@@ -4,6 +4,7 @@
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/agent/agent_warp_segmented_scan.cuh>
+#include <cub/device/dispatch/kernels/kernel_segmented_scan.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/warp/warp_load.cuh>
 #include <cub/warp/warp_scan.cuh>
@@ -100,195 +101,6 @@ struct ChainedPolicy
 {
   using ActivePolicy = policy_wrapper<BlockThreads, ItemsPerThread, MaxSegmentsPerWorker>;
 };
-
-template <typename ChainedPolicyT,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename BeginOffsetIteratorInputT,
-          typename EndOffsetIteratorInputT,
-          typename BeginOffsetIteratorOutputT,
-          typename OffsetT,
-          typename ScanOpT,
-          typename InitValueT,
-          typename AccumT,
-          bool ForceInclusive,
-          typename ActualInitValueT = typename InitValueT::value_type>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t::BLOCK_THREADS)) __global__
-  void device_warp_segmented_scan_kernel_one_segment_per_worker(
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    BeginOffsetIteratorInputT begin_offset_d_in,
-    EndOffsetIteratorInputT end_offset_d_in,
-    BeginOffsetIteratorOutputT begin_offset_d_out,
-    OffsetT n_segments,
-    ScanOpT scan_op,
-    InitValueT init_value)
-{
-  using policy_t = typename ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t;
-  static_assert(policy_t::max_segments_per_warp == 1, "Policy with single segment per block must be used");
-
-  using agent_t = cub::detail::segmented_scan::agent_warp_segmented_scan<
-    policy_t,
-    InputIteratorT,
-    OutputIteratorT,
-    OffsetT,
-    ScanOpT,
-    ActualInitValueT,
-    AccumT,
-    ForceInclusive>;
-
-  __shared__ typename agent_t::TempStorage temp_storage;
-
-  const ActualInitValueT _init_value = init_value;
-
-  constexpr unsigned warps_in_block = unsigned(policy_t::BLOCK_THREADS) >> cub::detail::log2_warp_threads;
-  const unsigned int warp_id        = (threadIdx.x >> cub::detail::log2_warp_threads);
-
-  const auto segment_id = blockIdx.x * warps_in_block + warp_id;
-
-  if (segment_id < n_segments)
-  {
-    const OffsetT inp_begin_offset = begin_offset_d_in[segment_id];
-    const OffsetT inp_end_offset   = end_offset_d_in[segment_id];
-    const OffsetT out_begin_offset = begin_offset_d_out[segment_id];
-
-    agent_t agent(temp_storage, d_in, d_out, scan_op, _init_value);
-
-    agent.consume_range(inp_begin_offset, inp_end_offset, out_begin_offset);
-  }
-}
-
-template <typename ChainedPolicyT,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename BeginOffsetIteratorInputT,
-          typename EndOffsetIteratorInputT,
-          typename BeginOffsetIteratorOutputT,
-          typename OffsetT,
-          typename ScanOpT,
-          typename InitValueT,
-          typename AccumT,
-          bool ForceInclusive,
-          typename ActualInitValueT = typename InitValueT::value_type>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t::BLOCK_THREADS)) __global__
-  void device_warp_segmented_scan_kernel_two_segments_per_worker(
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    BeginOffsetIteratorInputT begin_offset_d_in,
-    EndOffsetIteratorInputT end_offset_d_in,
-    BeginOffsetIteratorOutputT begin_offset_d_out,
-    OffsetT n_segments,
-    ScanOpT scan_op,
-    InitValueT init_value)
-{
-  using policy_t                        = typename ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t;
-  constexpr int num_segments_per_worker = 2;
-  static_assert(policy_t::max_segments_per_warp >= num_segments_per_worker,
-                "Policy with two segment per block must be used");
-
-  using agent_t = cub::detail::segmented_scan::agent_warp_segmented_scan<
-    policy_t,
-    InputIteratorT,
-    OutputIteratorT,
-    OffsetT,
-    ScanOpT,
-    ActualInitValueT,
-    AccumT,
-    ForceInclusive>;
-
-  __shared__ typename agent_t::TempStorage temp_storage;
-
-  const ActualInitValueT _init_value = init_value;
-
-  constexpr unsigned warps_in_block = unsigned(policy_t::BLOCK_THREADS) >> cub::detail::log2_warp_threads;
-  const unsigned int warp_id        = (threadIdx.x >> cub::detail::log2_warp_threads);
-
-  const unsigned work_id = blockIdx.x * warps_in_block + warp_id;
-
-  if (num_segments_per_worker * work_id < n_segments)
-  {
-    auto inp_segments_beg = begin_offset_d_in + num_segments_per_worker * work_id;
-    auto inp_segments_end = end_offset_d_in + num_segments_per_worker * work_id;
-    auto out_segments_beg = begin_offset_d_out + num_segments_per_worker * work_id;
-
-    agent_t agent(temp_storage, d_in, d_out, scan_op, _init_value);
-
-    if (num_segments_per_worker * work_id + num_segments_per_worker < n_segments)
-    {
-      agent.consume_ranges(inp_segments_beg, inp_segments_end, out_segments_beg, num_segments_per_worker);
-    }
-    else
-    {
-      int tail_size = n_segments - num_segments_per_worker * work_id;
-      agent.consume_ranges(inp_segments_beg, inp_segments_end, out_segments_beg, tail_size);
-    }
-  }
-}
-
-template <typename ChainedPolicyT,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename BeginOffsetIteratorInputT,
-          typename EndOffsetIteratorInputT,
-          typename BeginOffsetIteratorOutputT,
-          typename OffsetT,
-          typename ScanOpT,
-          typename InitValueT,
-          typename AccumT,
-          bool ForceInclusive,
-          typename ActualInitValueT = typename InitValueT::value_type>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t::BLOCK_THREADS)) __global__
-  void device_warp_segmented_scan_kernel_three_segments_per_worker(
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    BeginOffsetIteratorInputT begin_offset_d_in,
-    EndOffsetIteratorInputT end_offset_d_in,
-    BeginOffsetIteratorOutputT begin_offset_d_out,
-    OffsetT n_segments,
-    ScanOpT scan_op,
-    InitValueT init_value)
-{
-  using policy_t                        = typename ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t;
-  constexpr int num_segments_per_worker = 3;
-  static_assert(policy_t::max_segments_per_warp >= num_segments_per_worker,
-                "Policy with three segment per block must be used");
-
-  using agent_t = cub::detail::segmented_scan::agent_warp_segmented_scan<
-    policy_t,
-    InputIteratorT,
-    OutputIteratorT,
-    OffsetT,
-    ScanOpT,
-    ActualInitValueT,
-    AccumT,
-    ForceInclusive>;
-
-  __shared__ typename agent_t::TempStorage temp_storage;
-
-  const ActualInitValueT _init_value = init_value;
-
-  constexpr unsigned warps_in_block = unsigned(policy_t::BLOCK_THREADS) >> cub::detail::log2_warp_threads;
-  const unsigned int warp_id        = (threadIdx.x >> cub::detail::log2_warp_threads);
-
-  const unsigned work_id = blockIdx.x * warps_in_block + warp_id;
-
-  const unsigned offset_start = num_segments_per_worker * work_id;
-
-  if (offset_start < n_segments)
-  {
-    auto inp_segments_beg = begin_offset_d_in + offset_start;
-    auto inp_segments_end = end_offset_d_in + offset_start;
-    auto out_segments_beg = begin_offset_d_out + offset_start;
-
-    agent_t agent(temp_storage, d_in, d_out, scan_op, _init_value);
-
-    const auto offset_end = ::cuda::std::min(offset_start + num_segments_per_worker, n_segments);
-
-    const auto n_worker = static_cast<int>(offset_end - offset_start);
-
-    agent.consume_ranges(inp_segments_beg, inp_segments_end, out_segments_beg, n_worker);
-  }
-}
 } // namespace
 
 C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with one segment per block",
@@ -309,12 +121,13 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with one segme
   pair_t* d_output    = thrust::raw_pointer_cast(output.data());
   unsigned* d_offsets = thrust::raw_pointer_cast(offsets.data());
 
-  constexpr int block_size          = 128;
-  constexpr int items_per_thread    = 4;
-  constexpr int segments_per_worker = 1;
-  using chained_policy_t            = ChainedPolicy<block_size, items_per_thread, segments_per_worker>;
+  constexpr int block_size              = 128;
+  constexpr int items_per_thread        = 4;
+  constexpr int max_segments_per_worker = 1;
+  using chained_policy_t                = ChainedPolicy<block_size, items_per_thread, max_segments_per_worker>;
 
   constexpr unsigned workers_in_block   = (block_size / cub::detail::warp_threads);
+  constexpr int segments_per_worker     = max_segments_per_worker;
   constexpr unsigned segments_per_block = segments_per_worker * workers_in_block;
 
   const auto n_segments = static_cast<unsigned>(num_segments);
@@ -322,7 +135,8 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with one segme
 
   [[maybe_unused]] const auto itp = items_per_thread;
 
-  device_warp_segmented_scan_kernel_one_segment_per_worker<
+  static constexpr int one_segment_per_warp = 1;
+  cub::detail::segmented_scan::device_warp_segmented_scan_kernel<
     chained_policy_t,
     pair_t*,
     pair_t*,
@@ -334,7 +148,7 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with one segme
     cub::NullType,
     pair_t,
     true><<<grid_size, block_size>>>(
-    d_input, d_output, d_offsets, d_offsets + 1, d_offsets, n_segments, op_t{}, cub::NullType{});
+    d_input, d_output, d_offsets, d_offsets + 1, d_offsets, n_segments, op_t{}, cub::NullType{}, one_segment_per_warp);
 
   REQUIRE(cudaSuccess == cudaGetLastError());
 
@@ -389,7 +203,8 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with two segme
 
   [[maybe_unused]] const auto itp = items_per_thread;
 
-  device_warp_segmented_scan_kernel_two_segments_per_worker<
+  static constexpr int two_segments_per_warp = 2;
+  cub::detail::segmented_scan::device_warp_segmented_scan_kernel<
     chained_policy_t,
     pair_t*,
     pair_t*,
@@ -401,7 +216,7 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with two segme
     cub::NullType,
     pair_t,
     false><<<grid_size, block_size>>>(
-    d_input, d_output, d_offsets, d_offsets + 1, d_offsets, n_segments, op_t{}, cub::NullType{});
+    d_input, d_output, d_offsets, d_offsets + 1, d_offsets, n_segments, op_t{}, cub::NullType{}, two_segments_per_warp);
 
   REQUIRE(cudaSuccess == cudaGetLastError());
 
@@ -432,6 +247,78 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with two segme
       }
       std::cout << std::endl;
     }
+  }
+
+  REQUIRE(h_expected == h_output);
+}
+
+C2H_TEST("device_warp_segmented_scan_kernel handles tail warp segments",
+         "[agent_multiple_segments_per_block][segmented][scan]")
+{
+  using op_t    = cuda::std::plus<>;
+  using value_t = unsigned;
+
+  constexpr unsigned num_segments      = 10;
+  constexpr unsigned items_per_segment = 3;
+  constexpr unsigned num_items         = num_segments * items_per_segment;
+  constexpr unsigned offsets_size      = num_segments + 1;
+  c2h::host_vector<unsigned> h_offsets(offsets_size);
+
+  for (unsigned i = 0; i < offsets_size; ++i)
+  {
+    h_offsets[i] = i * items_per_segment;
+  }
+
+  c2h::device_vector<unsigned> offsets = h_offsets;
+  c2h::device_vector<value_t> input(num_items);
+  thrust::tabulate(input.begin(), input.end(), cuda::std::identity{});
+  c2h::device_vector<value_t> output(input.size());
+
+  value_t* d_input    = thrust::raw_pointer_cast(input.data());
+  value_t* d_output   = thrust::raw_pointer_cast(output.data());
+  unsigned* d_offsets = thrust::raw_pointer_cast(offsets.data());
+
+  constexpr int block_size             = 128;
+  constexpr int items_per_thread       = 4;
+  constexpr int max_segments_per_block = 8;
+  constexpr int segments_per_worker    = 2;
+  using chained_policy_t               = ChainedPolicy<block_size, items_per_thread, max_segments_per_block>;
+
+  constexpr unsigned workers_in_block   = (block_size / cub::detail::warp_threads);
+  constexpr unsigned segments_per_block = segments_per_worker * workers_in_block;
+
+  const auto grid_size = cuda::ceil_div(num_segments, segments_per_block);
+
+  [[maybe_unused]] const auto itp = items_per_thread;
+
+  cub::detail::segmented_scan::device_warp_segmented_scan_kernel<
+    chained_policy_t,
+    value_t*,
+    value_t*,
+    unsigned*,
+    unsigned*,
+    unsigned*,
+    unsigned,
+    op_t,
+    cub::NullType,
+    value_t,
+    false><<<grid_size, block_size>>>(
+    d_input, d_output, d_offsets, d_offsets + 1, d_offsets, num_segments, op_t{}, cub::NullType{}, segments_per_worker);
+
+  REQUIRE(cudaSuccess == cudaGetLastError());
+
+  c2h::host_vector<value_t> h_output(output);
+  c2h::host_vector<value_t> h_input(input);
+  c2h::host_vector<value_t> h_expected(output.size());
+
+  for (unsigned segment_id = 0; segment_id < num_segments; ++segment_id)
+  {
+    compute_inclusive_scan_reference(
+      h_input.begin() + h_offsets[segment_id],
+      h_input.begin() + h_offsets[segment_id + 1],
+      h_expected.begin() + h_offsets[segment_id],
+      op_t{},
+      value_t{0});
   }
 
   REQUIRE(h_expected == h_output);
@@ -470,7 +357,7 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with three seg
   [[maybe_unused]] const auto itp = items_per_thread;
 
   // inclusive scan (no initial condition)
-  device_warp_segmented_scan_kernel_three_segments_per_worker<
+  cub::detail::segmented_scan::device_warp_segmented_scan_kernel<
     chained_policy_t,
     pair_t*,
     pair_t*,
@@ -482,7 +369,7 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with three seg
     cub::NullType,
     pair_t,
     false><<<grid_size, block_size>>>(
-    d_input, d_output, d_offsets, d_offsets + 1, d_offsets, n_segments, op_t{}, cub::NullType{});
+    d_input, d_output, d_offsets, d_offsets + 1, d_offsets, n_segments, op_t{}, cub::NullType{}, segments_per_worker);
 
   REQUIRE(cudaSuccess == cudaGetLastError());
 
@@ -552,7 +439,8 @@ C2H_TEST("agent_segmented_scan works for exclusive_scan with two segments per bl
 
   // force inclusive is false (last template parameter), initial value is provided
   // hence this call computes exclusive scan algorithm
-  device_warp_segmented_scan_kernel_two_segments_per_worker<
+
+  cub::detail::segmented_scan::device_warp_segmented_scan_kernel<
     chained_policy_t,
     pair_t*,
     pair_t*,
@@ -571,7 +459,8 @@ C2H_TEST("agent_segmented_scan works for exclusive_scan with two segments per bl
     d_offsets,
     n_segments,
     op_t{},
-    cub::detail::InputValue<pair_t>{pair_t{1, 1}});
+    cub::detail::InputValue<pair_t>{pair_t{1, 1}},
+    segments_per_worker);
 
   REQUIRE(cudaSuccess == cudaGetLastError());
 
@@ -643,7 +532,7 @@ C2H_TEST("agent_segmented_scan works for exclusive_scan with three segments per 
 
   // force inclusive is false (last template parameter), initial value is provided
   // hence this call computes inclusive scan algorithm
-  device_warp_segmented_scan_kernel_three_segments_per_worker<
+  cub::detail::segmented_scan::device_warp_segmented_scan_kernel<
     chained_policy_t,
     value_t*,
     value_t*,
@@ -662,7 +551,8 @@ C2H_TEST("agent_segmented_scan works for exclusive_scan with three segments per 
     d_offsets,
     n_segments,
     op_t{},
-    cub::detail::InputValue<value_t>{init_value_});
+    cub::detail::InputValue<value_t>{init_value_},
+    segments_per_worker);
 
   REQUIRE(cudaSuccess == cudaGetLastError());
 
