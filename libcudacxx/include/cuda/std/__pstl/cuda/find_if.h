@@ -73,7 +73,7 @@ struct __pstl_dispatch<__pstl_algorithm::__find_if, __execution_backend::__cuda>
     _CCCL_HOST_API __allocation_guard(::cuda::stream_ref __stream, _Resource& __resource, size_t __num_bytes)
         : __stream_(__stream)
         , __resource_(__resource)
-        , __ptr_(static_cast<_Tp*>(__resource_.allocate(__stream_, __num_bytes + sizeof(_Tp), alignof(_Tp))))
+        , __ptr_(static_cast<_Tp*>(__resource_.allocate(__stream_, sizeof(_Tp) + __num_bytes, alignof(_Tp))))
     {}
 
     _CCCL_HOST_API ~__allocation_guard()
@@ -101,7 +101,7 @@ struct __pstl_dispatch<__pstl_algorithm::__find_if, __execution_backend::__cuda>
     using __offset_type    = remove_cvref_t<decltype(__num_items)>;
     __offset_type __ret;
 
-    //!    // Determine temporary device storage requirements for reduce
+    // Determine temporary device storage requirements for find_if
     void* __temp_storage = nullptr;
     size_t __num_bytes   = 0;
     ::cub::DeviceFind::FindIf(
@@ -133,6 +133,8 @@ struct __pstl_dispatch<__pstl_algorithm::__find_if, __execution_backend::__cuda>
       ::cudaMemcpyDeviceToHost,
       __stream.get());
 
+    // Need to sync before reading __ret
+    __stream.sync();
     return __first + __ret;
   }
 
