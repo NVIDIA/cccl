@@ -1036,8 +1036,8 @@ public:
    * @param place The execution place to activate. Must be an `exec_place` object;
    *              implicit conversions from other types are disabled.
    */
-  explicit exec_place_guard(const exec_place& place)
-      : place_(place)
+  explicit exec_place_guard(exec_place place)
+      : place_(mv(place))
       , prev_(place_.activate())
   {}
 
@@ -1057,13 +1057,12 @@ public:
   exec_place_guard(exec_place_guard&&)            = delete;
   exec_place_guard& operator=(exec_place_guard&&) = delete;
 
-  // Prevent implicit conversions from other types (e.g., data_place)
+  // Accept only exec_place and nothing else
   template <typename T,
-            typename = ::std::enable_if_t<!::std::is_same_v<::std::decay_t<T>, exec_place>
-                                          && !::std::is_base_of_v<exec_place, ::std::decay_t<T>>>>
-  exec_place_guard(T&&)
+            typename = ::std::enable_if_t<::std::is_same_v<T, exec_place>>
+  explicit exec_place_guard(T place)
+     : place_(mv(place))
   {
-    static_assert(!::std::is_same_v<T, T>, "exec_place_guard requires an exec_place, not a data_place or other type.");
   }
 
 private:
