@@ -23,7 +23,13 @@
 
 #if _CCCL_HAS_BACKEND_CUDA()
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
+
 #  include <cub/device/device_for.cuh>
+
+_CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
