@@ -71,6 +71,46 @@ def test_block_run_length_missing_total_decoded_size_raises():
         kernel[1, 32](d_run_values, d_run_lengths)
 
 
+def test_block_run_length_total_decoded_size_none_raises():
+    runs_per_thread = 2
+    decoded_items_per_thread = 4
+
+    @cuda.jit
+    def kernel(run_values, run_lengths):
+        run_values_local = coop.local.array(runs_per_thread, dtype=run_values.dtype)
+        run_lengths_local = coop.local.array(runs_per_thread, dtype=run_lengths.dtype)
+
+        coop.block.load(
+            run_values,
+            run_values_local,
+            items_per_thread=runs_per_thread,
+        )
+        coop.block.load(
+            run_lengths,
+            run_lengths_local,
+            items_per_thread=runs_per_thread,
+        )
+
+        coop.block.run_length(
+            run_values_local,
+            run_lengths_local,
+            runs_per_thread,
+            decoded_items_per_thread,
+            total_decoded_size=None,
+        )
+
+    h_run_values = np.arange(64, dtype=np.uint32)
+    h_run_lengths = np.full(64, 1, dtype=np.uint32)
+    d_run_values = cuda.to_device(h_run_values)
+    d_run_lengths = cuda.to_device(h_run_lengths)
+
+    with pytest.raises(
+        Exception,
+        match="total_decoded_size must be a device array",
+    ):
+        kernel[1, 32](d_run_values, d_run_lengths)
+
+
 def test_warp_exchange_thread_data_requires_array():
     items_per_thread = 4
 

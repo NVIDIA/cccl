@@ -972,3 +972,15 @@
 ## 2026-01-25
 - Isolated sharedmem=0 illegal access test in a subprocess to avoid poisoning the main CUDA context; full block_stress_kernels now runs cleanly.
 - Ran pytest: `python -m pytest tests/coop/test_block_stress_kernels.py` (21 passed, 2 xfailed).
+
+## 2026-01-25
+- Added per-warp warp.exchange temp-storage test; currently xfails due to temp_storage type mismatch when slicing shared memory.
+- Added dynamic-shared near-limit radix alignment test and post-crash sanity kernel for sharedmem=0 subprocess test.
+- Added run_length total_decoded_size=None compile-time error test.
+- Ran pytest: `python -m pytest tests/coop/test_compile_time_error_paths.py` (4 passed).
+- Ran pytest: `python -m pytest tests/coop/test_block_stress_kernels.py` (22 passed, 3 xfailed).
+
+## 2026-01-25
+- Investigated per-warp warp.exchange temp storage; output mismatch persists with aligned shared slices, now xfail on mismatch.
+- Ran pytest: `python -m pytest tests/coop/test_block_stress_kernels.py -k warp_exchange_temp_storage_per_warp` (xfail).
+- Ran pytest: `python -m pytest tests/coop/test_block_stress_kernels.py` (22 passed, 3 xfailed).

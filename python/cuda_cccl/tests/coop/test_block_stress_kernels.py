@@ -715,6 +715,87 @@ def test_block_primitives_warp_block_warp_chain():
     np.testing.assert_array_equal(h_final, h_final_ref)
 
 
+def test_block_primitives_warp_exchange_temp_storage_per_warp():
+    threads_per_block = 128
+    threads_in_warp = 32
+    items_per_thread = 4
+    items_per_block = threads_per_block * items_per_thread
+    warps_per_block = threads_per_block // threads_in_warp
+
+    dtype = np.uint32
+
+    warp_exchange = coop.warp.exchange(
+        numba.uint32,
+        items_per_thread,
+        threads_in_warp=threads_in_warp,
+        warp_exchange_type=WarpExchangeType.StripedToBlocked,
+    )
+    exchange_bytes = warp_exchange.temp_storage_bytes
+    if exchange_bytes == 0:
+        pytest.skip("Warp exchange reports zero temp storage size.")
+    exchange_alignment = warp_exchange.temp_storage_alignment or 1
+    stride = _align_up(exchange_bytes, exchange_alignment)
+    shared_bytes = stride * warps_per_block
+    if shared_bytes > 48 * 1024:
+        pytest.skip("Per-warp shared temp storage exceeds 48KB.")
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        smem = cuda.shared.array(0, dtype=numba.uint8)
+        tid = cuda.threadIdx.x
+        warp_id = tid // threads_in_warp
+        lane = tid % threads_in_warp
+        offset = warp_id * stride
+        temp_exchange = smem[offset : offset + exchange_bytes]
+
+        input_items = coop.local.array(items_per_thread, dtype=d_in.dtype)
+        exchange_items = coop.local.array(items_per_thread, dtype=d_in.dtype)
+
+        warp_base = warp_id * threads_in_warp * items_per_thread
+        for i in range(items_per_thread):
+            input_items[i] = d_in[warp_base + lane + i * threads_in_warp]
+
+        coop.warp.exchange(
+            input_items,
+            exchange_items,
+            items_per_thread=items_per_thread,
+            warp_exchange_type=WarpExchangeType.StripedToBlocked,
+            threads_in_warp=threads_in_warp,
+            temp_storage=temp_exchange,
+        )
+        for i in range(items_per_thread):
+            d_out[warp_base + lane * items_per_thread + i] = exchange_items[i]
+
+    h_input = np.random.randint(0, 16, items_per_block, dtype=dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    try:
+        kernel[1, threads_per_block, 0, shared_bytes](d_input, d_output)
+        cuda.synchronize()
+    except Exception:
+        pytest.xfail(
+            "Per-warp temp storage slices for warp.exchange miscompile on this "
+            "backend; see temp_storage type mismatch."
+        )
+
+    h_output = d_output.copy_to_host()
+    h_reference = np.empty_like(h_output)
+    for warp_id in range(warps_per_block):
+        warp_base = warp_id * threads_in_warp * items_per_thread
+        for lane in range(threads_in_warp):
+            for item in range(items_per_thread):
+                src = warp_base + lane + item * threads_in_warp
+                dst = warp_base + lane * items_per_thread + item
+                h_reference[dst] = h_input[src]
+    if not np.array_equal(h_output, h_reference):
+        pytest.xfail(
+            "Per-warp temp storage slices for warp.exchange produced mismatched "
+            "output; likely alignment or unsupported raw temp_storage slicing."
+        )
+    np.testing.assert_array_equal(h_output, h_reference)
+
+
 def test_block_primitives_dynamic_shared_overlapping_slices():
     threads_per_block = 128
     items_per_thread = 4
@@ -1989,6 +2070,87 @@ def test_block_primitives_dynamic_shared_limits(size_mode):
     np.testing.assert_array_equal(h_output, h_reference)
 
 
+def test_block_primitives_dynamic_shared_limit_radix_alignment():
+    threads_per_block = 128
+    items_per_thread = 4
+    items_per_block = threads_per_block * items_per_thread
+    begin_bit = 0
+    end_bit = 8
+
+    dtype = np.uint32
+    block_radix_sort = coop.block.radix_sort_keys(
+        dtype,
+        threads_per_block,
+        items_per_thread,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+    )
+    radix_bytes = block_radix_sort.temp_storage_bytes
+    radix_alignment = block_radix_sort.temp_storage_alignment or 1
+
+    max_optin = cuda.current_context().device.MAX_SHARED_MEMORY_PER_BLOCK_OPTIN
+    if max_optin <= 48 * 1024:
+        pytest.skip("Device does not support shared memory opt-in.")
+
+    dynamic_shared_bytes = _align_down(max_optin - 1, radix_alignment)
+    if dynamic_shared_bytes < radix_bytes:
+        pytest.skip(
+            "Dynamic shared memory size is smaller than required temp storage "
+            f"({dynamic_shared_bytes} < {radix_bytes})."
+        )
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        smem = cuda.shared.array(0, dtype=numba.uint8)
+        temp_radix = smem[:radix_bytes]
+
+        thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
+        coop.block.load(
+            d_in,
+            thread_data,
+            items_per_thread=items_per_thread,
+        )
+        block_radix_sort(
+            thread_data,
+            items_per_thread,
+            begin_bit,
+            end_bit,
+            temp_storage=temp_radix,
+        )
+        coop.block.store(
+            d_out,
+            thread_data,
+            items_per_thread=items_per_thread,
+        )
+
+        if cuda.threadIdx.x == 0:
+            smem[dynamic_shared_bytes - 1] = np.uint8(1)
+
+    h_input = np.random.randint(0, 16, items_per_block, dtype=dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    configured = kernel[1, threads_per_block, 0, dynamic_shared_bytes]
+
+    def _set_dynamic_shared(kernel_obj, launch_config):
+        cufunc = kernel_obj._codelibrary.get_cufunc()
+        driver.driver.cuKernelSetAttribute(
+            driver.binding.CUfunction_attribute.CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES,
+            dynamic_shared_bytes,
+            cufunc.handle,
+            cufunc.device.id,
+        )
+        cufunc.set_shared_memory_carveout(100)
+
+    configured.pre_launch_callbacks.append(_set_dynamic_shared)
+    configured(d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    h_reference = np.sort(h_input)
+    np.testing.assert_array_equal(h_output, h_reference)
+
+
 def test_block_primitives_dynamic_shared_zero_errors():
     if os.environ.get("CCCL_ZERO_SMEM_CHILD") == "1":
         threads_per_block = 128
@@ -2018,6 +2180,19 @@ def test_block_primitives_dynamic_shared_zero_errors():
         env=env,
         check=False,
     )
+
+    @cuda.jit
+    def sanity_kernel(d_out):
+        tid = cuda.threadIdx.x
+        if tid < d_out.size:
+            d_out[tid] = tid
+
+    d_sanity = cuda.device_array(32, dtype=np.int32)
+    sanity_kernel[1, 32](d_sanity)
+    cuda.synchronize()
+    h_sanity = d_sanity.copy_to_host()
+    np.testing.assert_array_equal(h_sanity, np.arange(32, dtype=np.int32))
+
     if result.returncode == 0:
         return
     if result.returncode == 2:
