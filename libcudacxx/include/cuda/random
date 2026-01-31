@@ -8,18 +8,20 @@
 //
 //===----------------------------------------------------------------------===//
 
+#ifndef _CUDA_RANDOM
+#define _CUDA_RANDOM
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/__random/pcg_engine.h>
 #include <cuda/std/random>
 
-#include "random_utilities/test_engine.h"
-
-__host__ __device__ void test()
-{
-  test_engine<cuda::std::minstd_rand0, 1043618065u>();
-  test_engine<cuda::std::minstd_rand, 399268537ull>();
-}
-
-int main(int, char**)
-{
-  test();
-  return 0;
-}
+#endif // _CUDA_RANDOM
