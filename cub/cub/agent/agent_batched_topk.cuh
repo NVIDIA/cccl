@@ -203,7 +203,7 @@ struct agent_batched_topk_worker_per_segment
       // Pass both keys and values
       const bool is_successful_dispatch = detail::params::dispatch_discrete(
         select_directions, segment_id, [this, &thread_keys, &thread_values, k](auto direction_tag) {
-          if constexpr (Direction == detail::topk::select::max)
+          if constexpr (decltype(direction_tag)::value == detail::topk::select::max)
           {
             block_topk_t(temp_storage.topk).max_pairs(thread_keys, thread_values, k);
           }
@@ -218,7 +218,7 @@ struct agent_batched_topk_worker_per_segment
     {
       const bool is_successful_dispatch =
         detail::params::dispatch_discrete(select_directions, segment_id, [this, &thread_keys, k](auto direction_tag) {
-          if constexpr (Direction == detail::topk::select::max)
+          if constexpr (decltype(direction_tag)::value == detail::topk::select::max)
           {
             block_topk_t(temp_storage.topk).max_keys(thread_keys, k);
           }
