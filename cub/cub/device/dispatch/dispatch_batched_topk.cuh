@@ -373,7 +373,7 @@ struct dispatch_batched_topk
                   "Only uniform segment sizes are currently supported.");
 
     // TODO (elstehle): support larger number of segments through multiple kernel launches
-    int grid_dim = static_cast<int>(resolve_param(num_segments, 0));
+    int grid_dim = static_cast<int>(num_segments.get_param(0));
 
     cudaError_t error = CubDebug(
       THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, 0, stream)

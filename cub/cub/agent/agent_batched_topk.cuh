@@ -139,15 +139,15 @@ struct agent_batched_topk_worker_per_segment
     const int segment_id = blockIdx.x;
 
     // Boundary check
-    if (segment_id >= resolve_param(num_segments, 0))
+    if (segment_id >= num_segments.get_param(0))
     {
       return;
     }
 
     // Resolve Segment Parameters
-    const auto segment_size = resolve_param(segment_sizes, segment_id);
-    const auto k            = resolve_param(k_param, segment_id);
-    const auto direction    = resolve_param(select_directions, segment_id);
+    const auto segment_size = segment_sizes.get_param(segment_id);
+    const auto k            = k_param.get_param(segment_id);
+    const auto direction    = select_directions.get_param(segment_id);
 
     // Determine padding key based on direction
     const key_t padding_key =

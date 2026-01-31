@@ -56,6 +56,13 @@ template <typename T, T Value>
 struct static_constant_param : public static_bounds_mixin<T, Value, Value>
 {
   using value_type = T;
+
+  template <typename SegmentIndexT>
+  _CCCL_HOST_DEVICE constexpr auto get_param([[maybe_unused]] SegmentIndexT segment_id) const
+  {
+    static_assert(static_bounds_mixin<T, Value, Value>::is_exact, "Static parameter must have exact value");
+    return static_bounds_mixin<T, Value, Value>::static_min_value;
+  }
 };
 // -----------------------------------------------------------------------------
 // 1. Uniform Param
@@ -73,6 +80,12 @@ struct uniform_param : public static_bounds_mixin<T, Min, Max>
   {}
 
   uniform_param() = default;
+
+  template <typename SegmentIndexT>
+  _CCCL_HOST_DEVICE constexpr auto get_param([[maybe_unused]] SegmentIndexT segment_id) const
+  {
+    return value;
+  }
 };
 
 template <typename T>
@@ -102,6 +115,12 @@ struct per_segment_param : public static_bounds_mixin<T, Min, Max>
   {}
 
   per_segment_param() = default;
+
+  template <typename SegmentIndexT>
+  _CCCL_HOST_DEVICE constexpr auto get_param(SegmentIndexT segment_id) const
+  {
+    return iterator[segment_id];
+  }
 };
 
 // Deduction Guide:
@@ -126,6 +145,12 @@ struct uniform_discrete_param
   {}
 
   uniform_discrete_param() = default;
+
+  template <typename SegmentIndexT>
+  _CCCL_HOST_DEVICE constexpr auto get_param([[maybe_unused]] SegmentIndexT segment_id) const
+  {
+    return value;
+  }
 };
 
 // -----------------------------------------------------------------------------
@@ -145,6 +170,12 @@ struct per_segment_discrete_param
   {}
 
   per_segment_discrete_param() = default;
+
+  template <typename SegmentIndexT>
+  _CCCL_HOST_DEVICE constexpr auto get_param(SegmentIndexT segment_id) const
+  {
+    return iterator[segment_id];
+  }
 };
 
 // -----------------------------------------------------------------------------
@@ -186,29 +217,6 @@ inline constexpr auto static_min_value_v = T::static_min_value;
 template <typename T>
 inline constexpr bool has_single_static_value_v = (static_max_value_v<T> == static_min_value_v<T>);
 
-// Resolve parameter value for a given segment index
-template <typename ParamT, typename SegmentIndexT>
-constexpr _CCCL_HOST_DEVICE auto resolve_param(ParamT const& p, [[maybe_unused]] SegmentIndexT segment_id)
-{
-  if constexpr (is_static_param_v<ParamT>)
-  {
-    // Case 1: Compile-time constant.
-    static_assert(ParamT::is_exact, "Static parameter must have exact value");
-    return ParamT::static_min_value;
-  }
-  else if constexpr (is_uniform_param_v<ParamT>)
-  {
-    // Case 2: Runtime uniform.
-    return p.value;
-  }
-  else
-  {
-    // Case 3: Per-segment.
-    static_assert(is_per_segment_param_v<ParamT>, "Unknown parameter type");
-    return p.iterator[segment_id];
-  }
-}
-
 // Helper that translates a runtime parameter value into a compile-time constant by matching against a list of supported
 // options.
 template <typename T, T... Opts, typename Functor>
@@ -233,7 +241,7 @@ template <typename ParamT, typename SegmentIndexT, typename Functor>
 _CCCL_HOST_DEVICE bool dispatch_discrete(ParamT param, SegmentIndexT segment_id, Functor&& f)
 {
   using supported_list = typename ParamT::supported_options_t;
-  auto param_value     = resolve_param(param, segment_id);
+  auto param_value     = param.get_param(segment_id);
   return dispatch_impl(param_value, supported_list{}, ::cuda::std::forward<Functor>(f));
 }
 } // namespace detail::params
