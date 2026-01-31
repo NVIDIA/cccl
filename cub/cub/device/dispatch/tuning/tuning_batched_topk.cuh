@@ -24,16 +24,19 @@ struct policy_hub
 {
   struct Policy900 : ChainedPolicy<900, Policy900, Policy900>
   {
+    static constexpr BlockLoadAlgorithm default_load_alg = BLOCK_LOAD_WARP_TRANSPOSE;
+    static constexpr BlockStoreAlgorithm default_store_alg = BLOCK_STORE_WARP_TRANSPOSE;
+
     // Policies selected based on optimal performance for different segment sizes
     // The list below will be checked to determine if each policy can support the one-worker-per-segment approach
     // within available shared memory limits. Policies must be ordered by decreasing segment size
     using worker_per_segment_policies =
-      ::cuda::std::tuple<agent_batched_topk_worker_per_segment_policy<256, 64>,
-                         agent_batched_topk_worker_per_segment_policy<256, 32>,
-                         agent_batched_topk_worker_per_segment_policy<256, 16>,
-                         agent_batched_topk_worker_per_segment_policy<256, 8>,
-                         agent_batched_topk_worker_per_segment_policy<256, 4>,
-                         agent_batched_topk_worker_per_segment_policy<128, 2>>;
+      ::cuda::std::tuple<agent_batched_topk_worker_per_segment_policy<256, 64, default_load_alg, default_store_alg>,
+                         agent_batched_topk_worker_per_segment_policy<256, 32, default_load_alg, default_store_alg>,
+                         agent_batched_topk_worker_per_segment_policy<256, 16, default_load_alg, default_store_alg>,
+                         agent_batched_topk_worker_per_segment_policy<256, 8, default_load_alg, default_store_alg>,
+                         agent_batched_topk_worker_per_segment_policy<256, 4, default_load_alg, default_store_alg>,
+                         agent_batched_topk_worker_per_segment_policy<128, 2, default_load_alg, default_store_alg>>;
   };
 
   using max_policy = Policy900;

@@ -230,7 +230,7 @@ __launch_bounds__(int(
                     SegmentSizeParameterT,
                     KParameterT,
                     SelectDirectionParameterT,
-                    NumSegmentsParameterT>::worker_per_segment_policy_t::BLOCK_THREADS)) __global__
+                    NumSegmentsParameterT>::worker_per_segment_policy_t::block_threads)) __global__
   void device_segmented_topk_kernel(
     KeyInputItItT d_key_segments_it,
     KeyOutputItItT d_key_segments_out_it,
@@ -358,7 +358,7 @@ struct dispatch_batched_topk
     // Instantiate the kernel with the selected policy and check shared memory requirements
     using topk_policy_t = ActiveWorkerPerSegmentPolicyTPolicyT;
 
-    constexpr int block_dim = topk_policy_t::BLOCK_THREADS;
+    constexpr int block_dim = topk_policy_t::block_threads;
 
     if (d_temp_storage == nullptr)
     {
