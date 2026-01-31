@@ -9,6 +9,7 @@ Functional
 
    functional/proclaim_return_type
    functional/maximum_minimum
+   functional/operator_properties
    memory/get_device_address
 
 .. list-table::
@@ -44,3 +45,8 @@ Functional
      - Returns a valid address to a device object
      - CCCL 2.8.0
      - CUDA 12.9
+
+   * - :ref:`cuda::is_associative_v <libcudacxx-extended-api-functional-operator-properties>`, :ref:`cuda::is_commutative_v <libcudacxx-extended-api-functional-operator-properties>`, :ref:`cuda::identity_element() <libcudacxx-extended-api-functional-operator-properties>`, :ref:`cuda::absorbing_element() <libcudacxx-extended-api-functional-operator-properties>`
+     - Determines if an operator is associative for a type
+     - CCCL 3.3.0
+     - CUDA 13.3
