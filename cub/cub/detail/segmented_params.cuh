@@ -225,10 +225,11 @@ _CCCL_HOST_DEVICE bool dispatch_impl(T val, supported_options<T, Opts...>, Funct
   // if (val == Opt1) f(integral_constant<Opt1>);
   // else if (val == Opt2) f(integral_constant<Opt2>);
   // ...
-  bool match_found = ((val == Opts ? (f(::cuda::std::integral_constant<T, Opts>{}), true) : false) || ...);
+  const bool match_found = ((val == Opts ? (f(::cuda::std::integral_constant<T, Opts>{}), true) : false) || ...);
 
   // Optional: Handling cases where the runtime value was not in the supported
   // list. In a release build, we assume the user respected the contract.
+  _CCCL_ASSERT(match_found, "The given runtime parameter value is not in the supported list");
   return match_found;
 }
 

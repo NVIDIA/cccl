@@ -170,7 +170,7 @@ struct agent_batched_topk_worker_per_segment
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
     // Identify Segment
-    int segment_id = blockIdx.x;
+    const int segment_id = blockIdx.x;
 
     // Boundary check
     if (segment_id >= resolve_param(num_segments, 0))
@@ -184,9 +184,10 @@ struct agent_batched_topk_worker_per_segment
     const auto direction    = resolve_param(select_directions, segment_id);
 
     // Determine padding key based on direction
-    key_t padding_key = (direction == detail::topk::select::max)
-                        ? ::cuda::std::numeric_limits<key_t>::lowest()
-                        : ::cuda::std::numeric_limits<key_t>::max();
+    const key_t padding_key =
+      (direction == detail::topk::select::max)
+        ? ::cuda::std::numeric_limits<key_t>::lowest()
+        : ::cuda::std::numeric_limits<key_t>::max();
 
     // Dereference iterator-of-iterators to get the segment specific iterator
     auto block_keys_in = d_key_segments_it[segment_id];

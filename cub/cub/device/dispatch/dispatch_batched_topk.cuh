@@ -416,8 +416,6 @@ struct dispatch_batched_topk
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    using max_policy_t = typename SelectedPolicy::max_policy;
-
     // Helper that determines (a) whether there's any one-worker-per-segment policy supporting the range of segment
     // sizes and k, and (b) if so, which set of one-worker-per-segment policies to use
     using find_valid_policy_t = find_valid_policy<
@@ -459,8 +457,6 @@ struct dispatch_batched_topk
     TotalNumItemsGuaranteeT total_num_items_guarantee,
     cudaStream_t stream)
   {
-    using max_policy_t = typename SelectedPolicy::max_policy;
-
     int ptx_version = 0;
     if (cudaError_t error = CubDebug(PtxVersion(ptx_version)))
     {

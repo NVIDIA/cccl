@@ -27,9 +27,9 @@ struct policy_hub
     static constexpr BlockLoadAlgorithm default_load_alg   = BLOCK_LOAD_WARP_TRANSPOSE;
     static constexpr BlockStoreAlgorithm default_store_alg = BLOCK_STORE_WARP_TRANSPOSE;
 
-    // Policies selected based on optimal performance for different segment sizes
     // The list below will be checked to determine if each policy can support the one-worker-per-segment approach
-    // within available shared memory limits. Policies must be ordered by decreasing segment size
+    // within available shared memory limits. The first policy that fits SMEM is taken. Policies must be ordered by
+    // decreasing segment size.
     using worker_per_segment_policies =
       ::cuda::std::tuple<agent_batched_topk_worker_per_segment_policy<256, 64, default_load_alg, default_store_alg>,
                          agent_batched_topk_worker_per_segment_policy<256, 32, default_load_alg, default_store_alg>,
