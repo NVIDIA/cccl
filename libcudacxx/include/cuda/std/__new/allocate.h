@@ -33,7 +33,7 @@
 #  include <new>
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
-#if !defined(__cpp_sized_deallocation) || __cpp_sized_deallocation < 201309L
+#if __cpp_sized_deallocation < 201309L
 #  define _LIBCUDACXX_HAS_SIZED_DEALLOCATION() 0
 #else
 #  define _LIBCUDACXX_HAS_SIZED_DEALLOCATION() 1
