@@ -12,11 +12,12 @@ from typing import TYPE_CHECKING
 from .._cpp_codegen import cpp_type_from_descriptor
 from ._base import IteratorBase
 from ._codegen_utils import (
-    ADVANCE_TEMPLATE,
-    INPUT_DEREF_TEMPLATE,
-    OUTPUT_DEREF_TEMPLATE,
+    collect_child_ltoirs,
+    compile_cpp_source_to_ltoir,
     compose_iterator_states,
-    format_template,
+    format_advance,
+    format_input_dereference,
+    format_output_dereference,
 )
 
 if TYPE_CHECKING:
@@ -79,8 +80,8 @@ class PermutationIterator(IteratorBase):
             value_type=self._values.value_type,
         )
 
-    def _generate_advance_source(self) -> tuple[str, str, list[bytes]]:
-        """Generate advance that only advances indices iterator."""
+    def _provide_advance_ltoir(self) -> tuple[str, bytes, list[bytes]]:
+        """Provide compiled LTOIR for advance that only advances indices iterator."""
         indices_advance, _, _ = self._indices.get_advance_ltoir()
         symbol = self._make_advance_symbol()
 
@@ -89,13 +90,13 @@ class PermutationIterator(IteratorBase):
             {indices_advance}(indices_state, offset);
         """).strip()
 
-        source = format_template(
-            ADVANCE_TEMPLATE, symbol=symbol, body=body, extern_symbols=[indices_advance]
-        )
-        return (symbol, source, [])
+        source = format_advance(symbol, body, extern_symbols=[indices_advance])
+        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+        child_ltoirs = collect_child_ltoirs([self._indices], "advance")
+        return (symbol, ltoir, child_ltoirs)
 
-    def _generate_input_deref_source(self) -> tuple[str, str, list[bytes]] | None:
-        """Generate input deref that reads index then accesses values."""
+    def _provide_input_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
+        """Provide compiled LTOIR for input deref that reads index then accesses values."""
         idx_result = self._indices.get_input_dereference_ltoir()
         if idx_result is None:
             raise ValueError("Indices iterator must support input dereference")
@@ -128,17 +129,18 @@ class PermutationIterator(IteratorBase):
             {values_deref}(temp_values, result);
         """).strip()
 
-        source = format_template(
-            INPUT_DEREF_TEMPLATE,
-            symbol=symbol,
-            body=body,
-            extern_symbols=[indices_deref, values_advance, values_deref],
+        source = format_input_dereference(
+            symbol, body, extern_symbols=[indices_deref, values_advance, values_deref]
         )
-        # Include values.advance since we reference it
-        return (symbol, source, [val_adv_ltoir] + val_adv_extras)
+        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+        # Include values.advance LTOIR and child LTOIRs from both iterators
+        child_ltoirs = collect_child_ltoirs(
+            [self._values, self._indices], "input_deref"
+        )
+        return (symbol, ltoir, [val_adv_ltoir] + val_adv_extras + child_ltoirs)
 
-    def _generate_output_deref_source(self) -> tuple[str, str, list[bytes]] | None:
-        """Generate output deref that reads index then writes to values."""
+    def _provide_output_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
+        """Provide compiled LTOIR for output deref that reads index then writes to values."""
         idx_result = self._indices.get_input_dereference_ltoir()
         if idx_result is None:
             raise ValueError("Indices iterator must support input dereference")
@@ -171,14 +173,15 @@ class PermutationIterator(IteratorBase):
             {values_deref}(temp_values, value);
         """).strip()
 
-        source = format_template(
-            OUTPUT_DEREF_TEMPLATE,
-            symbol=symbol,
-            body=body,
-            extern_symbols=[indices_deref, values_advance, values_deref],
+        source = format_output_dereference(
+            symbol, body, extern_symbols=[indices_deref, values_advance, values_deref]
         )
-        # Include values.advance since we reference it
-        return (symbol, source, [val_adv_ltoir] + val_adv_extras)
+        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+        # Include values.advance LTOIR and child LTOIRs from both iterators
+        child_ltoirs = collect_child_ltoirs(
+            [self._values, self._indices], "output_deref"
+        )
+        return (symbol, ltoir, [val_adv_ltoir] + val_adv_extras + child_ltoirs)
 
     @property
     def children(self):

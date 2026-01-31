@@ -10,11 +10,12 @@ from .._bindings import IteratorState
 from ..types import TypeDescriptor, struct
 from ._base import IteratorBase
 from ._codegen_utils import (
-    ADVANCE_TEMPLATE,
-    INPUT_DEREF_TEMPLATE,
-    OUTPUT_DEREF_TEMPLATE,
+    collect_child_ltoirs,
+    compile_cpp_source_to_ltoir,
     compose_iterator_states,
-    format_template,
+    format_advance,
+    format_input_dereference,
+    format_output_dereference,
 )
 
 
@@ -135,20 +136,20 @@ class ZipIterator(IteratorBase):
             value_type=self._value_type,
         )
 
-    def _generate_advance_source(self) -> tuple[str, str, list[bytes]]:
-        """Generate advance that calls all child iterator advances."""
+    def _provide_advance_ltoir(self) -> tuple[str, bytes, list[bytes]]:
+        """Provide compiled LTOIR for advance that calls all child iterator advances."""
         advance_names = [it.get_advance_ltoir()[0] for it in self._iterators]
         symbol = self._make_advance_symbol()
 
         body = _generate_advance_body(advance_names, self._state_offsets)
 
-        source = format_template(
-            ADVANCE_TEMPLATE, symbol=symbol, body=body, extern_symbols=advance_names
-        )
-        return (symbol, source, [])
+        source = format_advance(symbol, body, extern_symbols=advance_names)
+        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+        child_ltoirs = collect_child_ltoirs(self._iterators, "advance")
+        return (symbol, ltoir, child_ltoirs)
 
-    def _generate_input_deref_source(self) -> tuple[str, str, list[bytes]] | None:
-        """Generate input deref that calls all child iterator input derefs."""
+    def _provide_input_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
+        """Provide compiled LTOIR for input deref that calls all child iterator input derefs."""
         # Check if all iterators support input dereference
         deref_results = [it.get_input_dereference_ltoir() for it in self._iterators]
         if not all(result is not None for result in deref_results):
@@ -161,13 +162,13 @@ class ZipIterator(IteratorBase):
             deref_names, self._state_offsets, self._value_offsets, result_name="result"
         )
 
-        source = format_template(
-            INPUT_DEREF_TEMPLATE, symbol=symbol, body=body, extern_symbols=deref_names
-        )
-        return (symbol, source, [])
+        source = format_input_dereference(symbol, body, extern_symbols=deref_names)
+        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+        child_ltoirs = collect_child_ltoirs(self._iterators, "input_deref")
+        return (symbol, ltoir, child_ltoirs)
 
-    def _generate_output_deref_source(self) -> tuple[str, str, list[bytes]] | None:
-        """Generate output deref that calls all child iterator output derefs."""
+    def _provide_output_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
+        """Provide compiled LTOIR for output deref that calls all child iterator output derefs."""
         # Check if all iterators support output dereference
         deref_results = [it.get_output_dereference_ltoir() for it in self._iterators]
         if not all(result is not None for result in deref_results):
@@ -180,10 +181,10 @@ class ZipIterator(IteratorBase):
             deref_names, self._state_offsets, self._value_offsets, result_name="value"
         )
 
-        source = format_template(
-            OUTPUT_DEREF_TEMPLATE, symbol=symbol, body=body, extern_symbols=deref_names
-        )
-        return (symbol, source, [])
+        source = format_output_dereference(symbol, body, extern_symbols=deref_names)
+        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+        child_ltoirs = collect_child_ltoirs(self._iterators, "output_deref")
+        return (symbol, ltoir, child_ltoirs)
 
     @property
     def state(self) -> IteratorState:

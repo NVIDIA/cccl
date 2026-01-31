@@ -170,7 +170,9 @@ def test_caching_permutation_iterator():
             cp.arange(i * 10, (i + 1) * 10, dtype=np.float32),
             cp.arange(5, dtype=np.int32),
         )
-        it._compile_if_needed()
+        # Trigger compilation by accessing LTOIR
+        it.get_advance_ltoir()
+        it.get_input_dereference_ltoir()
         iterators.append(it)
 
     cache_info = compile_cpp_to_ltoir.cache_info()

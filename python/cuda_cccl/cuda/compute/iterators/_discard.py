@@ -11,10 +11,10 @@ from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..types import TypeDescriptor, from_numpy_dtype
 from ._base import IteratorBase
 from ._codegen_utils import (
-    ADVANCE_TEMPLATE,
-    INPUT_DEREF_TEMPLATE,
-    OUTPUT_DEREF_TEMPLATE,
-    format_template,
+    compile_cpp_source_to_ltoir,
+    format_advance,
+    format_input_dereference,
+    format_output_dereference,
 )
 
 
@@ -54,26 +54,29 @@ class DiscardIterator(IteratorBase):
             value_type=value_type,
         )
 
-    def _generate_advance_source(self) -> tuple[str, str, list[bytes]]:
+    def _provide_advance_ltoir(self) -> tuple[str, bytes, list[bytes]]:
         symbol = self._make_advance_symbol()
         body = """(void)state;
 (void)offset;"""
-        source = format_template(ADVANCE_TEMPLATE, symbol=symbol, body=body)
-        return (symbol, source, [])
+        source = format_advance(symbol, body)
+        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+        return (symbol, ltoir, [])
 
-    def _generate_input_deref_source(self) -> tuple[str, str, list[bytes]] | None:
+    def _provide_input_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
         symbol = self._make_input_deref_symbol()
         body = """(void)state;
 (void)result;"""
-        source = format_template(INPUT_DEREF_TEMPLATE, symbol=symbol, body=body)
-        return (symbol, source, [])
+        source = format_input_dereference(symbol, body)
+        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+        return (symbol, ltoir, [])
 
-    def _generate_output_deref_source(self) -> tuple[str, str, list[bytes]] | None:
+    def _provide_output_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
         symbol = self._make_output_deref_symbol()
         body = """(void)state;
 (void)value;"""
-        source = format_template(OUTPUT_DEREF_TEMPLATE, symbol=symbol, body=body)
-        return (symbol, source, [])
+        source = format_output_dereference(symbol, body)
+        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+        return (symbol, ltoir, [])
 
     def __add__(self, offset: int) -> "DiscardIterator":
         """Return a new DiscardIterator (stateless, so position doesn't matter)."""

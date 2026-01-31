@@ -13,7 +13,11 @@ import numpy as np
 from .._cpp_codegen import cpp_type_from_descriptor
 from ..types import from_numpy_dtype
 from ._base import IteratorBase
-from ._codegen_utils import ADVANCE_TEMPLATE, INPUT_DEREF_TEMPLATE, format_template
+from ._codegen_utils import (
+    compile_cpp_source_to_ltoir,
+    format_advance,
+    format_input_dereference,
+)
 
 
 class CountingIterator(IteratorBase):
@@ -43,7 +47,7 @@ class CountingIterator(IteratorBase):
             value_type=value_type,
         )
 
-    def _generate_advance_source(self) -> tuple[str, str, list[bytes]]:
+    def _provide_advance_ltoir(self) -> tuple[str, bytes, list[bytes]]:
         symbol = self._make_advance_symbol()
         cpp_type = cpp_type_from_descriptor(self._value_type)
 
@@ -53,10 +57,11 @@ class CountingIterator(IteratorBase):
             *s += static_cast<{cpp_type}>(dist);
         """).strip()
 
-        source = format_template(ADVANCE_TEMPLATE, symbol=symbol, body=body)
-        return (symbol, source, [])
+        source = format_advance(symbol, body)
+        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+        return (symbol, ltoir, [])
 
-    def _generate_input_deref_source(self) -> tuple[str, str, list[bytes]] | None:
+    def _provide_input_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
         symbol = self._make_input_deref_symbol()
         cpp_type = cpp_type_from_descriptor(self._value_type)
 
@@ -64,10 +69,11 @@ class CountingIterator(IteratorBase):
             *static_cast<{cpp_type}*>(result) = *static_cast<{cpp_type}*>(state);
         """).strip()
 
-        source = format_template(INPUT_DEREF_TEMPLATE, symbol=symbol, body=body)
-        return (symbol, source, [])
+        source = format_input_dereference(symbol, body)
+        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+        return (symbol, ltoir, [])
 
-    def _generate_output_deref_source(self) -> tuple[str, str, list[bytes]] | None:
+    def _provide_output_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
         return None
 
     def __add__(self, offset: int) -> "CountingIterator":

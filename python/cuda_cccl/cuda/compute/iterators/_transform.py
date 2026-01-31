@@ -17,10 +17,11 @@ from ..op import make_op_adapter
 from ..types import TypeDescriptor
 from ._base import IteratorBase
 from ._codegen_utils import (
-    ADVANCE_TEMPLATE,
-    INPUT_DEREF_TEMPLATE,
-    OUTPUT_DEREF_TEMPLATE,
-    format_template,
+    collect_child_ltoirs,
+    compile_cpp_source_to_ltoir,
+    format_advance,
+    format_input_dereference,
+    format_output_dereference,
 )
 
 
@@ -84,8 +85,8 @@ class TransformIterator(IteratorBase):
             )
         return self._compiled_op
 
-    def _generate_advance_source(self) -> tuple[str, str, list[bytes]]:
-        """Generate advance that delegates to underlying iterator."""
+    def _provide_advance_ltoir(self) -> tuple[str, bytes, list[bytes]]:
+        """Provide compiled LTOIR for advance that delegates to underlying iterator."""
         underlying_advance, _, _ = self._underlying.get_advance_ltoir()
         symbol = self._make_advance_symbol()
 
@@ -93,16 +94,13 @@ class TransformIterator(IteratorBase):
             {underlying_advance}(state, offset);
         """).strip()
 
-        source = format_template(
-            ADVANCE_TEMPLATE,
-            symbol=symbol,
-            body=body,
-            extern_symbols=[underlying_advance],
-        )
-        return (symbol, source, [])
+        source = format_advance(symbol, body, extern_symbols=[underlying_advance])
+        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+        child_ltoirs = collect_child_ltoirs([self._underlying], "advance")
+        return (symbol, ltoir, child_ltoirs)
 
-    def _generate_input_deref_source(self) -> tuple[str, str, list[bytes]] | None:
-        """Generate input dereference that reads from underlying then transforms."""
+    def _provide_input_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
+        """Provide compiled LTOIR for input dereference that reads from underlying then transforms."""
         if not self._is_input:
             return None
 
@@ -125,16 +123,15 @@ class TransformIterator(IteratorBase):
             {transform_op}(&temp, result);
         """).strip()
 
-        source = format_template(
-            INPUT_DEREF_TEMPLATE,
-            symbol=symbol,
-            body=body,
-            extern_symbols=[underlying_deref, transform_op],
+        source = format_input_dereference(
+            symbol, body, extern_symbols=[underlying_deref, transform_op]
         )
-        return (symbol, source, [op_ltoir] + op_extras)
+        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+        child_ltoirs = collect_child_ltoirs([self._underlying], "input_deref")
+        return (symbol, ltoir, [op_ltoir] + op_extras + child_ltoirs)
 
-    def _generate_output_deref_source(self) -> tuple[str, str, list[bytes]] | None:
-        """Generate output dereference that transforms then writes to underlying."""
+    def _provide_output_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
+        """Provide compiled LTOIR for output dereference that transforms then writes to underlying."""
         if self._is_input:
             return None
 
@@ -157,13 +154,12 @@ class TransformIterator(IteratorBase):
             {underlying_deref}(state, &temp);
         """).strip()
 
-        source = format_template(
-            OUTPUT_DEREF_TEMPLATE,
-            symbol=symbol,
-            body=body,
-            extern_symbols=[underlying_deref, transform_op],
+        source = format_output_dereference(
+            symbol, body, extern_symbols=[underlying_deref, transform_op]
         )
-        return (symbol, source, [op_ltoir] + op_extras)
+        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+        child_ltoirs = collect_child_ltoirs([self._underlying], "output_deref")
+        return (symbol, ltoir, [op_ltoir] + op_extras + child_ltoirs)
 
     def advance(self, offset: int) -> "TransformIterator":
         """Return a new iterator advanced by offset elements."""

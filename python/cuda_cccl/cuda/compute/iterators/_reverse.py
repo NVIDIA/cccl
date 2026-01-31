@@ -14,10 +14,11 @@ from .._utils.protocols import get_size
 from ..types import TypeDescriptor
 from ._base import IteratorBase
 from ._codegen_utils import (
-    ADVANCE_TEMPLATE,
-    INPUT_DEREF_TEMPLATE,
-    OUTPUT_DEREF_TEMPLATE,
-    format_template,
+    collect_child_ltoirs,
+    compile_cpp_source_to_ltoir,
+    format_advance,
+    format_input_dereference,
+    format_output_dereference,
 )
 
 if TYPE_CHECKING:
@@ -67,8 +68,8 @@ class ReverseIterator(IteratorBase):
             value_type=self._underlying.value_type,
         )
 
-    def _generate_advance_source(self) -> tuple[str, str, list[bytes]]:
-        """Generate advance that negates offset direction."""
+    def _provide_advance_ltoir(self) -> tuple[str, bytes, list[bytes]]:
+        """Provide compiled LTOIR for advance that negates offset direction."""
         underlying_advance, _, _ = self._underlying.get_advance_ltoir()
         symbol = self._make_advance_symbol()
 
@@ -77,16 +78,13 @@ class ReverseIterator(IteratorBase):
             {underlying_advance}(state, &neg_offset);
         """).strip()
 
-        source = format_template(
-            ADVANCE_TEMPLATE,
-            symbol=symbol,
-            body=body,
-            extern_symbols=[underlying_advance],
-        )
-        return (symbol, source, [])
+        source = format_advance(symbol, body, extern_symbols=[underlying_advance])
+        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+        child_ltoirs = collect_child_ltoirs([self._underlying], "advance")
+        return (symbol, ltoir, child_ltoirs)
 
-    def _generate_input_deref_source(self) -> tuple[str, str, list[bytes]] | None:
-        """Generate input dereference that delegates to underlying."""
+    def _provide_input_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
+        """Provide compiled LTOIR for input dereference that delegates to underlying."""
         underlying_result = self._underlying.get_input_dereference_ltoir()
         if underlying_result is None:
             return None
@@ -98,16 +96,15 @@ class ReverseIterator(IteratorBase):
             {underlying_deref}(state, result);
         """).strip()
 
-        source = format_template(
-            INPUT_DEREF_TEMPLATE,
-            symbol=symbol,
-            body=body,
-            extern_symbols=[underlying_deref],
+        source = format_input_dereference(
+            symbol, body, extern_symbols=[underlying_deref]
         )
-        return (symbol, source, [])
+        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+        child_ltoirs = collect_child_ltoirs([self._underlying], "input_deref")
+        return (symbol, ltoir, child_ltoirs)
 
-    def _generate_output_deref_source(self) -> tuple[str, str, list[bytes]] | None:
-        """Generate output dereference that delegates to underlying."""
+    def _provide_output_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
+        """Provide compiled LTOIR for output dereference that delegates to underlying."""
         underlying_result = self._underlying.get_output_dereference_ltoir()
         if underlying_result is None:
             return None
@@ -119,13 +116,12 @@ class ReverseIterator(IteratorBase):
             {underlying_deref}(state, value);
         """).strip()
 
-        source = format_template(
-            OUTPUT_DEREF_TEMPLATE,
-            symbol=symbol,
-            body=body,
-            extern_symbols=[underlying_deref],
+        source = format_output_dereference(
+            symbol, body, extern_symbols=[underlying_deref]
         )
-        return (symbol, source, [])
+        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+        child_ltoirs = collect_child_ltoirs([self._underlying], "output_deref")
+        return (symbol, ltoir, child_ltoirs)
 
     @property
     def state(self) -> IteratorState:

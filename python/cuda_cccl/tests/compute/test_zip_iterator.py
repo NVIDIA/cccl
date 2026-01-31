@@ -480,7 +480,9 @@ def test_caching_zip_iterator():
     for i in range(5):
         arr = cp.arange(i * 10, (i + 1) * 10, dtype=np.float32)
         z = ZipIterator(arr)
-        z._compile_if_needed()  # Force compilation
+        # Trigger compilation by accessing LTOIR
+        z.get_advance_ltoir()
+        z.get_input_dereference_ltoir()
         iterators.append(z)
 
     # Check cache statistics
@@ -497,11 +499,13 @@ def test_caching_zip_iterator():
     compile_cpp_to_ltoir.cache_clear()
 
     z_int32 = ZipIterator(cp.arange(10, dtype=np.int32))
-    z_int32._compile_if_needed()
+    z_int32.get_advance_ltoir()
+    z_int32.get_input_dereference_ltoir()
     misses_after_first = compile_cpp_to_ltoir.cache_info().misses
 
     z_int64 = ZipIterator(cp.arange(10, dtype=np.int64))
-    z_int64._compile_if_needed()
+    z_int64.get_advance_ltoir()
+    z_int64.get_input_dereference_ltoir()
     misses_after_second = compile_cpp_to_ltoir.cache_info().misses
 
     # Different dtypes should not share cache
@@ -516,7 +520,8 @@ def test_caching_zip_iterator():
     # CountingIterators with same type
     count_iters = [ZipIterator(CountingIterator(np.int32(i * 10))) for i in range(3)]
     for z in count_iters:
-        z._compile_if_needed()
+        z.get_advance_ltoir()
+        z.get_input_dereference_ltoir()
 
     cache_info = compile_cpp_to_ltoir.cache_info()
     assert cache_info.hits >= 2, (
@@ -538,7 +543,8 @@ def test_compilation_caching_across_iterator_types():
 
     const_iterators = [ConstantIterator(np.int32(i)) for i in range(5)]
     for it in const_iterators:
-        it._compile_if_needed()
+        it.get_advance_ltoir()
+        it.get_input_dereference_ltoir()
 
     cache_info = compile_cpp_to_ltoir.cache_info()
     assert cache_info.hits >= 3, (
@@ -557,7 +563,8 @@ def test_compilation_caching_across_iterator_types():
 
     counting_iterators = [CountingIterator(np.int64(i * 100)) for i in range(5)]
     for it in counting_iterators:
-        it._compile_if_needed()
+        it.get_advance_ltoir()
+        it.get_input_dereference_ltoir()
 
     cache_info = compile_cpp_to_ltoir.cache_info()
     assert cache_info.hits >= 3, (
