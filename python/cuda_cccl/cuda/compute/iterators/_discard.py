@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from .._bindings import Op, OpKind
 from .._utils.protocols import get_dtype
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..types import TypeDescriptor, from_numpy_dtype
@@ -54,29 +55,44 @@ class DiscardIterator(IteratorBase):
             value_type=value_type,
         )
 
-    def _provide_advance_ltoir(self) -> tuple[str, bytes, list[bytes]]:
+    def _make_advance_op(self) -> Op:
         symbol = self._make_advance_symbol()
         body = """(void)state;
 (void)offset;"""
         source = format_advance(symbol, body)
         ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        return (symbol, ltoir, [])
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=symbol,
+            ltoir=ltoir,
+            extra_ltoirs=None,
+        )
 
-    def _provide_input_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
+    def _make_input_deref_op(self) -> Op | None:
         symbol = self._make_input_deref_symbol()
         body = """(void)state;
 (void)result;"""
         source = format_input_dereference(symbol, body)
         ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        return (symbol, ltoir, [])
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=symbol,
+            ltoir=ltoir,
+            extra_ltoirs=None,
+        )
 
-    def _provide_output_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
+    def _make_output_deref_op(self) -> Op | None:
         symbol = self._make_output_deref_symbol()
         body = """(void)state;
 (void)value;"""
         source = format_output_dereference(symbol, body)
         ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        return (symbol, ltoir, [])
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=symbol,
+            ltoir=ltoir,
+            extra_ltoirs=None,
+        )
 
     def __add__(self, offset: int) -> "DiscardIterator":
         """Return a new DiscardIterator (stateless, so position doesn't matter)."""

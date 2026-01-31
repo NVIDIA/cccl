@@ -10,6 +10,7 @@ from textwrap import dedent
 
 import numpy as np
 
+from .._bindings import Op, OpKind
 from .._cpp_codegen import cpp_type_from_descriptor
 from ..types import from_numpy_dtype
 from ._base import IteratorBase
@@ -47,7 +48,7 @@ class CountingIterator(IteratorBase):
             value_type=value_type,
         )
 
-    def _provide_advance_ltoir(self) -> tuple[str, bytes, list[bytes]]:
+    def _make_advance_op(self) -> Op:
         symbol = self._make_advance_symbol()
         cpp_type = cpp_type_from_descriptor(self._value_type)
 
@@ -59,9 +60,14 @@ class CountingIterator(IteratorBase):
 
         source = format_advance(symbol, body)
         ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        return (symbol, ltoir, [])
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=symbol,
+            ltoir=ltoir,
+            extra_ltoirs=None,
+        )
 
-    def _provide_input_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
+    def _make_input_deref_op(self) -> Op | None:
         symbol = self._make_input_deref_symbol()
         cpp_type = cpp_type_from_descriptor(self._value_type)
 
@@ -71,9 +77,14 @@ class CountingIterator(IteratorBase):
 
         source = format_input_dereference(symbol, body)
         ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        return (symbol, ltoir, [])
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=symbol,
+            ltoir=ltoir,
+            extra_ltoirs=None,
+        )
 
-    def _provide_output_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
+    def _make_output_deref_op(self) -> Op | None:
         return None
 
     def __add__(self, offset: int) -> "CountingIterator":

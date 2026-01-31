@@ -239,33 +239,64 @@ def compile_cpp_source_to_ltoir(source: str, symbol: str) -> bytes:
     return compile_cpp_to_ltoir(source, (symbol,))
 
 
-def collect_child_ltoirs(children, operation: str) -> list[bytes]:
+def collect_child_ops(children, operation: str):
     """
-    Collect LTOIRs from child iterators for a specific operation.
+    Collect Op objects from child iterators for a specific operation.
 
-    This is a utility function for composite iterators (Zip, Transform, etc.)
-    that need to include their children's LTOIR in their own extra_ltoirs.
+    This is a utility function for composite iterators that need to access
+    child operation names (for extern declarations) and LTOIRs (for dependencies).
 
     Args:
         children: Iterable of child IteratorBase instances
         operation: Operation type - "advance", "input_deref", or "output_deref"
 
     Returns:
-        List of LTOIR bytes from all children and their transitive dependencies
+        List of Op objects from children (skips None for input/output deref)
     """
-    extras = []
+    ops = []
     for child in children:
         if operation == "advance":
-            _, ltoir, child_extras = child.get_advance_ltoir()
-            extras.extend([ltoir] + child_extras)
+            ops.append(child.get_advance_op())
         elif operation == "input_deref":
-            result = child.get_input_dereference_ltoir()
-            if result is not None:
-                _, ltoir, child_extras = result
-                extras.extend([ltoir] + child_extras)
+            op = child.get_input_deref_op()
+            if op is not None:
+                ops.append(op)
         elif operation == "output_deref":
-            result = child.get_output_dereference_ltoir()
-            if result is not None:
-                _, ltoir, child_extras = result
-                extras.extend([ltoir] + child_extras)
-    return extras
+            op = child.get_output_deref_op()
+            if op is not None:
+                ops.append(op)
+    return ops
+
+
+def collect_child_op_names(children, operation: str) -> list[str]:
+    """
+    Get list of child operation names for extern declarations.
+
+    Args:
+        children: Iterable of child IteratorBase instances
+        operation: Operation type - "advance", "input_deref", or "output_deref"
+
+    Returns:
+        List of symbol names from children
+    """
+    ops = collect_child_ops(children, operation)
+    return [op.name for op in ops]
+
+
+def collect_child_ltoirs(children, operation: str) -> list[bytes]:
+    """
+    Get flattened list of child LTOIRs plus their extras for dependencies.
+
+    Args:
+        children: Iterable of child IteratorBase instances
+        operation: Operation type - "advance", "input_deref", or "output_deref"
+
+    Returns:
+        Flattened list of LTOIR bytes from all children and their transitive dependencies
+    """
+    ltoirs = []
+    for op in collect_child_ops(children, operation):
+        ltoirs.append(op.ltoir)
+        if op.extra_ltoirs:
+            ltoirs.extend(op.extra_ltoirs)
+    return ltoirs

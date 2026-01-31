@@ -9,12 +9,13 @@ from __future__ import annotations
 from textwrap import dedent
 from typing import TYPE_CHECKING
 
-from .._bindings import IteratorState
+from .._bindings import IteratorState, Op, OpKind
 from .._utils.protocols import get_size
 from ..types import TypeDescriptor
 from ._base import IteratorBase
 from ._codegen_utils import (
     collect_child_ltoirs,
+    collect_child_op_names,
     compile_cpp_source_to_ltoir,
     format_advance,
     format_input_dereference,
@@ -68,9 +69,10 @@ class ReverseIterator(IteratorBase):
             value_type=self._underlying.value_type,
         )
 
-    def _provide_advance_ltoir(self) -> tuple[str, bytes, list[bytes]]:
-        """Provide compiled LTOIR for advance that negates offset direction."""
-        underlying_advance, _, _ = self._underlying.get_advance_ltoir()
+    def _make_advance_op(self) -> Op:
+        """Provide Op for advance that negates offset direction."""
+        advance_names = collect_child_op_names([self._underlying], "advance")
+        underlying_advance = advance_names[0]
         symbol = self._make_advance_symbol()
 
         body = dedent(f"""
@@ -81,15 +83,21 @@ class ReverseIterator(IteratorBase):
         source = format_advance(symbol, body, extern_symbols=[underlying_advance])
         ltoir = compile_cpp_source_to_ltoir(source, symbol)
         child_ltoirs = collect_child_ltoirs([self._underlying], "advance")
-        return (symbol, ltoir, child_ltoirs)
 
-    def _provide_input_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
-        """Provide compiled LTOIR for input dereference that delegates to underlying."""
-        underlying_result = self._underlying.get_input_dereference_ltoir()
-        if underlying_result is None:
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=symbol,
+            ltoir=ltoir,
+            extra_ltoirs=child_ltoirs if child_ltoirs else None,
+        )
+
+    def _make_input_deref_op(self) -> Op | None:
+        """Provide Op for input dereference that delegates to underlying."""
+        if self._underlying.get_input_deref_op() is None:
             return None
-        underlying_deref, _, _ = underlying_result
 
+        deref_names = collect_child_op_names([self._underlying], "input_deref")
+        underlying_deref = deref_names[0]
         symbol = self._make_input_deref_symbol()
 
         body = dedent(f"""
@@ -101,15 +109,21 @@ class ReverseIterator(IteratorBase):
         )
         ltoir = compile_cpp_source_to_ltoir(source, symbol)
         child_ltoirs = collect_child_ltoirs([self._underlying], "input_deref")
-        return (symbol, ltoir, child_ltoirs)
 
-    def _provide_output_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
-        """Provide compiled LTOIR for output dereference that delegates to underlying."""
-        underlying_result = self._underlying.get_output_dereference_ltoir()
-        if underlying_result is None:
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=symbol,
+            ltoir=ltoir,
+            extra_ltoirs=child_ltoirs if child_ltoirs else None,
+        )
+
+    def _make_output_deref_op(self) -> Op | None:
+        """Provide Op for output dereference that delegates to underlying."""
+        if self._underlying.get_output_deref_op() is None:
             return None
-        underlying_deref, _, _ = underlying_result
 
+        deref_names = collect_child_op_names([self._underlying], "output_deref")
+        underlying_deref = deref_names[0]
         symbol = self._make_output_deref_symbol()
 
         body = dedent(f"""
@@ -121,7 +135,13 @@ class ReverseIterator(IteratorBase):
         )
         ltoir = compile_cpp_source_to_ltoir(source, symbol)
         child_ltoirs = collect_child_ltoirs([self._underlying], "output_deref")
-        return (symbol, ltoir, child_ltoirs)
+
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=symbol,
+            ltoir=ltoir,
+            extra_ltoirs=child_ltoirs if child_ltoirs else None,
+        )
 
     @property
     def state(self) -> IteratorState:

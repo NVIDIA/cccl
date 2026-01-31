@@ -11,7 +11,7 @@ from __future__ import annotations
 import hashlib
 from typing import Hashable
 
-from .._bindings import Iterator, IteratorKind, IteratorState, Op, OpKind
+from .._bindings import Iterator, IteratorKind, IteratorState, Op
 from .._caching import cache_with_registered_key_functions
 from ..types import TypeDescriptor
 
@@ -21,11 +21,11 @@ class IteratorBase:
     Base class for all iterators.
 
     Subclasses must implement:
-    - _provide_advance_ltoir() -> tuple[str, bytes, list[bytes]]  # (symbol, ltoir, extra_ltoirs)
-    - _provide_input_deref_ltoir() -> tuple[str, bytes, list[bytes]] | None
-    - _provide_output_deref_ltoir() -> tuple[str, bytes, list[bytes]] | None
+    - _make_advance_op() -> Op
+    - _make_input_deref_op() -> Op | None
+    - _make_output_deref_op() -> Op | None
 
-    These methods are responsible for providing compiled LTOIR directly.
+    These private methods create Op objects with compiled LTOIR.
     Subclasses can use any compilation approach:
     - C++ source via compile_cpp_source_to_ltoir() (most common)
     - Pre-compiled LTOIR bytes
@@ -34,16 +34,19 @@ class IteratorBase:
     Optionally override:
     - children property to return tuple of child iterators for dependency tracking
 
-    The base class handles caching of LTOIR results.
+    The base class provides public cached accessors:
+    - get_advance_op() -> Op (cached)
+    - get_input_deref_op() -> Op | None (cached)
+    - get_output_deref_op() -> Op | None (cached)
     """
 
     __slots__ = [
         "_state_bytes",
         "_state_alignment",
         "_value_type",
-        "_advance_ltoir",
-        "_input_deref_ltoir",
-        "_output_deref_ltoir",
+        "_advance_op",
+        "_input_deref_op",
+        "_output_deref_op",
         "_uid_cached",
     ]
 
@@ -56,9 +59,9 @@ class IteratorBase:
         self._state_bytes = state_bytes
         self._state_alignment = state_alignment
         self._value_type = value_type
-        self._advance_ltoir: tuple[str, bytes, list[bytes]] | None = None
-        self._input_deref_ltoir: tuple[str, bytes, list[bytes]] | None = None
-        self._output_deref_ltoir: tuple[str, bytes, list[bytes]] | None = None
+        self._advance_op: Op | None = None
+        self._input_deref_op: Op | None = None
+        self._output_deref_op: Op | None = None
         self._uid_cached: str | None = None
 
     @property
@@ -113,33 +116,33 @@ class IteratorBase:
         """Generate symbol name for output dereference operation."""
         return f"{self.__class__.__name__}_output_deref_{self._get_uid()}"
 
-    def get_advance_ltoir(self) -> tuple[str, bytes, list[bytes]]:
-        """Get the LTOIR for the advance operation (symbol, ltoir, extra_ltoirs)."""
-        if self._advance_ltoir is None:
-            self._advance_ltoir = self._provide_advance_ltoir()
-        return self._advance_ltoir
+    def get_advance_op(self) -> Op:
+        """Get the cached Op for the advance operation."""
+        if self._advance_op is None:
+            self._advance_op = self._make_advance_op()
+        return self._advance_op
 
-    def get_input_dereference_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
-        """Get the LTOIR for input dereference operation (symbol, ltoir, extra_ltoirs) or None."""
-        if self._input_deref_ltoir is None:
-            self._input_deref_ltoir = self._provide_input_deref_ltoir()
-        return self._input_deref_ltoir
+    def get_input_deref_op(self) -> Op | None:
+        """Get the cached Op for input dereference operation, or None if not supported."""
+        if self._input_deref_op is None:
+            self._input_deref_op = self._make_input_deref_op()
+        return self._input_deref_op
 
-    def get_output_dereference_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
-        """Get the LTOIR for output dereference operation (symbol, ltoir, extra_ltoirs) or None."""
-        if self._output_deref_ltoir is None:
-            self._output_deref_ltoir = self._provide_output_deref_ltoir()
-        return self._output_deref_ltoir
+    def get_output_deref_op(self) -> Op | None:
+        """Get the cached Op for output dereference operation, or None if not supported."""
+        if self._output_deref_op is None:
+            self._output_deref_op = self._make_output_deref_op()
+        return self._output_deref_op
 
     @property
     def is_input_iterator(self) -> bool:
         """Return True if this iterator supports input dereference."""
-        return self.get_input_dereference_ltoir() is not None
+        return self.get_input_deref_op() is not None
 
     @property
     def is_output_iterator(self) -> bool:
         """Return True if this iterator supports output dereference."""
-        return self.get_output_dereference_ltoir() is not None
+        return self.get_output_deref_op() is not None
 
     def to_cccl_iter(self, is_output: bool = False) -> Iterator:
         """
@@ -152,31 +155,17 @@ class IteratorBase:
             CCCL Iterator object
         """
         # Get advance op
-        adv_name, adv_ltoir, adv_extras = self.get_advance_ltoir()
-        advance_op = Op(
-            operator_type=OpKind.STATELESS,
-            name=adv_name,
-            ltoir=adv_ltoir,
-            extra_ltoirs=adv_extras if adv_extras else None,
-        )
+        advance_op = self.get_advance_op()
 
         # Get dereference op based on direction
         if is_output:
-            deref_result = self.get_output_dereference_ltoir()
-            if deref_result is None:
+            deref_op = self.get_output_deref_op()
+            if deref_op is None:
                 raise ValueError("This iterator does not support output operations")
         else:
-            deref_result = self.get_input_dereference_ltoir()
-            if deref_result is None:
+            deref_op = self.get_input_deref_op()
+            if deref_op is None:
                 raise ValueError("This iterator does not support input operations")
-
-        deref_name, deref_ltoir, deref_extras = deref_result
-        deref_op = Op(
-            operator_type=OpKind.STATELESS,
-            name=deref_name,
-            ltoir=deref_ltoir,
-            extra_ltoirs=deref_extras if deref_extras else None,
-        )
 
         # Create the CCCL Iterator
         return Iterator(
@@ -198,63 +187,50 @@ class IteratorBase:
         return (type(self).__name__, self._value_type)
 
     # Abstract methods for subclasses
-    def _provide_advance_ltoir(self) -> tuple[str, bytes, list[bytes]]:
+    def _make_advance_op(self) -> Op:
         """
-        Provide compiled LTOIR for advance operation.
+        Create Op object for advance operation.
 
         Returns:
-            Tuple of (symbol_name, ltoir_bytes, extra_ltoirs)
+            Op object with compiled LTOIR
 
         Subclasses can use any compilation approach:
-        - compile_cpp_source_to_ltoir() for C++ source
-        - Pre-compiled LTOIR bytes
+        - compile_cpp_source_to_ltoir() for C++ source, then construct Op
+        - Pre-compiled LTOIR bytes, then construct Op
         - Other compilation backends
         """
         raise NotImplementedError
 
-    def _provide_input_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
+    def _make_input_deref_op(self) -> Op | None:
         """
-        Provide compiled LTOIR for input dereference operation.
+        Create Op object for input dereference operation.
 
         Returns:
-            Tuple of (symbol_name, ltoir_bytes, extra_ltoirs) or None if not supported
+            Op object with compiled LTOIR, or None if not supported
 
         Subclasses can use any compilation approach:
-        - compile_cpp_source_to_ltoir() for C++ source
-        - Pre-compiled LTOIR bytes
+        - compile_cpp_source_to_ltoir() for C++ source, then construct Op
+        - Pre-compiled LTOIR bytes, then construct Op
         - Other compilation backends
         """
         raise NotImplementedError
 
-    def _provide_output_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
+    def _make_output_deref_op(self) -> Op | None:
         """
-        Provide compiled LTOIR for output dereference operation.
+        Create Op object for output dereference operation.
 
         Returns:
-            Tuple of (symbol_name, ltoir_bytes, extra_ltoirs) or None if not supported
+            Op object with compiled LTOIR, or None if not supported
 
         Subclasses can use any compilation approach:
-        - compile_cpp_source_to_ltoir() for C++ source
-        - Pre-compiled LTOIR bytes
+        - compile_cpp_source_to_ltoir() for C++ source, then construct Op
+        - Pre-compiled LTOIR bytes, then construct Op
         - Other compilation backends
         """
         raise NotImplementedError
 
 
 def _deterministic_suffix(kind: Hashable) -> str:
-    """
-    Generate a deterministic suffix from an iterator's kind.
-
-    This ensures that iterators with the same logical structure
-    (same kind) generate identical symbol names, allowing compilation
-    results to be shared across iterator instances.
-
-    Args:
-        kind: The iterator's kind (must be hashable)
-
-    Returns:
-        A 16-character hexadecimal string derived from the kind
-    """
     kind_str = str(kind)
     return hashlib.sha256(kind_str.encode()).hexdigest()[:16]
 

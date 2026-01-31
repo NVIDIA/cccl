@@ -9,6 +9,7 @@ from __future__ import annotations
 from textwrap import dedent
 from typing import Literal
 
+from .._bindings import Op, OpKind
 from .._cpp_codegen import cpp_type_from_descriptor
 from .._utils.protocols import get_data_pointer, get_dtype
 from ..types import from_numpy_dtype
@@ -79,7 +80,7 @@ class CacheModifiedInputIterator(IteratorBase):
             value_type=value_type,
         )
 
-    def _provide_advance_ltoir(self) -> tuple[str, bytes, list[bytes]]:
+    def _make_advance_op(self) -> Op:
         symbol = self._make_advance_symbol()
         cpp_type = cpp_type_from_descriptor(self._value_type)
 
@@ -91,9 +92,14 @@ class CacheModifiedInputIterator(IteratorBase):
 
         source = format_advance(symbol, body)
         ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        return (symbol, ltoir, [])
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=symbol,
+            ltoir=ltoir,
+            extra_ltoirs=None,
+        )
 
-    def _provide_input_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
+    def _make_input_deref_op(self) -> Op | None:
         symbol = self._make_input_deref_symbol()
         cpp_type = cpp_type_from_descriptor(self._value_type)
         _, intrinsic = _CACHE_MODIFIERS[self._modifier]
@@ -115,9 +121,14 @@ class CacheModifiedInputIterator(IteratorBase):
 
         source = format_input_dereference(symbol, body)
         ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        return (symbol, ltoir, [])
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=symbol,
+            ltoir=ltoir,
+            extra_ltoirs=None,
+        )
 
-    def _provide_output_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
+    def _make_output_deref_op(self) -> Op | None:
         # Cache-modified iterator is input-only
         return None
 

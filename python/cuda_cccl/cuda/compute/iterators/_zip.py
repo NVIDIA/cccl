@@ -6,11 +6,12 @@
 
 from __future__ import annotations
 
-from .._bindings import IteratorState
+from .._bindings import IteratorState, Op, OpKind
 from ..types import TypeDescriptor, struct
 from ._base import IteratorBase
 from ._codegen_utils import (
     collect_child_ltoirs,
+    collect_child_op_names,
     compile_cpp_source_to_ltoir,
     compose_iterator_states,
     format_advance,
@@ -136,9 +137,9 @@ class ZipIterator(IteratorBase):
             value_type=self._value_type,
         )
 
-    def _provide_advance_ltoir(self) -> tuple[str, bytes, list[bytes]]:
-        """Provide compiled LTOIR for advance that calls all child iterator advances."""
-        advance_names = [it.get_advance_ltoir()[0] for it in self._iterators]
+    def _make_advance_op(self) -> Op:
+        """Provide Op for advance that calls all child iterator advances."""
+        advance_names = collect_child_op_names(self._iterators, "advance")
         symbol = self._make_advance_symbol()
 
         body = _generate_advance_body(advance_names, self._state_offsets)
@@ -146,16 +147,21 @@ class ZipIterator(IteratorBase):
         source = format_advance(symbol, body, extern_symbols=advance_names)
         ltoir = compile_cpp_source_to_ltoir(source, symbol)
         child_ltoirs = collect_child_ltoirs(self._iterators, "advance")
-        return (symbol, ltoir, child_ltoirs)
 
-    def _provide_input_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
-        """Provide compiled LTOIR for input deref that calls all child iterator input derefs."""
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=symbol,
+            ltoir=ltoir,
+            extra_ltoirs=child_ltoirs if child_ltoirs else None,
+        )
+
+    def _make_input_deref_op(self) -> Op | None:
+        """Provide Op for input deref that calls all child iterator input derefs."""
         # Check if all iterators support input dereference
-        deref_results = [it.get_input_dereference_ltoir() for it in self._iterators]
-        if not all(result is not None for result in deref_results):
+        if not all(it.get_input_deref_op() is not None for it in self._iterators):
             return None
 
-        deref_names = [result[0] for result in deref_results if result is not None]
+        deref_names = collect_child_op_names(self._iterators, "input_deref")
         symbol = self._make_input_deref_symbol()
 
         body = _generate_deref_body(
@@ -165,16 +171,21 @@ class ZipIterator(IteratorBase):
         source = format_input_dereference(symbol, body, extern_symbols=deref_names)
         ltoir = compile_cpp_source_to_ltoir(source, symbol)
         child_ltoirs = collect_child_ltoirs(self._iterators, "input_deref")
-        return (symbol, ltoir, child_ltoirs)
 
-    def _provide_output_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
-        """Provide compiled LTOIR for output deref that calls all child iterator output derefs."""
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=symbol,
+            ltoir=ltoir,
+            extra_ltoirs=child_ltoirs if child_ltoirs else None,
+        )
+
+    def _make_output_deref_op(self) -> Op | None:
+        """Provide Op for output deref that calls all child iterator output derefs."""
         # Check if all iterators support output dereference
-        deref_results = [it.get_output_dereference_ltoir() for it in self._iterators]
-        if not all(result is not None for result in deref_results):
+        if not all(it.get_output_deref_op() is not None for it in self._iterators):
             return None
 
-        deref_names = [result[0] for result in deref_results if result is not None]
+        deref_names = collect_child_op_names(self._iterators, "output_deref")
         symbol = self._make_output_deref_symbol()
 
         body = _generate_deref_body(
@@ -184,7 +195,13 @@ class ZipIterator(IteratorBase):
         source = format_output_dereference(symbol, body, extern_symbols=deref_names)
         ltoir = compile_cpp_source_to_ltoir(source, symbol)
         child_ltoirs = collect_child_ltoirs(self._iterators, "output_deref")
-        return (symbol, ltoir, child_ltoirs)
+
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=symbol,
+            ltoir=ltoir,
+            extra_ltoirs=child_ltoirs if child_ltoirs else None,
+        )
 
     @property
     def state(self) -> IteratorState:

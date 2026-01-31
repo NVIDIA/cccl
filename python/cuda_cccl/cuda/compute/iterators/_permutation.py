@@ -9,10 +9,12 @@ from __future__ import annotations
 from textwrap import dedent
 from typing import TYPE_CHECKING
 
+from .._bindings import Op, OpKind
 from .._cpp_codegen import cpp_type_from_descriptor
 from ._base import IteratorBase
 from ._codegen_utils import (
     collect_child_ltoirs,
+    collect_child_op_names,
     compile_cpp_source_to_ltoir,
     compose_iterator_states,
     format_advance,
@@ -80,9 +82,10 @@ class PermutationIterator(IteratorBase):
             value_type=self._values.value_type,
         )
 
-    def _provide_advance_ltoir(self) -> tuple[str, bytes, list[bytes]]:
-        """Provide compiled LTOIR for advance that only advances indices iterator."""
-        indices_advance, _, _ = self._indices.get_advance_ltoir()
+    def _make_advance_op(self) -> Op:
+        """Provide Op for advance that only advances indices iterator."""
+        advance_names = collect_child_op_names([self._indices], "advance")
+        indices_advance = advance_names[0]
         symbol = self._make_advance_symbol()
 
         body = dedent(f"""
@@ -93,22 +96,31 @@ class PermutationIterator(IteratorBase):
         source = format_advance(symbol, body, extern_symbols=[indices_advance])
         ltoir = compile_cpp_source_to_ltoir(source, symbol)
         child_ltoirs = collect_child_ltoirs([self._indices], "advance")
-        return (symbol, ltoir, child_ltoirs)
 
-    def _provide_input_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
-        """Provide compiled LTOIR for input deref that reads index then accesses values."""
-        idx_result = self._indices.get_input_dereference_ltoir()
-        if idx_result is None:
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=symbol,
+            ltoir=ltoir,
+            extra_ltoirs=child_ltoirs if child_ltoirs else None,
+        )
+
+    def _make_input_deref_op(self) -> Op | None:
+        """Provide Op for input deref that reads index then accesses values."""
+        if self._indices.get_input_deref_op() is None:
             raise ValueError("Indices iterator must support input dereference")
-        indices_deref, _, _ = idx_result
 
-        val_in_result = self._values.get_input_dereference_ltoir()
-        if val_in_result is None:
+        if self._values.get_input_deref_op() is None:
             return None
-        values_deref, _, _ = val_in_result
+
+        deref_names = collect_child_op_names(
+            [self._indices, self._values], "input_deref"
+        )
+        indices_deref = deref_names[0]
+        values_deref = deref_names[1]
 
         # Also need values advance for random access
-        values_advance, val_adv_ltoir, val_adv_extras = self._values.get_advance_ltoir()
+        advance_names = collect_child_op_names([self._values], "advance")
+        values_advance = advance_names[0]
 
         symbol = self._make_input_deref_symbol()
         idx_type = cpp_type_from_descriptor(self._indices.value_type)
@@ -134,25 +146,36 @@ class PermutationIterator(IteratorBase):
         )
         ltoir = compile_cpp_source_to_ltoir(source, symbol)
         # Include values.advance LTOIR and child LTOIRs from both iterators
-        child_ltoirs = collect_child_ltoirs(
-            [self._values, self._indices], "input_deref"
+        deref_ltoirs = collect_child_ltoirs(
+            [self._indices, self._values], "input_deref"
         )
-        return (symbol, ltoir, [val_adv_ltoir] + val_adv_extras + child_ltoirs)
+        advance_ltoirs = collect_child_ltoirs([self._values], "advance")
 
-    def _provide_output_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
-        """Provide compiled LTOIR for output deref that reads index then writes to values."""
-        idx_result = self._indices.get_input_dereference_ltoir()
-        if idx_result is None:
+        extra_ltoirs = advance_ltoirs + deref_ltoirs
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=symbol,
+            ltoir=ltoir,
+            extra_ltoirs=extra_ltoirs if extra_ltoirs else None,
+        )
+
+    def _make_output_deref_op(self) -> Op | None:
+        """Provide Op for output deref that reads index then writes to values."""
+        if self._indices.get_input_deref_op() is None:
             raise ValueError("Indices iterator must support input dereference")
-        indices_deref, _, _ = idx_result
 
-        val_out_result = self._values.get_output_dereference_ltoir()
-        if val_out_result is None:
+        if self._values.get_output_deref_op() is None:
             return None
-        values_deref, _, _ = val_out_result
+
+        # Get indices input_deref and values output_deref names
+        indices_deref_names = collect_child_op_names([self._indices], "input_deref")
+        values_deref_names = collect_child_op_names([self._values], "output_deref")
+        indices_deref = indices_deref_names[0]
+        values_deref = values_deref_names[0]
 
         # Also need values advance for random access
-        values_advance, val_adv_ltoir, val_adv_extras = self._values.get_advance_ltoir()
+        advance_names = collect_child_op_names([self._values], "advance")
+        values_advance = advance_names[0]
 
         symbol = self._make_output_deref_symbol()
         idx_type = cpp_type_from_descriptor(self._indices.value_type)
@@ -178,10 +201,18 @@ class PermutationIterator(IteratorBase):
         )
         ltoir = compile_cpp_source_to_ltoir(source, symbol)
         # Include values.advance LTOIR and child LTOIRs from both iterators
-        child_ltoirs = collect_child_ltoirs(
-            [self._values, self._indices], "output_deref"
+        # For output_deref, we need indices input_deref and values output_deref
+        indices_deref_ltoirs = collect_child_ltoirs([self._indices], "input_deref")
+        values_deref_ltoirs = collect_child_ltoirs([self._values], "output_deref")
+        advance_ltoirs = collect_child_ltoirs([self._values], "advance")
+
+        extra_ltoirs = advance_ltoirs + indices_deref_ltoirs + values_deref_ltoirs
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=symbol,
+            ltoir=ltoir,
+            extra_ltoirs=extra_ltoirs if extra_ltoirs else None,
         )
-        return (symbol, ltoir, [val_adv_ltoir] + val_adv_extras + child_ltoirs)
 
     @property
     def children(self):

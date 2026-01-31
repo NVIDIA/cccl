@@ -11,6 +11,7 @@ import sys
 from textwrap import dedent
 from typing import TYPE_CHECKING
 
+from .._bindings import Op, OpKind
 from .._cpp_codegen import cpp_type_from_descriptor
 from .._utils.protocols import get_data_pointer, get_dtype
 from ..types import from_numpy_dtype
@@ -71,7 +72,7 @@ class PointerIterator(IteratorBase):
             value_type=value_type,
         )
 
-    def _provide_advance_ltoir(self) -> tuple[str, bytes, list[bytes]]:
+    def _make_advance_op(self) -> Op:
         symbol = self._make_advance_symbol()
 
         if self._cpp_type:
@@ -91,9 +92,14 @@ class PointerIterator(IteratorBase):
 
         source = format_advance(symbol, body)
         ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        return (symbol, ltoir, [])
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=symbol,
+            ltoir=ltoir,
+            extra_ltoirs=None,
+        )
 
-    def _provide_input_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
+    def _make_input_deref_op(self) -> Op | None:
         symbol = self._make_input_deref_symbol()
 
         if self._cpp_type:
@@ -111,9 +117,14 @@ class PointerIterator(IteratorBase):
         """).strip()
             source = format_input_dereference(symbol, body)
         ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        return (symbol, ltoir, [])
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=symbol,
+            ltoir=ltoir,
+            extra_ltoirs=None,
+        )
 
-    def _provide_output_deref_ltoir(self) -> tuple[str, bytes, list[bytes]] | None:
+    def _make_output_deref_op(self) -> Op | None:
         symbol = self._make_output_deref_symbol()
 
         if self._cpp_type:
@@ -131,7 +142,12 @@ class PointerIterator(IteratorBase):
         """).strip()
             source = format_output_dereference(symbol, body)
         ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        return (symbol, ltoir, [])
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=symbol,
+            ltoir=ltoir,
+            extra_ltoirs=None,
+        )
 
     def __add__(self, offset: int):
         dtype = get_dtype(self._array)
@@ -154,9 +170,9 @@ class PointerIterator(IteratorBase):
         clone._state_bytes = bytes(state_bytes_buffer)
         clone._state_alignment = 8
         clone._value_type = self._value_type
-        clone._advance_ltoir = None
-        clone._input_deref_ltoir = None
-        clone._output_deref_ltoir = None
+        clone._advance_op = None
+        clone._input_deref_op = None
+        clone._output_deref_op = None
         clone._uid_cached = None
         return clone
 
