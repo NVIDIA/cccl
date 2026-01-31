@@ -361,6 +361,7 @@
         "libcudacxx.test.public_headers",
         "libcudacxx.test.public_headers_host_only",
         "libcudacxx.test.lit.precompile",
+        "libcudacxx.test.nvtarget",
         "libcudacxx.test.atomics.ptx",
         "libcudacxx.test.c2h_all"
       ]
