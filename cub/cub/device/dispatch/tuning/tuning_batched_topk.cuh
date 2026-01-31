@@ -30,6 +30,8 @@ struct policy_hub
     // The list below will be checked to determine if each policy can support the one-worker-per-segment approach
     // within available shared memory limits. The first policy that fits SMEM is taken. Policies must be ordered by
     // decreasing segment size.
+    // TODO (elstehle): Consider making this a static constexpr array of a simple struct and implementing
+    // find_valid_policy_impl as a constexpr function.
     using worker_per_segment_policies =
       ::cuda::std::tuple<agent_batched_topk_worker_per_segment_policy<256, 64, default_load_alg, default_store_alg>,
                          agent_batched_topk_worker_per_segment_policy<256, 32, default_load_alg, default_store_alg>,

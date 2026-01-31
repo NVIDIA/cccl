@@ -257,6 +257,7 @@ __launch_bounds__(int(
     NumSegmentsParameterT>;
 
   using agent_t = typename find_valid_policy_t::worker_per_segment_agent_t;
+  static_assert(!::cuda::std::is_same_v<agent_t, void>, "No valid policy found for one-worker-per-segment approach");
 
   // Static Assertions (Constraints)
   static_assert(agent_t::tile_size >= params::static_max_value_v<SegmentSizeParameterT>,
@@ -457,6 +458,8 @@ struct dispatch_batched_topk
     TotalNumItemsGuaranteeT total_num_items_guarantee,
     cudaStream_t stream)
   {
+    using max_policy_t = typename SelectedPolicy::max_policy;
+
     int ptx_version = 0;
     if (cudaError_t error = CubDebug(PtxVersion(ptx_version)))
     {

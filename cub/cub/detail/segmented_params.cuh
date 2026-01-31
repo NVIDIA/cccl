@@ -163,22 +163,13 @@ struct per_segment_discrete_param
 // Parameter Type Helpers
 // -----------------------------------------------------------------------------
 template <typename T>
-using is_static_param = ::cuda::std::is_same<typename T::param_tag, tag_static>;
+inline constexpr bool is_static_param_v = ::cuda::std::is_same<typename T::param_tag, tag_static>::value;
 
 template <typename T>
-inline constexpr bool is_static_param_v = is_static_param<T>::value;
+inline constexpr bool is_uniform_param_v = ::cuda::std::is_same<typename T::param_tag, tag_uniform>::value;
 
 template <typename T>
-using is_uniform_param = ::cuda::std::is_same<typename T::param_tag, tag_uniform>;
-
-template <typename T>
-inline constexpr bool is_uniform_param_v = is_uniform_param<T>::value;
-
-template <typename T>
-using is_per_segment_param = ::cuda::std::is_same<typename T::param_tag, tag_per_segment>;
-
-template <typename T>
-inline constexpr bool is_per_segment_param_v = is_per_segment_param<T>::value;
+inline constexpr bool is_per_segment_param_v = ::cuda::std::is_same<typename T::param_tag, tag_per_segment>::value;
 
 // Get max value (works for all types inheriting bounds_mixin)
 template <typename T>
