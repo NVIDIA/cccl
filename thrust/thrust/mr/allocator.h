@@ -24,6 +24,7 @@
 #include <thrust/mr/polymorphic_adaptor.h>
 #include <thrust/mr/validator.h>
 
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
@@ -57,9 +58,9 @@ public:
   /*! The pointer to const type. Equivalent to a pointer type of \p MR rebound to <tt>const T</tt>. */
   using const_pointer = typename thrust::detail::pointer_traits<void_pointer>::template rebind<const T>::other;
   /*! The reference to the type allocated by this allocator. Supports smart references. */
-  using reference = typename thrust::detail::pointer_traits<pointer>::reference;
+  using reference = typename ::cuda::std::iterator_traits<pointer>::reference;
   /*! The const reference to the type allocated by this allocator. Supports smart references. */
-  using const_reference = typename thrust::detail::pointer_traits<const_pointer>::reference;
+  using const_reference = typename ::cuda::std::iterator_traits<const_pointer>::reference;
   /*! The size type of this allocator. Always \p std::size_t. */
   using size_type = std::size_t;
   /*! The difference type between pointers allocated by this allocator. */

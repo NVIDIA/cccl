@@ -19,6 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/host_vector.h>
 #include <thrust/mr/allocator.h>
 #include <thrust/mr/memory_resource.h>
