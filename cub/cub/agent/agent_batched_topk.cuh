@@ -133,40 +133,6 @@ struct agent_batched_topk_worker_per_segment
       , num_segments(num_segments)
   {}
 
-  // -------------------------------------------------------------------------
-  // Processing Logic
-  // -------------------------------------------------------------------------
-  template <typename KValueT, detail::topk::select Direction>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void select_topk_keys(
-    key_t (&keys)[items_per_thread], KValueT k, ::cuda::std::integral_constant<detail::topk::select, Direction>)
-  {
-    if constexpr (Direction == detail::topk::select::max)
-    {
-      block_topk_t(temp_storage.topk).max_keys(keys, k);
-    }
-    else
-    {
-      block_topk_t(temp_storage.topk).min_keys(keys, k);
-    }
-  }
-
-  template <typename KValueT, detail::topk::select Direction>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void select_topk_pairs(
-    key_t (&keys)[items_per_thread],
-    value_t (&values)[items_per_thread],
-    KValueT k,
-    ::cuda::std::integral_constant<detail::topk::select, Direction>)
-  {
-    if constexpr (Direction == detail::topk::select::max)
-    {
-      block_topk_t(temp_storage.topk).max_pairs(keys, values, k);
-    }
-    else
-    {
-      block_topk_t(temp_storage.topk).min_pairs(keys, values, k);
-    }
-  }
-
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
     // Identify Segment
@@ -237,7 +203,14 @@ struct agent_batched_topk_worker_per_segment
       // Pass both keys and values
       const bool is_successful_dispatch = detail::params::dispatch_discrete(
         select_directions, segment_id, [this, &thread_keys, &thread_values, k](auto direction_tag) {
-          select_topk_pairs(thread_keys, thread_values, k, direction_tag);
+          if constexpr (Direction == detail::topk::select::max)
+          {
+            block_topk_t(temp_storage.topk).max_pairs(thread_keys, thread_values, k);
+          }
+          else
+          {
+            block_topk_t(temp_storage.topk).min_pairs(thread_keys, thread_values, k);
+          }
         });
       _CCCL_ASSERT(is_successful_dispatch, "Error: Unsupported select direction");
     }
@@ -245,7 +218,14 @@ struct agent_batched_topk_worker_per_segment
     {
       const bool is_successful_dispatch =
         detail::params::dispatch_discrete(select_directions, segment_id, [this, &thread_keys, k](auto direction_tag) {
-          select_topk_keys(thread_keys, k, direction_tag);
+          if constexpr (Direction == detail::topk::select::max)
+          {
+            block_topk_t(temp_storage.topk).max_keys(thread_keys, k);
+          }
+          else
+          {
+            block_topk_t(temp_storage.topk).min_keys(thread_keys, k);
+          }
         });
       _CCCL_ASSERT(is_successful_dispatch, "Error: Unsupported select direction");
     }
