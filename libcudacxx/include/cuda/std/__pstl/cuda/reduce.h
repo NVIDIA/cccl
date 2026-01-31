@@ -25,6 +25,7 @@
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 
 #  include <cub/device/device_reduce.cuh>
 
