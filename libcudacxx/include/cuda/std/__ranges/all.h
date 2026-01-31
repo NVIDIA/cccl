@@ -53,10 +53,10 @@ struct __fn : __range_adaptor_closure<__fn>
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::ranges::view<decay_t<_Tp>>)
   [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Tp>(__t))))
-      -> decltype(_LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Tp>(__t)))
+    noexcept(noexcept(_CCCL_AUTO_CAST(::cuda::std::forward<_Tp>(__t))))
+      -> decltype(_CCCL_AUTO_CAST(::cuda::std::forward<_Tp>(__t)))
   {
-    return _LIBCUDACXX_AUTO_CAST(::cuda::std::forward<_Tp>(__t));
+    return _CCCL_AUTO_CAST(::cuda::std::forward<_Tp>(__t));
   }
 
   _CCCL_TEMPLATE(class _Tp)
