@@ -24,7 +24,7 @@ struct policy_hub
 {
   struct Policy900 : ChainedPolicy<900, Policy900, Policy900>
   {
-    static constexpr BlockLoadAlgorithm default_load_alg = BLOCK_LOAD_WARP_TRANSPOSE;
+    static constexpr BlockLoadAlgorithm default_load_alg   = BLOCK_LOAD_WARP_TRANSPOSE;
     static constexpr BlockStoreAlgorithm default_store_alg = BLOCK_STORE_WARP_TRANSPOSE;
 
     // Policies selected based on optimal performance for different segment sizes

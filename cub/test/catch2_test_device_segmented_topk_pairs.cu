@@ -108,54 +108,46 @@ using key_types =
                 , bfloat16_t
 #endif // TEST_BF_T()
 >;
+// clang-format on
 
 // Consistency check: ensures values remain associated with their corresponding keys
 template <typename KeyT, typename ValueT>
-bool verify_pairs_consistency(
-    const c2h::device_vector<KeyT>& keys_in,
-    const c2h::device_vector<KeyT>& keys_out,
-    const c2h::device_vector<ValueT>& values_out)
+bool verify_pairs_consistency(const c2h::device_vector<KeyT>& keys_in,
+                              const c2h::device_vector<KeyT>& keys_out,
+                              const c2h::device_vector<ValueT>& values_out)
 {
-    auto d_keys_in = thrust::raw_pointer_cast(keys_in.data());
-    auto d_values_out = thrust::raw_pointer_cast(values_out.data());
+  auto d_keys_in    = thrust::raw_pointer_cast(keys_in.data());
+  auto d_values_out = thrust::raw_pointer_cast(values_out.data());
 
-    // permutation_it[i] -> d_keys_in[d_values_out[i]] to verify that keys and values remained associated
-    auto permutation_it = cuda::make_permutation_iterator(d_keys_in, d_values_out);
+  // permutation_it[i] -> d_keys_in[d_values_out[i]] to verify that keys and values remained associated
+  auto permutation_it = cuda::make_permutation_iterator(d_keys_in, d_values_out);
 
-    return thrust::equal(keys_out.cbegin(), keys_out.cend(), permutation_it);
+  return thrust::equal(keys_out.cbegin(), keys_out.cend(), permutation_it);
 }
 
 // Uniqueness check: ensures there are no duplicate values within the top-k items of each segment
 template <typename ValueT>
-bool verify_unique_indices(
-    c2h::device_vector<ValueT>& values_out,
-    cuda::std::int64_t num_segments,
-    cuda::std::int64_t k)
+bool verify_unique_indices(c2h::device_vector<ValueT>& values_out, cuda::std::int64_t num_segments, cuda::std::int64_t k)
 {
-    // Make a copy to sort
-    c2h::device_vector<ValueT> sorted_values = values_out;
+  // Make a copy to sort
+  c2h::device_vector<ValueT> sorted_values = values_out;
 
-    // Sort the values within each segment for subsequent duplicate check
-    segmented_sort_keys(
-        sorted_values,
-        num_segments,
-        k,
-        cub::detail::topk::select::min);
+  // Sort the values within each segment for subsequent duplicate check
+  segmented_sort_keys(sorted_values, num_segments, k, cub::detail::topk::select::min);
 
-    // Check for adjacent duplicates within segment boundaries
-    auto d_sorted_values = thrust::raw_pointer_cast(sorted_values.data());
-    auto num_items = sorted_values.size();
+  // Check for adjacent duplicates within segment boundaries
+  auto d_sorted_values = thrust::raw_pointer_cast(sorted_values.data());
+  auto num_items       = sorted_values.size();
 
-    flag_duplicates_in_segment<ValueT*> flag_op{d_sorted_values, k};
+  flag_duplicates_in_segment<ValueT*> flag_op{d_sorted_values, k};
 
-    auto num_duplicates = thrust::count_if(
-        thrust::make_counting_iterator(size_t{0}),
-        thrust::make_counting_iterator(num_items - 1), flag_op);
+  auto num_duplicates =
+    thrust::count_if(thrust::make_counting_iterator(size_t{0}), thrust::make_counting_iterator(num_items - 1), flag_op);
 
-    return num_duplicates == 0;
+  return num_duplicates == 0;
 }
 
-C2H_TEST("DeviceSegmentedTopK::{Min,Max}Pairs work with small fixed-size segments",
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments",
          "[keys][segmented][topk][device]",
          key_types,
          max_segment_size_list,
@@ -206,7 +198,7 @@ C2H_TEST("DeviceSegmentedTopK::{Min,Max}Pairs work with small fixed-size segment
           direction);
 
   // Prepare keys input & output
-  c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size);
+  c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
   c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
   const int num_key_seeds = 1;
   c2h::gen(C2H_SEED(num_key_seeds), keys_in_buffer);
@@ -239,8 +231,8 @@ C2H_TEST("DeviceSegmentedTopK::{Min,Max}Pairs work with small fixed-size segment
 
   // Verification:
   // - We verify correct top-k selection through the keys
-  // - We verify that values were permuted along correctly by making sure values remain associated with their keys and making sure we do not duplicate values
-  // Verify values remain associated with their corresponding keys
+  // - We verify that values were permuted along correctly by making sure values remain associated with their keys and
+  // making sure we do not duplicate values Verify values remain associated with their corresponding keys
   REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
 
   // Verify values don't appear more than once in the returned results

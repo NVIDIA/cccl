@@ -10,11 +10,11 @@
 #include <thrust/sort.h>
 
 #include <cuda/iterator>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/type_traits>
 
 #include "catch2_test_device_topk_common.cuh"
 #include "catch2_test_launch_helper.h"
-#include "cuda/std/__algorithm/min.h"
 #include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
 #include <catch2/generators/catch_generators.hpp>
@@ -80,16 +80,16 @@ using key_types =
                  float,
                  cuda::std::uint64_t
 // clang-format off
-                                 #if TEST_HALF_T()
-                                                  , half_t
-                                 #endif // TEST_HALF_T()
-                                 #if TEST_BF_T()
-                                                  , bfloat16_t
-                                 #endif // TEST_BF_T()
-                                 >;
+#if TEST_HALF_T()
+                , half_t
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
+                , bfloat16_t
+#endif // TEST_BF_T()
+>;
+// clang-format on
 
-
-C2H_TEST("DeviceSegmentedTopK::{Min,Max}Keys work with small fixed-size segments",
+C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
          "[keys][segmented][topk][device]",
          key_types,
          max_segment_size_list,
@@ -139,7 +139,7 @@ C2H_TEST("DeviceSegmentedTopK::{Min,Max}Keys work with small fixed-size segments
           direction);
 
   // Prepare input & output
-  c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size);
+  c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
   c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
   const int num_key_seeds = 1;
   c2h::gen(C2H_SEED(num_key_seeds), keys_in_buffer);

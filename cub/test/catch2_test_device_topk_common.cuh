@@ -206,7 +206,7 @@ void segmented_sort_keys(c2h::device_vector<KeyT>& d_keys_in,
       nullptr, temp_storage_bytes, d_keys, num_items, num_segments, segment_offsets_it, (segment_offsets_it + 1));
 
     // Allocate temporary storage
-    c2h::device_vector<cuda::std::uint8_t> d_temp_storage(temp_storage_bytes);
+    c2h::device_vector<cuda::std::uint8_t> d_temp_storage(temp_storage_bytes, thrust::no_init);
 
     // Run segmented sort
     cub::DeviceSegmentedSort::SortKeys(
@@ -224,7 +224,7 @@ void segmented_sort_keys(c2h::device_vector<KeyT>& d_keys_in,
       nullptr, temp_storage_bytes, d_keys, num_items, num_segments, segment_offsets_it, (segment_offsets_it + 1));
 
     // Allocate temporary storage
-    c2h::device_vector<cuda::std::uint8_t> d_temp_storage(temp_storage_bytes);
+    c2h::device_vector<cuda::std::uint8_t> d_temp_storage(temp_storage_bytes, thrust::no_init);
 
     // Run segmented sort
     cub::DeviceSegmentedSort::SortKeysDescending(
