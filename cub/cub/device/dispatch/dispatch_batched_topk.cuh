@@ -81,8 +81,7 @@ using k_static = params::static_constant_param<::cuda::std::int64_t, K>;
 // K is a runtime value, same value applies to all segments
 template <::cuda::std::int64_t MinK = 1,
           ::cuda::std::int64_t MaxK = ::cuda::std::numeric_limits<::cuda::std::int64_t>::max()>
-struct k_uniform : public params::uniform_param<::cuda::std::int64_t, MinK, MaxK>
-{};
+using k_uniform = params::uniform_param<::cuda::std::int64_t, MinK, MaxK>;
 
 // K via iterator
 template <typename KItT,

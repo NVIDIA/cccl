@@ -51,19 +51,11 @@ struct supported_options
 // Fundamental Parameter Types
 // -----------------------------------------------------------------------------
 
-struct tag_static
-{};
-struct tag_uniform
-{};
-struct tag_per_segment
-{};
-
 // A compile-time constant
 template <typename T, T Value>
 struct static_constant_param : public static_bounds_mixin<T, Value, Value>
 {
   using value_type = T;
-  using param_tag  = tag_static;
 };
 // -----------------------------------------------------------------------------
 // 1. Uniform Param
@@ -73,7 +65,6 @@ template <typename T, T Min = ::cuda::std::numeric_limits<T>::lowest(), T Max = 
 struct uniform_param : public static_bounds_mixin<T, Min, Max>
 {
   using value_type = T;
-  using param_tag  = tag_uniform;
 
   T value;
 
@@ -99,7 +90,6 @@ struct per_segment_param : public static_bounds_mixin<T, Min, Max>
 {
   using iterator_type = IteratorT;
   using value_type    = T;
-  using param_tag     = tag_per_segment;
 
   IteratorT iterator;
   T min_value = Min;
@@ -127,7 +117,6 @@ template <typename T, T... Options>
 struct uniform_discrete_param
 {
   using value_type          = T;
-  using param_tag           = tag_uniform;
   using supported_options_t = supported_options<T, Options...>;
 
   T value;
@@ -147,7 +136,6 @@ struct per_segment_discrete_param
 {
   using iterator_type       = IteratorT;
   using value_type          = T;
-  using param_tag           = tag_per_segment;
   using supported_options_t = supported_options<T, Options...>;
 
   IteratorT iterator;
@@ -163,13 +151,28 @@ struct per_segment_discrete_param
 // Parameter Type Helpers
 // -----------------------------------------------------------------------------
 template <typename T>
-inline constexpr bool is_static_param_v = ::cuda::std::is_same<typename T::param_tag, tag_static>::value;
+inline constexpr bool is_static_param_v = false;
+
+template <typename T, T Value>
+inline constexpr bool is_static_param_v<static_constant_param<T, Value>> = true;
 
 template <typename T>
-inline constexpr bool is_uniform_param_v = ::cuda::std::is_same<typename T::param_tag, tag_uniform>::value;
+inline constexpr bool is_uniform_param_v = false;
+
+template <typename T, T Min, T Max>
+inline constexpr bool is_uniform_param_v<uniform_param<T, Min, Max>> = true;
+
+template <typename T, T... Options>
+inline constexpr bool is_uniform_param_v<uniform_discrete_param<T, Options...>> = true;
 
 template <typename T>
-inline constexpr bool is_per_segment_param_v = ::cuda::std::is_same<typename T::param_tag, tag_per_segment>::value;
+inline constexpr bool is_per_segment_param_v = false;
+
+template <typename IteratorT, typename T, T Min, T Max>
+inline constexpr bool is_per_segment_param_v<per_segment_param<IteratorT, T, Min, Max>> = true;
+
+template <typename IteratorT, typename T, T... Options>
+inline constexpr bool is_per_segment_param_v<per_segment_discrete_param<IteratorT, T, Options...>> = true;
 
 // Get max value (works for all types inheriting bounds_mixin)
 template <typename T>
