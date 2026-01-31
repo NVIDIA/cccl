@@ -11,9 +11,8 @@ from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._utils import protocols
-from ..iterators._base import IteratorBase
 from ..op import OpAdapter, OpKind, make_op_adapter
-from ..typing import DeviceArrayLike
+from ..typing import DeviceArrayLike, IteratorLike
 
 
 def _normalize_comp(comp: Callable | OpKind | None) -> OpAdapter:
@@ -43,14 +42,14 @@ class _BinarySearch:
     def __init__(
         self,
         d_data: DeviceArrayLike,
-        d_values: DeviceArrayLike | IteratorBase,
+        d_values: IteratorLike,
         d_out: DeviceArrayLike,
         comp: OpAdapter,
         mode: _bindings.BinarySearchMode,
     ):
-        if isinstance(d_data, IteratorBase):
+        if not isinstance(d_data, DeviceArrayLike):
             raise ValueError("d_data must be a device array for index outputs.")
-        if isinstance(d_out, IteratorBase):
+        if not isinstance(d_out, DeviceArrayLike):
             raise ValueError("d_out must be a device array for index outputs.")
 
         out_dtype = protocols.get_dtype(d_out)
@@ -108,7 +107,7 @@ class _BinarySearch:
 @cache_with_registered_key_functions
 def _make_binary_search(
     d_data: DeviceArrayLike,
-    d_values: DeviceArrayLike | IteratorBase,
+    d_values: IteratorLike,
     d_out: DeviceArrayLike,
     comp: OpAdapter,
     mode: _bindings.BinarySearchMode,
@@ -121,7 +120,7 @@ def _make_binary_search(
 
 def make_lower_bound(
     d_data: DeviceArrayLike,
-    d_values: DeviceArrayLike | IteratorBase,
+    d_values: IteratorLike,
     d_out: DeviceArrayLike,
     comp: Callable | OpKind | None = None,
 ):
@@ -159,7 +158,7 @@ def make_lower_bound(
 
 def make_upper_bound(
     d_data: DeviceArrayLike,
-    d_values: DeviceArrayLike | IteratorBase,
+    d_values: IteratorLike,
     d_out: DeviceArrayLike,
     comp: Callable | OpKind | None = None,
 ):
@@ -197,7 +196,7 @@ def make_upper_bound(
 
 def lower_bound(
     d_data: DeviceArrayLike,
-    d_values: DeviceArrayLike | IteratorBase,
+    d_values: IteratorLike,
     d_out: DeviceArrayLike,
     num_items: int,
     num_values: int,
@@ -228,7 +227,7 @@ def lower_bound(
 
 def upper_bound(
     d_data: DeviceArrayLike,
-    d_values: DeviceArrayLike | IteratorBase,
+    d_values: IteratorLike,
     d_out: DeviceArrayLike,
     num_items: int,
     num_values: int,

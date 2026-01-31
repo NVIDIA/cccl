@@ -18,9 +18,8 @@ from .._cccl_interop import (
 )
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._base import IteratorBase
 from ..op import OpAdapter, OpKind, make_op_adapter
-from ..typing import DeviceArrayLike, GpuStruct
+from ..typing import DeviceArrayLike, GpuStruct, IteratorLike
 
 
 def get_init_kind(
@@ -50,8 +49,8 @@ class _Scan:
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
     def __init__(
         self,
-        d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
+        d_in: IteratorLike,
+        d_out: IteratorLike,
         op: OpAdapter,
         init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
         force_inclusive: bool,
@@ -164,8 +163,8 @@ class _Scan:
 # TODO Accept stream
 @cache_with_registered_key_functions
 def make_exclusive_scan(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: IteratorLike,
+    d_out: IteratorLike,
     op: Callable | OpKind,
     init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
 ):
@@ -193,8 +192,8 @@ def make_exclusive_scan(
 
 
 def exclusive_scan(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: IteratorLike,
+    d_out: IteratorLike,
     op: Callable | OpKind,
     init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
     num_items: int,
@@ -231,8 +230,8 @@ def exclusive_scan(
 # TODO Accept stream
 @cache_with_registered_key_functions
 def make_inclusive_scan(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: IteratorLike,
+    d_out: IteratorLike,
     op: Callable | OpKind,
     init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
 ):
@@ -260,8 +259,8 @@ def make_inclusive_scan(
 
 
 def inclusive_scan(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: IteratorLike,
+    d_out: IteratorLike,
     op: Callable | OpKind,
     init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
     num_items: int,

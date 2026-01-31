@@ -7,10 +7,9 @@ from typing import Callable
 
 from .._caching import cache_with_registered_key_functions
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._base import IteratorBase
 from ..iterators._factories import DiscardIterator
 from ..op import OpAdapter, make_op_adapter
-from ..typing import DeviceArrayLike
+from ..typing import DeviceArrayLike, IteratorLike
 from ._three_way_partition import make_three_way_partition
 
 
@@ -19,8 +18,8 @@ class _Select:
 
     def __init__(
         self,
-        d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
+        d_in: IteratorLike,
+        d_out: IteratorLike,
         d_num_selected_out: DeviceArrayLike,
         cond: OpAdapter,
     ):
@@ -63,8 +62,8 @@ class _Select:
 
 @cache_with_registered_key_functions
 def make_select(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: IteratorLike,
+    d_out: IteratorLike,
     d_num_selected_out: DeviceArrayLike,
     cond: Callable,
 ):
@@ -100,8 +99,8 @@ def make_select(
 
 
 def select(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: IteratorLike,
+    d_out: IteratorLike,
     d_num_selected_out: DeviceArrayLike,
     cond: Callable,
     num_items: int,

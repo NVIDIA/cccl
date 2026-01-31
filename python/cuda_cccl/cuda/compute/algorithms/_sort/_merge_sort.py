@@ -14,9 +14,8 @@ from ..._utils.protocols import (
     validate_and_get_stream,
 )
 from ..._utils.temp_storage_buffer import TempStorageBuffer
-from ...iterators._base import IteratorBase
 from ...op import OpAdapter, OpKind, make_op_adapter
-from ...typing import DeviceArrayLike
+from ...typing import DeviceArrayLike, IteratorLike
 
 
 class _MergeSort:
@@ -32,8 +31,8 @@ class _MergeSort:
 
     def __init__(
         self,
-        d_in_keys: DeviceArrayLike | IteratorBase,
-        d_in_items: DeviceArrayLike | IteratorBase | None,
+        d_in_keys: IteratorLike,
+        d_in_items: IteratorLike | None,
         d_out_keys: DeviceArrayLike,
         d_out_items: DeviceArrayLike | None,
         op: OpAdapter,
@@ -64,8 +63,8 @@ class _MergeSort:
     def __call__(
         self,
         temp_storage,
-        d_in_keys: DeviceArrayLike | IteratorBase,
-        d_in_items: DeviceArrayLike | IteratorBase | None,
+        d_in_keys: IteratorLike,
+        d_in_items: IteratorLike | None,
         d_out_keys: DeviceArrayLike,
         d_out_items: DeviceArrayLike | None,
         num_items: int,
@@ -109,8 +108,8 @@ class _MergeSort:
 
 @cache_with_registered_key_functions
 def make_merge_sort(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase | None,
+    d_in_keys: IteratorLike,
+    d_in_items: IteratorLike | None,
     d_out_keys: DeviceArrayLike,
     d_out_items: DeviceArrayLike | None,
     op: Callable | OpKind,
@@ -140,8 +139,8 @@ def make_merge_sort(
 
 
 def merge_sort(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase | None,
+    d_in_keys: IteratorLike,
+    d_in_items: IteratorLike | None,
     d_out_keys: DeviceArrayLike,
     d_out_items: DeviceArrayLike | None,
     op: Callable | OpKind,
