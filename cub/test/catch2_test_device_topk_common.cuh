@@ -3,10 +3,15 @@
 
 #pragma once
 
-#include <cub/device/dispatch/dispatch_topk.cuh> // topk::select::{min, max}
+#include <cub/device/device_segmented_sort.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh> // topk::select::{min, max}
+
+#include <thrust/remove.h>
 
 #include <cuda/iterator>
 #include <cuda/std/limits>
+
+#include <c2h/catch2_test_helper.h>
 
 // Function object to generate monotonically non-decreasing values for small key types
 template <typename T>
@@ -149,3 +154,92 @@ public:
     check_bit_flags(index_flags);
   }
 };
+
+// Function object used to remove all elements outside the top-k within each segment
+struct remove_out_of_topk_op
+{
+  cuda::std::int64_t segment_size;
+  cuda::std::int64_t k;
+
+  bool __device__ operator()(cuda::std::int64_t idx) const
+  {
+    auto offset_in_segment = idx % segment_size;
+    return offset_in_segment >= k;
+  }
+};
+
+// Stream-compacts each segment to only contain the top-k elements
+template <typename KeyT>
+void compact_sorted_keys_to_topk(
+  c2h::device_vector<KeyT>& d_keys_in, cuda::std::int64_t segment_size, cuda::std::int64_t k)
+{
+  // Remove all elements within each segment that are not amongst the top-k
+  auto new_end = thrust::remove_if(
+    d_keys_in.begin(), d_keys_in.end(), cuda::make_counting_iterator(0), remove_out_of_topk_op{segment_size, k});
+
+  // Resize input to new size
+  d_keys_in.resize(new_end - d_keys_in.begin());
+}
+
+template <typename KeyT>
+void segmented_sort_keys(c2h::device_vector<KeyT>& d_keys_in,
+                         cuda::std::int64_t num_segments,
+                         cuda::std::int64_t segment_size,
+                         cub::detail::topk::select direction)
+{
+  cuda::std::int64_t num_items = d_keys_in.size();
+
+  // Prepare alternate buffer for double buffering
+  c2h::device_vector<KeyT> d_keys_alt(num_items, thrust::no_init);
+  cub::DoubleBuffer<KeyT> d_keys(
+    thrust::raw_pointer_cast(d_keys_in.data()), thrust::raw_pointer_cast(d_keys_alt.data()));
+
+  // Prepare segment offsets
+  auto segment_offsets_it =
+    cuda::make_strided_iterator(cuda::make_counting_iterator<cuda::std::int64_t>(0), segment_size);
+
+  // Query temporary storage size
+  size_t temp_storage_bytes = 0;
+  if (direction == cub::detail::topk::select::min)
+  {
+    cub::DeviceSegmentedSort::SortKeys(
+      nullptr, temp_storage_bytes, d_keys, num_items, num_segments, segment_offsets_it, (segment_offsets_it + 1));
+
+    // Allocate temporary storage
+    c2h::device_vector<cuda::std::uint8_t> d_temp_storage(temp_storage_bytes, thrust::no_init);
+
+    // Run segmented sort
+    cub::DeviceSegmentedSort::SortKeys(
+      thrust::raw_pointer_cast(d_temp_storage.data()),
+      temp_storage_bytes,
+      d_keys,
+      num_items,
+      num_segments,
+      segment_offsets_it,
+      (segment_offsets_it + 1));
+  }
+  else
+  {
+    cub::DeviceSegmentedSort::SortKeysDescending(
+      nullptr, temp_storage_bytes, d_keys, num_items, num_segments, segment_offsets_it, (segment_offsets_it + 1));
+
+    // Allocate temporary storage
+    c2h::device_vector<cuda::std::uint8_t> d_temp_storage(temp_storage_bytes, thrust::no_init);
+
+    // Run segmented sort
+    cub::DeviceSegmentedSort::SortKeysDescending(
+      thrust::raw_pointer_cast(d_temp_storage.data()),
+      temp_storage_bytes,
+      d_keys,
+      num_items,
+      num_segments,
+      segment_offsets_it,
+      (segment_offsets_it + 1));
+  }
+
+  // Make sure the result is returned in the original buffer
+  if (d_keys.Current() != thrust::raw_pointer_cast(d_keys_in.data()))
+  {
+    thrust::copy(d_keys.Current(), d_keys.Current() + num_items, d_keys_in.begin());
+  }
+}
