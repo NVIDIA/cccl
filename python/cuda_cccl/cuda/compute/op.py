@@ -3,7 +3,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Callable
 
 from ._bindings import Op, OpKind
 from ._caching import CachableFunction, cache_with_registered_key_functions
@@ -50,10 +49,11 @@ class _OpAdapter:
         """
         pass
 
-    @property
-    def func(self) -> Callable | None:
-        """The underlying callable, if any."""
-        return None
+    def get_return_type(self, input_types):
+        """Get the return type for this op given input types."""
+        raise NotImplementedError(
+            f"get_return_type not implemented for {self.__class__.__name__}"
+        )
 
 
 class _WellKnownOp(_OpAdapter):
@@ -82,6 +82,14 @@ class _WellKnownOp(_OpAdapter):
     def kind(self) -> OpKind:
         """The underlying OpKind."""
         return self._kind
+
+    def __eq__(self, other):
+        if not isinstance(other, _WellKnownOp):
+            return False
+        return self._kind == other._kind
+
+    def __hash__(self):
+        return hash(self._kind)
 
 
 # Public aliases
