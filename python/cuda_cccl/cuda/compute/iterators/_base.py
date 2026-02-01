@@ -235,4 +235,46 @@ def _deterministic_suffix(kind: Hashable) -> str:
     return hashlib.sha256(kind_str.encode()).hexdigest()[:16]
 
 
+def compose_iterator_states(
+    iterators: list[IteratorBase],
+) -> tuple[bytes, int, list[int]]:
+    """
+    Concatenate multiple iterator states with proper alignment.
+
+    This is used by composite iterators (like ZipIterator and PermutationIterator)
+    that need to store multiple child iterator states in their own state.
+
+    Args:
+        iterators: List of child iterators whose states should be composed
+
+    Returns:
+        Tuple of:
+        - combined_state_bytes: Concatenated state bytes with padding
+        - combined_alignment: Maximum alignment requirement
+        - offsets: List of byte offsets for each iterator's state
+    """
+    if not iterators:
+        return (b"", 1, [])
+
+    states = [bytes(memoryview(it.state)) for it in iterators]
+    alignments = [it.state_alignment for it in iterators]
+
+    offsets = []
+    current_offset = 0
+    combined = b""
+
+    for state, align in zip(states, alignments):
+        # Add padding to meet alignment requirement
+        padding = (align - (current_offset % align)) % align
+        combined += b"\x00" * padding
+        current_offset += padding
+
+        offsets.append(current_offset)
+        combined += state
+        current_offset += len(state)
+
+    max_alignment = max(alignments)
+    return (combined, max_alignment, offsets)
+
+
 cache_with_registered_key_functions.register(IteratorBase, lambda it: it.kind)

@@ -6,62 +6,18 @@
 
 from __future__ import annotations
 
+from textwrap import dedent
+
 from .._bindings import Op, OpKind
+from .._cpp_codegen import compile_cpp_to_ltoir
 from ..types import struct
-from ._base import IteratorBase
-from ._codegen_utils import (
-    collect_child_ltoirs,
-    collect_child_op_names,
-    compile_cpp_source_to_ltoir,
-    compose_iterator_states,
-    format_advance,
-    format_input_dereference,
-    format_output_dereference,
-)
+from ._base import IteratorBase, compose_iterator_states
 
-
-def _generate_advance_body(child_symbols: list[str], state_offsets: list[int]) -> str:
-    """
-    Generate C++ code to call advance on multiple child iterators.
-
-    Args:
-        child_symbols: List of child iterator advance function names
-        state_offsets: List of byte offsets for each child's state
-
-    Returns:
-        C++ code calling each child's advance function
-    """
-    return "\n".join(
-        f"{sym}(static_cast<char*>(state) + {off}, offset);"
-        for sym, off in zip(child_symbols, state_offsets)
-    )
-
-
-def _generate_deref_body(
-    child_symbols: list[str],
-    state_offsets: list[int],
-    value_offsets: list[int],
-    result_name: str = "result",
-) -> str:
-    """
-    Generate C++ code to call dereference on multiple child iterators.
-
-    Used by ZipIterator to read/write to multiple child iterators at once.
-
-    Args:
-        child_symbols: List of child iterator dereference function names
-        state_offsets: List of byte offsets for each child's state
-        value_offsets: List of byte offsets for each child's value in result
-        result_name: Name of result/value parameter (usually "result" or "value")
-
-    Returns:
-        C++ code calling each child's dereference function
-    """
-    return "\n".join(
-        f"{sym}(static_cast<char*>(state) + {state_off}, "
-        f"static_cast<char*>({result_name}) + {val_off});"
-        for sym, state_off, val_off in zip(child_symbols, state_offsets, value_offsets)
-    )
+CUDA_PREAMBLE = """#include <cuda/std/cstdint>
+#include <cuda_fp16.h>
+#include <cuda/std/cstring>
+using namespace cuda::std;
+"""
 
 
 def _ensure_iterator(obj):
@@ -139,68 +95,137 @@ class ZipIterator(IteratorBase):
 
     def _make_advance_op(self) -> Op:
         """Provide Op for advance that calls all child iterator advances."""
-        advance_names = collect_child_op_names(self._iterators, "advance")
+        child_ops = [it.get_advance_op() for it in self._iterators]
         symbol = self._make_advance_symbol()
 
-        body = _generate_advance_body(advance_names, self._state_offsets)
+        externs = "\n".join(
+            f'extern "C" __device__ void {op.name}(void* state, void* offset);'
+            for op in child_ops
+        )
 
-        source = format_advance(symbol, body, extern_symbols=advance_names)
-        ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        child_ltoirs = collect_child_ltoirs(self._iterators, "advance")
+        calls = "\n        ".join(
+            f"{op.name}(static_cast<char*>(state) + {offset}, offset);"
+            for op, offset in zip(child_ops, self._state_offsets)
+        )
+
+        source = dedent(f"""
+            {CUDA_PREAMBLE}
+
+            {externs}
+
+            extern "C" __device__ void {symbol}(void* state, void* offset) {{
+                {calls}
+            }}
+        """).strip()
+
+        ltoir = compile_cpp_to_ltoir(source, (symbol,))
+
+        # Flatten child LTOIRs
+        child_ltoirs = []
+        for op in child_ops:
+            child_ltoirs.append(op.ltoir)
+            if op.extra_ltoirs:
+                child_ltoirs.extend(op.extra_ltoirs)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=child_ltoirs if child_ltoirs else None,
+            extra_ltoirs=child_ltoirs,
         )
 
     def _make_input_deref_op(self) -> Op | None:
         """Provide Op for input deref that calls all child iterator input derefs."""
-        # Check if all iterators support input dereference
-        if not all(it.get_input_deref_op() is not None for it in self._iterators):
+        child_ops = [it.get_input_deref_op() for it in self._iterators]
+        if not all(op is not None for op in child_ops):
             return None
 
-        deref_names = collect_child_op_names(self._iterators, "input_deref")
         symbol = self._make_input_deref_symbol()
 
-        body = _generate_deref_body(
-            deref_names, self._state_offsets, self._value_offsets, result_name="result"
+        externs = "\n".join(
+            f'extern "C" __device__ void {op.name}(void* state, void* result);'
+            for op in child_ops
         )
 
-        source = format_input_dereference(symbol, body, extern_symbols=deref_names)
-        ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        child_ltoirs = collect_child_ltoirs(self._iterators, "input_deref")
+        calls = "\n        ".join(
+            f"{op.name}(static_cast<char*>(state) + {state_off}, "
+            f"static_cast<char*>(result) + {val_off});"
+            for op, state_off, val_off in zip(
+                child_ops, self._state_offsets, self._value_offsets
+            )
+        )
+
+        source = dedent(f"""
+            {CUDA_PREAMBLE}
+
+            {externs}
+
+            extern "C" __device__ void {symbol}(void* state, void* result) {{
+                {calls}
+            }}
+        """).strip()
+
+        ltoir = compile_cpp_to_ltoir(source, (symbol,))
+
+        # Flatten child LTOIRs
+        child_ltoirs = []
+        for op in child_ops:
+            child_ltoirs.append(op.ltoir)
+            if op.extra_ltoirs:
+                child_ltoirs.extend(op.extra_ltoirs)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=child_ltoirs if child_ltoirs else None,
+            extra_ltoirs=child_ltoirs,
         )
 
     def _make_output_deref_op(self) -> Op | None:
         """Provide Op for output deref that calls all child iterator output derefs."""
-        # Check if all iterators support output dereference
-        if not all(it.get_output_deref_op() is not None for it in self._iterators):
+        child_ops = [it.get_output_deref_op() for it in self._iterators]
+        if not all(op is not None for op in child_ops):
             return None
 
-        deref_names = collect_child_op_names(self._iterators, "output_deref")
         symbol = self._make_output_deref_symbol()
 
-        body = _generate_deref_body(
-            deref_names, self._state_offsets, self._value_offsets, result_name="value"
+        externs = "\n".join(
+            f'extern "C" __device__ void {op.name}(void* state, void* value);'
+            for op in child_ops
         )
 
-        source = format_output_dereference(symbol, body, extern_symbols=deref_names)
-        ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        child_ltoirs = collect_child_ltoirs(self._iterators, "output_deref")
+        calls = "\n        ".join(
+            f"{op.name}(static_cast<char*>(state) + {state_off}, "
+            f"static_cast<char*>(value) + {val_off});"
+            for op, state_off, val_off in zip(
+                child_ops, self._state_offsets, self._value_offsets
+            )
+        )
+
+        source = dedent(f"""
+            {CUDA_PREAMBLE}
+
+            {externs}
+
+            extern "C" __device__ void {symbol}(void* state, void* value) {{
+                {calls}
+            }}
+        """).strip()
+
+        ltoir = compile_cpp_to_ltoir(source, (symbol,))
+
+        # Flatten child LTOIRs
+        child_ltoirs = []
+        for op in child_ops:
+            child_ltoirs.append(op.ltoir)
+            if op.extra_ltoirs:
+                child_ltoirs.extend(op.extra_ltoirs)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=child_ltoirs if child_ltoirs else None,
+            extra_ltoirs=child_ltoirs,
         )
 
     @property

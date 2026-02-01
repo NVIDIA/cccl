@@ -11,14 +11,15 @@ from textwrap import dedent
 import numpy as np
 
 from .._bindings import Op, OpKind
-from .._cpp_codegen import cpp_type_from_descriptor
+from .._cpp_codegen import compile_cpp_to_ltoir, cpp_type_from_descriptor
 from ..types import from_numpy_dtype
 from ._base import IteratorBase
-from ._codegen_utils import (
-    compile_cpp_source_to_ltoir,
-    format_advance,
-    format_input_dereference,
-)
+
+CUDA_PREAMBLE = """#include <cuda/std/cstdint>
+#include <cuda_fp16.h>
+#include <cuda/std/cstring>
+using namespace cuda::std;
+"""
 
 
 class ConstantIterator(IteratorBase):
@@ -51,33 +52,41 @@ class ConstantIterator(IteratorBase):
     def _make_advance_op(self) -> Op:
         symbol = self._make_advance_symbol()
 
-        body = """(void)state;
-(void)offset;"""
+        source = dedent(f"""
+            {CUDA_PREAMBLE}
 
-        source = format_advance(symbol, body)
-        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+            extern "C" __device__ void {symbol}(void* state, void* offset) {{
+                (void)state;
+                (void)offset;
+            }}
+        """).strip()
+
+        ltoir = compile_cpp_to_ltoir(source, (symbol,))
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=None,
+            extra_ltoirs=[],
         )
 
     def _make_input_deref_op(self) -> Op | None:
         symbol = self._make_input_deref_symbol()
         cpp_type = cpp_type_from_descriptor(self._value_type)
 
-        body = dedent(f"""
-            *static_cast<{cpp_type}*>(result) = *static_cast<{cpp_type}*>(state);
+        source = dedent(f"""
+            {CUDA_PREAMBLE}
+
+            extern "C" __device__ void {symbol}(void* state, void* result) {{
+                *static_cast<{cpp_type}*>(result) = *static_cast<{cpp_type}*>(state);
+            }}
         """).strip()
 
-        source = format_input_dereference(symbol, body)
-        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+        ltoir = compile_cpp_to_ltoir(source, (symbol,))
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=None,
+            extra_ltoirs=[],
         )
 
     def _make_output_deref_op(self) -> Op | None:

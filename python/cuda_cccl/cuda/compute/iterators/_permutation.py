@@ -10,17 +10,14 @@ from textwrap import dedent
 from typing import TYPE_CHECKING
 
 from .._bindings import Op, OpKind
-from .._cpp_codegen import cpp_type_from_descriptor
-from ._base import IteratorBase
-from ._codegen_utils import (
-    collect_child_ltoirs,
-    collect_child_op_names,
-    compile_cpp_source_to_ltoir,
-    compose_iterator_states,
-    format_advance,
-    format_input_dereference,
-    format_output_dereference,
-)
+from .._cpp_codegen import compile_cpp_to_ltoir, cpp_type_from_descriptor
+from ._base import IteratorBase, compose_iterator_states
+
+CUDA_PREAMBLE = """#include <cuda/std/cstdint>
+#include <cuda_fp16.h>
+#include <cuda/std/cstring>
+using namespace cuda::std;
+"""
 
 if TYPE_CHECKING:
     pass
@@ -84,134 +81,144 @@ class PermutationIterator(IteratorBase):
 
     def _make_advance_op(self) -> Op:
         """Provide Op for advance that only advances indices iterator."""
-        advance_names = collect_child_op_names([self._indices], "advance")
-        indices_advance = advance_names[0]
+        child_op = self._indices.get_advance_op()
         symbol = self._make_advance_symbol()
 
-        body = dedent(f"""
-            char* indices_state = static_cast<char*>(state) + {self._indices_offset};
-            {indices_advance}(indices_state, offset);
+        source = dedent(f"""
+            {CUDA_PREAMBLE}
+
+            extern "C" __device__ void {child_op.name}(void* state, void* offset);
+
+            extern "C" __device__ void {symbol}(void* state, void* offset) {{
+                char* indices_state = static_cast<char*>(state) + {self._indices_offset};
+                {child_op.name}(indices_state, offset);
+            }}
         """).strip()
 
-        source = format_advance(symbol, body, extern_symbols=[indices_advance])
-        ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        child_ltoirs = collect_child_ltoirs([self._indices], "advance")
+        ltoir = compile_cpp_to_ltoir(source, (symbol,))
+
+        # Flatten child LTOIRs
+        child_ltoirs = [child_op.ltoir]
+        if child_op.extra_ltoirs:
+            child_ltoirs.extend(child_op.extra_ltoirs)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=child_ltoirs if child_ltoirs else None,
+            extra_ltoirs=child_ltoirs,
         )
 
     def _make_input_deref_op(self) -> Op | None:
         """Provide Op for input deref that reads index then accesses values."""
-        if self._indices.get_input_deref_op() is None:
+        indices_deref_op = self._indices.get_input_deref_op()
+        if indices_deref_op is None:
             raise ValueError("Indices iterator must support input dereference")
 
-        if self._values.get_input_deref_op() is None:
+        values_deref_op = self._values.get_input_deref_op()
+        if values_deref_op is None:
             return None
 
-        deref_names = collect_child_op_names(
-            [self._indices, self._values], "input_deref"
-        )
-        indices_deref = deref_names[0]
-        values_deref = deref_names[1]
-
         # Also need values advance for random access
-        advance_names = collect_child_op_names([self._values], "advance")
-        values_advance = advance_names[0]
+        values_advance_op = self._values.get_advance_op()
 
         symbol = self._make_input_deref_symbol()
         idx_type = cpp_type_from_descriptor(self._indices.value_type)
         values_state_size = len(bytes(memoryview(self._values.state)))
 
-        body = dedent(f"""
-            char* values_state = static_cast<char*>(state) + {self._values_offset};
-            char* indices_state = static_cast<char*>(state) + {self._indices_offset};
+        source = dedent(f"""
+            {CUDA_PREAMBLE}
 
-            alignas({self._indices.value_type.alignment}) {idx_type} idx;
-            {indices_deref}(indices_state, &idx);
+            extern "C" __device__ void {indices_deref_op.name}(void* state, void* result);
+            extern "C" __device__ void {values_advance_op.name}(void* state, void* offset);
+            extern "C" __device__ void {values_deref_op.name}(void* state, void* result);
 
-            alignas({self._values.state_alignment}) char temp_values[{values_state_size}];
-            memcpy(temp_values, values_state, {values_state_size});
+            extern "C" __device__ void {symbol}(void* state, void* result) {{
+                char* values_state = static_cast<char*>(state) + {self._values_offset};
+                char* indices_state = static_cast<char*>(state) + {self._indices_offset};
 
-            uint64_t offset = static_cast<uint64_t>(idx);
-            {values_advance}(temp_values, &offset);
-            {values_deref}(temp_values, result);
+                alignas({self._indices.value_type.alignment}) {idx_type} idx;
+                {indices_deref_op.name}(indices_state, &idx);
+
+                alignas({self._values.state_alignment}) char temp_values[{values_state_size}];
+                memcpy(temp_values, values_state, {values_state_size});
+
+                uint64_t offset = static_cast<uint64_t>(idx);
+                {values_advance_op.name}(temp_values, &offset);
+                {values_deref_op.name}(temp_values, result);
+            }}
         """).strip()
 
-        source = format_input_dereference(
-            symbol, body, extern_symbols=[indices_deref, values_advance, values_deref]
-        )
-        ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        # Include values.advance LTOIR and child LTOIRs from both iterators
-        deref_ltoirs = collect_child_ltoirs(
-            [self._indices, self._values], "input_deref"
-        )
-        advance_ltoirs = collect_child_ltoirs([self._values], "advance")
+        ltoir = compile_cpp_to_ltoir(source, (symbol,))
 
-        extra_ltoirs = advance_ltoirs + deref_ltoirs
+        # Flatten child LTOIRs
+        child_ltoirs = []
+        for op in [values_advance_op, indices_deref_op, values_deref_op]:
+            child_ltoirs.append(op.ltoir)
+            if op.extra_ltoirs:
+                child_ltoirs.extend(op.extra_ltoirs)
+
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=extra_ltoirs if extra_ltoirs else None,
+            extra_ltoirs=child_ltoirs,
         )
 
     def _make_output_deref_op(self) -> Op | None:
         """Provide Op for output deref that reads index then writes to values."""
-        if self._indices.get_input_deref_op() is None:
+        indices_deref_op = self._indices.get_input_deref_op()
+        if indices_deref_op is None:
             raise ValueError("Indices iterator must support input dereference")
 
-        if self._values.get_output_deref_op() is None:
+        values_deref_op = self._values.get_output_deref_op()
+        if values_deref_op is None:
             return None
 
-        # Get indices input_deref and values output_deref names
-        indices_deref_names = collect_child_op_names([self._indices], "input_deref")
-        values_deref_names = collect_child_op_names([self._values], "output_deref")
-        indices_deref = indices_deref_names[0]
-        values_deref = values_deref_names[0]
-
         # Also need values advance for random access
-        advance_names = collect_child_op_names([self._values], "advance")
-        values_advance = advance_names[0]
+        values_advance_op = self._values.get_advance_op()
 
         symbol = self._make_output_deref_symbol()
         idx_type = cpp_type_from_descriptor(self._indices.value_type)
         values_state_size = len(bytes(memoryview(self._values.state)))
 
-        body = dedent(f"""
-            char* values_state = static_cast<char*>(state) + {self._values_offset};
-            char* indices_state = static_cast<char*>(state) + {self._indices_offset};
+        source = dedent(f"""
+            {CUDA_PREAMBLE}
 
-            alignas({self._indices.value_type.alignment}) {idx_type} idx;
-            {indices_deref}(indices_state, &idx);
+            extern "C" __device__ void {indices_deref_op.name}(void* state, void* result);
+            extern "C" __device__ void {values_advance_op.name}(void* state, void* offset);
+            extern "C" __device__ void {values_deref_op.name}(void* state, void* value);
 
-            alignas({self._values.state_alignment}) char temp_values[{values_state_size}];
-            memcpy(temp_values, values_state, {values_state_size});
+            extern "C" __device__ void {symbol}(void* state, void* value) {{
+                char* values_state = static_cast<char*>(state) + {self._values_offset};
+                char* indices_state = static_cast<char*>(state) + {self._indices_offset};
 
-            uint64_t offset = static_cast<uint64_t>(idx);
-            {values_advance}(temp_values, &offset);
-            {values_deref}(temp_values, value);
+                alignas({self._indices.value_type.alignment}) {idx_type} idx;
+                {indices_deref_op.name}(indices_state, &idx);
+
+                alignas({self._values.state_alignment}) char temp_values[{values_state_size}];
+                memcpy(temp_values, values_state, {values_state_size});
+
+                uint64_t offset = static_cast<uint64_t>(idx);
+                {values_advance_op.name}(temp_values, &offset);
+                {values_deref_op.name}(temp_values, value);
+            }}
         """).strip()
 
-        source = format_output_dereference(
-            symbol, body, extern_symbols=[indices_deref, values_advance, values_deref]
-        )
-        ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        # Include values.advance LTOIR and child LTOIRs from both iterators
-        # For output_deref, we need indices input_deref and values output_deref
-        indices_deref_ltoirs = collect_child_ltoirs([self._indices], "input_deref")
-        values_deref_ltoirs = collect_child_ltoirs([self._values], "output_deref")
-        advance_ltoirs = collect_child_ltoirs([self._values], "advance")
+        ltoir = compile_cpp_to_ltoir(source, (symbol,))
 
-        extra_ltoirs = advance_ltoirs + indices_deref_ltoirs + values_deref_ltoirs
+        # Flatten child LTOIRs
+        child_ltoirs = []
+        for op in [values_advance_op, indices_deref_op, values_deref_op]:
+            child_ltoirs.append(op.ltoir)
+            if op.extra_ltoirs:
+                child_ltoirs.extend(op.extra_ltoirs)
+
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=extra_ltoirs if extra_ltoirs else None,
+            extra_ltoirs=child_ltoirs,
         )
 
     @property

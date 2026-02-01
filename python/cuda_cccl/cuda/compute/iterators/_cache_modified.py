@@ -10,15 +10,16 @@ from textwrap import dedent
 from typing import Literal
 
 from .._bindings import Op, OpKind
-from .._cpp_codegen import cpp_type_from_descriptor
+from .._cpp_codegen import compile_cpp_to_ltoir, cpp_type_from_descriptor
 from .._utils.protocols import get_data_pointer, get_dtype
 from ..types import from_numpy_dtype
 from ._base import IteratorBase
-from ._codegen_utils import (
-    compile_cpp_source_to_ltoir,
-    format_advance,
-    format_input_dereference,
-)
+
+CUDA_PREAMBLE = """#include <cuda/std/cstdint>
+#include <cuda_fp16.h>
+#include <cuda/std/cstring>
+using namespace cuda::std;
+"""
 
 # Map modifier names to PTX cache operators and C++ intrinsics
 _CACHE_MODIFIERS = {
@@ -95,19 +96,22 @@ class CacheModifiedInputIterator(IteratorBase):
         symbol = self._make_advance_symbol()
         cpp_type = cpp_type_from_descriptor(self._value_type)
 
-        body = dedent(f"""
-            auto* s = static_cast<{cpp_type}**>(state);
-            auto dist = *static_cast<uint64_t*>(offset);
-            *s += dist;
+        source = dedent(f"""
+            {CUDA_PREAMBLE}
+
+            extern "C" __device__ void {symbol}(void* state, void* offset) {{
+                auto* s = static_cast<{cpp_type}**>(state);
+                auto dist = *static_cast<uint64_t*>(offset);
+                *s += dist;
+            }}
         """).strip()
 
-        source = format_advance(symbol, body)
-        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+        ltoir = compile_cpp_to_ltoir(source, (symbol,))
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=None,
+            extra_ltoirs=[],
         )
 
     def _make_input_deref_op(self) -> Op | None:
@@ -118,18 +122,21 @@ class CacheModifiedInputIterator(IteratorBase):
         # Use cache-modified intrinsic for all supported sizes (1, 2, 4, 8, 16 bytes)
         # These correspond to PTX instructions: ld.global.{modifier}.b{8,16,32,64,128}
         # Note: __ldcs, __ldcg, __ldcv intrinsics work for all these sizes
-        body = dedent(f"""
-            auto* ptr = *static_cast<{cpp_type}**>(state);
-            *static_cast<{cpp_type}*>(result) = {intrinsic}(ptr);
+        source = dedent(f"""
+            {CUDA_PREAMBLE}
+
+            extern "C" __device__ void {symbol}(void* state, void* result) {{
+                auto* ptr = *static_cast<{cpp_type}**>(state);
+                *static_cast<{cpp_type}*>(result) = {intrinsic}(ptr);
+            }}
         """).strip()
 
-        source = format_input_dereference(symbol, body)
-        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+        ltoir = compile_cpp_to_ltoir(source, (symbol,))
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=None,
+            extra_ltoirs=[],
         )
 
     def _make_output_deref_op(self) -> Op | None:

@@ -9,18 +9,16 @@ from __future__ import annotations
 from textwrap import dedent
 
 from .._bindings import Op, OpKind
-from .._cpp_codegen import cpp_type_from_descriptor
+from .._cpp_codegen import compile_cpp_to_ltoir, cpp_type_from_descriptor
 from ..op import make_op_adapter
 from ..types import TypeDescriptor
 from ._base import IteratorBase
-from ._codegen_utils import (
-    collect_child_ltoirs,
-    collect_child_op_names,
-    compile_cpp_source_to_ltoir,
-    format_advance,
-    format_input_dereference,
-    format_output_dereference,
-)
+
+CUDA_PREAMBLE = """#include <cuda/std/cstdint>
+#include <cuda_fp16.h>
+#include <cuda/std/cstring>
+using namespace cuda::std;
+"""
 
 
 class TransformIterator(IteratorBase):
@@ -85,23 +83,31 @@ class TransformIterator(IteratorBase):
 
     def _make_advance_op(self) -> Op:
         """Provide Op for advance that delegates to underlying iterator."""
-        advance_names = collect_child_op_names([self._underlying], "advance")
-        underlying_advance = advance_names[0]
+        child_op = self._underlying.get_advance_op()
         symbol = self._make_advance_symbol()
 
-        body = dedent(f"""
-            {underlying_advance}(state, offset);
+        source = dedent(f"""
+            {CUDA_PREAMBLE}
+
+            extern "C" __device__ void {child_op.name}(void* state, void* offset);
+
+            extern "C" __device__ void {symbol}(void* state, void* offset) {{
+                {child_op.name}(state, offset);
+            }}
         """).strip()
 
-        source = format_advance(symbol, body, extern_symbols=[underlying_advance])
-        ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        child_ltoirs = collect_child_ltoirs([self._underlying], "advance")
+        ltoir = compile_cpp_to_ltoir(source, (symbol,))
+
+        # Flatten child LTOIRs
+        child_ltoirs = [child_op.ltoir]
+        if child_op.extra_ltoirs:
+            child_ltoirs.extend(child_op.extra_ltoirs)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=child_ltoirs if child_ltoirs else None,
+            extra_ltoirs=child_ltoirs,
         )
 
     def _make_input_deref_op(self) -> Op | None:
@@ -109,39 +115,42 @@ class TransformIterator(IteratorBase):
         if not self._is_input:
             return None
 
-        if self._underlying.get_input_deref_op() is None:
+        child_op = self._underlying.get_input_deref_op()
+        if child_op is None:
             raise ValueError("Underlying iterator must support input dereference")
 
-        deref_names = collect_child_op_names([self._underlying], "input_deref")
-        underlying_deref = deref_names[0]
-
         compiled_op = self._get_compiled_op()
-        transform_op = compiled_op.name
-        op_ltoir = compiled_op.ltoir
-        op_extras = list(compiled_op.extra_ltoirs) if compiled_op.extra_ltoirs else []
-
         symbol = self._make_input_deref_symbol()
         underlying_type = cpp_type_from_descriptor(self._underlying.value_type)
 
-        body = dedent(f"""
-            {underlying_type} temp;
-            {underlying_deref}(state, &temp);
-            {transform_op}(&temp, result);
+        source = dedent(f"""
+            {CUDA_PREAMBLE}
+
+            extern "C" __device__ void {child_op.name}(void* state, void* result);
+            extern "C" __device__ void {compiled_op.name}(void* input, void* output);
+
+            extern "C" __device__ void {symbol}(void* state, void* result) {{
+                {underlying_type} temp;
+                {child_op.name}(state, &temp);
+                {compiled_op.name}(&temp, result);
+            }}
         """).strip()
 
-        source = format_input_dereference(
-            symbol, body, extern_symbols=[underlying_deref, transform_op]
-        )
-        ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        child_ltoirs = collect_child_ltoirs([self._underlying], "input_deref")
+        ltoir = compile_cpp_to_ltoir(source, (symbol,))
+
+        # Flatten child LTOIRs
+        child_ltoirs = [compiled_op.ltoir]
+        if compiled_op.extra_ltoirs:
+            child_ltoirs.extend(compiled_op.extra_ltoirs)
+        child_ltoirs.append(child_op.ltoir)
+        if child_op.extra_ltoirs:
+            child_ltoirs.extend(child_op.extra_ltoirs)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=[op_ltoir] + op_extras + child_ltoirs
-            if ([op_ltoir] + op_extras + child_ltoirs)
-            else None,
+            extra_ltoirs=child_ltoirs,
         )
 
     def _make_output_deref_op(self) -> Op | None:
@@ -149,39 +158,42 @@ class TransformIterator(IteratorBase):
         if self._is_input:
             return None
 
-        if self._underlying.get_output_deref_op() is None:
+        child_op = self._underlying.get_output_deref_op()
+        if child_op is None:
             raise ValueError("Underlying iterator must support output dereference")
 
-        deref_names = collect_child_op_names([self._underlying], "output_deref")
-        underlying_deref = deref_names[0]
-
         compiled_op = self._get_compiled_op()
-        transform_op = compiled_op.name
-        op_ltoir = compiled_op.ltoir
-        op_extras = list(compiled_op.extra_ltoirs) if compiled_op.extra_ltoirs else []
-
         symbol = self._make_output_deref_symbol()
         underlying_type = cpp_type_from_descriptor(self._underlying.value_type)
 
-        body = dedent(f"""
-            {underlying_type} temp;
-            {transform_op}(value, &temp);
-            {underlying_deref}(state, &temp);
+        source = dedent(f"""
+            {CUDA_PREAMBLE}
+
+            extern "C" __device__ void {child_op.name}(void* state, void* value);
+            extern "C" __device__ void {compiled_op.name}(void* input, void* output);
+
+            extern "C" __device__ void {symbol}(void* state, void* value) {{
+                {underlying_type} temp;
+                {compiled_op.name}(value, &temp);
+                {child_op.name}(state, &temp);
+            }}
         """).strip()
 
-        source = format_output_dereference(
-            symbol, body, extern_symbols=[underlying_deref, transform_op]
-        )
-        ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        child_ltoirs = collect_child_ltoirs([self._underlying], "output_deref")
+        ltoir = compile_cpp_to_ltoir(source, (symbol,))
+
+        # Flatten child LTOIRs
+        child_ltoirs = [compiled_op.ltoir]
+        if compiled_op.extra_ltoirs:
+            child_ltoirs.extend(compiled_op.extra_ltoirs)
+        child_ltoirs.append(child_op.ltoir)
+        if child_op.extra_ltoirs:
+            child_ltoirs.extend(child_op.extra_ltoirs)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=[op_ltoir] + op_extras + child_ltoirs
-            if ([op_ltoir] + op_extras + child_ltoirs)
-            else None,
+            extra_ltoirs=child_ltoirs,
         )
 
     def advance(self, offset: int) -> "TransformIterator":

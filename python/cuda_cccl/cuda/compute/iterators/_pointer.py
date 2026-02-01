@@ -12,16 +12,16 @@ from textwrap import dedent
 from typing import TYPE_CHECKING
 
 from .._bindings import Op, OpKind
-from .._cpp_codegen import cpp_type_from_descriptor
+from .._cpp_codegen import compile_cpp_to_ltoir, cpp_type_from_descriptor
 from .._utils.protocols import get_data_pointer, get_dtype
 from ..types import from_numpy_dtype
 from ._base import IteratorBase
-from ._codegen_utils import (
-    compile_cpp_source_to_ltoir,
-    format_advance,
-    format_input_dereference,
-    format_output_dereference,
-)
+
+CUDA_PREAMBLE = """#include <cuda/std/cstdint>
+#include <cuda_fp16.h>
+#include <cuda/std/cstring>
+using namespace cuda::std;
+"""
 
 if TYPE_CHECKING:
     pass
@@ -77,26 +77,33 @@ class PointerIterator(IteratorBase):
 
         if self._cpp_type:
             # Scalar type - use typed pointer arithmetic
-            body = dedent(f"""
-            auto* ptr_state = static_cast<{self._cpp_type}**>(state);
-            auto dist = *static_cast<int64_t*>(offset);
-            *ptr_state += dist;
-        """).strip()
+            source = dedent(f"""
+                {CUDA_PREAMBLE}
+
+                extern "C" __device__ void {symbol}(void* state, void* offset) {{
+                    auto* ptr_state = static_cast<{self._cpp_type}**>(state);
+                    auto dist = *static_cast<int64_t*>(offset);
+                    *ptr_state += dist;
+                }}
+            """).strip()
         else:
             # Struct type - use byte-level pointer arithmetic
-            body = dedent(f"""
-            auto* ptr_state = static_cast<char**>(state);
-            auto dist = *static_cast<int64_t*>(offset);
-            *ptr_state += dist * {self._element_size};
-        """).strip()
+            source = dedent(f"""
+                {CUDA_PREAMBLE}
 
-        source = format_advance(symbol, body)
-        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+                extern "C" __device__ void {symbol}(void* state, void* offset) {{
+                    auto* ptr_state = static_cast<char**>(state);
+                    auto dist = *static_cast<int64_t*>(offset);
+                    *ptr_state += dist * {self._element_size};
+                }}
+            """).strip()
+
+        ltoir = compile_cpp_to_ltoir(source, (symbol,))
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=None,
+            extra_ltoirs=[],
         )
 
     def _make_input_deref_op(self) -> Op | None:
@@ -104,24 +111,31 @@ class PointerIterator(IteratorBase):
 
         if self._cpp_type:
             # Scalar type - use typed dereference
-            body = dedent(f"""
-            auto* ptr_state = static_cast<{self._cpp_type}**>(state);
-            *static_cast<{self._cpp_type}*>(result) = **ptr_state;
-        """).strip()
-            source = format_input_dereference(symbol, body)
+            source = dedent(f"""
+                {CUDA_PREAMBLE}
+
+                extern "C" __device__ void {symbol}(void* state, void* result) {{
+                    auto* ptr_state = static_cast<{self._cpp_type}**>(state);
+                    *static_cast<{self._cpp_type}*>(result) = **ptr_state;
+                }}
+            """).strip()
         else:
             # Struct type - use memcpy
-            body = dedent(f"""
-            auto* ptr_state = static_cast<char**>(state);
-            memcpy(result, *ptr_state, {self._element_size});
-        """).strip()
-            source = format_input_dereference(symbol, body)
-        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+            source = dedent(f"""
+                {CUDA_PREAMBLE}
+
+                extern "C" __device__ void {symbol}(void* state, void* result) {{
+                    auto* ptr_state = static_cast<char**>(state);
+                    memcpy(result, *ptr_state, {self._element_size});
+                }}
+            """).strip()
+
+        ltoir = compile_cpp_to_ltoir(source, (symbol,))
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=None,
+            extra_ltoirs=[],
         )
 
     def _make_output_deref_op(self) -> Op | None:
@@ -129,24 +143,31 @@ class PointerIterator(IteratorBase):
 
         if self._cpp_type:
             # Scalar type - use typed dereference
-            body = dedent(f"""
-            auto* ptr_state = static_cast<{self._cpp_type}**>(state);
-            **ptr_state = *static_cast<{self._cpp_type}*>(value);
-        """).strip()
-            source = format_output_dereference(symbol, body)
+            source = dedent(f"""
+                {CUDA_PREAMBLE}
+
+                extern "C" __device__ void {symbol}(void* state, void* value) {{
+                    auto* ptr_state = static_cast<{self._cpp_type}**>(state);
+                    **ptr_state = *static_cast<{self._cpp_type}*>(value);
+                }}
+            """).strip()
         else:
             # Struct type - use memcpy
-            body = dedent(f"""
-            auto* ptr_state = static_cast<char**>(state);
-            memcpy(*ptr_state, value, {self._element_size});
-        """).strip()
-            source = format_output_dereference(symbol, body)
-        ltoir = compile_cpp_source_to_ltoir(source, symbol)
+            source = dedent(f"""
+                {CUDA_PREAMBLE}
+
+                extern "C" __device__ void {symbol}(void* state, void* value) {{
+                    auto* ptr_state = static_cast<char**>(state);
+                    memcpy(*ptr_state, value, {self._element_size});
+                }}
+            """).strip()
+
+        ltoir = compile_cpp_to_ltoir(source, (symbol,))
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=None,
+            extra_ltoirs=[],
         )
 
     def __add__(self, offset: int):

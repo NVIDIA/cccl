@@ -10,16 +10,15 @@ from textwrap import dedent
 from typing import TYPE_CHECKING
 
 from .._bindings import Op, OpKind
+from .._cpp_codegen import compile_cpp_to_ltoir
 from .._utils.protocols import get_size
 from ._base import IteratorBase
-from ._codegen_utils import (
-    collect_child_ltoirs,
-    collect_child_op_names,
-    compile_cpp_source_to_ltoir,
-    format_advance,
-    format_input_dereference,
-    format_output_dereference,
-)
+
+CUDA_PREAMBLE = """#include <cuda/std/cstdint>
+#include <cuda_fp16.h>
+#include <cuda/std/cstring>
+using namespace cuda::std;
+"""
 
 if TYPE_CHECKING:
     pass
@@ -70,76 +69,96 @@ class ReverseIterator(IteratorBase):
 
     def _make_advance_op(self) -> Op:
         """Provide Op for advance that negates offset direction."""
-        advance_names = collect_child_op_names([self._underlying], "advance")
-        underlying_advance = advance_names[0]
+        child_op = self._underlying.get_advance_op()
         symbol = self._make_advance_symbol()
 
-        body = dedent(f"""
-            int64_t neg_offset = -static_cast<int64_t>(*static_cast<uint64_t*>(offset));
-            {underlying_advance}(state, &neg_offset);
+        source = dedent(f"""
+            {CUDA_PREAMBLE}
+
+            extern "C" __device__ void {child_op.name}(void* state, void* offset);
+
+            extern "C" __device__ void {symbol}(void* state, void* offset) {{
+                int64_t neg_offset = -static_cast<int64_t>(*static_cast<uint64_t*>(offset));
+                {child_op.name}(state, &neg_offset);
+            }}
         """).strip()
 
-        source = format_advance(symbol, body, extern_symbols=[underlying_advance])
-        ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        child_ltoirs = collect_child_ltoirs([self._underlying], "advance")
+        ltoir = compile_cpp_to_ltoir(source, (symbol,))
+
+        # Flatten child LTOIRs
+        child_ltoirs = [child_op.ltoir]
+        if child_op.extra_ltoirs:
+            child_ltoirs.extend(child_op.extra_ltoirs)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=child_ltoirs if child_ltoirs else None,
+            extra_ltoirs=child_ltoirs,
         )
 
     def _make_input_deref_op(self) -> Op | None:
         """Provide Op for input dereference that delegates to underlying."""
-        if self._underlying.get_input_deref_op() is None:
+        child_op = self._underlying.get_input_deref_op()
+        if child_op is None:
             return None
 
-        deref_names = collect_child_op_names([self._underlying], "input_deref")
-        underlying_deref = deref_names[0]
         symbol = self._make_input_deref_symbol()
 
-        body = dedent(f"""
-            {underlying_deref}(state, result);
+        source = dedent(f"""
+            {CUDA_PREAMBLE}
+
+            extern "C" __device__ void {child_op.name}(void* state, void* result);
+
+            extern "C" __device__ void {symbol}(void* state, void* result) {{
+                {child_op.name}(state, result);
+            }}
         """).strip()
 
-        source = format_input_dereference(
-            symbol, body, extern_symbols=[underlying_deref]
-        )
-        ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        child_ltoirs = collect_child_ltoirs([self._underlying], "input_deref")
+        ltoir = compile_cpp_to_ltoir(source, (symbol,))
+
+        # Flatten child LTOIRs
+        child_ltoirs = [child_op.ltoir]
+        if child_op.extra_ltoirs:
+            child_ltoirs.extend(child_op.extra_ltoirs)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=child_ltoirs if child_ltoirs else None,
+            extra_ltoirs=child_ltoirs,
         )
 
     def _make_output_deref_op(self) -> Op | None:
         """Provide Op for output dereference that delegates to underlying."""
-        if self._underlying.get_output_deref_op() is None:
+        child_op = self._underlying.get_output_deref_op()
+        if child_op is None:
             return None
 
-        deref_names = collect_child_op_names([self._underlying], "output_deref")
-        underlying_deref = deref_names[0]
         symbol = self._make_output_deref_symbol()
 
-        body = dedent(f"""
-            {underlying_deref}(state, value);
+        source = dedent(f"""
+            {CUDA_PREAMBLE}
+
+            extern "C" __device__ void {child_op.name}(void* state, void* value);
+
+            extern "C" __device__ void {symbol}(void* state, void* value) {{
+                {child_op.name}(state, value);
+            }}
         """).strip()
 
-        source = format_output_dereference(
-            symbol, body, extern_symbols=[underlying_deref]
-        )
-        ltoir = compile_cpp_source_to_ltoir(source, symbol)
-        child_ltoirs = collect_child_ltoirs([self._underlying], "output_deref")
+        ltoir = compile_cpp_to_ltoir(source, (symbol,))
+
+        # Flatten child LTOIRs
+        child_ltoirs = [child_op.ltoir]
+        if child_op.extra_ltoirs:
+            child_ltoirs.extend(child_op.extra_ltoirs)
 
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=child_ltoirs if child_ltoirs else None,
+            extra_ltoirs=child_ltoirs,
         )
 
     @property
