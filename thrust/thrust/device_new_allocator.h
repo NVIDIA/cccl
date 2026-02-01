@@ -21,9 +21,13 @@
 #include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
 
-#include <cuda/std/__new/bad_alloc.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
+
+#if !_CCCL_COMPILER(NVRTC)
+#  include <new>
+#endif // !_CCCL_COMPILER(NVRTC)>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -140,7 +144,7 @@ public:
   {
     if (cnt > this->max_size())
     {
-      ::cuda::std::__throw_bad_alloc();
+      _CCCL_THROW(std::bad_alloc);
     } // end if
 
     // use "::operator new" rather than keyword new
