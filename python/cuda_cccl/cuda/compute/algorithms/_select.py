@@ -7,10 +7,9 @@ from typing import Callable
 
 from .._caching import cache_with_registered_key_functions
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._factories import DiscardIterator
-from ..iterators._iterators import IteratorBase
+from ..iterators import DiscardIterator
 from ..op import OpAdapter, make_op_adapter
-from ..typing import DeviceArrayLike
+from ..typing import DeviceArrayLike, IteratorBase
 from ._three_way_partition import make_three_way_partition
 
 
