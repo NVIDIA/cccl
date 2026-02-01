@@ -33,6 +33,7 @@
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/make_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/__utility/cmp.h>
 
 #include <nv/target>
 
@@ -99,9 +100,8 @@ template <class _Tp>
 
     if constexpr (sizeof(_Tp) < sizeof(uint32_t))
     {
-      constexpr auto __max         = uint32_t{::cuda::std::numeric_limits<_Tp>::max()};
-      const auto __result_enlarged = uint32_t{__lhs} - uint32_t{__rhs};
-      return {static_cast<_Tp>(__result_enlarged), __result_enlarged > __max};
+      const auto __result = uint32_t{__lhs} - uint32_t{__rhs};
+      return {static_cast<_Tp>(__result), !::cuda::std::in_range<_Tp>(__result)};
     }
     else if constexpr (sizeof(_Tp) == sizeof(uint32_t))
     {
@@ -151,10 +151,8 @@ template <class _Tp>
 
     if constexpr (sizeof(_Tp) < sizeof(int32_t))
     {
-      constexpr auto __max         = int32_t{::cuda::std::numeric_limits<_Tp>::max()};
-      constexpr auto __min         = int32_t{::cuda::std::numeric_limits<_Tp>::min()};
-      const auto __result_enlarged = int32_t{__lhs} - int32_t{__rhs};
-      return {static_cast<_Tp>(__result_enlarged), __result_enlarged > __max || __result_enlarged < __min};
+      const auto __result = int32_t{__lhs} - int32_t{__rhs};
+      return {static_cast<_Tp>(__result), !::cuda::std::in_range<_Tp>(__result)};
     }
 #  if _CCCL_HAS_INT128()
     else if constexpr (sizeof(_Tp) == sizeof(__int128_t))
