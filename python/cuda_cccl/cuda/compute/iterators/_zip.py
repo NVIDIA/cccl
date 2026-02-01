@@ -9,7 +9,7 @@ from __future__ import annotations
 from textwrap import dedent
 
 from .._bindings import Op, OpKind
-from .._cpp_codegen import compile_cpp_to_ltoir
+from .._cpp_compile import compile_cpp_to_ltoir
 from ..types import struct
 from ._base import IteratorBase, compose_iterator_states
 

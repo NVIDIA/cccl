@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from .._bindings import Op, OpKind
-from .._cpp_codegen import compile_cpp_to_ltoir
+from .._cpp_compile import compile_cpp_to_ltoir
 from .._utils.protocols import get_dtype
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..types import TypeDescriptor, from_numpy_dtype

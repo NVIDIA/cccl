@@ -11,7 +11,7 @@ from textwrap import dedent
 import numpy as np
 
 from .._bindings import Op, OpKind
-from .._cpp_codegen import compile_cpp_to_ltoir, cpp_type_from_descriptor
+from .._cpp_compile import compile_cpp_to_ltoir, cpp_type_from_descriptor
 from ..types import from_numpy_dtype
 from ._base import IteratorBase
 

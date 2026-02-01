@@ -10,7 +10,7 @@ from textwrap import dedent
 from typing import TYPE_CHECKING
 
 from .._bindings import Op, OpKind
-from .._cpp_codegen import compile_cpp_to_ltoir, cpp_type_from_descriptor
+from .._cpp_compile import compile_cpp_to_ltoir, cpp_type_from_descriptor
 from ._base import IteratorBase, compose_iterator_states
 
 CUDA_PREAMBLE = """#include <cuda/std/cstdint>

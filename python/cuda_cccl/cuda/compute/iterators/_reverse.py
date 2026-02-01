@@ -10,7 +10,7 @@ from textwrap import dedent
 from typing import TYPE_CHECKING
 
 from .._bindings import Op, OpKind
-from .._cpp_codegen import compile_cpp_to_ltoir
+from .._cpp_compile import compile_cpp_to_ltoir
 from .._utils.protocols import get_size
 from ._base import IteratorBase
 
