@@ -97,16 +97,11 @@ class PermutationIterator(IteratorBase):
 
         ltoir = compile_cpp_to_ltoir(source, (symbol,))
 
-        # Flatten child LTOIRs
-        child_ltoirs = [child_op.ltoir]
-        if child_op.extra_ltoirs:
-            child_ltoirs.extend(child_op.extra_ltoirs)
-
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=child_ltoirs,
+            extra_ltoirs=[child_op.ltoir, *child_op.extra_ltoirs],
         )
 
     def _make_input_deref_op(self) -> Op | None:
@@ -151,18 +146,18 @@ class PermutationIterator(IteratorBase):
 
         ltoir = compile_cpp_to_ltoir(source, (symbol,))
 
-        # Flatten child LTOIRs
-        child_ltoirs = []
-        for op in [values_advance_op, indices_deref_op, values_deref_op]:
-            child_ltoirs.append(op.ltoir)
-            if op.extra_ltoirs:
-                child_ltoirs.extend(op.extra_ltoirs)
-
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=child_ltoirs,
+            extra_ltoirs=[
+                values_advance_op.ltoir,
+                *values_advance_op.extra_ltoirs,
+                indices_deref_op.ltoir,
+                *indices_deref_op.extra_ltoirs,
+                values_deref_op.ltoir,
+                *values_deref_op.extra_ltoirs,
+            ],
         )
 
     def _make_output_deref_op(self) -> Op | None:
@@ -207,18 +202,18 @@ class PermutationIterator(IteratorBase):
 
         ltoir = compile_cpp_to_ltoir(source, (symbol,))
 
-        # Flatten child LTOIRs
-        child_ltoirs = []
-        for op in [values_advance_op, indices_deref_op, values_deref_op]:
-            child_ltoirs.append(op.ltoir)
-            if op.extra_ltoirs:
-                child_ltoirs.extend(op.extra_ltoirs)
-
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=child_ltoirs,
+            extra_ltoirs=[
+                values_advance_op.ltoir,
+                *values_advance_op.extra_ltoirs,
+                indices_deref_op.ltoir,
+                *indices_deref_op.extra_ltoirs,
+                values_deref_op.ltoir,
+                *values_deref_op.extra_ltoirs,
+            ],
         )
 
     @property

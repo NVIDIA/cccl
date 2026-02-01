@@ -120,18 +120,13 @@ class ZipIterator(IteratorBase):
 
         ltoir = compile_cpp_to_ltoir(source, (symbol,))
 
-        # Flatten child LTOIRs
-        child_ltoirs = []
-        for op in child_ops:
-            child_ltoirs.append(op.ltoir)
-            if op.extra_ltoirs:
-                child_ltoirs.extend(op.extra_ltoirs)
-
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=child_ltoirs,
+            extra_ltoirs=[
+                ltoir for op in child_ops for ltoir in [op.ltoir, *op.extra_ltoirs]
+            ],
         )
 
     def _make_input_deref_op(self) -> Op | None:
@@ -167,18 +162,13 @@ class ZipIterator(IteratorBase):
 
         ltoir = compile_cpp_to_ltoir(source, (symbol,))
 
-        # Flatten child LTOIRs
-        child_ltoirs = []
-        for op in child_ops:
-            child_ltoirs.append(op.ltoir)
-            if op.extra_ltoirs:
-                child_ltoirs.extend(op.extra_ltoirs)
-
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=child_ltoirs,
+            extra_ltoirs=[
+                ltoir for op in child_ops for ltoir in [op.ltoir, *op.extra_ltoirs]
+            ],
         )
 
     def _make_output_deref_op(self) -> Op | None:
@@ -214,18 +204,13 @@ class ZipIterator(IteratorBase):
 
         ltoir = compile_cpp_to_ltoir(source, (symbol,))
 
-        # Flatten child LTOIRs
-        child_ltoirs = []
-        for op in child_ops:
-            child_ltoirs.append(op.ltoir)
-            if op.extra_ltoirs:
-                child_ltoirs.extend(op.extra_ltoirs)
-
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=child_ltoirs,
+            extra_ltoirs=[
+                ltoir for op in child_ops for ltoir in [op.ltoir, *op.extra_ltoirs]
+            ],
         )
 
     @property

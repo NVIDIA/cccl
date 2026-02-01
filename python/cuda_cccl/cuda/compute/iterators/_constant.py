@@ -55,9 +55,7 @@ class ConstantIterator(IteratorBase):
         source = dedent(f"""
             {CUDA_PREAMBLE}
 
-            extern "C" __device__ void {symbol}(void* state, void* offset) {{
-                (void)state;
-                (void)offset;
+            extern "C" __device__ void {symbol}(void*, void*) {{
             }}
         """).strip()
 

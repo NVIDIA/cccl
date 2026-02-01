@@ -61,9 +61,7 @@ class DiscardIterator(IteratorBase):
 
         source = f"""{CUDA_PREAMBLE}
 
-extern "C" __device__ void {symbol}(void* state, void* offset) {{
-    (void)state;
-    (void)offset;
+extern "C" __device__ void {symbol}(void*, void*) {{
 }}
 """
         ltoir = compile_cpp_to_ltoir(source, (symbol,))
@@ -79,9 +77,7 @@ extern "C" __device__ void {symbol}(void* state, void* offset) {{
 
         source = f"""{CUDA_PREAMBLE}
 
-extern "C" __device__ void {symbol}(void* state, void* result) {{
-    (void)state;
-    (void)result;
+extern "C" __device__ void {symbol}(void*, void*) {{
 }}
 """
         ltoir = compile_cpp_to_ltoir(source, (symbol,))
@@ -97,9 +93,7 @@ extern "C" __device__ void {symbol}(void* state, void* result) {{
 
         source = f"""{CUDA_PREAMBLE}
 
-extern "C" __device__ void {symbol}(void* state, void* value) {{
-    (void)state;
-    (void)value;
+extern "C" __device__ void {symbol}(void*, void*) {{
 }}
 """
         ltoir = compile_cpp_to_ltoir(source, (symbol,))

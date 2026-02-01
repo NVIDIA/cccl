@@ -85,16 +85,11 @@ class ReverseIterator(IteratorBase):
 
         ltoir = compile_cpp_to_ltoir(source, (symbol,))
 
-        # Flatten child LTOIRs
-        child_ltoirs = [child_op.ltoir]
-        if child_op.extra_ltoirs:
-            child_ltoirs.extend(child_op.extra_ltoirs)
-
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=child_ltoirs,
+            extra_ltoirs=[child_op.ltoir, *child_op.extra_ltoirs],
         )
 
     def _make_input_deref_op(self) -> Op | None:
@@ -117,16 +112,11 @@ class ReverseIterator(IteratorBase):
 
         ltoir = compile_cpp_to_ltoir(source, (symbol,))
 
-        # Flatten child LTOIRs
-        child_ltoirs = [child_op.ltoir]
-        if child_op.extra_ltoirs:
-            child_ltoirs.extend(child_op.extra_ltoirs)
-
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=child_ltoirs,
+            extra_ltoirs=[child_op.ltoir, *child_op.extra_ltoirs],
         )
 
     def _make_output_deref_op(self) -> Op | None:
@@ -149,16 +139,11 @@ class ReverseIterator(IteratorBase):
 
         ltoir = compile_cpp_to_ltoir(source, (symbol,))
 
-        # Flatten child LTOIRs
-        child_ltoirs = [child_op.ltoir]
-        if child_op.extra_ltoirs:
-            child_ltoirs.extend(child_op.extra_ltoirs)
-
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=child_ltoirs,
+            extra_ltoirs=[child_op.ltoir, *child_op.extra_ltoirs],
         )
 
     @property

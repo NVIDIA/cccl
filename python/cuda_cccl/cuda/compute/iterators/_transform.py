@@ -98,16 +98,11 @@ class TransformIterator(IteratorBase):
 
         ltoir = compile_cpp_to_ltoir(source, (symbol,))
 
-        # Flatten child LTOIRs
-        child_ltoirs = [child_op.ltoir]
-        if child_op.extra_ltoirs:
-            child_ltoirs.extend(child_op.extra_ltoirs)
-
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=child_ltoirs,
+            extra_ltoirs=[child_op.ltoir, *child_op.extra_ltoirs],
         )
 
     def _make_input_deref_op(self) -> Op | None:
@@ -138,19 +133,16 @@ class TransformIterator(IteratorBase):
 
         ltoir = compile_cpp_to_ltoir(source, (symbol,))
 
-        # Flatten child LTOIRs
-        child_ltoirs = [compiled_op.ltoir]
-        if compiled_op.extra_ltoirs:
-            child_ltoirs.extend(compiled_op.extra_ltoirs)
-        child_ltoirs.append(child_op.ltoir)
-        if child_op.extra_ltoirs:
-            child_ltoirs.extend(child_op.extra_ltoirs)
-
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=child_ltoirs,
+            extra_ltoirs=[
+                compiled_op.ltoir,
+                *compiled_op.extra_ltoirs,
+                child_op.ltoir,
+                *child_op.extra_ltoirs,
+            ],
         )
 
     def _make_output_deref_op(self) -> Op | None:
@@ -181,19 +173,16 @@ class TransformIterator(IteratorBase):
 
         ltoir = compile_cpp_to_ltoir(source, (symbol,))
 
-        # Flatten child LTOIRs
-        child_ltoirs = [compiled_op.ltoir]
-        if compiled_op.extra_ltoirs:
-            child_ltoirs.extend(compiled_op.extra_ltoirs)
-        child_ltoirs.append(child_op.ltoir)
-        if child_op.extra_ltoirs:
-            child_ltoirs.extend(child_op.extra_ltoirs)
-
         return Op(
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
-            extra_ltoirs=child_ltoirs,
+            extra_ltoirs=[
+                compiled_op.ltoir,
+                *compiled_op.extra_ltoirs,
+                child_op.ltoir,
+                *child_op.extra_ltoirs,
+            ],
         )
 
     def advance(self, offset: int) -> "TransformIterator":
