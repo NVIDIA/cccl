@@ -19,9 +19,8 @@ from .._cccl_interop import (
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..determinism import Determinism
-from ..iterators._iterators import IteratorBase
 from ..op import OpAdapter, OpKind, make_op_adapter
-from ..typing import DeviceArrayLike, GpuStruct
+from ..typing import GpuStruct, IteratorLike
 
 
 class _Reduce:
@@ -38,8 +37,8 @@ class _Reduce:
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
     def __init__(
         self,
-        d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
+        d_in: IteratorLike,
+        d_out: IteratorLike,
         op: OpAdapter,
         h_init: np.ndarray | GpuStruct,
         determinism: Determinism,
@@ -107,8 +106,8 @@ class _Reduce:
 
 @cache_with_registered_key_functions
 def make_reduce_into(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: IteratorLike,
+    d_out: IteratorLike,
     op: Callable | OpKind,
     h_init: np.ndarray | GpuStruct,
     **kwargs,
@@ -143,8 +142,8 @@ def make_reduce_into(
 
 
 def reduce_into(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: IteratorLike,
+    d_out: IteratorLike,
     op: Callable | OpKind,
     num_items: int,
     h_init: np.ndarray | GpuStruct,

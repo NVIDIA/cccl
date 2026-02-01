@@ -11,9 +11,8 @@ from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._utils import protocols
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._iterators import IteratorBase
 from ..op import OpAdapter, make_op_adapter
-from ..typing import DeviceArrayLike
+from ..typing import IteratorLike
 
 
 class _ThreeWayPartition:
@@ -32,11 +31,11 @@ class _ThreeWayPartition:
 
     def __init__(
         self,
-        d_in: DeviceArrayLike | IteratorBase,
-        d_first_part_out: DeviceArrayLike | IteratorBase,
-        d_second_part_out: DeviceArrayLike | IteratorBase,
-        d_unselected_out: DeviceArrayLike | IteratorBase,
-        d_num_selected_out: DeviceArrayLike | IteratorBase,
+        d_in: IteratorLike,
+        d_first_part_out: IteratorLike,
+        d_second_part_out: IteratorLike,
+        d_unselected_out: IteratorLike,
+        d_num_selected_out: IteratorLike,
         select_first_part_op: OpAdapter,
         select_second_part_op: OpAdapter,
     ):
@@ -110,11 +109,11 @@ class _ThreeWayPartition:
 
 @cache_with_registered_key_functions
 def make_three_way_partition(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_first_part_out: DeviceArrayLike | IteratorBase,
-    d_second_part_out: DeviceArrayLike | IteratorBase,
-    d_unselected_out: DeviceArrayLike | IteratorBase,
-    d_num_selected_out: DeviceArrayLike | IteratorBase,
+    d_in: IteratorLike,
+    d_first_part_out: IteratorLike,
+    d_second_part_out: IteratorLike,
+    d_unselected_out: IteratorLike,
+    d_num_selected_out: IteratorLike,
     select_first_part_op: Callable | OpAdapter,
     select_second_part_op: Callable | OpAdapter,
 ):
@@ -157,11 +156,11 @@ def make_three_way_partition(
 
 
 def three_way_partition(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_first_part_out: DeviceArrayLike | IteratorBase,
-    d_second_part_out: DeviceArrayLike | IteratorBase,
-    d_unselected_out: DeviceArrayLike | IteratorBase,
-    d_num_selected_out: DeviceArrayLike | IteratorBase,
+    d_in: IteratorLike,
+    d_first_part_out: IteratorLike,
+    d_second_part_out: IteratorLike,
+    d_unselected_out: IteratorLike,
+    d_num_selected_out: IteratorLike,
     select_first_part_op: Callable,
     select_second_part_op: Callable,
     num_items: int,

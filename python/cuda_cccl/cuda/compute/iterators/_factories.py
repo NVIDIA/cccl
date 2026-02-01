@@ -3,32 +3,42 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from ._iterators import (
-    CacheModifiedPointer as _CacheModifiedPointer,
+from ._cache_modified import (
+    CacheModifiedInputIterator as _CacheModifiedInputIterator,
 )
-from ._iterators import (
+from ._constant import (
     ConstantIterator as _ConstantIterator,
 )
-from ._iterators import (
+from ._counting import (
     CountingIterator as _CountingIterator,
 )
-from ._iterators import (
+from ._discard import (
     DiscardIterator as _DiscardIterator,
 )
-from ._iterators import (
-    make_reverse_iterator,
-    make_transform_iterator,
+from ._permutation import (
+    PermutationIterator as _PermutationIterator,
 )
-from ._permutation_iterator import make_permutation_iterator
-from ._zip_iterator import make_zip_iterator
+from ._pointer import (
+    PointerIterator as _PointerIterator,
+)
+from ._reverse import (
+    ReverseIterator as _ReverseIterator,
+)
+from ._transform import (
+    TransformIterator as _TransformIterator,
+)
+from ._zip import ZipIterator as _ZipIterator
+
+# from ._permutation_iterator import make_permutation_iterator
+# from ._zip_iterator import make_zip_iterator
 
 
-def CacheModifiedInputIterator(device_array, modifier):
+def CacheModifiedInputIterator(device_array, modifier="stream"):
     """Random Access Cache Modified Iterator that wraps a native device pointer.
 
     Similar to https://nvidia.github.io/cccl/cub/api/classcub_1_1CacheModifiedInputIterator.html
 
-    Currently the only supported modifier is "stream" (LOAD_CS).
+    Supported modifiers are "stream", "global", and "volatile".
 
     Example:
         The code snippet below demonstrates the usage of a ``CacheModifiedInputIterator``:
@@ -40,19 +50,12 @@ def CacheModifiedInputIterator(device_array, modifier):
 
     Args:
         device_array: Array storing the input sequence of data items
-        modifier: The PTX cache load modifier
+        modifier: The PTX cache load modifier ("stream", "global", or "volatile")
 
     Returns:
         A ``CacheModifiedInputIterator`` object initialized with ``device_array``
     """
-    from .. import types
-
-    if modifier != "stream":
-        raise NotImplementedError("Only stream modifier is supported")
-    return _CacheModifiedPointer(
-        device_array.__cuda_array_interface__["data"][0],
-        types.from_numpy_dtype(device_array.dtype),
-    )
+    return _CacheModifiedInputIterator(device_array, modifier)
 
 
 def ConstantIterator(value):
@@ -149,7 +152,7 @@ def ReverseIterator(sequence):
     Returns:
         A ``ReverseIterator`` object
     """
-    return make_reverse_iterator(sequence)
+    return _ReverseIterator(sequence)
 
 
 def TransformIterator(it, op):
@@ -171,30 +174,49 @@ def TransformIterator(it, op):
     Returns:
         A ``TransformIterator`` object to transform the items in ``it`` using ``op``
     """
-    return make_transform_iterator(it, op, "input")
+    from ..op import make_op_adapter
+
+    if hasattr(it, "__cuda_array_interface__"):
+        it = _PointerIterator(it)
+
+    op_adapter = make_op_adapter(op)
+    output_type = op_adapter.get_return_type((it.value_type,))
+    return _TransformIterator(it, op, output_type)
 
 
 def TransformOutputIterator(it, op):
     """An iterator that applies a user-defined unary function to values before writing them to an underlying iterator.
+    }
+        Similar to [thrust::transform_output_iterator](https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__output__iterator.html).
 
-    Similar to [thrust::transform_output_iterator](https://nvidia.github.io/cccl/thrust/api/classthrust_1_1transform__output__iterator.html).
+        Example:
+            The code snippet below demonstrates the usage of a ``TransformOutputIterator`` to transform the output
+            of a reduction before writing to an output array.
 
-    Example:
-        The code snippet below demonstrates the usage of a ``TransformOutputIterator`` to transform the output
-        of a reduction before writing to an output array.
+            .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/transform_output_iterator.py
+                :language: python
+                :start-after: # example-begin
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/transform_output_iterator.py
-            :language: python
-            :start-after: # example-begin
+        Args:
+            it: The underlying iterator
+            op: The operation to be applied to values before they are written to ``it``
 
-    Args:
-        it: The underlying iterator
-        op: The operation to be applied to values before they are written to ``it``
-
-    Returns:
-        A ``TransformOutputIterator`` object that applies ``op`` to transform values before writing them to ``it``
+        Returns:
+            A ``TransformOutputIterator`` object that applies ``op`` to transform values before writing them to ``it``
     """
-    return make_transform_iterator(it, op, "output")
+    from .._jit import get_input_types_from_annotations
+
+    if hasattr(it, "__cuda_array_interface__"):
+        it = _PointerIterator(it)
+    input_types = get_input_types_from_annotations(op)
+
+    # TransformOutputIterator should take a single value, extract the first type
+    if not isinstance(input_types, list) or len(input_types) != 1:
+        raise ValueError(
+            "TransformOutputIterator transform function must take exactly one argument"
+        )
+    input_type = input_types[0]
+    return _TransformIterator(it, op, input_type, is_input=False)
 
 
 def PermutationIterator(values, indices):
@@ -221,36 +243,18 @@ def PermutationIterator(values, indices):
     Returns:
         A ``PermutationIterator`` object that yields values[indices[i]] at position i
     """
-    return make_permutation_iterator(values, indices)
+    return _PermutationIterator(values, indices)
 
 
 def ZipIterator(*iterators):
-    """Returns an Iterator representing a zipped sequence of values from N iterators.
+    """Returns an iterator that zips multiple iterators together.
 
     Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1zip__iterator.html
 
-    The resulting iterator yields gpu_struct objects with fields corresponding to each input iterator.
-    For 2 iterators, fields are named 'first' and 'second'. For N iterators, fields are indexed
-    as field_0, field_1, ..., field_N-1.
-
-    Example:
-        The code snippet below demonstrates the usage of a ``ZipIterator``
-        combining two device arrays:
-
-        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/zip_iterator_elementwise.py
-            :language: python
-            :start-after: # example-begin
-
-        ZipIterator can also be used with nested gpu_struct types:
-
-        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/struct/nested_struct_zip_iterator.py
-            :language: python
-            :start-after: # example-begin
-
     Args:
-        *iterators: Variable number of iterators to zip (at least 1)
+        *iterators: Iterators or device arrays to zip together
 
     Returns:
-        A ``ZipIterator`` object that yields combined values from all input iterators
+        A ``ZipIterator`` object
     """
-    return make_zip_iterator(*iterators)
+    return _ZipIterator(*iterators)

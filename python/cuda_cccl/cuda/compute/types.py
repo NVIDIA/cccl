@@ -28,9 +28,18 @@ class TypeDescriptor:
         self._type_info = TypeInfo(size, alignment, type_enum)
         self._dtype = _ENUM_TO_DTYPE.get(type_enum, np.dtype(f"V{size}"))
 
+    @property
     def info(self) -> TypeInfo:
         """Return the TypeInfo for this type."""
         return self._type_info
+
+    @property
+    def size(self):
+        return self._type_info.size
+
+    @property
+    def alignment(self):
+        return self._type_info.alignment
 
     @property
     def dtype(self) -> np.dtype:

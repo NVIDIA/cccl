@@ -10,9 +10,8 @@ from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import set_cccl_iterator_state
 from .._utils import protocols
-from ..iterators._iterators import IteratorBase
 from ..op import OpAdapter, OpKind, make_op_adapter
-from ..typing import DeviceArrayLike
+from ..typing import IteratorLike
 
 
 class _UnaryTransform:
@@ -20,8 +19,8 @@ class _UnaryTransform:
 
     def __init__(
         self,
-        d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
+        d_in: IteratorLike,
+        d_out: IteratorLike,
         op: OpAdapter,
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
@@ -72,9 +71,9 @@ class _BinaryTransform:
 
     def __init__(
         self,
-        d_in1: DeviceArrayLike | IteratorBase,
-        d_in2: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
+        d_in1: IteratorLike,
+        d_in2: IteratorLike,
+        d_out: IteratorLike,
         op: OpAdapter,
     ):
         self.d_in1_cccl = cccl.to_cccl_input_iter(d_in1)
@@ -121,8 +120,8 @@ class _BinaryTransform:
 
 @cache_with_registered_key_functions
 def make_unary_transform(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: IteratorLike,
+    d_out: IteratorLike,
     op: Callable | OpKind,
 ):
     """
@@ -152,9 +151,9 @@ def make_unary_transform(
 
 @cache_with_registered_key_functions
 def make_binary_transform(
-    d_in1: DeviceArrayLike | IteratorBase,
-    d_in2: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in1: IteratorLike,
+    d_in2: IteratorLike,
+    d_out: IteratorLike,
     op: Callable | OpKind,
 ):
     """
@@ -184,8 +183,8 @@ def make_binary_transform(
 
 
 def unary_transform(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: IteratorLike,
+    d_out: IteratorLike,
     op: Callable | OpKind,
     num_items: int,
     stream=None,
@@ -226,9 +225,9 @@ def unary_transform(
 
 
 def binary_transform(
-    d_in1: DeviceArrayLike | IteratorBase,
-    d_in2: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in1: IteratorLike,
+    d_in2: IteratorLike,
+    d_out: IteratorLike,
     op: Callable | OpKind,
     num_items: int,
     stream=None,

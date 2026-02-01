@@ -62,6 +62,21 @@ def get_shape(arr: DeviceArrayLike) -> Tuple[int]:
         return arr.__cuda_array_interface__["shape"]
 
 
+def get_size(arr: DeviceArrayLike) -> int:
+    """Get the total number of elements in an array."""
+    # Try fast path via .size attribute (works for NumPy, CuPy, PyTorch)
+    try:
+        return int(arr.size)  # type: ignore
+    except AttributeError:
+        pass
+
+    # Fall back to computing from shape
+    shape = get_shape(arr)
+    import math
+
+    return math.prod(shape)
+
+
 def is_contiguous(arr: DeviceArrayLike) -> bool:
     cai = arr.__cuda_array_interface__
 

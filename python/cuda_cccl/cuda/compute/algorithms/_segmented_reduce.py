@@ -21,9 +21,8 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._iterators import IteratorBase
 from ..op import OpAdapter, OpKind, make_op_adapter
-from ..typing import DeviceArrayLike, GpuStruct
+from ..typing import GpuStruct, IteratorLike
 
 
 class _SegmentedReduce:
@@ -40,10 +39,10 @@ class _SegmentedReduce:
 
     def __init__(
         self,
-        d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
-        start_offsets_in: DeviceArrayLike | IteratorBase,
-        end_offsets_in: DeviceArrayLike | IteratorBase,
+        d_in: IteratorLike,
+        d_out: IteratorLike,
+        start_offsets_in: IteratorLike,
+        end_offsets_in: IteratorLike,
         op: OpAdapter,
         h_init: np.ndarray | GpuStruct,
     ):
@@ -114,10 +113,10 @@ class _SegmentedReduce:
 
 @cache_with_registered_key_functions
 def make_segmented_reduce(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    start_offsets_in: DeviceArrayLike | IteratorBase,
-    end_offsets_in: DeviceArrayLike | IteratorBase,
+    d_in: IteratorLike,
+    d_out: IteratorLike,
+    start_offsets_in: IteratorLike,
+    end_offsets_in: IteratorLike,
     op: Callable | OpKind,
     h_init: np.ndarray | GpuStruct,
 ):
@@ -149,10 +148,10 @@ def make_segmented_reduce(
 
 
 def segmented_reduce(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    start_offsets_in: DeviceArrayLike | IteratorBase,
-    end_offsets_in: DeviceArrayLike | IteratorBase,
+    d_in: IteratorLike,
+    d_out: IteratorLike,
+    start_offsets_in: IteratorLike,
+    end_offsets_in: IteratorLike,
     op: Callable | OpKind,
     h_init: np.ndarray | GpuStruct,
     num_segments: int,

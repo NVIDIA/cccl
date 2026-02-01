@@ -38,6 +38,11 @@ class _OpAdapter:
         """The underlying callable, if any."""
         return None
 
+    def get_return_type(self, input_types):
+        raise NotImplementedError(
+            f"get_return_type not implemented for {self.__class__.__name__}"
+        )
+
 
 class _WellKnownOp(_OpAdapter):
     """Internal wrapper for well-known OpKind values."""
@@ -66,6 +71,14 @@ class _WellKnownOp(_OpAdapter):
         """The underlying OpKind."""
         return self._kind
 
+    def __eq__(self, other):
+        if not isinstance(other, _WellKnownOp):
+            return False
+        return self._kind == other._kind
+
+    def __hash__(self):
+        return hash(self._kind)
+
 
 class _StatelessOp(_OpAdapter):
     """Internal wrapper for stateless callables."""
@@ -76,15 +89,28 @@ class _StatelessOp(_OpAdapter):
         self._func = func
         self._cachable = CachableFunction(func)
 
-    def compile(self, input_types, output_type=None) -> Op:
-        from ._cccl_interop import to_cccl_op
+    def get_return_type(self, input_types):
+        from ._jit import get_or_infer_return_type
 
-        return to_cccl_op(self._func, input_types, output_type)
+        return get_or_infer_return_type(self._func, input_types)
+
+    def compile(self, input_types, output_type=None) -> Op:
+        from ._jit import compile_op
+
+        return compile_op(self._func, input_types, output_type)
 
     @property
     def func(self) -> Callable:
         """Access the wrapped callable."""
         return self._func
+
+    def __eq__(self, other):
+        if not isinstance(other, _StatelessOp):
+            return False
+        return self._cachable == other._cachable
+
+    def __hash__(self):
+        return hash(self._cachable)
 
 
 # Public aliases
