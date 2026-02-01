@@ -104,9 +104,8 @@ python_version = "3.10"
 [[tool.mypy.overrides]]
 module = [
   "numba.*",
-  "llvmlite.*",
-  "cuda.cccl.headers.*",
-  "cuda.cccl._cuda_version_utils.*",
+  "llvmlite",
+  "cuda.cccl.*",
   "cuda.bindings.*",
   "cuda.core.*",
   "cuda.pathfinder.*",
