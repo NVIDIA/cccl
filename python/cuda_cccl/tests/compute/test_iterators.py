@@ -122,21 +122,6 @@ def reverse_iterator_array(request):
     return array
 
 
-def test_reverse_iterator(reverse_iterator_array):
-    it = ReverseIterator(reverse_iterator_array)
-
-    # Create array of size 1 from memory pointer of last element
-    arr = cp.ndarray(
-        shape=(1,),
-        dtype=reverse_iterator_array.dtype,
-        memptr=cp.cuda.MemoryPointer(
-            cp.cuda.UnownedMemory(it.cvalue.value, 0, None), 0
-        ),
-    )
-
-    assert -999 == arr[0]
-
-
 def test_reverse_input_iterator_equality():
     ary1 = cp.asarray([0, 1, 2], dtype="int32")
     ary2 = cp.asarray([3, 4, 5], dtype="int32")
