@@ -36,6 +36,8 @@ class CacheModifiedInputIterator(IteratorBase):
     - "stream": Uses streaming loads (ld.global.cs) - hints that data will not be reused
     - "global": Uses global cache loads (ld.global.cg) - caches only at L2
     - "volatile": Uses volatile loads (ld.global.cv) - always fetches from memory
+
+    Supports element types of size 1, 2, 4, 8, or 16 bytes.
     """
 
     __slots__ = [
@@ -68,6 +70,15 @@ class CacheModifiedInputIterator(IteratorBase):
 
         self._ptr = ptr
         value_type = from_numpy_dtype(dtype)
+
+        # Cache-modified loads only supported for power-of-two sizes up to 16 bytes
+        # These correspond to PTX instructions: ld.global.{modifier}.b{8,16,32,64,128}
+        if value_type.size not in (1, 2, 4, 8, 16):
+            raise ValueError(
+                f"CacheModifiedInputIterator only supports types of size 1, 2, 4, 8, or 16 bytes. "
+                f"Got type with size {value_type.size} bytes. "
+                f"This matches PTX cache-modified load instruction limitations."
+            )
 
         # State is just the pointer (8 bytes on 64-bit)
         import struct
@@ -104,20 +115,13 @@ class CacheModifiedInputIterator(IteratorBase):
         cpp_type = cpp_type_from_descriptor(self._value_type)
         _, intrinsic = _CACHE_MODIFIERS[self._modifier]
 
-        # For types that don't support direct __ldcs, we need to use inline PTX
-        # __ldcs works for 4-byte and 8-byte types
-        if self._value_type.size in (4, 8):
-            body = dedent(f"""
-                auto* ptr = *static_cast<{cpp_type}**>(state);
-                *static_cast<{cpp_type}*>(result) = {intrinsic}(ptr);
-            """).strip()
-        else:
-            # For smaller types, fall back to regular load
-            # (cache modifiers for small types aren't as beneficial)
-            body = dedent(f"""
-                auto* ptr = *static_cast<{cpp_type}**>(state);
-                *static_cast<{cpp_type}*>(result) = *ptr;
-            """).strip()
+        # Use cache-modified intrinsic for all supported sizes (1, 2, 4, 8, 16 bytes)
+        # These correspond to PTX instructions: ld.global.{modifier}.b{8,16,32,64,128}
+        # Note: __ldcs, __ldcg, __ldcv intrinsics work for all these sizes
+        body = dedent(f"""
+            auto* ptr = *static_cast<{cpp_type}**>(state);
+            *static_cast<{cpp_type}*>(result) = {intrinsic}(ptr);
+        """).strip()
 
         source = format_input_dereference(symbol, body)
         ltoir = compile_cpp_source_to_ltoir(source, symbol)
