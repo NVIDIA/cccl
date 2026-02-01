@@ -9,9 +9,8 @@ from __future__ import annotations
 from textwrap import dedent
 from typing import TYPE_CHECKING
 
-from .._bindings import IteratorState, Op, OpKind
+from .._bindings import Op, OpKind
 from .._utils.protocols import get_size
-from ..types import TypeDescriptor
 from ._base import IteratorBase
 from ._codegen_utils import (
     collect_child_ltoirs,
@@ -144,28 +143,8 @@ class ReverseIterator(IteratorBase):
         )
 
     @property
-    def state(self) -> IteratorState:
-        return self._underlying.state
-
-    @property
-    def state_alignment(self) -> int:
-        return self._underlying.state_alignment
-
-    @property
-    def value_type(self) -> TypeDescriptor:
-        return self._underlying.value_type
-
-    @property
     def children(self):
         return (self._underlying,)
-
-    @property
-    def is_input_iterator(self) -> bool:
-        return self._underlying.is_input_iterator
-
-    @property
-    def is_output_iterator(self) -> bool:
-        return self._underlying.is_output_iterator
 
     @property
     def kind(self):

@@ -132,14 +132,6 @@ class CacheModifiedInputIterator(IteratorBase):
         # Cache-modified iterator is input-only
         return None
 
-    @property
-    def is_input_iterator(self) -> bool:
-        return True
-
-    @property
-    def is_output_iterator(self) -> bool:
-        return False
-
     def __add__(self, offset: int) -> "CacheModifiedInputIterator":
         """Advance the iterator by offset elements."""
         import struct

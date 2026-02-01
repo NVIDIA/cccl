@@ -8,11 +8,8 @@ from __future__ import annotations
 
 from textwrap import dedent
 
-from .._bindings import IteratorState, Op, OpKind
-from .._cpp_codegen import (
-    cpp_type_from_descriptor,
-    extract_extra_ltoirs,
-)
+from .._bindings import Op, OpKind
+from .._cpp_codegen import cpp_type_from_descriptor
 from ..op import make_op_adapter
 from ..types import TypeDescriptor
 from ._base import IteratorBase
@@ -121,13 +118,13 @@ class TransformIterator(IteratorBase):
         compiled_op = self._get_compiled_op()
         transform_op = compiled_op.name
         op_ltoir = compiled_op.ltoir
-        op_extras = extract_extra_ltoirs(compiled_op)
+        op_extras = list(compiled_op.extra_ltoirs) if compiled_op.extra_ltoirs else []
 
         symbol = self._make_input_deref_symbol()
         underlying_type = cpp_type_from_descriptor(self._underlying.value_type)
 
         body = dedent(f"""
-            alignas({self._underlying.value_type.alignment}) {underlying_type} temp;
+            {underlying_type} temp;
             {underlying_deref}(state, &temp);
             {transform_op}(&temp, result);
         """).strip()
@@ -161,13 +158,13 @@ class TransformIterator(IteratorBase):
         compiled_op = self._get_compiled_op()
         transform_op = compiled_op.name
         op_ltoir = compiled_op.ltoir
-        op_extras = extract_extra_ltoirs(compiled_op)
+        op_extras = list(compiled_op.extra_ltoirs) if compiled_op.extra_ltoirs else []
 
         symbol = self._make_output_deref_symbol()
         underlying_type = cpp_type_from_descriptor(self._underlying.value_type)
 
         body = dedent(f"""
-            alignas({self._underlying.value_type.alignment}) {underlying_type} temp;
+            {underlying_type} temp;
             {transform_op}(value, &temp);
             {underlying_deref}(state, &temp);
         """).strip()
@@ -205,28 +202,8 @@ class TransformIterator(IteratorBase):
         return self.advance(offset)
 
     @property
-    def state(self) -> IteratorState:
-        return self._underlying.state
-
-    @property
-    def state_alignment(self) -> int:
-        return self._underlying.state_alignment
-
-    @property
-    def value_type(self) -> TypeDescriptor:
-        return self._value_type
-
-    @property
     def children(self):
         return (self._underlying,)
-
-    @property
-    def is_input_iterator(self) -> bool:
-        return self._is_input
-
-    @property
-    def is_output_iterator(self) -> bool:
-        return not self._is_input
 
     @property
     def kind(self):

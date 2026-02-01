@@ -218,14 +218,6 @@ class PermutationIterator(IteratorBase):
     def children(self):
         return (self._values, self._indices)
 
-    @property
-    def is_input_iterator(self) -> bool:
-        return self._values.is_input_iterator
-
-    @property
-    def is_output_iterator(self) -> bool:
-        return self._values.is_output_iterator
-
     def __add__(self, offset: int) -> "PermutationIterator":
         """Advance the indices iterator by offset, keeping values at base."""
         return PermutationIterator(

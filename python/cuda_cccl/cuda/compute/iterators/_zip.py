@@ -6,8 +6,8 @@
 
 from __future__ import annotations
 
-from .._bindings import IteratorState, Op, OpKind
-from ..types import TypeDescriptor, struct
+from .._bindings import Op, OpKind
+from ..types import struct
 from ._base import IteratorBase
 from ._codegen_utils import (
     collect_child_ltoirs,
@@ -204,28 +204,8 @@ class ZipIterator(IteratorBase):
         )
 
     @property
-    def state(self) -> IteratorState:
-        return IteratorState(self._state_bytes)
-
-    @property
-    def state_alignment(self) -> int:
-        return self._state_alignment
-
-    @property
-    def value_type(self) -> TypeDescriptor:
-        return self._value_type
-
-    @property
     def children(self):
         return tuple(self._iterators)
-
-    @property
-    def is_input_iterator(self) -> bool:
-        return all(it.is_input_iterator for it in self._iterators)
-
-    @property
-    def is_output_iterator(self) -> bool:
-        return all(it.is_output_iterator for it in self._iterators)
 
     def __add__(self, offset: int) -> "ZipIterator":
         """Advance all child iterators by offset."""

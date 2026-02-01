@@ -81,60 +81,6 @@ def compile_cpp_to_ltoir(
     return result.code
 
 
-def extract_extra_ltoirs(obj) -> list[bytes]:
-    """
-    Safely extract extra_ltoirs from an Op/Iterator object.
-
-    Args:
-        obj: An object that may have an extra_ltoirs attribute
-
-    Returns:
-        List of LTOIR byte strings, or empty list if not present
-    """
-    extras = getattr(obj, "extra_ltoirs", None)
-    return list(extras) if extras else []
-
-
-# =============================================================================
-# C++ type name utilities
-# =============================================================================
-
-
-def cpp_type_name(size: int, is_signed: bool = True, is_float: bool = False) -> str:
-    """
-    Get the C++ type name for a given size and signedness.
-
-    Args:
-        size: Size in bytes (1, 2, 4, or 8)
-        is_signed: Whether the type is signed (for integers)
-        is_float: Whether the type is floating point
-
-    Returns:
-        C++ type name string
-    """
-    if is_float:
-        if size == 2:
-            return "__half"
-        elif size == 4:
-            return "float"
-        elif size == 8:
-            return "double"
-        else:
-            raise ValueError(f"Unsupported float size: {size}")
-    else:
-        prefix = "" if is_signed else "u"
-        if size == 1:
-            return f"{prefix}int8_t"
-        elif size == 2:
-            return f"{prefix}int16_t"
-        elif size == 4:
-            return f"{prefix}int32_t"
-        elif size == 8:
-            return f"{prefix}int64_t"
-        else:
-            raise ValueError(f"Unsupported integer size: {size}")
-
-
 def cpp_type_from_descriptor(type_desc) -> str:
     """
     Get the C++ type name from a TypeDescriptor.
@@ -143,7 +89,8 @@ def cpp_type_from_descriptor(type_desc) -> str:
         type_desc: A TypeDescriptor instance
 
     Returns:
-        C++ type name string
+        C++ type name string. For struct/storage types, returns an inline
+        anonymous struct type like: struct alignas(8) { char _[16]; }
     """
     from ._bindings import TypeEnum
 
@@ -166,9 +113,7 @@ def cpp_type_from_descriptor(type_desc) -> str:
     if type_desc.info.typenum in type_map:
         return type_map[type_desc.info.typenum]
 
-    # For STORAGE types (structs), we can't return a proper type name.
-    # The caller should handle struct types specially using void* with reinterpret_cast.
-    raise ValueError(
-        f"Cannot generate C++ type name for {type_desc}. "
-        "Struct types require void* with explicit size/alignment handling."
-    )
+    # For STORAGE types, return an inline anonymous struct
+    size = type_desc.size
+    alignment = type_desc.alignment
+    return f"struct alignas({alignment}) {{ char _[{size}]; }}"
