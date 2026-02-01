@@ -3,7 +3,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-
 import numpy as np
 
 from ... import _bindings

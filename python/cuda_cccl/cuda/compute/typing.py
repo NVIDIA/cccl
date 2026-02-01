@@ -3,9 +3,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Protocol
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from .struct import _Struct
+
+if TYPE_CHECKING:
+    from .iterators._base import IteratorBase
+else:
+    IteratorBase = Any
 
 
 class DeviceArrayLike(Protocol):

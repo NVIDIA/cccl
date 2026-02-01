@@ -208,3 +208,34 @@ def test_transform_iterator_with_lambda():
     # Expected: sum of (10*2, 11*2, ..., 109*2) = 2 * sum(10..109)
     expected = 2 * sum(range(first_item, first_item + num_items))
     assert d_output.get()[0] == expected
+
+
+def test_transform_iterator_with_zip_iterator():
+    """Test TransformIterator wrapping ZipIterator (struct types)."""
+    from cuda.compute.iterators import ZipIterator
+
+    # Create a ZipIterator with two int32 arrays
+    d_a = cp.arange(10, dtype=np.int32)
+    d_b = cp.arange(100, 110, dtype=np.int32)
+
+    zip_it = ZipIterator(d_a, d_b)
+
+    # Create a transform that sums the two fields
+    # Input is a struct with two int32 fields, output is a single int32
+    def sum_fields(pair):
+        return pair[0] + pair[1]
+
+    # Create TransformIterator wrapping ZipIterator
+    # This tests that cpp_type_from_descriptor handles struct types correctly
+    transform_it = TransformIterator(zip_it, sum_fields)
+
+    # Use it in a reduction
+    h_init = np.array([0], dtype=np.int32)
+    d_output = cp.empty(1, dtype=np.int32)
+
+    cuda.compute.reduce_into(transform_it, d_output, OpKind.PLUS, len(d_a), h_init)
+
+    result = d_output.get()[0]
+    expected = (d_a + d_b).sum().get()
+
+    assert result == expected, f"Expected {expected}, got {result}"
