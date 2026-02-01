@@ -19,9 +19,8 @@ from .._cccl_interop import (
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..determinism import Determinism
-from ..iterators._iterators import IteratorBase
 from ..op import OpAdapter, OpKind, make_op_adapter
-from ..typing import DeviceArrayLike, GpuStruct
+from ..typing import DeviceArrayLike, GpuStruct, IteratorBase
 
 
 class _Reduce:
