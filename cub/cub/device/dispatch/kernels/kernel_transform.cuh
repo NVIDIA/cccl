@@ -778,15 +778,15 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_size;
   const int valid_items = (::cuda::std::min) (num_items - offset, Offset{tile_size});
 
-#if __cccl_ptx_isa >= 920
-  // TODO(bgruber): the .ignore_oob variant of UBLKCP only supports up to 15 ignore bytes. We should figure out if it's
-  // beneficial on Hopper to reduce the alignment from 128 to 16 but use the .ignore_oob variant.
-  if constexpr (bulk_copy_alignment == 16)
+  const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
+  if (inner_blocks)
   {
     // use one thread to set up the entire bulk copy
     if (cuda::device::__block_elect_one())
     {
       ptx::mbarrier_init(&bar, 1);
+      // an update to the CUDA memory model blesses skipping the following fence
+      // ptx::fence_proxy_async(ptx::space_shared);
 
       char* smem                         = smem_base;
       ::cuda::std::uint32_t total_copied = 0;
@@ -801,31 +801,23 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
         // TODO(bgruber): we could precompute bytes_to_copy on the host
         int bytes_to_copy;
-        int head_padding;
-        int tail_padding;
         if constexpr (alignof(T) < bulk_copy_size_multiple)
         {
-          head_padding = aligned_ptr.head_padding;
-          tail_padding = head_padding > 0 ? 16 - aligned_ptr.head_padding : 0; // tile size % 16 == 0
           bytes_to_copy =
-            ::cuda::round_up(aligned_ptr.head_padding + int{sizeof(T)} * valid_items, bulk_copy_size_multiple);
+            ::cuda::round_up(aligned_ptr.head_padding + int{sizeof(T)} * tile_size, bulk_copy_size_multiple);
         }
         else
         {
           _CCCL_ASSERT(aligned_ptr.head_padding == 0, "");
-          head_padding  = 0;
-          tail_padding  = 0;
-          bytes_to_copy = int{sizeof(T)} * valid_items;
+          bytes_to_copy = int{sizeof(T)} * tile_size;
         }
 
-        ::cuda::ptx::cp_async_bulk_ignore_oob(
-          ::cuda::ptx::space_shared,
+        ::cuda::ptx::cp_async_bulk(
+          ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
           ::cuda::ptx::space_global,
           dst,
           src,
           bytes_to_copy,
-          /* ignore left */ head_padding,
-          /* ignore right */ tail_padding,
           &bar);
         total_copied += bytes_to_copy;
 
@@ -838,25 +830,31 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       // Order of evaluation is left-to-right
       (..., bulk_copy_tile(aligned_ptrs));
 
-      ptx::mbarrier_arrive_expect_tx(ptx::sem_relaxed, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
+      // we can use ptx::sem_relaxed when available
+      ptx::mbarrier_arrive_expect_tx(
+        ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ptx::sem_relaxed_t, ptx::sem_release_t>{},
+        ptx::scope_cta,
+        ptx::space_shared,
+        &bar,
+        total_copied);
 
-      // Triggering the next kernel launch here led to slowdowns in the non .ignore_oob path (see comments there), but
-      // we can revisit this.
-      // _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+      // Triggering the next kernel launch here lets the SM ramp up the next kernel while we wait for the bulk copy.
+      // Also, the uniform code path should reduce traffic to the CWD (only one thread in a block needs to trigger).
+      // However, benchmarks showed up to 20% slowdown on B200 (among strong improvements in batch mode), so we
+      // decided to omit PREEXIT here. See #5249 for details. _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
     }
   }
   else
-#endif // __cccl_ptx_isa >= 920
   {
-    const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
-    if (inner_blocks)
+#if __cccl_ptx_isa >= 920
+    // TODO(bgruber): the .ignore_oob variant of UBLKCP only supports up to 15 ignore bytes. We should figure out if
+    // it's beneficial on Hopper to reduce the alignment from 128 to 16 but use the .ignore_oob variant.
+    if constexpr (bulk_copy_alignment == 16)
     {
       // use one thread to set up the entire bulk copy
       if (cuda::device::__block_elect_one())
       {
         ptx::mbarrier_init(&bar, 1);
-        // an update to the CUDA memory model blesses skipping the following fence
-        // ptx::fence_proxy_async(ptx::space_shared);
 
         char* smem                         = smem_base;
         ::cuda::std::uint32_t total_copied = 0;
@@ -871,24 +869,31 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
           // TODO(bgruber): we could precompute bytes_to_copy on the host
           int bytes_to_copy;
+          int head_padding;
+          int tail_padding;
           if constexpr (alignof(T) < bulk_copy_size_multiple)
           {
+            head_padding = aligned_ptr.head_padding;
+            tail_padding = head_padding > 0 ? 16 - aligned_ptr.head_padding : 0; // tile size % 16 == 0
             bytes_to_copy =
-              ::cuda::round_up(aligned_ptr.head_padding + int{sizeof(T)} * tile_size, bulk_copy_size_multiple);
+              ::cuda::round_up(aligned_ptr.head_padding + int{sizeof(T)} * valid_items, bulk_copy_size_multiple);
           }
           else
           {
             _CCCL_ASSERT(aligned_ptr.head_padding == 0, "");
-            bytes_to_copy = int{sizeof(T)} * tile_size;
+            head_padding  = 0;
+            tail_padding  = 0;
+            bytes_to_copy = int{sizeof(T)} * valid_items;
           }
 
-          ::cuda::ptx::cp_async_bulk(
-            ::cuda::std::
-              conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
+          ::cuda::ptx::cp_async_bulk_ignore_oob(
+            ::cuda::ptx::space_shared,
             ::cuda::ptx::space_global,
             dst,
             src,
             bytes_to_copy,
+            /* ignore left */ head_padding,
+            /* ignore right */ tail_padding,
             &bar);
           total_copied += bytes_to_copy;
 
@@ -901,21 +906,15 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         // Order of evaluation is left-to-right
         (..., bulk_copy_tile(aligned_ptrs));
 
-        // we can use ptx::sem_relaxed when available
-        ptx::mbarrier_arrive_expect_tx(
-          ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ptx::sem_relaxed_t, ptx::sem_release_t>{},
-          ptx::scope_cta,
-          ptx::space_shared,
-          &bar,
-          total_copied);
+        ptx::mbarrier_arrive_expect_tx(ptx::sem_relaxed, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
 
-        // Triggering the next kernel launch here lets the SM ramp up the next kernel while we wait for the bulk copy.
-        // Also, the uniform code path should reduce traffic to the CWD (only one thread in a block needs to trigger).
-        // However, benchmarks showed up to 20% slowdown on B200 (among strong improvements in batch mode), so we
-        // decided to omit PREEXIT here. See #5249 for details. _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+        // Triggering the next kernel launch here led to slowdowns in the non .ignore_oob path (see comments there), but
+        // we can revisit this.
+        // _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
       }
     }
     else
+#endif // __cccl_ptx_isa >= 920
     {
       const bool elected = cuda::device::__block_elect_one();
       if (elected)
