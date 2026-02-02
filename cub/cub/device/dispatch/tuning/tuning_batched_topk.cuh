@@ -16,6 +16,8 @@
 #include <cub/agent/agent_batched_topk.cuh>
 #include <cub/util_device.cuh>
 
+#include <cuda/std/tuple>
+
 CUB_NAMESPACE_BEGIN
 namespace detail::batched_topk
 {

@@ -139,6 +139,7 @@ struct agent_batched_topk_worker_per_segment
     const int segment_id = blockIdx.x;
 
     // Boundary check
+    // TODO (elstehle): consider skipping boundary check if we can safely assume the right grid dimensions
     if (segment_id >= num_segments.get_param(0))
     {
       return;
