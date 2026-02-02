@@ -120,7 +120,8 @@ template <typename IterT,
           typename SpanT,
           typename BeginOffsetIterT,
           typename ReadTransformT,
-          typename WriteTransformT>
+          typename WriteTransformT,
+          unsigned int LinearBinarySearchThreshold = 18>
 struct multi_segmented_iterator
 {
   IterT m_it;
@@ -256,9 +257,14 @@ private:
 
   _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy make_proxy(difference_type n) const
   {
-    const auto& [segment_id, rel_offset] = locate_linear_search(n);
-    const auto offset                    = m_it_idx_begin[segment_id] + rel_offset;
-    const bool head_flag                 = (rel_offset == 0);
+    const bool is_small = (m_offsets.size() < LinearBinarySearchThreshold);
+
+    const auto pos                      = (is_small) ? locate_linear_search(n) : locate_binary_search(n);
+    const auto [segment_id, rel_offset] = pos;
+
+    const auto offset    = m_it_idx_begin[segment_id] + rel_offset;
+    const bool head_flag = (rel_offset == 0);
+
     return __mapping_proxy(m_it, offset, head_flag, m_read_transform_fn, m_write_transform_fn);
   }
 };
