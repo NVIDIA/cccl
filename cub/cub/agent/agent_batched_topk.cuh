@@ -199,7 +199,22 @@ struct agent_batched_topk_worker_per_segment
     __syncthreads();
 
     // Perform Block Top-K
-    if constexpr (!is_keys_only)
+    if constexpr (is_keys_only)
+    {
+      const bool is_successful_dispatch =
+        detail::params::dispatch_discrete(select_directions, segment_id, [this, &thread_keys, k](auto direction_tag) {
+          if constexpr (decltype(direction_tag)::value == detail::topk::select::max)
+          {
+            block_topk_t(temp_storage.topk).max_keys(thread_keys, k);
+          }
+          else
+          {
+            block_topk_t(temp_storage.topk).min_keys(thread_keys, k);
+          }
+        });
+      _CCCL_ASSERT(is_successful_dispatch, "Error: Unsupported select direction");
+    }
+    else
     {
       // Pass both keys and values
       const bool is_successful_dispatch = detail::params::dispatch_discrete(
@@ -211,21 +226,6 @@ struct agent_batched_topk_worker_per_segment
           else
           {
             block_topk_t(temp_storage.topk).min_pairs(thread_keys, thread_values, k);
-          }
-        });
-      _CCCL_ASSERT(is_successful_dispatch, "Error: Unsupported select direction");
-    }
-    else
-    {
-      const bool is_successful_dispatch =
-        detail::params::dispatch_discrete(select_directions, segment_id, [this, &thread_keys, k](auto direction_tag) {
-          if constexpr (decltype(direction_tag)::value == detail::topk::select::max)
-          {
-            block_topk_t(temp_storage.topk).max_keys(thread_keys, k);
-          }
-          else
-          {
-            block_topk_t(temp_storage.topk).min_keys(thread_keys, k);
           }
         });
       _CCCL_ASSERT(is_successful_dispatch, "Error: Unsupported select direction");
