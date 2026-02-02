@@ -778,15 +778,13 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_size;
   const int valid_items = (::cuda::std::min) (num_items - offset, Offset{tile_size});
 
-  const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
-  if (inner_blocks)
+#if __cccl_ptx_isa >= 920
+  if constexpr (bulk_copy_alignment == 16)
   {
-    // use one thread to setup the entire bulk copy
+    // use one thread to set up the entire bulk copy
     if (cuda::device::__block_elect_one())
     {
       ptx::mbarrier_init(&bar, 1);
-      // an update to the CUDA memory model blesses skipping the following fence
-      // ptx::fence_proxy_async(ptx::space_shared);
 
       char* smem                         = smem_base;
       ::cuda::std::uint32_t total_copied = 0;
@@ -812,12 +810,14 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
           bytes_to_copy = int{sizeof(T)} * tile_size;
         }
 
-        ::cuda::ptx::cp_async_bulk(
-          ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
+        ::cuda::ptx::cp_async_bulk_ignore_oob(
+          ::cuda::ptx::space_shared,
           ::cuda::ptx::space_global,
           dst,
           src,
           bytes_to_copy,
+          /* ignore left */ aligned_ptr.head_padding,
+          /* ignore right */ 16 - aligned_ptr.head_padding, // because the tile size is a multiple of 16
           &bar);
         total_copied += bytes_to_copy;
 
@@ -841,54 +841,121 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     }
   }
   else
+#endif // __cccl_ptx_isa >= 920
   {
-    const bool elected = cuda::device::__block_elect_one();
-    if (elected)
+    static_assert(bulk_copy_alignment == 123);
+    const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
+    if (inner_blocks)
     {
-      ptx::mbarrier_init(&bar, 1);
-      // an update to the CUDA memory model blesses skipping the following fence
-      // ptx::fence_proxy_async(ptx::space_shared);
+      // use one thread to set up the entire bulk copy
+      if (cuda::device::__block_elect_one())
+      {
+        ptx::mbarrier_init(&bar, 1);
+        // an update to the CUDA memory model blesses skipping the following fence
+        // ptx::fence_proxy_async(ptx::space_shared);
+
+        char* smem                         = smem_base;
+        ::cuda::std::uint32_t total_copied = 0;
+
+        // turning this lambda into a function does not change SASS
+        auto bulk_copy_tile = [&](auto aligned_ptr) {
+          using T         = typename decltype(aligned_ptr)::value_type;
+          const char* src = aligned_ptr.ptr + offset * unsigned{sizeof(T)}; // compute expression in U32 if Offset==I32
+          char* dst       = smem;
+          _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % bulk_copy_alignment == 0, "");
+          _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % bulk_copy_alignment == 0, "");
+
+          // TODO(bgruber): we could precompute bytes_to_copy on the host
+          int bytes_to_copy;
+          if constexpr (alignof(T) < bulk_copy_size_multiple)
+          {
+            bytes_to_copy =
+              ::cuda::round_up(aligned_ptr.head_padding + int{sizeof(T)} * tile_size, bulk_copy_size_multiple);
+          }
+          else
+          {
+            _CCCL_ASSERT(aligned_ptr.head_padding == 0, "");
+            bytes_to_copy = int{sizeof(T)} * tile_size;
+          }
+
+          ::cuda::ptx::cp_async_bulk(
+            ::cuda::std::
+              conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
+            ::cuda::ptx::space_global,
+            dst,
+            src,
+            bytes_to_copy,
+            &bar);
+          total_copied += bytes_to_copy;
+
+          smem += tile_padding + int{sizeof(T)} * tile_size;
+          _CCCL_ASSERT(bytes_to_copy <= int{sizeof(T)} * tile_size + bulk_copy_alignment, "");
+        };
+
+        // only elected thread waits, but other threads wait on the barrier fulfilled by the bulk copy later
+        _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+        // Order of evaluation is left-to-right
+        (..., bulk_copy_tile(aligned_ptrs));
+
+        // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
+        ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
+
+        // Triggering the next kernel launch here lets the SM ramp up the next kernel while we wait for the bulk copy.
+        // Also, the uniform code path should reduce traffic to the CWD (only one thread in a block needs to trigger).
+        // However, benchmarks showed up to 20% slowdown on B200 (among strong improvements in batch mode), so we
+        // decided to omit PREEXIT here. See #5249 for details. _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+      }
     }
-
-    // use all threads to copy the head and tail bytes, use the elected thread to start the bulk copy
-    char* smem                         = smem_base;
-    ::cuda::std::uint32_t total_copied = 0;
-
-    // turning this lambda into a function does not change SASS
-    auto bulk_copy_tile_fallback = [&](auto aligned_ptr) {
-      using T = typename decltype(aligned_ptr)::value_type;
-
-      _CCCL_ASSERT(alignof(T) < bulk_copy_alignment || aligned_ptr.head_padding == 0, "");
-      const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
-
-      const char* src = aligned_ptr.ptr + offset * unsigned{sizeof(T)} + head_padding; // compute expression in U32 if
-                                                                                       // Offset==I32
-      char* dst = smem + head_padding;
-      _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0, "");
-      _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
-      const int bytes_to_copy = int{sizeof(T)} * valid_items;
-      bulk_copy_maybe_unaligned<bulk_copy_alignment>(
-        dst, src, bytes_to_copy, aligned_ptr.head_padding, bar, total_copied, elected);
-
-      // add padding to account for this tile's head padding
-      smem += tile_padding + int{sizeof(T)} * tile_size;
-    };
-
-    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-    // Order of evaluation is left-to-right
-    (..., bulk_copy_tile_fallback(aligned_ptrs));
-
-    if (elected)
+    else
     {
-      // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
-      ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
-    }
+      const bool elected = cuda::device::__block_elect_one();
+      if (elected)
+      {
+        ptx::mbarrier_init(&bar, 1);
+        // an update to the CUDA memory model blesses skipping the following fence
+        // ptx::fence_proxy_async(ptx::space_shared);
+      }
 
-    // _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // disabled, see comment on previous _CCCL_PDL_TRIGGER_NEXT_LAUNCH
+      // use all threads to copy the head and tail bytes, use the elected thread to start the bulk copy
+      char* smem                         = smem_base;
+      ::cuda::std::uint32_t total_copied = 0;
+
+      // turning this lambda into a function does not change SASS
+      auto bulk_copy_tile_fallback = [&](auto aligned_ptr) {
+        using T = typename decltype(aligned_ptr)::value_type;
+
+        _CCCL_ASSERT(alignof(T) < bulk_copy_alignment || aligned_ptr.head_padding == 0, "");
+        const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
+
+        const char* src = aligned_ptr.ptr + offset * unsigned{sizeof(T)} + head_padding; // compute expression in U32 if
+        // Offset==I32
+        char* dst = smem + head_padding;
+        _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0, "");
+        _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
+        const int bytes_to_copy = int{sizeof(T)} * valid_items;
+        bulk_copy_maybe_unaligned<bulk_copy_alignment>(
+          dst, src, bytes_to_copy, aligned_ptr.head_padding, bar, total_copied, elected);
+
+        // add padding to account for this tile's head padding
+        smem += tile_padding + int{sizeof(T)} * tile_size;
+      };
+
+      _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+      // Order of evaluation is left-to-right
+      (..., bulk_copy_tile_fallback(aligned_ptrs));
+
+      if (elected)
+      {
+        // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
+        ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
+      }
+
+      // _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // disabled, see comment on previous _CCCL_PDL_TRIGGER_NEXT_LAUNCH
+    }
   }
 
   // all threads wait for bulk copy
-  __syncthreads(); // TODO: ahendriksen said this is not needed, but compute-sanitizer disagrees
+  __syncthreads();
   while (!ptx::mbarrier_try_wait_parity(&bar, 0))
     ;
 
