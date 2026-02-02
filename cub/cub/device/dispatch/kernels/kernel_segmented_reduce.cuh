@@ -105,7 +105,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   OutputIteratorT d_out,
   BeginOffsetIteratorT d_begin_offsets,
   EndOffsetIteratorT d_end_offsets,
-  ::cuda::std::int64_t num_segments,
+  int num_segments,
   ReductionOpT reduction_op,
   InitT init,
   size_t max_segment_size)
@@ -116,7 +116,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   // Use OffsetT for offset calculations to support 64-bit offsets
   using AgentReduceT = AgentReduce<typename ActivePolicyT::ReducePolicy, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
 
-  // TOOD: use only int as offset type in medium and small reduce as segment sizes are small enough to fit in int
   using AgentMediumReduceT =
     AgentWarpReduce<typename ActivePolicyT::MediumReducePolicy, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
 
@@ -151,11 +150,11 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
       const int lane_id                = tid % threads_per_warp;
       const int global_segment_id      = bid * segments_per_block + sid_within_block;
 
-      const auto segment_begin = static_cast<OffsetT>(d_begin_offsets[global_segment_id]);
-      const auto segment_end   = static_cast<OffsetT>(d_end_offsets[global_segment_id]);
-
       if (global_segment_id < num_segments)
       {
+        const auto segment_begin = static_cast<OffsetT>(d_begin_offsets[global_segment_id]);
+        const auto segment_end   = static_cast<OffsetT>(d_end_offsets[global_segment_id]);
+
         // If empty segment, write out the initial value
         if (segment_begin == segment_end)
         {

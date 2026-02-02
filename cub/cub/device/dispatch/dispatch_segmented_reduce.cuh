@@ -266,9 +266,9 @@ struct DispatchSegmentedReduce
 
       for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
       {
-        const auto current_seg_offset = invocation_index * num_segments_per_invocation;
-        const auto num_current_segments =
-          ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
+        const auto current_seg_offset   = invocation_index * num_segments_per_invocation;
+        const auto num_current_segments = static_cast<::cuda::std::int32_t>(
+          ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset));
 
         const auto num_current_blocks = ::cuda::ceil_div(num_current_segments, segments_per_block);
 
@@ -291,7 +291,7 @@ struct DispatchSegmentedReduce
                 d_out,
                 d_begin_offsets,
                 d_end_offsets,
-                static_cast<::cuda::std::int64_t>(num_current_segments),
+                num_current_segments,
                 reduction_op,
                 init,
                 max_segment_size);
