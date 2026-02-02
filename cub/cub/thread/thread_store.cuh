@@ -128,7 +128,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_helper(T* ptr, T* vals, ::cuda::std::i
   (ThreadStore<MODIFIER>(ptr + Is, vals[Is]), ...);
 }
 
-template <CacheStoreModifier MODIFIER, typename T, size_t... Is>
+template <typename T, size_t... Is>
 _CCCL_DEVICE _CCCL_FORCEINLINE void dereference_helper(T* ptr, T* vals, ::cuda::std::index_sequence<Is...>)
 {
   ((ptr[Is] = vals[Is]), ...);
@@ -344,10 +344,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStore(OutputIteratorT itr, T val)
 
     if constexpr (MODIFIER == STORE_VOLATILE)
     {
-      detail::dereference_helper<MODIFIER>(
-        reinterpret_cast<volatile StoreWord*>(::cuda::std::to_address(itr)),
-        words,
-        ::cuda::std::make_index_sequence<WORD_MULTIPLE>{});
+      detail::dereference_helper(reinterpret_cast<volatile StoreWord*>(::cuda::std::to_address(itr)),
+                                 words,
+                                 ::cuda::std::make_index_sequence<WORD_MULTIPLE>{});
     }
     else
     {
