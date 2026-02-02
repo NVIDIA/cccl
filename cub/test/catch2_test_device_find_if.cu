@@ -6,6 +6,7 @@
 #include <cub/device/device_find.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/tabulate.h>
 
 #include <cuda/iterator>
 
@@ -228,7 +229,16 @@ struct NotDefaultConstructible
   }
 };
 
-static_assert(cuda::std::is_default_constructible<NotDefaultConstructible>::value == false,
+template <typename OffsetT>
+struct index_to_value
+{
+  __host__ __device__ NotDefaultConstructible operator()(OffsetT i)
+  {
+    return NotDefaultConstructible{static_cast<int>(i)};
+  }
+};
+
+static_assert(cuda::std::is_default_constructible_v<NotDefaultConstructible> == false,
               "NotDefaultConstructible should not be default constructible");
 
 C2H_TEST("Device find_if works with non default constructible types", "[device][find_if]")
@@ -246,24 +256,17 @@ C2H_TEST("Device find_if works with non default constructible types", "[device][
       min_items,
       max_items,
     }));
-  const int val_to_find = static_cast<int>(num_items - 1);
+  const auto val_to_find = static_cast<int>(num_items - 1);
 
   CAPTURE(num_items, val_to_find);
 
   // raw device iterator to some device vector so that vectorized path is taken
   c2h::device_vector<input_t> d_vec(num_items, NotDefaultConstructible(0));
-  {
-    // fill with arbitrary values dont use c2h gen because NotDefaultConstructible is not default constructible
-    for (offset_t i = 0; i < num_items - 1; ++i)
-    {
-      d_vec[i] = NotDefaultConstructible{static_cast<int>(i)};
-    }
 
-    // set the value to find at the end
-    d_vec[num_items - 1] = NotDefaultConstructible{val_to_find};
-  }
+  // fill with arbitrary values dont use c2h gen because NotDefaultConstructible is not default constructible
+  thrust::tabulate(c2h::device_policy, d_vec.begin(), d_vec.end(), index_to_value<offset_t>{});
+
   auto it = thrust::raw_pointer_cast(d_vec.data());
-
   c2h::device_vector<offset_t> out_result(1, thrust::no_init);
   auto predicate = thrust::detail::equal_to_value<NotDefaultConstructible>{NotDefaultConstructible{val_to_find}};
   find_if(it, thrust::raw_pointer_cast(out_result.data()), predicate, num_items);
