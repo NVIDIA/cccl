@@ -23,6 +23,7 @@
 #endif // no system header
 
 #include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__fwd/new.h>
 
 #if _CCCL_HAS_EXCEPTIONS()
 #  include <new>
