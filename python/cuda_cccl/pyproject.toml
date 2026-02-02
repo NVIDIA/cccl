@@ -56,7 +56,6 @@ test-cu12 = [
   "pytest-xdist",
   "cupy-cuda12x",
   "pytest-benchmark",
-  "cuda-bench[cu12]",
 ]
 test-cu13 = [
   "cuda-cccl[cu13]",
@@ -64,8 +63,9 @@ test-cu13 = [
   "pytest-xdist",
   "cupy-cuda13x",
   "pytest-benchmark",
-  "cuda-bench[cu13]",
 ]
+bench-cu12 = ["cuda-cccl[cu12]", "cuda-bench[cu12]"]
+bench-cu13 = ["cuda-cccl[cu13]", "cuda-bench[cu13]"]
 
 [project.urls]
 Homepage = "https://github.com/NVIDIA/cccl"
