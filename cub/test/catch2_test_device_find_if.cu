@@ -207,7 +207,7 @@ struct NotDefaultConstructible
 {
   int value_;
 
-  __host__ __device__ constexpr explicit NotDefaultConstructible(int value = 0)
+  __host__ __device__ constexpr explicit NotDefaultConstructible(int value)
       : value_(value)
   {}
 
@@ -228,17 +228,12 @@ struct NotDefaultConstructible
   }
 };
 
-struct converter
-{
-  __host__ __device__ constexpr NotDefaultConstructible operator()(const int val) const noexcept
-  {
-    return NotDefaultConstructible{val};
-  }
-};
+static_assert(cuda::std::is_default_constructible<NotDefaultConstructible>::value == false,
+              "NotDefaultConstructible should not be default constructible");
 
 C2H_TEST("Device find_if works with non default constructible types", "[device][find_if]")
 {
-  using input_t  = int32_t;
+  using input_t  = NotDefaultConstructible;
   using offset_t = int32_t;
 
   constexpr offset_t min_items = 1;
@@ -251,16 +246,26 @@ C2H_TEST("Device find_if works with non default constructible types", "[device][
       min_items,
       max_items,
     }));
-  const input_t val_to_find = static_cast<input_t>(num_items - 1);
+  const int val_to_find = static_cast<int>(num_items - 1);
 
   CAPTURE(num_items, val_to_find);
 
-  // counting_iterator input
-  auto c_it = cuda::make_transform_iterator(cuda::make_counting_iterator(input_t{0}), converter{});
+  // raw device iterator to some device vector so that vectorized path is taken
+  c2h::device_vector<input_t> d_vec(num_items, NotDefaultConstructible(0));
   {
-    c2h::device_vector<offset_t> out_result(1, thrust::no_init);
-    auto predicate = thrust::detail::equal_to_value<NotDefaultConstructible>{NotDefaultConstructible{val_to_find}};
-    find_if(c_it, thrust::raw_pointer_cast(out_result.data()), predicate, num_items);
-    REQUIRE(val_to_find == out_result[0]);
+    // fill with arbitrary values dont use c2h gen because NotDefaultConstructible is not default constructible
+    for (offset_t i = 0; i < num_items - 1; ++i)
+    {
+      d_vec[i] = NotDefaultConstructible{static_cast<int>(i)};
+    }
+
+    // set the value to find at the end
+    d_vec[num_items - 1] = NotDefaultConstructible{val_to_find};
   }
+  auto it = thrust::raw_pointer_cast(d_vec.data());
+
+  c2h::device_vector<offset_t> out_result(1, thrust::no_init);
+  auto predicate = thrust::detail::equal_to_value<NotDefaultConstructible>{NotDefaultConstructible{val_to_find}};
+  find_if(it, thrust::raw_pointer_cast(out_result.data()), predicate, num_items);
+  REQUIRE(val_to_find == out_result[0]);
 }
