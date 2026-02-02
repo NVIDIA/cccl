@@ -84,5 +84,17 @@ struct input_iterator_traits
 
     return cuda::std::nullopt;
   }
+
+  template <typename Tag, typename StorageT>
+  static cuda::std::optional<specialization> special(tagged_arg<StorageT, cccl_iterator_t> it)
+  {
+    if (it.value.type == cccl_iterator_kind_t::CCCL_POINTER)
+    {
+      return cuda::std::make_optional(
+        specialization{cccl_type_enum_to_name<StorageT>(it.value.value_type.type, true), ""});
+    }
+
+    return cuda::std::nullopt;
+  }
 };
 #endif
