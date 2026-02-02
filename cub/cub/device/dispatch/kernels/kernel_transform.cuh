@@ -830,8 +830,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       // Order of evaluation is left-to-right
       (..., bulk_copy_tile(aligned_ptrs));
 
-      // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
-      ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
+      ptx::mbarrier_arrive_expect_tx(ptx::sem_relaxed, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
 
       // Triggering the next kernel launch here lets the SM ramp up the next kernel while we wait for the bulk copy.
       // Also, the uniform code path should reduce traffic to the CWD (only one thread in a block needs to trigger).
@@ -897,8 +896,13 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         // Order of evaluation is left-to-right
         (..., bulk_copy_tile(aligned_ptrs));
 
-        // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
-        ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
+        // we can use ptx::sem_relaxed when available
+        ptx::mbarrier_arrive_expect_tx(
+          ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ptx::sem_relaxed_t, ptx::sem_release_t>{},
+          ptx::scope_cta,
+          ptx::space_shared,
+          &bar,
+          total_copied);
 
         // Triggering the next kernel launch here lets the SM ramp up the next kernel while we wait for the bulk copy.
         // Also, the uniform code path should reduce traffic to the CWD (only one thread in a block needs to trigger).
@@ -946,7 +950,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
       if (elected)
       {
-        // TODO(ahendriksen): this could only have ptx::sem_relaxed, but this is not available yet
+        // we need sem_release to also release the manual stores to SMEM
         ptx::mbarrier_arrive_expect_tx(ptx::sem_release, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
       }
 
