@@ -801,15 +801,21 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
         // TODO(bgruber): we could precompute bytes_to_copy on the host
         int bytes_to_copy;
+        int head_padding;
+        int tail_padding;
         if constexpr (alignof(T) < bulk_copy_size_multiple)
         {
+          head_padding = aligned_ptr.head_padding;
+          tail_padding = head_padding > 0 ? 16 - aligned_ptr.head_padding : 0; // tile size % 16 == 0
           bytes_to_copy =
-            ::cuda::round_up(aligned_ptr.head_padding + int{sizeof(T)} * tile_size, bulk_copy_size_multiple);
+            ::cuda::round_up(aligned_ptr.head_padding + int{sizeof(T)} * valid_items, bulk_copy_size_multiple);
         }
         else
         {
           _CCCL_ASSERT(aligned_ptr.head_padding == 0, "");
-          bytes_to_copy = int{sizeof(T)} * tile_size;
+          head_padding  = 0;
+          tail_padding  = 0;
+          bytes_to_copy = int{sizeof(T)} * valid_items;
         }
 
         ::cuda::ptx::cp_async_bulk_ignore_oob(
@@ -818,8 +824,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
           dst,
           src,
           bytes_to_copy,
-          /* ignore left */ aligned_ptr.head_padding,
-          /* ignore right */ 16 - aligned_ptr.head_padding, // because the tile size is a multiple of 16
+          /* ignore left */ head_padding,
+          /* ignore right */ tail_padding,
           &bar);
         total_copied += bytes_to_copy;
 
@@ -834,10 +840,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
       ptx::mbarrier_arrive_expect_tx(ptx::sem_relaxed, ptx::scope_cta, ptx::space_shared, &bar, total_copied);
 
-      // Triggering the next kernel launch here lets the SM ramp up the next kernel while we wait for the bulk copy.
-      // Also, the uniform code path should reduce traffic to the CWD (only one thread in a block needs to trigger).
-      // However, benchmarks showed up to 20% slowdown on B200 (among strong improvements in batch mode), so we decided
-      // to omit PREEXIT here. See #5249 for details.
+      // Triggering the next kernel launch here led to slowdowns in the non .ignore_oob path (see comments there), but
+      // we can revisit this.
       // _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
     }
   }
