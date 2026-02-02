@@ -35,7 +35,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -90,7 +90,7 @@ jobs:
 
           .devcontainer/launch.sh \
             --docker \
-            --cuda 13.0 \
+            --cuda 13.1 \
             --host gcc14 \
             --cuda-ext \
             --env "PARALLEL_LEVEL=$(ulimit -Hn)" \

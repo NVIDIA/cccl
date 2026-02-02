@@ -47,4 +47,10 @@ enum class ForceInclusive
   No
 };
 
+namespace detail
+{
+struct use_default
+{};
+} // namespace detail
+
 CUB_NAMESPACE_END

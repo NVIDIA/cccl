@@ -1,11 +1,10 @@
-# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from typing import Callable, cast
 
-import numba
 import numpy as np
 
 from .. import _bindings
@@ -17,7 +16,6 @@ from .._cccl_interop import (
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
-from .._utils import protocols
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
@@ -75,9 +73,7 @@ class _Scan:
                 self.init_value_cccl = cccl.to_cccl_input_iter(
                     cast(DeviceArrayLike, init_value)
                 )
-                value_type = numba.from_dtype(
-                    protocols.get_dtype(cast(DeviceArrayLike, init_value))
-                )
+                value_type = get_value_type(cast(DeviceArrayLike, init_value))
                 init_value_type_info = self.init_value_cccl.value_type
 
             case _bindings.InitKind.VALUE_INIT:
