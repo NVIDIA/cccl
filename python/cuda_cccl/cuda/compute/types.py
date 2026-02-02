@@ -89,11 +89,11 @@ class StructTypeDescriptor(TypeDescriptor):
         # Compare by fields (TypeDescriptors) to correctly distinguish structs
         # with different pointer pointee types, which have identical numpy dtypes
         # (both uint64) but different semantics.
-        return self._fields == other._fields
+        # Must compare as ordered items because field order matters for struct layout.
+        return list(self._fields.items()) == list(other._fields.items())
 
     def __hash__(self):
-        # Convert to a hashable tuple of (name, type_descriptor) pairs
-        return hash(tuple(sorted((k, v) for k, v in self._fields.items())))
+        return hash(tuple(self._fields.items()))
 
 
 class PointerTypeDescriptor(TypeDescriptor):
