@@ -232,9 +232,9 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
     ::cuda::ptx::fence_proxy_async(::cuda::ptx::space_shared);
 
     // FIXME(bgruber): for some reason the optimizer propagates some information from the computation of
-    // overCopySizeBytes to the masked bulk copy and then errors with
-    // `ptxas fatal   : (C7907) Internal compiler error`, see nvbug 5848313
-    // Preventing the propagation here works around this
+    // overCopySizeBytes to the masked bulk copy below and generates an unaligned access error.
+    // The artificial read modification of overCopySizeBytes prevents the propagation here works around this.
+    // It also solves the issue described in nvbug 5848313 by accident on nvcc 13.2+
     asm volatile("" : "+r"(cpAsyncOobInfo.overCopySizeBytes));
 
     const bool doStartCopy  = cpAsyncOobInfo.smemStartSkipBytes > 0;
@@ -244,11 +244,14 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
     const uint16_t byteMask      = 0xFFFF;
     const uint16_t byteMaskStart = byteMask << cpAsyncOobInfo.smemStartSkipBytes;
     const uint16_t byteMaskEnd   = byteMask >> (16 - cpAsyncOobInfo.smemEndBytesAfter16BBoundary);
-    // byteMaskStart contains zeroes at the left.
-    // TODO(bgruber): this should be `const uint16_t byteMaskSmall = byteMaskStart & byteMaskEnd;`, but this results in
+    // byteMaskStart contains zeroes at the left
+#  if _CCCL_CUDA_COMPILER(NVCC, >=, 13, 2)
+    const uint16_t byteMaskSmall = byteMaskStart & byteMaskEnd;
+#  else // _CCCL_CUDA_COMPILER(NVCC, >=, 13, 2)
     // `ptxas fatal   : (C7907) Internal compiler error`, see nvbug 5848313
     const uint16_t byteMaskSmall =
       byteMaskStart & (byteMask >> (16 - (cpAsyncOobInfo.ptrGmemEnd - cpAsyncOobInfo.ptrGmemStartAlignDown)));
+#  endif // _CCCL_CUDA_COMPILER(NVCC, >=, 13, 2)
 
     const ::cuda::std::byte* ptrSmemMiddle = srcSmem;
     if (doStartCopy)
