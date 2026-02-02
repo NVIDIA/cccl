@@ -784,8 +784,10 @@ inline constexpr bool scan_use_warpspeed = false;
 // detect the use via CCCL.C (pre-compiled dispatch and JIT pass) and disable the new kernel.
 // See https://github.com/NVIDIA/cccl/issues/6821 for more details.
 // We also need `cuda::std::is_constant_evaluated` for the compile-time SMEM computation. And we need PTX ISA 8.6.
+// MSVC + nvcc < 13.1 just fails to compile `cub.test.device.scan.lid_1.types_0` with `Internal error` and nothing else.
 #if !defined(CUB_ENABLE_POLICY_PTX_JSON) && !defined(CUB_DEFINE_RUNTIME_POLICIES) \
-  && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && __cccl_ptx_isa >= 860
+  && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && __cccl_ptx_isa >= 860        \
+  && !(_CCCL_COMPILER(MSVC) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 1))
 template <typename Policy, typename InputIteratorT, typename OutputIteratorT, typename AccumT>
 inline constexpr bool scan_use_warpspeed<Policy,
                                          InputIteratorT,
