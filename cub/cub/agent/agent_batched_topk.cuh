@@ -136,7 +136,7 @@ struct agent_batched_topk_worker_per_segment
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
     // Identify Segment
-    const int segment_id = blockIdx.x;
+    const int segment_id = static_cast<int>(blockIdx.x);
 
     // Boundary check
     // TODO (elstehle): consider skipping boundary check if we can safely assume the right grid dimensions
