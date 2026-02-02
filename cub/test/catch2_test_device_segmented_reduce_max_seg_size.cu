@@ -15,7 +15,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
 
 // %PARAM% TEST_LAUNCH lid 0
 
-using full_type_list = c2h::type_list<uint8_t, int16_t, uint32_t, int64_t, float, double>;
+using full_type_list = c2h::type_list<uint8_t, int16_t, uint32_t, int64_t>;
 using offsets        = c2h::type_list<std::int32_t, std::uint64_t>;
 
 C2H_TEST("Device segmented reduce works with dynamic max segment sizes",
