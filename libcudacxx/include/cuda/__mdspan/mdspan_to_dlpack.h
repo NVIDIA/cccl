@@ -30,6 +30,7 @@
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__fwd/complex.h>
+#  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_pointer.h>
@@ -40,8 +41,6 @@
 #  include <cuda/std/array>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/mdspan>
-
-#  include <stdexcept>
 
 #  include <cuda/std/__cccl/prologue.h>
 

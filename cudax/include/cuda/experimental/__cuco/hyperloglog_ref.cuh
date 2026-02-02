@@ -1,0 +1,321 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDAX___CUCO_HYPERLOGLOG_REF_CUH
+#define _CUDAX___CUCO_HYPERLOGLOG_REF_CUH
+
+#include <cuda/__cccl_config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/span>
+#include <cuda/stream>
+
+#include <cuda/experimental/__cuco/__hyperloglog/hyperloglog_impl.cuh>
+#include <cuda/experimental/__cuco/hash_functions.cuh>
+
+#include <cooperative_groups.h>
+
+#include <cuda/std/__cccl/prologue.h>
+
+namespace cuda::experimental::cuco
+{
+//! @brief A non-owning reference to a HyperLogLog sketch for approximating the number of distinct
+//! items in a multiset.
+//!
+//! @note This implementation is based on the HyperLogLog++ algorithm:
+//! https://static.googleusercontent.com/media/research.google.com/de//pubs/archive/40671.pdf.
+//!
+//! @tparam _Tp Type of items to count
+//! @tparam _Scope The scope in which operations will be performed by individual threads
+//! @tparam _Hash Hash function used to hash items
+template <class _Tp,
+          ::cuda::thread_scope _Scope = ::cuda::thread_scope_device,
+          class _Hash = ::cuda::experimental::cuco::hash<_Tp, ::cuda::experimental::cuco::hash_algorithm::xxhash_64>>
+class hyperloglog_ref
+{
+  using __impl_type = ::cuda::experimental::cuco::__hyperloglog_impl<_Tp, _Scope, _Hash>;
+
+  __impl_type __impl; ///< Implementation object
+
+  template <class _Tp_, ::cuda::thread_scope _Scope_, class _Hash_>
+  friend class hyperloglog_ref;
+
+public:
+  static constexpr auto thread_scope = __impl_type::__thread_scope; ///< CUDA thread scope
+
+  using value_type    = typename __impl_type::__value_type; ///< Type of items to count
+  using hasher        = typename __impl_type::__hasher; ///< Type of hash function
+  using register_type = typename __impl_type::__register_type; ///< HLL register type
+
+  //! A strong type wrapper `sketch_size_kb` of `double`, for specifying the upper-bound
+  //! sketch size of `cuda::experimental::cuco::hyperloglog(_ref)` in KB.
+  //!
+  //! @note Valid sketch sizes are in [0.0625 KB, 1024 KB], which correspond to precision [4, 18].
+  using sketch_size_kb = ::cuda::experimental::cuco::__sketch_size_kb_t;
+
+  //! A strong type wrapper `standard_deviation` of `double`, for specifying the desired
+  //! standard deviation for the cardinality estimate of `cuda::experimental::cuco::hyperloglog(_ref)`.
+  //!
+  //! @note Valid standard deviations are approximately in [0.00216, 0.2765], which correspond to
+  //! precision [4, 18].
+  using standard_deviation = ::cuda::experimental::cuco::__standard_deviation_t;
+
+  //! A strong type wrapper `precision` of `int`, for specifying the HyperLogLog precision
+  //! parameter of `cuda::experimental::cuco::hyperloglog(_ref)`.
+  //!
+  //! @note Valid precision values are in [4, 18], which correspond to sketch sizes in
+  //! [0.0625 KB, 1024 KB] and standard deviations approximately in [0.00216, 0.2765].
+  using precision = ::cuda::experimental::cuco::__precision_t;
+
+  template <::cuda::thread_scope _NewScope>
+  using with_scope = hyperloglog_ref<_Tp, _NewScope, _Hash>; ///< Ref type with different thread scope
+
+  //! @brief Constructs a non-owning `hyperloglog_ref` object.
+  //!
+  //! @throw If sketch size < 0.0625KB or 64B or standard deviation > 0.2765. Throws if called from
+  //! host; __trap() if called from device.
+  //! @throw If sketch size or standard deviation imply precision outside [4, 18].
+  //! @throw If sketch storage has insufficient alignment. Throws if called from host; __trap() if called
+  //! from device.
+  //!
+  //! @param __sketch_span Reference to sketch storage
+  //! @param __hash The hash function used to hash items
+  _CCCL_API constexpr hyperloglog_ref(::cuda::std::span<::cuda::std::byte> __sketch_span, const _Hash& __hash = {})
+      : __impl{__sketch_span, __hash}
+  {}
+
+  //! @brief Resets the estimator, i.e., clears the current count estimate.
+  //!
+  //! @tparam _CG CUDA Cooperative Group type
+  //!
+  //! @param __group CUDA Cooperative group this operation is executed in
+  template <class _CG>
+  _CCCL_DEVICE constexpr void clear(_CG __group) noexcept
+  {
+    __impl.__clear(__group);
+  }
+
+  //! @brief Asynchronously resets the estimator, i.e., clears the current count estimate.
+  //!
+  //! @param __stream CUDA stream this operation is executed in
+  _CCCL_HOST constexpr void clear_async(::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}}) noexcept
+  {
+    __impl.__clear_async(__stream);
+  }
+
+  //! @brief Resets the estimator, i.e., clears the current count estimate.
+  //!
+  //! @note This function synchronizes the given stream. For asynchronous execution use
+  //! `clear_async`.
+  //!
+  //! @param __stream CUDA stream this operation is executed in
+  _CCCL_HOST constexpr void clear(::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  {
+    __impl.__clear(__stream);
+  }
+
+  //! @brief Adds an item to the estimator.
+  //!
+  //! @param __item The item to be counted
+  _CCCL_DEVICE constexpr void add(const _Tp& __item) noexcept
+  {
+    __impl.__add(__item);
+  }
+
+  //! @brief Asynchronously adds to be counted items to the estimator.
+  //!
+  //! @tparam _InputIt Device accessible random access input iterator where
+  //! <tt>std::is_convertible<std::iterator_traits<_InputIt>::value_type,
+  //! _Tp></tt> is `true`
+  //!
+  //! @param __first Beginning of the sequence of items
+  //! @param __last End of the sequence of items
+  //! @param __stream CUDA stream this operation is executed in
+  template <class _InputIt>
+  _CCCL_HOST constexpr void
+  add_async(_InputIt __first, _InputIt __last, ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  {
+    __impl.__add_async(__first, __last, __stream);
+  }
+
+  //! @brief Adds to be counted items to the estimator.
+  //!
+  //! @note This function synchronizes the given stream. For asynchronous execution use
+  //! `add_async`.
+  //!
+  //! @tparam _InputIt Device accessible random access input iterator where
+  //! <tt>std::is_convertible<std::iterator_traits<_InputIt>::value_type,
+  //! _Tp></tt> is `true`
+  //!
+  //! @param __first Beginning of the sequence of items
+  //! @param __last End of the sequence of items
+  //! @param __stream CUDA stream this operation is executed in
+  template <class _InputIt>
+  _CCCL_HOST constexpr void
+  add(_InputIt __first, _InputIt __last, ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  {
+    __impl.__add(__first, __last, __stream);
+  }
+
+  //! @brief Merges the result of `other` estimator reference into `*this` estimator reference.
+  //!
+  //! @throw If sketch_bytes() != __other.sketch_bytes(), then terminates execution with a device __trap()
+  //!
+  //! @tparam _CG CUDA Cooperative Group type
+  //! @tparam _OtherScope Thread scope of `other` estimator
+  //!
+  //! @param __group CUDA Cooperative group this operation is executed in
+  //! @param __other Other estimator reference to be merged into `*this`
+  template <class _CG, ::cuda::thread_scope _OtherScope>
+  _CCCL_DEVICE constexpr void merge(_CG __group, const hyperloglog_ref<_Tp, _OtherScope, _Hash>& __other)
+  {
+    __impl.__merge(__group, __other.__impl);
+  }
+
+  //! @brief Asynchronously merges the result of `other` estimator reference into `*this`
+  //! estimator.
+  //!
+  //! @throw If sketch_bytes() != __other.sketch_bytes()
+  //!
+  // Review: For host-side merges, consider validating `__other` is on the same device.
+  //! @tparam _OtherScope Thread scope of `other` estimator
+  //!
+  //! @param __other Other estimator reference to be merged into `*this`
+  //! @param __stream CUDA stream this operation is executed in
+  template <::cuda::thread_scope _OtherScope>
+  _CCCL_HOST constexpr void merge_async(const hyperloglog_ref<_Tp, _OtherScope, _Hash>& __other,
+                                        ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  {
+    __impl.__merge_async(__other.__impl, __stream);
+  }
+
+  //! @brief Merges the result of `other` estimator reference into `*this` estimator.
+  //!
+  //! @note This function synchronizes the given stream. For asynchronous execution use
+  //! `merge_async`.
+  //!
+  //! @throw If sketch_bytes() != __other.sketch_bytes()
+  //!
+  //! @tparam _OtherScope Thread scope of `other` estimator
+  //!
+  //! @param __other Other estimator reference to be merged into `*this`
+  //! @param __stream CUDA stream this operation is executed in
+  template <::cuda::thread_scope _OtherScope>
+  _CCCL_HOST constexpr void merge(const hyperloglog_ref<_Tp, _OtherScope, _Hash>& __other,
+                                  ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
+  {
+    __impl.__merge(__other.__impl, __stream);
+  }
+
+  //! @brief Compute the estimated distinct items count.
+  //!
+  //! @param __group CUDA thread block group this operation is executed in
+  //!
+  //! @return Approximate distinct items count
+  [[nodiscard]] _CCCL_DEVICE ::cuda::std::size_t
+  estimate(const ::cooperative_groups::thread_block& __group) const noexcept
+  {
+    return __impl.__estimate(__group);
+  }
+
+  //! @brief Compute the estimated distinct items count.
+  //!
+  //! @note This function synchronizes the given stream.
+  //!
+  //! @tparam _HostMemoryResource Host memory resource used for allocating the host buffer required to
+  //! compute the final estimate by copying the sketch from device to host
+  //!
+  //! @param __host_mr Host memory resource used for copying the sketch
+  //! @param __stream CUDA stream this operation is executed in
+  //!
+  //! @return Approximate distinct items count
+  template <typename _HostMemoryResource = ::cuda::mr::legacy_pinned_memory_resource>
+  [[nodiscard]] _CCCL_HOST constexpr ::cuda::std::size_t estimate(
+    _HostMemoryResource __host_mr = {}, ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}}) const
+  {
+    return __impl.__estimate(__host_mr, __stream);
+  }
+
+  //! @brief Gets the hash function.
+  //!
+  //! @return The hash function
+  [[nodiscard]] _CCCL_API constexpr auto hash_function() const noexcept
+  {
+    return __impl.__hash_function();
+  }
+
+  //! @brief Gets the span of the sketch.
+  //!
+  //! @return The ::cuda::std::span of the sketch
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::span<::cuda::std::byte> sketch() const noexcept
+  {
+    return __impl.__sketch_span();
+  }
+
+  //! @brief Gets the number of bytes required for the sketch storage.
+  //!
+  //! @return The number of bytes required for the sketch
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::size_t sketch_bytes() const noexcept
+  {
+    return __impl.__sketch_bytes();
+  }
+
+  //! @brief Gets the number of bytes required for the sketch storage.
+  //!
+  //! @param __sketch_size_kb Upper bound sketch size in KB
+  //!
+  //! @return The number of bytes required for the sketch
+  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t sketch_bytes(sketch_size_kb __sketch_size_kb) noexcept
+  {
+    return __impl_type::__sketch_bytes(__sketch_size_kb);
+  }
+
+  //! @brief Gets the number of bytes required for the sketch storage.
+  //!
+  //! @param __standard_deviation Upper bound standard deviation for approximation error
+  //!
+  //! @return The number of bytes required for the sketch
+  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t
+  sketch_bytes(standard_deviation __standard_deviation) noexcept
+  {
+    return __impl_type::sketch_bytes(__standard_deviation);
+  }
+
+  //! @brief Gets the number of bytes required for the sketch storage.
+  //!
+  //! @param __precision HyperLogLog precision parameter
+  //!
+  //! @return The number of bytes required for the sketch
+  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t sketch_bytes(precision __precision) noexcept
+  {
+    return __impl_type::sketch_bytes(__precision);
+  }
+
+  //! @brief Gets the alignment required for the sketch storage.
+  //!
+  //! @return The required alignment
+  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t sketch_alignment() noexcept
+  {
+    return __impl_type::__sketch_alignment();
+  }
+};
+} // namespace cuda::experimental::cuco
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDAX___CUCO_HYPERLOGLOG_REF_CUH
