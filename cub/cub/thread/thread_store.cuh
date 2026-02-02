@@ -129,7 +129,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_helper(T* ptr, T* vals, ::cuda::std::i
 }
 
 template <typename T, size_t... Is>
-_CCCL_DEVICE _CCCL_FORCEINLINE void dereference_helper(T* ptr, T* vals, ::cuda::std::index_sequence<Is...>)
+_CCCL_DEVICE _CCCL_FORCEINLINE void dereference_helper(volatile T* ptr, T* vals, ::cuda::std::index_sequence<Is...>)
 {
   ((ptr[Is] = vals[Is]), ...);
 }
