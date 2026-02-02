@@ -779,6 +779,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   const int valid_items = (::cuda::std::min) (num_items - offset, Offset{tile_size});
 
 #if __cccl_ptx_isa >= 920
+  // TODO(bgruber): the .ignore_oob variant of UBLKCP only supports up to 15 ignore bytes. We should figure out if it's
+  // beneficial on Hopper to reduce the alignment from 128 to 16 but use the .ignore_oob variant.
   if constexpr (bulk_copy_alignment == 16)
   {
     // use one thread to set up the entire bulk copy
@@ -842,7 +844,6 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   else
 #endif // __cccl_ptx_isa >= 920
   {
-    static_assert(bulk_copy_alignment == 123);
     const bool inner_blocks = 0 < blockIdx.x && blockIdx.x + 2 < gridDim.x;
     if (inner_blocks)
     {
