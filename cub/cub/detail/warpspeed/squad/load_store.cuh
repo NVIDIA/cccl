@@ -231,6 +231,12 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
     // Perform fence.proxy.async with full warp to avoid BSSY+BSYNC
     ::cuda::ptx::fence_proxy_async(::cuda::ptx::space_shared);
 
+    // FIXME(bgruber): for some reason the optimizer propagates some information from the computation of
+    // overCopySizeBytes to the masked bulk copy and then errors with
+    // `ptxas fatal   : (C7907) Internal compiler error`, see nvbug 5848313
+    // Preventing the propagation here works around this
+    asm volatile("" : "+r"(cpAsyncOobInfo.overCopySizeBytes));
+
     const bool doStartCopy  = cpAsyncOobInfo.smemStartSkipBytes > 0;
     const bool doEndCopy    = cpAsyncOobInfo.smemEndBytesAfter16BBoundary > 0;
     const bool doMiddleCopy = cpAsyncOobInfo.ptrGmemStartAlignUp != cpAsyncOobInfo.ptrGmemEndAlignUp;
