@@ -1,3 +1,8 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 # distutils: language = c++
 # cython: language_level=3
 # cython: linetrace=True

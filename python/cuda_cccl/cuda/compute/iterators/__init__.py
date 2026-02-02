@@ -1,4 +1,8 @@
-# Export iterator classes directly
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 from ._cache_modified import CacheModifiedInputIterator
 from ._constant import ConstantIterator
 from ._counting import CountingIterator
