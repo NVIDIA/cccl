@@ -91,7 +91,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE CpAsyncOobInfo<Tp> prepareCpAsyncOob(Tp* ptrG
     ptrGmemEndAlignUp,
     overCopySizeBytes,
     underCopySizeBytes,
-    static_cast<uint32_t>(sizeof(Tp) * sizeElem),
+    origCopySizeBytes,
     static_cast<uint32_t>(ptrGmemBytes - ptrGmemStartAlignDown),
     static_cast<uint32_t>(ptrGmemEnd - ptrGmemEndAlignDown),
   };
