@@ -45,18 +45,21 @@ static void mul(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_reads<T>(n);
   state.add_global_memory_writes<T>(n);
 
-  cuda::stream stream{cuda::device_ref{0}};
-  cuda::device_memory_pool_ref alloc = cuda::device_default_memory_pool(stream.device());
-  auto policy                        = cuda::execution::__cub_par_unseq.with_stream(stream).with_memory_resource(alloc);
+  caching_allocator_t alloc{};
+  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
 
   const T scalar = startScalar;
-  state.exec(
-    nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-      cuda::std::transform(
-        policy, c.begin(), c.end(), b.begin(), cuda::proclaim_copyable_arguments([=] _CCCL_DEVICE(const T& ci) {
-          return ci * scalar;
-        }));
-    });
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               cuda::std::transform(
+                 policy.with_stream(launch.get_stream().get_stream()),
+                 c.begin(),
+                 c.end(),
+                 b.begin(),
+                 [=] _CCCL_HOST_DEVICE(const T& ci) {
+                   return ci * scalar;
+                 });
+             });
 }
 
 NVBENCH_BENCH_TYPES(mul, NVBENCH_TYPE_AXES(element_types))
@@ -76,21 +79,18 @@ static void add(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_reads<T>(2 * n);
   state.add_global_memory_writes<T>(n);
 
-  cuda::stream stream{cuda::device_ref{0}};
-  cuda::device_memory_pool_ref alloc = cuda::device_default_memory_pool(stream.device());
-  auto policy                        = cuda::execution::__cub_par_unseq.with_stream(stream).with_memory_resource(alloc);
+  caching_allocator_t alloc{};
+  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
                cuda::std::transform(
-                 policy,
+                 policy.with_stream(launch.get_stream().get_stream()),
                  a.begin(),
                  a.end(),
                  b.begin(),
                  c.begin(),
-                 cuda::proclaim_copyable_arguments([] _CCCL_DEVICE(const T& ai, const T& bi) -> T {
-                   return ai + bi;
-                 }));
+                 cuda::std::plus<T>{});
              });
 }
 
@@ -111,22 +111,21 @@ static void triad(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_reads<T>(2 * n);
   state.add_global_memory_writes<T>(n);
 
-  cuda::stream stream{cuda::device_ref{0}};
-  cuda::device_memory_pool_ref alloc = cuda::device_default_memory_pool(stream.device());
-  auto policy                        = cuda::execution::__cub_par_unseq.with_stream(stream).with_memory_resource(alloc);
+  caching_allocator_t alloc{};
+  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
 
   const T scalar = startScalar;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
                cuda::std::transform(
-                 policy,
+                 policy.with_stream(launch.get_stream().get_stream()),
                  b.begin(),
                  b.end(),
                  c.begin(),
                  a.begin(),
-                 cuda::proclaim_copyable_arguments([=] _CCCL_DEVICE(const T& bi, const T& ci) {
+                 [=] _CCCL_HOST_DEVICE(const T& bi, const T& ci) {
                    return bi + scalar * ci;
-                 }));
+                 });
              });
 }
 
@@ -147,22 +146,20 @@ static void nstream(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_reads<T>(3 * n);
   state.add_global_memory_writes<T>(n);
 
-  cuda::stream stream{cuda::device_ref{0}};
-  cuda::device_memory_pool_ref alloc = cuda::device_default_memory_pool(stream.device());
-  auto policy                        = cuda::execution::__cub_par_unseq.with_stream(stream).with_memory_resource(alloc);
+  caching_allocator_t alloc{};
+  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
 
   const T scalar = startScalar;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
                cuda::std::transform(
-                 policy,
-                 thrust::make_zip_iterator(a.begin(), b.begin(), c.begin()),
-                 thrust::make_zip_iterator(a.end(), b.end(), c.end()),
+                 policy.with_stream(launch.get_stream().get_stream()),
+                 cuda::make_zip_iterator(a.begin(), b.begin(), c.begin()),
+                 cuda::make_zip_iterator(a.end(), b.end(), c.end()),
                  a.begin(),
-                 thrust::make_zip_function(
-                   cuda::proclaim_copyable_arguments([=] _CCCL_DEVICE(const T& ai, const T& bi, const T& ci) {
-                     return ai + bi + scalar * ci;
-                   })));
+                 cuda::zip_function{[=] _CCCL_HOST_DEVICE(const T& ai, const T& bi, const T& ci) {
+                   return ai + bi + scalar * ci;
+                 }});
              });
 }
 

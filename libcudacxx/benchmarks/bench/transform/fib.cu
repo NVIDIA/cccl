@@ -62,14 +62,14 @@ static void fib(nvbench::state& state, nvbench::type_list<T>)
 
   fib_t<T, nvbench::uint32_t> op{};
 
-  cuda::stream stream{cuda::device_ref{0}};
-  cuda::device_memory_pool_ref alloc = cuda::device_default_memory_pool(stream.device());
-  auto policy                        = cuda::execution::__cub_par_unseq.with_stream(stream).with_memory_resource(alloc);
+  caching_allocator_t alloc{};
+  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
 
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
-             [&](nvbench::launch& launch) {
-               cuda::std::transform(policy, input.cbegin(), input.cend(), output.begin(), op);
-             });
+  state.exec(
+    nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+      cuda::std::transform(
+        policy.with_stream(launch.get_stream().get_stream()), input.cbegin(), input.cend(), output.begin(), op);
+    });
 }
 
 using types = nvbench::type_list<nvbench::uint32_t, nvbench::uint64_t>;
