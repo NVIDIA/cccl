@@ -176,7 +176,7 @@ struct agent_warp_segmented_scan
 
       if (chunk_id == 0)
       {
-        // Initialize exlusive_prefix, referenced from prefix_op
+        // Initialize exclusive_prefix, referenced from prefix_op
         scan_first_tile(thread_values, initial_value, scan_op, exclusive_prefix);
       }
       else
@@ -221,6 +221,9 @@ struct agent_warp_segmented_scan
     static_assert(::cuda::std::is_convertible_v<::cuda::std::iter_value_t<OutputBeginOffsetIteratorT>, OffsetT>,
                   "Unexpected iterator type");
 
+    static_assert(MaxNumSegments <= max_segments_per_warp,
+                  "Template parameter MaxNumSegments must not exceed size of shared array");
+
     _CCCL_ASSERT(n_segments > 0, "Number of segments should be greater than zero");
     _CCCL_ASSERT(n_segments <= max_segments_per_warp,
                  "Number of segments should not exceed statically provisioned storage");
@@ -264,9 +267,13 @@ struct agent_warp_segmented_scan
       }
     }
 
-    __syncthreads();
+    // All accesses of logical_segment_offsets from now on are read-only. Elements of
+    // logical_segment_offsets[warp_id] is only accessed by threads with the same warp_id.
+    // Warp-synchronization ensure that all threads in respective warps finished
+    // writing to shared memory, and subsequent reads are safe.
+    __syncwarp();
 
-    ::cuda::std::span<OffsetT> cum_sizes{
+    const ::cuda::std::span<OffsetT> cum_sizes{
       temp_storage.logical_segment_offsets[warp_id], static_cast<::cuda::std::size_t>(n_segments)};
     const OffsetT items_per_block = cum_sizes[n_segments - 1];
     const OffsetT n_chunks        = ::cuda::ceil_div(items_per_block, tile_items);
@@ -334,7 +341,7 @@ struct agent_warp_segmented_scan
 
       if (chunk_id == 0)
       {
-        // Initialize exlusive_prefix, referenced from prefix_op
+        // Initialize exclusive_prefix, referenced from prefix_op
         augmented_init_value_t augmented_init_value = multi_segment_helpers::make_value_flag(initial_value, false);
         scan_first_tile(thread_flag_values, augmented_init_value, augmented_scan_op, exclusive_prefix);
       }
