@@ -17,9 +17,9 @@
 
 #include <cuda/__ptx/instructions/elect_sync.h>
 #include <cuda/__ptx/instructions/mbarrier_init.h>
-#include <cuda/std/cstdint> // uint8_t
+#include <cuda/std/cstdint>
 
-#include <nv/target> // NV_IF_TARGET
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 
