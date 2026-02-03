@@ -34,7 +34,7 @@
 #include <cuda/std/cstddef>
 
 #ifdef _CCCL_HAS_CONSTEXPR_ALLOCATION
-#  include <cuda/std/__cccl/memory_wrapper.h>
+#  include <cuda/std/__host_stdlib/memory>
 #endif // _CCCL_HAS_CONSTEXPR_ALLOCATION
 
 #include <cuda/std/__cccl/prologue.h>

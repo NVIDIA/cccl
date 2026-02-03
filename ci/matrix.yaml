@@ -28,9 +28,9 @@ workflows:
     - {jobs: ['build'], std: 'minmax', ctk: '12.X', cxx: ['gcc7',  'gcc',   'clang14', 'clang19', 'msvc2019', 'msvc'     ]}
     - {jobs: ['build'], std: 'minmax', ctk: '13.0', cxx: ['gcc11', 'gcc',   'clang15', 'clang',   'msvc2019', 'msvc'     ]}
     # Old CTK: cudax has a different support matrix:
-    - {jobs: ['build'], project: 'cudax', ctk: '12.0', std: 'minmax', cxx: ['gcc9',  'gcc12', 'clang14']}
-    - {jobs: ['build'], project: 'cudax', ctk: '12.X', std: 'minmax', cxx: ['gcc9',  'gcc',   'clang14', 'clang19']}
-    - {jobs: ['build'], project: 'cudax', ctk: '13.0', std: 'minmax', cxx: ['gcc11', 'gcc',   'clang15', 'clang']}
+    - {jobs: ['build'], project: 'cudax', ctk: '12.0', std: 'minmax', cxx: ['gcc9',  'gcc12', 'clang14',            'msvc14.39']}
+    - {jobs: ['build'], project: 'cudax', ctk: '12.X', std: 'minmax', cxx: ['gcc9',  'gcc',   'clang14', 'clang19', 'msvc']}
+    - {jobs: ['build'], project: 'cudax', ctk: '13.0', std: 'minmax', cxx: ['gcc11', 'gcc',   'clang15', 'clang',   'msvc']}
     # Current CTK build-only:
     - {jobs: ['build'], std: 'minmax', cxx: ['gcc11', 'clang15', 'msvc2019'] } # Oldest
     - {jobs: ['build'], std: 'max',    cxx: ['gcc12', 'gcc13'] }
@@ -40,11 +40,11 @@ workflows:
     - {jobs: ['build'], project: 'cudax', std: 'minmax', cxx: ['gcc11', 'clang15']} # Oldest
     - {jobs: ['build'], project: 'cudax', std: 'max',    cxx: ['gcc12']}
     - {jobs: ['build'], project: 'cudax', std: 'max',    cxx: ['clang16', 'clang17', 'clang18', 'clang19']}
-    - {jobs: ['build'], project: 'cudax', std: 'all',    cxx: ['gcc', 'clang']} # Newest
+    - {jobs: ['build'], project: 'cudax', std: 'all',    cxx: ['gcc', 'clang', 'msvc']} # Newest
     # Current CTK testing:
     - {jobs: ['test'], project: 'thrust',     std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx4090'}
     - {jobs: ['test'], project: 'libcudacxx', std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080'}
-    - {jobs: ['test'], project: 'cudax',      std: 'max', cxx: ['gcc', 'clang'], gpu: 'rtx2080'}
+    - {jobs: ['test'], project: 'cudax',      std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080'}
     - {jobs: ['test_nolid', 'test_lid0'], project: 'cub', std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtxa6000'}
     - {jobs: ['test_lid1',  'test_lid2'], project: 'cub', std: 'max', cxx: ['gcc'],                  gpu: 'rtxa6000'}
     # H100 coverage:
@@ -178,7 +178,7 @@ workflows:
     - {jobs: ['limited'], project: 'cub', std: 17, gpu: 'rtx2080'}
     # NVRTC tests don't currently support 12.0:
     - {jobs: ['nvrtc'],          project: 'libcudacxx', ctk: [        '12.X', '13.0', '13.X'], cxx: 'gcc12', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
-    - {jobs: ['verify_codegen'], project: 'libcudacxx', ctk: ['12.0', '12.X', '13.0', '13.X'], cxx: 'gcc12'}
+    - {jobs: ['verify_codegen'], project: 'libcudacxx'}
     # c.parallel -- pinned to gcc13 to match python
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080']}
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080', 'l4', 'h100']}
@@ -263,7 +263,7 @@ workflows:
     - {jobs: ['build'], project: ['cub'], std: 'max', sm: 'all-cccl', cmake_options: '-DCUB_ENABLE_LAUNCH_VARIANTS=OFF'}
     # NVRTC tests don't currently support 12.0:
     - {jobs: ['nvrtc'],          project: 'libcudacxx', ctk: [        '12.X', '13.0', '13.X'], cxx: 'gcc12', std: 'all', gpu: 'rtx2080', sm: 'gpu'}
-    - {jobs: ['verify_codegen'], project: 'libcudacxx', ctk: ['12.0', '12.X', '13.0', '13.X'], cxx: 'gcc12'}
+    - {jobs: ['verify_codegen'], project: 'libcudacxx'}
     # c.parallel -- pinned to gcc13 to match python
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080']}
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080', 'l4', 'h100']}
@@ -301,13 +301,13 @@ workflows:
   # This is just used to ensure that we generate devcontainers for all images we build.
   # These do not map to any actual jobs.
   devcontainers:
-    - {jobs: ['dc'],     ctk: ['12.0', '12.9'        ], cxx: ['clang14']}
-    - {jobs: ['dc'],     ctk: ['12.0', '12.9'        ], cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10']}
-    - {jobs: ['dc'],     ctk: ['12.0', '12.9', '13.0'], cxx: ['gcc11', 'gcc12']}
-    - {jobs: ['dc'],     ctk: [        '12.9', '13.0'], cxx: ['gcc13', 'gcc14']}
+    - {jobs: ['dc'],     ctk: ['12.0', '12.X'                ], cxx: ['clang14']}
+    - {jobs: ['dc'],     ctk: ['12.0', '12.X'                ], cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10']}
+    - {jobs: ['dc'],     ctk: ['12.0', '12.X', '13.0', '13.X'], cxx: ['gcc11', 'gcc12']}
+    - {jobs: ['dc'],     ctk: [        '12.X', '13.0', '13.X'], cxx: ['gcc13', 'gcc14']}
     # Clang20+CTK12.9 is currently only used for cuda-clang testing. nvcc 12.9 doesn't support clang20.
-    - {jobs: ['dc'],     ctk: [        '12.9', '13.0'], cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20']}
-    - {jobs: ['dc_ext'], ctk: [        '12.9', '13.0'], cxx: ['gcc14', 'clang20']}
+    - {jobs: ['dc'],     ctk: [        '12.X', '13.0', '13.X'], cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20']}
+    - {jobs: ['dc_ext'], ctk: [        '12.X', '13.0', '13.X'], cxx: ['gcc14', 'clang20']}
     # 12.0 python image, pinned at gcc13 for simplicity. CTK 12.0 doesn't really play nice with gcc13, but
     # that doesn't matter for running python tests.
     - {jobs: ['dc'], ctk: ['12.0'], cxx: 'gcc13'}
@@ -327,7 +327,7 @@ workflows:
 
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
-devcontainer_version: '25.12'
+devcontainer_version: '26.02'
 
 # Compiler versions used for the cuda99.X internal builds:
 cuda99_gcc_version: 14
@@ -345,7 +345,8 @@ all_stds: [17, 20]
 ctk_versions:
   12.0: { stds: [17, 20] }
   12.9: { stds: [17, 20], alias: ['12.X', 'nvhpc-prev', 'pybuild', 'clang-cuda'] }
-  13.0: { stds: [17, 20], alias: ['13.X', 'nvhpc'] }
+  13.0: { stds: [17, 20], alias: ['nvhpc'] }
+  13.1: { stds: [17, 20], alias: ['13.X'] }
 
 device_compilers:
   nvcc: # Version / stds are taken from CTK

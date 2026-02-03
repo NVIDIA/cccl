@@ -54,6 +54,7 @@ PUSH_POP_MACROS = {
         "empty_bases",
         "hybrid_patchable",
         "jitintrinsic",
+        "lifetimebound",
         "naked",
         "noalias",
         "noinline",
@@ -122,12 +123,12 @@ def make_prologue(file):
         for macro in macros:
             write_section(
                 file,
-                f'''\
+                f"""\
 #if defined({macro})
 #  pragma push_macro("{macro}")
 #  undef {macro}
 #  define _CCCL_POP_MACRO_{macro}
-#endif // defined({macro})''',
+#endif // defined({macro})""",
             )
 
     # Add warnings suppressions.
@@ -214,14 +215,14 @@ _CCCL_DIAG_POP""",
         for macro in macros:
             write_section(
                 file,
-                f'''\
+                f"""\
 #if defined({macro})
 #  error \\
     "cccl internal error: macro `{macro}` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_{macro})
 #  pragma pop_macro("{macro}")
 #  undef _CCCL_POP_MACRO_{macro}
-#endif''',
+#endif""",
             )
 
     # Write the common footer.

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file generate.h
  *  \brief Fills a range with values "generated" from a function of no arguments
@@ -71,6 +58,10 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see generate_n
  *  \see https://en.cppreference.com/w/cpp/algorithm/generate
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename Generator>
 _CCCL_HOST_DEVICE void
@@ -109,6 +100,10 @@ generate(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *
  *  \see generate_n
  *  \see https://en.cppreference.com/w/cpp/algorithm/generate
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename Generator>
 void generate(ForwardIterator first, ForwardIterator last, Generator gen);
@@ -147,6 +142,10 @@ void generate(ForwardIterator first, ForwardIterator last, Generator gen);
  *
  *  \see generate
  *  \see https://en.cppreference.com/w/cpp/algorithm/generate
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename OutputIterator, typename Size, typename Generator>
 _CCCL_HOST_DEVICE OutputIterator generate_n(
@@ -181,6 +180,10 @@ _CCCL_HOST_DEVICE OutputIterator generate_n(
  *
  *  \see generate
  *  \see https://en.cppreference.com/w/cpp/algorithm/generate
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename OutputIterator, typename Size, typename Generator>
 OutputIterator generate_n(OutputIterator first, Size n, Generator gen);

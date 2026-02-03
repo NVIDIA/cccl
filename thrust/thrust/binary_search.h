@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file binary_search.h
  *  \brief Search for values in sorted ranges.
@@ -101,6 +88,10 @@ THRUST_NAMESPACE_BEGIN
  *  \see \p upper_bound
  *  \see \p equal_range
  *  \see \p binary_search
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename LessThanComparable>
 _CCCL_HOST_DEVICE ForwardIterator lower_bound(
@@ -153,6 +144,10 @@ _CCCL_HOST_DEVICE ForwardIterator lower_bound(
  *  \see \p upper_bound
  *  \see \p equal_range
  *  \see \p binary_search
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <class ForwardIterator, class LessThanComparable>
 ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last, const LessThanComparable& value);
@@ -209,6 +204,10 @@ ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last, const L
  *  \see \p upper_bound
  *  \see \p equal_range
  *  \see \p binary_search
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
 _CCCL_HOST_DEVICE ForwardIterator lower_bound(
@@ -265,6 +264,10 @@ _CCCL_HOST_DEVICE ForwardIterator lower_bound(
  *  \see \p upper_bound
  *  \see \p equal_range
  *  \see \p binary_search
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <class ForwardIterator, class T, class StrictWeakOrdering>
 ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last, const T& value, StrictWeakOrdering comp);
@@ -319,6 +322,10 @@ ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last, const T
  *  \see \p lower_bound
  *  \see \p equal_range
  *  \see \p binary_search
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename LessThanComparable>
 _CCCL_HOST_DEVICE ForwardIterator upper_bound(
@@ -372,6 +379,10 @@ _CCCL_HOST_DEVICE ForwardIterator upper_bound(
  *  \see \p lower_bound
  *  \see \p equal_range
  *  \see \p binary_search
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <class ForwardIterator, class LessThanComparable>
 ForwardIterator upper_bound(ForwardIterator first, ForwardIterator last, const LessThanComparable& value);
@@ -430,6 +441,10 @@ ForwardIterator upper_bound(ForwardIterator first, ForwardIterator last, const L
  *  \see \p lower_bound
  *  \see \p equal_range
  *  \see \p binary_search
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
 _CCCL_HOST_DEVICE ForwardIterator upper_bound(
@@ -488,6 +503,10 @@ _CCCL_HOST_DEVICE ForwardIterator upper_bound(
  *  \see \p lower_bound
  *  \see \p equal_range
  *  \see \p binary_search
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <class ForwardIterator, class T, class StrictWeakOrdering>
 ForwardIterator upper_bound(ForwardIterator first, ForwardIterator last, const T& value, StrictWeakOrdering comp);
@@ -541,6 +560,10 @@ ForwardIterator upper_bound(ForwardIterator first, ForwardIterator last, const T
  *  \see \p lower_bound
  *  \see \p upper_bound
  *  \see \p equal_range
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename LessThanComparable>
 _CCCL_HOST_DEVICE bool binary_search(
@@ -593,6 +616,10 @@ _CCCL_HOST_DEVICE bool binary_search(
  *  \see \p lower_bound
  *  \see \p upper_bound
  *  \see \p equal_range
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <class ForwardIterator, class LessThanComparable>
 bool binary_search(ForwardIterator first, ForwardIterator last, const LessThanComparable& value);
@@ -650,6 +677,10 @@ bool binary_search(ForwardIterator first, ForwardIterator last, const LessThanCo
  *  \see \p lower_bound
  *  \see \p upper_bound
  *  \see \p equal_range
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
 _CCCL_HOST_DEVICE bool binary_search(
@@ -707,6 +738,10 @@ _CCCL_HOST_DEVICE bool binary_search(
  *  \see \p lower_bound
  *  \see \p upper_bound
  *  \see \p equal_range
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <class ForwardIterator, class T, class StrictWeakOrdering>
 bool binary_search(ForwardIterator first, ForwardIterator last, const T& value, StrictWeakOrdering comp);
@@ -773,6 +808,10 @@ bool binary_search(ForwardIterator first, ForwardIterator last, const T& value, 
  *  \see \p lower_bound
  *  \see \p upper_bound
  *  \see \p binary_search
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename LessThanComparable>
 _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> equal_range(
@@ -838,6 +877,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> equal_rang
  *  \see \p lower_bound
  *  \see \p upper_bound
  *  \see \p binary_search
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <class ForwardIterator, class LessThanComparable>
 ::cuda::std::pair<ForwardIterator, ForwardIterator>
@@ -916,6 +959,10 @@ equal_range(ForwardIterator first, ForwardIterator last, const LessThanComparabl
  *  \see \p lower_bound
  *  \see \p upper_bound
  *  \see \p binary_search
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
 _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> equal_range(
@@ -993,6 +1040,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> equal_rang
  *  \see \p lower_bound
  *  \see \p upper_bound
  *  \see \p binary_search
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <class ForwardIterator, class T, class StrictWeakOrdering>
 ::cuda::std::pair<ForwardIterator, ForwardIterator>
@@ -1071,6 +1122,10 @@ equal_range(ForwardIterator first, ForwardIterator last, const T& value, StrictW
  *  \see \p upper_bound
  *  \see \p equal_range
  *  \see \p binary_search
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator lower_bound(
@@ -1138,6 +1193,10 @@ _CCCL_HOST_DEVICE OutputIterator lower_bound(
  *  \see \p upper_bound
  *  \see \p equal_range
  *  \see \p binary_search
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <class ForwardIterator, class InputIterator, class OutputIterator>
 OutputIterator lower_bound(
@@ -1214,6 +1273,10 @@ OutputIterator lower_bound(
  *  \see \p upper_bound
  *  \see \p equal_range
  *  \see \p binary_search
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename ForwardIterator,
@@ -1291,6 +1354,10 @@ _CCCL_HOST_DEVICE OutputIterator lower_bound(
  *  \see \p upper_bound
  *  \see \p equal_range
  *  \see \p binary_search
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <class ForwardIterator, class InputIterator, class OutputIterator, class StrictWeakOrdering>
 OutputIterator lower_bound(
@@ -1365,6 +1432,10 @@ OutputIterator lower_bound(
  *  \see \p upper_bound
  *  \see \p equal_range
  *  \see \p binary_search
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator upper_bound(
@@ -1432,6 +1503,10 @@ _CCCL_HOST_DEVICE OutputIterator upper_bound(
  *  \see \p upper_bound
  *  \see \p equal_range
  *  \see \p binary_search
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <class ForwardIterator, class InputIterator, class OutputIterator>
 OutputIterator upper_bound(
@@ -1510,6 +1585,10 @@ OutputIterator upper_bound(
  *  \see \p lower_bound
  *  \see \p equal_range
  *  \see \p binary_search
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename ForwardIterator,
@@ -1587,6 +1666,10 @@ _CCCL_HOST_DEVICE OutputIterator upper_bound(
  *  \see \p lower_bound
  *  \see \p equal_range
  *  \see \p binary_search
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <class ForwardIterator, class InputIterator, class OutputIterator, class StrictWeakOrdering>
 OutputIterator upper_bound(
@@ -1662,6 +1745,10 @@ OutputIterator upper_bound(
  *  \see \p lower_bound
  *  \see \p upper_bound
  *  \see \p equal_range
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator binary_search(
@@ -1730,6 +1817,10 @@ _CCCL_HOST_DEVICE OutputIterator binary_search(
  *  \see \p lower_bound
  *  \see \p upper_bound
  *  \see \p equal_range
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <class ForwardIterator, class InputIterator, class OutputIterator>
 OutputIterator binary_search(
@@ -1809,6 +1900,10 @@ OutputIterator binary_search(
  *  \see \p lower_bound
  *  \see \p upper_bound
  *  \see \p equal_range
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename ForwardIterator,
@@ -1887,6 +1982,10 @@ _CCCL_HOST_DEVICE OutputIterator binary_search(
  *  \see \p lower_bound
  *  \see \p upper_bound
  *  \see \p equal_range
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <class ForwardIterator, class InputIterator, class OutputIterator, class StrictWeakOrdering>
 OutputIterator binary_search(

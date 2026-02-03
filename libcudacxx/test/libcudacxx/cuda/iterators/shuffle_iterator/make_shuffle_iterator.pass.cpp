@@ -12,8 +12,8 @@
 // template<class RGN> constexpr explicit shuffle_iterator(index_type, RNG, index_type = 0);
 
 #include <cuda/iterator>
-#include <cuda/std/__random_>
 #include <cuda/std/cassert>
+#include <cuda/std/random>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"

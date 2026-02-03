@@ -37,7 +37,7 @@ __host__ __device__ void test()
 {
   _CCCL_TRY
   {
-    _CCCL_THROW(Exception());
+    _CCCL_THROW(Exception);
   }
   _CCCL_CATCH ([[maybe_unused]] Exception e)
   {

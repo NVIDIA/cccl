@@ -71,7 +71,7 @@ Common options:
 Example:
 
 ```bash
-.devcontainer/launch.sh -d --cuda 13.0 --host gcc14 -- <script> [args...]
+.devcontainer/launch.sh -d --cuda 13.1 --host gcc14 -- <script> [args...]
 ```
 
 ### `ci/util/build_and_test_targets.sh`
@@ -330,6 +330,7 @@ Tags appended to the commit summary (case-sensitive) control CI behavior:
 * `[skip-third-party-testing]` / `[skip-tpt]`: Skip third-party smoke tests (MatX, PyTorch, RAPIDS).
 * `[skip-matx]`: Skip building the MatX third-party smoke test.
 * `[skip-pytorch]`: Skip building the PyTorch third-party smoke test.
+* `[skip-rapids]`: Skip building the RAPIDS third-party smoke test.
 
 > ⚠️ All of these tags block merging until removed and a full CI run (with no overrides) succeeds.
 

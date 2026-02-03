@@ -51,7 +51,7 @@ public:
   public:
     using distribution_type = extreme_value_distribution;
 
-    _CCCL_API constexpr explicit param_type(result_type __a = result_type{0}, result_type __b = result_type{1})
+    _CCCL_API constexpr explicit param_type(result_type __a = result_type{0}, result_type __b = result_type{1}) noexcept
         : __a_{__a}
         , __b_{__b}
     {}
@@ -156,7 +156,7 @@ public:
     using ios_base                            = typename ostream_type::ios_base;
     const typename ios_base::fmtflags __flags = __os.flags();
     const _CharT __fill                       = __os.fill();
-    const ::std::streamsize __precision       = __os.precision();
+    const auto __precision                    = __os.precision();
     __os.flags(ios_base::dec | ios_base::left | ios_base::scientific);
     _CharT __sp = __os.widen(' ');
     __os.fill(__sp);

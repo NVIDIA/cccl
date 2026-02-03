@@ -18,12 +18,12 @@
 // ADDITIONAL_COMPILE_FLAGS(has-fconstexpr-steps): -fconstexpr-steps=200000000
 // ADDITIONAL_COMPILE_FLAGS(has-fconstexpr-ops-limit): -fconstexpr-ops-limit=200000000
 
-#include <cuda/std/__random_>
 #include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 #include <cuda/std/functional>
 #include <cuda/std/memory>
+#include <cuda/std/random>
 #include <cuda/std/utility>
 
 #include "test_macros.h"
