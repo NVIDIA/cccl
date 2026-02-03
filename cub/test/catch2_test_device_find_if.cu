@@ -229,10 +229,9 @@ struct NotDefaultConstructible
   }
 };
 
-template <typename OffsetT>
 struct index_to_value
 {
-  __host__ __device__ NotDefaultConstructible operator()(OffsetT i)
+  __host__ __device__ NotDefaultConstructible operator()(int i)
   {
     return NotDefaultConstructible{static_cast<int>(i)};
   }
@@ -244,7 +243,7 @@ static_assert(cuda::std::is_default_constructible_v<NotDefaultConstructible> == 
 C2H_TEST("Device find_if works with non default constructible types", "[device][find_if]")
 {
   using input_t  = NotDefaultConstructible;
-  using offset_t = int32_t;
+  using offset_t = int;
 
   constexpr offset_t min_items = 1;
   constexpr offset_t max_items = 10'000; // 10k items for reasonable test time
@@ -264,7 +263,7 @@ C2H_TEST("Device find_if works with non default constructible types", "[device][
   c2h::device_vector<input_t> d_vec(num_items, NotDefaultConstructible(0));
 
   // fill with arbitrary values dont use c2h gen because NotDefaultConstructible is not default constructible
-  thrust::tabulate(c2h::device_policy, d_vec.begin(), d_vec.end(), index_to_value<offset_t>{});
+  thrust::tabulate(c2h::device_policy, d_vec.begin(), d_vec.end(), index_to_value{});
 
   auto it = thrust::raw_pointer_cast(d_vec.data());
   c2h::device_vector<offset_t> out_result(1, thrust::no_init);
