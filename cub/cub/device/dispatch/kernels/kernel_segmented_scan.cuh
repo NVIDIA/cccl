@@ -64,19 +64,20 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
   __shared__ typename agent_t::TempStorage temp_storage;
 
   const ActualInitValueT _init_value = init_value;
+
   _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments to be processed by block must be positive");
   _CCCL_ASSERT(num_segments_per_worker <= policy_t::max_segments_per_block,
                "Requested number of segments to be processed by block exceeds compile-time maximum");
 
   const auto work_id = num_segments_per_worker * blockIdx.x;
 
-  _CCCL_ASSERT(work_id < n_segments, "device_segmented_scan_kernel launch configuration results in access violation");
-
   agent_t agent(temp_storage, d_in, d_out, scan_op, _init_value);
 
   if constexpr (policy_t::max_segments_per_block == 1)
   {
     _CCCL_ASSERT(num_segments_per_worker == 1, "Inconsistent parameters in device_warp_segmented_scan_kernel");
+    _CCCL_ASSERT(work_id < n_segments, "device_segmented_scan_kernel launch configuration results in access violation");
+
     const OffsetT inp_begin_offset = begin_offset_d_in[work_id];
     const OffsetT inp_end_offset   = end_offset_d_in[work_id];
     const OffsetT out_begin_offset = begin_offset_d_out[work_id];
@@ -85,15 +86,22 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
   }
   else
   {
-    const auto start_id = work_id;
-    const auto end_id   = ::cuda::std::min<decltype(start_id)>(start_id + num_segments_per_worker, n_segments);
-    int size            = end_id - start_id;
+    using IdT = decltype(work_id);
 
-    auto worker_beg_off_d_in  = begin_offset_d_in + start_id;
-    auto worker_end_off_d_in  = end_offset_d_in + start_id;
-    auto worker_beg_off_d_out = begin_offset_d_out + start_id;
+    if (work_id < n_segments)
+    {
+      const auto start_offset         = work_id;
+      const auto suggested_end_offset = start_offset + num_segments_per_worker;
 
-    agent.consume_ranges(worker_beg_off_d_in, worker_end_off_d_in, worker_beg_off_d_out, size);
+      const auto end_offset = ::cuda::std::min<IdT>(suggested_end_offset, n_segments);
+      int size              = end_offset - start_offset;
+
+      auto worker_beg_off_d_in  = begin_offset_d_in + start_offset;
+      auto worker_end_off_d_in  = end_offset_d_in + start_offset;
+      auto worker_beg_off_d_out = begin_offset_d_out + start_offset;
+
+      agent.consume_ranges(worker_beg_off_d_in, worker_end_off_d_in, worker_beg_off_d_out, size);
+    }
   }
 }
 
@@ -164,7 +172,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t
 
       // agent accesses offset iterators with index: thread_work_id = chunk_id * worker_thread_count + lane_id;
       // for 0 <= chunk_id < ::cuda::ceil_div<unsigned>(n_segments, worker_thread_count)
-      //
       //
       //  total_offset = num_segments_per_worker * (blockIdx.x * warps_in_block) + warp_id +
       //      warps_in_block * thread_work_id;
