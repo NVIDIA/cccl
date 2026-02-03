@@ -101,25 +101,25 @@ template <class _Deleter>
 struct __unique_ptr_deleter_sfinae
 {
   static_assert(!is_reference_v<_Deleter>, "incorrect specialization");
-  typedef const _Deleter& __lval_ref_type;
-  typedef _Deleter&& __good_rval_ref_type;
-  typedef true_type __enable_rval_overload;
+  using __lval_ref_type        = const _Deleter&;
+  using __good_rval_ref_type   = _Deleter&&;
+  using __enable_rval_overload = true_type;
 };
 
 template <class _Deleter>
 struct __unique_ptr_deleter_sfinae<_Deleter const&>
 {
-  typedef const _Deleter& __lval_ref_type;
-  typedef const _Deleter&& __bad_rval_ref_type;
-  typedef false_type __enable_rval_overload;
+  using __lval_ref_type        = const _Deleter&;
+  using __bad_rval_ref_type    = const _Deleter&&;
+  using __enable_rval_overload = false_type;
 };
 
 template <class _Deleter>
 struct __unique_ptr_deleter_sfinae<_Deleter&>
 {
-  typedef _Deleter& __lval_ref_type;
-  typedef _Deleter&& __bad_rval_ref_type;
-  typedef false_type __enable_rval_overload;
+  using __lval_ref_type        = _Deleter&;
+  using __bad_rval_ref_type    = _Deleter&&;
+  using __enable_rval_overload = false_type;
 };
 
 #if defined(_LIBCUDACXX_ABI_ENABLE_UNIQUE_PTR_TRIVIAL_ABI)
@@ -132,9 +132,9 @@ template <class _Tp, class _Dp = default_delete<_Tp>>
 class _LIBCUDACXX_UNIQUE_PTR_TRIVIAL_ABI _CCCL_TYPE_VISIBILITY_DEFAULT unique_ptr
 {
 public:
-  typedef _Tp element_type;
-  typedef _Dp deleter_type;
-  typedef _CCCL_NODEBUG_ALIAS typename __pointer<_Tp, deleter_type>::type pointer;
+  using element_type                = _Tp;
+  using deleter_type                = _Dp;
+  using pointer _CCCL_NODEBUG_ALIAS = typename __pointer<_Tp, deleter_type>::type;
 
   static_assert(!is_rvalue_reference_v<deleter_type>, "the specified deleter type cannot be an rvalue reference");
 
@@ -146,7 +146,7 @@ private:
     int __for_bool_;
   };
 
-  typedef _CCCL_NODEBUG_ALIAS __unique_ptr_deleter_sfinae<_Dp> _DeleterSFINAE;
+  using _DeleterSFINAE _CCCL_NODEBUG_ALIAS = __unique_ptr_deleter_sfinae<_Dp>;
 
   template <bool _Dummy>
   using _LValRefType _CCCL_NODEBUG_ALIAS = typename __dependent_type<_DeleterSFINAE, _Dummy>::__lval_ref_type;
@@ -303,9 +303,9 @@ template <class _Tp, class _Dp>
 class _LIBCUDACXX_UNIQUE_PTR_TRIVIAL_ABI _CCCL_TYPE_VISIBILITY_DEFAULT unique_ptr<_Tp[], _Dp>
 {
 public:
-  typedef _Tp element_type;
-  typedef _Dp deleter_type;
-  typedef typename __pointer<_Tp, deleter_type>::type pointer;
+  using element_type = _Tp;
+  using deleter_type = _Dp;
+  using pointer      = typename __pointer<_Tp, deleter_type>::type;
 
 private:
   __compressed_pair<pointer, deleter_type> __ptr_;
@@ -322,7 +322,7 @@ private:
             || (is_same_v<pointer, element_type*> && is_convertible_v<_FromElem (*)[], element_type (*)[]>)>
   {};
 
-  typedef __unique_ptr_deleter_sfinae<_Dp> _DeleterSFINAE;
+  using _DeleterSFINAE = __unique_ptr_deleter_sfinae<_Dp>;
 
   template <bool _Dummy>
   using _LValRefType _CCCL_NODEBUG_ALIAS = typename __dependent_type<_DeleterSFINAE, _Dummy>::__lval_ref_type;
@@ -541,9 +541,9 @@ _CCCL_API inline
   bool
   operator<(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
 {
-  typedef typename unique_ptr<_T1, _D1>::pointer _P1;
-  typedef typename unique_ptr<_T2, _D2>::pointer _P2;
-  typedef typename common_type<_P1, _P2>::type _Vp;
+  using _P1 = typename unique_ptr<_T1, _D1>::pointer;
+  using _P2 = typename unique_ptr<_T2, _D2>::pointer;
+  using _Vp = typename common_type<_P1, _P2>::type;
   return less<_Vp>()(__x.get(), __y.get());
 }
 
@@ -625,14 +625,14 @@ _CCCL_API inline
 template <class _T1, class _D1>
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 bool operator<(const unique_ptr<_T1, _D1>& __x, nullptr_t)
 {
-  typedef typename unique_ptr<_T1, _D1>::pointer _P1;
+  using _P1 = typename unique_ptr<_T1, _D1>::pointer;
   return less<_P1>()(__x.get(), nullptr);
 }
 
 template <class _T1, class _D1>
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 bool operator<(nullptr_t, const unique_ptr<_T1, _D1>& __x)
 {
-  typedef typename unique_ptr<_T1, _D1>::pointer _P1;
+  using _P1 = typename unique_ptr<_T1, _D1>::pointer;
   return less<_P1>()(nullptr, __x.get());
 }
 
@@ -687,19 +687,19 @@ operator<=>(const unique_ptr<_T1, _D1>& __x, nullptr_t)
 template <class _Tp>
 struct __unique_if
 {
-  typedef unique_ptr<_Tp> __unique_single;
+  using __unique_single = unique_ptr<_Tp>;
 };
 
 template <class _Tp>
 struct __unique_if<_Tp[]>
 {
-  typedef unique_ptr<_Tp[]> __unique_array_unknown_bound;
+  using __unique_array_unknown_bound = unique_ptr<_Tp[]>;
 };
 
 template <class _Tp, size_t _Np>
 struct __unique_if<_Tp[_Np]>
 {
-  typedef void __unique_array_known_bound;
+  using __unique_array_known_bound = void;
 };
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -713,7 +713,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_array_unknown_bound make_unique(size_t __n)
 {
-  typedef remove_extent_t<_Tp> _Up;
+  using _Up = remove_extent_t<_Tp>;
   return unique_ptr<_Tp>(new _Up[__n]());
 }
 
@@ -746,13 +746,13 @@ template <class _Tp, class _Dp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unique_ptr<_Tp, _Dp>>
 {
 #  if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  CCCL_DEPRECATED typedef unique_ptr<_Tp, _Dp> argument_type;
-  CCCL_DEPRECATED typedef size_t result_type;
+  using argument_type = CCCL_DEPRECATED unique_ptr<_Tp, _Dp>;
+  using result_type   = CCCL_DEPRECATED size_t;
 #  endif
 
   _CCCL_API inline size_t operator()(const unique_ptr<_Tp, _Dp>& __ptr) const
   {
-    typedef typename unique_ptr<_Tp, _Dp>::pointer pointer;
+    using pointer = typename unique_ptr<_Tp, _Dp>::pointer;
     return hash<pointer>()(__ptr.get());
   }
 };

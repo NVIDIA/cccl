@@ -1,4 +1,7 @@
-import numba
+# Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from ._iterators import (
     CacheModifiedPointer as _CacheModifiedPointer,
@@ -42,11 +45,13 @@ def CacheModifiedInputIterator(device_array, modifier):
     Returns:
         A ``CacheModifiedInputIterator`` object initialized with ``device_array``
     """
+    from .. import types
+
     if modifier != "stream":
         raise NotImplementedError("Only stream modifier is supported")
     return _CacheModifiedPointer(
         device_array.__cuda_array_interface__["data"][0],
-        numba.from_dtype(device_array.dtype),
+        types.from_numpy_dtype(device_array.dtype),
     )
 
 

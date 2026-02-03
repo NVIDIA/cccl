@@ -23,7 +23,7 @@ endmacro()
 
 macro(cccl_get_catch2)
   include("${_cccl_cpm_file}")
-  CPMAddPackage("gh:catchorg/Catch2@3.8.1")
+  CPMAddPackage("gh:catchorg/Catch2@3.12.0")
 endmacro()
 
 macro(cccl_get_cccl)

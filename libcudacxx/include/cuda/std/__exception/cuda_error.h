@@ -23,11 +23,11 @@
 
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__exception/msg_storage.h>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/source_location>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <cstdio>
-#  include <stdexcept>
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
@@ -100,7 +100,7 @@ private:
   [[maybe_unused]] const char* __api                  = nullptr,
   [[maybe_unused]] ::cuda::std::source_location __loc = ::cuda::std::source_location::current())
 {
-  _CCCL_THROW(::cuda::cuda_error(__status, __msg, __api, __loc));
+  _CCCL_THROW(cuda::cuda_error, __status, __msg, __api, __loc);
 }
 
 _CCCL_END_NAMESPACE_CUDA

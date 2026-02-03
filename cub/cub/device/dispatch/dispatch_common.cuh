@@ -47,4 +47,22 @@ enum class ForceInclusive
   No
 };
 
+// Options for specifying selection direction (e.g., for top-k selection).
+namespace detail::topk
+{
+enum class select
+{
+  // Select the elements with the lowest values
+  min,
+  // Select the elements with the highest values
+  max
+};
+} // namespace detail::topk
+
+namespace detail
+{
+struct use_default
+{};
+} // namespace detail
+
 CUB_NAMESPACE_END

@@ -49,7 +49,7 @@ insert3at(C& c, typename C::iterator i, typename C::value_type x1, typename C::v
 int main(int, char**)
 {
   {
-    typedef cuda::std::inplace_vector<int, 10> C;
+    using C = cuda::std::inplace_vector<int, 10>;
     C c1;
     for (int i = 0; i < 3; ++i)
     {

@@ -22,13 +22,11 @@
 
 #include <cuda/std/__exception/terminate.h>
 
-#if !_CCCL_COMPILER(NVRTC)
-#  if __cpp_lib_format >= 201907L
-#    include <format>
-#  else // ^^^ __cpp_lib_format >= 201907L ^^^ / vvv __cpp_lib_format < 201907L vvv
-#    include <stdexcept>
-#  endif // ^^^ __cpp_lib_format < 201907L ^^^
-#endif // !_CCCL_COMPILER(NVRTC)
+#if __cpp_lib_format >= 201907L
+#  include <format>
+#else // ^^^ __cpp_lib_format >= 201907L ^^^ / vvv __cpp_lib_format < 201907L vvv
+#  include <cuda/std/__host_stdlib/stdexcept>
+#endif // ^^^ __cpp_lib_format < 201907L ^^^
 
 #include <cuda/std/__cccl/prologue.h>
 
