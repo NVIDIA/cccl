@@ -25,7 +25,7 @@
 __host__ __device__ constexpr bool tests()
 {
   {
-    typedef cuda::std::array<int, 3> C;
+    using C    = cuda::std::array<int, 3>;
     const C c1 = {1, 2, 3};
     const C c2 = {1, 2, 3};
     const C c3 = {3, 2, 1};
@@ -35,13 +35,13 @@ __host__ __device__ constexpr bool tests()
     assert(testComparisons(c1, c4, false, false));
   }
   {
-    typedef cuda::std::array<int, 0> C;
+    using C    = cuda::std::array<int, 0>;
     const C c1 = {};
     const C c2 = {};
     assert(testComparisons(c1, c2, true, false));
   }
   {
-    typedef cuda::std::array<LessAndEqComp, 3> C;
+    using C    = cuda::std::array<LessAndEqComp, 3>;
     const C c1 = {LessAndEqComp(1), LessAndEqComp(2), LessAndEqComp(3)};
     const C c2 = {LessAndEqComp(1), LessAndEqComp(2), LessAndEqComp(3)};
     const C c3 = {LessAndEqComp(3), LessAndEqComp(2), LessAndEqComp(1)};
@@ -51,7 +51,7 @@ __host__ __device__ constexpr bool tests()
     assert(testComparisons(c1, c4, false, false));
   }
   {
-    typedef cuda::std::array<LessAndEqComp, 0> C;
+    using C    = cuda::std::array<LessAndEqComp, 0>;
     const C c1 = {};
     const C c2 = {};
     assert(testComparisons(c1, c2, true, false));

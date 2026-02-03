@@ -20,30 +20,30 @@ template <class T1, class T2>
 __host__ __device__ void test()
 {
   {
-    typedef T1 Exp1;
-    typedef T2 Exp2;
-    typedef cuda::std::pair<T1, T2> P;
+    using Exp1 = T1;
+    using Exp2 = T2;
+    using P    = cuda::std::pair<T1, T2>;
     static_assert((cuda::std::is_same<typename cuda::std::tuple_element<0, P>::type, Exp1>::value), "");
     static_assert((cuda::std::is_same<typename cuda::std::tuple_element<1, P>::type, Exp2>::value), "");
   }
   {
-    typedef T1 const Exp1;
-    typedef T2 const Exp2;
-    typedef cuda::std::pair<T1, T2> const P;
+    using Exp1 = T1 const;
+    using Exp2 = T2 const;
+    using P    = cuda::std::pair<T1, T2> const;
     static_assert((cuda::std::is_same<typename cuda::std::tuple_element<0, P>::type, Exp1>::value), "");
     static_assert((cuda::std::is_same<typename cuda::std::tuple_element<1, P>::type, Exp2>::value), "");
   }
   {
-    typedef T1 volatile Exp1;
-    typedef T2 volatile Exp2;
-    typedef cuda::std::pair<T1, T2> volatile P;
+    using Exp1 = T1 volatile;
+    using Exp2 = T2 volatile;
+    using P    = cuda::std::pair<T1, T2> volatile;
     static_assert((cuda::std::is_same<typename cuda::std::tuple_element<0, P>::type, Exp1>::value), "");
     static_assert((cuda::std::is_same<typename cuda::std::tuple_element<1, P>::type, Exp2>::value), "");
   }
   {
-    typedef T1 const volatile Exp1;
-    typedef T2 const volatile Exp2;
-    typedef cuda::std::pair<T1, T2> const volatile P;
+    using Exp1 = T1 const volatile;
+    using Exp2 = T2 const volatile;
+    using P    = cuda::std::pair<T1, T2> const volatile;
     static_assert((cuda::std::is_same<typename cuda::std::tuple_element<0, P>::type, Exp1>::value), "");
     static_assert((cuda::std::is_same<typename cuda::std::tuple_element<1, P>::type, Exp2>::value), "");
   }

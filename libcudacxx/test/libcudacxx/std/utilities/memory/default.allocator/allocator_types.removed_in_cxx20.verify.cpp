@@ -16,12 +16,12 @@
 // class allocator
 // {
 // public:
-//     typedef T*                                           pointer;
-//     typedef const T*                                     const_pointer;
-//     typedef typename add_lvalue_reference<T>::type       reference;
-//     typedef typename add_lvalue_reference<const T>::type const_reference;
+//     using pointer         = T*;
+//     using const_pointer   = const T*;
+//     using reference       = typename add_lvalue_reference<T>::type;
+//     using const_reference = typename add_lvalue_reference<const T>::type;
 //
-//     template <class U> struct rebind {typedef allocator<U> other;};
+//     template <class U> struct rebind {using other = allocator<U>;};
 // ...
 // };
 
@@ -32,11 +32,11 @@
 template <typename T>
 __host__ __device__ void check()
 {
-  typedef typename cuda::std::allocator<T>::pointer AP; // expected-error 3 {{no type named 'pointer'}}
-  typedef typename cuda::std::allocator<T>::const_pointer ACP; // expected-error 3 {{no type named 'const_pointer'}}
-  typedef typename cuda::std::allocator<T>::reference AR; // expected-error 3 {{no type named 'reference'}}
-  typedef typename cuda::std::allocator<T>::const_reference ACR; // expected-error 3 {{no type named 'const_reference'}}
-  typedef typename cuda::std::allocator<T>::template rebind<int>::other ARO; // expected-error 3 {{no member named
+  using AP  = typename cuda::std::allocator<T>::pointer; // expected-error 3 {{no type named 'pointer'}}
+  using ACP = typename cuda::std::allocator<T>::const_pointer; // expected-error 3 {{no type named 'const_pointer'}}
+  using AR  = typename cuda::std::allocator<T>::reference; // expected-error 3 {{no type named 'reference'}}
+  using ACR = typename cuda::std::allocator<T>::const_reference; // expected-error 3 {{no type named 'const_reference'}}
+  using ARO = typename cuda::std::allocator<T>::template rebind<int>::other; // expected-error 3 {{no member named
                                                                              // 'rebind'}}
 }
 
