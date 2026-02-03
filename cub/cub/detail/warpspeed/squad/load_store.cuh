@@ -174,7 +174,7 @@ _CCCL_DEVICE_API void squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSme
     refDestSmem.squadIncreaseTxCount(squad, cpAsyncOobInfo.underCopySizeBytes);
 
     // we cannot use Tp to load the head and tail elements, because sizeof(Tp) may be larger than alignof(Tp)
-    using load_word_t = ::cuda::__make_nbit_uint_t<alignof(Tp) * CHAR_BIT>;
+    using load_word_t = ::cuda::std::__make_nbit_uint_t<alignof(Tp) * CHAR_BIT>;
 
     const int head_elements = (cpAsyncOobInfo.ptrGmemStartAlignUp - cpAsyncOobInfo.ptrGmem) / sizeof(load_word_t);
     const int tail_elements = (cpAsyncOobInfo.ptrGmemEnd - cpAsyncOobInfo.ptrGmemEndAlignDown) / sizeof(load_word_t);
