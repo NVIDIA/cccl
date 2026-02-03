@@ -257,7 +257,7 @@ struct agent_segmented_scan
 
       if (chunk_id == 0)
       {
-        // Initialize exlusive_prefix, referenced from prefix_op
+        // Initialize exclusive_prefix, referenced from prefix_op
         scan_first_tile(thread_values, initial_value, scan_op, exclusive_prefix);
       }
       else
@@ -303,6 +303,10 @@ struct agent_segmented_scan
     static_assert(::cuda::std::is_convertible_v<::cuda::std::iter_value_t<OutputBeginOffsetIteratorT>, OffsetT>,
                   "Unexpected iterator type");
 
+    static_assert(NumSegments <= max_segments_per_block,
+                  "Template value NumSegments of consume_ranges method must not exceed class template value "
+                  "controlling size of shared memory array");
+
     _CCCL_ASSERT(n_segments > 0, "Number of segments per worker should be positive");
     _CCCL_ASSERT(n_segments <= NumSegments, "Number of segments per worker exceeds statically provisioned storage");
 
@@ -339,7 +343,7 @@ struct agent_segmented_scan
 
     __syncthreads();
 
-    ::cuda::std::span<OffsetT> cum_sizes{
+    const ::cuda::std::span<OffsetT> cum_sizes{
       temp_storage.logical_segment_offsets, static_cast<::cuda::std::size_t>(n_segments)};
     const OffsetT items_per_block = cum_sizes[n_segments - 1];
 
@@ -408,7 +412,7 @@ struct agent_segmented_scan
 
       if (chunk_id == 0)
       {
-        // Initialize exlusive_prefix, referenced from prefix_op
+        // Initialize exclusive_prefix, referenced from prefix_op
         augmented_init_value_t augmented_init_value = multi_segment_helpers::make_value_flag(initial_value, false);
         scan_first_tile(thread_flag_values, augmented_init_value, augmented_scan_op, exclusive_prefix);
       }
