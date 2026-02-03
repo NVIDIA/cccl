@@ -53,11 +53,12 @@ __host__ __device__ constexpr T get_value()
 template <class Op, class T>
 __host__ __device__ constexpr void test_absorbing_impl2()
 {
+  using U = cuda::std::remove_cv_t<T>;
   Op op{};
-  auto value      = get_value<cuda::std::remove_cv_t<T>>();
+  auto value      = get_value<U>();
   auto absorbing1 = cuda::absorbing_element<Op, T>();
-  auto result_lhs = static_cast<T>(op(value, absorbing1));
-  auto result_rhs = static_cast<T>(op(absorbing1, value));
+  auto result_lhs = static_cast<U>(op(value, absorbing1));
+  auto result_rhs = static_cast<U>(op(absorbing1, value));
   assert(result_lhs == absorbing1);
   assert(result_rhs == absorbing1);
 }

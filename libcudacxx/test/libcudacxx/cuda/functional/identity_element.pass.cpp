@@ -54,11 +54,12 @@ __host__ __device__ constexpr T get_value()
 template <class Op, class T>
 __host__ __device__ constexpr void test_identity_impl2()
 {
+  using U = cuda::std::remove_cv_t<T>;
   Op op{};
-  auto value      = get_value<cuda::std::remove_cv_t<T>>();
+  auto value      = get_value<U>();
   auto identity1  = cuda::identity_element<Op, T>();
-  auto result_lhs = static_cast<T>(op(value, identity1));
-  auto result_rhs = static_cast<T>(op(identity1, value));
+  auto result_lhs = static_cast<U>(op(value, identity1));
+  auto result_rhs = static_cast<U>(op(identity1, value));
   assert(result_lhs == value);
   assert(result_rhs == value);
 }
