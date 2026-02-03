@@ -237,7 +237,7 @@ struct index_to_value
   }
 };
 
-static_assert(cuda::std::is_default_constructible_v<NotDefaultConstructible> == false,
+static_assert(!cuda::std::is_default_constructible_v<NotDefaultConstructible>,
               "NotDefaultConstructible should not be default constructible");
 
 C2H_TEST("Device find_if works with non default constructible types", "[device][find_if]")
