@@ -76,13 +76,13 @@ CUB_NAMESPACE_END
 // Tuple protocol specializations
 namespace std
 {
-template <typename _Tp, ::std::size_t numPhases>
+template <typename _Tp, size_t numPhases>
 struct tuple_size<CUB_NS_QUALIFIER::detail::warpspeed::SmemPhaseStructuredBinding<_Tp, numPhases>>
 {
-  static constexpr ::std::size_t value = numPhases;
+  static constexpr size_t value = numPhases;
 };
 
-template <typename _Tp, ::std::size_t _Index, ::cuda::std::size_t numPhases>
+template <typename _Tp, size_t _Index, ::cuda::std::size_t numPhases>
 struct tuple_element<_Index, CUB_NS_QUALIFIER::detail::warpspeed::SmemPhaseStructuredBinding<_Tp, numPhases>>
 {
   using type = CUB_NS_QUALIFIER::detail::warpspeed::SmemPhase<_Tp>;
