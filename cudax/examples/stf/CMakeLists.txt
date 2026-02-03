@@ -7,7 +7,10 @@ set(
   03-temporary-data.cu
   04-fibonacci.cu
   04-fibonacci-run_once.cu
+  08-cub-exclusive-scan.cu
   08-cub-reduce.cu
+  08-cub-transform-reduce.cu
+  08-cub-reduce-lowlevel.cu
   axpy-annotated.cu
   void_data_interface.cu
   explicit_data_places.cu
