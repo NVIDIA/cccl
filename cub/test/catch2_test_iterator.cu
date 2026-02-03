@@ -132,7 +132,9 @@ C2H_TEST("Test tex-obj texture iterator", "[iterator]", types)
 
   const auto h_reference = c2h::host_vector<T>{
     h_data[0], h_data[100], h_data[1000], h_data[10000], h_data[1], h_data[21], h_data[11], h_data[0]};
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   cub::TexObjInputIterator<T> d_obj_itr;
+  _CCCL_SUPPRESS_DEPRECATED_POP
   CubDebugExit(
     d_obj_itr.BindTexture(const_cast<const T*>(thrust::raw_pointer_cast(d_data.data())), sizeof(T) * TEST_VALUES));
   test_iterator(d_obj_itr, h_reference);
@@ -140,6 +142,8 @@ C2H_TEST("Test tex-obj texture iterator", "[iterator]", types)
 
 C2H_TEST("Test texture transform iterator", "[iterator]", types)
 {
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
+
   using T                   = c2h::get<0, TestType>;
   constexpr int TEST_VALUES = 11000;
 
@@ -165,4 +169,6 @@ C2H_TEST("Test texture transform iterator", "[iterator]", types)
   cuda::transform_iterator<transform_op_t<T>, TextureIterator> xform_itr(d_tex_itr, op);
   test_iterator(xform_itr, h_reference);
   CubDebugExit(d_tex_itr.UnbindTexture());
+
+  _CCCL_SUPPRESS_DEPRECATED_POP
 }

@@ -39,6 +39,8 @@ CUB_NAMESPACE_BEGIN
  * @brief A random-access input wrapper for dereferencing array values through texture cache.
  *        Uses newer Kepler-style texture objects.
  *
+ * Deprecated [Since 3.3]
+ *
  * @par Overview
  * - TexObjInputIterator wraps a native device pointer of type <tt>ValueType*</tt>. References
  *   to elements are to be loaded through texture cache.
@@ -88,7 +90,7 @@ CUB_NAMESPACE_BEGIN
  * @endrst
  */
 template <typename T, typename OffsetT = ptrdiff_t>
-class TexObjInputIterator
+class CCCL_DEPRECATED TexObjInputIterator
 {
 public:
   // Required iterator traits
@@ -264,6 +266,7 @@ public:
   }
 
 #if !_CCCL_COMPILER(NVRTC)
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   /// ostream operator
   friend ::std::ostream& operator<<(::std::ostream& os, const self_type& itr)
   {
@@ -271,6 +274,7 @@ public:
        << " )";
     return os;
   }
+  _CCCL_SUPPRESS_DEPRECATED_POP
 #endif // !_CCCL_COMPILER(NVRTC)
 
 private:
