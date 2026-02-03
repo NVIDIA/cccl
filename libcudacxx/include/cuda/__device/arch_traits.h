@@ -25,6 +25,7 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__fwd/devices.h>
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -506,9 +507,9 @@ template <>
       return ::cuda::arch_traits<arch_id::sm_121a>();
     default:
 #if _CCCL_HAS_CTK()
-      ::cuda::__throw_cuda_error(::cudaErrorInvalidValue, "Traits requested for an unknown architecture");
+      _CCCL_THROW(cuda::cuda_error, ::cudaErrorInvalidValue, "Traits requested for an unknown architecture");
 #else // ^^^ _CCCL_HAS_CTK() ^^^ / vvv !_CCCL_HAS_CTK() vvv
-      ::cuda::__throw_cuda_error(/*cudaErrorInvalidValue*/ 1, "Traits requested for an unknown architecture");
+      _CCCL_THROW(cuda::cuda_error, /*cudaErrorInvalidValue*/ 1, "Traits requested for an unknown architecture");
 #endif // ^^^ !_CCCL_HAS_CTK() ^^^
       break;
   }

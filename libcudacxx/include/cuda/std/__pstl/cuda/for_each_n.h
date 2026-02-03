@@ -54,7 +54,7 @@ struct __pstl_dispatch<__pstl_algorithm::__for_each_n, __execution_backend::__cu
 {
   template <class _Policy, class _Iter, class _Size, class _Fn>
   [[nodiscard]] _CCCL_HOST_API static _Iter
-  __par_impl([[maybe_unused]] const _Policy& __policy, _Iter __first, _Size __orig_n, _Fn __func) noexcept
+  __par_impl(const _Policy& __policy, _Iter __first, _Size __orig_n, _Fn __func)
   {
     const auto __count = ::cuda::std::__convert_to_integral(__orig_n);
 

@@ -35,6 +35,7 @@
 #  include <cuda/__stream/launch_transform.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__exception/cuda_error.h>
+#  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__type_traits/is_function.h>
 #  include <cuda/std/__type_traits/is_pointer.h>
 #  include <cuda/std/__type_traits/type_identity.h>
@@ -99,7 +100,7 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __k
   ::cudaError_t __status = __detail::apply_kernel_config(__conf, __config, __kernel);
   if (__status != ::cudaSuccess)
   {
-    ::cuda::__throw_cuda_error(__status, "Failed to prepare a launch configuration");
+    _CCCL_THROW(cuda::cuda_error, __status, "Failed to prepare a launch configuration");
   }
 
   __config.gridDimX  = block.dims(grid, __conf).x;
