@@ -56,7 +56,7 @@ struct alignas(_Alignment) tile_state_t : tile_state_unaligned_t<AccumT>
 #if __cccl_ptx_isa >= 860
 
 template <typename AccumT>
-_CCCL_DEVICE_API inline void
+_CCCL_DEVICE_API void
 storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, AccumT sum, int index)
 {
   _CCCL_ASSERT(::cuda::is_aligned(ptrTileStates, alignof(tile_state_t<AccumT>)), "");
@@ -83,7 +83,7 @@ storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, Ac
 }
 
 template <typename AccumT>
-_CCCL_DEVICE_API inline tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* ptrTileStates, int index)
+_CCCL_DEVICE_API tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* ptrTileStates, int index)
 {
   _CCCL_ASSERT(::cuda::is_aligned(ptrTileStates, alignof(tile_state_t<AccumT>)), "");
   _CCCL_ASSERT(index >= 0 && index < gridDim.x, "Reading out of bounds tile state");
@@ -127,7 +127,7 @@ _CCCL_DEVICE_API inline tile_state_t<AccumT> loadTileAggregate(tile_state_t<Accu
 // If the index idxTileCur + ii of the loaded state is equal to or exceeds idxTileNext, i.e., idxTileCur + ii >=
 // idxTileNext, then the state is not loaded from memory and set to EMPTY.
 template <int numTileStatesPerThread, typename AccumT>
-_CCCL_DEVICE_API inline void warpLoadLookback(
+_CCCL_DEVICE_API void warpLoadLookback(
   int laneIdx,
   tile_state_t<AccumT> (&outTileStates)[numTileStatesPerThread],
   tile_state_t<AccumT>* ptrTileStates,
@@ -163,7 +163,7 @@ _CCCL_DEVICE_API inline void warpLoadLookback(
 // warp-uniform.
 //
 template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
-[[nodiscard]] _CCCL_DEVICE_API inline AccumT warpIncrementalLookback(
+[[nodiscard]] _CCCL_DEVICE_API AccumT warpIncrementalLookback(
   SpecialRegisters specialRegisters,
   tile_state_t<AccumT>* ptrTileStates,
   const int idxTilePrev,

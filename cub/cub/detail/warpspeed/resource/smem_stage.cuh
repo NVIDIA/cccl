@@ -67,7 +67,7 @@ struct SmemPhaseStructuredBinding
 
 // The binding function
 template <::cuda::std::size_t numPhases, typename _Tp>
-[[nodiscard]] _CCCL_DEVICE_API inline SmemPhaseStructuredBinding<_Tp, numPhases> bindPhases(SmemStage<_Tp>& smemStage)
+[[nodiscard]] _CCCL_DEVICE_API SmemPhaseStructuredBinding<_Tp, numPhases> bindPhases(SmemStage<_Tp>& smemStage)
 {
   _WS_CONSTANT_ASSERT(smemStage.mSmemResourceRaw.mNumPhases == numPhases,
                       "Number of bound phases must match resource phases.");

@@ -44,7 +44,7 @@ struct SmemResource : SmemResourceRaw
   }
 
 private:
-  [[nodiscard]] _CCCL_API static constexpr inline SmemResourceRaw
+  [[nodiscard]] _CCCL_API static constexpr SmemResourceRaw
   makeSmemResourceRaw(SyncHandler& syncHandler, SmemAllocator& smemAllocator, Stages stages, Elems elems = Elems{1})
   {
     int align       = alignof(_Tp);
@@ -52,7 +52,7 @@ private:
     int strideBytes = sizeBytes;
 
     void* ptrBase = smemAllocator.alloc(::cuda::std::to_underlying(stages) * strideBytes, align);
-    return SmemResourceRaw(syncHandler, ptrBase, sizeBytes, strideBytes, ::cuda::std::to_underlying(stages));
+    return {syncHandler, ptrBase, sizeBytes, strideBytes, ::cuda::std::to_underlying(stages)};
   }
 };
 } // namespace detail::warpspeed

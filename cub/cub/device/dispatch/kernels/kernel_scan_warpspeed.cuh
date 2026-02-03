@@ -139,7 +139,7 @@ _CCCL_DEVICE_API inline void squadGetNextBlockIdx(const warpspeed::Squad& squad,
 }
 
 template <typename Tp, typename ScanOpT>
-_CCCL_DEVICE_API inline Tp warpReduce(const Tp input, ScanOpT& scan_op)
+_CCCL_DEVICE_API Tp warpReduce(const Tp input, ScanOpT& scan_op)
 {
   using warp_reduce_t = WarpReduce<Tp>;
 
@@ -152,7 +152,7 @@ _CCCL_DEVICE_API inline Tp warpReduce(const Tp input, ScanOpT& scan_op)
 }
 
 template <typename Tp, typename ScanOpT>
-_CCCL_DEVICE_API inline Tp warpReducePartial(const Tp input, ScanOpT& scan_op, const int num_items)
+_CCCL_DEVICE_API Tp warpReducePartial(const Tp input, ScanOpT& scan_op, const int num_items)
 {
   using warp_reduce_t = WarpReduce<Tp>;
 
@@ -165,7 +165,7 @@ _CCCL_DEVICE_API inline Tp warpReducePartial(const Tp input, ScanOpT& scan_op, c
 }
 
 template <typename Tp, typename ScanOpT>
-_CCCL_DEVICE_API inline Tp warpScanExclusive(const Tp regInput, ScanOpT& scan_op)
+_CCCL_DEVICE_API Tp warpScanExclusive(const Tp regInput, ScanOpT& scan_op)
 {
   using warp_scan_t = WarpScan<Tp>;
 

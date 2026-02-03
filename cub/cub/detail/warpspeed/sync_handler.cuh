@@ -95,7 +95,7 @@ struct SyncHandler
   }
 
   // clusterInitSync can only be called on device.
-  _CCCL_DEVICE_API inline void clusterInitSync(SpecialRegisters sr, SkipSync)
+  _CCCL_DEVICE_API void clusterInitSync(SpecialRegisters sr, SkipSync)
   {
     _WS_CONSTANT_ASSERT(!mHasInitialized, "Cannot initialize SyncHandler twice.");
     mHasInitialized = true;
@@ -136,7 +136,7 @@ struct SyncHandler
     }
   }
 
-  _CCCL_DEVICE_API inline void clusterInitSync(SpecialRegisters sr)
+  _CCCL_DEVICE_API void clusterInitSync(SpecialRegisters sr)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, ({
                    clusterInitSync(sr, SkipSync{});
