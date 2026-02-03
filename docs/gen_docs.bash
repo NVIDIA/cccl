@@ -232,17 +232,15 @@ fi
 
 # Provide version metadata for the theme switcher
 cat > "${HTML_DIR}/nv-versions.json" <<EOF
-{
-  "versions": [
-    {
-      "name": "${VERSION}",
-      "version": "${VERSION}",
-      "url": "${BASE_URL}${VERSION}/",
-      "latest": ${IS_LATEST},
-      "preferred": ${IS_LATEST}
-    }
-  ]
-}
+[
+  {
+    "name": "${VERSION}",
+    "version": "${VERSION}",
+    "url": "${BASE_URL}${VERSION}/",
+    "latest": ${IS_LATEST},
+    "preferred": ${IS_LATEST}
+  }
+]
 EOF
 
 cat > "${HTML_DIR}/versions.json" <<EOF
