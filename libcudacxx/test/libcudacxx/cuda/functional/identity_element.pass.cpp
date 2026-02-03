@@ -72,7 +72,9 @@ __host__ __device__ constexpr void test_identity_impl(bool has_identity, [[maybe
   {
     if constexpr (::cuda::is_floating_point_v<T>)
     {
+#if _CCCL_COMPILER(GCC, >=, 8)
       assert(cuda::std::signbit(identity) == cuda::std::signbit(cuda::identity_element<Op, T>()));
+#endif // _CCCL_COMPILER(GCC, >=, 8)
     }
     // handle extended floating-point types separately
     if constexpr (!::cuda::std::__is_extended_floating_point_v<T>)
