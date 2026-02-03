@@ -63,15 +63,12 @@ template <class _StridedMapping>
   using _Extents        = typename _StridedMapping::extents_type;
   using _RankType       = typename _StridedMapping::rank_type;
   constexpr auto __rank = _Extents::rank();
-  if constexpr (__rank > 0) // avoid pointless comparison of unsigned integer with zero warning
+  // Check if any extent is zero - can't call mapping(0,...) in that case
+  for (_RankType __r = 0; __r != __rank; ++__r)
   {
-    // Check if any extent is zero - can't call mapping(0,...) in that case
-    for (_RankType __r = 0; __r < __rank; ++__r)
+    if (__mapping.extents().extent(__r) == 0)
     {
-      if (__mapping.extents().extent(__r) == 0)
-      {
-        return typename _StridedMapping::index_type{0};
-      }
+      return typename _StridedMapping::index_type{0};
     }
   }
   return ::cuda::__layout_stride_relaxed_compute_offset(__mapping, ::cuda::std::make_index_sequence<__rank>{});
@@ -147,14 +144,11 @@ private:
 
   [[nodiscard]] _CCCL_API constexpr bool __has_positive_strides() const noexcept
   {
-    if constexpr (__rank_ > 0) // avoid pointless comparison of unsigned integer with zero warning
+    for (rank_type __r = 0; __r != __rank_; ++__r)
     {
-      for (rank_type __r = 0; __r < __rank_; ++__r)
+      if (__strides_.stride(__r) <= 0)
       {
-        if (__strides_.stride(__r) <= 0)
-        {
-          return false;
-        }
+        return false;
       }
     }
     return true;
@@ -399,12 +393,9 @@ public:
     _CCCL_ASSERT(__has_positive_strides(),
                  "layout_stride_relaxed::mapping: cannot convert to layout_stride with non-positive strides");
     ::cuda::std::array<index_type, __rank_> __stride_array{};
-    if constexpr (__rank_ > 0) // avoid pointless comparison of unsigned integer with zero warning
+    for (rank_type __r = 0; __r != __rank_; ++__r)
     {
-      for (rank_type __r = 0; __r < __rank_; ++__r)
-      {
-        __stride_array[__r] = static_cast<index_type>(__strides_.stride(__r));
-      }
+      __stride_array[__r] = static_cast<index_type>(__strides_.stride(__r));
     }
     return ::cuda::std::layout_stride::mapping<extents_type>(__extents_, __stride_array);
   }

@@ -48,8 +48,8 @@ namespace __strides_detail
 template <class _OffsetType, class _Seq>
 struct __make_dstrides_impl;
 
-template <class _OffsetType, ::cuda::std::size_t... _Idx>
-struct __make_dstrides_impl<_OffsetType, ::cuda::std::index_sequence<_Idx...>>
+template <class _OffsetType, ::cuda::std::ptrdiff_t... _Idx>
+struct __make_dstrides_impl<_OffsetType, ::cuda::std::integer_sequence<::cuda::std::ptrdiff_t, _Idx...>>
 {
   using type = strides<_OffsetType, ((void) _Idx, dynamic_stride)...>;
 };
@@ -57,8 +57,8 @@ struct __make_dstrides_impl<_OffsetType, ::cuda::std::index_sequence<_Idx...>>
 
 //! @brief Alias template for strides with all dynamic stride values
 template <class _OffsetType, ::cuda::std::size_t _Rank>
-using dstrides =
-  typename __strides_detail::__make_dstrides_impl<_OffsetType, ::cuda::std::make_index_sequence<_Rank>>::type;
+using dstrides = typename __strides_detail::
+  __make_dstrides_impl<_OffsetType, ::cuda::std::make_integer_sequence<::cuda::std::ptrdiff_t, _Rank>>::type;
 
 template <::cuda::std::size_t _Rank, class _OffsetType = ::cuda::std::ptrdiff_t>
 using steps = dstrides<_OffsetType, _Rank>;
