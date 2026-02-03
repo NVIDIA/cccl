@@ -48,5 +48,10 @@ else()
   target_compile_definitions(cccl.c2h PRIVATE C2H_HAS_CURAND=0)
 endif()
 
+set_target_properties(
+  cccl.c2h
+  PROPERTIES CXX_VISIBILITY_PRESET "default" CUDA_VISIBILITY_PRESET "default"
+)
+
 add_library(cccl.c2h.main OBJECT catch2_runner.cu catch2_runner_helper.cu)
 target_link_libraries(cccl.c2h.main PUBLIC cccl.c2h)
