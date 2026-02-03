@@ -50,36 +50,51 @@ struct agent_thread_segmented_scan_policy_t : ScalingType
 
 // helper
 
-template <typename InpBeginOffsetIt, typename InpEndOffsetIt, typename OutBeginOffsetIt, typename OffsetTy, typename MapperF>
+template <typename InpBeginOffsetIt, typename InpEndOffsetIt, typename OutBeginOffsetIt, typename OffsetT, typename MapperF>
 struct multi_segmented_seq_iterator
 {
-private:
-  int segment_counter{};
-  int max_segment_counter{};
-  OffsetTy inp_offset{};
-  OffsetTy out_offset{};
-  OffsetTy segment_id{};
-  OffsetTy segment_beg_offset{};
-  OffsetTy segment_end_offset{};
-  const InpBeginOffsetIt& inp_begin_offset_it;
-  const InpEndOffsetIt& inp_end_offset_it;
-  const OutBeginOffsetIt& out_begin_offset_it;
-  OffsetTy n_segments;
-  MapperF work_mapper_fn;
-  bool is_head = false;
+  static_assert(::cuda::std::is_convertible_v<cub::detail::it_value_t<InpBeginOffsetIt>, OffsetT>,
+                "Iterator values for input sequence begin offsets should be convertible to offset type");
+  static_assert(::cuda::std::is_convertible_v<cub::detail::it_value_t<InpEndOffsetIt>, OffsetT>,
+                "Iterator values for input sequence end offsets should be convertible to offset type");
+  static_assert(::cuda::std::is_convertible_v<cub::detail::it_value_t<OutBeginOffsetIt>, OffsetT>,
+                "Iterator values for output sequence begin offsets should be convertible to offset type");
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void set(bool head_flag)
+private:
+  int m_segment_counter     = 0;
+  int m_max_segment_counter = 0; // read-only value
+  OffsetT m_inp_offset{};
+  OffsetT m_out_offset{};
+  OffsetT m_segment_id{};
+  OffsetT m_segment_beg_offset{};
+  OffsetT m_segment_end_offset{};
+  const InpBeginOffsetIt& m_inp_begin_offset_it; // read-only value
+  const InpEndOffsetIt& m_inp_end_offset_it; // read-only value
+  const OutBeginOffsetIt& m_out_begin_offset_it; // read-only value
+  OffsetT m_num_segments; // read-only value
+  MapperF m_work_mapper_fn; // read-only value
+  bool m_is_head = false;
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE void set_first_nonempty(bool head_flag)
   {
-    if (segment_counter < max_segment_counter)
+    for (; m_segment_counter < m_max_segment_counter; ++m_segment_counter)
     {
-      segment_id = work_mapper_fn(segment_counter);
-      if (segment_id < n_segments)
+      m_segment_id = m_work_mapper_fn(m_segment_counter);
+      if (m_segment_id < m_num_segments)
       {
-        segment_beg_offset = inp_begin_offset_it[segment_id];
-        segment_end_offset = (::cuda::std::max<OffsetTy>) (inp_end_offset_it[segment_id], segment_beg_offset);
-        inp_offset         = segment_beg_offset;
-        out_offset         = out_begin_offset_it[segment_id];
-        is_head            = head_flag;
+        const OffsetT offset_beg = m_inp_begin_offset_it[m_segment_id];
+        const OffsetT offset_end = m_inp_end_offset_it[m_segment_id];
+
+        if (offset_end > offset_beg)
+        {
+          m_segment_beg_offset = offset_beg;
+          m_segment_end_offset = offset_end;
+
+          m_inp_offset = m_segment_beg_offset;
+          m_out_offset = m_out_begin_offset_it[m_segment_id];
+          m_is_head    = head_flag;
+          return;
+        }
       }
     }
   }
@@ -90,43 +105,43 @@ public:
     const InpBeginOffsetIt& inp_begin_offset_it,
     const InpEndOffsetIt& inp_end_offset_it,
     const OutBeginOffsetIt& out_begin_offset_it,
-    OffsetTy n_segments,
+    OffsetT n_segments,
     MapperF mapper_fn)
-      : max_segment_counter(max_segment_counter)
-      , inp_begin_offset_it(inp_begin_offset_it)
-      , inp_end_offset_it(inp_end_offset_it)
-      , out_begin_offset_it(out_begin_offset_it)
-      , n_segments(n_segments)
-      , work_mapper_fn(mapper_fn)
+      : m_max_segment_counter(max_segment_counter)
+      , m_inp_begin_offset_it(inp_begin_offset_it)
+      , m_inp_end_offset_it(inp_end_offset_it)
+      , m_out_begin_offset_it(out_begin_offset_it)
+      , m_num_segments(n_segments)
+      , m_work_mapper_fn(mapper_fn)
   {
-    set(false);
+    set_first_nonempty(false);
   }
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void print() const
   {
     printf(
       "segment_counter = %d, max_segment_counter=%d, segment_id = %u, inp_offset=%u, out_offset=%u, n_segments=%u\n",
-      segment_counter,
-      max_segment_counter,
-      static_cast<unsigned int>(segment_id),
-      static_cast<unsigned int>(inp_offset),
-      static_cast<unsigned int>(out_offset),
-      static_cast<unsigned int>(n_segments));
+      m_segment_counter,
+      m_max_segment_counter,
+      static_cast<unsigned int>(m_segment_id),
+      static_cast<unsigned int>(m_inp_offset),
+      static_cast<unsigned int>(m_out_offset),
+      static_cast<unsigned int>(m_num_segments));
   }
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE multi_segmented_seq_iterator& operator++()
   {
-    auto next_val = inp_offset + 1;
-    if (next_val < segment_end_offset)
+    auto next_val = m_inp_offset + 1;
+    if (next_val < m_segment_end_offset)
     {
-      inp_offset = next_val;
-      ++out_offset;
-      is_head = false;
+      m_inp_offset = next_val;
+      ++m_out_offset;
+      m_is_head = false;
     }
     else
     {
-      ++segment_counter;
-      set(true);
+      ++m_segment_counter;
+      set_first_nonempty(true);
     }
 
     return *this;
@@ -134,22 +149,22 @@ public:
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator bool() const
   {
-    return (segment_counter < max_segment_counter) && (segment_id < n_segments);
+    return (m_segment_counter < m_max_segment_counter) && (m_segment_id < m_num_segments);
   }
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool get_head_flag() const
   {
-    return is_head;
+    return m_is_head;
   }
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetTy get_input_offset() const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT get_input_offset() const
   {
-    return inp_offset;
+    return m_inp_offset;
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE OffsetTy get_output_offset() const
+  _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT get_output_offset() const
   {
-    return out_offset;
+    return m_out_offset;
   }
 };
 
