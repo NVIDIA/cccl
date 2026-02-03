@@ -24,6 +24,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/equality_comparable.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
@@ -39,8 +40,8 @@ _CCCL_CONCEPT __integral_constant_like = _CCCL_REQUIRES_EXPR((_Tp)) //
     requires(!is_same_v<bool, remove_cvref_t<decltype(_Tp::value)>>), //
     requires(convertible_to<_Tp, decltype(_Tp::value)>), //
     requires(equality_comparable_with<_Tp, decltype(_Tp::value)>), //
-    requires(_Tp() == _Tp::value), //
-    requires(static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value) //
+    requires(bool_constant<(_Tp() == _Tp::value)>::value), //
+    requires(bool_constant<(static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value)>::value) //
   );
 
 _CCCL_END_NAMESPACE_CUDA_STD
