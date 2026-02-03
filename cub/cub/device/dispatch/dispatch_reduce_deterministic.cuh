@@ -1,11 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-/**
- * @file This file device-wide, parallel operations for
- *       computing a reduction across a sequence of data items residing within
- *       device-accessible memory. Current reduction operator supported is ::cuda::std::plus
- */
+//! @file
+//! This file device-wide, parallel operations for computing a reduction across a sequence of data items residing within
+//! device-accessible memory. Current reduction operator supported is ::cuda::std::plus
 
 #pragma once
 
@@ -22,16 +20,11 @@
 #include <cub/agent/agent_reduce.cuh>
 #include <cub/detail/rfa.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
+#include <cub/device/dispatch/kernels/kernel_reduce_deterministic.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_deterministic.cuh>
-#include <cub/grid/grid_even_share.cuh>
-#include <cub/iterator/arg_index_input_iterator.cuh>
-#include <cub/thread/thread_operators.cuh>
-#include <cub/thread/thread_store.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
-
-#include <thrust/iterator/transform_output_iterator.h>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__type_traits/is_floating_point.h>
@@ -124,24 +117,24 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
 
   // Invoke single_reduce_sweep_kernel
   if (const auto error = CubDebug(
-  launcher_factory(1, active_policy.single_tile.block_threads, 0, stream)
-    .doit(detail::reduce::DeterministicDeviceReduceSingleTileKernel<
-            PolicySelector,
-            InputIteratorT,
-            OutputIteratorT,
-            ReductionOpT,
-            InitT,
-            DeterministicAccumT,
-            TransformOpT>,
-          d_in,
-          d_out,
-          static_cast<int>(num_items),
-          reduction_op,
-          init,
-          transform_op))
-    {
+        launcher_factory(1, active_policy.single_tile.block_threads, 0, stream)
+          .doit(detail::reduce::DeterministicDeviceReduceSingleTileKernel<
+                  PolicySelector,
+                  InputIteratorT,
+                  OutputIteratorT,
+                  ReductionOpT,
+                  InitT,
+                  DeterministicAccumT,
+                  TransformOpT>,
+                d_in,
+                d_out,
+                static_cast<int>(num_items),
+                reduction_op,
+                init,
+                transform_op)))
+  {
     return error;
-    }
+  }
 
   // Check for failure to launch
   if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -251,19 +244,21 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
 #endif // CUB_DEBUG_LOG
 
     if (const auto error = CubDebug(
-    launcher_factory(current_grid_size, active_policy.reduce.block_threads, 0, stream)
-      .doit(
-        detail::reduce::
-          DeterministicDeviceReduceKernel<PolicySelector, InputIteratorT, ReductionOpT, DeterministicAccumT, TransformOpT>,
-        d_in,
-        d_chunk_block_reductions,
-        num_current_items,
-        reduction_op,
-        transform_op,
-        current_grid_size))
-      {
+          launcher_factory(current_grid_size, active_policy.reduce.block_threads, 0, stream)
+            .doit(detail::reduce::DeterministicDeviceReduceKernel<PolicySelector,
+                                                                  InputIteratorT,
+                                                                  ReductionOpT,
+                                                                  DeterministicAccumT,
+                                                                  TransformOpT>,
+                  d_in,
+                  d_chunk_block_reductions,
+                  num_current_items,
+                  reduction_op,
+                  transform_op,
+                  current_grid_size)))
+    {
       return error;
-      }
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -295,23 +290,23 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
 
   // Invoke DeterministicDeviceReduceSingleTileKernel
   if (const auto error = CubDebug(
-  launcher_factory(1, active_policy.single_tile.block_threads, 0, stream)
-    .doit(detail::reduce::DeterministicDeviceReduceSingleTileKernel<
-            PolicySelector,
-            DeterministicAccumT*,
-            OutputIteratorT,
-            ReductionOpT,
-            InitT,
-            DeterministicAccumT>,
-          d_block_reductions,
-          d_out,
-          reduce_grid_size,
-          reduction_op,
-          init,
-          ::cuda::std::identity{}))
-    {
+        launcher_factory(1, active_policy.single_tile.block_threads, 0, stream)
+          .doit(detail::reduce::DeterministicDeviceReduceSingleTileKernel<
+                  PolicySelector,
+                  DeterministicAccumT*,
+                  OutputIteratorT,
+                  ReductionOpT,
+                  InitT,
+                  DeterministicAccumT>,
+                d_block_reductions,
+                d_out,
+                reduce_grid_size,
+                reduction_op,
+                init,
+                ::cuda::std::identity{})))
+  {
     return error;
-    }
+  }
 
   // Check for failure to launch
   if (const auto error = CubDebug(cudaPeekAtLastError()))
