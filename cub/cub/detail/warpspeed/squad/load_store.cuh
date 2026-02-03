@@ -22,6 +22,7 @@
 #include <cuda/__ptx/instructions/cp_async_bulk_wait_group.h>
 #include <cuda/__ptx/instructions/elect_sync.h>
 #include <cuda/__ptx/instructions/fence.h>
+#include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
