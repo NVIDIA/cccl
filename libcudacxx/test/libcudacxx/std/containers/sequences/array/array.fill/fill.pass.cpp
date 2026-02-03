@@ -19,9 +19,9 @@
 __host__ __device__ constexpr bool tests()
 {
   {
-    typedef double T;
-    typedef cuda::std::array<T, 3> C;
-    C c = {1, 2, 3.5};
+    using T = double;
+    using C = cuda::std::array<T, 3>;
+    C c     = {1, 2, 3.5};
     c.fill(5.5);
     assert(c.size() == 3);
     assert(c[0] == 5.5);
@@ -30,9 +30,9 @@ __host__ __device__ constexpr bool tests()
   }
 
   {
-    typedef double T;
-    typedef cuda::std::array<T, 0> C;
-    C c = {};
+    using T = double;
+    using C = cuda::std::array<T, 0>;
+    C c     = {};
     c.fill(5.5);
     assert(c.size() == 0);
   }

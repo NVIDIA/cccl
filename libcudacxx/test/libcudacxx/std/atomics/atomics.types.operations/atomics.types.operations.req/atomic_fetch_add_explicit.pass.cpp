@@ -42,7 +42,7 @@ struct TestFn
   __host__ __device__ void operator()() const
   {
     {
-      typedef cuda::std::atomic<T> A;
+      using A = cuda::std::atomic<T>;
       Selector<A, constructor_initializer> sel;
       A& t = *sel.construct();
       cuda::std::atomic_init(&t, T(1));
@@ -50,7 +50,7 @@ struct TestFn
       assert(t == T(3));
     }
     {
-      typedef cuda::std::atomic<T> A;
+      using A = cuda::std::atomic<T>;
       Selector<volatile A, constructor_initializer> sel;
       volatile A& t = *sel.construct();
       cuda::std::atomic_init(&t, T(1));
@@ -64,8 +64,8 @@ template <class T, template <typename, typename> class Selector>
 __host__ __device__ void testp()
 {
   {
-    typedef cuda::std::atomic<T> A;
-    typedef typename cuda::std::remove_pointer<T>::type X;
+    using A = cuda::std::atomic<T>;
+    using X = typename cuda::std::remove_pointer<T>::type;
     Selector<A, constructor_initializer> sel;
     A& t = *sel.construct();
     cuda::std::atomic_init(&t, T(1 * sizeof(X)));
@@ -73,8 +73,8 @@ __host__ __device__ void testp()
     assert(t == T(3 * sizeof(X)));
   }
   {
-    typedef cuda::std::atomic<T> A;
-    typedef typename cuda::std::remove_pointer<T>::type X;
+    using A = cuda::std::atomic<T>;
+    using X = typename cuda::std::remove_pointer<T>::type;
     Selector<volatile A, constructor_initializer> sel;
     volatile A& t = *sel.construct();
     cuda::std::atomic_init(&t, T(1 * sizeof(X)));
