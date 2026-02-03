@@ -80,7 +80,7 @@ struct DeviceScanKernelSource
                      AccumT,
                      EnforceInclusive == ForceInclusive::Yes>)
 
-  CUB_RUNTIME_FUNCTION static constexpr size_t AccumSize()
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t AccumSize()
   {
     return sizeof(AccumT);
   }
@@ -90,12 +90,12 @@ struct DeviceScanKernelSource
     return {};
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr size_t look_ahead_tile_state_size()
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t look_ahead_tile_state_size()
   {
     return sizeof(warpspeed::tile_state_t<AccumT>);
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr size_t look_ahead_tile_state_alignment()
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t look_ahead_tile_state_alignment()
   {
     return alignof(warpspeed::tile_state_t<AccumT>);
   }

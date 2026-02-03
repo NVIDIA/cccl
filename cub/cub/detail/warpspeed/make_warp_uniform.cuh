@@ -27,11 +27,11 @@ namespace detail::warpspeed
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return __reduce_min_sync(~0, x);), (return x;));
 }
-[[nodiscard]] _CCCL_DEVICE_API inline uint32_t makeWarpUniform(uint32_t x)
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t makeWarpUniform(::cuda::std::uint32_t x)
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return __reduce_min_sync(~0, x);), (return x;));
 }
-[[nodiscard]] _CCCL_DEVICE_API inline uint64_t makeWarpUniform(uint64_t x)
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint64_t makeWarpUniform(::cuda::std::uint64_t x)
 {
   return __shfl_sync(~0, x, 0);
 }

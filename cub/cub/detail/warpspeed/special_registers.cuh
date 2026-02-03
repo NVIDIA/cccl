@@ -25,18 +25,18 @@ namespace detail::warpspeed
 // registers.
 struct SpecialRegisters
 {
-  const uint32_t clusterCtaRank;
-  const uint32_t blockIdxX;
-  const uint32_t threadIdxX;
-  const uint32_t warpIdx;
-  const uint32_t laneIdx;
+  const ::cuda::std::uint32_t clusterCtaRank;
+  const ::cuda::std::uint32_t blockIdxX;
+  const ::cuda::std::uint32_t threadIdxX;
+  const ::cuda::std::uint32_t warpIdx;
+  const ::cuda::std::uint32_t laneIdx;
 };
 
 [[nodiscard]] _CCCL_DEVICE_API inline SpecialRegisters getSpecialRegisters()
 {
-  uint32_t clusterCtaRank = ::cuda::ptx::get_sreg_cluster_ctarank();
-  uint32_t threadIdxX     = threadIdx.x;
-  uint32_t warpIdx        = makeWarpUniform(threadIdxX / 32);
+  ::cuda::std::uint32_t clusterCtaRank = ::cuda::ptx::get_sreg_cluster_ctarank();
+  ::cuda::std::uint32_t threadIdxX     = threadIdx.x;
+  ::cuda::std::uint32_t warpIdx        = makeWarpUniform(threadIdxX / 32);
   return {clusterCtaRank, blockIdx.x, threadIdxX, warpIdx, ::cuda::ptx::get_sreg_laneid()};
 }
 } // namespace detail::warpspeed

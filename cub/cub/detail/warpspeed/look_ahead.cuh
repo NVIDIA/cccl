@@ -33,7 +33,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::warpspeed
 {
-enum scan_state : uint32_t
+enum scan_state : ::cuda::std::uint32_t
 {
   EMPTY          = 0,
   TILE_AGGREGATE = 1,
@@ -48,7 +48,8 @@ struct tile_state_unaligned_t
 
 // some older nvcc versions do not evaluate next_power_of_two() at compile time when called inside an attribute, so we
 // have to force constant evaluation by assigning the result to a template parameter
-template <typename AccumT, size_t _Alignment = ::cuda::next_power_of_two(sizeof(tile_state_unaligned_t<AccumT>))>
+template <typename AccumT,
+          ::cuda::std::size_t _Alignment = ::cuda::next_power_of_two(sizeof(tile_state_unaligned_t<AccumT>))>
 struct alignas(_Alignment) tile_state_t : tile_state_unaligned_t<AccumT>
 {};
 
@@ -170,8 +171,8 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   const int idxTileNext,
   ScanOpT& scan_op)
 {
-  const int laneIdx         = specialRegisters.laneIdx;
-  const uint32_t lanemaskEq = ::cuda::ptx::get_sreg_lanemask_eq();
+  const int laneIdx                      = specialRegisters.laneIdx;
+  const ::cuda::std::uint32_t lanemaskEq = ::cuda::ptx::get_sreg_lanemask_eq();
 
   int idxTileCur            = idxTilePrev;
   AccumT sumExclusiveCtaCur = sumExclusiveCtaPrev;
@@ -181,10 +182,10 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
                 "WarpReduce with non-trivial temporary storage is not supported yet in this kernel.");
   [[maybe_unused]] typename warp_reduce_t::TempStorage temp_storage;
 
-  using warp_reduce_or_t = WarpReduce<uint32_t>;
+  using warp_reduce_or_t = WarpReduce<::cuda::std::uint32_t>;
   typename warp_reduce_or_t::TempStorage temp_storage_or;
   warp_reduce_or_t warp_reduce_or{temp_storage_or};
-  constexpr ::cuda::std::bit_or<uint32_t> or_op{};
+  constexpr ::cuda::std::bit_or<::cuda::std::uint32_t> or_op{};
 
   while (idxTileCur < idxTileNext)
   {
@@ -194,13 +195,13 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
     for (int idx = 0; idx < numTileStatesPerThread; ++idx)
     {
       // Bitmask with a 1 bit in the position of the current lane if current lane has a tile aggregate
-      const uint32_t lane_has_aggregate = lanemaskEq * (regTmpStates[idx].state == TILE_AGGREGATE);
+      const ::cuda::std::uint32_t lane_has_aggregate = lanemaskEq * (regTmpStates[idx].state == TILE_AGGREGATE);
 
       // Bitmask with 1 bits indicating which lane has a tile aggregate
-      const uint32_t warp_has_aggregate_mask = warp_reduce_or.Reduce(lane_has_aggregate, or_op);
+      const ::cuda::std::uint32_t warp_has_aggregate_mask = warp_reduce_or.Reduce(lane_has_aggregate, or_op);
 
       // Bitmask with 1 bits for all rightmost lanes having a tile aggregate
-      const uint32_t warp_right_aggregates_mask = warp_has_aggregate_mask & (~warp_has_aggregate_mask - 1);
+      const ::cuda::std::uint32_t warp_right_aggregates_mask = warp_has_aggregate_mask & (~warp_has_aggregate_mask - 1);
 
       // Cannot reduce if no rightmost tile aggregates
       if (warp_right_aggregates_mask == 0)
@@ -208,7 +209,7 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
         break;
       }
 
-      const uint32_t warp_right_aggregates_count = ::cuda::std::popcount(warp_right_aggregates_mask);
+      const ::cuda::std::uint32_t warp_right_aggregates_count = ::cuda::std::popcount(warp_right_aggregates_mask);
 
       // Accumulate the rightmost tile aggregates
       AccumT local_sum;
