@@ -40,6 +40,10 @@ if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
         cccl.c2h.main
     )
 
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+      target_compile_options(${target_name} PRIVATE "-Wno-attributes")
+    endif()
+
     add_dependencies(${c2h_all_target} ${target_name})
 
     add_test(NAME ${target_name} COMMAND ${target_name})
