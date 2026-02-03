@@ -28,7 +28,7 @@ struct SmemAllocator
   uint32_t mPtrSmem32 = 0;
   int mAllocatedSize  = 0;
 
-  _CCCL_API constexpr SmemAllocator()
+  _CCCL_API constexpr SmemAllocator() noexcept
   {
     // we only need the real pointer at runtime in device code
     if (!::cuda::std::is_constant_evaluated())
@@ -45,10 +45,10 @@ struct SmemAllocator
 
   // SmemAllocator is a non-copyable, non-movable type. It must be passed by
   // (mutable) reference to be useful.
-  SmemAllocator(const SmemAllocator&)             = delete; // Delete copy constructor
-  SmemAllocator(SmemAllocator&&)                  = delete; // Delete move constructor
-  SmemAllocator& operator=(const SmemAllocator&)  = delete; // Delete copy assignment
-  SmemAllocator& operator=(const SmemAllocator&&) = delete; // Delete move assignment
+  SmemAllocator(const SmemAllocator&)            = delete; // Delete copy constructor
+  SmemAllocator(SmemAllocator&&)                 = delete; // Delete move constructor
+  SmemAllocator& operator=(const SmemAllocator&) = delete; // Delete copy assignment
+  SmemAllocator& operator=(SmemAllocator&&)      = delete; // Delete move assignment
 
   [[nodiscard]] _CCCL_API constexpr void* alloc(uint32_t size, uint32_t align = 0)
   {

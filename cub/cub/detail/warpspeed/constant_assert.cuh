@@ -33,9 +33,6 @@
  *
  */
 
-#define _WS_STRINGIZE_DETAIL(x) #x
-#define _WS_STRINGIZE(x)        _WS_STRINGIZE_DETAIL(x)
-
 #if defined(_WARPSPEED_FORCE_ASSERT_AT_COMPILE_TIME) && defined(__CUDA_ARCH__)
 // When _WARPSPEED_FORCE_ASSERT_AT_COMPILE_TIME is defined and compiling for device, output illegal PTX.
 // This causes the compilation to fail.
@@ -44,7 +41,7 @@
     {                                                                                          \
       if (!(expr))                                                                             \
       {                                                                                        \
-        asm volatile(".pragma \"\n" __FILE__ "(" _WS_STRINGIZE(                                \
+        asm volatile(".pragma \"\n" __FILE__ "(" _CCCL_TO_STRING(                              \
           __LINE__) "): %0"                                                                    \
                     ": error: constant assertion failed with '" msg "'\n\";" ::"C"(__func__)); \
       }                                                                                        \

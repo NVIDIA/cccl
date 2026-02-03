@@ -38,10 +38,10 @@ struct SmemRef
   // reference to be useful. The reason is that it in case of an accidental copy
   // or move the destructor is called twice. This leads to double-arrivals on
   // barriers and results in deadlock or a hardware fault.
-  SmemRef(const SmemRef&)             = delete; // Delete copy constructor
-  SmemRef(SmemRef&&)                  = delete; // Delete move constructor
-  SmemRef& operator=(const SmemRef&)  = delete; // Delete copy assignment
-  SmemRef& operator=(const SmemRef&&) = delete; // Delete move assignment
+  SmemRef(const SmemRef&)            = delete; // Delete copy constructor
+  SmemRef(SmemRef&&)                 = delete; // Delete move constructor
+  SmemRef& operator=(const SmemRef&) = delete; // Delete copy assignment
+  SmemRef& operator=(SmemRef&&)      = delete; // Delete move assignment
 
   _CCCL_DEVICE_API ~SmemRef()
   {
