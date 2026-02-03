@@ -49,7 +49,7 @@ jobs:
           if [ -z "${repo_name}" ] || [ "${repo_name}" = "${repo}" ]; then
             repo_name="cccl"
           fi
-          echo "base=https://${owner}.github.io/${repo_name}/" >> "${GITHUB_OUTPUT}"
+          echo "base=https://${owner}.github.io/${repo_name}/docs/" >> "${GITHUB_OUTPUT}"
 
       - name: Determine deployment destination
         id: destination
@@ -119,4 +119,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./deploy
           publish_branch: gh-pages
-          keep_files: true
+          keep_files: false
