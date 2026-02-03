@@ -241,7 +241,7 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
     const bool doEndCopy    = cpAsyncOobInfo.smemEndBytesAfter16BBoundary > 0;
     const bool doMiddleCopy = cpAsyncOobInfo.ptrGmemStartAlignUp != cpAsyncOobInfo.ptrGmemEndAlignUp;
 
-    const uint16_t byteMask      = 0xFFFF;
+    constexpr uint16_t byteMask  = 0xFFFF;
     const uint16_t byteMaskStart = byteMask << cpAsyncOobInfo.smemStartSkipBytes;
     const uint16_t byteMaskEnd   = byteMask >> (16 - cpAsyncOobInfo.smemEndBytesAfter16BBoundary);
     // byteMaskStart contains zeroes at the left
