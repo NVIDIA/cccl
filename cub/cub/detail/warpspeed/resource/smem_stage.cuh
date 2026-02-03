@@ -58,11 +58,6 @@ struct SmemPhaseStructuredBinding
   {
     return SmemPhase<_Tp>(mSmemResourceRaw, _Index);
   }
-  template <::cuda::std::size_t _Index>
-  [[nodiscard]] _CCCL_DEVICE_API SmemPhase<_Tp> get()
-  {
-    return SmemPhase<_Tp>(mSmemResourceRaw, _Index);
-  }
 };
 
 // The binding function

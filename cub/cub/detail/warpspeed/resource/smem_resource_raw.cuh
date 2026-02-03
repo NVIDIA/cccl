@@ -138,11 +138,13 @@ struct SmemResourceRaw
   }
   _CCCL_DEVICE_API void release(int phase)
   {
+    _WS_CONSTANT_ASSERT(phase < mNumPhases, "Phase exceeds limit.");
     ::cuda::ptx::mbarrier_arrive(ptrCurBarrierRelease(phase));
   }
 
   _CCCL_DEVICE_API void releaseTx(int phase, int txCount)
   {
+    _WS_CONSTANT_ASSERT(phase < mNumPhases, "Phase exceeds limit.");
     ::cuda::ptx::mbarrier_arrive_expect_tx(
       ::cuda::ptx::sem_release, ::cuda::ptx::scope_cta, ::cuda::ptx::space_shared, ptrCurBarrierRelease(phase), txCount);
   }
