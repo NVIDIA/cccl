@@ -17,11 +17,11 @@
 //   void
 //   inplace_merge(Iter first, Iter middle, Iter last, Compare comp);
 
-#include <cuda/std/__random_>
 #include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 #include <cuda/std/memory>
+#include <cuda/std/random>
 #include <cuda/std/span>
 #if defined(_LIBCUDACXX_HAS_VECTOR)
 #  include <cuda/std/vector>

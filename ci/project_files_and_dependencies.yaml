@@ -173,6 +173,13 @@ projects:
       # CCCLBenchmarkRegistry.cmake is effectively part of nvbench_helper:
       - "benchmarks/cmake/"
 
+  nvrtcc:
+    name: "nvrtcc"
+    matrix_project: "nvrtcc"
+    lite_dependencies: []
+    full_dependencies: []
+    include_regexes: ["nvrtcc/"]
+
 # Files matching any of these regexes will be ignored globally.
 ignore_regexes:
   - '.+\.md$'

@@ -33,9 +33,22 @@
 
 #include <list>
 #include <random>
+#include <unordered_map>
 
 namespace cuda::experimental::stf::reserved
 {
+/**
+ * @brief Check if localized allocation statistics should be printed
+ */
+inline bool localized_alloc_stats_enabled()
+{
+  static bool enabled = [] {
+    const char* env = ::std::getenv("CUDASTF_LOCALIZED_ALLOC_STATS");
+    return env != nullptr && ::std::string(env) != "0";
+  }();
+  return enabled;
+}
+
 /**
  * @brief An allocator that takes a mapping function to dispatch an allocation over multiple data places.
  *
@@ -45,15 +58,15 @@ class localized_array
 {
   struct metadata
   {
-    metadata(int dev_, size_t size_, size_t offset_)
+    metadata(data_place place_, size_t size_, size_t offset_)
         : alloc_handle{}
-        , dev(dev_)
+        , place(mv(place_))
         , size(size_)
         , offset(offset_)
     {}
 
     CUmemGenericAllocationHandle alloc_handle;
-    int dev;
+    const data_place place;
     size_t size;
     size_t offset;
   };
@@ -115,17 +128,23 @@ public:
       accessDesc[d].flags         = CU_MEM_ACCESS_FLAGS_PROT_READWRITE;
     }
 
+    // Statistics tracking
+    block_stats stats;
+
     // Compute mapping at allocation granularity
     ::std::vector<pos4> owner;
     owner.reserve(nblocks);
     for (size_t i = 0; i < nblocks; i++)
     {
       owner.push_back(
-        block_to_grid_pos(i * block_size_bytes / elemsize, alloc_granularity_bytes / elemsize, delinearize));
+        block_to_grid_pos(i * block_size_bytes / elemsize, alloc_granularity_bytes / elemsize, delinearize, stats));
     }
 
     // We create one allocation handle per block
     meta.reserve(nblocks);
+
+    // Track bytes per place for statistics
+    ::std::unordered_map<::std::string, size_t> bytes_per_place;
 
     // Try to merge blocks with the same position
     for (size_t i = 0; i < nblocks;)
@@ -138,9 +157,102 @@ public:
         j++;
       }
 
-      meta.emplace_back(grid_pos_to_dev(p), j * alloc_granularity_bytes, i * block_size_bytes);
+      data_place place  = grid_pos_to_place(p);
+      size_t alloc_size = j * alloc_granularity_bytes;
+      bytes_per_place[place.to_string()] += alloc_size;
+
+      meta.emplace_back(mv(place), alloc_size, i * block_size_bytes);
 
       i += j;
+    }
+
+    // Print statistics if enabled
+    if (localized_alloc_stats_enabled())
+    {
+      fprintf(stderr, "\n=== Localized Array Allocation Statistics ===\n");
+      fprintf(stderr, "Total size: %zu bytes (%.2f MB)\n", total_size_bytes, total_size_bytes / (1024.0 * 1024.0));
+      fprintf(
+        stderr, "VM reservation: %zu bytes (%.2f MB)\n", vm_total_size_bytes, vm_total_size_bytes / (1024.0 * 1024.0));
+      fprintf(stderr, "Block size: %zu bytes (%.2f KB)\n", block_size_bytes, block_size_bytes / 1024.0);
+      fprintf(stderr, "Number of blocks: %zu (merged into %zu allocations)\n", nblocks, meta.size());
+      fprintf(stderr, "Number of places: %zu\n", bytes_per_place.size());
+
+      fprintf(stderr, "\nAllocation distribution by place:\n");
+      for (const auto& entry : bytes_per_place)
+      {
+        double pct = 100.0 * entry.second / vm_total_size_bytes;
+        fprintf(stderr,
+                "  %s: %zu bytes (%.2f MB, %.1f%%)\n",
+                entry.first.c_str(),
+                entry.second,
+                entry.second / (1024.0 * 1024.0),
+                pct);
+      }
+
+      if (stats.total_samples > 0)
+      {
+        double accuracy = 100.0 * stats.matching_samples / stats.total_samples;
+        fprintf(stderr,
+                "\nPlacement accuracy: %.1f%% (%zu/%zu samples matched chosen position)\n",
+                accuracy,
+                stats.matching_samples,
+                stats.total_samples);
+      }
+
+      // Print allocation map
+      fprintf(stderr, "\nAllocation map (%zu allocations):\n", meta.size());
+      fprintf(stderr, "  %-6s  %-12s  %-12s  %-10s  %s\n", "Index", "Offset", "Size", "Blocks", "Place");
+      fprintf(stderr, "  %-6s  %-12s  %-12s  %-10s  %s\n", "-----", "------", "----", "------", "-----");
+      for (size_t idx = 0; idx < meta.size(); idx++)
+      {
+        const auto& item   = meta[idx];
+        size_t num_blocks  = item.size / alloc_granularity_bytes;
+        size_t start_block = item.offset / alloc_granularity_bytes;
+        fprintf(stderr,
+                "  %-6zu  %-12zu  %-12zu  %-10zu  %s\n",
+                idx,
+                item.offset,
+                item.size,
+                num_blocks,
+                item.place.to_string().c_str());
+      }
+
+      // Print visual block map (compact representation)
+      fprintf(stderr, "\nBlock ownership map (each char = 1 block, 0-9/a-z = place index):\n  ");
+      // Build a map of place names to single-char indices
+      ::std::unordered_map<::std::string, char> place_to_char;
+      char next_char = '0';
+      for (size_t i = 0; i < nblocks; i++)
+      {
+        ::std::string place_str = grid_pos_to_place(owner[i]).to_string();
+        if (place_to_char.find(place_str) == place_to_char.end())
+        {
+          place_to_char[place_str] = next_char;
+          if (next_char == '9')
+          {
+            next_char = 'a';
+          }
+          else
+          {
+            next_char++;
+          }
+        }
+        fprintf(stderr, "%c", place_to_char[place_str]);
+        if ((i + 1) % 80 == 0)
+        {
+          fprintf(stderr, "\n  ");
+        }
+      }
+      fprintf(stderr, "\n");
+
+      // Print legend
+      fprintf(stderr, "\n  Legend:\n");
+      for (const auto& entry : place_to_char)
+      {
+        fprintf(stderr, "    %c = %s\n", entry.second, entry.first.c_str());
+      }
+
+      fprintf(stderr, "==============================================\n\n");
     }
 
     // fprintf(stderr, "GOT %ld effective blocks (%ld blocks)\n", nblocks_effective, nblocks);
@@ -149,33 +261,25 @@ public:
     // virtual memory yet.
     for (auto& item : meta)
     {
-      CUmemAllocationProp create_prop = {};
-      create_prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
-      create_prop.location.type       = CU_MEM_LOCATION_TYPE_DEVICE;
-      // Physically allocate this block on the appropriate device
-      // fprintf(stderr, "MAP EFFECTIVE BLOCK %d on dev %d\n", i, hdl_dev[i]);
-      create_prop.location.id = item.dev;
+      int item_dev = device_ordinal(item.place);
 
-      cuda_safe_call(cuMemCreate(&item.alloc_handle, item.size, &create_prop, 0));
+      // Physically allocate this block on the appropriate device/place
+      // Use the data_place's mem_create which delegates to extensions for custom behavior
+      cuda_safe_call(item.place.mem_create(&item.alloc_handle, item.size));
 
-      // Device where this was allocated
-
-      assert(item.offset + item.size <= vm_total_size_bytes);
-      // fprintf(stderr, "cuMemMap(base_ptr %p = %p + %p, %p, 0ULL, hdl[%d], 0ULL)\n", base_ptr + offset,
-      // base_ptr,
-      //        offset, sz, i);
+      _CCCL_ASSERT(item.offset + item.size <= vm_total_size_bytes, "Allocation offset out of bounds");
       cuda_safe_call(cuMemMap(base_ptr + item.offset, item.size, 0ULL, item.alloc_handle, 0ULL));
 
       for (int d = 0; d < ndevs; d++)
       {
         int set_access = 1;
-        if (item.dev != d)
+        if (item_dev != d)
         {
-          cuda_safe_call(cudaDeviceCanAccessPeer(&set_access, d, item.dev));
+          cuda_safe_call(cudaDeviceCanAccessPeer(&set_access, d, item_dev));
 
           if (!set_access)
           {
-            fprintf(stderr, "Warning : Cannot enable peer access between devices %d and %d\n", d, item.dev);
+            fprintf(stderr, "Warning : Cannot enable peer access between devices %d and %d\n", d, item_dev);
           }
         }
 
@@ -245,15 +349,22 @@ public:
   }
 
 private:
-  int grid_pos_to_dev(pos4 grid_pos)
+  data_place grid_pos_to_place(pos4 grid_pos)
   {
-    return device_ordinal(grid.get_place(grid_pos).affine_data_place());
+    return grid.get_place(grid_pos).affine_data_place();
   }
+
+  // Statistics for block placement accuracy
+  struct block_stats
+  {
+    size_t total_samples    = 0;
+    size_t matching_samples = 0; // samples that matched the chosen position
+  };
 
   // linearized_index : expressed in number of entries from the base, not bytes
   // allocation_granularity expressed in number of entries
   template <typename F>
-  pos4 block_to_grid_pos(size_t linearized_index, size_t allocation_granularity, F&& delinearize)
+  pos4 block_to_grid_pos(size_t linearized_index, size_t allocation_granularity, F&& delinearize, block_stats& stats)
   {
 #if 0
         // Our first strategy consists in mapping the block at the location of the first entry of the block
@@ -288,6 +399,10 @@ private:
         max_cnt = s.second;
       }
     }
+
+    // Track statistics
+    stats.total_samples += nsamples;
+    stats.matching_samples += max_cnt;
 
     // ::std::cout << "GOT BEST POS for offset " << linearized_index << " -> " << max_pos.string() << ::std::endl;
 

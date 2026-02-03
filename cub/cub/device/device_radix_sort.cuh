@@ -133,7 +133,7 @@ private:
     int end_bit,
     cudaStream_t stream)
   {
-    return DispatchRadixSort<Order, KeyT, ValueT, OffsetT, DecomposerT>::Dispatch(
+    return detail::radix_sort::dispatch<Order>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -160,17 +160,17 @@ private:
     constexpr int begin_bit = 0;
     const int end_bit       = detail::radix::traits_t<KeyT>::default_end_bit(decomposer);
 
-    return DeviceRadixSort::custom_radix_sort<Order>(
+    return detail::radix_sort::dispatch<Order>(
       d_temp_storage,
       temp_storage_bytes,
-      is_overwrite_okay,
       d_keys,
       d_values,
       num_items,
-      decomposer,
       begin_bit,
       end_bit,
-      stream);
+      is_overwrite_okay,
+      stream,
+      decomposer);
   }
 
   // Name reported for NVTX ranges
@@ -312,7 +312,7 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DispatchRadixSort<SortOrder::Ascending, KeyT, ValueT, OffsetT>::Dispatch(
+    return detail::radix_sort::dispatch<SortOrder::Ascending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -742,8 +742,16 @@ public:
 
     constexpr bool is_overwrite_okay = true;
 
-    return DispatchRadixSort<SortOrder::Ascending, KeyT, ValueT, OffsetT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
+    return detail::radix_sort::dispatch<SortOrder::Ascending>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      static_cast<OffsetT>(num_items),
+      begin_bit,
+      end_bit,
+      is_overwrite_okay,
+      stream);
   }
 
   //! @rst
@@ -1157,8 +1165,16 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DispatchRadixSort<SortOrder::Descending, KeyT, ValueT, OffsetT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
+    return detail::radix_sort::dispatch<SortOrder::Descending>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      static_cast<OffsetT>(num_items),
+      begin_bit,
+      end_bit,
+      is_overwrite_okay,
+      stream);
   }
 
   //! @rst
@@ -1583,8 +1599,16 @@ public:
 
     constexpr bool is_overwrite_okay = true;
 
-    return DispatchRadixSort<SortOrder::Descending, KeyT, ValueT, OffsetT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
+    return detail::radix_sort::dispatch<SortOrder::Descending>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      static_cast<OffsetT>(num_items),
+      begin_bit,
+      end_bit,
+      is_overwrite_okay,
+      stream);
   }
 
   //! @rst
@@ -1989,7 +2013,7 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return DispatchRadixSort<SortOrder::Ascending, KeyT, NullType, OffsetT>::Dispatch(
+    return detail::radix_sort::dispatch<SortOrder::Ascending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -2382,8 +2406,16 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return DispatchRadixSort<SortOrder::Ascending, KeyT, NullType, OffsetT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
+    return detail::radix_sort::dispatch<SortOrder::Ascending>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      static_cast<OffsetT>(num_items),
+      begin_bit,
+      end_bit,
+      is_overwrite_okay,
+      stream);
   }
 
   //! @rst
@@ -2758,8 +2790,16 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DispatchRadixSort<SortOrder::Descending, KeyT, NullType, OffsetT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
+    return detail::radix_sort::dispatch<SortOrder::Descending>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      static_cast<OffsetT>(num_items),
+      begin_bit,
+      end_bit,
+      is_overwrite_okay,
+      stream);
   }
 
   //! @rst
@@ -3141,8 +3181,16 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return DispatchRadixSort<SortOrder::Descending, KeyT, NullType, OffsetT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
+    return detail::radix_sort::dispatch<SortOrder::Descending>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      static_cast<OffsetT>(num_items),
+      begin_bit,
+      end_bit,
+      is_overwrite_okay,
+      stream);
   }
 
   //! @rst

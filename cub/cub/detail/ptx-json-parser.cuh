@@ -5,7 +5,7 @@
 
 #include <cub/config.cuh>
 
-#include <cuda/std/__cccl/algorithm_wrapper.h>
+#include <cuda/std/__host_stdlib/algorithm>
 
 #include <format>
 #include <string_view>

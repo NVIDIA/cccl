@@ -139,7 +139,7 @@ public:
 
   fast_div_mod() = delete;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE explicit fast_div_mod(T divisor) noexcept
+  _CCCL_HOST_DEVICE explicit fast_div_mod(T divisor) noexcept
       : _divisor{static_cast<unsigned_t>(divisor)}
   {
     using larger_t = larger_unsigned_type_t<T>;

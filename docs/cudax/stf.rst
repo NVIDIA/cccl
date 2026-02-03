@@ -2162,6 +2162,116 @@ management:
 
     gc_place.deactivate(prev);  // Restore original context
 
+Memory allocation with data places
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Data places provide a unified interface for memory allocation that works across
+different memory types (host, device, managed) and place extensions (green
+contexts, user-defined places). This allows you to allocate memory without using
+CUDASTF tasks, while benefiting from the place abstraction.
+
+The ``data_place::allocate()`` and ``data_place::deallocate()`` methods provide
+raw memory allocation. The stream parameter defaults to ``nullptr``, which is
+convenient for non-stream-ordered allocations (host, managed) where the stream
+is ignored:
+
+.. code:: cpp
+
+    #include <cuda/experimental/stf.cuh>
+    using namespace cuda::experimental::stf;
+
+    // Allocate on host (pinned memory) - stream defaults to nullptr
+    void* host_ptr = data_place::host().allocate(1024);
+    // ... use host_ptr ...
+    data_place::host().deallocate(host_ptr, 1024);
+
+    // Allocate on a specific device (stream-ordered)
+    cudaStream_t stream;
+    cudaStreamCreate(&stream);
+    void* dev_ptr = data_place::device(0).allocate(1024, stream);
+    // ... use dev_ptr with stream ...
+    data_place::device(0).deallocate(dev_ptr, 1024, stream);
+    cudaStreamDestroy(stream);
+
+    // Allocate managed memory - stream defaults to nullptr
+    void* managed_ptr = data_place::managed().allocate(1024);
+    // ... use managed_ptr from host or device ...
+    data_place::managed().deallocate(managed_ptr, 1024);
+
+**Stream-ordered vs immediate allocations:**
+
+Different data places have different allocation behaviors:
+
+- **Host** (``data_place::host()``): Uses ``cudaMallocHost()`` / ``cudaFreeHost()`` - immediate, stream parameter is ignored
+- **Managed** (``data_place::managed()``): Uses ``cudaMallocManaged()`` / ``cudaFree()`` - immediate, stream parameter is ignored (note: ``cudaFree`` may introduce implicit synchronization)
+- **Device** (``data_place::device(id)``): Uses ``cudaMallocAsync()`` / ``cudaFreeAsync()`` - stream-ordered
+- **Extensions** (green contexts, etc.): Behavior depends on the extension implementation
+
+You can query whether a place uses stream-ordered allocation with
+``allocation_is_stream_ordered()``:
+
+.. code:: cpp
+
+    data_place place = data_place::device(0);
+    if (place.allocation_is_stream_ordered()) {
+        // Allocation is stream-ordered - synchronize via the stream
+        void* ptr = place.allocate(size, stream);
+        myKernel<<<grid, block, 0, stream>>>(ptr);
+        place.deallocate(ptr, size, stream);
+        cudaStreamSynchronize(stream);
+    } else {
+        // Allocation is immediate - stream is ignored, safe to use right away
+        void* ptr = place.allocate(size);
+        // ... use ptr ...
+        place.deallocate(ptr, size);
+    }
+
+This abstraction is particularly useful when writing generic code that needs to
+work with different types of places, including custom place extensions.
+
+VMM-based allocation with mem_create
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For advanced use cases involving CUDA's Virtual Memory Management (VMM) API,
+``data_place`` also provides the ``mem_create()`` method. This is a lower-level
+interface used internally by localized arrays (``composite_slice``) to create
+physical memory segments that are then mapped into a contiguous virtual address
+space.
+
+Unlike ``allocate()``, which returns a usable pointer directly, ``mem_create()``
+returns a ``CUmemGenericAllocationHandle`` that must be subsequently mapped with
+``cuMemMap()`` before use:
+
+.. code:: cpp
+
+    #include <cuda/experimental/stf.cuh>
+    using namespace cuda::experimental::stf;
+
+    // Create a physical memory handle for device 0
+    CUmemGenericAllocationHandle handle;
+    data_place::device(0).mem_create(&handle, size);
+
+    // The handle must be mapped to a virtual address before use
+    // (see CUDA VMM documentation for cuMemMap, cuMemSetAccess, etc.)
+
+**When to use each method:**
+
+- Use ``allocate()`` for most cases - it provides ready-to-use memory with
+  stream-ordered semantics where applicable.
+
+- Use ``mem_create()`` only when you need explicit control over virtual memory
+  mapping, such as creating localized arrays that span multiple devices with a
+  unified virtual address space.
+
+**Limitations of mem_create:**
+
+- Only supports device memory and host memory (pinned)
+- Managed memory is **not supported** by the VMM API
+- The returned handle requires additional VMM API calls to be usable
+
+Custom place extensions can override ``mem_create()`` to provide specialized
+VMM allocation behavior (e.g., memory localization for hardware partitions).
+
 Debugging
 ---------
 

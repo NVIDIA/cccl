@@ -23,6 +23,7 @@
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__fwd/devices.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/array>
@@ -141,6 +142,40 @@ enum class arch_id : int
 }
 
 _CCCL_END_NAMESPACE_CUDA
+
+#if __cpp_lib_format >= 201907L
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <class _CharT>
+struct formatter<::cuda::arch_id, _CharT> : private formatter<::cuda::compute_capability, _CharT>
+{
+  template <class _ParseCtx>
+  _CCCL_HOST_API constexpr auto parse(_ParseCtx& __ctx)
+  {
+    return __ctx.begin();
+  }
+
+  template <class _FmtCtx>
+  _CCCL_HOST_API auto format(const ::cuda::arch_id& __arch, _FmtCtx& __ctx) const
+  {
+    auto __it = __ctx.out();
+    *__it++   = _CharT{'s'};
+    *__it++   = _CharT{'m'};
+    *__it++   = _CharT{'_'};
+    __ctx.advance_to(__it);
+    __it = formatter<::cuda::compute_capability, _CharT>::format(::cuda::compute_capability{__arch}, __ctx);
+    if (::cuda::__is_specific_arch(__arch))
+    {
+      *__it++ = _CharT{'a'};
+    }
+    return __it;
+  }
+};
+
+_CCCL_END_NAMESPACE_STD
+#endif // __cpp_lib_format >= 201907L
+
+// todo: specialize cuda::std::formatter for cuda::arch_id
 
 #if _CCCL_CUDA_COMPILATION()
 
