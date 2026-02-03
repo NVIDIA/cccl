@@ -26,6 +26,8 @@ C2H_TEST("cub::DeviceSelect::If accepts determinism requirements", "[select][env
 
   auto error = cub::DeviceSelect::If(input.begin(), output.begin(), num_selected.begin(), input.size(), le, env);
 
+  REQUIRE(error == cudaSuccess);
+
   thrust::device_vector<int> expected_output{1, 2, 3, 4};
   thrust::device_vector<int> expected_num_selected{4};
   // example-end select-if-env-determinism

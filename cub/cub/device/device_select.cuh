@@ -276,6 +276,17 @@ public:
   //! - | The range ``[d_out, d_out + *d_num_selected_out)`` shall not overlap ``[d_in, d_in + num_items)``,
   //!   | ``[d_flags, d_flags + num_items)`` nor ``d_num_selected_out`` in any way.
   //!
+  //! Determinism
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The API guarantees ``gpu_to_gpu`` determinism. The deterministic guarantees hold provided that
+  //! ``select_op`` is a **pure function**.
+  //!
+  //! The deterministic guarantees break if ``select_op`` exhibits any of the following behaviors:
+  //!
+  //! - Reading thread-varying state (e.g., ``threadIdx``, ``clock()``, uninitialized memory)
+  //! - Reading or writing shared mutable state (e.g., global variables, atomics)
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -357,13 +368,9 @@ public:
     using requested_determinism_t =
       ::cuda::std::execution::__query_result_or_t<requirements_t, //
                                                   ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
+                                                  ::cuda::execution::determinism::gpu_to_gpu_t>;
 
-    // Static assert to reject gpu_to_gpu determinism since it makes no sense for DeviceSelect
-    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
-                  "gpu_to_gpu determinism is not supported");
-
-    using determinism_t = ::cuda::execution::determinism::run_to_run_t;
+    using determinism_t = ::cuda::execution::determinism::gpu_to_gpu_t;
 
     // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
@@ -405,6 +412,18 @@ public:
   //!   their original relative ordering.
   //! - | The range ``[d_out, d_out + *d_num_selected_out)`` shall not overlap
   //!   | ``[d_in, d_in + num_items)`` nor ``d_num_selected_out`` in any way.
+  //!
+  //! Determinism
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The API guarantees ``gpu_to_gpu`` determinism. The deterministic guarantees hold provided that
+  //! ``select_op`` is a **pure function**.
+  //!
+  //! The deterministic guarantees break if ``select_op`` exhibits any of the following behaviors:
+  //!
+  //! - Reading thread-varying state (e.g., ``threadIdx``, ``clock()``, uninitialized memory)
+  //! - Reading or writing shared mutable state (e.g., global variables, atomics)
+
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -487,13 +506,9 @@ public:
     using requested_determinism_t =
       ::cuda::std::execution::__query_result_or_t<requirements_t, //
                                                   ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
+                                                  ::cuda::execution::determinism::gpu_to_gpu_t>;
 
-    // Static assert to reject gpu_to_gpu determinism since it makes no sense for DeviceSelect
-    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
-                  "gpu_to_gpu determinism is not supported");
-
-    using determinism_t = ::cuda::execution::determinism::run_to_run_t;
+    using determinism_t = ::cuda::execution::determinism::gpu_to_gpu_t;
 
     // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
