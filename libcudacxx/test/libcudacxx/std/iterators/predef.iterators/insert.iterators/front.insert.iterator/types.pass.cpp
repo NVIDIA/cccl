@@ -18,12 +18,12 @@
 // protected:
 //   Container* container;
 // public:
-//   typedef Container                   container_type;
-//   typedef void                        value_type;
-//   typedef void                        difference_type;
-//   typedef void                        reference;
-//   typedef void                        pointer;
-//   typedef output_iterator_tag         iterator_category;
+//   using container_type    = Container;
+//   using value_type        = void;
+//   using difference_type   = void;
+//   using reference         = void;
+//   using pointer           = void;
+//   using iterator_category = output_iterator_tag;
 // };
 
 #include <cuda/std/inplace_vector>
@@ -47,7 +47,7 @@ struct find_container : private cuda::std::front_insert_iterator<C>
 template <class C>
 __host__ __device__ void test()
 {
-  typedef cuda::std::front_insert_iterator<C> R;
+  using R = cuda::std::front_insert_iterator<C>;
   C c;
   find_container<C> q(c);
   q.test();

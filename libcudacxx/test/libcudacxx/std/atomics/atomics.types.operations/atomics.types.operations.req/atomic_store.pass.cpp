@@ -32,7 +32,7 @@ struct TestFn
 {
   __host__ __device__ void operator()() const
   {
-    typedef cuda::std::atomic<T> A;
+    using A = cuda::std::atomic<T>;
     Selector<A, constructor_initializer> sel;
     A& t = *sel.construct();
     cuda::std::atomic_store(&t, T(1));

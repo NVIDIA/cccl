@@ -18,8 +18,8 @@ template <typename Predicate, typename Arg>
 struct unary_counting_predicate
 {
 public:
-  typedef Arg argument_type;
-  typedef bool result_type;
+  using argument_type = Arg;
+  using result_type   = bool;
 
   __host__ __device__ constexpr unary_counting_predicate(Predicate p)
       : p_(p)
@@ -49,9 +49,9 @@ template <typename Predicate, typename Arg1, typename Arg2 = Arg1>
 struct binary_counting_predicate
 {
 public:
-  typedef Arg1 first_argument_type;
-  typedef Arg2 second_argument_type;
-  typedef bool result_type;
+  using first_argument_type  = Arg1;
+  using second_argument_type = Arg2;
+  using result_type          = bool;
 
   __host__ __device__ constexpr binary_counting_predicate(Predicate p)
       : p_(p)
