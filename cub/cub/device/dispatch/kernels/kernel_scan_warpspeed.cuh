@@ -407,7 +407,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       ////////////////////////////////////////////////////////////////////////////////
       if (squad.isLeaderThread())
       {
-        warpspeed::storeTileAggregate(params.ptrTileStates, warpspeed::TILE_AGGREGATE, regSquadSum, idxTile);
+        warpspeed::storeTileAggregate(params.ptrTileStates, warpspeed::scan_state::tile_aggregate, regSquadSum, idxTile);
       }
       ////////////////////////////////////////////////////////////////////////////////
       // Store thread sum
@@ -723,7 +723,7 @@ device_scan_init_lookahead_body(warpspeed::tile_state_t<AccumT>* tile_states, co
   }
   // we strive to initialize the padding bits to avoid compute-sanitizer's initcheck to report reading uninitialized
   // data when reading the tile state. We use a single atomic load/store up until 16 bytes.
-  static_assert(warpspeed::EMPTY == 0); // so we can zero init each tile state
+  static_assert(warpspeed::scan_state::empty == 0); // so we can zero init each tile state
   if constexpr (sizeof(warpspeed::tile_state_t<AccumT>) == 2)
   {
     *reinterpret_cast<::cuda::std::uint16_t*>(tile_states + tile_id) = 0;

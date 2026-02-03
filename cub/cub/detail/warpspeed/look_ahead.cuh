@@ -35,8 +35,8 @@ namespace detail::warpspeed
 {
 enum scan_state : ::cuda::std::uint32_t
 {
-  EMPTY          = 0,
-  TILE_AGGREGATE = 1,
+  empty          = 0,
+  tile_aggregate = 1,
 };
 
 template <typename AccumT>
@@ -125,7 +125,7 @@ _CCCL_DEVICE_API tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* pt
 //   Lane 31 idxTileCur + 63
 //
 // If the index idxTileCur + ii of the loaded state is equal to or exceeds idxTileNext, i.e., idxTileCur + ii >=
-// idxTileNext, then the state is not loaded from memory and set to EMPTY.
+// idxTileNext, then the state is not loaded from memory and set to empty.
 template <int numTileStatesPerThread, typename AccumT>
 _CCCL_DEVICE_API void warpLoadLookback(
   int laneIdx,
@@ -143,8 +143,8 @@ _CCCL_DEVICE_API void warpLoadLookback(
     }
     else
     {
-      // If we are looking ahead of idxTileNext, then set state to EMPTY
-      outTileStates[i].state = EMPTY;
+      // If we are looking ahead of idxTileNext, then set state to empty
+      outTileStates[i].state = scan_state::empty;
     }
   }
 }
@@ -195,7 +195,8 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
     for (int idx = 0; idx < numTileStatesPerThread; ++idx)
     {
       // Bitmask with a 1 bit in the position of the current lane if current lane has a tile aggregate
-      const ::cuda::std::uint32_t lane_has_aggregate = lanemaskEq * (regTmpStates[idx].state == TILE_AGGREGATE);
+      const ::cuda::std::uint32_t lane_has_aggregate =
+        lanemaskEq * (regTmpStates[idx].state == scan_state::tile_aggregate);
 
       // Bitmask with 1 bits indicating which lane has a tile aggregate
       const ::cuda::std::uint32_t warp_has_aggregate_mask = warp_reduce_or.Reduce(lane_has_aggregate, or_op);
