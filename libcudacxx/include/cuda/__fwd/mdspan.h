@@ -80,7 +80,8 @@ inline constexpr bool __is_cuda_strides_v<strides<_OffsetType, _Strides...>> = t
 struct layout_stride_relaxed
 {
   template <class _Extents,
-            class _Stride = dstrides<::cuda::std::make_signed_t<typename _Extents::index_type>, _Extents::rank()>>
+            class _Strides    = dstrides<::cuda::std::make_signed_t<typename _Extents::index_type>, _Extents::rank()>,
+            class _OffsetType = ::cuda::std::ptrdiff_t>
   class mapping;
 };
 

@@ -46,7 +46,8 @@ Synopsis
     struct layout_stride_relaxed {
         template <class Extents,
                   class Stride = dstrides<make_signed_t<typename Extents::index_type>,
-                                          Extents::rank()>>
+                                          Extents::rank()>,
+                  class OffsetType = ptrdiff_t>
         class mapping;
     };
 
@@ -75,7 +76,7 @@ Class template to describe the strides of a multi-dimensional array layout. Simi
 
 **Template Parameters**
 
-- ``OffsetType``: A signed integer type for stride values (supports negative strides).
+- ``OffsetType``: A signed integer type for stride values (supports negative strides) or an *integer-constant-like* type.
 - ``Strides...``: The stride values, where ``dynamic_stride`` indicates a runtime value.
 - ``Rank``: The number of dimensions.
 
@@ -237,7 +238,7 @@ The class template ``layout_stride_relaxed::mapping`` controls how multidimensio
     * - ``is_always_exhaustive()``
       - Returns ``false``. Exhaustiveness is not guaranteed due to zero/negative strides.
     * - ``is_always_strided()``
-      - Returns ``false``. Standard strided behavior is not guaranteed due to offset.
+      - Returns ``false`` if offset is non-zero (compile-time evaluation). Standard strided behavior is not guaranteed due to offset.
 
 .. list-table::
     :widths: 40 60
@@ -313,7 +314,7 @@ The class template ``layout_stride_relaxed::mapping`` controls how multidimensio
 
   - *Preconditions*:
 
-    - ``offset`` is nonnegative.
+    - ``offset`` is non-negative.
     - ``required_span_size()`` is representable as ``index_type``.
 
 Examples
@@ -343,7 +344,7 @@ Examples
         assert(mapping(2, 0) == 2);
         assert(mapping(0, 1) == 3);
     }
-1
+
 **Negative strides (reverse iteration)**
 
 .. code:: cpp
@@ -360,6 +361,29 @@ Examples
         using stride_t  = mapping_t::strides_type;
         mapping_t mapping(extents_t{}, stride_t(-1), 4); // offset=4, stride=-1
         // Access pattern: mapping(i) = 4 + i * (-1) = 4 - i
+        assert(mapping(0) == 4);
+        assert(mapping(1) == 3);
+        assert(mapping(2) == 2);
+        assert(mapping(3) == 1);
+        assert(mapping(4) == 0);
+    }
+
+**Negative strides (reverse iteration) with constant offset**
+
+.. code:: cpp
+
+    #include <cuda/mdspan>
+    #include <cassert>
+
+    int main() {
+        int data[] = {1, 2, 3, 4, 5};
+        // Create a reversed view using negative stride
+        // Offset points to the last element, stride is -1
+        using extents_t = cuda::std::extents<int, 5>;
+        using offset_t = cuda::std::integral_constant<int, 4>;
+        using strides_t = steps<extents_t::rank()>;
+        using mapping_t = cuda::layout_stride_relaxed::mapping<extents_t, strides_t, offset_t>;
+        mapping_t mapping(extents_t{}, strides_t(-1));
         assert(mapping(0) == 4);
         assert(mapping(1) == 3);
         assert(mapping(2) == 2);

@@ -42,6 +42,7 @@
 #include <cuda/std/__ranges/enable_borrowed_range.h>
 #include <cuda/std/__ranges/enable_view.h>
 #include <cuda/std/__ranges/size.h>
+#include <cuda/std/__type_traits/integer_constant_like.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_const.h>
@@ -89,17 +90,6 @@ _CCCL_CONCEPT __span_compatible_sentinel_for = _CCCL_REQUIRES_EXPR((_Sentinel, _
   ( //
     requires(sized_sentinel_for<_Sentinel, _It>), //
     requires(!is_convertible_v<_Sentinel, size_t>) //
-  );
-
-template <class _Tp>
-_CCCL_CONCEPT __integral_constant_like = _CCCL_REQUIRES_EXPR((_Tp)) //
-  ( //
-    requires(is_integral_v<decltype(_Tp::value)>), //
-    requires(!is_same_v<bool, remove_const_t<decltype(_Tp::value)>>), //
-    requires(convertible_to<_Tp, decltype(_Tp::value)>), //
-    requires(equality_comparable_with<_Tp, decltype(_Tp::value)>), //
-    requires(_Tp() == _Tp::value), //
-    requires(static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value) //
   );
 
 template <class _Tp, bool = __integral_constant_like<_Tp>>

@@ -36,6 +36,7 @@
 #include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_like.h>
+#include <cuda/std/__type_traits/integer_constant_like.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_move_assignable.h>
@@ -47,7 +48,6 @@
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
-#include <cuda/std/span>
 
 #include <cuda/std/__cccl/prologue.h>
 
