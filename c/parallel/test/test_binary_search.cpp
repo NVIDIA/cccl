@@ -151,31 +151,29 @@ void test_vectorized(Variant variant, HostVariant host_variant)
   std::vector<Value> data                = generate<Value>(num_items);
   std::copy(target_values.begin(), target_values.end(), data.begin());
   std::sort(data.begin(), data.end());
-  const std::vector<Value*> output(target_values.size(), nullptr);
+  const std::vector<std::ptrdiff_t> output(target_values.size(), 0);
 
   pointer_t<Value> target_values_ptr(target_values);
   pointer_t<Value> data_ptr(data);
-  pointer_t<Value*> output_ptr(output);
+  pointer_t<std::ptrdiff_t> output_ptr(output);
 
   auto& build_cache    = get_cache<Fixture>();
   const auto& test_key = make_binary_search_key<Value>(true, Variant::mode);
 
   variant(data_ptr, num_items, target_values_ptr, target_values.size(), output_ptr, op, build_cache, test_key);
 
-  std::vector<Value*> results(output_ptr);
-  std::vector<Value*> expected(target_values.size(), nullptr);
+  std::vector<std::ptrdiff_t> results(output_ptr);
+  std::vector<std::ptrdiff_t> expected(target_values.size(), 0);
 
-  std::vector<std::ptrdiff_t> offsets(target_values.size(), 0);
-  std::vector<std::ptrdiff_t> expected_offsets(target_values.size(), 0);
+  std::vector<std::ptrdiff_t> expected_results(target_values.size(), 0);
 
   for (auto i = 0u; i < target_values.size(); ++i)
   {
-    offsets[i] = results[i] - data_ptr.ptr;
-    expected_offsets[i] =
+    expected_results[i] =
       host_variant(data.data(), data.data() + num_items, target_values[i], std::less<>()) - data.data();
   }
 
-  CHECK(expected_offsets == offsets);
+  CHECK(expected_results == results);
 }
 
 struct BinarySearch_IntegralTypes_LowerBound_Fixture_Tag;

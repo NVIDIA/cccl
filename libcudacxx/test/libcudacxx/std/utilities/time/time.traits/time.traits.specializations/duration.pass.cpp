@@ -11,7 +11,7 @@
 // template <class Rep1, class Period1, class Rep2, class Period2>
 // struct common_type<chrono::duration<Rep1, Period1>, chrono::duration<Rep2, Period2>>
 // {
-//     typedef chrono::duration<typename common_type<Rep1, Rep2>::type, see below }> type;
+//     using type = chrono::duration<typename common_type<Rep1, Rep2>::type, see below }>;
 // };
 
 #include <cuda/std/chrono>
@@ -19,7 +19,7 @@
 template <class D1, class D2, class De>
 __host__ __device__ void test()
 {
-  typedef typename cuda::std::common_type<D1, D2>::type Dc;
+  using Dc = typename cuda::std::common_type<D1, D2>::type;
   static_assert((cuda::std::is_same<Dc, De>::value), "");
 }
 

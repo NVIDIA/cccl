@@ -15,10 +15,10 @@
 //                       SampleIterator out, Distance n,
 //                       UniformRandomNumberGenerator &&g);
 
-#include <cuda/std/__random_>
 #include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
+#include <cuda/std/random>
 #include <cuda/std/type_traits>
 
 #include "test_iterators.h"

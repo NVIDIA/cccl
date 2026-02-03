@@ -1,11 +1,12 @@
-# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Callable, Hashable
+from typing import Callable
 
 from ._bindings import Op, OpKind
-from ._caching import CachableFunction
+from ._caching import CachableFunction, cache_with_registered_key_functions
 
 
 def _is_well_known_op(op: OpKind) -> bool:
@@ -19,17 +20,13 @@ class _OpAdapter:
     - Stateless user-provided callables
     """
 
-    def get_cache_key(self) -> Hashable:
-        """Return a hashable cache key for this operator."""
-        raise NotImplementedError("Subclasses must implement this method")
-
     def compile(self, input_types, output_type=None) -> Op:
         """
         Compile this operator to an Op for CCCL interop.
 
         Args:
-            input_types: Tuple of numba types for input arguments
-            output_type: Optional numba type for return value (inferred if None)
+            input_types: Tuple of TypeDescriptors for input arguments
+            output_type: Optional TypeDescriptor for return value (inferred if None)
 
         Returns:
             Compiled Op object for C++ interop
@@ -55,9 +52,6 @@ class _WellKnownOp(_OpAdapter):
             )
         self._kind = kind
 
-    def get_cache_key(self) -> Hashable:
-        return (self._kind.name, self._kind.value)
-
     def compile(self, input_types, output_type=None) -> Op:
         return Op(
             operator_type=self._kind,
@@ -82,25 +76,10 @@ class _StatelessOp(_OpAdapter):
         self._func = func
         self._cachable = CachableFunction(func)
 
-    def get_cache_key(self) -> Hashable:
-        return self._cachable
-
     def compile(self, input_types, output_type=None) -> Op:
-        from . import _cccl_interop as cccl
-        from .numba_utils import get_inferred_return_type, signature_from_annotations
+        from ._cccl_interop import to_cccl_op
 
-        # Try to get signature from annotations first
-        try:
-            sig = signature_from_annotations(self._func)
-        except ValueError:
-            # Infer signature from input/output types
-            if output_type is None or (
-                hasattr(output_type, "is_internal") and not output_type.is_internal
-            ):
-                output_type = get_inferred_return_type(self._func, input_types)
-            sig = output_type(*input_types)
-
-        return cccl.to_stateless_cccl_op(self._func, sig)
+        return to_cccl_op(self._func, input_types, output_type)
 
     @property
     def func(self) -> Callable:
@@ -138,3 +117,18 @@ __all__ = [
     "OpKind",
     "make_op_adapter",
 ]
+
+
+cache_with_registered_key_functions.register(
+    _WellKnownOp, lambda op: (op._kind.name, op._kind.value)
+)
+
+cache_with_registered_key_functions.register(_StatelessOp, lambda op: op._cachable)
+
+cache_with_registered_key_functions.register(
+    OpKind, lambda kind: (kind.name, kind.value)
+)
+
+cache_with_registered_key_functions.register(
+    type(lambda: None), lambda func: CachableFunction(func)
+)

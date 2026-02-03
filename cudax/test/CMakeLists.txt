@@ -85,6 +85,10 @@ cudax_add_catch2_test(test_target cuco
     cuco/utility/test_hashers.cu
 )
 
+cudax_add_catch2_test(test_target cuco_hyperloglog ${cudax_target}
+  cuco/hyperloglog/test_hyperloglog.cu
+)
+
 cudax_add_catch2_test(test_target green_context
     green_context/green_ctx_smoke.cu
 )

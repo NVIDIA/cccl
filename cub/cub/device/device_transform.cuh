@@ -127,8 +127,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @param inputs A tuple of iterators to the input sequences where num_items elements are read from each. The
-  //! iterators' value types must be trivially relocatable.
+  //! @param inputs A tuple of iterators to the input sequences where num_items elements are read from each.
   //! @param output An iterator to the output sequence where num_items results are written to. May point to the
   //! beginning of one of the input sequences, performing the transformation inplace. The output sequence must not
   //! overlap with any of the input sequence in any other way.
@@ -189,8 +188,7 @@ public:
   //! address) of the objects passed to the call operator of the transformation operation.
   //! @endrst
   //!
-  //! @param input An iterator to the input sequence where num_items elements are read from. The iterator's value type
-  //! must be trivially relocatable.
+  //! @param input An iterator to the input sequence where num_items elements are read from.
   //! @param output An iterator to the output sequence where num_items results are written to. May point to the same
   //! sequence as \p input, performing the transformation inplace. The output sequence must not overlap with the
   //! input sequence in any other way.
@@ -376,8 +374,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @param inputs A tuple of iterators to the input sequences where num_items elements are read from each. The
-  //! iterators' value types must be trivially relocatable.
+  //! @param inputs A tuple of iterators to the input sequences where num_items elements are read from each.
   //! @param output An iterator to the output sequence where num_items results are written to. May point to the
   //! beginning of one of the input sequences, performing the transformation inplace. The output sequence must not
   //! overlap with any of the input sequence in any other way.
@@ -467,8 +464,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @param input An iterator to the input sequence where num_items elements are read from. The iterator's value type
-  //! must be trivially relocatable.
+  //! @param input An iterator to the input sequence where num_items elements are read from.
   //! @param output An iterator to the output sequence where num_items results are written to. May point to the same
   //! sequence as \p input, performing the transformation inplace. The output sequence must not overlap with the
   //! input sequence in any other way.
@@ -554,8 +550,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @param inputs A tuple of iterators to the input sequences where num_items elements are read from each. The
-  //! iterators' value types must be trivially relocatable.
+  //! @param inputs A tuple of iterators to the input sequences where num_items elements are read from each.
   //! @param output An iterator to the output sequence where num_items results are written to. May point to the
   //! beginning of one of the input sequences, performing the transformation inplace. The output sequence must not
   //! overlap with any of the input sequence in any other way.
@@ -615,8 +610,7 @@ public:
   //! of the transformation operation are guaranteed to reside in the input sequences and are never copied.
   //! @endrst
   //!
-  //! @param input An iterator to the input sequence where num_items elements are read from. The iterator's value type
-  //! must be trivially relocatable.
+  //! @param input An iterator to the input sequence where num_items elements are read from.
   //! @param output An iterator to the output sequence where num_items results are written to. May point to the
   //! beginning of one of the input sequences, performing the transformation inplace. The output sequence must not
   //! overlap with any of the input sequence in any other way.

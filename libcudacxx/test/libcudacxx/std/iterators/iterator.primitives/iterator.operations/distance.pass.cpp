@@ -27,7 +27,7 @@ template <class It>
 __host__ __device__ constexpr void
 check_distance(It first, It last, typename cuda::std::iterator_traits<It>::difference_type dist)
 {
-  typedef typename cuda::std::iterator_traits<It>::difference_type Difference;
+  using Difference = typename cuda::std::iterator_traits<It>::difference_type;
   static_assert(cuda::std::is_same<decltype(cuda::std::distance(first, last)), Difference>::value, "");
   assert(cuda::std::distance(first, last) == dist);
 }

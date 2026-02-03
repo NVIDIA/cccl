@@ -17,9 +17,9 @@
 int main(int, char**)
 {
   {
-    typedef double T;
-    typedef cuda::std::array<const T, 0> C;
-    C c = {};
+    using T = double;
+    using C = cuda::std::array<const T, 0>;
+    C c     = {};
     // expected-error-re@array:* {{{{(static_assert|static assertion)}} failed{{.*}}cannot fill zero-sized array of type
     // 'const T'}}
     c.fill(5.5); // expected-note {{requested here}}

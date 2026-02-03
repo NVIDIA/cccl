@@ -39,9 +39,9 @@ int main(int, char**)
 
   {
     constexpr const char* p = "123456789";
-    typedef cuda::std::move_iterator<const char*> MI;
-    constexpr MI it1 = cuda::std::make_move_iterator(p);
-    constexpr MI it2 = cuda::std::make_move_iterator(p + 1);
+    using MI                = cuda::std::move_iterator<const char*>;
+    constexpr MI it1        = cuda::std::make_move_iterator(p);
+    constexpr MI it2        = cuda::std::make_move_iterator(p + 1);
     static_assert(it1 != it2, "");
     constexpr MI it3 = cuda::std::make_move_iterator(p + 1)--;
     static_assert(it1 != it3, "");

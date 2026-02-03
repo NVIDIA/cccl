@@ -57,7 +57,7 @@
 #  elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #    define _CCCL_ENDIAN_NATIVE() _CCCL_ENDIAN_BIG()
 #  endif // __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-#elif _CCCL_HAS_INCLUDE(<endian.h>)
+#elif __has_include(<endian.h>)
 #  include <endian.h>
 #  if __BYTE_ORDER == __LITTLE_ENDIAN
 #    define _CCCL_ENDIAN_NATIVE() _CCCL_ENDIAN_LITTLE()

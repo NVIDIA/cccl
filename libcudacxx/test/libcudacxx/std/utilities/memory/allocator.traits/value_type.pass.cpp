@@ -12,7 +12,7 @@
 // template <class Alloc>
 // struct allocator_traits
 // {
-//     typedef typename Alloc::value_type value_type;
+//     using value_type = typename Alloc::value_type;
 //     ...
 // };
 
@@ -24,7 +24,7 @@
 template <class T>
 struct A
 {
-  typedef T value_type;
+  using value_type = T;
 };
 
 int main(int, char**)

@@ -30,6 +30,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _Tp, class _BinaryOp>
 [[nodiscard]] _CCCL_API constexpr _Tp reduce(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOp __b)
 {

@@ -8,7 +8,7 @@ print_environment_details
 
 PRESET="cccl-c-stf"
 
-CMAKE_OPTIONS=""
+CMAKE_OPTIONS="-DCMAKE_CXX_STANDARD=${CXX_STANDARD} -DCMAKE_CUDA_STANDARD=${CXX_STANDARD}"
 
 configure_and_build_preset "CCCL C CUDASTF Library" "$PRESET" "$CMAKE_OPTIONS"
 

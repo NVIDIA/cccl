@@ -76,7 +76,14 @@ static void ensure_pinned_ptr(void* ptr)
 C2H_CCCLRT_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", TEST_TYPES)
 {
   using pinned_resource = TestType;
-  pinned_resource res   = get_resource<pinned_resource>();
+
+#if _CCCL_CTK_AT_LEAST(12, 6)
+  if (!cuda::__is_host_memory_pool_supported() && cuda::std::is_same_v<pinned_resource, cuda::pinned_memory_pool_ref>)
+  {
+    return;
+  }
+#endif // _CCCL_CTK_AT_LEAST(12, 6)
+  pinned_resource res = get_resource<pinned_resource>();
   cuda::stream stream{cuda::device_ref{0}};
 
   { // allocate_sync / deallocate_sync

@@ -297,11 +297,16 @@ class Nvrtcc:
     def __init__(self, opts: list[str], env):
         args, nvcc_opts = Nvrtcc._parse_nvrtcc_opts(opts)
 
+        # Prepend nvrtcc specific macro definitions to nvcc options.
+        nvrtcc_defines = ["-D__NVRTCC__=1"]
+        nvrtcc_defines += ["-D__NVRTCC_USE_NVRTC__=1"] if args.use_nvrtc else []
+        nvcc_opts = nvrtcc_defines + nvcc_opts
+
         self.nvcc_bin = Nvrtcc._get_nvcc_bin_abs_path(args.nvccbin, env)
         self.use_nvrtc = args.use_nvrtc
         self.nvrtc_opts = args.nvrtc_options
-        self.nvcc_opts = ["-D__NVRTCC__"] + nvcc_opts
-        self.nvcc_args = Nvrtcc._parse_nvcc_opts(self.nvcc_opts)
+        self.nvcc_opts = nvcc_opts
+        self.nvcc_args = Nvrtcc._parse_nvcc_opts(nvcc_opts)
         self.device_compile_bin = os.path.join(
             os.path.dirname(__file__), "nvrtcc_device_compiler"
         )
@@ -361,7 +366,8 @@ class Nvrtcc:
 
         if run_result.returncode != 0:
             Nvrtcc._emit_error(
-                "failed to retrieve nvcc command list", run_result.returncode
+                f"failed to retrieve nvcc command list with error:\n    {run_result.stderr.decode()}",
+                run_result.returncode,
             )
 
         lines = run_result.stderr.decode().splitlines()
