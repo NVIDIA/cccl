@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include "insert_nested_NVTX_range_guard.h"
-
 #include <cub/agent/agent_thread_segmented_scan.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_scan.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
@@ -13,7 +11,6 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
 #include <c2h/catch2_test_helper.h>
 
@@ -93,7 +90,7 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with one segme
   using pair_t = typename op_t::pair_t;
 
   unsigned num_items = 128 * 16;
-  c2h::device_vector<unsigned> offsets{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};
+  c2h::device_vector<unsigned> offsets{0u, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};
   size_t num_segments = offsets.size() - 1;
 
   c2h::device_vector<pair_t> input(num_items);
@@ -116,6 +113,12 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with one segme
 
   [[maybe_unused]] const auto itp = items_per_thread;
 
+  op_t scan_op{};
+  cub::NullType no_init{};
+  auto inp_beg = d_offsets;
+  auto inp_end = d_offsets + 1;
+  auto out_beg = d_offsets;
+
   cub::detail::segmented_scan::device_thread_segmented_scan_kernel<
     chained_policy_t,
     pair_t*,
@@ -128,7 +131,7 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with one segme
     cub::NullType,
     pair_t,
     true><<<grid_size, block_size>>>(
-    d_input, d_output, d_offsets, d_offsets + 1, d_offsets, n_segments, op_t{}, cub::NullType{}, segments_per_worker);
+    d_input, d_output, inp_beg, inp_end, out_beg, n_segments, scan_op, no_init, segments_per_worker);
 
   REQUIRE(cudaSuccess == cudaGetLastError());
 
@@ -144,7 +147,7 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with one segme
       h_input.begin() + h_offsets[segment_id],
       h_input.begin() + h_offsets[segment_id + 1],
       h_expected.begin() + h_offsets[segment_id],
-      op_t{},
+      scan_op,
       pair_t{0, 0});
   }
 
@@ -183,6 +186,12 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with two segme
 
   [[maybe_unused]] const auto itp = items_per_thread;
 
+  op_t scan_op{};
+  cub::NullType no_init{};
+  auto inp_beg = d_offsets;
+  auto inp_end = d_offsets + 1;
+  auto out_beg = d_offsets;
+
   cub::detail::segmented_scan::device_thread_segmented_scan_kernel<
     chained_policy_t,
     pair_t*,
@@ -195,7 +204,7 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with two segme
     cub::NullType,
     pair_t,
     false><<<grid_size, block_size>>>(
-    d_input, d_output, d_offsets, d_offsets + 1, d_offsets, n_segments, op_t{}, cub::NullType{}, segments_per_worker);
+    d_input, d_output, inp_beg, inp_end, out_beg, n_segments, scan_op, no_init, segments_per_worker);
 
   REQUIRE(cudaSuccess == cudaGetLastError());
 
@@ -211,7 +220,7 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with two segme
       h_input.begin() + h_offsets[segment_id],
       h_input.begin() + h_offsets[segment_id + 1],
       h_expected.begin() + h_offsets[segment_id],
-      op_t{},
+      scan_op,
       pair_t{0, 0});
   }
 
@@ -261,6 +270,12 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with three seg
 
   [[maybe_unused]] const auto itp = items_per_thread;
 
+  op_t scan_op{};
+  cub::NullType no_init{};
+  auto inp_beg = d_offsets;
+  auto inp_end = d_offsets + 1;
+  auto out_beg = d_offsets;
+
   // inclusive scan (no initial condition)
   cub::detail::segmented_scan::device_thread_segmented_scan_kernel<
     chained_policy_t,
@@ -274,7 +289,7 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with three seg
     cub::NullType,
     pair_t,
     false><<<grid_size, block_size>>>(
-    d_input, d_output, d_offsets, d_offsets + 1, d_offsets, n_segments, op_t{}, cub::NullType{}, segments_per_worker);
+    d_input, d_output, inp_beg, inp_end, out_beg, n_segments, scan_op, no_init, segments_per_worker);
 
   REQUIRE(cudaSuccess == cudaGetLastError());
 
@@ -290,7 +305,7 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with three seg
       h_input.begin() + h_offsets[segment_id],
       h_input.begin() + h_offsets[segment_id + 1],
       h_expected.begin() + h_offsets[segment_id],
-      op_t{},
+      scan_op,
       pair_t{0, 0});
   }
 
@@ -305,6 +320,86 @@ C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan works with three seg
       }
       std::cout << std::endl;
     }
+  }
+
+  REQUIRE(h_expected == h_output);
+}
+
+C2H_TEST("cub::detail::segmented_scan::agent_segmented_scan skips empty segments",
+         "[agent_multiple_segments_per_block][segmented][scan]")
+{
+  using op_t    = cuda::std::plus<>;
+  using value_t = unsigned;
+
+  auto canary = value_t{0xDEADBEEF};
+
+  c2h::device_vector<unsigned> offsets{0, 4, 4, 12};
+  c2h::device_vector<unsigned> out_offsets{0, 4, 8, 16};
+
+  size_t num_segments = offsets.size() - 1;
+  unsigned num_items  = offsets.back();
+  unsigned num_output = out_offsets.back();
+
+  c2h::device_vector<value_t> input(num_items);
+  thrust::tabulate(input.begin(), input.end(), cuda::std::identity{});
+  c2h::device_vector<value_t> output(num_output, canary);
+
+  value_t* d_input        = thrust::raw_pointer_cast(input.data());
+  value_t* d_output       = thrust::raw_pointer_cast(output.data());
+  unsigned* d_offsets     = thrust::raw_pointer_cast(offsets.data());
+  unsigned* d_out_offsets = thrust::raw_pointer_cast(out_offsets.data());
+
+  constexpr int block_size          = 128;
+  constexpr int items_per_thread    = 4;
+  constexpr int segments_per_worker = 2;
+  constexpr int segments_per_block  = segments_per_worker * block_size;
+  using chained_policy_t            = ChainedPolicy<block_size, items_per_thread>;
+
+  const auto n_segments = static_cast<unsigned>(num_segments);
+  const auto grid_size  = cuda::ceil_div(n_segments, segments_per_block);
+
+  [[maybe_unused]] const auto itp = items_per_thread;
+
+  op_t scan_op{};
+  cub::NullType no_init{};
+  auto inp_beg = d_offsets;
+  auto inp_end = d_offsets + 1;
+  auto out_beg = d_out_offsets;
+
+  cub::detail::segmented_scan::device_thread_segmented_scan_kernel<
+    chained_policy_t,
+    value_t*,
+    value_t*,
+    unsigned*,
+    unsigned*,
+    unsigned*,
+    unsigned,
+    op_t,
+    cub::NullType,
+    value_t,
+    false><<<grid_size, block_size>>>(
+    d_input, d_output, inp_beg, inp_end, out_beg, n_segments, scan_op, no_init, segments_per_worker);
+
+  REQUIRE(cudaSuccess == cudaGetLastError());
+
+  c2h::host_vector<value_t> h_output(output);
+  c2h::host_vector<value_t> h_input(input);
+  c2h::host_vector<value_t> h_expected(output.size(), canary);
+  c2h::host_vector<unsigned> h_offsets(offsets);
+  c2h::host_vector<unsigned> h_out_offsets(out_offsets);
+
+  for (unsigned segment_id = 0; segment_id < num_segments; ++segment_id)
+  {
+    if (h_offsets[segment_id] == h_offsets[segment_id + 1])
+    {
+      continue;
+    }
+    compute_inclusive_scan_reference(
+      h_input.begin() + h_offsets[segment_id],
+      h_input.begin() + h_offsets[segment_id + 1],
+      h_expected.begin() + h_out_offsets[segment_id],
+      scan_op,
+      value_t{0});
   }
 
   REQUIRE(h_expected == h_output);
@@ -339,6 +434,14 @@ C2H_TEST("agent_segmented_scan works for exclusive_scan with two segments per bl
 
   [[maybe_unused]] const auto itp = items_per_thread;
 
+  pair_t h_init{1, 1};
+
+  op_t scan_op{};
+  cub::detail::InputValue<pair_t> init{h_init};
+  auto inp_beg = d_offsets;
+  auto inp_end = d_offsets + 1;
+  auto out_beg = d_offsets;
+
   // force inclusive is false (last template parameter), initial value is provided
   // hence this call computes exclusive scan algorithm
   cub::detail::segmented_scan::device_thread_segmented_scan_kernel<
@@ -353,15 +456,7 @@ C2H_TEST("agent_segmented_scan works for exclusive_scan with two segments per bl
     cub::detail::InputValue<pair_t>,
     pair_t,
     false><<<grid_size, block_size>>>(
-    d_input,
-    d_output,
-    d_offsets,
-    d_offsets + 1,
-    d_offsets,
-    n_segments,
-    op_t{},
-    cub::detail::InputValue<pair_t>{pair_t{1, 1}},
-    segments_per_worker);
+    d_input, d_output, inp_beg, inp_end, out_beg, n_segments, scan_op, init, segments_per_worker);
 
   REQUIRE(cudaSuccess == cudaGetLastError());
 
@@ -377,8 +472,8 @@ C2H_TEST("agent_segmented_scan works for exclusive_scan with two segments per bl
       h_input.begin() + h_offsets[segment_id],
       h_input.begin() + h_offsets[segment_id + 1],
       h_expected.begin() + h_offsets[segment_id],
-      pair_t{1, 1},
-      op_t{});
+      h_init,
+      scan_op);
   }
 
   if (h_expected != h_output)
@@ -426,7 +521,13 @@ C2H_TEST("agent_segmented_scan works for exclusive_scan with three segments per 
 
   [[maybe_unused]] const auto itp = items_per_thread;
 
-  value_t init_value_{10};
+  value_t h_init{10};
+
+  op_t scan_op{};
+  cub::detail::InputValue<value_t> init{h_init};
+  auto inp_beg = d_offsets;
+  auto inp_end = d_offsets + 1;
+  auto out_beg = d_offsets;
 
   // force inclusive is false (last template parameter), initial value is provided
   // hence this call computes inclusive scan algorithm
@@ -442,15 +543,7 @@ C2H_TEST("agent_segmented_scan works for exclusive_scan with three segments per 
     cub::detail::InputValue<value_t>,
     value_t,
     true><<<grid_size, block_size>>>(
-    d_input,
-    d_output,
-    d_offsets,
-    d_offsets + 1,
-    d_offsets,
-    n_segments,
-    op_t{},
-    cub::detail::InputValue<value_t>{init_value_},
-    segments_per_worker);
+    d_input, d_output, inp_beg, inp_end, out_beg, n_segments, scan_op, init, segments_per_worker);
 
   REQUIRE(cudaSuccess == cudaGetLastError());
 
@@ -466,8 +559,8 @@ C2H_TEST("agent_segmented_scan works for exclusive_scan with three segments per 
       h_input.begin() + h_offsets[segment_id],
       h_input.begin() + h_offsets[segment_id + 1],
       h_expected.begin() + h_offsets[segment_id],
-      op_t{},
-      init_value_);
+      scan_op,
+      h_init);
   }
 
   if (h_expected != h_output)
