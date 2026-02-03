@@ -17,7 +17,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail::warpspeed
 {
 template <typename _Tp>
-[[nodiscard]] _CCCL_DEVICE_API inline _Tp* optimizeSmemPtr(const _Tp* smemGeneric)
+[[nodiscard]] _CCCL_DEVICE_API _Tp* optimizeSmemPtr(const _Tp* smemGeneric)
 {
   // See https://nvbugspro.nvidia.com/bug/4907996
 

@@ -95,8 +95,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE CpAsyncOobInfo<Tp> prepareCpAsyncOob(Tp* ptrG
 }
 
 template <typename ResourceTp, typename Tp>
-_CCCL_DEVICE_API inline void
-squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSmem, CpAsyncOobInfo<Tp> cpAsyncOobInfo)
+_CCCL_DEVICE_API void squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSmem, CpAsyncOobInfo<Tp> cpAsyncOobInfo)
 {
   ::cuda::std::byte* ptrSmem = refDestSmem.data().inout;
   _CCCL_ASSERT(::cuda::is_aligned(ptrSmem, 16), "");
@@ -174,13 +173,7 @@ squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSmem, CpAsyncOobInfo<Tp> 
     refDestSmem.squadIncreaseTxCount(squad, cpAsyncOobInfo.underCopySizeBytes);
 
     // we cannot use Tp to load the head and tail elements, because sizeof(Tp) may be larger than alignof(Tp)
-    using load_word_t = ::cuda::std::conditional_t<
-      alignof(Tp) == 8,
-      ::cuda::std::uint64_t,
-      ::cuda::std::conditional_t<
-        alignof(Tp) == 4,
-        ::cuda::std::uint32_t,
-        ::cuda::std::conditional_t<alignof(Tp) == 2, ::cuda::std::uint16_t, ::cuda::std::uint8_t>>>;
+    using load_word_t = ::cuda::__make_nbit_uint_t<alignof(Tp) * CHAR_BIT>;
 
     const int head_elements = (cpAsyncOobInfo.ptrGmemStartAlignUp - cpAsyncOobInfo.ptrGmem) / sizeof(load_word_t);
     const int tail_elements = (cpAsyncOobInfo.ptrGmemEnd - cpAsyncOobInfo.ptrGmemEndAlignDown) / sizeof(load_word_t);
@@ -210,7 +203,7 @@ squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSmem, CpAsyncOobInfo<Tp> 
 }
 
 template <typename OutputT>
-_CCCL_DEVICE_API inline void
+_CCCL_DEVICE_API void
 squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::cuda::std::byte* srcSmem)
 {
   // This function performs either 1 copy, or three copies, depending on the
@@ -324,7 +317,7 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
 #endif // __cccl_ptx_isa >= 860
 
 template <typename InputT, typename AccumT, int elemPerThread>
-_CCCL_DEVICE_API inline void squadLoadSmem(Squad squad, AccumT (&outReg)[elemPerThread], const InputT* smemBuf)
+_CCCL_DEVICE_API void squadLoadSmem(Squad squad, AccumT (&outReg)[elemPerThread], const InputT* smemBuf)
 {
   for (int i = 0; i < elemPerThread; ++i)
   {
@@ -334,7 +327,7 @@ _CCCL_DEVICE_API inline void squadLoadSmem(Squad squad, AccumT (&outReg)[elemPer
 }
 
 template <typename OutputT, typename AccumT, int elemPerThread>
-_CCCL_DEVICE_API inline void squadStoreSmem(Squad squad, OutputT* smemBuf, const AccumT (&inReg)[elemPerThread])
+_CCCL_DEVICE_API void squadStoreSmem(Squad squad, OutputT* smemBuf, const AccumT (&inReg)[elemPerThread])
 {
   for (int i = 0; i < elemPerThread; ++i)
   {
@@ -344,7 +337,7 @@ _CCCL_DEVICE_API inline void squadStoreSmem(Squad squad, OutputT* smemBuf, const
 }
 
 template <typename OutputT, typename AccumT, int elemPerThread>
-_CCCL_DEVICE_API inline void
+_CCCL_DEVICE_API void
 squadStoreSmemPartial(Squad squad, OutputT* smemBuf, const AccumT (&inReg)[elemPerThread], int beginIndex, int endIndex)
 {
   for (int i = 0; i < elemPerThread; ++i)

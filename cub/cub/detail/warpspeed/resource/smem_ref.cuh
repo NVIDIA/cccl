@@ -61,7 +61,7 @@ struct SmemRef
 
   [[nodiscard]] _CCCL_DEVICE_API _Tp& data() noexcept
   {
-    return reinterpret_cast<_Tp&>(*(_Tp*) mSmemResourceRaw.data());
+    return *static_cast<_Tp*>(mSmemResourceRaw.data());
   }
 
   [[nodiscard]] _CCCL_DEVICE_API int sizeBytes() const noexcept
