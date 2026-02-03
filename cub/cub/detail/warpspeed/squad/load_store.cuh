@@ -59,10 +59,10 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE CpAsyncOobInfo<Tp> prepareCpAsyncOob(Tp* ptrG
   auto ptrGmemEnd   = reinterpret_cast<::cuda::std::byte*>(ptrGmem + sizeElem);
 
   // We will copy from [ptrGmemBase, ptrGmemEnd). Both pointers have to be 16B aligned.
-  ::cuda::std::byte* ptrGmemStartAlignDown = ::cuda::align_down(ptrGmemBytes, ::cuda::std::size_t(16));
-  ::cuda::std::byte* ptrGmemStartAlignUp   = ::cuda::align_up(ptrGmemBytes, ::cuda::std::size_t(16));
-  ::cuda::std::byte* ptrGmemEndAlignUp     = ::cuda::align_up(ptrGmemEnd, ::cuda::std::size_t(16));
-  ::cuda::std::byte* ptrGmemEndAlignDown   = ::cuda::align_down(ptrGmemEnd, ::cuda::std::size_t(16));
+  ::cuda::std::byte* ptrGmemStartAlignDown = ::cuda::align_down(ptrGmemBytes, 16);
+  ::cuda::std::byte* ptrGmemStartAlignUp   = ::cuda::align_up(ptrGmemBytes, 16);
+  ::cuda::std::byte* ptrGmemEndAlignUp     = ::cuda::align_up(ptrGmemEnd, 16);
+  ::cuda::std::byte* ptrGmemEndAlignDown   = ::cuda::align_down(ptrGmemEnd, 16);
 
   // Compute the final copy size in bytes. It can be either sizeElem or sizeElem + 16 / sizeof(T).
   const auto origCopySizeBytes = static_cast<::cuda::std::uint32_t>(sizeof(Tp) * sizeElem);
@@ -76,10 +76,6 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE CpAsyncOobInfo<Tp> prepareCpAsyncOob(Tp* ptrG
     underCopySizeBytes = 0;
   }
 
-  _CCCL_ASSERT(::cuda::is_aligned(ptrGmemStartAlignDown, 16), "");
-  _CCCL_ASSERT(::cuda::is_aligned(ptrGmemStartAlignUp, 16), "");
-  _CCCL_ASSERT(::cuda::is_aligned(ptrGmemEndAlignDown, 16), "");
-  _CCCL_ASSERT(::cuda::is_aligned(ptrGmemEndAlignUp, 16), "");
   _CCCL_ASSERT(overCopySizeBytes % 16 == 0, "");
   _CCCL_ASSERT(underCopySizeBytes % 16 == 0, "");
 
