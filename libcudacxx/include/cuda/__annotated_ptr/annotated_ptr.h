@@ -163,6 +163,11 @@ public:
   {
     return this->__get_property();
   }
+
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer __get_raw_ptr() const noexcept
+  {
+    return __repr;
+  }
 };
 
 //----------------------------------------------------------------------------------------------------------------------
