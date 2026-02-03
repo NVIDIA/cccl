@@ -48,7 +48,7 @@ struct scanKernelParams
   const InputT* ptrIn;
   OutputT* ptrOut;
   warpspeed::tile_state_t<AccumT>* ptrTileStates;
-  size_t numElem;
+  ::cuda::std::size_t numElem;
   int numStages;
 };
 
@@ -57,7 +57,7 @@ template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename 
 struct ScanResources
 {
   // align to at least 16 bytes (InputT/OutputT may be aligned higher) so each stage starts correctly aligned
-  struct alignas(::cuda::std::max({size_t{16}, alignof(InputT), alignof(OutputT)})) InOutT
+  struct alignas(::cuda::std::max({::cuda::std::size_t{16}, alignof(InputT), alignof(OutputT)})) InOutT
   {
     // the tile_size size is a multiple of the warp size, and thus for sure a multiple of 16
     static_assert(WarpspeedPolicy::tile_size % 16 == 0, "tile_size must be multiple of 16");
@@ -282,9 +282,10 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       squadGetNextBlockIdx(squad, refNextBlockIdxW);
     }
 
-    const size_t idxTileBase = idxTile * size_t(tile_size);
+    const ::cuda::std::size_t idxTileBase = idxTile * ::cuda::std::size_t(tile_size);
     _CCCL_ASSERT(idxTileBase < params.numElem, "");
-    const int valid_items   = static_cast<int>(cuda::std::min(params.numElem - idxTileBase, size_t(tile_size)));
+    const int valid_items =
+      static_cast<int>(cuda::std::min(params.numElem - idxTileBase, ::cuda::std::size_t(tile_size)));
     const bool is_last_tile = valid_items < tile_size;
     warpspeed::CpAsyncOobInfo loadInfo =
       warpspeed::prepareCpAsyncOob(const_cast<InputT*>(params.ptrIn) + idxTileBase, valid_items);
@@ -725,15 +726,15 @@ device_scan_init_lookahead_body(warpspeed::tile_state_t<AccumT>* tile_states, co
   static_assert(warpspeed::EMPTY == 0); // so we can zero init each tile state
   if constexpr (sizeof(warpspeed::tile_state_t<AccumT>) == 2)
   {
-    *reinterpret_cast<uint16_t*>(tile_states + tile_id) = 0;
+    *reinterpret_cast<::cuda::std::uint16_t*>(tile_states + tile_id) = 0;
   }
   else if constexpr (sizeof(warpspeed::tile_state_t<AccumT>) == 4)
   {
-    *reinterpret_cast<uint32_t*>(tile_states + tile_id) = 0;
+    *reinterpret_cast<::cuda::std::uint32_t*>(tile_states + tile_id) = 0;
   }
   else if constexpr (sizeof(warpspeed::tile_state_t<AccumT>) == 8)
   {
-    *reinterpret_cast<uint64_t*>(tile_states + tile_id) = 0;
+    *reinterpret_cast<::cuda::std::uint64_t*>(tile_states + tile_id) = 0;
   }
   else if constexpr (sizeof(warpspeed::tile_state_t<AccumT>) == 16)
   {

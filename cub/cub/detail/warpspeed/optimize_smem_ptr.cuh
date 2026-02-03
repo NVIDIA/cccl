@@ -22,7 +22,7 @@ template <typename _Tp>
   // See https://nvbugspro.nvidia.com/bug/4907996
 
   // 1. Convert to 32-bit shared memory pointer
-  uint32_t smem32 = __cvta_generic_to_shared(smemGeneric);
+  ::cuda::std::uint32_t smem32 = __cvta_generic_to_shared(smemGeneric);
   // 2. Pretend to NVVM that the 32-bit pointer is modified. This is required to avoid NVVM constant
   // propagation from pulling the smem32 definition into loops and branches in subsequent code.
   asm("" : "+r"(smem32));

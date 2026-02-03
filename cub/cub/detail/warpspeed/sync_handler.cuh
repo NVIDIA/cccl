@@ -44,7 +44,7 @@ struct SyncHandler
   int mNumStages[mMaxNumResources]{};
   int mNumPhases[mMaxNumResources]{};
   int mNumOwningThreads[mMaxNumResources][mMaxNumPhases]{};
-  uint64_t* mPtrBar[mMaxNumResources][mMaxNumPhases]{};
+  ::cuda::std::uint64_t* mPtrBar[mMaxNumResources][mMaxNumPhases]{};
 
   constexpr SyncHandler() = default;
 

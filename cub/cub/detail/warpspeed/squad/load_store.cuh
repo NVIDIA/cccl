@@ -43,30 +43,31 @@ struct CpAsyncOobInfo
   ::cuda::std::byte* ptrGmemEnd;
   ::cuda::std::byte* ptrGmemEndAlignDown;
   ::cuda::std::byte* ptrGmemEndAlignUp;
-  uint32_t overCopySizeBytes;
-  uint32_t underCopySizeBytes;
-  uint32_t origCopySizeBytes;
-  uint32_t smemStartSkipBytes; // ptrSmem + smemStartSkipBytes will point to the first valid element copied from ptrGmem
-  uint32_t smemEndBytesAfter16BBoundary; // number of bytes after the last 16B boundary in GMEM/SMEM that still contains
-                                         // valid (partial) elements
+  ::cuda::std::uint32_t overCopySizeBytes;
+  ::cuda::std::uint32_t underCopySizeBytes;
+  ::cuda::std::uint32_t origCopySizeBytes;
+  ::cuda::std::uint32_t smemStartSkipBytes; // ptrSmem + smemStartSkipBytes will point to the first valid element copied
+                                            // from ptrGmem
+  ::cuda::std::uint32_t smemEndBytesAfter16BBoundary; // number of bytes after the last 16B boundary in GMEM/SMEM that
+                                                      // still contains valid (partial) elements
 };
 
 template <typename Tp>
-_CCCL_DEVICE_API _CCCL_FORCEINLINE CpAsyncOobInfo<Tp> prepareCpAsyncOob(Tp* ptrGmem, uint32_t sizeElem)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE CpAsyncOobInfo<Tp> prepareCpAsyncOob(Tp* ptrGmem, ::cuda::std::uint32_t sizeElem)
 {
-  ::cuda::std::byte* ptrGmemBytes = reinterpret_cast<::cuda::std::byte*>(ptrGmem);
+  auto ptrGmemBytes = reinterpret_cast<::cuda::std::byte*>(ptrGmem);
+  auto ptrGmemEnd   = reinterpret_cast<::cuda::std::byte*>(ptrGmem + sizeElem);
 
   // We will copy from [ptrGmemBase, ptrGmemEnd). Both pointers have to be 16B aligned.
   ::cuda::std::byte* ptrGmemStartAlignDown = ::cuda::align_down(ptrGmemBytes, ::cuda::std::size_t(16));
   ::cuda::std::byte* ptrGmemStartAlignUp   = ::cuda::align_up(ptrGmemBytes, ::cuda::std::size_t(16));
-  ::cuda::std::byte* ptrGmemEnd            = reinterpret_cast<::cuda::std::byte*>(ptrGmem + sizeElem);
   ::cuda::std::byte* ptrGmemEndAlignUp     = ::cuda::align_up(ptrGmemEnd, ::cuda::std::size_t(16));
   ::cuda::std::byte* ptrGmemEndAlignDown   = ::cuda::align_down(ptrGmemEnd, ::cuda::std::size_t(16));
 
   // Compute the final copy size in bytes. It can be either sizeElem or sizeElem + 16 / sizeof(T).
-  const uint32_t origCopySizeBytes = static_cast<uint32_t>(sizeof(Tp) * sizeElem);
-  const uint32_t overCopySizeBytes = static_cast<uint32_t>(ptrGmemEndAlignUp - ptrGmemStartAlignDown);
-  uint32_t underCopySizeBytes      = static_cast<uint32_t>(ptrGmemEndAlignDown - ptrGmemStartAlignUp);
+  const auto origCopySizeBytes = static_cast<::cuda::std::uint32_t>(sizeof(Tp) * sizeElem);
+  const auto overCopySizeBytes = static_cast<::cuda::std::uint32_t>(ptrGmemEndAlignUp - ptrGmemStartAlignDown);
+  auto underCopySizeBytes      = static_cast<::cuda::std::uint32_t>(ptrGmemEndAlignDown - ptrGmemStartAlignUp);
   if (origCopySizeBytes < underCopySizeBytes)
   {
     // If ptrGmemStart and ptrGmemEnd are aligned to [1, .., 15] bytes, then
@@ -92,8 +93,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE CpAsyncOobInfo<Tp> prepareCpAsyncOob(Tp* ptrG
     overCopySizeBytes,
     underCopySizeBytes,
     origCopySizeBytes,
-    static_cast<uint32_t>(ptrGmemBytes - ptrGmemStartAlignDown),
-    static_cast<uint32_t>(ptrGmemEnd - ptrGmemEndAlignDown),
+    static_cast<::cuda::std::uint32_t>(ptrGmemBytes - ptrGmemStartAlignDown),
+    static_cast<::cuda::std::uint32_t>(ptrGmemEnd - ptrGmemEndAlignDown),
   };
 }
 
@@ -103,7 +104,7 @@ squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSmem, CpAsyncOobInfo<Tp> 
 {
   ::cuda::std::byte* ptrSmem = refDestSmem.data().inout;
   _CCCL_ASSERT(::cuda::is_aligned(ptrSmem, 16), "");
-  uint64_t* ptrBar = refDestSmem.ptrCurBarrierRelease();
+  ::cuda::std::uint64_t* ptrBar = refDestSmem.ptrCurBarrierRelease();
 
   if constexpr (alignof(Tp) >= 16)
   {
@@ -179,9 +180,11 @@ squadLoadBulk(Squad squad, SmemRef<ResourceTp>& refDestSmem, CpAsyncOobInfo<Tp> 
     // we cannot use Tp to load the head and tail elements, because sizeof(Tp) may be larger than alignof(Tp)
     using load_word_t = ::cuda::std::conditional_t<
       alignof(Tp) == 8,
-      uint64_t,
-      ::cuda::std::
-        conditional_t<alignof(Tp) == 4, uint32_t, ::cuda::std::conditional_t<alignof(Tp) == 2, uint16_t, uint8_t>>>;
+      ::cuda::std::uint64_t,
+      ::cuda::std::conditional_t<
+        alignof(Tp) == 4,
+        ::cuda::std::uint32_t,
+        ::cuda::std::conditional_t<alignof(Tp) == 2, ::cuda::std::uint16_t, ::cuda::std::uint8_t>>>;
 
     const int head_elements = (cpAsyncOobInfo.ptrGmemStartAlignUp - cpAsyncOobInfo.ptrGmem) / sizeof(load_word_t);
     const int tail_elements = (cpAsyncOobInfo.ptrGmemEnd - cpAsyncOobInfo.ptrGmemEndAlignDown) / sizeof(load_word_t);
@@ -241,15 +244,15 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
     const bool doEndCopy    = cpAsyncOobInfo.smemEndBytesAfter16BBoundary > 0;
     const bool doMiddleCopy = cpAsyncOobInfo.ptrGmemStartAlignUp != cpAsyncOobInfo.ptrGmemEndAlignUp;
 
-    constexpr uint16_t byteMask  = 0xFFFF;
-    const uint16_t byteMaskStart = byteMask << cpAsyncOobInfo.smemStartSkipBytes;
-    const uint16_t byteMaskEnd   = byteMask >> (16 - cpAsyncOobInfo.smemEndBytesAfter16BBoundary);
+    constexpr ::cuda::std::uint16_t byteMask  = 0xFFFF;
+    const ::cuda::std::uint16_t byteMaskStart = byteMask << cpAsyncOobInfo.smemStartSkipBytes;
+    const ::cuda::std::uint16_t byteMaskEnd   = byteMask >> (16 - cpAsyncOobInfo.smemEndBytesAfter16BBoundary);
     // byteMaskStart contains zeroes at the left
 #  if _CCCL_CUDA_COMPILER(NVCC, >=, 13, 2)
-    const uint16_t byteMaskSmall = byteMaskStart & byteMaskEnd;
+    const ::cuda::std::uint16_t byteMaskSmall = byteMaskStart & byteMaskEnd;
 #  else // _CCCL_CUDA_COMPILER(NVCC, >=, 13, 2)
     // `ptxas fatal   : (C7907) Internal compiler error`, see nvbug 5848313
-    const uint16_t byteMaskSmall =
+    const ::cuda::std::uint16_t byteMaskSmall =
       byteMaskStart & (byteMask >> (16 - (cpAsyncOobInfo.ptrGmemEnd - cpAsyncOobInfo.ptrGmemStartAlignDown)));
 #  endif // _CCCL_CUDA_COMPILER(NVCC, >=, 13, 2)
 

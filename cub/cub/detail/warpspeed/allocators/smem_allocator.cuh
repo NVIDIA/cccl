@@ -25,8 +25,8 @@ namespace detail::warpspeed
 {
 struct SmemAllocator
 {
-  uint32_t mPtrSmem32 = 0;
-  int mAllocatedSize  = 0;
+  ::cuda::std::uint32_t mPtrSmem32 = 0;
+  int mAllocatedSize               = 0;
 
   _CCCL_API constexpr SmemAllocator() noexcept
   {
@@ -37,7 +37,7 @@ struct SmemAllocator
     }
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API static uint32_t dynamic_smem_base() noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static ::cuda::std::uint32_t dynamic_smem_base() noexcept
   {
     extern __shared__ char warpSpeedDynamicSmemBase[];
     return __cvta_generic_to_shared(warpSpeedDynamicSmemBase);
@@ -50,10 +50,10 @@ struct SmemAllocator
   SmemAllocator& operator=(const SmemAllocator&) = delete; // Delete copy assignment
   SmemAllocator& operator=(SmemAllocator&&)      = delete; // Delete move assignment
 
-  [[nodiscard]] _CCCL_API constexpr void* alloc(uint32_t size, uint32_t align = 0)
+  [[nodiscard]] _CCCL_API constexpr void* alloc(::cuda::std::uint32_t size, ::cuda::std::uint32_t align = 0)
   {
     // Align mPtrSmem32 to requested alignment (round-up)
-    uint32_t ptrAllocation32 = (mPtrSmem32 + (align - 1)) & ~(align - 1);
+    ::cuda::std::uint32_t ptrAllocation32 = (mPtrSmem32 + (align - 1)) & ~(align - 1);
 
     // Move base pointer and update allocated size
     mAllocatedSize += size + ptrAllocation32 - mPtrSmem32;
@@ -73,7 +73,7 @@ struct SmemAllocator
     return nullptr;
   }
 
-  [[nodiscard]] _CCCL_API constexpr uint32_t sizeBytes() const
+  [[nodiscard]] _CCCL_API constexpr ::cuda::std::uint32_t sizeBytes() const
   {
     return mAllocatedSize;
   }

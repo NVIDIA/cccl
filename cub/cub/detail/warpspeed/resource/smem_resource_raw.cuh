@@ -35,13 +35,13 @@ struct SmemResourceRaw
   int mStageCurrent = 0;
 
   int mResourceHandle;
-  uint8_t* mPtrBase;
+  ::cuda::std::uint8_t* mPtrBase;
   int mSizeBytes;
   int mStride;
   int mStageCount;
   int mNumPhases = 0;
 
-  uint64_t* mPtrBar[mMaxNumPhases]{};
+  ::cuda::std::uint64_t* mPtrBar[mMaxNumPhases]{};
   int mParity[mMaxNumPhases]{};
 
   _CCCL_API constexpr SmemResourceRaw(
@@ -55,7 +55,7 @@ struct SmemResourceRaw
     // we don't need the pointer during constant evaluation (and casting is not allowed)
     if (!::cuda::std::is_constant_evaluated())
     {
-      mPtrBase = static_cast<uint8_t*>(ptrBase);
+      mPtrBase = static_cast<::cuda::std::uint8_t*>(ptrBase);
     }
 
     for (int pi = 0; pi < mMaxNumPhases; ++pi)
@@ -65,7 +65,8 @@ struct SmemResourceRaw
   }
 
   template <int numSquads>
-  _CCCL_API constexpr void addPhase(SyncHandler& syncHandler, uint64_t* ptrBarrier, const SquadDesc (&squads)[numSquads])
+  _CCCL_API constexpr void
+  addPhase(SyncHandler& syncHandler, ::cuda::std::uint64_t* ptrBarrier, const SquadDesc (&squads)[numSquads])
   {
     int numOwningThreads = squadCountThreads(squads);
 
@@ -80,17 +81,17 @@ struct SmemResourceRaw
   _CCCL_API constexpr void
   addPhase(SyncHandler& syncHandler, SmemAllocator& smemAllocator, const SquadDesc (&squads)[numSquads])
   {
-    void* ptrBar_raw = smemAllocator.alloc(mStageCount * sizeof(uint64_t), alignof(uint64_t));
+    void* ptrBar_raw = smemAllocator.alloc(mStageCount * sizeof(::cuda::std::uint64_t), alignof(::cuda::std::uint64_t));
     // we don't need the pointer during constant evaluation (and casting is not allowed)
-    uint64_t* ptrBar = nullptr;
+    ::cuda::std::uint64_t* ptrBar = nullptr;
     if (!::cuda::std::is_constant_evaluated())
     {
-      ptrBar = static_cast<uint64_t*>(ptrBar_raw);
+      ptrBar = static_cast<::cuda::std::uint64_t*>(ptrBar_raw);
     }
     addPhase(syncHandler, ptrBar, squads);
   }
 
-  _CCCL_API void addPhase(SyncHandler& syncHandler, uint64_t* ptrBarrier, const SquadDesc& squad)
+  _CCCL_API void addPhase(SyncHandler& syncHandler, ::cuda::std::uint64_t* ptrBarrier, const SquadDesc& squad)
   {
     const SquadDesc squads[] = {squad};
     addPhase(syncHandler, ptrBarrier, squads);
@@ -129,9 +130,9 @@ struct SmemResourceRaw
     return (void*) (mPtrBase + mStageCurrent * mStride);
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API uint64_t* ptrCurBarrierRelease(int phase)
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint64_t* ptrCurBarrierRelease(int phase)
   {
-    uint64_t* ptrBarPhase = mPtrBar[phase];
+    ::cuda::std::uint64_t* ptrBarPhase = mPtrBar[phase];
     _WS_CONSTANT_ASSERT(phase < mNumPhases, "Phase exceeds limit.");
     return &ptrBarPhase[mStageCurrent];
   }
@@ -165,8 +166,8 @@ struct SmemResourceRaw
 
     // The release of the previous phase occurs on the `phase - 1` barrier. So
     // that is what we wait on.
-    int phaseAcq          = (mNumPhases + phase - 1) % mNumPhases;
-    uint64_t* ptrBarPhase = mPtrBar[phaseAcq];
+    int phaseAcq                       = (mNumPhases + phase - 1) % mNumPhases;
+    ::cuda::std::uint64_t* ptrBarPhase = mPtrBar[phaseAcq];
 
     while (!::cuda::ptx::mbarrier_try_wait_parity(&ptrBarPhase[mStageCurrent], mParity[phase]))
     {
