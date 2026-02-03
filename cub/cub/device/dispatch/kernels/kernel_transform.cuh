@@ -23,6 +23,7 @@
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_up.h>
+#include <cuda/__device/arch_id.h>
 #include <cuda/__memcpy_async/elect_one.h>
 #include <cuda/__memory/aligned_size.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
@@ -37,7 +38,6 @@
 #include <cuda/std/__algorithm/transform.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/has_single_bit.h>
-#include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__memory/construct_at.h>
@@ -97,7 +97,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It begin, int items)
 // This kernel guarantees that objects passed as arguments to the user-provided transformation function f reside in
 // global memory. No intermediate copies are taken. If the parameter type of f is a reference, taking the address of the
 // parameter yields a global memory address.
-template <typename PrefetchPolicy,
+template <int BlockThreads,
           typename Offset,
           typename Predicate,
           typename F,
@@ -111,7 +111,7 @@ _CCCL_DEVICE void transform_kernel_prefetch(
   RandomAccessIteratorOut out,
   RandomAccessIteratorIn... ins)
 {
-  constexpr int block_threads = PrefetchPolicy::block_threads;
+  constexpr int block_threads = BlockThreads;
   const int tile_size         = block_threads * num_elem_per_thread;
   const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_size;
   const int valid_items       = static_cast<int>((::cuda::std::min) (num_items - offset, Offset{tile_size}));
@@ -202,11 +202,18 @@ _CCCL_HOST_DEVICE _CCCL_CONSTEVAL auto load_store_type()
   }
 }
 
-template <typename VectorizedPolicy,
-          typename Offset,
-          typename F,
-          typename RandomAccessIteratorOut,
-          typename... RandomAccessIteratorsIn>
+// FIXME(bgruber): nvcc 12.0 - 13.1 crash with `error: Internal Compiler Error (codegen): "unexpected error in codegen
+// for function: found previous definition of same function!"` when we pass a const& as template parameter (and the
+// function template body contains a lambda). As a workaround, we pass the parts of the policy by value.
+// TODO(bgruber): In C++20, we should just pass transform_policy by value.
+template < // const transform_policy& Policy,
+  int block_threads,
+  int items_per_thread,
+  int vec_size,
+  typename Offset,
+  typename F,
+  typename RandomAccessIteratorOut,
+  typename... RandomAccessIteratorsIn>
 _CCCL_DEVICE void transform_kernel_vectorized(
   Offset num_items,
   int num_elem_per_thread_prefetch,
@@ -215,18 +222,18 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   RandomAccessIteratorOut out,
   RandomAccessIteratorsIn... ins)
 {
-  constexpr int block_dim        = VectorizedPolicy::block_threads;
-  constexpr int items_per_thread = VectorizedPolicy::items_per_thread_vectorized;
-  constexpr int vec_size         = VectorizedPolicy::vec_size;
+  // constexpr int block_threads    = Policy.vectorized.block_threads;
+  // constexpr int items_per_thread = Policy.vectorized.items_per_thread;
+  // constexpr int vec_size         = Policy.vectorized.vec_size;
   _CCCL_ASSERT(!can_vectorize || (items_per_thread == num_elem_per_thread_prefetch), "");
-  constexpr int tile_size = block_dim * items_per_thread;
+  constexpr int tile_size = block_threads * items_per_thread;
   const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_size;
   const int valid_items   = static_cast<int>((::cuda::std::min) (num_items - offset, Offset{tile_size}));
 
   // if we cannot vectorize or don't have a full tile, fall back to prefetch kernel
   if (!can_vectorize || valid_items != tile_size)
   {
-    transform_kernel_prefetch<VectorizedPolicy>(
+    transform_kernel_prefetch<block_threads>(
       num_items,
       num_elem_per_thread_prefetch,
       always_true_predicate{},
@@ -252,7 +259,9 @@ _CCCL_DEVICE void transform_kernel_vectorized(
 
   // if we can vectorize, we convert f's return type to the output type right away, so we can reinterpret later
   using THRUST_NS_QUALIFIER::cuda_cub::core::detail::uninitialized_array;
-  uninitialized_array<::cuda::std::conditional_t<can_vectorize_store, output_t, result_t>, items_per_thread> output;
+  using output_array_t                  = ::cuda::std::conditional_t<can_vectorize_store, output_t, result_t>;
+  constexpr auto output_array_alignment = can_vectorize_store ? sizeof(output_t) * vec_size : alignof(result_t);
+  uninitialized_array<output_array_t, items_per_thread, output_array_alignment> output;
 
   auto provide_array = [&](auto... inputs) {
     // load inputs
@@ -269,7 +278,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < load_store_count; ++i)
         {
-          input_vec[i] = in_vec[i * VectorizedPolicy::block_threads];
+          input_vec[i] = in_vec[i * block_threads];
         }
       }
       else
@@ -281,7 +290,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
           _CCCL_PRAGMA_UNROLL_FULL()
           for (int j = 0; j < vec_size; ++j)
           {
-            input[i * vec_size + j] = in[i * vec_size * VectorizedPolicy::block_threads + j];
+            input[i * vec_size + j] = in[i * vec_size * block_threads + j];
           }
         }
       }
@@ -299,7 +308,9 @@ _CCCL_DEVICE void transform_kernel_vectorized(
       output[i] = f(inputs[i]...);
     }
   };
-  provide_array(uninitialized_array<it_value_t<RandomAccessIteratorsIn>, items_per_thread>{}...);
+  provide_array(uninitialized_array<it_value_t<RandomAccessIteratorsIn>,
+                                    items_per_thread,
+                                    sizeof(it_value_t<RandomAccessIteratorsIn>) * vec_size>{}...);
 
   // write output
   if constexpr (can_vectorize_store)
@@ -311,7 +322,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < load_store_count; ++i)
     {
-      out_vec[i * VectorizedPolicy::block_threads] = output_vec[i];
+      out_vec[i * block_threads] = output_vec[i];
     }
   }
   else
@@ -324,7 +335,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int j = 0; j < vec_size; ++j)
       {
-        out[i * vec_size * VectorizedPolicy::block_threads + j] = output[i * vec_size + j];
+        out[i * vec_size * block_threads + j] = output[i * vec_size + j];
       }
     }
   }
@@ -540,13 +551,18 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
   return reinterpret_cast<T*>(dst);
 }
 
+// FIXME(bgruber): nvcc 12.0 - 13.1 crash with `error: Internal Compiler Error (codegen): "unexpected error in codegen
+// for function: found previous definition of same function!"` when we pass a const& as template parameter (and the
+// function template body contains a lambda). As a workaround, we pass the parts of the policy by value.
+// TODO(bgruber): In C++20, we should just pass transform_policy by value.
 // note: there is no PDL in this kernel since PDL is not supported below Hopper and this kernel is intended for Ampere
-template <typename LdgstsPolicy,
-          typename Offset,
-          typename Predicate,
-          typename F,
-          typename RandomAccessIteratorOut,
-          typename... InTs>
+template < // const transform_policy& Policy,
+  int block_threads,
+  typename Offset,
+  typename Predicate,
+  typename F,
+  typename RandomAccessIteratorOut,
+  typename... InTs>
 _CCCL_DEVICE void transform_kernel_ldgsts(
   Offset num_items,
   int num_elem_per_thread,
@@ -560,10 +576,10 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   static_assert(ldgsts_size_and_align <= 16);
   _CCCL_ASSERT(reinterpret_cast<uintptr_t>(smem) % ldgsts_size_and_align == 0, "");
 
-  constexpr int block_threads = LdgstsPolicy::block_threads;
-  const int tile_size         = block_threads * num_elem_per_thread;
-  const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int valid_items       = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_size}));
+  // constexpr int block_threads = Policy.async_copy.block_threads;
+  const int tile_size   = block_threads * num_elem_per_thread;
+  const Offset offset   = static_cast<Offset>(blockIdx.x) * tile_size;
+  const int valid_items = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_size}));
 
   [[maybe_unused]] int smem_offset = 0;
   // TODO(bgruber): drop checking first block, since gmem buffers are always sufficiently aligned. But this would not
@@ -681,16 +697,26 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
     dst_ptr[bytes_to_copy - tail_bytes + threadIdx.x] = tail_byte;
   }
 }
-
+// FIXME(bgruber): nvcc 12.0 - 13.1 error with `function "void
+// cub::_V_300300_SM_750_800_900_1000_1200::detail::transform::transform_kernel_ublkcp< ::policy, int,
+// ::cub::_V_300300_SM_750_800_900_1000_1200::detail::transform::always_true_predicate,
+// ::cuda::std::__4::logical_and<int> , bool *, int, int > (T2, int, T3, T4, T5,
+// ::cub::_V_300300_SM_750_800_900_1000_1200::detail::transform::aligned_base_ptr<T6> ...)::[lambda(T1) (instance
+// 3)]::operator ()< ::cuda::std::__4::integral_constant<bool, (bool)1> >  const" has already been defined` when we pass
+// a const& as template parameter (and the function template body contains a lambda). As a workaround, we pass the parts
+// of the policy by value.
+// TODO(bgruber): In C++20, we should just pass transform_policy by value.
 // Note: we tried implementing work stealing, aka. cluster launch control, aka. UGETNEXTWORKID, (see PR:
 // https://github.com/NVIDIA/cccl/pull/5099) and the slowdowns on some benchmarks outweighed the benefits on B200. So we
 // didn't merge the changes. The problem was mostly a 25% increase in integer instructions, as shown by ncu.
-template <typename BulkCopyPolicy,
-          typename Offset,
-          typename Predicate,
-          typename F,
-          typename RandomAccessIteratorOut,
-          typename... InTs>
+template < // const transform_policy& Policy,
+  int block_threads,
+  int bulk_copy_alignment,
+  typename Offset,
+  typename Predicate,
+  typename F,
+  typename RandomAccessIteratorOut,
+  typename... InTs>
 _CCCL_DEVICE void transform_kernel_ublkcp(
   Offset num_items,
   int num_elem_per_thread,
@@ -699,8 +725,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   RandomAccessIteratorOut out,
   aligned_base_ptr<InTs>... aligned_ptrs)
 {
-  constexpr int block_threads       = BulkCopyPolicy::block_threads;
-  constexpr int bulk_copy_alignment = BulkCopyPolicy::bulk_copy_alignment;
+  // constexpr int block_threads       = Policy.async_copy.block_threads;
+  // constexpr int bulk_copy_alignment = Policy.async_copy.bulk_copy_alignment;
 
   // add padding after a tile in shared memory to make space for the next tile's head padding, and retain alignment
   constexpr int max_alignment = ::cuda::std::max({int{alignof(InTs)}...});
@@ -951,52 +977,57 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr, int alignment) -
   return arg;
 }
 
-template <typename ActivePolicy>
+template <typename PolicySelector>
 _CCCL_API constexpr int get_block_threads_helper()
 {
-  if constexpr (ActivePolicy::algorithm == Algorithm::prefetch)
+  constexpr transform_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  if constexpr (policy.algorithm == Algorithm::prefetch)
   {
-    return ActivePolicy::prefetch_policy::block_threads;
+    return policy.prefetch.block_threads;
   }
-  else if constexpr (ActivePolicy::algorithm == Algorithm::vectorized)
+  else if constexpr (policy.algorithm == Algorithm::vectorized)
   {
-    return ActivePolicy::vectorized_policy::block_threads;
+    return policy.vectorized.block_threads;
   }
   else
   {
-    return ActivePolicy::async_policy::block_threads;
+    return policy.async_copy.block_threads;
   }
 }
 
 // need a variable template to force constant evaluation of get_block_threads_helper(), otherwise nvcc will give us a
 // "bad attribute argument substitution" error
-template <typename ActivePolicy>
-inline constexpr int get_block_threads = get_block_threads_helper<ActivePolicy>();
+template <typename PolicySelector>
+inline constexpr int get_block_threads = get_block_threads_helper<PolicySelector>();
 
 // There is only one kernel for all algorithms, that dispatches based on the selected policy. It must be instantiated
 // with the same arguments for each algorithm. Only the device compiler will then select the implementation. This
 // saves some compile-time and binary size.
-template <typename MaxPolicy,
+template <typename PolicySelector,
           typename Offset,
           typename Predicate,
           typename F,
           typename RandomAccessIteratorOut,
-          typename... RandomAccessIteartorsIn>
-__launch_bounds__(get_block_threads<typename MaxPolicy::ActivePolicy>)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void transform_kernel(
-    Offset num_items,
-    int num_elem_per_thread,
-    [[maybe_unused]] bool can_vectorize,
-    Predicate pred,
-    F f,
-    RandomAccessIteratorOut out,
-    kernel_arg<RandomAccessIteartorsIn>... ins)
+          typename... RandomAccessIteratorsIn>
+#if _CCCL_HAS_CONCEPTS()
+  requires transform_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTES void transform_kernel(
+  Offset num_items,
+  int num_elem_per_thread,
+  [[maybe_unused]] bool can_vectorize,
+  Predicate pred,
+  F f,
+  RandomAccessIteratorOut out,
+  kernel_arg<RandomAccessIteratorsIn>... ins)
 {
   _CCCL_ASSERT(blockDim.y == 1 && blockDim.z == 1, "transform_kernel only supports 1D blocks");
 
-  if constexpr (MaxPolicy::ActivePolicy::algorithm == Algorithm::prefetch)
+  static constexpr transform_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+
+  if constexpr (policy.algorithm == Algorithm::prefetch)
   {
-    transform_kernel_prefetch<typename MaxPolicy::ActivePolicy::prefetch_policy>(
+    transform_kernel_prefetch<policy.prefetch.block_threads>(
       num_items,
       num_elem_per_thread,
       ::cuda::std::move(pred),
@@ -1004,11 +1035,14 @@ __launch_bounds__(get_block_threads<typename MaxPolicy::ActivePolicy>)
       ::cuda::std::move(out),
       ::cuda::std::move(ins.iterator)...);
   }
-  else if constexpr (MaxPolicy::ActivePolicy::algorithm == Algorithm::vectorized)
+  else if constexpr (policy.algorithm == Algorithm::vectorized)
   {
     static_assert(::cuda::std::is_same_v<Predicate, always_true_predicate>,
                   "Cannot vectorize transform with a predicate");
-    transform_kernel_vectorized<typename MaxPolicy::ActivePolicy::vectorized_policy>(
+
+    transform_kernel_vectorized</*policy*/ policy.vectorized.block_threads,
+                                policy.vectorized.items_per_thread,
+                                policy.vectorized.vec_size>(
       num_items,
       num_elem_per_thread,
       can_vectorize,
@@ -1016,11 +1050,11 @@ __launch_bounds__(get_block_threads<typename MaxPolicy::ActivePolicy>)
       ::cuda::std::move(out),
       ::cuda::std::move(ins.iterator)...);
   }
-  else if constexpr (MaxPolicy::ActivePolicy::algorithm == Algorithm::memcpy_async)
+  else if constexpr (policy.algorithm == Algorithm::memcpy_async)
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_80,
-      (transform_kernel_ldgsts<typename MaxPolicy::ActivePolicy::async_policy>(
+      (transform_kernel_ldgsts</*policy*/ policy.async_copy.block_threads>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),
@@ -1028,11 +1062,11 @@ __launch_bounds__(get_block_threads<typename MaxPolicy::ActivePolicy>)
          ::cuda::std::move(out),
          ::cuda::std::move(ins.aligned_ptr)...);));
   }
-  else if constexpr (MaxPolicy::ActivePolicy::algorithm == Algorithm::ublkcp)
+  else if constexpr (policy.algorithm == Algorithm::ublkcp)
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_90,
-      (transform_kernel_ublkcp<typename MaxPolicy::ActivePolicy::async_policy>(
+      (transform_kernel_ublkcp</*policy*/ policy.async_copy.block_threads, policy.async_copy.bulk_copy_alignment>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),

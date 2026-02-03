@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
-// SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 //! @file
@@ -20,6 +20,7 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/device_memory_resource.cuh>
+#include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/dispatch_scan_by_key.cuh>
@@ -145,15 +146,12 @@ struct DeviceScan
     return dispatch_t::Dispatch(
       d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init, static_cast<offset_t>(num_items), stream);
   }
-  //! @endcond
 
-  //! @cond
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename ScanOpT,
             typename InitValueT,
             typename NumItemsT,
-            ForceInclusive EnforceInclusive = ForceInclusive::No,
             typename EnvT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t scan_impl_env(
     InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, InitValueT init, NumItemsT num_items, EnvT env)
@@ -165,61 +163,32 @@ struct DeviceScan
       __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
 
     using requested_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t, //
+      ::cuda::std::execution::__query_result_or_t<requirements_t,
                                                   ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
+                                                  ::cuda::execution::determinism::not_guaranteed_t>;
 
-    // Static assert to reject gpu_to_gpu determinism since it's not implemented
-    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
-                  "gpu_to_gpu determinism is not supported");
+    using accum_t =
+      ::cuda::std::__accumulator_t<ScanOpT,
+                                   cub::detail::it_value_t<InputIteratorT>,
+                                   ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
+                                                    cub::detail::it_value_t<InputIteratorT>,
+                                                    typename InitValueT::value_type>>;
 
-    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>,
-                  "not_guaranteed determinism is not supported");
+    constexpr bool is_determinism_required =
+      !::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
+    constexpr bool is_safe_integral_op =
+      ::cuda::std::is_integral_v<accum_t> && detail::is_cuda_binary_operator<ScanOpT>;
 
-    using determinism_t = ::cuda::execution::determinism::run_to_run_t;
+    // Logic: If determinism is required, we must have a safe integral operator.
+    static_assert(!is_determinism_required || is_safe_integral_op,
+                  "run_to_run or gpu_to_gpu is only supported for integral types with known operators");
 
-    // Query relevant properties from the environment
-    auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
-    auto mr =
-      ::cuda::std::execution::__query_or(env, ::cuda::mr::__get_memory_resource, detail::device_memory_resource{});
-
-    void* d_temp_storage      = nullptr;
-    size_t temp_storage_bytes = 0;
-
-    using tuning_t =
-      ::cuda::std::execution::__query_result_or_t<EnvT, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
-
-    // Query the required temporary storage size
-    cudaError_t error = scan_impl_determinism<tuning_t>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init, num_items, determinism_t{}, stream.get());
-
-    if (error != cudaSuccess)
-    {
-      return error;
-    }
-
-    // TODO(gevtushenko): use uninitialized buffer whenit's available
-    error = CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr));
-    if (error != cudaSuccess)
-    {
-      return error;
-    }
-
-    // Run the algorithm
-    error = scan_impl_determinism<tuning_t>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init, num_items, determinism_t{}, stream.get());
-
-    // Try to deallocate regardless of the error to avoid memory leaks
-    cudaError_t deallocate_error =
-      CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
-
-    if (error != cudaSuccess)
-    {
-      // Reduction error takes precedence over deallocation error since it happens first
-      return error;
-    }
-
-    return deallocate_error;
+    // Dispatch with environment - handles all boilerplate
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using tuning_t = decltype(tuning);
+      return scan_impl_determinism<tuning_t>(
+        storage, bytes, d_in, d_out, scan_op, init, num_items, requested_determinism_t{}, stream);
+    });
   }
   //! @endcond
 
@@ -405,8 +374,6 @@ struct DeviceScan
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSum");
 
     using InitT = cub::detail::it_value_t<InputIteratorT>;
-
-    // Initial value
     InitT init_value{};
 
     return scan_impl_env(d_in, d_out, ::cuda::std::plus<>{}, detail::InputValue<InitT>(init_value), num_items, env);
@@ -1067,7 +1034,7 @@ struct DeviceScan
     return ExclusiveScan(d_temp_storage, temp_storage_bytes, d_data, d_data, scan_op, init_value, num_items, stream);
   }
 
-  //! @}  end member group
+  //! @}
 
   //! @name Inclusive scans
   //! @{
@@ -1560,7 +1527,7 @@ struct DeviceScan
   {
     return InclusiveScan(d_temp_storage, temp_storage_bytes, d_data, d_data, scan_op, num_items, stream);
   }
-  //! @}  end member group
+  //! @}
 
   //! @name Scans by key
   //! @{
@@ -2186,7 +2153,7 @@ struct DeviceScan
                          stream);
   }
 
-  //! @}  end member group
+  //! @}
 };
 
 CUB_NAMESPACE_END

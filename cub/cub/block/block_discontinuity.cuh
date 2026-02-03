@@ -238,7 +238,7 @@ public:
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  //! @} end member group
+  //! @}
   //! @name Head flag operations
   //! @{
 
@@ -482,7 +482,7 @@ public:
     FlagHeads(head_flags, input, preds, flag_op, tile_predecessor_item);
   }
 
-  //! @} end member group
+  //! @}
   //! @name Tail flag operations
   //! @{
 
@@ -675,7 +675,7 @@ public:
     Iterate::FlagTails(linear_tid, tail_flags, input, flag_op);
   }
 
-  //! @} end member group
+  //! @}
   //! @name Head & tail flag operations
   //! @{
 
@@ -1194,7 +1194,7 @@ public:
     Iterate::FlagTails(linear_tid, tail_flags, input, flag_op);
   }
 
-  //! @} end member group
+  //! @}
 };
 
 CUB_NAMESPACE_END

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -26,12 +13,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/allocator/allocator_traits.h>
+#include <thrust/detail/allocator/allocator_system.h>
 #include <thrust/detail/allocator/destroy_range.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/for_each.h>
 
-#include <cuda/std/__cccl/memory_wrapper.h>
+#include <cuda/std/__host_stdlib/memory>
+#include <cuda/std/__memory/allocator_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -44,7 +32,7 @@ namespace detail
 //   3. if T has a trivial destructor, do a no-op
 
 template <typename Allocator, typename T>
-inline constexpr bool has_effectful_member_destroy = allocator_traits_detail::has_member_destroy<Allocator, T>::value;
+inline constexpr bool has_effectful_member_destroy = ::cuda::std::__has_destroy<Allocator, T*>;
 
 // std::allocator::destroy's only effect is to invoke its argument's destructor
 template <typename U, typename T>
@@ -58,7 +46,7 @@ struct destroy_via_allocator
   template <typename T>
   _CCCL_HOST_DEVICE void operator()(T& x) noexcept
   {
-    allocator_traits<Allocator>::destroy(a, &x);
+    ::cuda::std::allocator_traits<Allocator>::destroy(a, &x);
   }
 };
 

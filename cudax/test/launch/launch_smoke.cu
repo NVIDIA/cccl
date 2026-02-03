@@ -38,7 +38,7 @@ struct kernel_run_proof_check
 
 void check_kernel_run(cudax::path_builder& pb)
 {
-  cudax::launch(pb, cudax::make_config(cuda::block_dims<1>, cuda::grid_dims<1>), kernel_run_proof_check{});
+  cudax::launch(pb, cuda::make_config(cuda::block_dims<1>, cuda::grid_dims<1>), kernel_run_proof_check{});
 }
 
 struct functor_int_argument
@@ -55,8 +55,8 @@ struct functor_taking_config
   template <typename Config>
   __device__ void operator()(Config config, int grid_size)
   {
-    static_assert(config.dims.static_count(cuda::thread, cuda::block) == BlockSize);
-    CUDAX_REQUIRE(config.dims.count(cuda::block, cuda::grid) == grid_size);
+    static_assert(cuda::gpu_thread.count(cuda::block, config) == BlockSize);
+    CUDAX_REQUIRE(cuda::block.count(cuda::grid, config) == grid_size);
     kernel_run_proof = true;
   }
 };
@@ -88,7 +88,7 @@ struct dynamic_smem_single
   template <typename Config>
   __device__ void operator()(Config config)
   {
-    decltype(auto) dynamic_smem = cudax::device::dynamic_shared_memory_view(config);
+    decltype(auto) dynamic_smem = cuda::dynamic_shared_memory(config);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem)>);
     CUDAX_REQUIRE(::cuda::device::is_object_from(dynamic_smem, ::cuda::device::address_space::shared));
     kernel_run_proof = true;
@@ -101,7 +101,7 @@ struct dynamic_smem_span
   template <typename Config>
   __device__ void operator()(Config config, int size)
   {
-    auto dynamic_smem = cudax::device::dynamic_shared_memory_view(config);
+    auto dynamic_smem = cuda::dynamic_shared_memory(config);
     static_assert(decltype(dynamic_smem)::extent == Extent);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem[1])>);
     CUDAX_REQUIRE(dynamic_smem.size() == size);
@@ -128,7 +128,7 @@ struct launch_transform_to_int_convertible
       // CUDAX_CHECK_FALSE(kernel_run_proof);
     }
 
-    // Immovable to ensure that device_transform doesn't copy the returned
+    // Immovable to ensure that launch_transform doesn't copy the returned
     // object
     int_convertible(int_convertible&&) noexcept = delete;
 
@@ -148,7 +148,7 @@ struct launch_transform_to_int_convertible
   };
 
   [[nodiscard]] friend int_convertible
-  transform_device_argument(::cuda::stream_ref stream, launch_transform_to_int_convertible self) noexcept
+  transform_launch_argument(::cuda::stream_ref stream, launch_transform_to_int_convertible self) noexcept
   {
     return int_convertible(stream.get(), self.value_);
   }
@@ -168,7 +168,7 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
     const int grid_size      = 4;
     constexpr int block_size = 256;
     auto dimensions          = cuda::make_hierarchy(cuda::grid_dims(grid_size), cuda::block_dims<256>());
-    auto config              = cudax::make_config(dimensions);
+    auto config              = cuda::make_config(dimensions);
 
     // Not taking dims
     {
@@ -248,7 +248,7 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
   // Lambda
   {
     cudax::launch(dst, cuda::block_dims<256>() & cuda::grid_dims(1), [] __device__(auto config) {
-      if (config.dims.rank(cuda::thread, cuda::block) == 0)
+      if (cuda::gpu_thread.rank(cuda::block, config) == 0)
       {
         printf("Hello from the GPU\n");
         kernel_run_proof = true;
@@ -264,7 +264,7 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
     auto test = [&](const auto& input_config) {
       // Single element
       {
-        auto config = input_config.add(cudax::dynamic_shared_memory<my_dynamic_smem_t>());
+        auto config = input_config.add(cuda::dynamic_shared_memory<my_dynamic_smem_t>());
 
         cudax::launch(dst, config, dynamic_smem_single<my_dynamic_smem_t>());
         check_kernel_run(dst);
@@ -273,7 +273,7 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
       // Dynamic span
       {
         const int size = 2;
-        auto config    = input_config.add(cudax::dynamic_shared_memory<my_dynamic_smem_t[]>(size));
+        auto config    = input_config.add(cuda::dynamic_shared_memory<my_dynamic_smem_t[]>(size));
         cudax::launch(dst, config, dynamic_smem_span<my_dynamic_smem_t, ::cuda::std::dynamic_extent>(), size);
         check_kernel_run(dst);
       }
@@ -281,14 +281,14 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
       // Static span
       {
         constexpr int size = 3;
-        auto config        = input_config.add(cudax::dynamic_shared_memory<my_dynamic_smem_t[size]>());
+        auto config        = input_config.add(cuda::dynamic_shared_memory<my_dynamic_smem_t[size]>());
         cudax::launch(dst, config, dynamic_smem_span<my_dynamic_smem_t, size>(), size);
         check_kernel_run(dst);
       }
     };
 
     test(config);
-    test(config.add(cudax::cooperative_launch(), cudax::launch_priority(0)));
+    test(config.add(cuda::cooperative_launch(), cuda::launch_priority(0)));
   }
 }
 
@@ -354,30 +354,30 @@ void test_default_config()
   auto block = cuda::block_dims<256>;
 
   auto verify_lambda = [] __device__(auto config) {
-    static_assert(config.dims.count(cuda::thread, cuda::block) == 256);
-    CUDAX_REQUIRE(config.dims.count(cuda::block) == 4);
+    static_assert(cuda::gpu_thread.count(cuda::block, config) == 256);
+    CUDAX_REQUIRE(cuda::block.count(cuda::grid, config) == 4);
     cooperative_groups::this_grid().sync();
   };
 
   SECTION("Combine with empty")
   {
-    kernel_with_default_config kernel{cudax::make_config(block, grid, cudax::cooperative_launch())};
-    static_assert(cudax::__is_kernel_config<decltype(kernel.default_config())>);
-    static_assert(cudax::__kernel_has_default_config<decltype(kernel)>);
+    kernel_with_default_config kernel{cuda::make_config(block, grid, cuda::cooperative_launch())};
+    static_assert(cuda::__is_kernel_config<decltype(kernel.default_config())>);
+    static_assert(cuda::__kernel_has_default_config<decltype(kernel)>);
 
-    cudax::launch(stream, cudax::make_config(), kernel, verify_lambda);
+    cudax::launch(stream, cuda::make_config(), kernel, verify_lambda);
     stream.sync();
   }
   SECTION("Combine with no overlap")
   {
-    kernel_with_default_config kernel{cudax::make_config(block)};
-    cudax::launch(stream, cudax::make_config(grid, cudax::cooperative_launch()), kernel, verify_lambda);
+    kernel_with_default_config kernel{cuda::make_config(block)};
+    cudax::launch(stream, cuda::make_config(grid, cuda::cooperative_launch()), kernel, verify_lambda);
     stream.sync();
   }
   SECTION("Combine with overlap")
   {
-    kernel_with_default_config kernel{cudax::make_config(cuda::block_dims<1>, cudax::cooperative_launch())};
-    cudax::launch(stream, cudax::make_config(block, grid, cudax::cooperative_launch()), kernel, verify_lambda);
+    kernel_with_default_config kernel{cuda::make_config(cuda::block_dims<1>, cuda::cooperative_launch())};
+    cudax::launch(stream, cuda::make_config(block, grid, cuda::cooperative_launch()), kernel, verify_lambda);
     stream.sync();
   }
 }

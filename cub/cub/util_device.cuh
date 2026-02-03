@@ -25,6 +25,8 @@
 
 #include <cuda/__device/arch_id.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__concepts/regular.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/array>
@@ -463,6 +465,50 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream([[maybe_unused]] cudaStream_t
   NV_IF_TARGET(NV_IS_HOST, (return CubDebug(cudaStreamSynchronize(stream));), (return cudaErrorNotSupported;))
 }
 
+//! @brief Computes the maximum potential dynamic shared memory size per block for kernel @p kernel_ptr taking into
+//!        account the amount of kernel's static and CUDA Driver's reserved shared memory.
+//!
+//! @param[out] max_dyn_smem_bytes
+//!   Maximum dynamic shared memory that can be allocated. Set to -1 in case of error.
+//!
+//! @param[in] kernel_ptr
+//!   Kernel pointer for which to compute the maximum potential dynamic shared memory.
+template <class KernelPtr>
+CUB_RUNTIME_FUNCTION inline cudaError_t
+MaxPotentialDynamicSmemBytes(int& max_dyn_smem_bytes, KernelPtr kernel_ptr) noexcept
+{
+  max_dyn_smem_bytes = -1;
+
+  cudaFuncAttributes kernel_attrs{};
+  if (const auto error = CubDebug(cudaFuncGetAttributes(&kernel_attrs, kernel_ptr)))
+  {
+    return error;
+  }
+
+  int curr_device{};
+  if (const auto error = CubDebug(cudaGetDevice(&curr_device)))
+  {
+    return error;
+  }
+
+  int reserved_smem_size{};
+  if (const auto error =
+        CubDebug(cudaDeviceGetAttribute(&reserved_smem_size, cudaDevAttrReservedSharedMemoryPerBlock, curr_device)))
+  {
+    return error;
+  }
+
+  int max_smem_size_optin{};
+  if (const auto error =
+        CubDebug(cudaDeviceGetAttribute(&max_smem_size_optin, cudaDevAttrMaxSharedMemoryPerBlockOptin, curr_device)))
+  {
+    return error;
+  }
+
+  max_dyn_smem_bytes = max_smem_size_optin - reserved_smem_size - static_cast<int>(kernel_attrs.sharedSizeBytes);
+  return cudaSuccess;
+}
+
 namespace detail
 {
 //! If CUB_DEBUG_SYNC is defined and this function is called from host code, a sync is performed and the
@@ -686,6 +732,8 @@ struct KernelConfig
   int tile_size{0};
   int sm_occupancy{0};
 
+  // TODO(bgruber): remove this function once all reduce and radix sort (segmented) algorithms have been ported to the
+  // new tuning API
   template <typename AgentPolicyT,
             typename KernelPtrT,
             typename LauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
@@ -694,6 +742,19 @@ struct KernelConfig
   {
     block_threads    = cub::detail::MakePolicyWrapper(agent_policy).BlockThreads();
     items_per_thread = cub::detail::MakePolicyWrapper(agent_policy).ItemsPerThread();
+    tile_size        = block_threads * items_per_thread;
+    return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
+  }
+
+  // Using new tuning API conventions
+  template <typename AgentPolicyT,
+            typename KernelPtrT,
+            typename LauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
+  __init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
+  {
+    block_threads    = agent_policy.block_threads;
+    items_per_thread = agent_policy.items_per_thread;
     tile_size        = block_threads * items_per_thread;
     return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
   }
@@ -729,14 +790,14 @@ public:
   template <typename FunctorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int device_ptx_version, FunctorT& op)
   {
-    // __CUDA_ARCH_LIST__ is only available from CTK 11.5 onwards
+    // __CUDA_ARCH_LIST__ is available from CTK 11.5 onwards and contains values like 860
+    // NV_TARGET_SM_INTEGER_LIST is defined by NVHPC and contains values like 86, so we need to scale by 10
 #  ifdef __CUDA_ARCH_LIST__
-    return runtime_to_compiletime<1, __CUDA_ARCH_LIST__>(device_ptx_version, op);
-    // NV_TARGET_SM_INTEGER_LIST is defined by NVHPC. The values need to be multiplied by 10 to match
-    // __CUDA_ARCH_LIST__. E.g. arch 860 from __CUDA_ARCH_LIST__ corresponds to arch 86 from NV_TARGET_SM_INTEGER_LIST.
+    return runtime_arch_to_compiletime<1, __CUDA_ARCH_LIST__>(device_ptx_version, op);
 #  elif defined(NV_TARGET_SM_INTEGER_LIST)
-    return runtime_to_compiletime<10, NV_TARGET_SM_INTEGER_LIST>(device_ptx_version, op);
+    return runtime_arch_to_compiletime<10, NV_TARGET_SM_INTEGER_LIST>(device_ptx_version, op);
 #  else
+    // some compilers, like clang in CUDA mode, do not have a macro, so we have to include a fallback
     if constexpr (have_previous_policy)
     {
       if (device_ptx_version < PolicyPtxVersion)
@@ -751,28 +812,34 @@ public:
 
 private:
   template <int, typename, typename>
-  friend struct ChainedPolicy; // let us call invoke_static of other ChainedPolicy instantiations
+  friend struct ChainedPolicy; // let us call find_and_invoke_policy of other ChainedPolicy instantiations
 
 #if !_CCCL_COMPILER(NVRTC)
   template <int ArchMult, int... CudaArches, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t runtime_to_compiletime(int device_ptx_version, FunctorT& op)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  runtime_arch_to_compiletime(int device_ptx_version, FunctorT& op)
   {
-    // We instantiate invoke_static for each CudaArches, but only call the one matching device_ptx_version.
+    // We instantiate find_and_invoke_policy for each CudaArches (the arches we are compiling for), but only call the
+    // one matching device_ptx_version.
     // If there's no exact match of the architectures in __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST and the runtime
-    // queried ptx version (i.e., the closest ptx version to the current device's architecture that the EmptyKernel was
-    // compiled for), we return cudaErrorInvalidDeviceFunction. Such a scenario may arise if CUB_DISABLE_NAMESPACE_MAGIC
-    // is set and different TUs are compiled for different sets of architecture.
+    // queried ptx version (i.e., the closest lower or equal ptx version to the current device's architecture that the
+    // EmptyKernel was compiled for), we return cudaErrorInvalidDeviceFunction. Such a scenario is a bug and may arise
+    // if CUB_DISABLE_NAMESPACE_MAGIC is set and different TUs are compiled for different sets of architecture.
     cudaError_t e = cudaErrorInvalidDeviceFunction;
-    (..., (device_ptx_version == CudaArches * ArchMult ? (e = invoke_static<CudaArches * ArchMult>(op)) : cudaSuccess));
+    (...,
+     (device_ptx_version == CudaArches * ArchMult
+        ? (e = find_and_invoke_policy<CudaArches * ArchMult>(op))
+        : cudaSuccess));
     return e;
   }
 
   template <int DevicePtxVersion, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT& op)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t find_and_invoke_policy(FunctorT& op)
   {
+    // find the first policy we can use on DevicePtxVersion
     if constexpr (DevicePtxVersion < PolicyPtxVersion && have_previous_policy)
     {
-      return PrevPolicyT::template invoke_static<DevicePtxVersion>(op);
+      return PrevPolicyT::template find_and_invoke_policy<DevicePtxVersion>(op);
     }
     else
     {
@@ -781,6 +848,22 @@ private:
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
+
+namespace detail
+{
+#if _CCCL_HAS_CONCEPTS()
+// TODO(bgruber): should we either drop the Policy template argument or rename it to policy_selector_for?
+template <typename T, typename Policy>
+concept policy_selector = requires(T pol_sel, ::cuda::arch_id arch) {
+  requires ::cuda::std::regular<Policy>;
+  { pol_sel(arch) } -> _CCCL_CONCEPT_VSTD::same_as<Policy>;
+  // we cannot reliably check whether pol_sel(arch) is a constant expression, since it sometimes depends on the data
+  // member values whether it can be constant evaluated (e.g., a default constructed reduce::policy_selector will lead
+  // to a division by zero when evaluated)
+};
+#endif // _CCCL_HAS_CONCEPTS()
+} // namespace detail
+
 CUB_NAMESPACE_END
 
 #if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)

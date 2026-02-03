@@ -154,8 +154,6 @@ PREDEFINED             = __device__= \
                         _CCCL_PUBLIC_API=inline \
                         _CCCL_PUBLIC_DEVICE_API=inline \
                         _CCCL_PUBLIC_HOST_API=inline \
-                        "_CCCL_BEGIN_NAMESPACE_CUDA_STD=namespace cuda::std {" \
-                        "_CCCL_END_NAMESPACE_CUDA_STD=}" \
                         "_CUDAX_CONSTEXPR_FRIEND=friend" \
                         "_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()=1" \
                         "CCCL_DEPRECATED=" \
@@ -164,7 +162,6 @@ PREDEFINED             = __device__= \
                         "CUB_DISABLE_NAMESPACE_MAGIC" \
                         "CUB_IGNORE_NAMESPACE_MAGIC_ERROR" \
                         "CUB_RUNTIME_FUNCTION=" \
-                        "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE" \
                         "THRUST_FWD(x)=x" \
                         "THRUST_NAMESPACE_BEGIN=namespace thrust {" \
                         "THRUST_NAMESPACE_END=}" \

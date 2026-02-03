@@ -31,7 +31,6 @@
 #  include <cub/agent/agent_unique_by_key.cuh> // for UniqueByKeyAgentPolicy
 #endif
 
-#include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>

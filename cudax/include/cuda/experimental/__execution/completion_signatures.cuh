@@ -356,7 +356,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   //! @tparam _Fn The callable metafunction to apply.
   //! @tparam _Continuation The template to collect results into.
   template <class _Fn, class _Continuation = ::cuda::std::__type_quote<__completion_signatures>>
-  using __transform _CCCL_NODEBUG_ALIAS = __transform_q<_Fn::template __call, _Continuation::template __call>;
+  using __transform _CCCL_NODEBUG_ALIAS =
+    ::cuda::std::__type_call<_Continuation, ::cuda::std::__type_apply<_Fn, _Sigs>...>;
 
   //! @brief Calls a metafunction with the signatures as arguments.
   //! @tparam _Fn The metafunction to call.
@@ -626,7 +627,7 @@ using __eptr_completion_if_t _CCCL_NODEBUG_ALIAS = decltype(execution::__eptr_co
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // invalid_completion_signature
-#if _CCCL_HAS_EXCEPTIONS() && __cpp_constexpr_exceptions >= 202411L // C++26, https://wg21.link/p3068
+#if _CCCL_HAS_CONSTEXPR_EXCEPTIONS()
 
 template <class... _What, class... _Values>
 [[noreturn, nodiscard]] _CCCL_API consteval auto invalid_completion_signature(_Values... __values)
@@ -642,7 +643,7 @@ template <class... _What, class... _Values>
   }
 }
 
-#else // ^^^ constexpr exceptions ^^^ / vvv no constexpr exceptions vvv
+#else // ^^^ _CCCL_HAS_CONSTEXPR_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_EXCEPTIONS() vvv
 
 template <class... _What, class... _Values>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto invalid_completion_signature(_Values...)
@@ -650,7 +651,7 @@ template <class... _What, class... _Values>
   return _ERROR<_What...>{};
 }
 
-#endif // ^^^ no constexpr exceptions ^^^
+#endif // ^^^ !_CCCL_HAS_CONSTEXPR_EXCEPTIONS() ^^^
 } // namespace cuda::experimental::execution
 
 _CCCL_DIAG_POP

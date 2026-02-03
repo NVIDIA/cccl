@@ -92,7 +92,7 @@
 
 // Some compilers turn on pack indexing in pre-C++26 code. We want to use it if it is
 // available.
-#if defined(__cpp_pack_indexing) && !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(CLANG, <, 20)
+#if __cpp_pack_indexing >= 202311L && !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(CLANG, <, 20)
 #  define _CCCL_HAS_PACK_INDEXING() 1
 #else // ^^^ has pack indexing ^^^ / vvv no pack indexing vvv
 #  define _CCCL_HAS_PACK_INDEXING() 0
@@ -141,8 +141,10 @@
 #  define _CCCL_HAS_IF_CONSTEVAL_IN_CXX20() 0
 #endif
 
-#if _CCCL_CUDA_COMPILER(NVCC) \
-  && (_CCCL_CUDA_COMPILER(NVCC, <, 13) || _CCCL_DEVICE_COMPILATION() || _CCCL_COMPILER(CLANG))
+// nvcc before 13 doesn't support if consteval at all. Since 13, it accepts if consteval in host code (clang doesn't
+// work) and since 13.1 it works in device code, too.
+#if _CCCL_CUDA_COMPILER(NVCC, <, 13) || (_CCCL_CUDA_COMPILER(NVCC, <, 13, 1) && _CCCL_DEVICE_COMPILATION()) \
+  || (_CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(CLANG))
 #  undef _CCCL_HAS_IF_CONSTEVAL_IN_CXX20
 #  define _CCCL_HAS_IF_CONSTEVAL_IN_CXX20() 0
 #endif // ^^^ disable if consteval in c++20 for nvcc ^^^
@@ -186,10 +188,10 @@
 
 // Fixme: replace the condition with (!_CCCL_DEVICE_COMPILATION())
 // FIXME: Enable this for clang-cuda in a followup
-#if !_CCCL_HAS_CUDA_COMPILER()
+#if !_CCCL_CUDA_COMPILATION() && !defined(CCCL_DISABLE_LONG_DOUBLE_SUPPORT)
 #  define _CCCL_HAS_LONG_DOUBLE() 1
-#else // ^^^ !_CCCL_HAS_CUDA_COMPILER() ^^^ / vvv _CCCL_HAS_CUDA_COMPILER() vvv
+#else // ^^^ has long double ^^^ / vvv no long double vvv
 #  define _CCCL_HAS_LONG_DOUBLE() 0
-#endif // ^^^ _CCCL_HAS_CUDA_COMPILER() ^^^
+#endif // ^^^ no long double ^^^
 
 #endif // __CCCL_DIALECT_H

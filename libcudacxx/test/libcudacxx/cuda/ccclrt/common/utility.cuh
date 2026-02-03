@@ -22,12 +22,38 @@
 
 #include <new> // IWYU pragma: keep (needed for placement new)
 
-#include "testing.cuh"
+__device__ inline void ccclrt_require_impl(
+  bool condition, const char* condition_text, const char* filename, unsigned int linenum, const char* funcname)
+{
+  if (!condition)
+  {
+    // TODO do warp aggregate prints for easier readability?
+    printf("%s:%u: %s: block: [%d,%d,%d], thread: [%d,%d,%d] Condition `%s` failed.\n",
+           filename,
+           linenum,
+           funcname,
+           blockIdx.x,
+           blockIdx.y,
+           blockIdx.z,
+           threadIdx.x,
+           threadIdx.y,
+           threadIdx.z,
+           condition_text);
+    __trap();
+  }
+}
 
 namespace
 {
 namespace test
 {
+template <typename T1, typename T2>
+T1& assign(T1& t1, T2&& t2)
+{
+  t1 = std::forward<T2>(t2);
+  return t1;
+}
+
 struct _malloc_pinned
 {
 private:
@@ -157,7 +183,7 @@ void launch_kernel_single_thread(cuda::stream_ref stream, Fn fn, Args... args)
 {
   cuda::__ensure_current_context guard(stream);
   kernel_launcher<<<1, 1, 0, stream.get()>>>(fn, args...);
-  CUDART(cudaGetLastError());
+  assert(cudaGetLastError() == cudaSuccess);
 }
 } // namespace test
 } // namespace

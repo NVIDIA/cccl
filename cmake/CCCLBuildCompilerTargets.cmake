@@ -12,6 +12,7 @@ set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 option(CCCL_ENABLE_EXCEPTIONS "Enable exceptions within CCCL libraries." ON)
 option(CCCL_ENABLE_RTTI "Enable RTTI within CCCL libraries." ON)
 option(CCCL_ENABLE_WERROR "Treat warnings as errors for CCCL targets." ON)
+option(CCCL_ENABLE_PTXAS_WARNINGS "Enable ptxas warnings" OFF) # currently used only in CUB
 
 function(
   cccl_build_compiler_interface
@@ -153,8 +154,9 @@ function(cccl_build_compiler_targets)
     # See https://github.com/microsoft/STL/issues/696
     append_option_if_available("/wd4494" cxx_compile_options)
 
-    # Require the conforming preprocessor
-    append_option_if_available("/Zc:preprocessor" cxx_compile_options)
+    # Get error messages with a little arrow indicating the error location more exactly
+    append_option_if_available("/diagnostics:caret" cxx_compile_options)
+
     if (MSVC_TOOLSET_VERSION LESS 143)
       # winbase.h(9572): warning C5105: macro expansion producing 'defined' has undefined behavior
       append_option_if_available("/wd5105" cxx_compile_options)

@@ -14,15 +14,85 @@
 #endif // no system header
 
 #include <cub/agent/agent_reduce.cuh>
+#include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_macro.cuh>
 
-CUB_NAMESPACE_BEGIN
+#include <cuda/__device/arch_id.h>
+#include <cuda/std/optional>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif
+
+CUB_NAMESPACE_BEGIN
 namespace detail
 {
 namespace reduce
 {
+// TODO(bgruber): bikeshed name before we make the tuning API public
+struct agent_reduce_policy // equivalent of AgentReducePolicy
+{
+  int block_threads;
+  int items_per_thread;
+  int vector_load_length;
+  BlockReduceAlgorithm block_algorithm;
+  CacheLoadModifier load_modifier;
+
+  _CCCL_API constexpr friend bool operator==(const agent_reduce_policy& lhs, const agent_reduce_policy& rhs)
+  {
+    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.vector_load_length == rhs.vector_load_length && lhs.block_algorithm == rhs.block_algorithm
+        && lhs.load_modifier == rhs.load_modifier;
+  }
+
+  _CCCL_API constexpr friend bool operator!=(const agent_reduce_policy& lhs, const agent_reduce_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const agent_reduce_policy& p)
+  {
+    return os << "agent_reduce_policy { .block_threads = " << p.block_threads
+              << ", .items_per_thread = " << p.items_per_thread << ", .vector_load_length = " << p.vector_load_length
+              << ", .block_algorithm = " << p.block_algorithm << ", .load_modifier = " << p.load_modifier << " }";
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
+};
+
+struct reduce_policy
+{
+  agent_reduce_policy reduce;
+  agent_reduce_policy single_tile;
+  agent_reduce_policy reduce_nondeterministic;
+
+  _CCCL_API constexpr friend bool operator==(const reduce_policy& lhs, const reduce_policy& rhs)
+  {
+    return lhs.reduce == rhs.reduce && lhs.single_tile == rhs.single_tile
+        && lhs.reduce_nondeterministic == rhs.reduce_nondeterministic;
+  }
+
+  _CCCL_API constexpr friend bool operator!=(const reduce_policy& lhs, const reduce_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const reduce_policy& p)
+  {
+    return os << "reduce_policy { .reduce = " << p.reduce << ", .single_tile = " << p.single_tile
+              << ", .reduce_nondeterministic = " << p.reduce_nondeterministic << " }";
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
+};
+
+#if _CCCL_HAS_CONCEPTS()
+template <typename T>
+concept reduce_policy_selector = policy_selector<T, reduce_policy>;
+#endif // _CCCL_HAS_CONCEPTS()
+
+// TODO(bgruber): remove in CCCL 4.0 when we drop the dispatchers
 template <typename PolicyT, typename = void>
 struct ReducePolicyWrapper : PolicyT
 {
@@ -31,11 +101,11 @@ struct ReducePolicyWrapper : PolicyT
   {}
 };
 
+// TODO(bgruber): remove in CCCL 4.0 when we drop the dispatchers
 template <typename StaticPolicyT>
-struct ReducePolicyWrapper<StaticPolicyT,
-                           ::cuda::std::void_t<typename StaticPolicyT::ReducePolicy,
-                                               typename StaticPolicyT::SingleTilePolicy,
-                                               typename StaticPolicyT::SegmentedReducePolicy>> : StaticPolicyT
+struct ReducePolicyWrapper<
+  StaticPolicyT,
+  ::cuda::std::void_t<typename StaticPolicyT::ReducePolicy, typename StaticPolicyT::SingleTilePolicy>> : StaticPolicyT
 {
   _CCCL_HOST_DEVICE ReducePolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
@@ -45,19 +115,9 @@ struct ReducePolicyWrapper<StaticPolicyT,
   CUB_DEFINE_SUB_POLICY_GETTER(SingleTile)
   CUB_DEFINE_SUB_POLICY_GETTER(SegmentedReduce)
   CUB_DEFINE_SUB_POLICY_GETTER(ReduceNondeterministic)
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-  _CCCL_DEVICE static constexpr auto EncodedPolicy()
-  {
-    using namespace ptx_json;
-    return object<key<"ReducePolicy">()                 = Reduce().EncodedPolicy(),
-                  key<"SingleTilePolicy">()             = SingleTile().EncodedPolicy(),
-                  key<"SegmentedReducePolicy">()        = SegmentedReduce().EncodedPolicy(),
-                  key<"ReduceNondeterministicPolicy">() = ReduceNondeterministic().EncodedPolicy()>();
-  }
-#endif
 };
 
+// TODO(bgruber): remove in CCCL 4.0 when we drop the dispatchers
 template <typename PolicyT>
 _CCCL_HOST_DEVICE ReducePolicyWrapper<PolicyT> MakeReducePolicyWrapper(PolicyT policy)
 {
@@ -102,44 +162,9 @@ _CCCL_HOST_DEVICE constexpr offset_size classify_offset_size()
   return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
 }
 
-template <typename Op>
-struct is_plus
-{
-  static constexpr bool value = false;
-};
-
-template <typename T>
-struct is_plus<::cuda::std::plus<T>>
-{
-  static constexpr bool value = true;
-};
-template <typename Op>
-struct is_min_or_max
-{
-  static constexpr bool value = false;
-};
-template <typename T>
-struct is_min_or_max<::cuda::minimum<T>>
-{
-  static constexpr bool value = true;
-};
-template <typename T>
-struct is_min_or_max<::cuda::maximum<T>>
-{
-  static constexpr bool value = true;
-};
-
-template <class ScanOpT>
-_CCCL_HOST_DEVICE constexpr op_type classify_op()
-{
-  return is_plus<ScanOpT>::value
-         ? op_type::plus
-         : (is_min_or_max<ScanOpT>::value ? op_type::min_or_max : op_type::unknown);
-}
-
 template <class AccumT,
           class OffsetT,
-          op_type OpTypeT        = classify_op<OffsetT>(),
+          op_kind_t OpTypeT      = classify_op<OffsetT>,
           offset_size OffsetSize = classify_offset_size<OffsetT>(),
           accum_size AccumSize   = classify_accum_size<AccumT>()>
 struct sm100_tuning;
@@ -149,7 +174,7 @@ struct sm100_tuning;
 // Tunings for offset size 4/8 and accum size 1/2/4 all showed no significant improvement during verification
 
 template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::plus, offset_size::_4, accum_size::_8>
+struct sm100_tuning<T, OffsetT, op_kind_t::plus, offset_size::_4, accum_size::_8>
 {
   // ipt_15.tpb_512.ipv_2 1.019887   1.0  1.017636  1.058036
   static constexpr int items              = 15;
@@ -158,7 +183,7 @@ struct sm100_tuning<T, OffsetT, op_type::plus, offset_size::_4, accum_size::_8>
 };
 
 template <class T, class OffsetT>
-struct sm100_tuning<T, OffsetT, op_type::plus, offset_size::_8, accum_size::_8>
+struct sm100_tuning<T, OffsetT, op_kind_t::plus, offset_size::_8, accum_size::_8>
 {
   // ipt_15.tpb_512.ipv_1 1.019414  1.000000  1.017218  1.057143
   static constexpr int items              = 15;
@@ -167,7 +192,7 @@ struct sm100_tuning<T, OffsetT, op_type::plus, offset_size::_8, accum_size::_8>
 };
 
 template <class OffsetT>
-struct sm100_tuning<float, OffsetT, op_type::plus, offset_size::_4, accum_size::_4>
+struct sm100_tuning<float, OffsetT, op_kind_t::plus, offset_size::_4, accum_size::_4>
 {
   // ipt_16.tpb_512.ipv_2 1.061295  1.000000  1.065478  1.167139
   static constexpr int items              = 16;
@@ -176,7 +201,7 @@ struct sm100_tuning<float, OffsetT, op_type::plus, offset_size::_4, accum_size::
 };
 
 template <class OffsetT>
-struct sm100_tuning<double, OffsetT, op_type::plus, offset_size::_4, accum_size::_8>
+struct sm100_tuning<double, OffsetT, op_kind_t::plus, offset_size::_4, accum_size::_8>
 {
   // ipt_16.tpb_640.ipv_1 1.017834  1.000000  1.015835  1.057092
   static constexpr int items              = 16;
@@ -184,8 +209,43 @@ struct sm100_tuning<double, OffsetT, op_type::plus, offset_size::_4, accum_size:
   static constexpr int items_per_vec_load = 1;
 };
 
-// For min or max, verification showed the benefits were too small (within noise)
+struct sm100_tuning_values
+{
+  int items;
+  int threads;
+  int items_per_vec_load;
+};
 
+_CCCL_API constexpr auto get_sm100_tuning(type_t accum_t, op_kind_t operation_t, int offset_size, int accum_size)
+  -> ::cuda::std::optional<sm100_tuning_values>
+{
+  if (operation_t != op_kind_t::plus)
+  {
+    // for min or max, verification showed the benefits were too small (within noise)
+    return {};
+  }
+
+  if (accum_t == type_t::float32 && offset_size == 4 && accum_size == 4)
+  {
+    return sm100_tuning_values{16, 512, 2};
+  }
+  if (accum_t == type_t::float64 && offset_size == 4 && accum_size == 8)
+  {
+    return sm100_tuning_values{16, 640, 1};
+  }
+  if (offset_size == 4 && accum_size == 8)
+  {
+    return sm100_tuning_values{15, 512, 2};
+  }
+  if (offset_size == 8 && accum_size == 8)
+  {
+    return sm100_tuning_values{15, 512, 1};
+  }
+
+  return {};
+}
+
+// TODO(bgruber): remove in CCCL 4.0 when we drop the reduce dispatchers
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct policy_hub
 {
@@ -281,6 +341,77 @@ struct policy_hub
   };
 
   using MaxPolicy = Policy1000;
+};
+
+struct policy_selector
+{
+  type_t accum_t;
+  op_kind_t operation_t;
+  int offset_size;
+  int accum_size;
+
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> reduce_policy
+  {
+    // if we don't have a tuning for sm100, fall through
+    auto sm100_tuning = get_sm100_tuning(accum_t, operation_t, offset_size, accum_size);
+    if (arch >= ::cuda::arch_id::sm_100 && sm100_tuning)
+    {
+      agent_reduce_policy rp{};
+      auto [scaled_items, scaled_threads] = scale_mem_bound(sm100_tuning->threads, sm100_tuning->items, accum_size);
+      rp                                  = agent_reduce_policy{
+        scaled_threads, scaled_items, sm100_tuning->items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
+
+      auto rp_nondet            = rp;
+      rp_nondet.block_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;
+      return {rp, rp, rp_nondet};
+    }
+
+    if (arch >= ::cuda::arch_id::sm_60)
+    {
+      constexpr int threads_per_block  = 256;
+      constexpr int items_per_thread   = 16;
+      constexpr int items_per_vec_load = 4;
+
+      // ReducePolicy (P100: 591 GB/s @ 64M 4B items; 583 GB/s @ 256M 1B items)
+      auto [scaled_items, scaled_threads] = scale_mem_bound(threads_per_block, items_per_thread, accum_size);
+      const auto rp =
+        agent_reduce_policy{scaled_threads, scaled_items, items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
+
+      auto rp_nondet            = rp;
+      rp_nondet.block_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;
+      return {rp, rp, rp_nondet};
+    }
+
+    // base policy is for 500
+    // GTX Titan: 255.1 GB/s @ 48M 4B items; 228.7 GB/s @ 192M 1B items
+    constexpr int threads_per_block  = 256;
+    constexpr int items_per_thread   = 20;
+    constexpr int items_per_vec_load = 4;
+
+    auto [scaled_items, scaled_threads] = scale_mem_bound(threads_per_block, items_per_thread, accum_size);
+    const auto rp =
+      agent_reduce_policy{scaled_threads, scaled_items, items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
+
+    auto rp_nondet            = rp;
+    rp_nondet.block_algorithm = BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;
+    return {rp, rp, rp_nondet};
+  }
+};
+
+#if _CCCL_HAS_CONCEPTS()
+static_assert(reduce_policy_selector<policy_selector>);
+#endif // _CCCL_HAS_CONCEPTS()
+
+// stateless version which can be passed to kernels
+template <typename AccumT, typename OffsetT, typename ReductionOpT>
+struct policy_selector_from_types
+{
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> reduce_policy
+  {
+    constexpr auto policies =
+      policy_selector{classify_type<AccumT>, classify_op<ReductionOpT>, int{sizeof(OffsetT)}, int{sizeof(AccumT)}};
+    return policies(arch);
+  }
 };
 } // namespace reduce
 

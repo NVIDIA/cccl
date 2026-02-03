@@ -171,7 +171,7 @@ public:
       : temp_storage{temp_storage.Alias()}
   {}
 
-  //! @}  end member group
+  //! @}
   //! @name Summation reductions
   //! @{
 
@@ -425,7 +425,7 @@ public:
     return TailSegmentedReduce(input, tail_flag, ::cuda::std::plus<>{});
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Generic reductions
   //! @{
 
@@ -671,7 +671,7 @@ public:
     return InternalWarpReduce{temp_storage}.template SegmentedReduce<false>(input, tail_flag, reduction_op);
   }
 
-  //! @}  end member group
+  //! @}
 };
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -706,7 +706,7 @@ public:
 
   using TempStorage = typename InternalWarpReduce::TempStorage;
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage& /*temp_storage */) {}
+  _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage& /*temp_storage */) {}
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
   {

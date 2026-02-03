@@ -78,6 +78,42 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
   // Reset the counters:
   this->counts = Counts();
 
+  SECTION("get, operator->, and operator*")
+  {
+    Counts expected{};
+    CHECK(this->counts == expected);
+    {
+      cuda::mr::shared_resource mr{cuda::std::in_place_type<TestResource>, 42, this};
+      ++expected.object_count;
+      CHECK(this->counts == expected);
+
+      // Test get()
+      TestResource& ref = mr.get();
+      CHECK(ref.data == 42);
+
+      // Test operator->
+      CHECK(mr->data == 42);
+
+      // Test operator*
+      TestResource& deref = *mr;
+      CHECK(deref.data == 42);
+
+      // Test const versions
+      const auto& cmr          = mr;
+      const TestResource& cref = cmr.get();
+      CHECK(cref.data == 42);
+      CHECK(cmr->data == 42);
+      const TestResource& cderef = *cmr;
+      CHECK(cderef.data == 42);
+    }
+
+    --expected.object_count;
+    CHECK(this->counts == expected);
+  }
+
+  // Reset the counters:
+  this->counts = Counts();
+
   SECTION("allocate_sync and deallocate_sync")
   {
     Counts expected{};
@@ -133,7 +169,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
   SECTION("basic sanity test about shared resource handling")
   {
     Counts expected{};
-    this->align(alignof(int) * 4);
+    this->align(alignof(int));
     {
       this->bytes(42 * sizeof(int));
       cuda::stream stream{cuda::device_ref{0}};
