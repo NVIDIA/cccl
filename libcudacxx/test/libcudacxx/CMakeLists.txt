@@ -275,7 +275,7 @@ add_test(
 set_tests_properties(
   libcudacxx.test.lit
   PROPERTIES
-    # 3hr, some CI machines are slow
-    TIMEOUT 10800
+    # 6hr to match CI timeout
+    TIMEOUT 21600
     RUN_SERIAL TRUE
 )
