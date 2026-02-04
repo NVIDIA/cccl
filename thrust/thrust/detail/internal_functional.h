@@ -23,8 +23,8 @@
 #include <thrust/iterator/detail/tuple_of_iterator_references.h>
 #include <thrust/iterator/iterator_traits.h>
 
-#include <cuda/__functional/equal_to_value.h>
 #include <cuda/__functional/address_stability.h>
+#include <cuda/__functional/equal_to_value.h>
 #include <cuda/__iterator/discard_iterator.h>
 #include <cuda/__iterator/tabulate_output_iterator.h>
 #include <cuda/__iterator/transform_input_output_iterator.h>

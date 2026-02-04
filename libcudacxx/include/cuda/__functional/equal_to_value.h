@@ -37,7 +37,8 @@ struct __equal_to_value
       : value_(value)
   {}
 
-  __host__ __device__ constexpr bool operator()(const T& lhs) const noexcept {
+  __host__ __device__ constexpr bool operator()(const T& lhs) const noexcept
+  {
     return lhs == value_;
   }
 };
