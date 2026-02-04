@@ -547,3 +547,27 @@ def test_binary_transform_bool_equal_to():
 
     expected = np.array([True, False, False, True], dtype=np.bool_)
     np.testing.assert_array_equal(d_output.get(), expected)
+
+
+def test_stateful_transform_same_bytecode_different_sizes():
+    """
+    Test that stateful op with same bytecode, but referencing arrays
+    of different sizes produce the correct result
+    """
+
+    def make_op(arr):
+        def op(x):
+            return x > len(arr)
+
+        return op
+
+    d_in = cp.asarray([1, 2, 3])
+    d_out = cp.empty_like(d_in, dtype=bool)
+    op1 = make_op(cp.empty(1))  # len(arr) == 1
+    op2 = make_op(cp.empty(2))  # len(arr) == 2
+
+    cuda.compute.unary_transform(d_in, d_out, op1, len(d_in))
+    np.testing.assert_array_equal(np.asarray([False, True, True]), d_out.get())
+
+    cuda.compute.unary_transform(d_in, d_out, op2, len(d_in))
+    np.testing.assert_array_equal(np.asarray([False, False, True]), d_out.get())
