@@ -270,11 +270,11 @@ public:
   /// ostream operator
   friend ::std::ostream& operator<<(::std::ostream& os, const self_type& itr)
   {
+    _CCCL_SUPPRESS_DEPRECATED_POP
     os << "cub::TexObjInputIterator( ptr=" << itr.ptr << ", offset=" << itr.tex_offset << ", tex_obj=" << itr.tex_obj
        << " )";
     return os;
   }
-  _CCCL_SUPPRESS_DEPRECATED_POP
 #endif // !_CCCL_COMPILER(NVRTC)
 
 private:
