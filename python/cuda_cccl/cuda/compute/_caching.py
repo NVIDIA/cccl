@@ -190,6 +190,7 @@ class CachableFunction:
     functions based on their bytecode, constants, and closures, while
     ignoring other attributes such as their names or docstrings.
     """
+
     # TODO: eventually, move this class to _jit.py as it only
     # has to do with caching of Python callables that will be
     # JIT compiled.
