@@ -36,8 +36,8 @@
 #include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_like.h>
-#include <cuda/std/__type_traits/integral_constant_like.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/integral_constant_like.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
