@@ -118,7 +118,10 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 endif()
 
 if (NOT MSVC AND NOT ${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
-  set(LIBCUDACXX_WARNING_LEVEL "-Xcompiler=-Wall -Xcompiler=-Wextra")
+  set(
+    LIBCUDACXX_WARNING_LEVEL
+    "--compiler-options=-Wall --compiler-options=-Wextra"
+  )
 endif()
 
 if (MSVC)
