@@ -1560,7 +1560,7 @@ The API is subject to change without notice.</p>
 <li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array to store the result of the reduction</p></li>
 <li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em> | </em><em>cuda.compute._bindings.OpKind</em>) – Binary reduction operator</p></li>
 <li><p><strong>num_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of items to reduce</p></li>
-<li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em> | </em><em>GpuStruct</em>) – Initial value for the reduction</p></li>
+<li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em> | </em><em>_Struct</em>) – Initial value for the reduction</p></li>
 <li><p><strong>stream</strong> – CUDA stream for the operation (optional)</p></li>
 </ul>
 </dd>
@@ -1619,7 +1619,7 @@ The API is subject to change without notice.</p>
 <li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array (of size 1) that will store the result of the reduction</p></li>
 <li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em> | </em><em>cuda.compute._bindings.OpKind</em>) – Callable or OpKind representing the binary operator to apply</p></li>
 <li><p><strong>init</strong> – Numpy array storing initial value of the reduction</p></li>
-<li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em> | </em><em>GpuStruct</em>)</p></li>
+<li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em> | </em><em>_Struct</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -1868,7 +1868,7 @@ The API is subject to change without notice.</p>
 <li><p><strong>d_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the input sequence of data items</p></li>
 <li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator to store the result of the scan</p></li>
 <li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em> | </em><em>cuda.compute._bindings.OpKind</em>) – Binary scan operator</p></li>
-<li><p><strong>init_value</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em> | </em><em>DeviceArrayLike</em><em> | </em><em>GpuStruct</em><em> | </em><em>None</em>) – Initial value for the scan</p></li>
+<li><p><strong>init_value</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em> | </em><em>DeviceArrayLike</em><em> | </em><em>_Struct</em><em> | </em><em>None</em>) – Initial value for the scan</p></li>
 <li><p><strong>num_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of items to scan</p></li>
 <li><p><strong>stream</strong> – CUDA stream for the operation (optional)</p></li>
 </ul>
@@ -1922,7 +1922,7 @@ The API is subject to change without notice.</p>
 <li><p><strong>d_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the input sequence of data items</p></li>
 <li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array that will store the result of the scan</p></li>
 <li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em> | </em><em>cuda.compute._bindings.OpKind</em>) – Callable or OpKind representing the binary operator to apply</p></li>
-<li><p><strong>init_value</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em> | </em><em>DeviceArrayLike</em><em> | </em><em>GpuStruct</em><em> | </em><em>None</em>) – Numpy array, device array, or GPU struct storing initial value of the scan, or None for no initial value</p></li>
+<li><p><strong>init_value</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em> | </em><em>DeviceArrayLike</em><em> | </em><em>_Struct</em><em> | </em><em>None</em>) – Numpy array, device array, or GPU struct storing initial value of the scan, or None for no initial value</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -1976,7 +1976,7 @@ The API is subject to change without notice.</p>
 <li><p><strong>d_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the input sequence of data items</p></li>
 <li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator to store the result of the scan</p></li>
 <li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em> | </em><em>cuda.compute._bindings.OpKind</em>) – Binary scan operator</p></li>
-<li><p><strong>init_value</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em> | </em><em>DeviceArrayLike</em><em> | </em><em>GpuStruct</em><em> | </em><em>None</em>) – Initial value for the scan</p></li>
+<li><p><strong>init_value</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em> | </em><em>DeviceArrayLike</em><em> | </em><em>_Struct</em><em> | </em><em>None</em>) – Initial value for the scan</p></li>
 <li><p><strong>num_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of items to scan</p></li>
 <li><p><strong>stream</strong> – CUDA stream for the operation (optional)</p></li>
 </ul>
@@ -2030,7 +2030,7 @@ The API is subject to change without notice.</p>
 <li><p><strong>d_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the input sequence of data items</p></li>
 <li><p><strong>d_out</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array that will store the result of the scan</p></li>
 <li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em> | </em><em>cuda.compute._bindings.OpKind</em>) – Callable or OpKind representing the binary operator to apply</p></li>
-<li><p><strong>init_value</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em> | </em><em>DeviceArrayLike</em><em> | </em><em>GpuStruct</em><em> | </em><em>None</em>) – Numpy array, device array, or GPU struct storing initial value of the scan, or None for no initial value</p></li>
+<li><p><strong>init_value</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em> | </em><em>DeviceArrayLike</em><em> | </em><em>_Struct</em><em> | </em><em>None</em>) – Numpy array, device array, or GPU struct storing initial value of the scan, or None for no initial value</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -3026,7 +3026,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <li><p><strong>start_offsets_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the sequence of beginning offsets</p></li>
 <li><p><strong>end_offsets_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing the sequence of ending offsets</p></li>
 <li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em> | </em><em>cuda.compute._bindings.OpKind</em>) – Binary reduction operator</p></li>
-<li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em> | </em><em>GpuStruct</em>) – Initial value for the reduction</p></li>
+<li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em> | </em><em>_Struct</em>) – Initial value for the reduction</p></li>
 <li><p><strong>num_segments</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of segments to reduce</p></li>
 <li><p><strong>stream</strong> – CUDA stream for the operation (optional)</p></li>
 </ul>
@@ -3105,7 +3105,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <li><p><strong>end_offsets_in</strong> (<em>DeviceArrayLike</em><em> | </em><em>IteratorBase</em>) – Device array or iterator containing offsets to end of segments</p></li>
 <li><p><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.14)"><em>Callable</em></a><em> | </em><em>cuda.compute._bindings.OpKind</em>) – Callable or OpKind representing the binary operator to apply</p></li>
 <li><p><strong>init</strong> – Numpy array storing initial value of the reduction</p></li>
-<li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em> | </em><em>GpuStruct</em>)</p></li>
+<li><p><strong>h_init</strong> (<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a><em> | </em><em>_Struct</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
