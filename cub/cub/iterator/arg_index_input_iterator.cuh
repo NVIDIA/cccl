@@ -78,6 +78,11 @@ CUB_NAMESPACE_BEGIN
  *
  * @tparam OutputValueT
  *   The paired value type of the <offset,value> tuple (Default: value type of input iterator)
+ *
+ * @rst
+ * .. versionadded:: 2.2.0
+ *    First appears in CUDA Toolkit 12.3.
+ * @endrst
  */
 template <typename InputIteratorT,
           typename OffsetT      = ptrdiff_t,
