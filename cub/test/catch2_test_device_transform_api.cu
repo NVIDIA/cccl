@@ -15,13 +15,13 @@ void test_transform_many_many_api()
 {
   // example-begin transform-many-many
   auto input1 = thrust::device_vector<int>{0, -1, 2, -3, 4, -5};
-  auto input2 = thrust::device_vector<float>{5.2f, 3.1f, -1.1f, 3.0f, 3.2f, 0.0f};
-  auto op     = [] __device__(int a, float b) -> cuda::std::tuple<float, bool> {
-    const float product = a * b;
+  auto input2 = thrust::device_vector<double>{5.2, 3.1, -1.1, 3.0, 3.2, 0.0};
+  auto op     = [] __device__(int a, double b) -> cuda::std::tuple<double, bool> {
+    const double product = a * b;
     return {product, product < 0};
   };
 
-  auto result1 = thrust::device_vector<float>(input1.size(), thrust::no_init);
+  auto result1 = thrust::device_vector<double>(input1.size(), thrust::no_init);
   auto result2 = thrust::device_vector<bool>(input1.size(), thrust::no_init);
   cub::DeviceTransform::Transform(
     cuda::std::tuple{input1.begin(), input2.begin()},
@@ -29,7 +29,7 @@ void test_transform_many_many_api()
     input1.size(),
     op);
 
-  const auto expected1 = thrust::host_vector<float>{0, -3.1, -2.2, -9, 12.8, -0};
+  const auto expected1 = thrust::host_vector<double>{0, -3.1, -2.2, -9, 12.8, -0};
   const auto expected2 = thrust::host_vector<bool>{false, true, true, true, false, false};
   // example-end transform-many-many
   CHECK(result1 == expected1);
