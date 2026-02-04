@@ -18,6 +18,7 @@ class _OpAdapter:
     Provides a unified interface for operators, whether they are:
     - Well-known operations (OpKind.PLUS, OpKind.MAXIMUM, etc.)
     - Stateless user-provided callables
+    - Stateful user-provided callables
     """
 
     def compile(self, input_types, output_type=None) -> Op:
@@ -32,6 +33,22 @@ class _OpAdapter:
             Compiled Op object for C++ interop
         """
         raise NotImplementedError("Subclasses must implement this method")
+
+    @property
+    def is_stateful(self) -> bool:
+        """Return True if this op has runtime state."""
+        return False
+
+    def update_op_state(self, cccl_op: Op) -> None:
+        """
+        Update the Op's state bytes.
+
+        Args:
+            cccl_op: The compiled CCCL Op to update
+
+        Default implementation is a no-op (for stateless ops).
+        """
+        pass
 
     @property
     def func(self) -> Callable | None:
@@ -67,26 +84,6 @@ class _WellKnownOp(_OpAdapter):
         return self._kind
 
 
-class _StatelessOp(_OpAdapter):
-    """Internal wrapper for stateless callables."""
-
-    __slots__ = ["_func", "_cachable"]
-
-    def __init__(self, func: Callable):
-        self._func = func
-        self._cachable = CachableFunction(func)
-
-    def compile(self, input_types, output_type=None) -> Op:
-        from ._cccl_interop import to_cccl_op
-
-        return to_cccl_op(self._func, input_types, output_type)
-
-    @property
-    def func(self) -> Callable:
-        """Access the wrapped callable."""
-        return self._func
-
-
 # Public aliases
 OpAdapter = _OpAdapter
 
@@ -101,6 +98,8 @@ def make_op_adapter(op) -> OpAdapter:
     Returns:
         A value with appropriate subtype of _BaseOp
     """
+    from ._jit import to_jit_op_adapter
+
     # Already an _OpAdapter instance:
     if isinstance(op, _OpAdapter):
         return op
@@ -109,7 +108,8 @@ def make_op_adapter(op) -> OpAdapter:
     if isinstance(op, OpKind):
         return _WellKnownOp(op)
 
-    return _StatelessOp(op)
+    # It's a Python callable
+    return to_jit_op_adapter(op)
 
 
 __all__ = [
@@ -122,8 +122,6 @@ __all__ = [
 cache_with_registered_key_functions.register(
     _WellKnownOp, lambda op: (op._kind.name, op._kind.value)
 )
-
-cache_with_registered_key_functions.register(_StatelessOp, lambda op: op._cachable)
 
 cache_with_registered_key_functions.register(
     OpKind, lambda kind: (kind.name, kind.value)
