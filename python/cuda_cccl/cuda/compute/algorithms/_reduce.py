@@ -29,7 +29,6 @@ class _Reduce:
         "d_in_cccl",
         "d_out_cccl",
         "h_init_cccl",
-        "op",
         "op_cccl",
         "build_result",
         "device_reduce_fn",

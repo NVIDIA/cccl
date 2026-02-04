@@ -27,7 +27,6 @@ class _UniqueByKey:
         "d_out_keys_cccl",
         "d_out_items_cccl",
         "d_out_num_selected_cccl",
-        "op",
         "op_cccl",
     ]
 

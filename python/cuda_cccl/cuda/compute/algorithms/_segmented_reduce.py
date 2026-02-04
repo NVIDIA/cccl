@@ -34,7 +34,6 @@ class _SegmentedReduce:
         "start_offsets_in_cccl",
         "end_offsets_in_cccl",
         "h_init_cccl",
-        "op",
         "op_cccl",
     ]
 
@@ -55,6 +54,7 @@ class _SegmentedReduce:
 
         # Compile the op with value types
         value_type = get_value_type(h_init)
+
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
         self.build_result = call_build(
