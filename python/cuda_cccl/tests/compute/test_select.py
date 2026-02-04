@@ -250,6 +250,7 @@ def test_select_object_api(dtype):
         d_in,
         d_out,
         d_num_selected,
+        divisible_by_3,
         num_items,
     )
 
@@ -262,6 +263,7 @@ def test_select_object_api(dtype):
         d_in,
         d_out,
         d_num_selected,
+        divisible_by_3,
         num_items,
     )
 
@@ -296,9 +298,11 @@ def test_select_reuse_object(dtype):
     )
 
     # First execution
-    temp_storage_bytes = selector(None, d_in1, d_out, d_num_selected, num_items)
+    temp_storage_bytes = selector(
+        None, d_in1, d_out, d_num_selected, positive_op, num_items
+    )
     d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-    selector(d_temp_storage, d_in1, d_out, d_num_selected, num_items)
+    selector(d_temp_storage, d_in1, d_out, d_num_selected, positive_op, num_items)
 
     num_selected1 = int(d_num_selected[0].get())
     got1 = d_out.get()[:num_selected1]
@@ -311,7 +315,7 @@ def test_select_reuse_object(dtype):
     h_in2 = random_array(num_items, dtype, max_value=100) - 50
     d_in2 = cp.asarray(h_in2)
 
-    selector(d_temp_storage, d_in2, d_out, d_num_selected, num_items)
+    selector(d_temp_storage, d_in2, d_out, d_num_selected, positive_op, num_items)
 
     num_selected2 = int(d_num_selected[0].get())
     got2 = d_out.get()[:num_selected2]
