@@ -780,9 +780,8 @@ class Configuration(object):
             self.cxx.compile_flags += ["-DNOMINMAX"]
             if "msvc" in self.config.available_features:
                 if self.cxx.type == "nvcc":
-                    self.cxx.compile_flags += ["-Xcompiler=/bigobj"]
-                else:
-                    self.cxx.compile_flags += ["/bigobj"]
+                    self.cxx.compile_flags += ["-Xcompiler"]
+                self.cxx.compile_flags += ["/bigobj"]
         additional_flags = self.get_lit_conf("test_compiler_flags")
         if additional_flags:
             self.cxx.compile_flags += shlex.split(additional_flags)
@@ -1136,9 +1135,8 @@ class Configuration(object):
             # TODO: I don't know how to shut off exceptions with MSVC.
             elif "msvc" not in self.config.available_features:
                 if self.cxx.type == "nvcc":
-                    self.cxx.compile_flags += ["-Xcompiler=-fno-exceptions"]
-                else:
-                    self.cxx.compile_flags += ["-fno-exceptions"]
+                    self.cxx.compile_flags += ["-Xcompiler"]
+                self.cxx.compile_flags += ["-fno-exceptions"]
         elif nvrtc:
             self.config.available_features.add("libcpp-no-exceptions")
 
@@ -1147,8 +1145,8 @@ class Configuration(object):
         if not enable_rtti:
             self.config.available_features.add("libcpp-no-rtti")
             if self.cxx.type == "nvcc":
-                self.cxx.compile_flags += ["-Xcompiler=-fno-rtti"]
-            elif "nvhpc" in self.config.available_features:
+                self.cxx.compile_flags += ["-Xcompiler"]
+            if "nvhpc" in self.config.available_features:
                 self.cxx.compile_flags += ["--no_rtti"]
             elif "msvc" in self.config.available_features:
                 self.cxx.compile_flags += ["/GR-"]
@@ -1226,16 +1224,14 @@ class Configuration(object):
                     or not self.cxx.is_nvrtc
                 ):
                     if self.cxx.type == "nvcc":
-                        self.cxx.link_flags += ["-Xcompiler=-nodefaultlibs"]
-                    else:
-                        self.cxx.link_flags += ["-nodefaultlibs"]
+                        self.cxx.link_flags += ["-Xcompiler"]
+                    self.cxx.link_flags += ["-nodefaultlibs"]
 
                     # FIXME: Handle MSVCRT as part of the ABI library handling.
                     if self.is_windows and "msvc" not in self.config.available_features:
                         if self.cxx.type == "nvcc":
-                            self.cxx.link_flags += ["-Xcompiler=-nostdlib"]
-                        else:
-                            self.cxx.link_flags += ["-nostdlib"]
+                            self.cxx.link_flags += ["-Xcompiler"]
+                        self.cxx.link_flags += ["-nostdlib"]
             self.configure_link_flags_cxx_library()
             self.configure_link_flags_abi_library()
             self.configure_extra_library_flags()
@@ -1263,7 +1259,8 @@ class Configuration(object):
                 if not self.is_windows:
                     if self.cxx.type == "nvcc":
                         self.cxx.link_flags += [
-                            f'-Xcompiler="-Wl,-rpath,{self.cxx_runtime_root}"'
+                            "-Xcompiler",
+                            '"-Wl,-rpath,' + self.cxx_runtime_root + '"',
                         ]
                     else:
                         self.cxx.link_flags += ["-Wl,-rpath," + self.cxx_runtime_root]
@@ -1274,7 +1271,8 @@ class Configuration(object):
             if not self.is_windows:
                 if self.cxx.type == "nvcc":
                     self.cxx.link_flags += [
-                        f'-Xcompiler="-Wl,-rpath,{self.cxx_runtime_root}"'
+                        "-Xcompiler",
+                        '"-Wl,-rpath,' + self.cxx_runtime_root + '"',
                     ]
                 else:
                     self.cxx.link_flags += ["-Wl,-rpath," + self.use_system_cxx_lib]
@@ -1292,7 +1290,8 @@ class Configuration(object):
             if not self.is_windows:
                 if self.cxx.type == "nvcc":
                     self.cxx.link_flags += [
-                        f'-Xcompiler="-Wl,-rpath,{self.cxx_runtime_root}"'
+                        "-Xcompiler",
+                        '"-Wl,-rpath,' + self.cxx_runtime_root + '"',
                     ]
                 else:
                     self.cxx.link_flags += ["-Wl,-rpath," + self.abi_library_root]
@@ -1387,27 +1386,27 @@ class Configuration(object):
         enable_warnings = self.get_lit_bool("enable_warnings", default_enable_warnings)
         self.cxx.useWarnings(enable_warnings)
         if "nvcc" in self.config.available_features:
-            self.cxx.warning_flags += ["-Xcudafe=--display_error_number"]
+            self.cxx.warning_flags += ["-Xcudafe", "--display_error_number"]
             self.cxx.warning_flags += ["-Werror=all-warnings"]
             if "msvc" in self.config.available_features:
-                self.cxx.warning_flags += ["-Xcompiler=/W4", "-Xcompiler=/WX"]
+                self.cxx.warning_flags += ["-Xcompiler", "/W4", "-Xcompiler", "/WX"]
                 # warning C4100: 'quack': unreferenced formal parameter
-                self.cxx.warning_flags += ["-Xcompiler=-wd4100"]
+                self.cxx.warning_flags += ["-Xcompiler", "-wd4100"]
                 # warning C4127: conditional expression is constant
-                self.cxx.warning_flags += ["-Xcompiler=-wd4127"]
+                self.cxx.warning_flags += ["-Xcompiler", "-wd4127"]
                 # warning C4180: qualifier applied to function type has no meaning; ignored
-                self.cxx.warning_flags += ["-Xcompiler=-wd4180"]
+                self.cxx.warning_flags += ["-Xcompiler", "-wd4180"]
                 # warning C4309: 'moo': truncation of constant value
-                self.cxx.warning_flags += ["-Xcompiler=-wd4309"]
+                self.cxx.warning_flags += ["-Xcompiler", "-wd4309"]
                 # warning C4996: deprecation warnings
-                self.cxx.warning_flags += ["-Xcompiler=-wd4996"]
+                self.cxx.warning_flags += ["-Xcompiler", "-wd4996"]
             else:
                 # TODO: Re-enable soon.
                 def addIfHostSupports(flag):
                     if hasattr(
                         self.cxx, "host_cxx"
                     ) and self.cxx.host_cxx.hasWarningFlag(flag):
-                        self.cxx.warning_flags += [f"-Xcompiler={flag}"]
+                        self.cxx.warning_flags += ["-Xcompiler", flag]
 
                 addIfHostSupports("-Wall")
                 addIfHostSupports("-Wextra")
@@ -1537,7 +1536,8 @@ class Configuration(object):
             if san_lib:
                 if self.cxx.type == "nvcc":
                     self.cxx.link_flags += [
-                        f'-Xcompiler="-Wl,-rpath,{os.path.dirname(san_lib)}"'
+                        "-Xcompiler",
+                        '"-Wl,-rpath,' + os.path.dirname(san_lib) + '"',
                     ]
                 else:
                     self.cxx.link_flags += ["-Wl,-rpath," + os.path.dirname(san_lib)]

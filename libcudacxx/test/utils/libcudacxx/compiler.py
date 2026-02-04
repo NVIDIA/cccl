@@ -405,8 +405,10 @@ class CXXCompiler(object):
                 raise RuntimeError("Cannot be dumped on old MSVC")
             if rc != 0:
                 flags = [
-                    "-Xcompiler=/Zc:preprocessor",
-                    "-Xcompiler=/PD",
+                    "-Xcompiler",
+                    "/Zc:preprocessor",
+                    "-Xcompiler",
+                    "/PD",
                 ] + old_flags
                 cmd, out, err, rc = self.preprocess(source_files, flags=flags, cwd=cwd)
                 if err.find("D9002") > 0:
@@ -415,8 +417,7 @@ class CXXCompiler(object):
             flags = ["-dM"] + flags
             cmd, out, err, rc = self.preprocess(source_files, flags=flags, cwd=cwd)
             if rc != 0:
-                flags = ",".join(flags)
-                flags = [f"-Xcompiler={flags}"]
+                flags = ["-Xcompiler"] + flags
                 cmd, out, err, rc = self.preprocess(source_files, flags=flags, cwd=cwd)
 
         if rc != 0:
