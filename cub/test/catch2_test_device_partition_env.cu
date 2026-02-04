@@ -21,9 +21,6 @@ DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::Flagged, device_partition_flagged);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/require.h>
-
 #include <c2h/catch2_test_helper.h>
 
 namespace stdexec = cuda::std::execution;
@@ -97,8 +94,7 @@ C2H_TEST("Device partition uses environment", "[partition][device]")
     == cub::DevicePartition::If(
       nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op));
 
-  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::run_to_run), // determinism
-                          expected_allocation_size(expected_bytes_allocated)}; // temp storage size
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)}; // temp storage size
 
   device_partition_if(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op, env);
 
@@ -133,8 +129,7 @@ C2H_TEST("Device partition flagged uses environment", "[partition][device]")
       d_num_selected.begin(),
       num_items));
 
-  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::run_to_run), // determinism
-                          expected_allocation_size(expected_bytes_allocated)}; // temp storage size
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)}; // temp storage size
 
   device_partition_flagged(d_in.begin(), d_flags.begin(), d_out.begin(), d_num_selected.begin(), num_items, env);
 

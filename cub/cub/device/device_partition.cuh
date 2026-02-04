@@ -23,8 +23,6 @@
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 #include <cub/device/dispatch/dispatch_three_way_partition.cuh>
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/require.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -84,8 +82,7 @@ private:
             typename OutputIteratorT,
             typename NumSelectedIteratorT,
             typename SelectOpT,
-            typename OffsetT,
-            ::cuda::execution::determinism::__determinism_t Determinism>
+            typename OffsetT>
   CUB_RUNTIME_FUNCTION static cudaError_t partition_impl(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -95,10 +92,8 @@ private:
     NumSelectedIteratorT d_num_selected_out,
     OffsetT num_items,
     SelectOpT select_op,
-    ::cuda::execution::determinism::__determinism_holder_t<Determinism> determinism_holder_arg,
     cudaStream_t stream)
   {
-    (void) determinism_holder_arg; // determinism is of no use in DevicePartition at the moment
     using partition_tuning_t = ::cuda::std::execution::
       __query_result_or_t<TuningEnvT, detail::partition::get_tuning_query_t, detail::partition::default_tuning>;
 
@@ -300,25 +295,17 @@ public:
   //!   ``[d_in, d_in + num_items)`` nor ``[d_flags, d_flags + num_items)`` in any way.
   //!   The range ``[d_in, d_in + num_items)`` may overlap ``[d_flags, d_flags + num_items)``.
   //!
-  //! Determinism
-  //! +++++++++++++++++++++++++++++++++++++++++++++
-  //!
-  //! DevicePartition is inherently ``gpu_to_gpu`` deterministic because it uses integer prefix sums,
-  //! which are truly associative. The stability and determinism guarantees hold provided that:
-  //!
-  //! - The ``d_flags`` sequence produces the same values when read multiple times during the operation.
-  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the partitioning of flagged items from an ``int`` device vector
-  //! using determinism requirements:
+  //! using environment-based API:
   //!
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_partition_env_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after: example-begin partition-flagged-env-determinism
-  //!     :end-before: example-end partition-flagged-env-determinism
+  //!     :start-after: example-begin partition-flagged-env
+  //!     :end-before: example-end partition-flagged-env
   //!
   //! @endrst
   //!
@@ -369,7 +356,7 @@ public:
               ::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>
                 && !::cuda::std::is_same_v<FlagIterator, size_t&>,
               int> = 0>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
     InputIteratorT d_in,
     FlagIterator d_flags,
     OutputIteratorT d_out,
@@ -379,42 +366,13 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DevicePartition::Flagged");
 
-    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
-                  "Determinism should be used inside requires to have an effect.");
-
     using offset_t = detail::choose_offset_t<NumItemsT>;
-
-    // Extract determinism from environment, defaulting to run_to_run
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using requested_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t, //
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::gpu_to_gpu_t>;
-
-    using determinism_t = ::cuda::execution::determinism::gpu_to_gpu_t;
 
     // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
-      return partition_impl<tuning_t,
-                            InputIteratorT,
-                            FlagIterator,
-                            OutputIteratorT,
-                            NumSelectedIteratorT,
-                            NullType,
-                            offset_t,
-                            determinism_t::value>(
-        storage,
-        bytes,
-        d_in,
-        d_flags,
-        d_out,
-        d_num_selected_out,
-        static_cast<offset_t>(num_items),
-        NullType{},
-        determinism_t{},
-        stream);
+      return partition_impl<tuning_t, InputIteratorT, FlagIterator, OutputIteratorT, NumSelectedIteratorT, NullType, offset_t>(
+        storage, bytes, d_in, d_flags, d_out, d_num_selected_out, static_cast<offset_t>(num_items), NullType{}, stream);
     });
   }
 
@@ -595,34 +553,17 @@ public:
   //! - The range ``[d_out, d_out + num_items)`` shall not overlap
   //!   ``[d_in, d_in + num_items)`` in any way.
   //!
-  //! Determinism
-  //! +++++++++++++++++++++++++++++++++++++++++++++
-  //!
-  //! DevicePartition is inherently ``gpu_to_gpu`` deterministic because it uses integer prefix sums,
-  //! which are truly associative. The stability and determinism guarantees hold provided that
-  //! ``select_op`` is a **pure function**, meaning:
-  //!
-  //! 1. **Referentially transparent**: For the same input value, it always returns the same result.
-  //! 2. **Side-effect free**: It has no observable side effects.
-  //!
-  //! Violations of purity that break guarantees include:
-  //!
-  //! - Reading thread-varying state (e.g., ``threadIdx``, ``clock()``, uninitialized memory)
-  //! - Reading or writing shared mutable state (e.g., global variables, atomics)
-  //! - Behavior that depends on evaluation order or timing
-  //! - Any operation that causes undefined behavior
-  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the partitioning of items selected from an ``int`` device vector
-  //! using determinism requirements:
+  //! using environment-based API:
   //!
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_partition_env_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after: example-begin partition-if-env-determinism
-  //!     :end-before: example-end partition-if-env-determinism
+  //!     :start-after: example-begin partition-if-env
+  //!     :end-before: example-end partition-if-env
   //!
   //! @endrst
   //!
@@ -671,7 +612,7 @@ public:
     typename EnvT = ::cuda::std::execution::env<>,
     typename ::cuda::std::
       enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(InputIteratorT d_in,
      OutputIteratorT d_out,
      NumSelectedIteratorT d_num_selected_out,
@@ -681,42 +622,13 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DevicePartition::If");
 
-    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
-                  "Determinism should be used inside requires to have an effect.");
-
     using offset_t = detail::choose_offset_t<NumItemsT>;
-
-    // Extract determinism from environment, defaulting to run_to_run
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using requested_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t, //
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::gpu_to_gpu_t>;
-
-    using determinism_t = ::cuda::execution::determinism::gpu_to_gpu_t;
 
     // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
-      return partition_impl<tuning_t,
-                            InputIteratorT,
-                            NullType*,
-                            OutputIteratorT,
-                            NumSelectedIteratorT,
-                            SelectOp,
-                            offset_t,
-                            determinism_t::value>(
-        storage,
-        bytes,
-        d_in,
-        nullptr,
-        d_out,
-        d_num_selected_out,
-        static_cast<offset_t>(num_items),
-        select_op,
-        determinism_t{},
-        stream);
+      return partition_impl<tuning_t, InputIteratorT, NullType*, OutputIteratorT, NumSelectedIteratorT, SelectOp, offset_t>(
+        storage, bytes, d_in, nullptr, d_out, d_num_selected_out, static_cast<offset_t>(num_items), select_op, stream);
     });
   }
 
