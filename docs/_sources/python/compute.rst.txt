@@ -56,8 +56,8 @@ to compute the sum of a sequence of integers:
    :start-after: # example-begin
    :caption: Sum reduction example.
 
-Controlling temporary memory
-++++++++++++++++++++++++++++
+Object-based API (expert mode)
+++++++++++++++++++++++++++++++
 
 Many algorithms allocate temporary device memory for intermediate results. For finer
 control over allocation—or to reuse buffers across calls—use the object-based API.
@@ -70,12 +70,33 @@ returns a reusable reduction object that lets you manage memory explicitly.
    # create a reducer object:
    reducer = cuda.compute.make_reduce_into(d_in, d_out, op, h_init)
    # get the temporary storage size by passing None as the first argument:
-   temp_storage_bytes = reducer(None, d_in, d_out, num_items, h_init)
+   temp_storage_bytes = reducer(None, d_in, d_out, op, num_items, h_init)
    # allocate the temporary storage as any array-like object
    # (e.g., CuPy array, Torch tensor):
    temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
    # perform the reduction, passing the temporary storage as the first argument:
-   reducer(temp_storage, d_in, d_out, num_items, h_init)
+   reducer(temp_storage, d_in, d_out, op, num_items, h_init)
+
+The object-based API splits the algorithm invocation into three phases,
+
+1. Constructing an algorithm object
+2. Determining the amount of temporary memory needed by the computation
+3. Performing the computation
+
+It is important that the type of arguments passed during construction (step 1) match
+those passed during invocation (step 2 and 3). Otherwise you may see unexpected errors
+or silent bugs.
+
+- Data types of arrays/iterators must match. If you pass an array of `int32` data type
+  as the `d_in=` argument during construction of a reducer object, you must pass
+  an array of dtype `int32` when invoking it. The array can be of a different size.
+
+- Bytecode instructions of functions must match. If you pass a function/lambda for
+  the operator during construction, you must pass a function with the same bytecode
+  instructions during invocation. This means you _can_ pass a different function
+  referencing different global/closures, but the operations within the functions
+  must be the same.
+
 
 .. _cuda.compute.user_defined_operations:
 

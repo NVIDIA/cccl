@@ -1597,14 +1597,14 @@ The API is subject to change without notice.</p>
 <span class="n">reducer</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">make_reduce_into</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
 
 <span class="c1"># Get the temporary storage size.</span>
-<span class="n">temp_storage_size</span> <span class="o">=</span> <span class="n">reducer</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+<span class="n">temp_storage_size</span> <span class="o">=</span> <span class="n">reducer</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
 
 <span class="c1"># Allocate temporary storage using any user-defined allocator.</span>
 <span class="c1"># The result must be an object exposing `__cuda_array_interface__`.</span>
 <span class="n">d_temp_storage</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">temp_storage_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
 
 <span class="c1"># Perform the reduction.</span>
-<span class="n">reducer</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+<span class="n">reducer</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
 
 <span class="n">expected_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">h_input</span><span class="p">)</span> <span class="o">+</span> <span class="n">init_value</span>
 <span class="n">actual_result</span> <span class="o">=</span> <span class="n">d_output</span><span class="o">.</span><span class="n">get</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
@@ -1699,7 +1699,7 @@ The API is subject to change without notice.</p>
 <span class="n">d_out</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">h_values</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uintp</span><span class="p">)</span>
 
 <span class="n">searcher</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">make_lower_bound</span><span class="p">(</span><span class="n">d_data</span><span class="p">,</span> <span class="n">d_values</span><span class="p">,</span> <span class="n">d_out</span><span class="p">)</span>
-<span class="n">searcher</span><span class="p">(</span><span class="n">d_data</span><span class="p">,</span> <span class="n">d_values</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_data</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_values</span><span class="p">))</span>
+<span class="n">searcher</span><span class="p">(</span><span class="n">d_data</span><span class="p">,</span> <span class="n">d_values</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_data</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_values</span><span class="p">))</span>
 
 <span class="n">expected</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">h_data</span><span class="p">,</span> <span class="n">h_values</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uintp</span><span class="p">)</span>
 <span class="n">got</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">(</span><span class="n">d_out</span><span class="p">)</span>
@@ -1797,7 +1797,7 @@ The API is subject to change without notice.</p>
 <span class="n">d_out</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">h_values</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uintp</span><span class="p">)</span>
 
 <span class="n">searcher</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">make_upper_bound</span><span class="p">(</span><span class="n">d_data</span><span class="p">,</span> <span class="n">d_values</span><span class="p">,</span> <span class="n">d_out</span><span class="p">)</span>
-<span class="n">searcher</span><span class="p">(</span><span class="n">d_data</span><span class="p">,</span> <span class="n">d_values</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_data</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_values</span><span class="p">))</span>
+<span class="n">searcher</span><span class="p">(</span><span class="n">d_data</span><span class="p">,</span> <span class="n">d_values</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_data</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_values</span><span class="p">))</span>
 
 <span class="n">expected</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">h_data</span><span class="p">,</span> <span class="n">h_values</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="s2">&quot;right&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uintp</span><span class="p">)</span>
 <span class="n">got</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">(</span><span class="n">d_out</span><span class="p">)</span>
@@ -1903,11 +1903,11 @@ The API is subject to change without notice.</p>
 
 <span class="c1"># Create the scanner object and allocate temporary storage.</span>
 <span class="n">scanner</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">make_inclusive_scan</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
-<span class="n">temp_storage_size</span> <span class="o">=</span> <span class="n">scanner</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+<span class="n">temp_storage_size</span> <span class="o">=</span> <span class="n">scanner</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
 <span class="n">d_temp_storage</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">temp_storage_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
 
 <span class="c1"># Perform the inclusive scan.</span>
-<span class="n">scanner</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+<span class="n">scanner</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
 
 <span class="c1"># Verify the result.</span>
 <span class="n">expected_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
@@ -2011,11 +2011,11 @@ The API is subject to change without notice.</p>
 
 <span class="c1"># Create the scanner object and allocate temporary storage.</span>
 <span class="n">scanner</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">make_exclusive_scan</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
-<span class="n">temp_storage_size</span> <span class="o">=</span> <span class="n">scanner</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+<span class="n">temp_storage_size</span> <span class="o">=</span> <span class="n">scanner</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
 <span class="n">d_temp_storage</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">temp_storage_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
 
 <span class="c1"># Perform the exclusive scan.</span>
-<span class="n">scanner</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+<span class="n">scanner</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
 
 <span class="c1"># Verify the result.</span>
 <span class="n">expected_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
@@ -2183,7 +2183,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <span class="n">transformer</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">make_unary_transform</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">add_one_op</span><span class="p">)</span>
 
 <span class="c1"># Perform the unary transform.</span>
-<span class="n">transformer</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">))</span>
+<span class="n">transformer</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">add_one_op</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">))</span>
 
 <span class="c1"># Verify the result.</span>
 <span class="n">expected_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
@@ -2349,7 +2349,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <span class="p">)</span>
 
 <span class="c1"># Perform the binary transform.</span>
-<span class="n">transformer</span><span class="p">(</span><span class="n">d_input1</span><span class="p">,</span> <span class="n">d_input2</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input1</span><span class="p">))</span>
+<span class="n">transformer</span><span class="p">(</span><span class="n">d_input1</span><span class="p">,</span> <span class="n">d_input2</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h_input1</span><span class="p">))</span>
 
 <span class="c1"># Verify the result.</span>
 <span class="n">expected_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">11</span><span class="p">,</span> <span class="mi">22</span><span class="p">,</span> <span class="mi">33</span><span class="p">,</span> <span class="mi">44</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
@@ -2674,6 +2674,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
     <span class="n">d_input_values</span><span class="p">,</span>
     <span class="n">d_output_keys</span><span class="p">,</span>
     <span class="n">d_output_values</span><span class="p">,</span>
+    <span class="n">OpKind</span><span class="o">.</span><span class="n">LESS</span><span class="p">,</span>
     <span class="nb">len</span><span class="p">(</span><span class="n">h_input_keys</span><span class="p">),</span>
 <span class="p">)</span>
 
@@ -2687,6 +2688,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
     <span class="n">d_input_values</span><span class="p">,</span>
     <span class="n">d_output_keys</span><span class="p">,</span>
     <span class="n">d_output_values</span><span class="p">,</span>
+    <span class="n">OpKind</span><span class="o">.</span><span class="n">LESS</span><span class="p">,</span>
     <span class="nb">len</span><span class="p">(</span><span class="n">h_input_keys</span><span class="p">),</span>
 <span class="p">)</span>
 
@@ -3080,14 +3082,23 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 
 <span class="c1"># Get the temporary storage size.</span>
 <span class="n">temp_storage_size</span> <span class="o">=</span> <span class="n">reducer</span><span class="p">(</span>
-    <span class="kc">None</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">start_offsets</span><span class="p">,</span> <span class="n">end_offsets</span><span class="p">,</span> <span class="n">h_init</span>
+    <span class="kc">None</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">start_offsets</span><span class="p">,</span> <span class="n">end_offsets</span><span class="p">,</span> <span class="n">h_init</span>
 <span class="p">)</span>
 
 <span class="c1"># Allocate the temporary storage.</span>
 <span class="n">d_temp_storage</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">temp_storage_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
 
 <span class="c1"># Perform the segmented reduce.</span>
-<span class="n">reducer</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span> <span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">start_offsets</span><span class="p">,</span> <span class="n">end_offsets</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
+<span class="n">reducer</span><span class="p">(</span>
+    <span class="n">d_temp_storage</span><span class="p">,</span>
+    <span class="n">d_input</span><span class="p">,</span>
+    <span class="n">d_output</span><span class="p">,</span>
+    <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span>
+    <span class="mi">2</span><span class="p">,</span>
+    <span class="n">start_offsets</span><span class="p">,</span>
+    <span class="n">end_offsets</span><span class="p">,</span>
+    <span class="n">h_init</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="c1"># Verify the result.</span>
 <span class="n">expected_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">6</span><span class="p">,</span> <span class="mi">15</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
@@ -3256,6 +3267,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
     <span class="n">d_output_keys</span><span class="p">,</span>
     <span class="n">d_output_values</span><span class="p">,</span>
     <span class="n">d_num_selected</span><span class="p">,</span>
+    <span class="n">OpKind</span><span class="o">.</span><span class="n">EQUAL_TO</span><span class="p">,</span>
     <span class="nb">len</span><span class="p">(</span><span class="n">h_input_keys</span><span class="p">),</span>
 <span class="p">)</span>
 
@@ -3270,6 +3282,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
     <span class="n">d_output_keys</span><span class="p">,</span>
     <span class="n">d_output_values</span><span class="p">,</span>
     <span class="n">d_num_selected</span><span class="p">,</span>
+    <span class="n">OpKind</span><span class="o">.</span><span class="n">EQUAL_TO</span><span class="p">,</span>
     <span class="nb">len</span><span class="p">(</span><span class="n">h_input_keys</span><span class="p">),</span>
 <span class="p">)</span>
 
@@ -3730,6 +3743,8 @@ storage allocation. For simpler usage, consider using <a class="reference intern
     <span class="n">d_second_part</span><span class="p">,</span>
     <span class="n">d_unselected</span><span class="p">,</span>
     <span class="n">d_num_selected</span><span class="p">,</span>
+    <span class="n">less_than_op</span><span class="p">,</span>
+    <span class="n">greater_than_equal_op</span><span class="p">,</span>
     <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span>
 <span class="p">)</span>
 <span class="n">d_temp_storage</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">temp_storage_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
@@ -3742,6 +3757,8 @@ storage allocation. For simpler usage, consider using <a class="reference intern
     <span class="n">d_second_part</span><span class="p">,</span>
     <span class="n">d_unselected</span><span class="p">,</span>
     <span class="n">d_num_selected</span><span class="p">,</span>
+    <span class="n">less_than_op</span><span class="p">,</span>
+    <span class="n">greater_than_equal_op</span><span class="p">,</span>
     <span class="nb">len</span><span class="p">(</span><span class="n">h_input</span><span class="p">),</span>
 <span class="p">)</span>
 
@@ -3912,11 +3929,13 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <span class="n">selector</span> <span class="o">=</span> <span class="n">make_select</span><span class="p">(</span><span class="n">d_in</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">d_num_selected</span><span class="p">,</span> <span class="n">greater_than_5</span><span class="p">)</span>
 
 <span class="c1"># Get required temp storage</span>
-<span class="n">temp_storage_bytes</span> <span class="o">=</span> <span class="n">selector</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">d_in</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">d_num_selected</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_in</span><span class="p">))</span>
+<span class="n">temp_storage_bytes</span> <span class="o">=</span> <span class="n">selector</span><span class="p">(</span>
+    <span class="kc">None</span><span class="p">,</span> <span class="n">d_in</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">d_num_selected</span><span class="p">,</span> <span class="n">greater_than_5</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_in</span><span class="p">)</span>
+<span class="p">)</span>
 <span class="n">d_temp_storage</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">temp_storage_bytes</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
 
 <span class="c1"># Execute select</span>
-<span class="n">selector</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span> <span class="n">d_in</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">d_num_selected</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_in</span><span class="p">))</span>
+<span class="n">selector</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span> <span class="n">d_in</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">d_num_selected</span><span class="p">,</span> <span class="n">greater_than_5</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_in</span><span class="p">))</span>
 
 <span class="c1"># Get results</span>
 <span class="n">num_selected</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">d_num_selected</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
@@ -3929,7 +3948,7 @@ storage allocation. For simpler usage, consider using <a class="reference intern
 <span class="n">d_out2</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">d_in2</span><span class="p">)</span>
 <span class="n">d_num_selected2</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">cp</span><span class="o">.</span><span class="n">uint64</span><span class="p">)</span>
 
-<span class="n">selector</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span> <span class="n">d_in2</span><span class="p">,</span> <span class="n">d_out2</span><span class="p">,</span> <span class="n">d_num_selected2</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_in2</span><span class="p">))</span>
+<span class="n">selector</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span> <span class="n">d_in2</span><span class="p">,</span> <span class="n">d_out2</span><span class="p">,</span> <span class="n">d_num_selected2</span><span class="p">,</span> <span class="n">greater_than_5</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_in2</span><span class="p">))</span>
 
 <span class="n">num_selected2</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">d_num_selected2</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 <span class="n">result2</span> <span class="o">=</span> <span class="n">d_out2</span><span class="p">[:</span><span class="n">num_selected2</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
