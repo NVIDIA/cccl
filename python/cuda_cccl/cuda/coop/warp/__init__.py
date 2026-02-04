@@ -1,9 +1,35 @@
-# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from ._warp_merge_sort import merge_sort_keys
-from ._warp_reduce import reduce, sum
-from ._warp_scan import exclusive_sum
+import os
 
-__all__ = ["exclusive_sum", "reduce", "sum", "merge_sort_keys"]
+if os.environ.get("CCCL_COOP_DOCS") == "1":
+    from .api import *  # noqa: F403
+    from .api import __all__  # noqa: F401
+else:
+    from ._warp_exchange import WarpExchangeType, exchange
+    from ._warp_load_store import load, store
+    from ._warp_merge_sort import merge_sort_keys, merge_sort_pairs
+    from ._warp_reduce import reduce, sum
+    from ._warp_scan import (
+        exclusive_scan,
+        exclusive_sum,
+        inclusive_scan,
+        inclusive_sum,
+    )
+
+    __all__ = [
+        "exclusive_scan",
+        "exclusive_sum",
+        "inclusive_scan",
+        "inclusive_sum",
+        "reduce",
+        "sum",
+        "merge_sort_keys",
+        "merge_sort_pairs",
+        "load",
+        "store",
+        "exchange",
+        "WarpExchangeType",
+    ]
