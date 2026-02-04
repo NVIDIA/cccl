@@ -108,9 +108,10 @@ template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
           typename InitT,
-          typename TransformOpT = ::cuda::std::identity,
-          typename AccumT       = accum_t<InitT, InputIteratorT, TransformOpT>,
-          typename PolicyHub    = policy_hub<AccumT, OffsetT, ::cuda::std::plus<>>>
+          typename TransformOpT          = ::cuda::std::identity,
+          typename AccumT                = accum_t<InitT, InputIteratorT, TransformOpT>,
+          typename PolicyHub             = policy_hub<AccumT, OffsetT, ::cuda::std::plus<>>,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct dispatch_t
 {
   using deterministic_add_t = deterministic_sum_t<AccumT>;
@@ -153,6 +154,8 @@ struct dispatch_t
 
   TransformOpT transform_op = {};
 
+  KernelLauncherFactory launcher_factory;
+
   //---------------------------------------------------------------------------
   // Small-problem (single tile) invocation
   //---------------------------------------------------------------------------
@@ -191,8 +194,7 @@ struct dispatch_t
 #endif
     // Invoke single_reduce_sweep_kernel
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-            1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
+          launcher_factory(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
             .doit(single_tile_kernel, d_in, d_out, static_cast<int>(num_items), reduction_op, init, transform_op)))
     {
       return error;
@@ -310,8 +312,7 @@ struct dispatch_t
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       if (const auto error = CubDebug(
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-              current_grid_size, ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
+            launcher_factory(current_grid_size, ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
               .doit(reduce_kernel,
                     d_in,
                     d_chunk_block_reductions,
@@ -346,8 +347,7 @@ struct dispatch_t
 
     // Invoke DeterministicDeviceReduceSingleTileKernel
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-            1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
+          launcher_factory(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
             .doit(single_tile_kernel,
                   d_block_reductions,
                   d_out,
@@ -442,9 +442,10 @@ struct dispatch_t
     InputIteratorT d_in,
     OutputIteratorT d_out,
     OffsetT num_items,
-    InitT init                = {},
-    cudaStream_t stream       = {},
-    TransformOpT transform_op = {})
+    InitT init                             = {},
+    cudaStream_t stream                    = {},
+    TransformOpT transform_op              = {},
+    KernelLauncherFactory launcher_factory = {})
   {
     // Get PTX version
     int ptx_version = 0;
@@ -466,7 +467,8 @@ struct dispatch_t
       init,
       stream,
       ptx_version,
-      transform_op};
+      transform_op,
+      launcher_factory};
 
     // Dispatch to chained policy
     return CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
