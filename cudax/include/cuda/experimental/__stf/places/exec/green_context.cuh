@@ -633,6 +633,46 @@ UNITTEST("green context exec_place and data_place with different data place mode
   // Green context data place should equal affine of exec_place with use_green_ctx_data_place=true
   EXPECT(dp0 == ep0_green_affine.affine_data_place());
 };
+
+UNITTEST("green context data_place as unordered_map key")
+{
+  async_resources_handle handle;
+  auto gc_helper = handle.get_gc_helper(0, 8);
+
+  if (gc_helper->get_count() < 2)
+  {
+    return;
+  }
+
+  auto gc0_view = gc_helper->get_view(0);
+  auto gc1_view = gc_helper->get_view(1);
+
+  auto dp0 = data_place::green_ctx(gc0_view);
+  auto dp1 = data_place::green_ctx(gc1_view);
+
+  ::std::unordered_map<data_place, int, hash<data_place>> map;
+
+  // Insert green context data places
+  map[dp0] = 100;
+  map[dp1] = 200;
+
+  // Verify lookups work correctly
+  EXPECT(map[dp0] == 100);
+  EXPECT(map[dp1] == 200);
+  EXPECT(map.size() == 2);
+
+  // Verify that a new data_place for the same green context finds the same entry
+  auto dp0_copy = data_place::green_ctx(gc0_view);
+  EXPECT(map[dp0_copy] == 100);
+
+  // Mix with regular device data place
+  map[data_place::device(0)] = 300;
+  EXPECT(map.size() == 3);
+  EXPECT(map[data_place::device(0)] == 300);
+
+  // Green context data place and device data place should be different keys
+  EXPECT(map[dp0] == 100); // Still 100, not overwritten
+};
 #  endif // UNITTESTED_FILE
 } // end namespace cuda::experimental::stf
 
