@@ -22,6 +22,7 @@
 
 #include <cuda/__numeric/add_overflow.h>
 #include <cuda/__numeric/div_overflow.h>
+#include <cuda/__numeric/mul_overflow.h>
 #include <cuda/__numeric/narrow.h>
 #include <cuda/__numeric/overflow_cast.h>
 #include <cuda/__numeric/overflow_result.h>
