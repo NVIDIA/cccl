@@ -412,7 +412,6 @@ public:
     {
       return __zip_apply(__zip_op_eq{}, __n.__current_, __y.__current_);
     }
-    _CCCL_UNREACHABLE();
   }
 
 #if _CCCL_STD_VER <= 2017
@@ -429,7 +428,6 @@ public:
     {
       return !__zip_apply(__zip_op_eq{}, __n.__current_, __y.__current_);
     }
-    _CCCL_UNREACHABLE();
   }
 #endif // _CCCL_STD_VER <= 2017
 

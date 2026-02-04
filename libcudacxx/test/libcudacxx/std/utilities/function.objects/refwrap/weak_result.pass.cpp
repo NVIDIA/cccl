@@ -26,16 +26,16 @@
 template <class Arg, class Result>
 struct my_unary_function
 { // cuda::std::unary_function was removed in C++17
-  typedef Arg argument_type;
-  typedef Result result_type;
+  using argument_type = Arg;
+  using result_type   = Result;
 };
 
 template <class Arg1, class Arg2, class Result>
 struct my_binary_function
 { // cuda::std::binary_function was removed in C++17
-  typedef Arg1 first_argument_type;
-  typedef Arg2 second_argument_type;
-  typedef Result result_type;
+  using first_argument_type  = Arg1;
+  using second_argument_type = Arg2;
+  using result_type          = Result;
 };
 
 class functor1 : public my_unary_function<int, char>
@@ -49,7 +49,7 @@ class functor3
     , public my_binary_function<char, int, double>
 {
 public:
-  typedef float result_type;
+  using result_type = float;
 };
 
 class functor4
@@ -96,7 +96,9 @@ int main(int, char**)
     "");
   static_assert((cuda::std::is_same<cuda::std::reference_wrapper<C()>::result_type, C>::value), "");
   static_assert(has_result_type<cuda::std::reference_wrapper<functor3>>::value, "");
+#if !TEST_COMPILER(MSVC, >=, 19, 50) // Visual Studio 2026 fails this
   static_assert(!has_result_type<cuda::std::reference_wrapper<functor4>>::value, "");
+#endif // !TEST_COMPILER(MSVC, >=, 19, 50)
   static_assert(!has_result_type<cuda::std::reference_wrapper<C>>::value, "");
 
   return 0;

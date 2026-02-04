@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -51,7 +38,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
   BinaryPredicate pred)
 {
   // Contributed by Erich Elsen
-  using IteratorTuple = thrust::tuple<InputIterator1, InputIterator2>;
+  using IteratorTuple = ::cuda::std::tuple<InputIterator1, InputIterator2>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
   ZipIterator zipped_first = thrust::make_zip_iterator(first1, first2);
@@ -61,7 +48,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
     thrust::find_if_not(exec, zipped_first, zipped_last, thrust::detail::tuple_binary_predicate<BinaryPredicate>{pred});
 
   return ::cuda::std::make_pair(
-    thrust::get<0>(result.get_iterator_tuple()), thrust::get<1>(result.get_iterator_tuple()));
+    ::cuda::std::get<0>(result.get_iterator_tuple()), ::cuda::std::get<1>(result.get_iterator_tuple()));
 } // end mismatch()
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

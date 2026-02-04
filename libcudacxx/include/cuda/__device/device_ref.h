@@ -26,13 +26,16 @@
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
 #  include <cuda/__runtime/types.h>
-#  include <cuda/std/__type_traits/is_constant_evaluated.h>
 #  include <cuda/std/span>
 #  include <cuda/std/string_view>
 
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
+// clang complains about missing braces in CUmemLocation constructor but GCC complains if we add them
 
 ::cuda::std::size_t __physical_devices_count();
 
@@ -46,7 +49,7 @@ public:
   /*implicit*/ _CCCL_HOST_API constexpr device_ref(int __id) noexcept
       : __id_(__id)
   {
-    if (::cuda::std::__cccl_default_is_constant_evaluated())
+    _CCCL_IF_CONSTEVAL_DEFAULT
     {
       _CCCL_VERIFY(__id >= 0, "Device ID must be a valid GPU device ordinal");
     }
@@ -159,6 +162,8 @@ public:
                                                                                   // <cuda/__device/physical_device.h>
                                                                                   // to avoid circular dependency
 };
+
+_CCCL_DIAG_POP
 
 _CCCL_END_NAMESPACE_CUDA
 

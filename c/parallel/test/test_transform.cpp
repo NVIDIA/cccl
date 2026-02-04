@@ -1,6 +1,5 @@
 #include <cstdint>
 #include <cstdlib>
-#include <iostream> // std::cerr
 #include <numeric>
 #include <optional> // std::optional
 #include <string>
@@ -281,14 +280,13 @@ C2H_TEST("Transform works with output of different type", "[transform]")
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
-  operation_t op = make_operation(
-    "op",
-    "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ void op(void* x_ptr, void* out_ptr) {\n"
-    "  int* x = static_cast<int*>(x_ptr);\n"
-    "  pair* out = static_cast<pair*>(out_ptr);\n"
-    "  *out = pair{ short(*x), size_t(*x) };\n"
-    "}");
+  operation_t op               = make_operation("op",
+                                  R"(struct pair { short a; size_t b; };
+extern "C" __device__ void op(void* x_ptr, void* out_ptr) {
+  int* x = static_cast<int*>(x_ptr);
+  pair* out = static_cast<pair*>(out_ptr);
+  *out = pair{ short(*x), size_t(*x) };
+})");
   const std::vector<int> input = generate<int>(num_items);
   std::vector<pair> expected(num_items);
   std::vector<pair> output(num_items);
@@ -310,19 +308,73 @@ C2H_TEST("Transform works with output of different type", "[transform]")
   }
 }
 
+struct alignas(8) unary_storage_in
+{
+  int x;
+  short y;
+};
+
+struct alignas(16) unary_storage_out
+{
+  long long sum;
+  int diff;
+
+  bool operator==(const unary_storage_out& other) const
+  {
+    return sum == other.sum && diff == other.diff;
+  }
+};
+
+struct Transform_UnaryStorageTypes_Fixture_Tag;
+C2H_TEST("Transform works with unary storage types of different size/alignment", "[transform]")
+{
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
+
+  operation_t op = make_operation("op",
+                                  R"(struct alignas(8) unary_storage_in { int x; short y; };
+struct alignas(16) unary_storage_out { long long sum; int diff; };
+extern "C" __device__ void op(void* x_ptr, void* out_ptr) {
+  auto* x = static_cast<unary_storage_in*>(x_ptr);
+  auto* out = static_cast<unary_storage_out*>(out_ptr);
+  out->sum = static_cast<long long>(x->x) + x->y;
+  out->diff = x->x - x->y;
+})");
+
+  std::vector<unary_storage_in> input(num_items);
+  std::vector<unary_storage_out> output(num_items);
+  std::vector<unary_storage_out> expected(num_items);
+  for (std::size_t i = 0; i < num_items; ++i)
+  {
+    input[i]    = {static_cast<int>(i + 3), static_cast<short>(i % 7)};
+    expected[i] = {static_cast<long long>(input[i].x) + input[i].y, input[i].x - input[i].y};
+  }
+
+  pointer_t<unary_storage_in> input_ptr(input);
+  pointer_t<unary_storage_out> output_ptr(output);
+
+  auto& build_cache    = get_cache<Transform_UnaryStorageTypes_Fixture_Tag>();
+  const auto& test_key = make_key<unary_storage_in, unary_storage_out>();
+
+  unary_transform(input_ptr, output_ptr, num_items, op, build_cache, test_key);
+
+  if (num_items > 0)
+  {
+    REQUIRE(expected == std::vector<unary_storage_out>(output_ptr));
+  }
+}
+
 struct Transform_CustomTypes_Fixture_Tag;
 C2H_TEST("Transform works with custom types", "[transform]")
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
-  operation_t op = make_operation(
-    "op",
-    "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ void op(void* x_ptr, void* out_ptr) {\n"
-    "  pair* x = static_cast<pair*>(x_ptr);\n"
-    "  pair* out = static_cast<pair*>(out_ptr);\n"
-    "  *out = pair{ x->a * 2, x->b * 2  };\n"
-    "}");
+  operation_t op              = make_operation("op",
+                                  R"(struct pair { short a; size_t b; };
+extern "C" __device__ void op(void* x_ptr, void* out_ptr) {
+  pair* x = static_cast<pair*>(x_ptr);
+  pair* out = static_cast<pair*>(out_ptr);
+  *out = pair{ x->a * 2, x->b * 2  };
+})");
   const std::vector<short> a  = generate<short>(num_items);
   const std::vector<size_t> b = generate<size_t>(num_items);
   std::vector<pair> input(num_items);
@@ -354,15 +406,14 @@ C2H_TEST("Transform works with custom types with well-known operators", "[transf
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
-  operation_t op_state = make_operation(
-    "op",
-    "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ void op(void* x_ptr, void* out_ptr) {\n"
-    "  pair* x = static_cast<pair*>(x_ptr);\n"
-    "  pair* out = static_cast<pair*>(out_ptr);\n"
-    "  *out = pair{ x->a * 2, x->b * 2  };\n"
-    "}");
-  cccl_op_t op = op_state;
+  operation_t op_state = make_operation("op",
+                                        R"(struct pair { short a; size_t b; };
+extern "C" __device__ void op(void* x_ptr, void* out_ptr) {
+  pair* x = static_cast<pair*>(x_ptr);
+  pair* out = static_cast<pair*>(out_ptr);
+  *out = pair{ x->a * 2, x->b * 2  };
+})");
+  cccl_op_t op         = op_state;
   // HACK: this doesn't actually match the operation above, but that's fine, as we are supposed to not take the
   // well-known path anyway
   op.type                     = cccl_op_kind_t::CCCL_NEGATE;
@@ -458,14 +509,13 @@ C2H_TEST("Transform with binary operator", "[transform]")
   pointer_t<int> input2_ptr(input2);
   pointer_t<int> output_ptr(output);
 
-  operation_t op = make_operation(
-    "op",
-    "extern \"C\" __device__ void op(void* x_ptr, void* y_ptr, void* out_ptr  ) {\n"
-    "  int* x = static_cast<int*>(x_ptr);\n"
-    "  int* y = static_cast<int*>(y_ptr);\n"
-    "  int* out = static_cast<int*>(out_ptr);\n"
-    "  *out = (*x > *y) ? *x : *y;\n"
-    "}");
+  operation_t op = make_operation("op",
+                                  R"(extern "C" __device__ void op(void* x_ptr, void* y_ptr, void* out_ptr  ) {
+  int* x = static_cast<int*>(x_ptr);
+  int* y = static_cast<int*>(y_ptr);
+  int* out = static_cast<int*>(out_ptr);
+  *out = (*x > *y) ? *x : *y;
+})");
 
   auto& build_cache    = get_cache<Transform_BinaryOp_Fixture_Tag>();
   const auto& test_key = make_key<int>();
@@ -483,6 +533,72 @@ C2H_TEST("Transform with binary operator", "[transform]")
   }
 }
 
+struct alignas(16) binary_storage_in1
+{
+  long long a;
+  int b;
+};
+
+struct alignas(8) binary_storage_in2
+{
+  int c;
+  int d;
+};
+
+struct alignas(16) binary_storage_out
+{
+  long long sum;
+  int diff;
+
+  bool operator==(const binary_storage_out& other) const
+  {
+    return sum == other.sum && diff == other.diff;
+  }
+};
+
+struct Transform_BinaryStorageTypes_Fixture_Tag;
+C2H_TEST("Transform works with binary storage types of different size/alignment", "[transform]")
+{
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
+
+  operation_t op = make_operation("op",
+                                  R"(struct alignas(16) binary_storage_in1 { long long a; int b; };
+struct alignas(8) binary_storage_in2 { int c; int d; };
+struct alignas(16) binary_storage_out { long long sum; int diff; };
+extern "C" __device__ void op(void* x_ptr, void* y_ptr, void* out_ptr) {
+  auto* x = static_cast<binary_storage_in1*>(x_ptr);
+  auto* y = static_cast<binary_storage_in2*>(y_ptr);
+  auto* out = static_cast<binary_storage_out*>(out_ptr);
+  out->sum = x->a + static_cast<long long>(y->c);
+  out->diff = x->b - y->d;
+})");
+
+  std::vector<binary_storage_in1> input1(num_items);
+  std::vector<binary_storage_in2> input2(num_items);
+  std::vector<binary_storage_out> output(num_items);
+  std::vector<binary_storage_out> expected(num_items);
+  for (std::size_t i = 0; i < num_items; ++i)
+  {
+    input1[i]   = {static_cast<long long>(i + 5), static_cast<int>(i + 2)};
+    input2[i]   = {static_cast<int>(i + 7), static_cast<int>(i + 1)};
+    expected[i] = {input1[i].a + static_cast<long long>(input2[i].c), input1[i].b - input2[i].d};
+  }
+
+  pointer_t<binary_storage_in1> input1_ptr(input1);
+  pointer_t<binary_storage_in2> input2_ptr(input2);
+  pointer_t<binary_storage_out> output_ptr(output);
+
+  auto& build_cache    = get_cache<Transform_BinaryStorageTypes_Fixture_Tag>();
+  const auto& test_key = make_key<binary_storage_in1, binary_storage_in2, binary_storage_out>();
+
+  binary_transform(input1_ptr, input2_ptr, output_ptr, num_items, op, build_cache, test_key);
+
+  if (num_items > 0)
+  {
+    REQUIRE(expected == std::vector<binary_storage_out>(output_ptr));
+  }
+}
+
 struct Transform_BinaryOp_Iterator_Fixture_Tag;
 C2H_TEST("Binary transform with one iterator", "[transform]")
 {
@@ -496,14 +612,13 @@ C2H_TEST("Binary transform with one iterator", "[transform]")
   pointer_t<int> input1_ptr(input1);
   pointer_t<int> output_ptr(output);
 
-  operation_t op = make_operation(
-    "op",
-    "extern \"C\" __device__ void op(void* x_ptr, void* y_ptr, void* out_ptr) {\n"
-    "  int* x = static_cast<int*>(x_ptr);\n"
-    "  int* y = static_cast<int*>(y_ptr);\n"
-    "  int* out = static_cast<int*>(out_ptr);\n"
-    "  *out = (*x > *y) ? *x : *y;\n"
-    "}");
+  operation_t op = make_operation("op",
+                                  R"(extern "C" __device__ void op(void* x_ptr, void* y_ptr, void* out_ptr) {
+  int* x = static_cast<int*>(x_ptr);
+  int* y = static_cast<int*>(y_ptr);
+  int* out = static_cast<int*>(out_ptr);
+  *out = (*x > *y) ? *x : *y;
+})");
 
   auto& build_cache    = get_cache<Transform_BinaryOp_Iterator_Fixture_Tag>();
   const auto& test_key = make_key<int>();
@@ -663,4 +778,47 @@ C2H_TEST("Transform works with C++ source operations using custom headers", "[tr
 
   // Cleanup
   REQUIRE(CUDA_SUCCESS == cccl_device_transform_cleanup(&build));
+}
+
+struct transform_stateful_counter_state_t
+{
+  int* d_counter;
+};
+
+C2H_TEST("Transform works with stateful unary operators", "[transform]")
+{
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
+  const std::vector<int> host_counter{0};
+  pointer_t<int> counter(host_counter);
+  stateful_operation_t<transform_stateful_counter_state_t> op = make_operation(
+    "op",
+    R"(struct transform_stateful_counter_state_t { int* d_counter; };
+extern "C" __device__ void op(void* state_ptr, void* x_ptr, void* out_ptr) {
+  auto* state = static_cast<transform_stateful_counter_state_t*>(state_ptr);
+  atomicAdd(state->d_counter, 1);
+  int x = *static_cast<int*>(x_ptr);
+  *static_cast<int*>(out_ptr) = x * 2;
+})",
+    transform_stateful_counter_state_t{counter.ptr});
+
+  const std::vector<int> input = generate<int>(num_items);
+  const std::vector<int> output(num_items, 0);
+  pointer_t<int> input_ptr(input);
+  pointer_t<int> output_ptr(output);
+
+  std::optional<transform_build_cache_t> build_cache = std::nullopt;
+  std::optional<std::string> test_key                = std::nullopt;
+
+  unary_transform(input_ptr, output_ptr, num_items, op, build_cache, test_key);
+
+  std::vector<int> expected(num_items, 0);
+  std::transform(input.begin(), input.end(), expected.begin(), [](int x) {
+    return x * 2;
+  });
+
+  if (num_items > 0)
+  {
+    REQUIRE(expected == std::vector<int>(output_ptr));
+    REQUIRE(counter[0] == static_cast<int>(num_items));
+  }
 }

@@ -6,9 +6,9 @@ source "$(dirname "${BASH_SOURCE[0]}")/build_common.sh"
 
 print_environment_details
 
-PRESET="thrust-cpp$CXX_STANDARD"
+PRESET="thrust"
 
-CMAKE_OPTIONS=""
+CMAKE_OPTIONS="-DCMAKE_CXX_STANDARD=$CXX_STANDARD -DCMAKE_CUDA_STANDARD=$CXX_STANDARD"
 
 configure_and_build_preset "Thrust" "$PRESET" "$CMAKE_OPTIONS"
 

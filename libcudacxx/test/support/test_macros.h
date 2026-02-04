@@ -14,9 +14,8 @@
 #include <cuda/std/detail/__config>
 
 // Use the CCCL compiler detection
-#define TEST_COMPILER(...)       _CCCL_COMPILER(__VA_ARGS__)
-#define TEST_CUDA_COMPILER(...)  _CCCL_CUDA_COMPILER(__VA_ARGS__)
-#define TEST_HAS_CUDA_COMPILER() _CCCL_HAS_CUDA_COMPILER()
+#define TEST_COMPILER(...)      _CCCL_COMPILER(__VA_ARGS__)
+#define TEST_CUDA_COMPILER(...) _CCCL_CUDA_COMPILER(__VA_ARGS__)
 
 // Use the CCCL diagnostic suppression
 #define TEST_DIAG_SUPPRESS_CLANG(...) _CCCL_DIAG_SUPPRESS_CLANG(__VA_ARGS__)
@@ -48,7 +47,7 @@
 #define TEST_HAS_SPACESHIP() _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-#  define TEST_IS_CONSTANT_EVALUATED() cuda::std::is_constant_evaluated()
+#  define TEST_IS_CONSTANT_EVALUATED() _CCCL_BUILTIN_IS_CONSTANT_EVALUATED()
 #else
 #  define TEST_IS_CONSTANT_EVALUATED() false
 #endif
@@ -60,7 +59,7 @@
 #endif // ^^^ TEST_STD_VER <= 2020
 
 // Attempt to deduce the GLIBC version
-#if _CCCL_HAS_INCLUDE(<features.h>) || defined(__linux__)
+#if __has_include(<features.h>) || defined(__linux__)
 #  include <features.h>
 #  if defined(__GLIBC_PREREQ)
 #    define TEST_HAS_GLIBC
@@ -84,7 +83,7 @@
 #  endif
 #endif
 
-#if !_CCCL_HAS_FEATURE(cxx_rtti) && !defined(__cpp_rtti) && !defined(__GXX_RTTI)
+#if !_CCCL_HAS_FEATURE(cxx_rtti) && __cpp_rtti == 0 && !defined(__GXX_RTTI)
 #  define TEST_HAS_NO_RTTI
 #endif
 

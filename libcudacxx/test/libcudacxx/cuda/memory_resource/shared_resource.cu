@@ -78,6 +78,42 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
   // Reset the counters:
   this->counts = Counts();
 
+  SECTION("get, operator->, and operator*")
+  {
+    Counts expected{};
+    CHECK(this->counts == expected);
+    {
+      cuda::mr::shared_resource mr{cuda::std::in_place_type<TestResource>, 42, this};
+      ++expected.object_count;
+      CHECK(this->counts == expected);
+
+      // Test get()
+      TestResource& ref = mr.get();
+      CHECK(ref.data == 42);
+
+      // Test operator->
+      CHECK(mr->data == 42);
+
+      // Test operator*
+      TestResource& deref = *mr;
+      CHECK(deref.data == 42);
+
+      // Test const versions
+      const auto& cmr          = mr;
+      const TestResource& cref = cmr.get();
+      CHECK(cref.data == 42);
+      CHECK(cmr->data == 42);
+      const TestResource& cderef = *cmr;
+      CHECK(cderef.data == 42);
+    }
+
+    --expected.object_count;
+    CHECK(this->counts == expected);
+  }
+
+  // Reset the counters:
+  this->counts = Counts();
+
   SECTION("allocate_sync and deallocate_sync")
   {
     Counts expected{};
@@ -87,12 +123,12 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
       ++expected.object_count;
       CHECK(this->counts == expected);
 
-      void* ptr = mr.allocate_sync(bytes(50), align(8));
+      void* ptr = mr.allocate_sync(this->bytes(50), this->align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
       CHECK(this->counts == expected);
 
-      mr.deallocate_sync(ptr, bytes(50), align(8));
+      mr.deallocate_sync(ptr, this->bytes(50), this->align(8));
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
@@ -115,11 +151,11 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
       cuda::mr::synchronous_resource_ref<::cuda::mr::host_accessible> ref = mr;
 
       CHECK(this->counts == expected);
-      auto* ptr = ref.allocate_sync(bytes(100), align(8));
+      auto* ptr = ref.allocate_sync(this->bytes(100), this->align(8));
       CHECK(ptr == this);
       ++expected.allocate_count;
       CHECK(this->counts == expected);
-      ref.deallocate_sync(ptr, bytes(0), align(0));
+      ref.deallocate_sync(ptr, this->bytes(0), this->align(0));
       ++expected.deallocate_count;
       CHECK(this->counts == expected);
     }
@@ -133,9 +169,9 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
   SECTION("basic sanity test about shared resource handling")
   {
     Counts expected{};
-    align(alignof(int) * 4);
+    this->align(alignof(int));
     {
-      bytes(42 * sizeof(int));
+      this->bytes(42 * sizeof(int));
       cuda::stream stream{cuda::device_ref{0}};
       cuda::__uninitialized_async_buffer<int, ::cuda::mr::host_accessible> buffer{
         cuda::mr::shared_resource<TestResource>(cuda::std::in_place_type<TestResource>, 42, this), stream, 42};
@@ -146,15 +182,16 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
       // copying the shared_resource should not copy the stored resource
       {
         // accounting for new storage
-        bytes(1337 * sizeof(int));
+        this->bytes(1337 * sizeof(int));
         cuda::__uninitialized_async_buffer<int, ::cuda::mr::host_accessible> other_buffer{
           buffer.memory_resource(), stream, 1337};
         ++expected.allocate_async_count;
         CHECK(this->counts == expected);
       }
 
-      // The original resource is still alive, but the second allocation was released
-      bytes(42 * sizeof(int));
+      // The original resource is still alive, but the second allocation was
+      // released
+      this->bytes(42 * sizeof(int));
       ++expected.deallocate_async_count;
       CHECK(this->counts == expected);
 
@@ -164,7 +201,8 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
         CHECK(this->counts == expected);
       }
 
-      // The original shared_resource has been moved from so everything is gone already
+      // The original shared_resource has been moved from so everything is gone
+      // already
       --expected.object_count;
       ++expected.deallocate_async_count;
       CHECK(this->counts == expected);

@@ -30,7 +30,6 @@
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -42,7 +41,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 _CCCL_API constexpr uint32_t __bit_log2(_Tp __t) noexcept
 {
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     if constexpr (sizeof(_Tp) <= 8)
     {
@@ -79,7 +78,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
   auto __width = ::cuda::std::bit_width(static_cast<_Up>(__t) - 1);
   if constexpr (sizeof(_Tp) <= 8)
   {
-    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
       // CUDA right shift (ptx::shr) returns 0 if the right operand is larger than the number of bits of the type
       // The result is computed as max(1, bit_width(__t - 1)) because it is more efficient than the ternary operator
@@ -104,7 +103,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
   // __bit_log2 returns 0xFFFFFFFF if __t == 0
   if constexpr (sizeof(_Tp) <= 8)
   {
-    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
       // CUDA left shift (ptx::shl) returns 0 if the right operand is larger than the number of bits of the type
       // -> the result is 0 if __t == 0

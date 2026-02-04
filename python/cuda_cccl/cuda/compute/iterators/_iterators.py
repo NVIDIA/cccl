@@ -1,41 +1,33 @@
+# Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 import ctypes
-import operator
-import uuid
-from functools import lru_cache
-from typing import Callable, Tuple
+from typing import Callable
 
-import numba
 import numpy as np
-from llvmlite import ir
-from numba import cuda, types
-from numba.core.extending import as_numba_type, intrinsic, overload
-from numba.core.typing.ctypes_utils import to_ctypes
-from numba.cuda.dispatcher import CUDADispatcher
+from numba import cuda
 
+from .. import types
 from .._bindings import IteratorState
-from .._caching import CachableFunction
+from .._caching import CachableFunction, cache_with_registered_key_functions
+from .._intrinsics import load_cs
 from .._utils.protocols import (
     compute_c_contiguous_strides_in_bytes,
     get_data_pointer,
     get_dtype,
     get_shape,
 )
-from ..numba_utils import get_inferred_return_type, signature_from_annotations
 from ..typing import DeviceArrayLike
-
-_DEVICE_POINTER_SIZE = 8
-_DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8
-
-
-@lru_cache(maxsize=256)  # TODO: what's a reasonable value?
-def cached_compile(func, sig, abi_name=None, **kwargs):
-    return cuda.compile(func, sig, abi_info={"abi_name": abi_name}, **kwargs)
 
 
 class IteratorKind:
     # The `.kind` of an iterator encapsulates additional metadata about the iterator,
     # analogous to the `.dtype` of a NumPy array.
-    def __init__(self, value_type, state_type):
+    def __init__(
+        self, value_type: types.TypeDescriptor, state_type: types.TypeDescriptor
+    ):
         self.value_type = value_type
         self.state_type = state_type
 
@@ -55,10 +47,6 @@ class IteratorKind:
         return hash((type(self), self.value_type, self.state_type))
 
 
-def _get_abi_suffix(kind: IteratorKind):
-    return uuid.uuid4().hex
-
-
 class IteratorBase:
     """
     An Iterator is a wrapper around a state pointer, and must define the following:
@@ -76,13 +64,12 @@ class IteratorBase:
     to device code by numba.
     """
 
-    iterator_kind_type: type  # must be a subclass of IteratorKind
-
     def __init__(
         self,
+        kind: IteratorKind,
         cvalue,
-        state_type: types.Type,
-        value_type: types.Type,
+        state_type: types.TypeDescriptor,
+        value_type: types.TypeDescriptor,
     ):
         """
         Parameters
@@ -90,17 +77,14 @@ class IteratorBase:
         cvalue
           A ctypes type representing the object pointed to by the iterator.
         state_type
-          A numba type representing the type of the input to the advance
-          and dereference functions. This should be a pointer type.
+          A TypeDescriptor representing the state type
         value_type
-          The numba type of the value returned by the dereference operation.
+          A TypeDescriptor representing the value type
         """
+        self._kind = kind
         self.cvalue = cvalue
         self.state_type = state_type
-        self.state_ptr_type = types.CPointer(state_type)
         self.value_type = value_type
-
-        self._kind = self.__class__.iterator_kind_type(self.value_type, self.state_type)
         self._state = IteratorState(self.cvalue)
 
     @property
@@ -128,6 +112,10 @@ class IteratorBase:
         return None
 
     @property
+    def children(self):
+        return ()
+
+    @property
     def is_input_iterator(self) -> bool:
         return self.input_dereference is not None
 
@@ -135,59 +123,10 @@ class IteratorBase:
     def is_output_iterator(self) -> bool:
         return self.output_dereference is not None
 
-    def get_advance_ltoir(self) -> Tuple:
-        abi_name = f"advance_{_get_abi_suffix(self.kind)}"
-        signature = (
-            self.state_ptr_type,
-            types.uint64,  # distance type
-        )
-        ltoir, _ = cached_compile(
-            self.advance,
-            signature,
-            output="ltoir",
-            abi_name=abi_name,
-        )
-        return (abi_name, ltoir)
-
-    def get_input_dereference_signature(self):
-        return (
-            self.state_ptr_type,
-            types.CPointer(self.value_type),
-        )
-
-    def get_output_dereference_signature(self):
-        return (
-            self.state_ptr_type,
-            self.value_type,
-        )
-
-    def get_input_dereference_ltoir(self) -> Tuple:
-        abi_name = f"input_dereference_{_get_abi_suffix(self.kind)}"
-        signature = self.get_input_dereference_signature()
-        ltoir, _ = cached_compile(
-            self.input_dereference,
-            signature,
-            output="ltoir",
-            abi_name=abi_name,
-        )
-        return (abi_name, ltoir)
-
-    def get_output_dereference_ltoir(self) -> Tuple:
-        abi_name = f"output_dereference_{_get_abi_suffix(self.kind)}"
-        signature = self.get_output_dereference_signature()
-        ltoir, _ = cached_compile(
-            self.output_dereference,
-            signature,
-            output="ltoir",
-            abi_name=abi_name,
-        )
-        return (abi_name, ltoir)
-
     def __add__(self, offset: int):
         # add the offset to the iterator's state, and return a new iterator
         # with the new state.
         res = type(self).__new__(type(self))
-        res.state_ptr_type = self.state_ptr_type
         res.state_type = self.state_type
         res.value_type = self.value_type
         res._kind = self._kind
@@ -197,56 +136,27 @@ class IteratorBase:
         return res
 
 
-def sizeof_pointee(context, ptr):
-    size = context.get_abi_sizeof(ptr.type.pointee)
-    return ir.Constant(ir.IntType(_DEVICE_POINTER_BITWIDTH), size)
-
-
-@intrinsic
-def pointer_add_intrinsic(context, ptr, offset):
-    def codegen(context, builder, sig, args):
-        ptr, index = args
-        base = builder.ptrtoint(ptr, ir.IntType(_DEVICE_POINTER_BITWIDTH))
-        sizeof = sizeof_pointee(context, ptr)
-        # Cast index to match sizeof type if needed
-        if index.type != sizeof.type:
-            index = (
-                builder.sext(index, sizeof.type)
-                if index.type.width < sizeof.type.width
-                else builder.trunc(index, sizeof.type)
-            )
-        offset = builder.mul(index, sizeof)
-        result = builder.add(base, offset)
-        return builder.inttoptr(result, ptr.type)
-
-    return ptr(ptr, offset), codegen
-
-
-@overload(operator.add)
-def pointer_add(ptr, offset):
-    if not isinstance(ptr, numba.types.CPointer) or not isinstance(
-        offset, numba.types.Integer
-    ):
-        return
-
-    def impl(ptr, offset):
-        return pointer_add_intrinsic(ptr, offset)
-
-    return impl
-
-
 class RawPointerKind(IteratorKind):
     pass
 
 
 class RawPointer(IteratorBase):
-    iterator_kind_type = RawPointerKind
+    def __init__(self, ptr: int, value_type: types.TypeDescriptor, obj: object):
+        """
+        Args:
+            ptr: Device pointer address
+            value_type: A TypeDescriptor for the element type
+            obj: Reference to the underlying object (to prevent garbage collection)
+        """
 
-    def __init__(self, ptr: int, value_type: types.Type, obj: object):
         cvalue = ctypes.c_void_p(ptr)
-        state_type = types.CPointer(value_type)
-        self.obj = obj  # the container holding the data
+        # state_type is a pointer to value_type
+        state_type = value_type.pointer()
+        self.obj = obj
+        kind = RawPointerKind(value_type, state_type)
+
         super().__init__(
+            kind=kind,
             cvalue=cvalue,
             state_type=state_type,
             value_type=value_type,
@@ -273,33 +183,14 @@ class RawPointer(IteratorBase):
         state[0][0] = x
 
 
-def pointer(container, value_type: types.Type) -> RawPointer:
+def pointer(container) -> RawPointer:
+    """Create a RawPointer iterator from a device array."""
+
     return RawPointer(
         container.__cuda_array_interface__["data"][0],
-        value_type,
+        types.from_numpy_dtype(get_dtype(container)),
         container,
     )
-
-
-@intrinsic
-def load_cs(typingctx, base):
-    # Corresponding to `LOAD_CS` here:
-    # https://nvidia.github.io/cccl/cub/api/classcub_1_1CacheModifiedInputIterator.html
-    def codegen(context, builder, sig, args):
-        rt = context.get_value_type(sig.return_type)
-        if rt is None:
-            raise RuntimeError(f"Unsupported return type: {type(sig.return_type)}")
-        ftype = ir.FunctionType(rt, [rt.as_pointer()])
-        bw = sig.return_type.bitwidth
-        asm_txt = f"ld.global.cs.b{bw} $0, [$1];"
-        if bw < 64:
-            constraint = "=r, l"
-        else:
-            constraint = "=l, l"
-        asm_ir = ir.InlineAsm(ftype, asm_txt, constraint)
-        return builder.call(asm_ir, args)
-
-    return base.dtype(base), codegen
 
 
 class CacheModifiedPointerKind(IteratorKind):
@@ -307,13 +198,17 @@ class CacheModifiedPointerKind(IteratorKind):
 
 
 class CacheModifiedPointer(IteratorBase):
-    iterator_kind_type = CacheModifiedPointerKind
-
-    def __init__(self, ptr: int, ntype: types.Type):
+    def __init__(self, ptr: int, value_type: types.TypeDescriptor):
+        """
+        Args:
+            ptr: Device pointer address
+            value_type: A TypeDescriptor for the element type
+        """
         cvalue = ctypes.c_void_p(ptr)
-        value_type = ntype
-        state_type = types.CPointer(value_type)
+        state_type = value_type.pointer()
+        kind = CacheModifiedPointerKind(value_type, state_type)
         super().__init__(
+            kind=kind,
             cvalue=cvalue,
             state_type=state_type,
             value_type=value_type,
@@ -351,13 +246,14 @@ class ConstantIteratorKind(IteratorKind):
 
 
 class ConstantIterator(IteratorBase):
-    iterator_kind_type = ConstantIteratorKind
-
     def __init__(self, value: np.number):
-        value_type = numba.from_dtype(value.dtype)
-        cvalue = to_ctypes(value_type)(value)
+        value_type = types.from_numpy_dtype(value.dtype)
+        cvalue = types.to_ctypes_type(value_type)(value)
+        # state_type is the value itself (not a pointer)
         state_type = value_type
+        kind = ConstantIteratorKind(value_type, state_type)
         super().__init__(
+            kind=kind,
             cvalue=cvalue,
             state_type=state_type,
             value_type=value_type,
@@ -393,13 +289,14 @@ class CountingIteratorKind(IteratorKind):
 
 
 class CountingIterator(IteratorBase):
-    iterator_kind_type = CountingIteratorKind
-
     def __init__(self, value: np.number):
-        value_type = numba.from_dtype(value.dtype)
-        cvalue = to_ctypes(value_type)(value)
+        value_type = types.from_numpy_dtype(value.dtype)
+        cvalue = types.to_ctypes_type(value_type)(value)
+        # state_type is the value itself (not a pointer)
         state_type = value_type
+        kind = CountingIteratorKind(value_type, state_type)
         super().__init__(
+            kind=kind,
             cvalue=cvalue,
             state_type=state_type,
             value_type=value_type,
@@ -435,16 +332,26 @@ class DiscardIteratorKind(IteratorKind):
 
 
 class DiscardIterator(IteratorBase):
-    iterator_kind_type = DiscardIteratorKind
+    def __init__(self, reference_iterator=None):
+        from .._utils.temp_storage_buffer import TempStorageBuffer
 
-    def __init__(self):
-        value_type = numba.from_dtype(np.uint8)
-        cvalue = to_ctypes(value_type)(0)
-        state_type = value_type
+        if reference_iterator is None:
+            reference_iterator = TempStorageBuffer(1)
+
+        if hasattr(reference_iterator, "__cuda_array_interface__"):
+            iter = RawPointer(
+                reference_iterator.__cuda_array_interface__["data"][0],
+                types.from_numpy_dtype(get_dtype(reference_iterator)),
+                reference_iterator,
+            )
+        else:
+            iter = reference_iterator
+
         super().__init__(
-            cvalue=cvalue,
-            state_type=state_type,
-            value_type=value_type,
+            kind=DiscardIteratorKind(iter.value_type, iter.state_type),
+            cvalue=iter.cvalue,
+            state_type=iter.state_type,
+            value_type=iter.value_type,
         )
 
     @property
@@ -484,7 +391,11 @@ def make_reverse_iterator(it: DeviceArrayLike | IteratorBase):
 
     if hasattr(it, "__cuda_array_interface__"):
         last_element_ptr = _get_last_element_ptr(it)
-        it = RawPointer(last_element_ptr, numba.from_dtype(get_dtype(it)), it)
+        it = RawPointer(
+            last_element_ptr,
+            types.from_numpy_dtype(get_dtype(it)),
+            it,
+        )
 
     it_advance = cuda.jit(it.advance, device=True)
     it_input_dereference = (
@@ -499,22 +410,23 @@ def make_reverse_iterator(it: DeviceArrayLike | IteratorBase):
     )
 
     class ReverseIterator(IteratorBase):
-        iterator_kind_type = ReverseIteratorKind
-
         def __init__(self, it):
             self._it = it
+            kind = ReverseIteratorKind(it.value_type, it.state_type)
             super().__init__(
+                kind=kind,
                 cvalue=it.cvalue,
                 state_type=it.state_type,
                 value_type=it.value_type,
-            )
-            self._kind = self.__class__.iterator_kind_type(
-                (it.kind, it.value_type), it.state_type
             )
 
         @property
         def host_advance(self):
             return self._advance
+
+        @property
+        def children(self):
+            return (self._it,)
 
         @property
         def advance(self):
@@ -548,12 +460,30 @@ def make_reverse_iterator(it: DeviceArrayLike | IteratorBase):
 
 
 class TransformIteratorKind(IteratorKind):
-    pass
+    def __init__(
+        self, underlying_it_kind: IteratorKind, op: CachableFunction, io_kind: str
+    ):
+        self.underlying_it_kind = underlying_it_kind
+        self.op = op
+        self.io_kind = io_kind
+
+    def __repr__(self):
+        return f"TransformIteratorKind({self.underlying_it_kind}, {self.op})"
+
+    def __eq__(self, other):
+        return (
+            type(self) is type(other)
+            and self.underlying_it_kind == other.underlying_it_kind
+            and self.op == other.op
+        )
+
+    def __hash__(self):
+        return hash((type(self), self.underlying_it_kind, self.op))
 
 
-def make_transform_iterator(it, op: Callable, io_kind: str):
+def make_transform_iterator(it: IteratorBase, op: Callable, io_kind: str):
     if hasattr(it, "__cuda_array_interface__"):
-        it = pointer(it, numba.from_dtype(it.dtype))
+        it = pointer(it)
 
     it_host_advance = it.host_advance
     it_advance = cuda.jit(it.advance, device=True)
@@ -569,46 +499,36 @@ def make_transform_iterator(it, op: Callable, io_kind: str):
         else None
     )
 
+    alloca_temp_for_underlying_type = None
     if io_kind == "input":
-        underlying_it_type = it.value_type
+        from .._intrinsics import make_alloca_intrinsic
+
+        # Create alloca intrinsic (accepts TypeDescriptor directly)
+        alloca_temp_for_underlying_type = make_alloca_intrinsic(it.value_type)
 
     op = cuda.jit(op, device=True)
 
-    # Create a specialized intrinsic for allocating temp storage of the underlying type
-    @intrinsic
-    def alloca_temp_for_underlying_type(context):
-        def codegen(context, builder, sig, args):
-            temp_value_type = context.get_value_type(underlying_it_type)
-            temp_ptr = builder.alloca(temp_value_type)
-            return temp_ptr
-
-        return types.CPointer(underlying_it_type)(), codegen
-
     class TransformIterator(IteratorBase):
-        iterator_kind_type = TransformIteratorKind
-
-        def __init__(self, it: IteratorBase, op: CUDADispatcher, io_kind: str):
+        def __init__(self, it: IteratorBase, op, io_kind: str):
             self._it = it
             self._op = CachableFunction(op.py_func)
             state_type = it.state_type
 
-            if io_kind == "input":
-                value_type = get_inferred_return_type(op.py_func, (underlying_it_type,))
-            else:
-                value_type = signature_from_annotations(op.py_func).args[0]
-
+            kind = TransformIteratorKind(it.kind, self._op, io_kind)
             super().__init__(
+                kind=kind,
                 cvalue=it.cvalue,
                 state_type=state_type,
-                value_type=value_type,
-            )
-            self._kind = self.__class__.iterator_kind_type(
-                (self._it.value_type, self._it.kind, self._op), self.state_type
+                value_type=it.value_type,
             )
 
         @property
         def host_advance(self):
             return it_host_advance
+
+        @property
+        def children(self):
+            return (self._it,)
 
         @property
         def advance(self):
@@ -643,6 +563,17 @@ def make_transform_iterator(it, op: Callable, io_kind: str):
         def _output_dereference(state, x):
             it_output_dereference(state, op(x))
 
+        def __add__(self, offset: int):
+            res = type(self).__new__(type(self))
+            res._it = self._it + offset
+            res._op = self._op
+            res.state_type = self.state_type
+            res.value_type = self.value_type
+            res._kind = self._kind
+            res.cvalue = type(self.cvalue)(self.cvalue.value + offset)
+            res._state = IteratorState(res.cvalue)
+            return res
+
     return TransformIterator(it, op, io_kind)
 
 
@@ -662,198 +593,4 @@ def _get_last_element_ptr(device_array) -> int:
     return ptr + offset_to_last_element
 
 
-class PermutationIteratorKind(IteratorKind):
-    pass
-
-
-def make_permutation_iterator(values, indices):
-    """
-    Create a PermutationIterator that accesses values through an index mapping.
-
-    The permutation iterator accesses elements from `values` using indices from `indices`,
-    effectively computing values[indices[i]] at position i.
-
-    Args:
-        values: The values array or iterator to permute
-        indices: The indices array or iterator specifying the permutation
-
-    Returns:
-        PermutationIterator: Iterator that yields permuted values
-    """
-    from ..struct import make_struct_type
-
-    # Convert arrays to iterators if needed
-    if hasattr(values, "__cuda_array_interface__"):
-        values = pointer(values, numba.from_dtype(get_dtype(values)))
-    elif not isinstance(values, IteratorBase):
-        raise TypeError("values must be a device array or iterator")
-
-    if hasattr(indices, "__cuda_array_interface__"):
-        indices = pointer(indices, numba.from_dtype(get_dtype(indices)))
-    elif not isinstance(indices, IteratorBase):
-        raise TypeError("indices must be an iterator or device array")
-
-    # JIT compile value advance/dereference methods
-    value_dtype = values.value_type
-    values_state_type = values.state_type
-    index_type = indices.value_type
-    value_advance = cuda.jit(values.advance, device=True)
-    value_input_dereference = cuda.jit(values.input_dereference, device=True)
-
-    try:
-        output_deref = values.output_dereference
-        if output_deref is not None:
-            value_output_dereference = cuda.jit(output_deref, device=True)
-            values_is_output_iterator = True
-        else:
-            values_is_output_iterator = False
-    except AttributeError:
-        values_is_output_iterator = False
-
-    # JIT compile index advance/dereference methods
-    index_advance = cuda.jit(indices.advance, device=True)
-    index_input_dereference = cuda.jit(indices.input_dereference, device=True)
-
-    # The cvalue and state for PermutationIterator are
-    # structs composed of the cvalues and states of the
-    # value and index iterators.
-    class PermutationCValueStruct(ctypes.Structure):
-        _fields_ = [
-            ("value_state", values.cvalue.__class__),
-            ("index_state", indices.cvalue.__class__),
-        ]
-
-    PermutationState = make_struct_type(
-        "PermutationState",
-        field_names=("value_state", "index_state"),
-        field_types=(values_state_type, indices.state_type),
-    )
-
-    cvalue = PermutationCValueStruct(values.cvalue, indices.cvalue)
-    state_type = as_numba_type(PermutationState)
-    value_type = value_dtype
-
-    # Define intrinsics for accessing struct fields
-    @intrinsic
-    def get_value_state_field_ptr(context, struct_ptr_type):
-        def codegen(context, builder, sig, args):
-            struct_ptr = args[0]
-            # Use GEP to get pointer to field at index 0 (value_state)
-            field_ptr = builder.gep(
-                struct_ptr,
-                [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 0)],
-            )
-            return field_ptr
-
-        from numba.core.datamodel.registry import default_manager
-
-        struct_model = default_manager.lookup(struct_ptr_type.dtype)
-        field_type = struct_model._members[0]
-        return types.CPointer(field_type)(struct_ptr_type), codegen
-
-    @intrinsic
-    def get_index_state_field_ptr(context, struct_ptr_type):
-        def codegen(context, builder, sig, args):
-            struct_ptr = args[0]
-            # Use GEP to get pointer to field at index 1 (index_state)
-            field_ptr = builder.gep(
-                struct_ptr,
-                [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), 1)],
-            )
-            return field_ptr
-
-        from numba.core.datamodel.registry import default_manager
-
-        struct_model = default_manager.lookup(struct_ptr_type.dtype)
-        field_type = struct_model._members[1]
-        return types.CPointer(field_type)(struct_ptr_type), codegen
-
-    # Create intrinsic for allocating temporary storage for index
-    @intrinsic
-    def alloca_temp_for_index_type(context):
-        def codegen(context, builder, sig, args):
-            temp_value_type = context.get_value_type(index_type)
-            temp_ptr = builder.alloca(temp_value_type)
-            return temp_ptr
-
-        return types.CPointer(index_type)(), codegen
-
-    # Create intrinsic for allocating temporary storage for value state
-    @intrinsic
-    def alloca_temp_for_value_state(context):
-        def codegen(context, builder, sig, args):
-            temp_state_type = context.get_value_type(values_state_type)
-            temp_ptr = builder.alloca(temp_state_type)
-            return temp_ptr
-
-        return types.CPointer(values_state_type)(), codegen
-
-    class PermutationIterator(IteratorBase):
-        iterator_kind_type = PermutationIteratorKind
-
-        def __init__(self, values_it, indices_it):
-            self._values = values_it
-            self._indices = indices_it
-            super().__init__(
-                cvalue=cvalue,
-                state_type=state_type,
-                value_type=value_type,
-            )
-            self._kind = self.__class__.iterator_kind_type(
-                (value_type, values_it.kind, indices_it.kind), state_type
-            )
-
-        @property
-        def advance(self):
-            return PermutationIterator._advance
-
-        @property
-        def input_dereference(self):
-            return PermutationIterator._input_dereference
-
-        @property
-        def output_dereference(self):
-            if not values_is_output_iterator:
-                raise AttributeError(
-                    "PermutationIterator cannot be used as output iterator "
-                    "when values iterator does not support output"
-                )
-            return PermutationIterator._output_dereference
-
-        @staticmethod
-        def _advance(state, distance):
-            # advance the index iterator
-            index_state_ptr = get_index_state_field_ptr(state)
-            index_advance(index_state_ptr, distance)
-
-        @staticmethod
-        def _input_dereference(state, result):
-            # dereference index to get the index value
-            index_state_ptr = get_index_state_field_ptr(state)
-            temp_index = alloca_temp_for_index_type()
-            index_input_dereference(index_state_ptr, temp_index)
-
-            # copy the value state (which always points to position 0)
-            # and advance it by the index value
-            value_state_ptr = get_value_state_field_ptr(state)
-            temp_value_state = alloca_temp_for_value_state()
-            temp_value_state[0] = value_state_ptr[0]
-            value_advance(temp_value_state, temp_index[0])
-            value_input_dereference(temp_value_state, result)
-
-        @staticmethod
-        def _output_dereference(state, x):
-            # dereference index to get the index value
-            index_state_ptr = get_index_state_field_ptr(state)
-            temp_index = alloca_temp_for_index_type()
-            index_input_dereference(index_state_ptr, temp_index)
-
-            # copy the value state (which always points to position 0)
-            # and advance it by the index value
-            value_state_ptr = get_value_state_field_ptr(state)
-            temp_value_state = alloca_temp_for_value_state()
-            temp_value_state[0] = value_state_ptr[0]
-            value_advance(temp_value_state, temp_index[0])
-            value_output_dereference(temp_value_state, x)
-
-    return PermutationIterator(values, indices)
+cache_with_registered_key_functions.register(IteratorBase, lambda it: it.kind)

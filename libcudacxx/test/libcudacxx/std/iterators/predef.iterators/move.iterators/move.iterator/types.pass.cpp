@@ -66,11 +66,11 @@ static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<FooIter>
 template <class ValueType, class Reference>
 struct DummyIt
 {
-  typedef cuda::std::forward_iterator_tag iterator_category;
-  typedef ValueType value_type;
-  typedef cuda::std::ptrdiff_t difference_type;
-  typedef ValueType* pointer;
-  typedef Reference reference;
+  using iterator_category = cuda::std::forward_iterator_tag;
+  using value_type        = ValueType;
+  using difference_type   = cuda::std::ptrdiff_t;
+  using pointer           = ValueType*;
+  using reference         = Reference;
 
   __host__ __device__ Reference operator*() const;
 };
@@ -78,8 +78,8 @@ struct DummyIt
 template <class It>
 __host__ __device__ void test()
 {
-  typedef cuda::std::move_iterator<It> R;
-  typedef cuda::std::iterator_traits<It> T;
+  using R = cuda::std::move_iterator<It>;
+  using T = cuda::std::iterator_traits<It>;
   static_assert((cuda::std::is_same<typename R::iterator_type, It>::value), "");
   static_assert((cuda::std::is_same<typename R::difference_type, typename T::difference_type>::value), "");
   static_assert((cuda::std::is_same<typename R::pointer, It>::value), "");
@@ -115,31 +115,31 @@ int main(int, char**)
   test<char*>();
 
   {
-    typedef DummyIt<int, int> T;
-    typedef cuda::std::move_iterator<T> It;
+    using T  = DummyIt<int, int>;
+    using It = cuda::std::move_iterator<T>;
     static_assert(cuda::std::is_same<It::reference, int>::value, "");
   }
   {
-    typedef DummyIt<int, cuda::std::reference_wrapper<int>> T;
-    typedef cuda::std::move_iterator<T> It;
+    using T  = DummyIt<int, cuda::std::reference_wrapper<int>>;
+    using It = cuda::std::move_iterator<T>;
 
     static_assert(cuda::std::is_same<It::reference, cuda::std::reference_wrapper<int>>::value, "");
   }
   {
     // Check that move_iterator uses whatever reference type it's given
     // when it's not a reference.
-    typedef DummyIt<int, long> T;
-    typedef cuda::std::move_iterator<T> It;
+    using T  = DummyIt<int, long>;
+    using It = cuda::std::move_iterator<T>;
     static_assert(cuda::std::is_same<It::reference, long>::value, "");
   }
   {
-    typedef DummyIt<int, int&> T;
-    typedef cuda::std::move_iterator<T> It;
+    using T  = DummyIt<int, int&>;
+    using It = cuda::std::move_iterator<T>;
     static_assert(cuda::std::is_same<It::reference, int&&>::value, "");
   }
   {
-    typedef DummyIt<int, int&&> T;
-    typedef cuda::std::move_iterator<T> It;
+    using T  = DummyIt<int, int&&>;
+    using It = cuda::std::move_iterator<T>;
     static_assert(cuda::std::is_same<It::reference, int&&>::value, "");
   }
 

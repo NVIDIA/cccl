@@ -16,7 +16,6 @@ INPUT                  = ../../cudax/include/cuda/experimental/__container \
                          ../../cudax/include/cuda/experimental/__graph \
                          ../../cudax/include/cuda/experimental/__hierarchy \
                          ../../cudax/include/cuda/experimental/__launch \
-                         ../../cudax/include/cuda/experimental/__memory_resource \
                          ../../cudax/include/cuda/experimental/__stream \
                          ../../cudax/include/cuda/experimental/stf.cuh \
                          ../../cudax/include/cuda/experimental/__stf \
@@ -144,7 +143,6 @@ PREDEFINED = \
     "CUB_NAMESPACE_BEGIN=namespace cub {" \
     "CUB_NAMESPACE_END=}" \
     "CUB_RUNTIME_FUNCTION=" \
-    "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE" \
     "THRUST_FWD(x)=x" \
     "THRUST_NAMESPACE_BEGIN=namespace thrust {" \
     "THRUST_NAMESPACE_END=}" \

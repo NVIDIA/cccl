@@ -8,6 +8,7 @@ Extended API
 
    extended_api/bit
    extended_api/execution_model
+   extended_api/exceptions
    extended_api/memory_model
    extended_api/thread_groups
    extended_api/synchronization_primitives
@@ -16,7 +17,9 @@ Extended API
    extended_api/functional
    extended_api/iterators
    extended_api/type_traits
+   extended_api/vector_tuple_protocol
    extended_api/numeric
+   extended_api/random
    extended_api/memory
    extended_api/memory_resource
    extended_api/math

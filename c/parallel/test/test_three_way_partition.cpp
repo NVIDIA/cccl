@@ -49,6 +49,7 @@ auto& get_cache()
   return fixture<three_way_partition_build_cache_t, Tag>::get_or_create().get_value();
 }
 
+template <bool DisableSassCheck = false>
 struct three_way_partition_build
 {
   template <typename... Rest>
@@ -74,6 +75,11 @@ struct three_way_partition_build
       select_first_part_op,
       select_second_part_op,
       rest...);
+  }
+
+  static constexpr bool should_check_sass(int)
+  {
+    return !DisableSassCheck;
   }
 };
 
@@ -194,7 +200,7 @@ std_partition(FirstPartSelectionOp first_selector, SecondPartSelectionOp second_
   return result;
 }
 
-template <typename OperationT, typename KeyT, typename NumSelectedT, typename TagT>
+template <typename OperationT, typename KeyT, typename NumSelectedT, typename TagT, bool DisableSassCheck = false>
 three_way_partition_result_t<KeyT>
 c_parallel_partition(OperationT first_selector, OperationT second_selector, const std::vector<KeyT>& input)
 {
@@ -209,7 +215,7 @@ c_parallel_partition(OperationT first_selector, OperationT second_selector, cons
   auto& build_cache    = get_cache<TagT>();
   const auto& test_key = make_key<KeyT, NumSelectedT>();
 
-  three_way_partition(
+  three_way_partition<DisableSassCheck>(
     input_ptr,
     first_part_output_ptr,
     second_part_output_ptr,
@@ -235,7 +241,9 @@ c_parallel_partition(OperationT first_selector, OperationT second_selector, cons
     num_items - num_selected[0] - num_selected[1]);
 }
 
-template <typename BuildCache = three_way_partition_build_cache_t, typename KeyT = std::string>
+template <bool DisableSassCheck = false,
+          typename BuildCache   = three_way_partition_build_cache_t,
+          typename KeyT         = std::string>
 void three_way_partition(
   cccl_iterator_t d_in,
   cccl_iterator_t d_first_part_out,
@@ -249,7 +257,7 @@ void three_way_partition(
   const std::optional<KeyT>& lookup_key)
 {
   AlgorithmExecute<BuildResultT,
-                   three_way_partition_build,
+                   three_way_partition_build<DisableSassCheck>,
                    three_way_partition_cleanup,
                    three_way_partition_run,
                    BuildCache,
@@ -308,7 +316,7 @@ C2H_TEST("ThreeWayPartition works with primitive types", "[three_way_partition]"
   const std::vector<key_t> input(input_int.begin(), input_int.end());
 
   auto c_parallel_result =
-    c_parallel_partition<operation_t, key_t, num_selected_t, ThreeWayPartition_PrimitiveTypes_Fixture_Tag>(
+    c_parallel_partition<operation_t, key_t, num_selected_t, ThreeWayPartition_PrimitiveTypes_Fixture_Tag, true>(
       less_op, greater_or_equal_op, input);
   auto std_result = std_partition(less_than_t<key_t>{key_t{21}}, greater_or_equal_t<key_t>{key_t{21}}, input);
 
@@ -329,21 +337,21 @@ C2H_TEST("ThreeWayPartition works with stateful operations", "[three_way_partiti
   selector_state_t op_state                      = {21};
   stateful_operation_t<selector_state_t> less_op = make_operation(
     "less_op",
-    "struct selector_state_t { int comparison_value; };\n"
-    "extern \"C\" __device__ void less_op(void* state_ptr, void* x_ptr, void* out_ptr) {\n"
-    "  selector_state_t* state = static_cast<selector_state_t*>(state_ptr);\n"
-    "  *static_cast<int*>(x_ptr) < state->comparison_value;\n"
-    "  *static_cast<bool*>(out_ptr) = *static_cast<int*>(x_ptr) < state->comparison_value;\n"
-    "}",
+    R"(struct selector_state_t { int comparison_value; };
+extern "C" __device__ void less_op(void* state_ptr, void* x_ptr, void* out_ptr) {
+  selector_state_t* state = static_cast<selector_state_t*>(state_ptr);
+  *static_cast<int*>(x_ptr) < state->comparison_value;
+  *static_cast<bool*>(out_ptr) = *static_cast<int*>(x_ptr) < state->comparison_value;
+})",
     op_state);
   stateful_operation_t<selector_state_t> greater_or_equal_op = make_operation(
     "greater_or_equal_op",
-    "struct selector_state_t { int comparison_value; };\n"
-    "extern \"C\" __device__ void greater_or_equal_op(void* state_ptr, void* x_ptr, void* out_ptr) {\n"
-    "  selector_state_t* state = static_cast<selector_state_t*>(state_ptr);\n"
-    "  *static_cast<int*>(x_ptr) >= state->comparison_value;\n"
-    "  *static_cast<bool*>(out_ptr) = *static_cast<int*>(x_ptr) >= state->comparison_value;\n"
-    "}",
+    R"(struct selector_state_t { int comparison_value; };
+extern "C" __device__ void greater_or_equal_op(void* state_ptr, void* x_ptr, void* out_ptr) {
+  selector_state_t* state = static_cast<selector_state_t*>(state_ptr);
+  *static_cast<int*>(x_ptr) >= state->comparison_value;
+  *static_cast<bool*>(out_ptr) = *static_cast<int*>(x_ptr) >= state->comparison_value;
+})",
     op_state);
 
   const std::size_t num_items      = GENERATE(0, 42, take(4, random(1 << 12, 1 << 20)));
@@ -409,21 +417,21 @@ C2H_TEST("ThreeWayPartition works with custom types", "[three_way_partition]")
 
   operation_t less_op = make_operation(
     "less_op",
-    std::format("struct pair_type {{ int a; size_t b; }};"
-                "extern \"C\" __device__ void less_op(void* x_ptr, void* out_ptr) {{ "
-                "  pair_type* x = static_cast<pair_type*>(x_ptr); "
-                "  bool* out = static_cast<bool*>(out_ptr); "
-                "  *out = x->a < {0}; "
-                "}}",
+    std::format(R"(struct pair_type {{ int a; size_t b; }};
+extern "C" __device__ void less_op(void* x_ptr, void* out_ptr) {{
+  pair_type* x = static_cast<pair_type*>(x_ptr);
+  bool* out = static_cast<bool*>(out_ptr);
+  *out = x->a < {0};
+}})",
                 comparison_value));
   operation_t greater_or_equal_op = make_operation(
     "greater_or_equal_op",
-    std::format("struct pair_type {{ int a; size_t b; }};"
-                "extern \"C\" __device__ void greater_or_equal_op(void* x_ptr, void* out_ptr) {{ "
-                "  pair_type* x = static_cast<pair_type*>(x_ptr); "
-                "  bool* out = static_cast<bool*>(out_ptr); "
-                "  *out = x->a >= {0}; "
-                "}}",
+    std::format(R"(struct pair_type {{ int a; size_t b; }};
+extern "C" __device__ void greater_or_equal_op(void* x_ptr, void* out_ptr) {{
+  pair_type* x = static_cast<pair_type*>(x_ptr);
+  bool* out = static_cast<bool*>(out_ptr);
+  *out = x->a >= {0};
+}})",
                 comparison_value));
 
   const std::size_t num_items      = GENERATE(0, 42, take(4, random(1 << 12, 1 << 20)));

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file internal_functional.inl
  *  \brief Non-public functionals used to implement algorithm internals.
@@ -35,14 +22,13 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/tuple_of_iterator_references.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/tuple.h>
 
 #include <cuda/__functional/address_stability.h>
 #include <cuda/__iterator/discard_iterator.h>
 #include <cuda/__iterator/tabulate_output_iterator.h>
 #include <cuda/__iterator/transform_input_output_iterator.h>
 #include <cuda/__iterator/transform_output_iterator.h>
-#include <cuda/std/__cccl/memory_wrapper.h> // for ::new
+#include <cuda/std/__host_stdlib/memory>
 #include <cuda/std/__new/device_new.h>
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
@@ -51,6 +37,7 @@
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
 

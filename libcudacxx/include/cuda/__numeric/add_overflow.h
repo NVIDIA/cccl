@@ -3,7 +3,7 @@
 // Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -26,7 +26,6 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
@@ -35,6 +34,7 @@
 #include <cuda/std/__type_traits/make_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/num_bits.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/cstdint>
 
 #include <nv/target>
@@ -45,9 +45,14 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if _CCCL_CHECK_BUILTIN(__builtin_add_overflow) || _CCCL_COMPILER(GCC)
+#if _CCCL_CHECK_BUILTIN(builtin_add_overflow) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_ADD_OVERFLOW(...) __builtin_add_overflow(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(__builtin_add_overflow)
+#endif // _CCCL_CHECK_BUILTIN(builtin_add_overflow)
+
+// nvc++ < 26.1 doesn't support 128-bit integers and crashes when certain type combinations are used (nvbug 5730860).
+#if _CCCL_COMPILER(NVHPC, <, 26, 1)
+#  undef _CCCL_BUILTIN_ADD_OVERFLOW
+#endif // _CCCL_COMPILER(NVHPC, <, 26, 1)
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
@@ -58,11 +63,11 @@ template <class _Tp>
   auto __sum = static_cast<_Tp>(static_cast<_Up>(__lhs) + static_cast<_Up>(__rhs));
   if constexpr (::cuda::std::is_signed_v<_Tp>)
   {
-    return overflow_result<_Tp>{__sum, (__sum < __lhs) == (__rhs >= _Tp{0})};
+    return {__sum, (__sum < __lhs) == (__rhs >= _Tp{0})};
   }
   else
   {
-    return overflow_result<_Tp>{__sum, __sum < __lhs};
+    return {__sum, __sum < __lhs};
   }
 }
 
@@ -71,29 +76,82 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API overflow_result<_Tp> __add_overflow_device(_Tp __lhs, _Tp __rhs) noexcept
 {
-  if constexpr ((sizeof(_Tp) == 4 || sizeof(_Tp) == 8) && ::cuda::std::is_unsigned_v<_Tp>)
+  if constexpr (::cuda::std::is_unsigned_v<_Tp>)
   {
-    _Tp __result;
-    int __overflow;
-    if constexpr (sizeof(_Tp) == 4)
+    using ::cuda::std::uint32_t;
+    using ::cuda::std::uint64_t;
+
+    if constexpr (sizeof(_Tp) < sizeof(uint32_t))
     {
+      const auto __result = uint32_t{__lhs} + uint32_t{__rhs};
+      return {static_cast<_Tp>(__result), !::cuda::std::in_range<_Tp>(__result)};
+    }
+    else if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+    {
+      uint32_t __result;
+      int __overflow;
       asm("add.cc.u32 %0, %2, %3;"
           "addc.u32 %1, 0, 0;"
           : "=r"(__result), "=r"(__overflow)
           : "r"(__lhs), "r"(__rhs));
+      return {__result, static_cast<bool>(__overflow)};
     }
-    else if constexpr (sizeof(_Tp) == 8)
+    else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
     {
+      uint64_t __result;
+      int __overflow;
       asm("add.cc.u64 %0, %2, %3;"
           "addc.u32 %1, 0, 0;"
           : "=l"(__result), "=r"(__overflow)
           : "l"(__lhs), "l"(__rhs));
+      return {__result, static_cast<bool>(__overflow)};
     }
-    return overflow_result<_Tp>{__result, static_cast<bool>(__overflow)};
+#  if _CCCL_HAS_INT128()
+    else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
+    {
+      uint64_t __result_lo;
+      uint64_t __result_hi;
+      int __overflow;
+      asm("add.cc.u64 %1, %4, %6;"
+          "addc.cc.u64 %0, %3, %5;"
+          "addc.u32 %2, 0, 0;"
+          : "=l"(__result_hi), "=l"(__result_lo), "=r"(__overflow)
+          : "l"(static_cast<uint64_t>(__lhs >> 64)),
+            "l"(static_cast<uint64_t>(__lhs)),
+            "l"(static_cast<uint64_t>(__rhs >> 64)),
+            "l"(static_cast<uint64_t>(__rhs)));
+      return {(static_cast<__uint128_t>(__result_hi) << 64) | __result_lo, static_cast<bool>(__overflow)};
+    }
+#  endif // _CCCL_HAS_INT128()
+    else
+    {
+      ::cuda::__add_overflow_generic_impl(__lhs, __rhs); // do not use builtin functions
+    }
   }
   else
   {
-    return ::cuda::__add_overflow_generic_impl(__lhs, __rhs); // do not use builtin functions
+    using ::cuda::std::int32_t;
+
+    if constexpr (sizeof(_Tp) < sizeof(int32_t))
+    {
+      const auto __result = int32_t{__lhs} + int32_t{__rhs};
+      return {static_cast<_Tp>(__result), !::cuda::std::in_range<_Tp>(__result)};
+    }
+#  if _CCCL_HAS_INT128()
+    else if constexpr (sizeof(_Tp) == sizeof(__int128_t))
+    {
+      using _Up                = ::cuda::std::make_unsigned_t<_Tp>;
+      const auto __uadd_result = ::cuda::__add_overflow_device(static_cast<_Up>(__lhs), static_cast<_Up>(__rhs));
+      const auto __result      = static_cast<_Tp>(__uadd_result.value);
+      const auto __overflow    = ((__lhs >= 0) == (__rhs >= 0)) && (__uadd_result.overflow == (__result >= 0));
+      return {__result, __overflow};
+    }
+#  endif // _CCCL_HAS_INT128()
+    else
+    {
+      // For 32 and 64 bit ints, this seems to be the more efficient path.
+      return ::cuda::__add_overflow_generic_impl(__lhs, __rhs);
+    }
   }
 }
 
@@ -169,7 +227,7 @@ template <class _Tp>
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr overflow_result<_Tp> __add_overflow_uniform_type(_Tp __lhs, _Tp __rhs) noexcept
 {
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_TARGET(NV_IS_DEVICE,
                  (return ::cuda::__add_overflow_device(__lhs, __rhs);),
@@ -198,14 +256,24 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
 [[nodiscard]]
 _CCCL_API constexpr overflow_result<_ActualResult> add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
 {
-// (1) __builtin_add_overflow is not available in a constant expression with gcc + nvcc
-// (2) __builtin_add_overflow generates suboptimal code with nvc++ and clang-cuda for device code
-#if defined(_CCCL_BUILTIN_ADD_OVERFLOW) && _CCCL_HOST_COMPILATION() \
-  && !(_CCCL_COMPILER(GCC) && _CCCL_CUDA_COMPILER(NVCC))
-  overflow_result<_ActualResult> __result;
-  __result.overflow = _CCCL_BUILTIN_ADD_OVERFLOW(__lhs, __rhs, &__result.value);
-  return __result;
-#else
+  // We want to use __builtin_add_overflow only in host code. When compiling CUDA source file, we cannot use it in
+  // constant expressions, because it doesn't work before nvcc 13.1 and is buggy in 13.1. When compiling C++ source
+  // file, we can use it all the time.
+#if defined(_CCCL_BUILTIN_ADD_OVERFLOW)
+#  if _CCCL_CUDA_COMPILATION()
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+#  endif // _CCCL_CUDA_COMPILATION()
+  {
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   overflow_result<_ActualResult> __result{};
+                   __result.overflow = _CCCL_BUILTIN_ADD_OVERFLOW(__lhs, __rhs, &__result.value);
+                   return __result;
+                 }))
+  }
+#endif // _CCCL_BUILTIN_ADD_OVERFLOW
+
+  // Host fallback + device implementation.
+#if _CCCL_CUDA_COMPILATION() || !defined(_CCCL_BUILTIN_ADD_OVERFLOW)
   using ::cuda::std::__make_nbit_int_t;
   using ::cuda::std::__make_nbit_uint_t;
   using ::cuda::std::__num_bits_v;
@@ -295,7 +363,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> add_overflow(const _Lhs __lhs
     }
     return overflow_result<_ActualResult>{static_cast<_ActualResult>(__sum), false}; // because of opposite signs
   }
-#endif // defined(_CCCL_BUILTIN_ADD_OVERFLOW) && !_CCCL_CUDA_COMPILER(NVCC)
+#endif // _CCCL_CUDA_COMPILATION() || !defined(_CCCL_BUILTIN_ADD_OVERFLOW)
 }
 
 //! @brief Adds two numbers \p __lhs and \p __rhs with overflow detection

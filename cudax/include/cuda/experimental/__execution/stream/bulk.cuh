@@ -29,7 +29,9 @@
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/policy.cuh>
 #include <cuda/experimental/__execution/stream/domain.cuh>
+#include <cuda/experimental/launch.cuh>
 
+#include <cooperative_groups.h>
 #include <cuda_runtime_api.h>
 
 #include <cuda/experimental/__execution/prologue.cuh>
@@ -66,7 +68,7 @@ struct __bulk_chunked_t : execution::__bulk_t<__bulk_chunked_t>
         }
       }
 
-      __syncthreads();
+      ::cooperative_groups::this_grid().sync();
 
       // Only call the downstream receiver once, after all threads have processed their
       // elements.
@@ -130,7 +132,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_unchunked_t : execution::__bulk_t<__
         this->__state_->__fn_(_Shape(__tid), __values...);
       }
 
-      __syncthreads();
+      ::cooperative_groups::this_grid().sync();
 
       // Only call the downstream receiver once, after all threads have processed their
       // elements.
@@ -209,14 +211,13 @@ struct stream_domain::__apply_t<bulk_t> : __stream::__bulk_t
 {};
 
 template <class _Sndr, class _Policy, class _Shape, class _Fn>
-inline constexpr size_t structured_binding_size<__stream::__bulk_chunked_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
+inline constexpr int structured_binding_size<__stream::__bulk_chunked_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
 
 template <class _Sndr, class _Policy, class _Shape, class _Fn>
-inline constexpr size_t structured_binding_size<__stream::__bulk_unchunked_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> =
-  3;
+inline constexpr int structured_binding_size<__stream::__bulk_unchunked_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
 
 template <class _Sndr, class _Policy, class _Shape, class _Fn>
-inline constexpr size_t structured_binding_size<__stream::__bulk_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
+inline constexpr int structured_binding_size<__stream::__bulk_t::__sndr_t<_Sndr, _Policy, _Shape, _Fn>> = 3;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

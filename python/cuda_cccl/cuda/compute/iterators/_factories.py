@@ -1,4 +1,7 @@
-import numba
+# Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from ._iterators import (
     CacheModifiedPointer as _CacheModifiedPointer,
@@ -13,10 +16,10 @@ from ._iterators import (
     DiscardIterator as _DiscardIterator,
 )
 from ._iterators import (
-    make_permutation_iterator,
     make_reverse_iterator,
     make_transform_iterator,
 )
+from ._permutation_iterator import make_permutation_iterator
 from ._zip_iterator import make_zip_iterator
 
 
@@ -42,11 +45,13 @@ def CacheModifiedInputIterator(device_array, modifier):
     Returns:
         A ``CacheModifiedInputIterator`` object initialized with ``device_array``
     """
+    from .. import types
+
     if modifier != "stream":
         raise NotImplementedError("Only stream modifier is supported")
     return _CacheModifiedPointer(
         device_array.__cuda_array_interface__["data"][0],
-        numba.from_dtype(device_array.dtype),
+        types.from_numpy_dtype(device_array.dtype),
     )
 
 
@@ -96,10 +101,14 @@ def CountingIterator(offset):
     return _CountingIterator(offset)
 
 
-def DiscardIterator():
+def DiscardIterator(reference_iterator=None):
     """Returns an Input or Output Iterator that discards all values written to it.
 
     Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1discard__iterator.html
+
+    Args:
+        reference_iterator: Optional iterator to use as a reference for value_type and state_type.
+                          If not provided, defaults to uint8.
 
     Example:
         The code snippet below demonstrates the usage of a ``DiscardIterator`` to discard items in a unique by key operation:
@@ -112,7 +121,7 @@ def DiscardIterator():
     Returns:
         A ``DiscardIterator`` object
     """
-    return _DiscardIterator()
+    return _DiscardIterator(reference_iterator)
 
 
 def ReverseIterator(sequence):

@@ -540,7 +540,7 @@ public:
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  //! @} end member group
+  //! @}
   //! @name Sorting (blocked arrangements)
   //! @{
 
@@ -1329,7 +1329,7 @@ public:
       decomposer);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Sorting (blocked arrangement -> striped arrangement)
   //! @{
 
@@ -2123,7 +2123,7 @@ public:
       decomposer);
   }
 
-  //@}  end member group
+  //@}
 };
 
 CUB_NAMESPACE_END

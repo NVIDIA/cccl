@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -51,7 +38,7 @@ struct reduce_by_key_functor
 {
   AssociativeOperator binary_op;
 
-  using result_type = typename thrust::tuple<ValueType, TailFlagType>;
+  using result_type = typename ::cuda::std::tuple<ValueType, TailFlagType>;
 
   _CCCL_HOST_DEVICE reduce_by_key_functor(AssociativeOperator _binary_op)
       : binary_op(_binary_op)
@@ -59,8 +46,9 @@ struct reduce_by_key_functor
 
   _CCCL_HOST_DEVICE result_type operator()(result_type a, result_type b)
   {
-    return result_type(thrust::get<1>(b) ? thrust::get<0>(b) : binary_op(thrust::get<0>(a), thrust::get<0>(b)),
-                       thrust::get<1>(a) | thrust::get<1>(b));
+    return result_type(
+      ::cuda::std::get<1>(b) ? ::cuda::std::get<0>(b) : binary_op(::cuda::std::get<0>(a), ::cuda::std::get<0>(b)),
+      ::cuda::std::get<1>(a) | ::cuda::std::get<1>(b));
   }
 };
 } // end namespace detail

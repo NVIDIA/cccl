@@ -19,6 +19,7 @@
 #include <thrust/sort.h>
 
 #include <cuda/std/tuple>
+#include <cuda/stream>
 
 #include <algorithm>
 #include <iostream>
@@ -130,6 +131,14 @@ int main(int argc, char** argv)
   auto requirements =
     cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
 
+  // Prepare CUDA stream
+  cudaStream_t stream = nullptr;
+  CubDebugExit(cudaStreamCreate(&stream));
+  cuda::stream_ref stream_ref{stream};
+
+  // Create the environment with the stream and requirements
+  auto env = cuda::std::execution::env{stream_ref, requirements};
+
   // Query temporary storage requirements
   CubDebugExit(DeviceTopK::MinPairs(
     nullptr,
@@ -140,7 +149,7 @@ int main(int argc, char** argv)
     d_values_out.begin(),
     num_items,
     k,
-    requirements));
+    env));
 
   // Allocate temporary storage
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
@@ -156,7 +165,7 @@ int main(int argc, char** argv)
     d_values_out.begin(),
     num_items,
     k,
-    requirements));
+    env));
 
   // Check for correctness (and display results, if specified)
   auto [h_res_keys, h_res_values] = sort_unordered_results(d_keys_out, d_values_out);

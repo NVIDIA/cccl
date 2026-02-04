@@ -51,7 +51,6 @@ _CCCL_API constexpr bool cmp_equal(_Tp __t, _Up __u) noexcept
   {
     return __u < 0 ? false : __t == make_unsigned_t<_Up>(__u);
   }
-  _CCCL_UNREACHABLE();
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
@@ -77,7 +76,6 @@ _CCCL_API constexpr bool cmp_less(_Tp __t, _Up __u) noexcept
   {
     return __u < 0 ? false : __t < make_unsigned_t<_Up>(__u);
   }
-  _CCCL_UNREACHABLE();
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)

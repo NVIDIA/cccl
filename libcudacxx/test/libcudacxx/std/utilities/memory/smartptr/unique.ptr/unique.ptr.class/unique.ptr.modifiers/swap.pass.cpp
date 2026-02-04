@@ -71,8 +71,8 @@ template <class T>
 __host__ __device__ TEST_CONSTEXPR_CXX23 typename cuda::std::remove_all_extents<T>::type*
 newValueInit(int size, int new_value)
 {
-  typedef typename cuda::std::remove_all_extents<T>::type VT;
-  VT* p = newValue<T>(size);
+  using VT = typename cuda::std::remove_all_extents<T>::type;
+  VT* p    = newValue<T>(size);
   for (int i = 0; i < size; ++i)
   {
     (p + i)->state_ = new_value;
@@ -83,7 +83,7 @@ newValueInit(int size, int new_value)
 template <bool IsArray>
 __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
 {
-  typedef typename cuda::std::conditional<IsArray, TT[], TT>::type VT;
+  using VT               = typename cuda::std::conditional<IsArray, TT[], TT>::type;
   const int expect_alive = IsArray ? 5 : 1;
   {
     using U = cuda::std::unique_ptr<VT, Deleter<VT>>;

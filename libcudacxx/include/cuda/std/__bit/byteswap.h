@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
@@ -56,12 +55,8 @@
 #  undef _CCCL_BUILTIN_BSWAP16
 #  undef _CCCL_BUILTIN_BSWAP32
 #  undef _CCCL_BUILTIN_BSWAP64
-#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
-
-// gcc fails to use the builtin when compiling with nvcc
-#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(GCC, <, 15)
 #  undef _CCCL_BUILTIN_BSWAP128
-#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(GCC, <, 15)
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -134,7 +129,7 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_BSWAP16)
   return _CCCL_BUILTIN_BSWAP16(__val);
 #else // ^^^ _CCCL_BUILTIN_BSWAP16 ^^^ / vvv !_CCCL_BUILTIN_BSWAP16 vvv
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
 #  if _CCCL_COMPILER(MSVC)
     NV_IF_TARGET(NV_IS_HOST, return ::_byteswap_ushort(__val);)
@@ -150,7 +145,7 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_BSWAP32)
   return _CCCL_BUILTIN_BSWAP32(__val);
 #else // ^^^ _CCCL_BUILTIN_BSWAP32 ^^^ / vvv !_CCCL_BUILTIN_BSWAP32 vvv
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
 #  if _CCCL_COMPILER(MSVC)
     NV_IF_TARGET(NV_IS_HOST, return ::_byteswap_ulong(__val);)
@@ -166,7 +161,7 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_BSWAP64)
   return _CCCL_BUILTIN_BSWAP64(__val);
 #else // ^^^ _CCCL_BUILTIN_BSWAP64 ^^^ / vvv !_CCCL_BUILTIN_BSWAP64 vvv
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
 #  if _CCCL_COMPILER(MSVC)
     NV_IF_TARGET(NV_IS_HOST, return ::_byteswap_uint64(__val);)
@@ -181,10 +176,15 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr __uint128_t __byteswap_impl(__uint128_t __val) noexcept
 {
 #  if defined(_CCCL_BUILTIN_BSWAP128)
-  return _CCCL_BUILTIN_BSWAP128(__val);
-#  else // ^^^ _CCCL_BUILTIN_BSWAP128 ^^^ / vvv !_CCCL_BUILTIN_BSWAP128 vvv
+  // nvcc fails to use this builtin in constexpr context
+#    if _CCCL_CUDA_COMPILER(NVCC)
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+#    endif // _CCCL_CUDA_COMPILER(NVCC)
+  {
+    return _CCCL_BUILTIN_BSWAP128(__val);
+  }
+#  endif // _CCCL_BUILTIN_BSWAP128
   return ::cuda::std::__byteswap_impl_recursive(__val);
-#  endif // !_CCCL_BUILTIN_BSWAP128
 }
 #endif // _CCCL_HAS_INT128()
 

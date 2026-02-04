@@ -30,7 +30,7 @@
 template <class LHS, class RHS>
 __host__ __device__ TEST_CONSTEXPR_CXX23 void checkReferenceDeleter(LHS& lhs, RHS& rhs)
 {
-  typedef typename LHS::deleter_type NewDel;
+  using NewDel = typename LHS::deleter_type;
   static_assert(cuda::std::is_reference<NewDel>::value, "");
   rhs.get_deleter().set_state(42);
   assert(rhs.get_deleter().state() == 42);
@@ -152,23 +152,23 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
 __host__ __device__ TEST_CONSTEXPR_CXX23 void test_noexcept()
 {
   {
-    typedef cuda::std::unique_ptr<A> APtr;
-    typedef cuda::std::unique_ptr<B> BPtr;
+    using APtr = cuda::std::unique_ptr<A>;
+    using BPtr = cuda::std::unique_ptr<B>;
     static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value, "");
   }
   {
-    typedef cuda::std::unique_ptr<A, Deleter<A>> APtr;
-    typedef cuda::std::unique_ptr<B, Deleter<B>> BPtr;
+    using APtr = cuda::std::unique_ptr<A, Deleter<A>>;
+    using BPtr = cuda::std::unique_ptr<B, Deleter<B>>;
     static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value, "");
   }
   {
-    typedef cuda::std::unique_ptr<A, NCDeleter<A>&> APtr;
-    typedef cuda::std::unique_ptr<B, NCDeleter<A>&> BPtr;
+    using APtr = cuda::std::unique_ptr<A, NCDeleter<A>&>;
+    using BPtr = cuda::std::unique_ptr<B, NCDeleter<A>&>;
     static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value, "");
   }
   {
-    typedef cuda::std::unique_ptr<A, const NCConstDeleter<A>&> APtr;
-    typedef cuda::std::unique_ptr<B, const NCConstDeleter<A>&> BPtr;
+    using APtr = cuda::std::unique_ptr<A, const NCConstDeleter<A>&>;
+    using BPtr = cuda::std::unique_ptr<B, const NCConstDeleter<A>&>;
     static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value, "");
   }
 }
@@ -180,8 +180,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
     test_noexcept();
   }
   {
-    typedef cuda::std::unique_ptr<A> APtr;
-    typedef cuda::std::unique_ptr<B> BPtr;
+    using APtr = cuda::std::unique_ptr<A>;
+    using BPtr = cuda::std::unique_ptr<B>;
     { // explicit
       BPtr b(new B);
       A* p = b.get();
@@ -198,8 +198,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
     checkNoneAlive();
   }
   { // test with moveable deleters
-    typedef cuda::std::unique_ptr<A, Deleter<A>> APtr;
-    typedef cuda::std::unique_ptr<B, Deleter<B>> BPtr;
+    using APtr = cuda::std::unique_ptr<A, Deleter<A>>;
+    using BPtr = cuda::std::unique_ptr<B, Deleter<B>>;
     {
       Deleter<B> del(5);
       BPtr b(new B, cuda::std::move(del));
@@ -220,8 +220,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
     checkNoneAlive();
   }
   { // test with reference deleters
-    typedef cuda::std::unique_ptr<A, NCDeleter<A>&> APtr;
-    typedef cuda::std::unique_ptr<B, NCDeleter<A>&> BPtr;
+    using APtr = cuda::std::unique_ptr<A, NCDeleter<A>&>;
+    using BPtr = cuda::std::unique_ptr<B, NCDeleter<A>&>;
     NCDeleter<A> del(5);
     {
       BPtr b(new B, del);
@@ -241,8 +241,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
     checkNoneAlive();
   }
   {
-    typedef cuda::std::unique_ptr<A, CDeleter<A>> APtr;
-    typedef cuda::std::unique_ptr<B, CDeleter<B>&> BPtr;
+    using APtr = cuda::std::unique_ptr<A, CDeleter<A>>;
+    using BPtr = cuda::std::unique_ptr<B, CDeleter<B>&>;
     CDeleter<B> del(5);
     {
       BPtr b(new B, del);

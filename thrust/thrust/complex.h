@@ -1,19 +1,6 @@
-/*
- *  Copyright 2008-2019 NVIDIA Corporation
- *  Copyright 2013 Filipe RNC Maia
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2019, NVIDIA Corporation
+// SPDX-FileCopyrightText: Copyright (c) 2013, Filipe RNC Maia
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file complex.h
  *  \brief Complex numbers
@@ -71,7 +58,9 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \tparam T The type used to hold the real and imaginary parts. Should be
  *  <tt>float</tt> or <tt>double</tt>. Others types are not supported.
- *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 struct complex
@@ -86,6 +75,10 @@ public:
   /*! Construct a complex number with an imaginary part of 0.
    *
    *  \param re The real part of the number.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE complex(const T& re);
 
@@ -93,6 +86,10 @@ public:
    *
    *  \param re The real part of the number.
    *  \param im The imaginary part of the number.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE complex(const T& re, const T& im);
 
@@ -113,6 +110,10 @@ public:
    *  \param z The \p complex to copy from.
    *
    *  \tparam U is convertible to \c value_type.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE complex(const complex<U>& z);
@@ -122,6 +123,10 @@ public:
    *  a type that is convertible to this \p complex's \c value_type.
    *
    *  \param z The \p complex to copy from.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex(const ::std::complex<T>& z);
 
@@ -131,6 +136,10 @@ public:
    *  \param z The \p complex to copy from.
    *
    *  \tparam U is convertible to \c value_type.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex(const ::std::complex<U>& z);
@@ -142,6 +151,10 @@ public:
    *  to 0.
    *
    *  \param re The real part of the number.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE complex& operator=(const T& re);
 
@@ -158,6 +171,10 @@ public:
    *  \param z The \p complex to copy from.
    *
    *  \tparam U is convertible to \c value_type.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE complex& operator=(const complex<U>& z);
@@ -167,6 +184,10 @@ public:
    *  \p complex respectively.
    *
    *  \param z The \p complex to copy from.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex& operator=(const ::std::complex<T>& z);
 
@@ -176,6 +197,10 @@ public:
    *  \param z The \p complex to copy from.
    *
    *  \tparam U is convertible to \c value_type.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex& operator=(const ::std::complex<U>& z);
@@ -189,6 +214,10 @@ public:
    *  \param z The \p complex to be added.
    *
    *  \tparam U is convertible to \c value_type.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE complex<T>& operator+=(const complex<U>& z);
@@ -199,6 +228,10 @@ public:
    *  \param z The \p complex to be subtracted.
    *
    *  \tparam U is convertible to \c value_type.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE complex<T>& operator-=(const complex<U>& z);
@@ -209,6 +242,10 @@ public:
    *  \param z The \p complex to be multiplied.
    *
    *  \tparam U is convertible to \c value_type.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE complex<T>& operator*=(const complex<U>& z);
@@ -219,6 +256,10 @@ public:
    *  \param z The \p complex to be divided.
    *
    *  \tparam U is convertible to \c value_type.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE complex<T>& operator/=(const complex<U>& z);
@@ -229,6 +270,10 @@ public:
    *  \param z The \p complex to be added.
    *
    *  \tparam U is convertible to \c value_type.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE complex<T>& operator+=(const U& z);
@@ -239,6 +284,10 @@ public:
    *  \param z The scalar to be subtracted.
    *
    *  \tparam U is convertible to \c value_type.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE complex<T>& operator-=(const U& z);
@@ -249,6 +298,10 @@ public:
    *  \param z The scalar to be multiplied.
    *
    *  \tparam U is convertible to \c value_type.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE complex<T>& operator*=(const U& z);
@@ -259,6 +312,10 @@ public:
    *  \param z The scalar to be divided.
    *
    *  \tparam U is convertible to \c value_type.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   _CCCL_HOST_DEVICE complex<T>& operator/=(const U& z);
@@ -266,9 +323,17 @@ public:
   /* --- Getter functions ---
    * The volatile ones are there to help for example
    * with certain reductions optimizations
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
 
   /*! Returns the real part of this \p complex.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE T real() const volatile
   {
@@ -276,6 +341,10 @@ public:
   }
 
   /*! Returns the imaginary part of this \p complex.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE T imag() const volatile
   {
@@ -283,6 +352,10 @@ public:
   }
 
   /*! Returns the real part of this \p complex.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE T real() const
   {
@@ -290,6 +363,10 @@ public:
   }
 
   /*! Returns the imaginary part of this \p complex.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE T imag() const
   {
@@ -304,6 +381,10 @@ public:
   /*! Sets the real part of this \p complex.
    *
    *  \param re The new real part of this \p complex.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE void real(T re) volatile
   {
@@ -313,6 +394,10 @@ public:
   /*! Sets the imaginary part of this \p complex.
    *
    *  \param im The new imaginary part of this \p complex.e
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE void imag(T im) volatile
   {
@@ -322,6 +407,10 @@ public:
   /*! Sets the real part of this \p complex.
    *
    *  \param re The new real part of this \p complex.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE void real(T re)
   {
@@ -331,6 +420,10 @@ public:
   /*! Sets the imaginary part of this \p complex.
    *
    *  \param im The new imaginary part of this \p complex.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE void imag(T im)
   {
@@ -341,6 +434,10 @@ public:
   /* --- Casting functions --- */
 
   /*! Casts this \p complex to a <tt>std::complex</tt> of the same type.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST operator ::std::complex<T>() const
   {
@@ -362,6 +459,10 @@ private:
 /*! Returns the magnitude (also known as absolute value) of a \p complex.
  *
  *  \param z The \p complex from which to calculate the absolute value.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE T abs(const complex<T>& z);
@@ -369,6 +470,10 @@ _CCCL_HOST_DEVICE T abs(const complex<T>& z);
 /*! Returns the phase angle (also known as argument) in radians of a \p complex.
  *
  *  \param z The \p complex from which to calculate the phase angle.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE T arg(const complex<T>& z);
@@ -376,6 +481,10 @@ _CCCL_HOST_DEVICE T arg(const complex<T>& z);
 /*! Returns the square of the magnitude of a \p complex.
  *
  *  \param z The \p complex from which to calculate the norm.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE T norm(const complex<T>& z);
@@ -383,6 +492,10 @@ _CCCL_HOST_DEVICE T norm(const complex<T>& z);
 /*! Returns the complex conjugate of a \p complex.
  *
  *  \param z The \p complex from which to calculate the complex conjugate.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE complex<T> conj(const complex<T>& z);
@@ -391,6 +504,10 @@ _CCCL_HOST_DEVICE complex<T> conj(const complex<T>& z);
  *
  *  \param m The magnitude of the returned \p complex.
  *  \param theta The phase of the returned \p complex in radians.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> polar(const T0& m, const T1& theta = T1());
@@ -401,6 +518,10 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> polar(const T0& m,
  *  the zero matches the sign of the imaginary part of the argument.
  *
  *  \param z The \p complex argument.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE complex<T> proj(const T& z);
@@ -414,6 +535,10 @@ _CCCL_HOST_DEVICE complex<T> proj(const T& z);
  *
  *  \param x The first \p complex.
  *  \param y The second \p complex.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator+(const complex<T0>& x, const complex<T1>& y);
@@ -425,6 +550,10 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator+(const co
  *
  *  \param x The \p complex.
  *  \param y The scalar.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator+(const complex<T0>& x, const T1& y);
@@ -436,6 +565,10 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator+(const co
  *
  *  \param x The scalar.
  *  \param y The \p complex.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator+(const T0& x, const complex<T1>& y);
@@ -447,6 +580,10 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator+(const T0
  *
  *  \param x The first \p complex (minuend).
  *  \param y The second \p complex (subtrahend).
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator-(const complex<T0>& x, const complex<T1>& y);
@@ -458,6 +595,10 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator-(const co
  *
  *  \param x The \p complex (minuend).
  *  \param y The scalar (subtrahend).
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator-(const complex<T0>& x, const T1& y);
@@ -469,6 +610,10 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator-(const co
  *
  *  \param x The scalar (minuend).
  *  \param y The \p complex (subtrahend).
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator-(const T0& x, const complex<T1>& y);
@@ -480,6 +625,10 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator-(const T0
  *
  *  \param x The first \p complex.
  *  \param y The second \p complex.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const complex<T0>& x, const complex<T1>& y);
@@ -488,6 +637,10 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const co
  *
  *  \param x The \p complex.
  *  \param y The scalar.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const complex<T0>& x, const T1& y);
@@ -499,6 +652,10 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const co
  *
  *  \param x The scalar.
  *  \param y The \p complex.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const T0& x, const complex<T1>& y);
@@ -510,6 +667,10 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const T0
  *
  *  \param x The numerator (dividend).
  *  \param y The denominator (divisor).
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const complex<T0>& x, const complex<T1>& y);
@@ -521,6 +682,10 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const co
  *
  *  \param x The complex numerator (dividend).
  *  \param y The scalar denominator (divisor).
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const complex<T0>& x, const T1& y);
@@ -532,6 +697,10 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const co
  *
  *  \param x The scalar numerator (dividend).
  *  \param y The complex denominator (divisor).
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const T0& x, const complex<T1>& y);
@@ -541,6 +710,10 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const T0
 /*! Unary plus, returns its \p complex argument.
  *
  *  \param y The \p complex argument.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE complex<T> operator+(const complex<T>& y);
@@ -549,6 +722,10 @@ _CCCL_HOST_DEVICE complex<T> operator+(const complex<T>& y);
  * argument.
  *
  *  \param y The \p complex argument.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE complex<T> operator-(const complex<T>& y);
@@ -558,6 +735,10 @@ _CCCL_HOST_DEVICE complex<T> operator-(const complex<T>& y);
 /*! Returns the complex exponential of a \p complex number.
  *
  *  \param z The \p complex argument.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE complex<T> exp(const complex<T>& z);
@@ -565,6 +746,10 @@ _CCCL_HOST_DEVICE complex<T> exp(const complex<T>& z);
 /*! Returns the complex natural logarithm of a \p complex number.
  *
  *  \param z The \p complex argument.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE complex<T> log(const complex<T>& z);
@@ -572,6 +757,10 @@ _CCCL_HOST_DEVICE complex<T> log(const complex<T>& z);
 /*! Returns the complex base 10 logarithm of a \p complex number.
  *
  *  \param z The \p complex argument.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE complex<T> log10(const complex<T>& z);
@@ -585,6 +774,10 @@ _CCCL_HOST_DEVICE complex<T> log10(const complex<T>& z);
  *
  *  \param x The base.
  *  \param y The exponent.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> pow(const complex<T0>& x, const complex<T1>& y);
@@ -596,6 +789,10 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> pow(const complex<
  *
  *  \param x The base.
  *  \param y The exponent.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> pow(const complex<T0>& x, const T1& y);
@@ -607,6 +804,10 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> pow(const complex<
  *
  *  \param x The base.
  *  \param y The exponent.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> pow(const T0& x, const complex<T1>& y);
@@ -614,6 +815,10 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> pow(const T0& x, c
 /*! Returns the complex square root of a \p complex number.
  *
  *  \param z The \p complex argument.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE complex<T> sqrt(const complex<T>& z);
@@ -623,6 +828,10 @@ _CCCL_HOST_DEVICE complex<T> sqrt(const complex<T>& z);
 /*! Returns the complex cosine of a \p complex number.
  *
  *  \param z The \p complex argument.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE complex<T> cos(const complex<T>& z);
@@ -630,6 +839,10 @@ _CCCL_HOST_DEVICE complex<T> cos(const complex<T>& z);
 /*! Returns the complex sine of a \p complex number.
  *
  *  \param z The \p complex argument.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE complex<T> sin(const complex<T>& z);
@@ -637,6 +850,10 @@ _CCCL_HOST_DEVICE complex<T> sin(const complex<T>& z);
 /*! Returns the complex tangent of a \p complex number.
  *
  *  \param z The \p complex argument.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE complex<T> tan(const complex<T>& z);
@@ -646,6 +863,10 @@ _CCCL_HOST_DEVICE complex<T> tan(const complex<T>& z);
 /*! Returns the complex hyperbolic cosine of a \p complex number.
  *
  *  \param z The \p complex argument.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE complex<T> cosh(const complex<T>& z);
@@ -653,6 +874,10 @@ _CCCL_HOST_DEVICE complex<T> cosh(const complex<T>& z);
 /*! Returns the complex hyperbolic sine of a \p complex number.
  *
  *  \param z The \p complex argument.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE complex<T> sinh(const complex<T>& z);
@@ -660,6 +885,10 @@ _CCCL_HOST_DEVICE complex<T> sinh(const complex<T>& z);
 /*! Returns the complex hyperbolic tangent of a \p complex number.
  *
  *  \param z The \p complex argument.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE complex<T> tanh(const complex<T>& z);
@@ -672,6 +901,10 @@ _CCCL_HOST_DEVICE complex<T> tanh(const complex<T>& z);
  *  the range of the imaginary part is [-inf, +inf]
  *
  *  \param z The \p complex argument.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE complex<T> acos(const complex<T>& z);
@@ -682,6 +915,10 @@ _CCCL_HOST_DEVICE complex<T> acos(const complex<T>& z);
  *  the range of the imaginary part is [-inf, +inf]
  *
  *  \param z The \p complex argument.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE complex<T> asin(const complex<T>& z);
@@ -692,6 +929,10 @@ _CCCL_HOST_DEVICE complex<T> asin(const complex<T>& z);
  *  the range of the imaginary part is [-inf, +inf]
  *
  *  \param z The \p complex argument.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE complex<T> atan(const complex<T>& z);
@@ -704,6 +945,10 @@ _CCCL_HOST_DEVICE complex<T> atan(const complex<T>& z);
  *  the range of the imaginary part is [-Pi, Pi]
  *
  *  \param z The \p complex argument.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE complex<T> acosh(const complex<T>& z);
@@ -714,6 +959,10 @@ _CCCL_HOST_DEVICE complex<T> acosh(const complex<T>& z);
  *  the range of the imaginary part is [-Pi/2, Pi/2]
  *
  *  \param z The \p complex argument.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE complex<T> asinh(const complex<T>& z);
@@ -724,6 +973,10 @@ _CCCL_HOST_DEVICE complex<T> asinh(const complex<T>& z);
  *  the range of the imaginary part is [-Pi/2, Pi/2]
  *
  *  \param z The \p complex argument.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE complex<T> atanh(const complex<T>& z);
@@ -735,6 +988,10 @@ _CCCL_HOST_DEVICE complex<T> atanh(const complex<T>& z);
  *
  *  \param os The output stream.
  *  \param z The \p complex number to output.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T, typename CharT, typename Traits>
 std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const complex<T>& z);
@@ -750,6 +1007,10 @@ std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>&
  *
  *  \param is The input stream.
  *  \param z The \p complex number to set.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T, typename CharT, typename Traits>
 _CCCL_HOST ::std::basic_istream<CharT, Traits>& operator>>(std::basic_istream<CharT, Traits>& is, complex<T>& z);
@@ -761,6 +1022,10 @@ _CCCL_HOST ::std::basic_istream<CharT, Traits>& operator>>(std::basic_istream<Ch
  *
  *  \param x The first \p complex.
  *  \param y The second \p complex.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE bool operator==(const complex<T0>& x, const complex<T1>& y);
@@ -770,6 +1035,10 @@ _CCCL_HOST_DEVICE bool operator==(const complex<T0>& x, const complex<T1>& y);
  *
  *  \param x The first \p complex.
  *  \param y The second \p complex.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator==(const complex<T0>& x, const ::std::complex<T1>& y);
@@ -778,6 +1047,10 @@ _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator==(const complex<T0>& x, const
  *
  *  \param x The first \p complex.
  *  \param y The second \p complex.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator==(const ::std::complex<T0>& x, const complex<T1>& y);
@@ -788,6 +1061,10 @@ _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator==(const ::std::complex<T0>& x
  *
  *  \param x The scalar.
  *  \param y The \p complex.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE bool operator==(const T0& x, const complex<T1>& y);
@@ -797,6 +1074,10 @@ _CCCL_HOST_DEVICE bool operator==(const T0& x, const complex<T1>& y);
  *
  *  \param x The \p complex.
  *  \param y The scalar.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE bool operator==(const complex<T0>& x, const T1& y);
@@ -805,6 +1086,10 @@ _CCCL_HOST_DEVICE bool operator==(const complex<T0>& x, const T1& y);
  *
  *  \param x The first \p complex.
  *  \param y The second \p complex.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE bool operator!=(const complex<T0>& x, const complex<T1>& y);
@@ -814,6 +1099,10 @@ _CCCL_HOST_DEVICE bool operator!=(const complex<T0>& x, const complex<T1>& y);
  *
  *  \param x The first \p complex.
  *  \param y The second \p complex.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator!=(const complex<T0>& x, const ::std::complex<T1>& y);
@@ -822,6 +1111,10 @@ _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator!=(const complex<T0>& x, const
  *
  *  \param x The first \p complex.
  *  \param y The second \p complex.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator!=(const ::std::complex<T0>& x, const complex<T1>& y);
@@ -832,6 +1125,10 @@ _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator!=(const ::std::complex<T0>& x
  *
  *  \param x The scalar.
  *  \param y The \p complex.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE bool operator!=(const T0& x, const complex<T1>& y);
@@ -841,6 +1138,10 @@ _CCCL_HOST_DEVICE bool operator!=(const T0& x, const complex<T1>& y);
  *
  *  \param x The \p complex.
  *  \param y The scalar.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE bool operator!=(const complex<T0>& x, const T1& y);

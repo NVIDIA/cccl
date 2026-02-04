@@ -49,16 +49,14 @@ __host__ __device__ constexpr void test_type()
   using cuda::std::is_signed_v;
   using cuda::std::is_unsigned_v;
   static_assert(is_same_v<decltype(cuda::sub_overflow<Result>(Lhs{}, Rhs{})), cuda::overflow_result<Result>>);
-  using UResult                                  = cuda::std::make_unsigned_t<Result>;
-  using URhs                                     = cuda::std::make_unsigned_t<Rhs>;
   [[maybe_unused]] constexpr auto lhs_min        = cuda::std::numeric_limits<Lhs>::min();
   [[maybe_unused]] constexpr auto lhs_max        = cuda::std::numeric_limits<Lhs>::max();
   [[maybe_unused]] constexpr auto rhs_min        = cuda::std::numeric_limits<Rhs>::min();
   [[maybe_unused]] constexpr auto rhs_max        = cuda::std::numeric_limits<Rhs>::max();
   [[maybe_unused]] constexpr auto result_min     = cuda::std::numeric_limits<Result>::min();
   [[maybe_unused]] constexpr auto result_max     = cuda::std::numeric_limits<Result>::max();
-  [[maybe_unused]] constexpr auto neg_result_min = static_cast<UResult>(cuda::neg(result_min));
-  [[maybe_unused]] constexpr auto neg_rhs_min    = static_cast<URhs>(cuda::neg(rhs_min));
+  [[maybe_unused]] constexpr auto neg_result_min = cuda::uabs(result_min);
+  [[maybe_unused]] constexpr auto neg_rhs_min    = cuda::uabs(rhs_min);
   //--------------------------------------------------------------------------------------------------------------------
   // trivial cases
   // 1. 0 - 0 -> should never overflow

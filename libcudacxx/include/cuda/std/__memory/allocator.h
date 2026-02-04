@@ -27,7 +27,6 @@
 #include <cuda/std/__memory/allocate_at_least.h>
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__new_>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/is_volatile.h>
@@ -35,12 +34,16 @@
 #include <cuda/std/cstddef>
 
 #ifdef _CCCL_HAS_CONSTEXPR_ALLOCATION
-#  include <cuda/std/__cccl/memory_wrapper.h>
+#  include <cuda/std/__host_stdlib/memory>
 #endif // _CCCL_HAS_CONSTEXPR_ALLOCATION
 
 #include <cuda/std/__cccl/prologue.h>
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 
 #if _CCCL_STD_VER <= 2017
 // These specializations shouldn't be marked CCCL_DEPRECATED.
@@ -129,7 +132,7 @@ public:
       __throw_bad_array_new_length();
     }
 #if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION)
-    if (::cuda::std::is_constant_evaluated())
+    _CCCL_IF_CONSTEVAL
     {
       return ::std::allocator<_Tp>{}.allocate(__n);
     }
@@ -150,7 +153,7 @@ public:
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20_ALLOCATION void deallocate(_Tp* __p, size_t __n) noexcept
   {
 #if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION)
-    if (::cuda::std::is_constant_evaluated())
+    _CCCL_IF_CONSTEVAL
     {
       return ::std::allocator<_Tp>{}.deallocate(__p, __n);
     }
@@ -231,7 +234,7 @@ public:
     {
       __throw_bad_array_new_length();
     }
-    if (::cuda::std::is_constant_evaluated())
+    _CCCL_IF_CONSTEVAL
     {
       return static_cast<const _Tp*>(::operator new(__n * sizeof(_Tp)));
     }
@@ -250,7 +253,7 @@ public:
 
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void deallocate(const _Tp* __p, size_t __n) noexcept
   {
-    if (::cuda::std::is_constant_evaluated())
+    _CCCL_IF_CONSTEVAL
     {
       ::operator delete(const_cast<_Tp*>(__p));
     }
@@ -313,7 +316,11 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 bool operator!=(const allocator<_Tp>&, co
   return false;
 }
 
+_CCCL_SUPPRESS_DEPRECATED_POP
+
 _CCCL_END_NAMESPACE_CUDA_STD
+
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 

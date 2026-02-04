@@ -53,7 +53,7 @@ struct random_to_vec_item_t
     template <>                                                                                                   \
     void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)                                 \
     {                                                                                                             \
-      const auto* dist = generator.prepare_random_generator(seed, data.size());                                   \
+      const auto* dist = prepare_random_data(seed, data.size());                                                  \
       auto op          = random_to_vec_item_t<T, ::cuda::std::tuple_size_v<T>>{min, max, dist, data.data()};      \
       thrust::for_each(                                                                                           \
         device_policy, thrust::counting_iterator<size_t>{0}, thrust::counting_iterator<size_t>{data.size()}, op); \
@@ -125,12 +125,14 @@ VEC_SPECIALIZATION(double4_32a);
 VEC_SPECIALIZATION(double4);
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
-#  if TEST_HALF_T()
+#  if CCCL_VERSION > 3001000
+#    if TEST_HALF_T()
 VEC_SPECIALIZATION(__half2);
-#  endif // TEST_HALF_T()
-#  if TEST_BF_T()
+#    endif // TEST_HALF_T()
+#    if TEST_BF_T()
 VEC_SPECIALIZATION(__nv_bfloat162);
-#  endif // TEST_BF_T()
+#    endif // TEST_BF_T()
+#  endif // CCCL_VERSION > 3001000
 
 template <typename VecType, typename Type>
 struct counter_to_cyclic_vector_t

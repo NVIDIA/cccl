@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file
  *  \brief An allocator which creates new elements in memory accessible by
@@ -46,6 +33,10 @@ THRUST_NAMESPACE_BEGIN
 /*! Memory resource adaptor that turns any memory resource that returns a fancy
  *      with the same tag as \p device_ptr, and adapts it to a resource that returns
  *      a \p device_ptr.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename Upstream>
 class device_ptr_memory_resource final : public thrust::mr::memory_resource<device_ptr<void>>
@@ -55,6 +46,10 @@ class device_ptr_memory_resource final : public thrust::mr::memory_resource<devi
 public:
   /*! Initialize the adaptor with the global instance of the upstream resource. Obtains
    *      the global instance by calling \p get_global_resource.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST device_ptr_memory_resource()
       : m_upstream(mr::get_global_resource<Upstream>())
@@ -63,6 +58,10 @@ public:
   /*! Initialize the adaptor with an upstream resource.
    *
    *  \param upstream the upstream memory resource to adapt.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST device_ptr_memory_resource(Upstream* upstream)
       : m_upstream(upstream)
@@ -87,6 +86,10 @@ private:
  *         devices.
  *
  *  \see https://en.cppreference.com/w/cpp/named_req/Allocator
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 class device_allocator
@@ -99,11 +102,19 @@ public:
    *  instantiated with another type.
    *
    *  \tparam U the other type to use for instantiation.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename U>
   struct rebind
   {
     /*! The alias \p other gives the type of the rebound \p device_allocator.
+     *
+     *  \verbatim embed:rst:leading-asterisk
+     *     .. versionadded:: 2.2.0
+     *  \endverbatim
      */
     using other = device_allocator<U>;
   };

@@ -33,7 +33,7 @@ TEMPLATE_LIST_TEST_CASE("Generators produce power law distributed data", "[gen][
   std::size_t actual_elements = 0;
   thrust::host_vector<double> log_sizes(segments);
   const thrust::host_vector<TestType> h_segment_offsets = d_segment_offsets;
-  for (int i = 0; i < segments; ++i)
+  for (std::size_t i = 0; i < segments; ++i)
   {
     const TestType begin = h_segment_offsets[i];
     const TestType end   = h_segment_offsets[i + 1];

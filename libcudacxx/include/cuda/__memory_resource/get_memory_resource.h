@@ -21,15 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/__memory_resource/resource.h>
-#include <cuda/__stream/stream_ref.h>
-#include <cuda/std/__concepts/equality_comparable.h>
-#include <cuda/std/__execution/env.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
+#if _CCCL_HAS_CTK()
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__memory_resource/resource.h>
+#  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/__concepts/equality_comparable.h>
+#  include <cuda/std/__execution/env.h>
+#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__type_traits/remove_cvref.h>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_MR
 
@@ -40,11 +42,9 @@ _CCCL_CONCEPT __has_member_get_resource = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& 
   requires(resource<::cuda::std::remove_cvref_t<decltype(__t.get_memory_resource())>>));
 
 template <class _Env>
-_CCCL_CONCEPT __has_query_get_memory_resource = _CCCL_REQUIRES_EXPR((_Env))(
-  requires(!__has_member_get_resource<_Env>),
-  requires(
-    resource<
-      ::cuda::std::remove_cvref_t<::cuda::std::execution::__query_result_t<const _Env&, __get_memory_resource_t>>>));
+_CCCL_CONCEPT __has_query_get_memory_resource = _CCCL_REQUIRES_EXPR(
+  (_Env))(requires(!__has_member_get_resource<_Env>),
+          requires(::cuda::std::execution::__queryable_with<const _Env&, __get_memory_resource_t>));
 
 //! @brief `__get_memory_resource_t` is a customization point object that queries a type `T` for an associated memory
 //! resource
@@ -65,6 +65,8 @@ struct __get_memory_resource_t
   [[nodiscard]] _CCCL_API constexpr decltype(auto) operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)), "get_memory_resource_t query must be noexcept");
+    static_assert(resource<::cuda::std::remove_cvref_t<decltype(__env.query(*this))>>,
+                  "get_memory_resource_t query must return a cuda::mr::resource");
     return __env.query(*this);
   }
 };
@@ -77,6 +79,8 @@ _CCCL_GLOBAL_CONSTANT auto get_memory_resource = get_memory_resource_t{};
 
 _CCCL_END_NAMESPACE_CUDA_MR
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
 
 #endif //_CUDA__MEMORY_RESOURCE_GET_MEMORY_RESOURCE_H

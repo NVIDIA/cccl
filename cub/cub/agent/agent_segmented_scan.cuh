@@ -204,7 +204,7 @@ struct agent_segmented_scan
     AccumT thread_values[items_per_thread] = {};
 
     AccumT exclusive_prefix{};
-    BlockPrefixCallBack<AccumT, ScanOpT> prefix_op{exclusive_prefix, scan_op};
+    block_prefix_callback_t<AccumT, ScanOpT> prefix_op{exclusive_prefix, scan_op};
 
     for (OffsetT chunk_id = 0; chunk_id < n_chunks; ++chunk_id)
     {
@@ -220,11 +220,11 @@ struct agent_segmented_scan
       if (chunk_id == 0)
       {
         // Initialize exlusive_prefix, referenced from prefix_op
-        ScanFirstTile(thread_values, initial_value, scan_op, exclusive_prefix);
+        scan_first_tile(thread_values, initial_value, scan_op, exclusive_prefix);
       }
       else
       {
-        ScanLaterTile(thread_values, scan_op, prefix_op);
+        scan_later_tile(thread_values, scan_op, prefix_op);
       }
       __syncthreads();
 
@@ -235,7 +235,7 @@ struct agent_segmented_scan
 
 private:
   template <typename PrefixT, typename BinaryOpT>
-  struct BlockPrefixCallBack
+  struct block_prefix_callback_t
   {
     PrefixT& m_exclusive_prefix;
     BinaryOpT m_scan_op;
@@ -248,9 +248,9 @@ private:
     }
   };
 
-  template <bool IsInclusive = is_inclusive>
+  template <typename _ItemT, typename _InitValueT, typename _ScanOpT, bool IsInclusive = is_inclusive>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ScanFirstTile(AccumT (&items)[items_per_thread], InitValueT init_value, ScanOpT scan_op, AccumT& block_aggregate)
+  scan_first_tile(_ItemT (&items)[items_per_thread], _InitValueT init_value, _ScanOpT scan_op, _ItemT& block_aggregate)
   {
     block_scan_t block_scan_algo(temp_storage.scan);
     if constexpr (IsInclusive)
@@ -272,9 +272,9 @@ private:
     }
   }
 
-  template <typename PrefixCallback, bool IsInclusive = is_inclusive>
+  template <typename _ItemT, typename _ScanOpT, typename PrefixCallback, bool IsInclusive = is_inclusive>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ScanLaterTile(AccumT (&items)[items_per_thread], ScanOpT scan_op, PrefixCallback& prefix_op)
+  scan_later_tile(_ItemT (&items)[items_per_thread], _ScanOpT scan_op, PrefixCallback& prefix_op)
   {
     block_scan_t block_scan_algo(temp_storage.scan);
     if constexpr (IsInclusive)

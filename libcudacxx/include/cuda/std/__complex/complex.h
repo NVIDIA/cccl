@@ -278,7 +278,7 @@ template <class _Tp>
 
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   // Avoid floating point operations that are invalid during constant evaluation
-  if (::cuda::std::is_constant_evaluated())
+  _CCCL_IF_CONSTEVAL
   {
     bool __z_zero = __a == _Tp(0) && __b == _Tp(0);
     bool __w_zero = __c == _Tp(0) && __d == _Tp(0);
@@ -415,7 +415,7 @@ template <class _Tp>
 
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   // Avoid floating point operations that are invalid during constant evaluation
-  if (::cuda::std::is_constant_evaluated())
+  _CCCL_IF_CONSTEVAL
   {
     bool __z_zero = __a == _Tp(0) && __b == _Tp(0);
     bool __w_zero = __c == _Tp(0) && __d == _Tp(0);

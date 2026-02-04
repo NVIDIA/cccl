@@ -70,17 +70,17 @@ private:
   friend class pipeline;
 
   template <class _Group, thread_scope _Pipeline_scope, uint8_t _Pipeline_stages_count>
-  friend _CCCL_API inline pipeline<_Pipeline_scope>
+  _CCCL_API friend inline pipeline<_Pipeline_scope>
   make_pipeline(const _Group& __group, pipeline_shared_state<_Pipeline_scope, _Pipeline_stages_count>* __shared_state);
 
   template <class _Group, thread_scope _Pipeline_scope, uint8_t _Pipeline_stages_count>
-  friend _CCCL_API inline pipeline<_Pipeline_scope>
+  _CCCL_API friend inline pipeline<_Pipeline_scope>
   make_pipeline(const _Group& __group,
                 pipeline_shared_state<_Pipeline_scope, _Pipeline_stages_count>* __shared_state,
                 size_t __producer_count);
 
   template <class _Group, thread_scope _Pipeline_scope, uint8_t _Pipeline_stages_count>
-  friend _CCCL_API inline pipeline<_Pipeline_scope>
+  _CCCL_API friend inline pipeline<_Pipeline_scope>
   make_pipeline(const _Group& __group,
                 pipeline_shared_state<_Pipeline_scope, _Pipeline_stages_count>* __shared_state,
                 pipeline_role __role);
@@ -133,6 +133,11 @@ public:
     }
     __active = false;
     return __released;
+  }
+
+  _CCCL_API inline bool __is_active() const
+  {
+    return __active;
   }
 
   _CCCL_API inline void producer_acquire()
@@ -220,17 +225,17 @@ private:
   }
 
   template <class _Group, thread_scope _Pipeline_scope, uint8_t _Pipeline_stages_count>
-  friend _CCCL_API inline pipeline<_Pipeline_scope>
+  _CCCL_API friend inline pipeline<_Pipeline_scope>
   make_pipeline(const _Group& __group, pipeline_shared_state<_Pipeline_scope, _Pipeline_stages_count>* __shared_state);
 
   template <class _Group, thread_scope _Pipeline_scope, uint8_t _Pipeline_stages_count>
-  friend _CCCL_API inline pipeline<_Pipeline_scope>
+  _CCCL_API friend inline pipeline<_Pipeline_scope>
   make_pipeline(const _Group& __group,
                 pipeline_shared_state<_Pipeline_scope, _Pipeline_stages_count>* __shared_state,
                 size_t __producer_count);
 
   template <class _Group, thread_scope _Pipeline_scope, uint8_t _Pipeline_stages_count>
-  friend _CCCL_API inline pipeline<_Pipeline_scope>
+  _CCCL_API friend inline pipeline<_Pipeline_scope>
   make_pipeline(const _Group& __group,
                 pipeline_shared_state<_Pipeline_scope, _Pipeline_stages_count>* __shared_state,
                 pipeline_role __role);
@@ -402,13 +407,13 @@ private:
       , __tail(0)
   {}
 
-  friend _CCCL_API inline pipeline<thread_scope_thread> make_pipeline();
+  _CCCL_API friend inline pipeline<thread_scope_thread> make_pipeline();
 
   template <uint8_t _Prior>
-  friend _CCCL_API inline void pipeline_consumer_wait_prior(pipeline<thread_scope_thread>& __pipeline);
+  _CCCL_API friend inline void pipeline_consumer_wait_prior(pipeline<thread_scope_thread>& __pipeline);
 
   template <class _Group, thread_scope _Pipeline_scope, uint8_t _Pipeline_stages_count>
-  friend _CCCL_API inline pipeline<_Pipeline_scope> __make_pipeline(
+  _CCCL_API friend inline pipeline<_Pipeline_scope> __make_pipeline(
     const _Group& __group, pipeline_shared_state<_Pipeline_scope, _Pipeline_stages_count>* __shared_state);
 };
 
@@ -468,15 +473,15 @@ _CCCL_API inline pipeline<thread_scope_thread> make_pipeline()
 }
 
 template <uint8_t _Prior>
-_CCCL_API inline void pipeline_consumer_wait_prior(pipeline<thread_scope_thread>& __pipeline)
+_CCCL_API inline void pipeline_consumer_wait_prior([[maybe_unused]] pipeline<thread_scope_thread>& __pipeline)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_80, ::cuda::device::__pipeline_consumer_wait<_Prior>(__pipeline);
                __pipeline.__tail = __pipeline.__head - _Prior;)
 }
 
 template <thread_scope _Scope>
-_CCCL_API inline void
-pipeline_producer_commit([[maybe_unused]] pipeline<thread_scope_thread>& __pipeline, barrier<_Scope>& __barrier)
+_CCCL_API inline void pipeline_producer_commit([[maybe_unused]] pipeline<thread_scope_thread>& __pipeline,
+                                               [[maybe_unused]] barrier<_Scope>& __barrier)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_80,
                ((void) __memcpy_completion_impl::__defer(
@@ -487,6 +492,11 @@ template <typename _Group, class _Tp, typename _Size, thread_scope _Scope>
 _CCCL_API inline async_contract_fulfillment __memcpy_async_pipeline(
   _Group const& __group, _Tp* __destination, _Tp const* __source, _Size __size, pipeline<_Scope>& __pipeline)
 {
+  if constexpr (_Scope != thread_scope_thread)
+  {
+    _CCCL_ASSERT(__pipeline.__is_active(), "The pipeline used for memcpy_async must be active (not quitted)");
+  }
+
   // 1. Set the completion mechanisms that can be used.
   //
   //    Do not (yet) allow async_bulk_group completion. Do not allow

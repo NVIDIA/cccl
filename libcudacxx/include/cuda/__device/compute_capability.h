@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__fwd/devices.h>
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__utility/to_underlying.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -84,7 +85,21 @@ public:
   //! @brief Gets the major compute capability.
   //!
   //! @return Major compute capability.
-  [[nodiscard]] _CCCL_API constexpr int major() const noexcept
+  //!
+  //! @deprecated This symbol is deprecated because it collides with major(...) macro defined in <sys/sysmacros.h> and
+  //! will be removed in next major release. Use cc.major_cap() instead.
+  [[nodiscard]]
+  CCCL_DEPRECATED_BECAUSE("This symbol is deprecated because it collides with major(...) macro defined in "
+                          "<sys/sysmacros.h> and will be removed in next major release. Use cc.major_cap() instead.")
+  _CCCL_API constexpr int major() const noexcept
+  {
+    return major_cap();
+  }
+
+  //! @brief Gets the major compute capability.
+  //!
+  //! @return Major compute capability.
+  [[nodiscard]] _CCCL_API constexpr int major_cap() const noexcept
   {
     return __cc_ / 10;
   }
@@ -92,7 +107,21 @@ public:
   //! @brief Gets the minor compute capability.
   //!
   //! @return Minor compute capability. The value is always less than 10.
-  [[nodiscard]] _CCCL_API constexpr int minor() const noexcept
+  //!
+  //! @deprecated This symbol is deprecated because it collides with minor(...) macro defined in <sys/sysmacros.h> and
+  //! will be removed in next major release. Use cc.minor_cap() instead.
+  [[nodiscard]]
+  CCCL_DEPRECATED_BECAUSE("This symbol is deprecated because it collides with minor(...) macro defined in "
+                          "<sys/sysmacros.h> and will be removed in next major release. Use cc.minor_cap() instead.")
+  _CCCL_API constexpr int minor() const noexcept
+  {
+    return minor_cap();
+  }
+
+  //! @brief Gets the minor compute capability.
+  //!
+  //! @return Minor compute capability. The value is always less than 10.
+  [[nodiscard]] _CCCL_API constexpr int minor_cap() const noexcept
   {
     return __cc_ % 10;
   }
@@ -106,43 +135,67 @@ public:
   }
 
   //! @brief Equality operator.
-  [[nodiscard]] friend _CCCL_API constexpr bool operator==(compute_capability __lhs, compute_capability __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator==(compute_capability __lhs, compute_capability __rhs) noexcept
   {
     return __lhs.__cc_ == __rhs.__cc_;
   }
 
   //! @brief Inequality operator.
-  [[nodiscard]] friend _CCCL_API constexpr bool operator!=(compute_capability __lhs, compute_capability __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(compute_capability __lhs, compute_capability __rhs) noexcept
   {
     return __lhs.__cc_ != __rhs.__cc_;
   }
 
   //! @brief Less than operator.
-  [[nodiscard]] friend _CCCL_API constexpr bool operator<(compute_capability __lhs, compute_capability __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator<(compute_capability __lhs, compute_capability __rhs) noexcept
   {
     return __lhs.__cc_ < __rhs.__cc_;
   }
 
   //! @brief Less than or equal to operator.
-  [[nodiscard]] friend _CCCL_API constexpr bool operator<=(compute_capability __lhs, compute_capability __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator<=(compute_capability __lhs, compute_capability __rhs) noexcept
   {
     return __lhs.__cc_ <= __rhs.__cc_;
   }
 
   //! @brief Greater than operator.
-  [[nodiscard]] friend _CCCL_API constexpr bool operator>(compute_capability __lhs, compute_capability __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator>(compute_capability __lhs, compute_capability __rhs) noexcept
   {
     return __lhs.__cc_ > __rhs.__cc_;
   }
 
   //! @brief Greater than or equal to operator.
-  [[nodiscard]] friend _CCCL_API constexpr bool operator>=(compute_capability __lhs, compute_capability __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend constexpr bool operator>=(compute_capability __lhs, compute_capability __rhs) noexcept
   {
     return __lhs.__cc_ >= __rhs.__cc_;
   }
 };
 
 _CCCL_END_NAMESPACE_CUDA
+
+#if __cpp_lib_format >= 201907L
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <class _CharT>
+struct formatter<::cuda::compute_capability, _CharT> : private formatter<int, _CharT>
+{
+  template <class _ParseCtx>
+  _CCCL_HOST_API constexpr auto parse(_ParseCtx& __ctx)
+  {
+    return __ctx.begin();
+  }
+
+  template <class _FmtCtx>
+  _CCCL_HOST_API auto format(const ::cuda::compute_capability& __cc, _FmtCtx& __ctx) const
+  {
+    return formatter<int, _CharT>::format(__cc.get(), __ctx);
+  }
+};
+
+_CCCL_END_NAMESPACE_STD
+#endif // __cpp_lib_format >= 201907L
+
+// todo: specialize cuda::std::formatter for cuda::compute_capability
 
 #if _CCCL_CUDA_COMPILATION()
 
@@ -151,7 +204,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 //! @brief Returns the \c cuda::compute_capability that is currently being compiled.
 //!
 //! @note This API cannot be used in constexpr context when compiling with nvc++ in CUDA mode.
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_TARGET_CONSTEXPR ::cuda::compute_capability current_compute_capability() noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline _CCCL_TARGET_CONSTEXPR ::cuda::compute_capability
+current_compute_capability() noexcept
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC)
   return ::cuda::compute_capability{__builtin_current_device_sm()};

@@ -16,7 +16,7 @@ class A; // Incomplete
 
 int main(int, char**)
 {
-  typedef cuda::std::aligned_union<10, A>::type T1;
+  using T1 = cuda::std::aligned_union<10, A>::type;
 
   return 0;
 }

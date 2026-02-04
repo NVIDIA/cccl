@@ -152,7 +152,7 @@ int main(int, char**)
 
 #if !TEST_COMPILER(NVRTC) && defined(_CCCL_BUILTIN_ADDRESSOF)
   {
-    typedef cuda::std::reverse_iterator<const C*> RI;
+    using RI         = cuda::std::reverse_iterator<const C*>;
     constexpr RI it1 = cuda::std::make_reverse_iterator(gC + 1);
 
     static_assert(it1->get() == gC[0].get(), "");

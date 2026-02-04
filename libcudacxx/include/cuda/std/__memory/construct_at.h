@@ -30,7 +30,7 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_array.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_trivially_constructible.h>
 #include <cuda/std/__type_traits/is_trivially_destructible.h>
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
@@ -40,9 +40,9 @@
 #include <cuda/std/__utility/move.h>
 
 #if _CCCL_STD_VER >= 2020 // need to backfill ::std::construct_at
-#  include <cuda/std/__cccl/memory_wrapper.h>
+#  include <cuda/std/__host_stdlib/memory>
 
-#  ifndef __cpp_lib_constexpr_dynamic_alloc
+#  if __cpp_lib_constexpr_dynamic_alloc < 201907L
 namespace std
 {
 _CCCL_EXEC_CHECK_DISABLE
@@ -59,7 +59,7 @@ _CCCL_API constexpr _Tp* construct_at(_Tp* __location, _Args&&... __args)
 #    endif
 }
 } // namespace std
-#  endif // __cpp_lib_constexpr_dynamic_alloc
+#  endif // __cpp_lib_constexpr_dynamic_alloc < 201907L
 #endif // _CCCL_STD_VER >= 2020
 
 #include <cuda/std/__cccl/prologue.h>
@@ -103,14 +103,13 @@ _CCCL_CONCEPT __can_optimize_construct_at = _CCCL_REQUIRES_EXPR((_Tp, variadic _
 #if _CCCL_STD_VER >= 2020
 
 _CCCL_EXEC_CHECK_DISABLE
-template <class _Tp,
-          class... _Args,
-          class = decltype(::new(::cuda::std::declval<void*>()) _Tp(::cuda::std::declval<_Args>()...))>
+_CCCL_TEMPLATE(class _Tp, class... _Args)
+_CCCL_REQUIRES(is_constructible_v<_Tp, _Args...>)
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Tp* construct_at(_Tp* __location, _Args&&... __args)
 {
   _CCCL_ASSERT(__location != nullptr, "null pointer given to construct_at");
   // Need to go through `std::construct_at` as that is the explicitly blessed function
-  if (::cuda::std::is_constant_evaluated())
+  _CCCL_IF_CONSTEVAL
   {
     return ::std::construct_at(__location, ::cuda::std::forward<_Args>(__args)...);
   }
@@ -133,7 +132,7 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Tp* __construct_at(_Tp* __location, _Arg
   _CCCL_ASSERT(__location != nullptr, "null pointer given to construct_at");
 #if _CCCL_STD_VER >= 2020
   // Need to go through `std::construct_at` as that is the explicitly blessed function
-  if (::cuda::std::is_constant_evaluated())
+  _CCCL_IF_CONSTEVAL
   {
     return ::std::construct_at(__location, ::cuda::std::forward<_Args>(__args)...);
   }

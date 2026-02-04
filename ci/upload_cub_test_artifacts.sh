@@ -43,7 +43,7 @@ preset_variants=($(echo "${preset_variants[@]}" | tr ' ' '\n' | sort -u | tr '\n
 artifact_prefix=z_cub-test-artifacts-$DEVCONTAINER_NAME-${JOB_ID}
 
 # BUILD_INFIX is undefined on windows CI
-build_dir_regex="build${CCCL_BUILD_INFIX:+/$CCCL_BUILD_INFIX}/cub-[^/]+"
+build_dir_regex="build${CCCL_BUILD_INFIX:+/$CCCL_BUILD_INFIX}/cub[^/]*"
 
 # Just collect the minimum set of files needed for running each ctest preset:
 for preset_variant in ${preset_variants[@]}; do

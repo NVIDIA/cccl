@@ -108,6 +108,11 @@ struct stream_registry_factory_t
     return cub::PtxVersion(version);
   }
 
+  CUB_RUNTIME_FUNCTION cudaError_t PtxArchId(::cuda::arch_id& arch_id) const
+  {
+    return cub::detail::ptx_arch_id(arch_id);
+  }
+
   CUB_RUNTIME_FUNCTION cudaError_t MultiProcessorCount(int& sm_count) const
   {
     int device_ordinal;
@@ -180,7 +185,7 @@ struct device_memory_resource : cub::detail::device_memory_resource
     return nullptr;
   }
 
-  void deallocate_sync(void* /* ptr */, size_t /* bytes */)
+  void deallocate_sync(void* /* ptr */, size_t /* bytes */, size_t /* alignment */)
   {
     FAIL("CUB shouldn't use synchronous deallocation");
   }
@@ -201,6 +206,11 @@ struct device_memory_resource : cub::detail::device_memory_resource
     return cub::detail::device_memory_resource::allocate(stream, bytes);
   }
 
+  void deallocate(const cuda::stream_ref stream, void* ptr, size_t bytes, size_t /* alignment */)
+  {
+    deallocate(stream, ptr, bytes);
+  }
+
   void deallocate(const cuda::stream_ref stream, void* ptr, size_t bytes)
   {
     REQUIRE(target_stream == stream.get());
@@ -211,17 +221,28 @@ struct device_memory_resource : cub::detail::device_memory_resource
     }
     cub::detail::device_memory_resource::deallocate(stream, ptr, bytes);
   }
+
+  bool operator==(const device_memory_resource& rhs) const
+  {
+    return target_stream == rhs.target_stream && bytes_allocated == rhs.bytes_allocated
+        && bytes_deallocated == rhs.bytes_deallocated;
+  }
+  bool operator!=(const device_memory_resource& rhs) const
+  {
+    return !(*this == rhs);
+  }
 };
+static_assert(::cuda::mr::resource<device_memory_resource>);
 
 struct throwing_memory_resource
 {
-  void* allocate(size_t /* bytes */, size_t /* alignment */)
+  void* allocate_sync(size_t /* bytes */, size_t /* alignment */)
   {
     FAIL("CUB shouldn't use synchronous allocation");
     return nullptr;
   }
 
-  void deallocate(void* /* ptr */, size_t /* bytes */)
+  void deallocate_sync(void* /* ptr */, size_t /* bytes */, size_t /* alignment */)
   {
     FAIL("CUB shouldn't use synchronous deallocation");
   }
@@ -236,11 +257,26 @@ struct throwing_memory_resource
     throw "test";
   }
 
-  void deallocate(const cuda::stream_ref /* stream */, void* /* ptr */, size_t /* bytes */)
+  void deallocate(cuda::stream_ref /* stream */, void* /* ptr */, size_t /* bytes */, size_t /* alignment*/)
   {
     throw "test";
   }
+
+  void deallocate(cuda::stream_ref /* stream */, void* /* ptr */, size_t /* bytes */)
+  {
+    throw "test";
+  }
+
+  bool operator==(const throwing_memory_resource&) const
+  {
+    return true;
+  }
+  bool operator!=(const throwing_memory_resource&) const
+  {
+    return false;
+  }
 };
+static_assert(::cuda::mr::resource<throwing_memory_resource>);
 
 struct device_side_memory_resource
 {
@@ -248,12 +284,12 @@ struct device_side_memory_resource
   size_t* bytes_allocated   = nullptr;
   size_t* bytes_deallocated = nullptr;
 
-  __host__ __device__ void* allocate(size_t /* bytes */, size_t /* alignment */)
+  __host__ __device__ void* allocate_sync(size_t /* bytes */, size_t /* alignment */)
   {
     cuda::std::terminate();
   }
 
-  __host__ __device__ void deallocate(void* /* ptr */, size_t /* bytes */)
+  __host__ __device__ void deallocate_sync(void* /* ptr */, size_t /* bytes */, size_t /* alignment */)
   {
     cuda::std::terminate();
   }
@@ -279,7 +315,26 @@ struct device_side_memory_resource
       *bytes_deallocated += bytes;
     }
   }
+
+  __host__ __device__ void
+  deallocate(const cuda::stream_ref /* stream */, void* /* ptr */, size_t bytes, size_t /* alignment */)
+  {
+    if (bytes_deallocated)
+    {
+      *bytes_deallocated += bytes;
+    }
+  }
+
+  bool operator==(const device_side_memory_resource& rhs) const
+  {
+    return ptr == rhs.ptr && bytes_allocated == rhs.bytes_allocated && bytes_deallocated == rhs.bytes_deallocated;
+  }
+  bool operator!=(const device_side_memory_resource& rhs) const
+  {
+    return !(*this == rhs);
+  }
 };
+static_assert(::cuda::mr::resource<device_side_memory_resource>);
 
 template <size_t... Is, class TplT, class EnvT>
 auto replace_back(cuda::std::integer_sequence<size_t, Is...>, TplT tpl, EnvT env)

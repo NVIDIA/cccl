@@ -12,10 +12,10 @@
 #define FETCH_OPS_H
 
 #include <array>
+#include <format>
 #include <string>
 
 #include "definitions.h"
-#include <fmt/format.h>
 
 inline std::string fetch_op_skip_v(std::string fetch_op)
 {
@@ -63,7 +63,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_memory_order_dispatch(_Fn& _
         case __ATOMIC_ACQ_REL: __cuda_fetch(__atomic_cuda_acq_rel{}); break;
         case __ATOMIC_RELEASE: __cuda_fetch(__atomic_cuda_release{}); break;
         case __ATOMIC_RELAXED: __cuda_fetch(__atomic_cuda_relaxed{}); break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     ),
     NV_IS_DEVICE, (
@@ -74,7 +74,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_memory_order_dispatch(_Fn& _
         case __ATOMIC_ACQUIRE: __cuda_fetch(__atomic_cuda_volatile{}); __cuda_atomic_membar(_Sco{}); break;
         case __ATOMIC_RELEASE: __cuda_atomic_membar(_Sco{}); __cuda_fetch(__atomic_cuda_volatile{}); break;
         case __ATOMIC_RELAXED: __cuda_fetch(__atomic_cuda_volatile{}); break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     )
   )
@@ -90,7 +90,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_memory_order_dispatch(_Fn& _
   // 5 - Memory Order function tag
   // 6 - Scope Constraint
   // 7 - Scope function tag
-  const std::string asm_intrinsic_format = R"XXX(
+  constexpr auto asm_intrinsic_format = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE void __cuda_atomic_fetch_{0}(
   _Type* __ptr, _Type& __dst, _Type __op, {5}, __atomic_cuda_operand_{1}{2}, {7})
@@ -99,7 +99,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_{0}(
   // 0 - Atomic Operation
   // 1 - Operand type constraint
   // 2 - Pointer op skip_v
-  const std::string fetch_bind_invoke = R"XXX(
+  constexpr auto fetch_bind_invoke = R"XXX(
 template <typename _Type, typename _Tag, typename _Sco>
 struct __cuda_atomic_bind_fetch_{0} {{
   _Type* __ptr;
@@ -185,7 +185,7 @@ template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_{1}<_Typ
             {
               continue;
             }
-            out << fmt::format(
+            out << std::format(
               asm_intrinsic_format,
               /* 0 */ op_name,
               /* 1 */ operand(type),
@@ -199,7 +199,7 @@ template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_{1}<_Typ
         }
       }
     }
-    out << "\n" << fmt::format(fetch_bind_invoke, op_name, deduction, fetch_op_skip_v(op_name));
+    out << "\n" << std::format(fetch_bind_invoke, op_name, deduction, fetch_op_skip_v(op_name));
   }
 
   out << R"XXX(

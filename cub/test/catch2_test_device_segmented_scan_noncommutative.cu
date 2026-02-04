@@ -29,6 +29,9 @@
 
 namespace impl
 {
+template <typename UnsignedIntegralT>
+using pair_t = cuda::std::pair<UnsignedIntegralT, UnsignedIntegralT>;
+
 // bicyclid monoid operator is associative and non-commutative
 template <typename UnsignedIntegralT>
 struct bicyclic_monoid_op
@@ -36,7 +39,7 @@ struct bicyclic_monoid_op
   static_assert(cuda::std::is_integral_v<UnsignedIntegralT>);
   static_assert(cuda::std::is_unsigned_v<UnsignedIntegralT>);
 
-  using pair_t = cuda::std::pair<UnsignedIntegralT, UnsignedIntegralT>;
+  using pair_t = pair_t<UnsignedIntegralT>;
   using min_t  = cuda::minimum<>;
 
   pair_t __host__ __device__ operator()(pair_t v1, pair_t v2)
@@ -54,7 +57,7 @@ struct populate_input
   static_assert(cuda::std::is_integral_v<UnsignedIntegralT>);
   static_assert(cuda::std::is_unsigned_v<UnsignedIntegralT>);
 
-  using pair_t = cuda::std::pair<UnsignedIntegralT, UnsignedIntegralT>;
+  using pair_t = pair_t<UnsignedIntegralT>;
 
   __host__ __device__ pair_t operator()(size_t id) const
   {
@@ -72,8 +75,8 @@ struct populate_input
 
 C2H_TEST("Device inclusive segmented scan works with non-commutative operator", "[segmented][scan][device]")
 {
-  using pair_t = cuda::std::pair<unsigned, unsigned>;
   using op_t   = impl::bicyclic_monoid_op<unsigned>;
+  using pair_t = typename op_t::pair_t;
 
   unsigned num_items = 1'234'567;
   c2h::device_vector<unsigned> offsets{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};

@@ -1,29 +1,6 @@
-/*******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -63,7 +40,7 @@ template <class InputType, class IndexType, class Predicate>
 struct arg_min_f
 {
   Predicate predicate;
-  using pair_type = tuple<InputType, IndexType>;
+  using pair_type = ::cuda::std::tuple<InputType, IndexType>;
 
   _CCCL_HOST_DEVICE arg_min_f(Predicate p)
       : predicate(p)
@@ -71,10 +48,10 @@ struct arg_min_f
 
   pair_type _CCCL_DEVICE operator()(pair_type const& lhs, pair_type const& rhs)
   {
-    InputType const& rhs_value = get<0>(rhs);
-    InputType const& lhs_value = get<0>(lhs);
-    IndexType const& rhs_key   = get<1>(rhs);
-    IndexType const& lhs_key   = get<1>(lhs);
+    InputType const& rhs_value = ::cuda::std::get<0>(rhs);
+    InputType const& lhs_value = ::cuda::std::get<0>(lhs);
+    IndexType const& rhs_key   = ::cuda::std::get<1>(rhs);
+    IndexType const& lhs_key   = ::cuda::std::get<1>(lhs);
 
     // check values first
     if (predicate(lhs_value, rhs_value))
@@ -102,7 +79,7 @@ template <class InputType, class IndexType, class Predicate>
 struct arg_max_f
 {
   Predicate predicate;
-  using pair_type = tuple<InputType, IndexType>;
+  using pair_type = ::cuda::std::tuple<InputType, IndexType>;
 
   _CCCL_HOST_DEVICE arg_max_f(Predicate p)
       : predicate(p)
@@ -110,10 +87,10 @@ struct arg_max_f
 
   pair_type _CCCL_DEVICE operator()(pair_type const& lhs, pair_type const& rhs)
   {
-    InputType const& rhs_value = get<0>(rhs);
-    InputType const& lhs_value = get<0>(lhs);
-    IndexType const& rhs_key   = get<1>(rhs);
-    IndexType const& lhs_key   = get<1>(lhs);
+    InputType const& rhs_value = ::cuda::std::get<0>(rhs);
+    InputType const& lhs_value = ::cuda::std::get<0>(lhs);
+    IndexType const& rhs_key   = ::cuda::std::get<1>(rhs);
+    IndexType const& lhs_key   = ::cuda::std::get<1>(lhs);
 
     // check values first
     if (predicate(lhs_value, rhs_value))
@@ -142,8 +119,8 @@ struct arg_minmax_f
 {
   Predicate predicate;
 
-  using pair_type      = tuple<InputType, IndexType>;
-  using two_pairs_type = tuple<pair_type, pair_type>;
+  using pair_type      = ::cuda::std::tuple<InputType, IndexType>;
+  using two_pairs_type = ::cuda::std::tuple<pair_type, pair_type>;
 
   using arg_min_t = arg_min_f<InputType, IndexType, Predicate>;
   using arg_max_t = arg_max_f<InputType, IndexType, Predicate>;
@@ -154,12 +131,13 @@ struct arg_minmax_f
 
   two_pairs_type _CCCL_DEVICE operator()(two_pairs_type const& lhs, two_pairs_type const& rhs)
   {
-    pair_type const& rhs_min = get<0>(rhs);
-    pair_type const& lhs_min = get<0>(lhs);
-    pair_type const& rhs_max = get<1>(rhs);
-    pair_type const& lhs_max = get<1>(lhs);
+    pair_type const& rhs_min = ::cuda::std::get<0>(rhs);
+    pair_type const& lhs_min = ::cuda::std::get<0>(lhs);
+    pair_type const& rhs_max = ::cuda::std::get<1>(rhs);
+    pair_type const& lhs_max = ::cuda::std::get<1>(lhs);
 
-    auto result = thrust::make_tuple(arg_min_t(predicate)(lhs_min, rhs_min), arg_max_t(predicate)(lhs_max, rhs_max));
+    auto result =
+      ::cuda::std::make_tuple(arg_min_t(predicate)(lhs_min, rhs_min), arg_max_t(predicate)(lhs_max, rhs_max));
 
     return result;
   }
@@ -168,7 +146,7 @@ struct arg_minmax_f
   {
     _CCCL_DEVICE two_pairs_type operator()(pair_type const& t)
     {
-      return thrust::make_tuple(t, t);
+      return ::cuda::std::make_tuple(t, t);
     }
   };
 }; // struct arg_minmax_f
@@ -371,18 +349,18 @@ element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPr
 
   IndexType num_items = static_cast<IndexType>(::cuda::std::distance(first, last));
 
-  using iterator_tuple = tuple<ItemsIt, counting_iterator<IndexType>>;
+  using iterator_tuple = ::cuda::std::tuple<ItemsIt, counting_iterator<IndexType>>;
   using zip_iterator   = zip_iterator<iterator_tuple>;
 
-  iterator_tuple iter_tuple = thrust::make_tuple(first, counting_iterator<IndexType>(0));
+  iterator_tuple iter_tuple = ::cuda::std::make_tuple(first, counting_iterator<IndexType>(0));
 
   using arg_min_t = ArgFunctor<InputType, IndexType, BinaryPred>;
-  using T         = tuple<InputType, IndexType>;
+  using T         = ::cuda::std::tuple<InputType, IndexType>;
 
   zip_iterator begin = make_zip_iterator(iter_tuple);
 
   T result = extrema(policy, begin, num_items, arg_min_t(binary_pred), (T*) (nullptr));
-  return first + thrust::get<1>(result);
+  return first + ::cuda::std::get<1>(result);
 }
 } // namespace __extrema
 
@@ -442,10 +420,10 @@ minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, B
 
      const auto num_items = static_cast<IndexType>(::cuda::std::distance(first, last));
 
-     using iterator_tuple = tuple<ItemsIt, counting_iterator<IndexType>>;
+     using iterator_tuple = ::cuda::std::tuple<ItemsIt, counting_iterator<IndexType>>;
      using zip_iterator   = zip_iterator<iterator_tuple>;
 
-     iterator_tuple iter_tuple = thrust::make_tuple(first, counting_iterator<IndexType>(0));
+     iterator_tuple iter_tuple = ::cuda::std::make_tuple(first, counting_iterator<IndexType>(0));
 
      using arg_minmax_t   = __extrema::arg_minmax_f<InputType, IndexType, BinaryPred>;
      using two_pairs_type = typename arg_minmax_t::two_pairs_type;
@@ -455,7 +433,8 @@ minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, B
      zip_iterator begin    = make_zip_iterator(iter_tuple);
      two_pairs_type result = __extrema::extrema(
        policy, transform_t(begin, duplicate_t()), num_items, arg_minmax_t(binary_pred), (two_pairs_type*) (nullptr));
-     ret = ::cuda::std::make_pair(first + get<1>(get<0>(result)), first + get<1>(get<1>(result)));),
+     ret = ::cuda::std::make_pair(first + ::cuda::std::get<1>(::cuda::std::get<0>(result)),
+                                  first + ::cuda::std::get<1>(::cuda::std::get<1>(result)));),
     // CDP Sequential impl:
     (ret = thrust::minmax_element(cvt_to_seq(derived_cast(policy)), first, last, binary_pred);));
   return ret;

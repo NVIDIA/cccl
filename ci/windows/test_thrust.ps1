@@ -27,13 +27,13 @@ If($CURRENT_PATH -ne "ci") {
 }
 
 if ($CPU_ONLY) {
-    $PRESET = "thrust-cpu-cpp$CXX_STANDARD"
+    $PRESET = "thrust-cpu"
     $artifactTag = "test_cpu"
 } elseif ($GPU_ONLY) {
-    $PRESET = "thrust-gpu-cpp$CXX_STANDARD"
+    $PRESET = "thrust-gpu"
     $artifactTag = "test_gpu"
 } else {
-    $PRESET = "thrust-cpp$CXX_STANDARD"
+    $PRESET = "thrust"
     $artifactTag = ""
 }
 

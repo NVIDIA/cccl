@@ -24,7 +24,6 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__memory/pointer_traits.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -72,7 +71,7 @@ ranges_overlap(_Tp __lhs_begin, _Tp __lhs_end, _Tp __rhs_begin, _Tp __rhs_end) n
 {
   if constexpr (::cuda::std::contiguous_iterator<_Tp>)
   {
-    if (::cuda::std::__cccl_default_is_constant_evaluated())
+    _CCCL_IF_CONSTEVAL_DEFAULT
     {
       // UB is not possible in a constant expression
       _CCCL_ASSERT(__lhs_begin <= __lhs_end, "lhs range is invalid");

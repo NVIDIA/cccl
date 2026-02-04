@@ -211,7 +211,6 @@ public:
       }
       return __n;
     }
-    _CCCL_UNREACHABLE();
   }
 };
 _CCCL_END_NAMESPACE_CPO

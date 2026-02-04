@@ -103,17 +103,16 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
     }
     else
     {
-      if (!::cuda::std::__cccl_default_is_constant_evaluated())
+      _CCCL_IF_NOT_CONSTEVAL_DEFAULT
       {
 #if _CCCL_HAS_FLOAT128()
         if constexpr (is_same_v<_Tp, __float128>)
         {
           NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fmax(__x, __y);))
         }
-        else
 #endif // _CCCL_HAS_FLOAT128()
 #if _CCCL_USE_BUILTIN_FMAX()
-          if constexpr (is_floating_point_v<_Tp>)
+        if constexpr (is_floating_point_v<_Tp>)
         {
 // GCC builtins do not treat NaN properly
 #  if _CCCL_COMPILER(GCC)
@@ -227,7 +226,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
     }
     else
     {
-      if (!::cuda::std::__cccl_default_is_constant_evaluated())
+      _CCCL_IF_NOT_CONSTEVAL_DEFAULT
       {
 #if _CCCL_HAS_FLOAT128()
         if constexpr (is_same_v<_Tp, __float128>)

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-20120 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-20120, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #include <thrust/detail/config.h>
 
@@ -103,7 +90,7 @@ _CCCL_HOST_DEVICE void shuffle_copy(
   // we have an available bijection of length n via a feistel cipher
   std::size_t m = last - first;
   thrust::detail::feistel_bijection bijection(m, g);
-  std::uint64_t n = bijection.nearest_power_of_two();
+  std::uint64_t n = bijection.size();
 
   // perform stream compaction over length n bijection to get length m
   // pseudorandom bijection over the original input

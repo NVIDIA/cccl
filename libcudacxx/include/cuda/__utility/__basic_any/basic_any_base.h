@@ -60,24 +60,7 @@ _CCCL_CONCEPT __is_basic_any =
   );
 // clang-format on
 
-#if _CCCL_HAS_CONCEPTS()
-template <class _Interface, int = 0>
-struct __basic_any_base : __interface_of<_Interface>
-{
-private:
-  template <class>
-  friend struct __basic_any;
-  friend struct __basic_any_access;
-
-  static constexpr size_t __size_  = __buffer_size(_Interface::size);
-  static constexpr size_t __align_ = __buffer_align(_Interface::align);
-
-  __tagged_ptr<__vptr_for<_Interface>> __vptr_{};
-  alignas(__align_)::cuda::std::byte __buffer_[__size_];
-};
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
-// Without concepts, we need a base class to correctly implement movability
-// and copyability.
+// We need a base class to correctly implement movability and copyability.
 template <class _Interface, int = __extension_of<_Interface, __imovable<>> + __extension_of<_Interface, __icopyable<>>>
 struct __basic_any_base;
 
@@ -139,7 +122,6 @@ struct __basic_any_base<_Interface, 0> : __basic_any_base<_Interface, 2> // immo
   auto operator=(__basic_any_base&&) noexcept -> __basic_any_base& = delete;
   auto operator=(__basic_any_base const&) -> __basic_any_base&     = delete;
 };
-#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _CCCL_END_NAMESPACE_CUDA
 

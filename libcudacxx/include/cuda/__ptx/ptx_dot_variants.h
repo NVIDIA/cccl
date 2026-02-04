@@ -141,12 +141,12 @@ using sem_release_t = sem_t<dot_sem::release>;
 using sem_sc_t      = sem_t<dot_sem::sc>;
 using sem_weak_t    = sem_t<dot_sem::weak>;
 
-static constexpr sem_acq_rel_t sem_acq_rel{};
-static constexpr sem_acquire_t sem_acquire{};
-static constexpr sem_relaxed_t sem_relaxed{};
-static constexpr sem_release_t sem_release{};
-static constexpr sem_sc_t sem_sc{};
-static constexpr sem_weak_t sem_weak{};
+[[maybe_unused]] static constexpr sem_acq_rel_t sem_acq_rel{};
+[[maybe_unused]] static constexpr sem_acquire_t sem_acquire{};
+[[maybe_unused]] static constexpr sem_relaxed_t sem_relaxed{};
+[[maybe_unused]] static constexpr sem_release_t sem_release{};
+[[maybe_unused]] static constexpr sem_sc_t sem_sc{};
+[[maybe_unused]] static constexpr sem_weak_t sem_weak{};
 
 template <dot_space __spc>
 using space_t         = ::cuda::std::integral_constant<dot_space, __spc>;
@@ -154,9 +154,9 @@ using space_global_t  = space_t<dot_space::global>;
 using space_shared_t  = space_t<dot_space::shared>;
 using space_cluster_t = space_t<dot_space::cluster>;
 
-static constexpr space_global_t space_global{};
-static constexpr space_shared_t space_shared{};
-static constexpr space_cluster_t space_cluster{};
+[[maybe_unused]] static constexpr space_global_t space_global{};
+[[maybe_unused]] static constexpr space_shared_t space_shared{};
+[[maybe_unused]] static constexpr space_cluster_t space_cluster{};
 
 template <dot_scope __scope>
 using scope_t         = ::cuda::std::integral_constant<dot_scope, __scope>;
@@ -165,10 +165,10 @@ using scope_cta_t     = scope_t<dot_scope::cta>;
 using scope_gpu_t     = scope_t<dot_scope::gpu>;
 using scope_sys_t     = scope_t<dot_scope::sys>;
 
-static constexpr scope_cluster_t scope_cluster{};
-static constexpr scope_cta_t scope_cta{};
-static constexpr scope_gpu_t scope_gpu{};
-static constexpr scope_sys_t scope_sys{};
+[[maybe_unused]] static constexpr scope_cluster_t scope_cluster{};
+[[maybe_unused]] static constexpr scope_cta_t scope_cta{};
+[[maybe_unused]] static constexpr scope_gpu_t scope_gpu{};
+[[maybe_unused]] static constexpr scope_sys_t scope_sys{};
 
 template <dot_op __op>
 using op_t        = ::cuda::std::integral_constant<dot_op, __op>;
@@ -183,24 +183,24 @@ using op_xor_op_t = op_t<dot_op::xor_op>;
 using op_cas_t    = op_t<dot_op::cas>;
 using op_exch_t   = op_t<dot_op::exch>;
 
-static constexpr op_add_t op_add{};
-static constexpr op_dec_t op_dec{};
-static constexpr op_inc_t op_inc{};
-static constexpr op_max_t op_max{};
-static constexpr op_min_t op_min{};
-static constexpr op_and_op_t op_and_op{};
-static constexpr op_or_op_t op_or_op{};
-static constexpr op_xor_op_t op_xor_op{};
-static constexpr op_cas_t op_cas{};
-static constexpr op_exch_t op_exch{};
+[[maybe_unused]] static constexpr op_add_t op_add{};
+[[maybe_unused]] static constexpr op_dec_t op_dec{};
+[[maybe_unused]] static constexpr op_inc_t op_inc{};
+[[maybe_unused]] static constexpr op_max_t op_max{};
+[[maybe_unused]] static constexpr op_min_t op_min{};
+[[maybe_unused]] static constexpr op_and_op_t op_and_op{};
+[[maybe_unused]] static constexpr op_or_op_t op_or_op{};
+[[maybe_unused]] static constexpr op_xor_op_t op_xor_op{};
+[[maybe_unused]] static constexpr op_cas_t op_cas{};
+[[maybe_unused]] static constexpr op_exch_t op_exch{};
 
 template <dot_cta_group __cta_group>
 using cta_group_t   = ::cuda::std::integral_constant<dot_cta_group, __cta_group>;
 using cta_group_1_t = cta_group_t<dot_cta_group::cta_group_1>;
 using cta_group_2_t = cta_group_t<dot_cta_group::cta_group_2>;
 
-static constexpr cta_group_1_t cta_group_1{};
-static constexpr cta_group_2_t cta_group_2{};
+[[maybe_unused]] static constexpr cta_group_1_t cta_group_1{};
+[[maybe_unused]] static constexpr cta_group_2_t cta_group_2{};
 
 template <dot_kind __kind>
 using kind_t          = ::cuda::std::integral_constant<dot_kind, __kind>;
@@ -212,13 +212,13 @@ using kind_mxf4nvf4_t = kind_t<dot_kind::mxf4nvf4>;
 using kind_mxf8f6f4_t = kind_t<dot_kind::mxf8f6f4>;
 using kind_tf32_t     = kind_t<dot_kind::tf32>;
 
-static constexpr kind_f16_t kind_f16{};
-static constexpr kind_f8f6f4_t kind_f8f6f4{};
-static constexpr kind_i8_t kind_i8{};
-static constexpr kind_mxf4_t kind_mxf4{};
-static constexpr kind_mxf4nvf4_t kind_mxf4nvf4{};
-static constexpr kind_mxf8f6f4_t kind_mxf8f6f4{};
-static constexpr kind_tf32_t kind_tf32{};
+[[maybe_unused]] static constexpr kind_f16_t kind_f16{};
+[[maybe_unused]] static constexpr kind_f8f6f4_t kind_f8f6f4{};
+[[maybe_unused]] static constexpr kind_i8_t kind_i8{};
+[[maybe_unused]] static constexpr kind_mxf4_t kind_mxf4{};
+[[maybe_unused]] static constexpr kind_mxf4nvf4_t kind_mxf4nvf4{};
+[[maybe_unused]] static constexpr kind_mxf8f6f4_t kind_mxf8f6f4{};
+[[maybe_unused]] static constexpr kind_tf32_t kind_tf32{};
 
 template <int n>
 using n32_t = ::cuda::std::integral_constant<int, n>;

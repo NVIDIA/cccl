@@ -8,9 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/__random_>
+#include <cuda/std/random>
 
-#include "test_engine.h"
+#include "random_utilities/test_engine.h"
 
 template <typename Engine>
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_set_counter()

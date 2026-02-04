@@ -26,6 +26,7 @@ class StreamLike(Protocol):
     def __cuda_stream__(self) -> tuple[int, int]: ...
 
 
+@runtime_checkable
 class GpuStruct(Protocol):
     """
     Type of instances of structs created with gpu_struct().
