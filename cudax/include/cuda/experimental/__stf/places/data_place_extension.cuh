@@ -65,6 +65,15 @@ class exec_place;
 class data_place_extension
 {
 public:
+  /**
+   * @brief Get the unique type identifier for this extension type
+   *
+   * Used for stable ordering in operator<. Each derived class should return
+   * a unique value computed from a descriptive string using constexpr_hash().
+   * Example: return constexpr_hash("cuda::stf::my_extension");
+   */
+  virtual uint64_t type_uuid() const = 0;
+
   virtual ~data_place_extension() = default;
 
   /**
@@ -105,6 +114,14 @@ public:
    * @return true if the extensions represent the same place
    */
   virtual bool equals(const data_place_extension& other) const = 0;
+
+  /**
+   * @brief Compare ordering with another extension
+   *
+   * @param other The other extension to compare with
+   * @return true if this extension is less than the other
+   */
+  virtual bool less_than(const data_place_extension& other) const = 0;
 
   /**
    * @brief Create a physical memory allocation for this place (VMM API)

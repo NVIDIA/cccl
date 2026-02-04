@@ -32,6 +32,11 @@
 #include <cuda/experimental/__stf/places/data_place_extension.cuh>
 #include <cuda/experimental/__stf/places/exec/green_ctx_view.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
+
+// Used only for unit tests, not in the actual implementation
+#ifdef UNITTESTED_FILE
+#  include <map>
+#endif
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
@@ -155,6 +160,44 @@ public:
   bool operator!=(const data_place& rhs) const
   {
     return !(*this == rhs);
+  }
+
+  // To use in a ::std::map indexed by data_place
+  bool operator<(const data_place& rhs) const
+  {
+    // Not implemented for composite places
+    EXPECT(!is_composite());
+    EXPECT(!rhs.is_composite());
+
+    // If both are extensions, delegate to the extension
+    if (is_extension() && rhs.is_extension())
+    {
+      return extension->less_than(*rhs.extension);
+    }
+
+    // Extensions sort after non-extensions
+    if (is_extension() != rhs.is_extension())
+    {
+      return rhs.is_extension(); // non-extension < extension
+    }
+
+    // For simple places, compare devid
+    return devid < rhs.devid;
+  }
+
+  bool operator>(const data_place& rhs) const
+  {
+    return rhs < *this;
+  }
+
+  bool operator<=(const data_place& rhs) const
+  {
+    return !(rhs < *this);
+  }
+
+  bool operator>=(const data_place& rhs) const
+  {
+    return !(*this < rhs);
   }
 
   /// checks if this data place is a composite data place
@@ -563,6 +606,17 @@ public:
   class impl
   {
   public:
+    /**
+     * @brief Get the unique type identifier for this impl type
+     *
+     * Used for stable ordering in operator<. Each derived class should return
+     * a unique value computed from a descriptive string using constexpr_hash().
+     */
+    virtual uint64_t type_uuid() const
+    {
+      return constexpr_hash("cuda::stf::exec_place::impl");
+    }
+
     // Note that the default ctor assumes an invalid affine data place
     impl()                       = default;
     impl(const impl&)            = delete;
@@ -653,6 +707,18 @@ public:
       return affine.hash();
     }
 
+    virtual bool less_than(const impl& rhs) const
+    {
+      // Different types: order by type_uuid
+      if (type_uuid() != rhs.type_uuid())
+      {
+        return type_uuid() < rhs.type_uuid();
+      }
+      // Same type (both base impl): compare by device ID
+      // (base impl stores devid in affine, so we extract it via device_ordinal)
+      return device_ordinal(affine) < device_ordinal(rhs.affine);
+    }
+
     /* Return the pool associated to this place
      *
      * If the stream is expected to perform computation, the
@@ -704,7 +770,22 @@ public:
   // To use in a ::std::map indexed by exec_place
   bool operator<(const exec_place& rhs) const
   {
-    return pimpl < rhs.pimpl;
+    return pimpl->less_than(*rhs.pimpl);
+  }
+
+  bool operator>(const exec_place& rhs) const
+  {
+    return rhs < *this;
+  }
+
+  bool operator<=(const exec_place& rhs) const
+  {
+    return !(rhs < *this);
+  }
+
+  bool operator>=(const exec_place& rhs) const
+  {
+    return !(*this < rhs);
   }
 
   /**
@@ -1051,13 +1132,22 @@ private:
 class exec_place_host : public exec_place
 {
 public:
-  // Implementation of the exec_place_device class
+  // Implementation of the exec_place_host class
   class impl : public exec_place::impl
   {
   public:
     impl()
         : exec_place::impl(data_place::host())
     {}
+
+    uint64_t type_uuid() const override
+    {
+      return constexpr_hash("cuda::stf::exec_place_host::impl");
+    }
+
+    // less_than: base class implementation is correct (compares type_uuid, then device_ordinal).
+    // Since host is a singleton, all instances compare equal.
+
     exec_place activate() const override
     {
       return exec_place();
@@ -1210,6 +1300,11 @@ public:
       _CCCL_ASSERT(affine.is_invalid(), "");
     }
 
+    uint64_t type_uuid() const override
+    {
+      return constexpr_hash("cuda::stf::exec_place_grid::impl");
+    }
+
     // TODO improve with a better description
     ::std::string to_string() const final
     {
@@ -1271,6 +1366,25 @@ public:
         hash_combine(h, p.hash());
       }
       return h;
+    }
+
+    bool less_than(const exec_place::impl& rhs) const override
+    {
+      // Different types: order by type_uuid
+      if (type_uuid() != rhs.type_uuid())
+      {
+        return type_uuid() < rhs.type_uuid();
+      }
+      // Same type: safe to cast
+      const auto& other = static_cast<const impl&>(rhs);
+      // Compare dims first, then places
+      if (!(dims == other.dims))
+      {
+        // Use tuple comparison for consistent ordering
+        return ::std::tie(dims.x, dims.y, dims.z, dims.t)
+             < ::std::tie(other.dims.x, other.dims.y, other.dims.z, other.dims.t);
+      }
+      return places < other.places;
     }
 
     const ::std::vector<exec_place>& get_places() const
@@ -2151,6 +2265,70 @@ UNITTEST("Data place as unordered_map key")
 UNITTEST("Exec place as unordered_map key")
 {
   ::std::unordered_map<exec_place, int, hash<exec_place>> map;
+
+  // Insert different exec places
+  map[exec_place::host()]    = 1;
+  map[exec_place::device(0)] = 2;
+
+  // Verify lookups work correctly
+  EXPECT(map[exec_place::host()] == 1);
+  EXPECT(map[exec_place::device(0)] == 2);
+
+  // Verify size
+  EXPECT(map.size() == 2);
+
+  // Inserting same key should update, not add
+  map[exec_place::host()] = 10;
+  EXPECT(map.size() == 2);
+  EXPECT(map[exec_place::host()] == 10);
+
+  // Test with multiple devices
+  int ndevices = cuda_try<cudaGetDeviceCount>();
+  if (ndevices >= 2)
+  {
+    map[exec_place::device(1)] = 3;
+    EXPECT(map.size() == 3);
+    EXPECT(map[exec_place::device(0)] == 2);
+    EXPECT(map[exec_place::device(1)] == 3);
+  }
+};
+
+UNITTEST("Data place as std::map key")
+{
+  ::std::map<data_place, int> map;
+
+  // Insert different data places
+  map[data_place::host()]    = 1;
+  map[data_place::managed()] = 2;
+  map[data_place::device(0)] = 3;
+
+  // Verify lookups work correctly
+  EXPECT(map[data_place::host()] == 1);
+  EXPECT(map[data_place::managed()] == 2);
+  EXPECT(map[data_place::device(0)] == 3);
+
+  // Verify size
+  EXPECT(map.size() == 3);
+
+  // Inserting same key should update, not add
+  map[data_place::host()] = 10;
+  EXPECT(map.size() == 3);
+  EXPECT(map[data_place::host()] == 10);
+
+  // Test with multiple devices
+  int ndevices = cuda_try<cudaGetDeviceCount>();
+  if (ndevices >= 2)
+  {
+    map[data_place::device(1)] = 4;
+    EXPECT(map.size() == 4);
+    EXPECT(map[data_place::device(0)] == 3);
+    EXPECT(map[data_place::device(1)] == 4);
+  }
+};
+
+UNITTEST("Exec place as std::map key")
+{
+  ::std::map<exec_place, int> map;
 
   // Insert different exec places
   map[exec_place::host()]    = 1;

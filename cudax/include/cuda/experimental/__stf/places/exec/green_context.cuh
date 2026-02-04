@@ -32,6 +32,11 @@
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 
+// Used only for unit tests, not in the actual implementation
+#ifdef UNITTESTED_FILE
+#  include <map>
+#endif
+
 #if _CCCL_CTK_AT_LEAST(12, 4)
 
 namespace cuda::experimental::stf
@@ -94,6 +99,21 @@ public:
         return false;
       }
       return view_ == other_gc->view_;
+    }
+
+    uint64_t type_uuid() const override
+    {
+      return constexpr_hash("cuda::stf::green_ctx_data_place");
+    }
+
+    bool less_than(const data_place_extension& other) const override
+    {
+      if (type_uuid() != other.type_uuid())
+      {
+        return type_uuid() < other.type_uuid();
+      }
+      const auto& other_gc = static_cast<const extension&>(other);
+      return view_ < other_gc.view_;
     }
 
     /**
@@ -425,6 +445,21 @@ public:
       return ::std::hash<CUgreenCtx>()(g_ctx);
     }
 
+    uint64_t type_uuid() const override
+    {
+      return constexpr_hash("cuda::stf::exec_place_green_ctx::impl");
+    }
+
+    bool less_than(const exec_place::impl& rhs) const override
+    {
+      if (type_uuid() != rhs.type_uuid())
+      {
+        return type_uuid() < rhs.type_uuid();
+      }
+      const auto& other = static_cast<const impl&>(rhs);
+      return g_ctx < other.g_ctx;
+    }
+
   private:
     int devid        = -1;
     CUgreenCtx g_ctx = {};
@@ -735,6 +770,89 @@ UNITTEST("green context exec_place as unordered_map key")
 
   // Green context exec place should still have its value
   EXPECT(map[ep0] == 100);
+};
+
+UNITTEST("green context data_place as std::map key")
+{
+  async_resources_handle handle;
+  auto gc_helper = handle.get_gc_helper(0, 8);
+
+  if (gc_helper->get_count() < 2)
+  {
+    return;
+  }
+
+  auto gc0_view = gc_helper->get_view(0);
+  auto gc1_view = gc_helper->get_view(1);
+
+  auto dp0 = data_place::green_ctx(gc0_view);
+  auto dp1 = data_place::green_ctx(gc1_view);
+
+  // Different green contexts must be distinguished
+  EXPECT(dp0 != dp1);
+
+  ::std::map<data_place, int> map;
+
+  // Insert green context data places
+  map[dp0] = 100;
+  map[dp1] = 200;
+
+  // Verify lookups work correctly
+  EXPECT(map[dp0] == 100);
+  EXPECT(map[dp1] == 200);
+  EXPECT(map.size() == 2);
+
+  // Verify that a new data_place for the same green context finds the same entry
+  auto dp0_copy = data_place::green_ctx(gc0_view);
+  EXPECT(map[dp0_copy] == 100);
+
+  // Mix with regular device data place
+  map[data_place::device(0)] = 300;
+  EXPECT(map.size() == 3);
+  EXPECT(map[data_place::device(0)] == 300);
+  EXPECT(map[dp0] == 100); // Still 100, not overwritten
+};
+
+UNITTEST("green context exec_place as std::map key")
+{
+  async_resources_handle handle;
+  auto gc_helper = handle.get_gc_helper(0, 8);
+
+  if (gc_helper->get_count() < 2)
+  {
+    return;
+  }
+
+  auto gc0_view = gc_helper->get_view(0);
+  auto gc1_view = gc_helper->get_view(1);
+
+  auto ep0 = exec_place::green_ctx(gc0_view);
+  auto ep1 = exec_place::green_ctx(gc1_view);
+
+  // Both share the same affine data_place but must be distinguished
+  EXPECT(ep0.affine_data_place() == ep1.affine_data_place());
+  EXPECT(ep0 != ep1);
+
+  ::std::map<exec_place, int> map;
+
+  // Insert green context exec places
+  map[ep0] = 100;
+  map[ep1] = 200;
+
+  // Verify lookups work correctly
+  EXPECT(map[ep0] == 100);
+  EXPECT(map[ep1] == 200);
+  EXPECT(map.size() == 2);
+
+  // Verify that a new exec_place for the same green context finds the same entry
+  auto ep0_copy = exec_place::green_ctx(gc0_view);
+  EXPECT(map[ep0_copy] == 100);
+
+  // Mix with regular device exec place
+  map[exec_place::device(0)] = 300;
+  EXPECT(map.size() == 3);
+  EXPECT(map[exec_place::device(0)] == 300);
+  EXPECT(map[ep0] == 100); // Still 100
 };
 #  endif // UNITTESTED_FILE
 } // end namespace cuda::experimental::stf
