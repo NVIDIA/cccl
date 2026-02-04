@@ -1772,38 +1772,6 @@ UNITTEST("Data place equality")
   EXPECT(data_place::invalid() != data_place::device(0));
 };
 
-UNITTEST("Data place as unordered_map key")
-{
-  ::std::unordered_map<data_place, int, hash<data_place>> map;
-
-  // Insert different data places
-  map[data_place::host()]    = 1;
-  map[data_place::managed()] = 2;
-  map[data_place::device(0)] = 3;
-
-  // Verify lookups work correctly
-  EXPECT(map[data_place::host()] == 1);
-  EXPECT(map[data_place::managed()] == 2);
-  EXPECT(map[data_place::device(0)] == 3);
-
-  // Verify size
-  EXPECT(map.size() == 3);
-
-  // Inserting same key should update, not add
-  map[data_place::host()] = 10;
-  EXPECT(map.size() == 3);
-  EXPECT(map[data_place::host()] == 10);
-
-  // Test with multiple devices
-  int ndevices = cuda_try<cudaGetDeviceCount>();
-  if (ndevices >= 2)
-  {
-    map[data_place::device(1)] = 4;
-    EXPECT(map.size() == 4);
-    EXPECT(map[data_place::device(0)] == 3);
-    EXPECT(map[data_place::device(1)] == 4);
-  }
-};
 #endif // UNITTESTED_FILE
 
 /**
@@ -2095,4 +2063,40 @@ struct hash<data_place>
     return ::std::hash<int>()(device_ordinal(k));
   }
 };
+
+#ifdef UNITTESTED_FILE
+UNITTEST("Data place as unordered_map key")
+{
+  ::std::unordered_map<data_place, int, hash<data_place>> map;
+
+  // Insert different data places
+  map[data_place::host()]    = 1;
+  map[data_place::managed()] = 2;
+  map[data_place::device(0)] = 3;
+
+  // Verify lookups work correctly
+  EXPECT(map[data_place::host()] == 1);
+  EXPECT(map[data_place::managed()] == 2);
+  EXPECT(map[data_place::device(0)] == 3);
+
+  // Verify size
+  EXPECT(map.size() == 3);
+
+  // Inserting same key should update, not add
+  map[data_place::host()] = 10;
+  EXPECT(map.size() == 3);
+  EXPECT(map[data_place::host()] == 10);
+
+  // Test with multiple devices
+  int ndevices = cuda_try<cudaGetDeviceCount>();
+  if (ndevices >= 2)
+  {
+    map[data_place::device(1)] = 4;
+    EXPECT(map.size() == 4);
+    EXPECT(map[data_place::device(0)] == 3);
+    EXPECT(map[data_place::device(1)] == 4);
+  }
+};
+#endif // UNITTESTED_FILE
+
 } // end namespace cuda::experimental::stf
