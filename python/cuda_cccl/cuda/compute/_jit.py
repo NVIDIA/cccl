@@ -691,36 +691,7 @@ def compile_iterator(it, io_kind: str):
     )
 
 
-# -----------------------------------------------------------------------------
-# Host callback compilation
-# -----------------------------------------------------------------------------
-
-
-def compile_host_op(fn, input_types):
-    """
-    Compile a host-side function (e.g., iterator advance) into a C function pointer.
-
-    Args:
-        fn: The Python function to compile
-        input_types: Tuple of TypeDescriptors for the function signature
-
-    Returns:
-        A ctypes function pointer that can be called from C code
-    """
-    from . import types as cccl_types
-
-    numba_input_types = tuple(
-        type_descriptor_to_numba(t) if isinstance(t, cccl_types.TypeDescriptor) else t
-        for t in input_types
-    )
-
-    sig = numba.types.void(*numba_input_types)
-    c_fn = numba.cfunc(sig)(fn)
-    return c_fn.ctypes
-
-
 __all__ = [
-    "compile_host_op",
     "compile_iterator",
     "compile_op",
     "type_descriptor_to_numba",

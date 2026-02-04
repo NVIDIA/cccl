@@ -16,7 +16,11 @@ from .._cccl_interop import (
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
-from .._utils.protocols import get_data_pointer, validate_and_get_stream
+from .._utils.protocols import (
+    get_data_pointer,
+    is_device_array,
+    validate_and_get_stream,
+)
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
 from ..op import OpAdapter, OpKind, make_op_adapter
@@ -29,7 +33,7 @@ def get_init_kind(
     match init_value:
         case None:
             return _bindings.InitKind.NO_INIT
-        case _ if isinstance(init_value, DeviceArrayLike):
+        case _ if is_device_array(init_value):
             return _bindings.InitKind.FUTURE_VALUE_INIT
         case _:
             return _bindings.InitKind.VALUE_INIT

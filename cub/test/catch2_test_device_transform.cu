@@ -435,22 +435,42 @@ C2H_TEST("DeviceTransform::Transform fancy output iterator type with void value 
   REQUIRE(result == c2h::device_vector<type>(num_items, 3));
 }
 
-C2H_TEST("DeviceTransform::Transform mixed input iterator types", "[device][transform]")
+struct plus_mul_neg
 {
-  using type          = int;
+  template <typename T>
+  __host__ __device__ auto operator()(T a, T b) const
+  {
+    return cuda::std::tuple{a + b, a * b, -a};
+  }
+};
+
+C2H_TEST("DeviceTransform::Transform mixed iterator types 2 -> 3", "[device][transform]")
+{
+  using type          = unsigned; // overflow is defined
   const int num_items = GENERATE(100, 100'000); // try to hit the small and full tile code paths
   cuda::counting_iterator<type> a{0};
   c2h::device_vector<type> b(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(1), b);
 
-  c2h::device_vector<type> result(num_items, thrust::no_init);
-  transform_many(cuda::std::make_tuple(a, b.begin()), result.begin(), num_items, cuda::std::plus<type>{});
+  c2h::device_vector<type> result_a(num_items, thrust::no_init);
+  c2h::device_vector<type> result_b(num_items, thrust::no_init);
+  c2h::device_vector<type> result_c(num_items, thrust::no_init);
+  transform_many(
+    cuda::std::make_tuple(a, b.begin()),
+    cuda::std::make_tuple(
+      result_a.begin(), result_b.begin(), thrust::make_transform_output_iterator(result_c.begin(), cuda::std::negate{})),
+    num_items,
+    plus_mul_neg{});
 
   // compute reference and verify
   c2h::host_vector<type> b_h = b;
-  c2h::host_vector<type> reference_h(num_items);
-  std::transform(a, a + num_items, b_h.begin(), reference_h.begin(), std::plus<type>{});
-  REQUIRE(reference_h == result);
+  c2h::host_vector<type> reference_a_h(num_items, thrust::no_init);
+  std::transform(a, a + num_items, b_h.begin(), reference_a_h.begin(), cuda::std::plus<type>{});
+  c2h::host_vector<type> reference_b_h(num_items, thrust::no_init);
+  std::transform(a, a + num_items, b_h.begin(), reference_b_h.begin(), cuda::std::multiplies<type>{});
+  CHECK(reference_a_h == result_a);
+  CHECK(reference_b_h == result_b);
+  CHECK(thrust::equal(a, a + num_items, result_c.begin()));
 }
 
 struct plus_needs_stable_address

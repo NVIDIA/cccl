@@ -33,8 +33,10 @@ CUB_NAMESPACE_BEGIN
 //! @rst
 //! Store a blocked arrangement of items across a thread block into a linear segment of items
 //!
-//! @blocked
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
 //!
+//! @blocked
 //! @endrst
 //!
 //! @tparam T
@@ -73,8 +75,10 @@ StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
 //! Store a blocked arrangement of items across a
 //! thread block into a linear segment of items, guarded by range
 //!
-//! @blocked
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
 //!
+//! @blocked
 //! @endrst
 //!
 //! @tparam T
@@ -119,6 +123,9 @@ StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
 //! Store a blocked arrangement of items across a
 //! thread block into a linear segment of items.
 //!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
+//!
 //! @blocked
 //!
 //! The output offset (``block_ptr + block_offset``) must be quad-item aligned,
@@ -130,7 +137,6 @@ StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
 //!   - ``ItemsPerThread`` is odd
 //!   - The data type ``T`` is not a built-in primitive or CUDA vector type
 //!     (e.g., ``short``, ``int2``, ``double``, ``float2``, etc.)
-//!
 //! @endrst
 //!
 //! @tparam T
@@ -199,8 +205,10 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
 //! Store a striped arrangement of data across the thread block into a
 //! linear segment of items.
 //!
-//! @striped
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
 //!
+//! @striped
 //! @endrst
 //!
 //! @tparam BLOCK_THREADS
@@ -242,8 +250,10 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
 //! Store a striped arrangement of data across the thread block into
 //! a linear segment of items, guarded by range
 //!
-//! @striped
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
 //!
+//! @striped
 //! @endrst
 //!
 //! @tparam BLOCK_THREADS
@@ -295,13 +305,15 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
 //! Store a warp-striped arrangement of data across the
 //! thread block into a linear segment of items.
 //!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
+//!
 //! @warpstriped
 //!
 //! Usage Considerations
 //! ++++++++++++++++++++
 //!
 //! The number of threads in the thread block must be a multiple of the architecture's warp size.
-//!
 //! @endrst
 //!
 //! @tparam T
@@ -344,13 +356,15 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[Ite
 //! Store a warp-striped arrangement of data across the thread block into a
 //! linear segment of items, guarded by range
 //!
+//! .. versionadded:: 2.2.0
+//!    First appears in CUDA Toolkit 12.3.
+//!
 //! @warpstriped
 //!
 //! Usage Considerations
 //! ++++++++++++++++++++
 //!
 //! The number of threads in the thread block must be a multiple of the architecture's warp size.
-//!
 //! @endrst
 //!
 //! @tparam T
@@ -1095,6 +1109,11 @@ public:
 
   /**
    * @brief Collective constructor using a private static allocation of shared memory as temporary storage.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockStore()
       : temp_storage(PrivateStorage())
@@ -1103,6 +1122,11 @@ public:
 
   /**
    * @brief Collective constructor using the specified memory allocation as temporary storage.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
@@ -1118,6 +1142,9 @@ public:
 
   //! @rst
   //! Store items into a linear segment of memory
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @blocked
   //! - @smemreuse
@@ -1154,7 +1181,6 @@ public:
   //! Suppose the set of ``thread_data`` across the block of threads is
   //! ``{ [0,1,2,3], [4,5,6,7], ..., [508,509,510,511] }``.
   //! The output ``d_data`` will be ``0, 1, 2, 3, 4, 5, ...``.
-  //!
   //! @endrst
   //!
   //! @param[out] block_itr
@@ -1170,6 +1196,9 @@ public:
 
   //! @rst
   //! Store items into a linear segment of memory, guarded by range.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @blocked
   //! - @smemreuse
@@ -1207,7 +1236,6 @@ public:
   //! ``{ [0,1,2,3], [4,5,6,7], ..., [508,509,510,511] }`` and ``valid_items`` is ``5``.
   //! The output ``d_data`` will be ``0, 1, 2, 3, 4, ?, ?, ?, ...``, with
   //! only the first two threads being unmasked to store portions of valid data.
-  //!
   //! @endrst
   //!
   //! @param[out] block_itr
