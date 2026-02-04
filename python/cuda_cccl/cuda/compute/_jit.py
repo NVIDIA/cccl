@@ -35,7 +35,7 @@ from numba.cuda.cudadecl import registry as cuda_registry
 from numba.extending import lower_builtin, lower_cast
 
 from . import types as cccl_types
-from ._bindings import OpKind
+from ._bindings import Op, OpKind
 from ._caching import CachableFunction, cache_with_registered_key_functions
 from ._odr_helpers import create_stateful_op_void_ptr_wrapper
 from ._utils import sanitize_identifier
@@ -45,7 +45,7 @@ from ._utils.protocols import (
     is_contiguous,
     is_device_array,
 )
-from .op import Op, OpAdapter
+from .op import OpAdapter
 from .typing import DeviceArrayLike
 
 # -----------------------------------------------------------------------------
@@ -714,7 +714,7 @@ def _compile_op(op, input_types, output_type=None):
 
 
 class _StatelessOp(OpAdapter):
-    """Adapter for stateles callables."""
+    """Adapter for stateless callables."""
 
     __slots__ = ["_func", "_cachable"]
 
@@ -1029,15 +1029,9 @@ class _JitOpState:
         self.arrays = arrays
 
     def get_cache_key(self) -> Hashable:
-        from ._utils import protocols
-
-        return (tuple(self.names), tuple(protocols.get_dtype(s) for s in self.arrays))
+        return (tuple(self.names), tuple(get_dtype(s) for s in self.arrays))
 
     def to_bytes(self):
-        import struct
-
-        from ._utils.protocols import get_data_pointer
-
         state_ptrs = [get_data_pointer(arr) for arr in self.arrays]
         return struct.pack(f"{len(state_ptrs)}P", *state_ptrs)
 
