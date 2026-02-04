@@ -53,7 +53,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 //
 //    template <class Iterator, class Size, class OutputIterator>
 //    Iterator uninitialized_copy_n(Iterator iter, Size n, OutputIterator out) {
-//        typedef typename iterator_traits<Iterator>::value_type value_type;
+//        using value_type = typename iterator_traits<Iterator>::value_type;
 //        __exception_guard guard([start=out, &out] {
 //            ::cuda::std::destroy(start, out);
 //        });

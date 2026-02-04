@@ -60,7 +60,7 @@ struct NoCopyMoveDeleter : DeleterBase
 template <bool IsArray>
 __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
 {
-  typedef typename cuda::std::conditional<!IsArray, int, int[]>::type VT;
+  using VT = typename cuda::std::conditional<!IsArray, int, int[]>::type;
   {
     using D = CopyOnlyDeleter;
     using U = cuda::std::unique_ptr<VT, D>;
@@ -109,7 +109,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
 template <bool IsArray>
 __host__ __device__ TEST_CONSTEXPR_CXX23 void test_noexcept()
 {
-  typedef typename cuda::std::conditional<!IsArray, int, int[]>::type VT;
+  using VT = typename cuda::std::conditional<!IsArray, int, int[]>::type;
   {
     using D = CopyOnlyDeleter;
     using U = cuda::std::unique_ptr<VT, D>;
@@ -209,7 +209,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae_runtime()
 template <bool IsArray>
 __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
 {
-  typedef typename cuda::std::conditional<!IsArray, A, A[]>::type VT;
+  using VT               = typename cuda::std::conditional<!IsArray, A, A[]>::type;
   const int expect_alive = IsArray ? 5 : 1;
   { // MoveConstructible deleter (C-1)
     A* p = newValue<VT>(expect_alive);
@@ -276,7 +276,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
   {
     assert(A_count == 0);
     { // Void and function pointers (C-6,7)
-      typedef typename cuda::std::conditional<IsArray, int[], int>::type VT2;
+      using VT2      = typename cuda::std::conditional<IsArray, int[], int>::type;
       my_free_called = false;
       {
         int i = 0;
@@ -330,7 +330,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic_single()
 template <bool IsArray>
 __host__ __device__ TEST_CONSTEXPR_CXX23 void test_nullptr()
 {
-  typedef typename cuda::std::conditional<!IsArray, A, A[]>::type VT;
+  using VT = typename cuda::std::conditional<!IsArray, A, A[]>::type;
   {
     cuda::std::unique_ptr<VT, Deleter<VT>> u(nullptr, Deleter<VT>{});
     assert(u.get() == nullptr);

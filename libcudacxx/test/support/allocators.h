@@ -24,7 +24,7 @@ public:
       : id_(id)
   {}
 
-  typedef T value_type;
+  using value_type = T;
 
   __device__ __host__ int id() const
   {
@@ -117,12 +117,12 @@ public:
       : id_(id)
   {}
 
-  typedef T value_type;
+  using value_type = T;
 
-  typedef unsigned size_type;
-  typedef int difference_type;
+  using size_type       = unsigned;
+  using difference_type = int;
 
-  typedef cuda::std::true_type propagate_on_container_move_assignment;
+  using propagate_on_container_move_assignment = cuda::std::true_type;
 
   __device__ __host__ int id() const
   {
@@ -185,10 +185,10 @@ public:
       : id_(id)
   {}
 
-  typedef T value_type;
+  using value_type = T;
 
-  typedef cuda::std::true_type propagate_on_container_copy_assignment;
-  typedef cuda::std::true_type propagate_on_container_swap;
+  using propagate_on_container_copy_assignment = cuda::std::true_type;
+  using propagate_on_container_swap            = cuda::std::true_type;
 
   __device__ __host__ int id() const
   {

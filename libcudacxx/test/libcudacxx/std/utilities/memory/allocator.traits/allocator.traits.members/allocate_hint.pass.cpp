@@ -26,7 +26,7 @@
 template <class T>
 struct A
 {
-  typedef T value_type;
+  using value_type = T;
 
   __host__ __device__ TEST_CONSTEXPR_CXX20 A() {}
 
@@ -42,7 +42,7 @@ struct A
 template <class T>
 struct B
 {
-  typedef T value_type;
+  using value_type = T;
 
   __host__ __device__ TEST_CONSTEXPR_CXX20 value_type* allocate(cuda::std::size_t n, const void* p)
   {
@@ -61,7 +61,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     assert(cuda::std::allocator_traits<A<int>>::allocate(a, 10, nullptr) == &a.storage);
   }
   {
-    typedef A<IncompleteHolder*> Alloc;
+    using Alloc = A<IncompleteHolder*>;
     Alloc a;
     assert(cuda::std::allocator_traits<Alloc>::allocate(a, 10, nullptr) == &a.storage);
   }
@@ -70,7 +70,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     assert(cuda::std::allocator_traits<B<int>>::allocate(b, 11, nullptr) == &b.storage);
   }
   {
-    typedef B<IncompleteHolder*> Alloc;
+    using Alloc = B<IncompleteHolder*>;
     Alloc b;
     assert(cuda::std::allocator_traits<Alloc>::allocate(b, 11, nullptr) == &b.storage);
   }

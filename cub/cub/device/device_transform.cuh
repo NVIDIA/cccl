@@ -116,6 +116,9 @@ public:
   //! input elements and writing the result to the corresponding output element. No guarantee is given on the identity
   //! (i.e. address) of the objects passed to the call operator of the transformation operation.
   //!
+  //! .. versionadded:: 2.8.0
+  //!    First appears in CUDA Toolkit 12.9.
+  //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -186,6 +189,9 @@ public:
   //! Transforms one input sequence into one output sequence, by applying a transformation operation on each input
   //! element and writing the result to the corresponding output element. No guarantee is given on the identity (i.e.
   //! address) of the objects passed to the call operator of the transformation operation.
+  //!
+  //! .. versionadded:: 2.8.0
+  //!    First appears in CUDA Toolkit 12.9.
   //! @endrst
   //!
   //! @param input An iterator to the input sequence where num_items elements are read from.
@@ -250,6 +256,9 @@ public:
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //! Fills the output sequence by invoking a generator operation for each output element and writing the result to it.
   //! This is effectively calling Transform with no input sequences.
+  //!
+  //! .. versionadded:: 2.8.0
+  //!    First appears in CUDA Toolkit 12.9.
   //! @endrst
   //!
   //! @param output An iterator to the output sequence where num_items results are written to.
@@ -307,6 +316,9 @@ public:
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //! Fills the output sequence by writing the provided value to each element of the output sequence.
   //! This is effectively calling Generate with a functor returning that value.
+  //!
+  //! .. versionadded:: 2.8.0
+  //!    First appears in CUDA Toolkit 12.9.
   //! @endrst
   //!
   //! @param output An iterator to the output sequence where num_items results are written to.
@@ -362,6 +374,9 @@ public:
   //! corresponding input elements, if a given predicate is true, and writing the result to the corresponding output
   //! element. No guarantee is given on the identity (i.e. address) of the objects passed to the call operator of the
   //! predicate and transformation operation. Output elements for which the predicate returns false are not written to.
+  //!
+  //! .. versionadded:: 2.8.0
+  //!    First appears in CUDA Toolkit 12.9.
   //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -453,6 +468,9 @@ public:
   //! guarantee is given on the identity (i.e. address) of the objects passed to the call operator of the predicate and
   //! transformation operation. Output elements for which the predicate returns false are not written to.
   //!
+  //! .. versionadded:: 2.8.0
+  //!    First appears in CUDA Toolkit 12.9.
+  //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -539,6 +557,9 @@ public:
   //! input elements and writing the result to the corresponding output element. The objects passed to the call operator
   //! of the transformation operation are guaranteed to reside in the input sequences and are never copied.
   //!
+  //! .. versionadded:: 2.8.0
+  //!    First appears in CUDA Toolkit 12.9.
+  //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -608,6 +629,9 @@ public:
   //! Transforms one input sequence into one output sequence, by applying a transformation operation on corresponding
   //! input elements and writing the result to the corresponding output element. The objects passed to the call operator
   //! of the transformation operation are guaranteed to reside in the input sequences and are never copied.
+  //!
+  //! .. versionadded:: 2.8.0
+  //!    First appears in CUDA Toolkit 12.9.
   //! @endrst
   //!
   //! @param input An iterator to the input sequence where num_items elements are read from.
