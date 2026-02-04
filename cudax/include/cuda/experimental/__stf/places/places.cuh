@@ -2098,5 +2098,4 @@ UNITTEST("Data place as unordered_map key")
   }
 };
 #endif // UNITTESTED_FILE
-
 } // end namespace cuda::experimental::stf
