@@ -837,10 +837,10 @@ class _AddStateParameters(ast.NodeTransformer):
         self.state_names = state_names
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:
-        # Append state parameters to the function arguments (states come last)
-        # Inner function signature: (regular_args..., state_arrays...)
+        # Prepend state parameters to the function arguments
+        # Inner function signature: (state_arrays..., regular_args...)
         new_args = [ast.arg(arg=name, annotation=None) for name in self.state_names]
-        node.args.args = node.args.args + new_args
+        node.args.args = new_args + node.args.args
         return node
 
     def visit_AsyncFunctionDef(
@@ -848,7 +848,7 @@ class _AddStateParameters(ast.NodeTransformer):
     ) -> ast.AsyncFunctionDef:
         # Handle async functions the same way
         new_args = [ast.arg(arg=name, annotation=None) for name in self.state_names]
-        node.args.args = node.args.args + new_args
+        node.args.args = new_args + node.args.args
         return node
 
 
@@ -966,8 +966,8 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
     # Infer output type if needed
     if output_type is None:
         # Compile with Numba to infer return type
-        # The transformed function expects (regular_args..., state_arrays...)
-        all_numba_input_types = numba_input_types + tuple(state_array_types)
+        # The transformed function expects (state_arrays..., regular_args...)
+        all_numba_input_types = tuple(state_array_types) + numba_input_types
         sanitized_name = sanitize_identifier(op.__name__)
         unique_suffix = hex(id(op))[2:]
         abi_name = f"{sanitized_name}_{unique_suffix}"
@@ -982,8 +982,8 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
     # Convert output type to Numba type
     numba_output_type = type_descriptor_to_numba(output_type)
 
-    # Build full signature: output_type(regular_args..., state_arrays...)
-    sig = numba_output_type(*numba_input_types, *state_array_types)
+    # Build full signature: output_type(state_arrays..., regular_args...)
+    sig = numba_output_type(*state_array_types, *numba_input_types)
 
     # Get state pointers - pointers to the device array data
     state_ptrs = [get_data_pointer(arr) for arr in state_arrays]

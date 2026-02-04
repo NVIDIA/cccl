@@ -159,7 +159,7 @@ def _codegen_void_ptr_wrapper(
     """
 
     input_vals = []
-    state_array_vals = []  # Collected separately, appended at end
+    state_array_vals = []
     ret_ptr = None
 
     for i, (arg, spec) in enumerate(zip(args, arg_specs)):
@@ -188,8 +188,8 @@ def _codegen_void_ptr_wrapper(
             case _:
                 raise ValueError(f"Invalid arg mode: {spec.mode}")
 
-    # Append state arrays at the end (inner_sig expects regular args first)
-    input_vals.extend(state_array_vals)
+    # Prepend state arrays at the beginning (inner_sig expects state args first)
+    input_vals = state_array_vals + input_vals
 
     # Call the inner function
     cres = context.compile_subroutine(builder, func_device, inner_sig, caching=False)
@@ -292,7 +292,7 @@ def create_stateful_op_void_ptr_wrapper(
 
     Args:
         op: The user's callable operator
-        sig: The signature of the operator (regular_arg, state_array1, state_array2, ...) -> return_type
+        sig: The signature of the operator (state_array1, state_array2, ..., regular_arg1, regular_arg2, ...) -> return_type
         state_array_types: List/tuple of numba Array types for the state parameters
         state_info: List/tuple of dicts with 'shape', 'itemsize', 'strides' for each state array
 
@@ -300,14 +300,13 @@ def create_stateful_op_void_ptr_wrapper(
         Tuple of (wrapper_func, wrapper_sig)
     """
     num_states = len(state_array_types)
-    num_regular_args = len(sig.args) - num_states
 
     # Build arg_specs: states_ptr + regular inputs + result
     # The packed state arrays spec goes first, then regular LOAD args, then STORE for result
     # numba_type is a list of (array_type, info) tuples
     type_info_pairs = list(zip(state_array_types, state_info))
     arg_specs = [_ArgSpec(type_info_pairs, _ArgMode.STATE)]
-    for i in range(num_regular_args):
+    for i in range(num_states, len(sig.args)):
         arg_specs.append(_ArgSpec(sig.args[i], _ArgMode.LOAD))
     arg_specs.append(_ArgSpec(sig.return_type, _ArgMode.STORE))
 
