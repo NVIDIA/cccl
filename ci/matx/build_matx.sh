@@ -102,4 +102,4 @@ cmake \
   -DMATX_BUILD_BENCHMARKS=ON \
   -DMATX_EN_CUTENSOR=ON
 
-cmake --build build -j "${PARALLEL_LEVEL:-}"
+cmake --build build -j ${PARALLEL_LEVEL:-}
