@@ -30,4 +30,4 @@ cmake -B build -S . -G Ninja \
   `# Explicitly compile for hopper since the CI machine does not have a gpu:` \
   -DCMAKE_CXX_FLAGS="-gpu=cc90"
 
-cmake --build build -j "${PARALLEL_LEVEL:-}"
+cmake --build build -j ${PARALLEL_LEVEL:-}
