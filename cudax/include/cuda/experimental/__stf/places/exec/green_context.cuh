@@ -101,16 +101,11 @@ public:
       return view_ == other_gc->view_;
     }
 
-    uint64_t type_uuid() const override
-    {
-      return constexpr_hash("cuda::stf::green_ctx_data_place");
-    }
-
     bool less_than(const data_place_extension& other) const override
     {
-      if (type_uuid() != other.type_uuid())
+      if (typeid(*this) != typeid(other))
       {
-        return type_uuid() < other.type_uuid();
+        return typeid(*this).before(typeid(other));
       }
       const auto& other_gc = static_cast<const extension&>(other);
       return view_ < other_gc.view_;
@@ -445,16 +440,11 @@ public:
       return ::std::hash<CUgreenCtx>()(g_ctx);
     }
 
-    uint64_t type_uuid() const override
-    {
-      return constexpr_hash("cuda::stf::exec_place_green_ctx::impl");
-    }
-
     bool less_than(const exec_place::impl& rhs) const override
     {
-      if (type_uuid() != rhs.type_uuid())
+      if (typeid(*this) != typeid(rhs))
       {
-        return type_uuid() < rhs.type_uuid();
+        return typeid(*this).before(typeid(rhs));
       }
       const auto& other = static_cast<const impl&>(rhs);
       return g_ctx < other.g_ctx;

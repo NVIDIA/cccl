@@ -86,16 +86,11 @@ public:
       return ::std::hash<cudaStream_t>()(dstream.stream);
     }
 
-    uint64_t type_uuid() const override
-    {
-      return constexpr_hash("cuda::stf::exec_place_cuda_stream::impl");
-    }
-
     bool less_than(const exec_place::impl& rhs) const override
     {
-      if (type_uuid() != rhs.type_uuid())
+      if (typeid(*this) != typeid(rhs))
       {
-        return type_uuid() < rhs.type_uuid();
+        return typeid(*this).before(typeid(rhs));
       }
       const auto& other = static_cast<const impl&>(rhs);
       return dstream.stream < other.dstream.stream;

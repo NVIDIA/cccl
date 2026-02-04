@@ -31,21 +31,6 @@
 namespace cuda::experimental::stf
 {
 /**
- * @brief Compile-time FNV-1a hash for strings
- *
- * Used to generate unique type identifiers from string literals at compile time.
- * Useful for type discrimination in polymorphic hierarchies without RTTI.
- *
- * @param str The string to hash
- * @param hash The initial hash value (FNV offset basis)
- * @return The computed hash value
- */
-constexpr uint64_t constexpr_hash(const char* str, uint64_t hash = 14695981039346656037ull)
-{
-  return *str ? constexpr_hash(str + 1, (hash ^ static_cast<uint64_t>(*str)) * 1099511628211ull) : hash;
-}
-
-/**
  * @brief We define a hash trait class in our namespace
  */
 template <typename T>

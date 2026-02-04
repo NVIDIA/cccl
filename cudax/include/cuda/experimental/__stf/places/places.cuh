@@ -33,6 +33,8 @@
 #include <cuda/experimental/__stf/places/exec/green_ctx_view.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 
+#include <typeinfo>
+
 // Used only for unit tests, not in the actual implementation
 #ifdef UNITTESTED_FILE
 #  include <map>
@@ -606,17 +608,6 @@ public:
   class impl
   {
   public:
-    /**
-     * @brief Get the unique type identifier for this impl type
-     *
-     * Used for stable ordering in operator<. Each derived class should return
-     * a unique value computed from a descriptive string using constexpr_hash().
-     */
-    virtual uint64_t type_uuid() const
-    {
-      return constexpr_hash("cuda::stf::exec_place::impl");
-    }
-
     // Note that the default ctor assumes an invalid affine data place
     impl()                       = default;
     impl(const impl&)            = delete;
@@ -709,10 +700,10 @@ public:
 
     virtual bool less_than(const impl& rhs) const
     {
-      // Different types: order by type_uuid
-      if (type_uuid() != rhs.type_uuid())
+      // Different types: order by typeid
+      if (typeid(*this) != typeid(rhs))
       {
-        return type_uuid() < rhs.type_uuid();
+        return typeid(*this).before(typeid(rhs));
       }
       // Same type (both base impl): compare by device ID
       // (base impl stores devid in affine, so we extract it via device_ordinal)
@@ -1140,12 +1131,7 @@ public:
         : exec_place::impl(data_place::host())
     {}
 
-    uint64_t type_uuid() const override
-    {
-      return constexpr_hash("cuda::stf::exec_place_host::impl");
-    }
-
-    // less_than: base class implementation is correct (compares type_uuid, then device_ordinal).
+    // less_than: base class implementation is correct (compares typeid, then device_ordinal).
     // Since host is a singleton, all instances compare equal.
 
     exec_place activate() const override
@@ -1300,11 +1286,6 @@ public:
       _CCCL_ASSERT(affine.is_invalid(), "");
     }
 
-    uint64_t type_uuid() const override
-    {
-      return constexpr_hash("cuda::stf::exec_place_grid::impl");
-    }
-
     // TODO improve with a better description
     ::std::string to_string() const final
     {
@@ -1370,10 +1351,10 @@ public:
 
     bool less_than(const exec_place::impl& rhs) const override
     {
-      // Different types: order by type_uuid
-      if (type_uuid() != rhs.type_uuid())
+      // Different types: order by typeid
+      if (typeid(*this) != typeid(rhs))
       {
-        return type_uuid() < rhs.type_uuid();
+        return typeid(*this).before(typeid(rhs));
       }
       // Same type: safe to cast
       const auto& other = static_cast<const impl&>(rhs);
