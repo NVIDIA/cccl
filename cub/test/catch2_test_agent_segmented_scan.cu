@@ -502,3 +502,67 @@ C2H_TEST("agent_segmented_scan works for exclusive_scan with three segments per 
 
   REQUIRE(h_expected == h_output);
 }
+
+C2H_TEST("agent_segmented_scan overlaunch with two segments per block",
+         "[agent_multiple_segments_per_block][segmented][scan]")
+{
+  using op_t   = impl::bicyclic_monoid_op<unsigned>;
+  using pair_t = typename op_t::pair_t;
+
+  unsigned num_items = 128 * 15 * 4;
+  c2h::device_vector<unsigned> offsets{
+    0, num_items / 5, 2 * (num_items / 5), 3 * (num_items / 5), 4 * (num_items / 5), num_items};
+  size_t num_segments = offsets.size() - 1;
+
+  c2h::device_vector<pair_t> input(num_items);
+  thrust::tabulate(input.begin(), input.end(), impl::populate_input<unsigned>{});
+  c2h::device_vector<pair_t> output(input.size());
+
+  pair_t* d_input     = thrust::raw_pointer_cast(input.data());
+  pair_t* d_output    = thrust::raw_pointer_cast(output.data());
+  unsigned* d_offsets = thrust::raw_pointer_cast(offsets.data());
+
+  constexpr int block_size             = 128;
+  constexpr int items_per_thread       = 4;
+  constexpr int segments_per_block     = 2;
+  constexpr int max_segments_per_block = 256;
+  using chained_policy_t               = ChainedPolicy<block_size, items_per_thread, max_segments_per_block>;
+
+  const auto n_segments = static_cast<unsigned>(num_segments);
+  const auto grid_size  = n_segments;
+
+  [[maybe_unused]] const auto itp = items_per_thread;
+
+  cub::detail::segmented_scan::device_segmented_scan_kernel<
+    chained_policy_t,
+    pair_t*,
+    pair_t*,
+    unsigned*,
+    unsigned*,
+    unsigned*,
+    unsigned,
+    op_t,
+    cub::NullType,
+    pair_t,
+    true><<<grid_size, block_size>>>(
+    d_input, d_output, d_offsets, d_offsets + 1, d_offsets, n_segments, op_t{}, cub::NullType{}, segments_per_block);
+
+  REQUIRE(cudaSuccess == cudaGetLastError());
+
+  c2h::host_vector<pair_t> h_output(output);
+  c2h::host_vector<pair_t> h_input(input);
+  c2h::host_vector<pair_t> h_expected(input.size());
+  c2h::host_vector<unsigned> h_offsets(offsets);
+
+  for (unsigned segment_id = 0; segment_id < num_segments; ++segment_id)
+  {
+    compute_inclusive_scan_reference(
+      h_input.begin() + h_offsets[segment_id],
+      h_input.begin() + h_offsets[segment_id + 1],
+      h_expected.begin() + h_offsets[segment_id],
+      op_t{},
+      pair_t{0, 0});
+  }
+
+  REQUIRE(h_expected == h_output);
+}
