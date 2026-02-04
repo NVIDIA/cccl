@@ -1529,6 +1529,9 @@
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0_iEN3cub28StoreDirectBlockedVectorizedEviP1TRA14ItemsPerThread_1T" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Store a blocked arrangement of items across a
 thread block into a linear segment of items.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <p>Assumes a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of (<em>block-threads</em> * <em>items-per-thread</em>) items across the thread block, where <em>thread</em><sub>i</sub> owns the <em>i</em><sup>th</sup> range of <em>items-per-thread</em> contiguous items. For multi-dimensional thread blocks, a row-major thread ordering is assumed.</p>
 <p>The output offset (<code class="docutils literal notranslate"><span class="pre">block_ptr</span> <span class="pre">+</span> <span class="pre">block_offset</span></code>) must be quad-item aligned,
 which is the default starting offset returned by <code class="docutils literal notranslate"><span class="pre">cudaMalloc()</span></code></p>

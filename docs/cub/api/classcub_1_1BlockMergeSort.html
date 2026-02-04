@@ -1615,7 +1615,11 @@ This example can be easily adapted to the storage required by <a class="referenc
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub14BlockMergeSort4SortEvRA14ItemsPerThread_4KeyT9CompareOp" title="Link to this definition">#</a><br /></dt>
 <dd><p>Sorts items partitioned across a CUDA thread block using a merge sorting method. </p>
-<p><dl class="simple">
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
+<dl class="simple">
 <dt><strong></strong></dt><dd><p>Sort is not guaranteed to be stable. That is, suppose that i and j are equivalent: neither one is less than the other. It is not guaranteed that the relative order of these two elements will be preserved by sort.</p>
 </dd>
 </dl>
@@ -1646,7 +1650,11 @@ This example can be easily adapted to the storage required by <a class="referenc
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub14BlockMergeSort4SortEvRA14ItemsPerThread_4KeyT9CompareOpi4KeyT" title="Link to this definition">#</a><br /></dt>
 <dd><p>Sorts items partitioned across a CUDA thread block using a merge sorting method. </p>
-<p><dl class="simple">
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
+<dl class="simple">
 <dt><strong></strong></dt><dd><p><ul class="simple">
 <li><p>Sort is not guaranteed to be stable. That is, suppose that <code class="docutils literal notranslate"><span class="pre">i</span></code> and <code class="docutils literal notranslate"><span class="pre">j</span></code> are equivalent: neither one is less than the other. It is not guaranteed that the relative order of these two elements will be preserved by sort.</p></li>
 <li><p>The value of <code class="docutils literal notranslate"><span class="pre">oob_default</span></code> is assigned to all elements that are out of <code class="docutils literal notranslate"><span class="pre">valid_items</span></code> boundaries. It’s expected that <code class="docutils literal notranslate"><span class="pre">oob_default</span></code> is ordered after any value in the <code class="docutils literal notranslate"><span class="pre">valid_items</span></code> boundaries. The algorithm always sorts a fixed amount of elements, which is equal to <code class="docutils literal notranslate"><span class="pre">ItemsPerThread</span> <span class="pre">*</span> <span class="pre">BLOCK_THREADS</span></code>. If there is a value that is ordered after <code class="docutils literal notranslate"><span class="pre">oob_default</span></code>, it won’t be placed within <code class="docutils literal notranslate"><span class="pre">valid_items</span></code> boundaries.</p></li>
@@ -1682,7 +1690,11 @@ This example can be easily adapted to the storage required by <a class="referenc
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub14BlockMergeSort4SortEvRA14ItemsPerThread_4KeyTRA14ItemsPerThread_6ValueT9CompareOp" title="Link to this definition">#</a><br /></dt>
 <dd><p>Sorts items partitioned across a CUDA thread block using a merge sorting method. </p>
-<p><dl class="simple">
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
+<dl class="simple">
 <dt><strong></strong></dt><dd><p>Sort is not guaranteed to be stable. That is, suppose that <code class="docutils literal notranslate"><span class="pre">i</span></code> and <code class="docutils literal notranslate"><span class="pre">j</span></code> are equivalent: neither one is less than the other. It is not guaranteed that the relative order of these two elements will be preserved by sort.</p>
 </dd>
 </dl>
@@ -1715,7 +1727,11 @@ This example can be easily adapted to the storage required by <a class="referenc
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0_bEN3cub14BlockMergeSort4SortEvRA14ItemsPerThread_4KeyTRA14ItemsPerThread_6ValueT9CompareOpi4KeyT" title="Link to this definition">#</a><br /></dt>
 <dd><p>Sorts items partitioned across a CUDA thread block using a merge sorting method. </p>
-<p><dl class="simple">
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
+<dl class="simple">
 <dt><strong></strong></dt><dd><p><ul class="simple">
 <li><p>Sort is not guaranteed to be stable. That is, suppose that <code class="docutils literal notranslate"><span class="pre">i</span></code> and <code class="docutils literal notranslate"><span class="pre">j</span></code> are equivalent: neither one is less than the other. It is not guaranteed that the relative order of these two elements will be preserved by sort.</p></li>
 <li><p>The value of <code class="docutils literal notranslate"><span class="pre">oob_default</span></code> is assigned to all elements that are out of <code class="docutils literal notranslate"><span class="pre">valid_items</span></code> boundaries. It’s expected that <code class="docutils literal notranslate"><span class="pre">oob_default</span></code> is ordered after any value in the <code class="docutils literal notranslate"><span class="pre">valid_items</span></code> boundaries. The algorithm always sorts a fixed amount of elements, which is equal to <code class="docutils literal notranslate"><span class="pre">ItemsPerThread</span> <span class="pre">*</span> <span class="pre">BLOCK_THREADS</span></code>. If there is a value that is ordered after <code class="docutils literal notranslate"><span class="pre">oob_default</span></code>, it won’t be placed within <code class="docutils literal notranslate"><span class="pre">valid_items</span></code> boundaries.</p></li>
@@ -1754,7 +1770,11 @@ This example can be easily adapted to the storage required by <a class="referenc
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub14BlockMergeSort10StableSortEvRA14ItemsPerThread_4KeyT9CompareOp" title="Link to this definition">#</a><br /></dt>
 <dd><p>Sorts items partitioned across a CUDA thread block using a merge sorting method. </p>
-<p><dl class="simple">
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
+<dl class="simple">
 <dt><strong></strong></dt><dd><p>StableSort is stable: it preserves the relative ordering of equivalent elements. That is, if <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> are elements such that <code class="docutils literal notranslate"><span class="pre">x</span></code> precedes <code class="docutils literal notranslate"><span class="pre">y</span></code>, and if the two elements are equivalent (neither <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">&lt;</span> <span class="pre">y</span></code> nor <code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">&lt;</span> <span class="pre">x</span></code>) then a postcondition of StableSort is that <code class="docutils literal notranslate"><span class="pre">x</span></code> still precedes <code class="docutils literal notranslate"><span class="pre">y</span></code>.</p>
 </dd>
 </dl>
@@ -1784,7 +1804,11 @@ This example can be easily adapted to the storage required by <a class="referenc
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub14BlockMergeSort10StableSortEvRA14ItemsPerThread_4KeyTRA14ItemsPerThread_6ValueT9CompareOp" title="Link to this definition">#</a><br /></dt>
 <dd><p>Sorts items partitioned across a CUDA thread block using a merge sorting method. </p>
-<p><dl class="simple">
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
+<dl class="simple">
 <dt><strong></strong></dt><dd><p>StableSort is stable: it preserves the relative ordering of equivalent elements. That is, if <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> are elements such that <code class="docutils literal notranslate"><span class="pre">x</span></code> precedes <code class="docutils literal notranslate"><span class="pre">y</span></code>, and if the two elements are equivalent (neither <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">&lt;</span> <span class="pre">y</span></code> nor <code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">&lt;</span> <span class="pre">x</span></code>) then a postcondition of StableSort is that <code class="docutils literal notranslate"><span class="pre">x</span></code> still precedes <code class="docutils literal notranslate"><span class="pre">y</span></code>.</p>
 </dd>
 </dl>
@@ -1816,7 +1840,11 @@ This example can be easily adapted to the storage required by <a class="referenc
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub14BlockMergeSort10StableSortEvRA14ItemsPerThread_4KeyT9CompareOpi4KeyT" title="Link to this definition">#</a><br /></dt>
 <dd><p>Sorts items partitioned across a CUDA thread block using a merge sorting method. </p>
-<p><dl class="simple">
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
+<dl class="simple">
 <dt><strong></strong></dt><dd><p><ul class="simple">
 <li><p>StableSort is stable: it preserves the relative ordering of equivalent elements. That is, if <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> are elements such that <code class="docutils literal notranslate"><span class="pre">x</span></code> precedes <code class="docutils literal notranslate"><span class="pre">y</span></code>, and if the two elements are equivalent (neither <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">&lt;</span> <span class="pre">y</span></code> nor <code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">&lt;</span> <span class="pre">x</span></code>) then a postcondition of StableSort is that <code class="docutils literal notranslate"><span class="pre">x</span></code> still precedes <code class="docutils literal notranslate"><span class="pre">y</span></code>.</p></li>
 <li><p>The value of <code class="docutils literal notranslate"><span class="pre">oob_default</span></code> is assigned to all elements that are out of <code class="docutils literal notranslate"><span class="pre">valid_items</span></code> boundaries. It’s expected that <code class="docutils literal notranslate"><span class="pre">oob_default</span></code> is ordered after any value in the <code class="docutils literal notranslate"><span class="pre">valid_items</span></code> boundaries. The algorithm always sorts a fixed amount of elements, which is equal to <code class="docutils literal notranslate"><span class="pre">ItemsPerThread</span> <span class="pre">*</span> <span class="pre">BLOCK_THREADS</span></code>. If there is a value that is ordered after <code class="docutils literal notranslate"><span class="pre">oob_default</span></code>, it won’t be placed within <code class="docutils literal notranslate"><span class="pre">valid_items</span></code> boundaries.</p></li>
@@ -1854,7 +1882,11 @@ This example can be easily adapted to the storage required by <a class="referenc
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0_bEN3cub14BlockMergeSort10StableSortEvRA14ItemsPerThread_4KeyTRA14ItemsPerThread_6ValueT9CompareOpi4KeyT" title="Link to this definition">#</a><br /></dt>
 <dd><p>Sorts items partitioned across a CUDA thread block using a merge sorting method. </p>
-<p><dl class="simple">
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
+<dl class="simple">
 <dt><strong></strong></dt><dd><p><ul class="simple">
 <li><p>StableSort is stable: it preserves the relative ordering of equivalent elements. That is, if <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> are elements such that <code class="docutils literal notranslate"><span class="pre">x</span></code> precedes <code class="docutils literal notranslate"><span class="pre">y</span></code>, and if the two elements are equivalent (neither <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">&lt;</span> <span class="pre">y</span></code> nor <code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">&lt;</span> <span class="pre">x</span></code>) then a postcondition of StableSort is that <code class="docutils literal notranslate"><span class="pre">x</span></code> still precedes <code class="docutils literal notranslate"><span class="pre">y</span></code>.</p></li>
 <li><p>The value of <code class="docutils literal notranslate"><span class="pre">oob_default</span></code> is assigned to all elements that are out of <code class="docutils literal notranslate"><span class="pre">valid_items</span></code> boundaries. It’s expected that <code class="docutils literal notranslate"><span class="pre">oob_default</span></code> is ordered after any value in the <code class="docutils literal notranslate"><span class="pre">valid_items</span></code> boundaries. The algorithm always sorts a fixed amount of elements, which is equal to <code class="docutils literal notranslate"><span class="pre">ItemsPerThread</span> <span class="pre">*</span> <span class="pre">BLOCK_THREADS</span></code>. If there is a value that is ordered after <code class="docutils literal notranslate"><span class="pre">oob_default</span></code>, it won’t be placed within <code class="docutils literal notranslate"><span class="pre">valid_items</span></code> boundaries.</p></li>

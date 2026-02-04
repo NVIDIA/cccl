@@ -1599,12 +1599,20 @@ The corresponding output <code class="docutils literal notranslate"><span class=
 <dt class="sig sig-object cpp" id="_CPPv4N3cub23BlockAdjacentDifference23BlockAdjacentDifferenceEv">
 <span class="target" id="classcub_1_1BlockAdjacentDifference_1a22ffd27e1cde9e9f647443176c3f0a96"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BlockAdjacentDifference</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub23BlockAdjacentDifference23BlockAdjacentDifferenceEv" title="Link to this definition">#</a><br /></dt>
 <dd><p>Collective constructor using a private static allocation of shared memory as temporary storage. </p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 </dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N3cub23BlockAdjacentDifference23BlockAdjacentDifferenceER11TempStorage">
 <span class="target" id="classcub_1_1BlockAdjacentDifference_1a8cc2d0c04eaac54f80479897f0a769b0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BlockAdjacentDifference</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4N3cub23BlockAdjacentDifference11TempStorageE" title="cub::BlockAdjacentDifference::TempStorage"><span class="n"><span class="pre">TempStorage</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">temp_storage</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub23BlockAdjacentDifference23BlockAdjacentDifferenceER11TempStorage" title="Link to this definition">#</a><br /></dt>
 <dd><p>Collective constructor using the specified memory allocation as temporary storage. </p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>temp_storage</strong> – <strong>[in]</strong> Reference to memory allocation having layout type <a class="reference internal" href="#structcub_1_1BlockAdjacentDifference_1_1TempStorage"><span class="std std-ref">TempStorage</span></a></p>
@@ -1627,6 +1635,9 @@ The corresponding output <code class="docutils literal notranslate"><span class=
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i00EN3cub23BlockAdjacentDifference12SubtractLeftEvRA16ITEMS_PER_THREAD_1TRA16ITEMS_PER_THREAD_10OutputType13DifferenceOpT" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Subtracts the left element of each adjacent pair of elements partitioned across a CUDA thread block.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>For multi-dimensional blocks, threads are linearly ranked in row-major order.</p></li>
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code> threadblock barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
@@ -1697,6 +1708,9 @@ The corresponding output <code class="docutils literal notranslate"><span class=
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i00EN3cub23BlockAdjacentDifference12SubtractLeftEvRA16ITEMS_PER_THREAD_1TRA16ITEMS_PER_THREAD_7OutputT13DifferenceOpT1T" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Subtracts the left element of each adjacent pair of elements partitioned across a CUDA thread block.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>For multi-dimensional blocks, threads are linearly ranked in row-major order.</p></li>
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code> threadblock barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
@@ -1777,6 +1791,9 @@ and that <cite>tile_predecessor_item</cite> is <cite>3</cite>. The corresponding
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i00EN3cub23BlockAdjacentDifference23SubtractLeftPartialTileEvRA16ITEMS_PER_THREAD_1TRA16ITEMS_PER_THREAD_10OutputType13DifferenceOpTi" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Subtracts the left element of each adjacent pair of elements partitioned across a CUDA thread block.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>For multi-dimensional blocks, threads are linearly ranked in row-major order.</p></li>
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code> threadblock barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
@@ -1852,6 +1869,9 @@ The corresponding output <code class="docutils literal notranslate"><span class=
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i00EN3cub23BlockAdjacentDifference23SubtractLeftPartialTileEvRA16ITEMS_PER_THREAD_1TRA16ITEMS_PER_THREAD_10OutputType13DifferenceOpTi1T" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Subtracts the left element of each adjacent pair of elements partitioned across a CUDA thread block.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>For multi-dimensional blocks, threads are linearly ranked in row-major order.</p></li>
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code> threadblock barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
@@ -1923,6 +1943,9 @@ The corresponding output <code class="docutils literal notranslate"><span class=
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-read-right-operations">Read right operations</p>
 <p><p><p>Subtracts the right element of each adjacent pair of elements partitioned across a CUDA thread block.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>For multi-dimensional blocks, threads are linearly ranked in row-major order.</p></li>
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code> threadblock barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
@@ -2009,6 +2032,9 @@ The corresponding output <code class="docutils literal notranslate"><span class=
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i00EN3cub23BlockAdjacentDifference13SubtractRightEvRA16ITEMS_PER_THREAD_1TRA16ITEMS_PER_THREAD_7OutputT13DifferenceOpT1T" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Subtracts the right element of each adjacent pair of elements partitioned across a CUDA thread block.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>For multi-dimensional blocks, threads are linearly ranked in row-major order.</p></li>
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code> threadblock barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
@@ -2089,6 +2115,9 @@ in those threads will be
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i00EN3cub23BlockAdjacentDifference24SubtractRightPartialTileEvRA16ITEMS_PER_THREAD_1TRA16ITEMS_PER_THREAD_7OutputT13DifferenceOpTi" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Subtracts the right element of each adjacent pair in range of elements partitioned across a CUDA thread block.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>For multi-dimensional blocks, threads are linearly ranked in row-major order.</p></li>
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code> threadblock barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>

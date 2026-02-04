@@ -1524,7 +1524,11 @@
 <span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">OffsetT</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">ptrdiff_t</span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classcub_1_1TexObjInputIterator"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">TexObjInputIterator</span></span></span><a class="headerlink" href="#_CPPv4I00EN3cub19TexObjInputIteratorE" title="Link to this definition">#</a><br /></dt>
 <dd><p>A random-access input wrapper for dereferencing array values through texture cache. </p>
 <p>Uses newer Kepler-style texture objects.</p>
-<p><dl>
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
+ <dl>
 <dt><strong>Overview</strong></dt><dd><p><ul class="simple">
 <li><p><a class="reference internal" href="#classcub_1_1TexObjInputIterator"><span class="std std-ref">TexObjInputIterator</span></a> wraps a native device pointer of type <code class="docutils literal notranslate"><span class="pre">ValueType*</span></code>. References to elements are to be loaded through texture cache.</p></li>
 <li><p>Can be used to load any data type from memory through texture cache.</p></li>
@@ -1563,7 +1567,7 @@
 <dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>T</strong> – The value type of this iterator</p></li>
-<li><p><strong>OffsetT</strong> – The difference type of this iterator (Default: <code class="docutils literal notranslate"><span class="pre">ptrdiff_t</span></code>) </p></li>
+<li><p><strong>OffsetT</strong> – The difference type of this iterator (Default: <code class="docutils literal notranslate"><span class="pre">ptrdiff_t</span></code>)</p></li>
 </ul>
 </dd>
 </dl>

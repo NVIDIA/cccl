@@ -1523,7 +1523,11 @@
 <dt class="sig sig-object cpp" id="_CPPv4I0EN3cub9GridQueueE">
 <span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">OffsetT</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classcub_1_1GridQueue"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GridQueue</span></span></span><a class="headerlink" href="#_CPPv4I0EN3cub9GridQueueE" title="Link to this definition">#</a><br /></dt>
 <dd><p><a class="reference internal" href="#classcub_1_1GridQueue"><span class="std std-ref">GridQueue</span></a> is a descriptor utility for dynamic queue management. </p>
-<p><dl class="simple">
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
+<dl class="simple">
 <dt><strong>Overview</strong></dt><dd><p><a class="reference internal" href="#classcub_1_1GridQueue"><span class="std std-ref">GridQueue</span></a> descriptors provides abstractions for “filling” or “draining” globally-shared vectors.</p>
 </dd>
 <dt><strong></strong></dt><dd><p>A “filling” <a class="reference internal" href="#classcub_1_1GridQueue"><span class="std std-ref">GridQueue</span></a> works by atomically-adding to a zero-initialized counter, returning a unique offset for the calling thread to write its items. The <a class="reference internal" href="#classcub_1_1GridQueue"><span class="std std-ref">GridQueue</span></a> maintains the total “fill-size”. The fill counter must be reset using <a class="reference internal" href="#classcub_1_1GridQueue_1a97c29d3afbbfd4d0808ea4a93edf4392"><span class="std std-ref">GridQueue::ResetFill</span></a> by the host or kernel instance prior to the kernel instance that will be filling.</p>

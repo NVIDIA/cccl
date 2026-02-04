@@ -1532,6 +1532,9 @@
 
 <span class="sig-paren">)</span><br /></dt>
 <dd><p><p>Load a linear segment of items into a striped arrangement across the thread block.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <p>Assumes a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">striped arrangement</span></a> of (<em>block-threads</em> * <em>items-per-thread</em>) items across the thread block, where <em>thread</em><sub>i</sub> owns items (<em>i</em>), (<em>i</em> + <em>block-threads</em>), …, (<em>i</em> + (<em>block-threads</em> * (<em>items-per-thread</em> - 1))).  For multi-dimensional thread blocks, a row-major thread ordering is assumed.</p>
 </p>
 <dl class="field-list simple">
@@ -1569,6 +1572,9 @@
 
 <span class="sig-paren">)</span><br /></dt>
 <dd><p><p>Load a linear segment of items into a striped arrangement across the thread block, guarded by range</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <p>Assumes a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">striped arrangement</span></a> of (<em>block-threads</em> * <em>items-per-thread</em>) items across the thread block, where <em>thread</em><sub>i</sub> owns items (<em>i</em>), (<em>i</em> + <em>block-threads</em>), …, (<em>i</em> + (<em>block-threads</em> * (<em>items-per-thread</em> - 1))).  For multi-dimensional thread blocks, a row-major thread ordering is assumed.</p>
 </p>
 <dl class="field-list simple">
@@ -1609,6 +1615,9 @@
 <span class="sig-paren">)</span><br /></dt>
 <dd><p><p>Load a linear segment of items into a striped arrangement across the thread block, guarded
 by range, with a fall-back assignment of out-of-bound elements.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <p>Assumes a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">striped arrangement</span></a> of (<em>block-threads</em> * <em>items-per-thread</em>) items across the thread block, where <em>thread</em><sub>i</sub> owns items (<em>i</em>), (<em>i</em> + <em>block-threads</em>), …, (<em>i</em> + (<em>block-threads</em> * (<em>items-per-thread</em> - 1))).  For multi-dimensional thread blocks, a row-major thread ordering is assumed.</p>
 </p>
 <dl class="field-list simple">

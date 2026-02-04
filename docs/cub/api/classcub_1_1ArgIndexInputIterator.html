@@ -1523,7 +1523,11 @@
 <dt class="sig sig-object cpp" id="_CPPv4I000EN3cub21ArgIndexInputIteratorE">
 <span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIteratorT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">OffsetT</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">ptrdiff_t</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">OutputValueT</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">it_value_t</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I000EN3cub21ArgIndexInputIteratorE" title="cub::ArgIndexInputIterator::InputIteratorT"><span class="n"><span class="pre">InputIteratorT</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classcub_1_1ArgIndexInputIterator"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ArgIndexInputIterator</span></span></span><a class="headerlink" href="#_CPPv4I000EN3cub21ArgIndexInputIteratorE" title="Link to this definition">#</a><br /></dt>
 <dd><p>A random-access input wrapper for pairing dereferenced values with their corresponding indices (forming <code class="docutils literal notranslate"><span class="pre">KeyValuePair</span></code> tuples). </p>
-<p><dl>
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
+ <dl>
 <dt><strong>Overview</strong></dt><dd><p><ul class="simple">
 <li><p><a class="reference internal" href="#classcub_1_1ArgIndexInputIterator"><span class="std std-ref">ArgIndexInputIterator</span></a> wraps a random access input iterator <code class="docutils literal notranslate"><span class="pre">itr</span></code> of type <code class="docutils literal notranslate"><span class="pre">InputIteratorT</span></code>. Dereferencing an <a class="reference internal" href="#classcub_1_1ArgIndexInputIterator"><span class="std std-ref">ArgIndexInputIterator</span></a> at offset <code class="docutils literal notranslate"><span class="pre">i</span></code> produces a <code class="docutils literal notranslate"><span class="pre">KeyValuePair</span></code> value whose <code class="docutils literal notranslate"><span class="pre">key</span></code> field is <code class="docutils literal notranslate"><span class="pre">i</span></code> and whose <code class="docutils literal notranslate"><span class="pre">value</span></code> field is <code class="docutils literal notranslate"><span class="pre">itr[i]</span></code>.</p></li>
 <li><p>Can be used with any data type.</p></li>
@@ -1563,7 +1567,7 @@
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>InputIteratorT</strong> – The value type of the wrapped input iterator</p></li>
 <li><p><strong>OffsetT</strong> – The difference type of this iterator (Default: <code class="docutils literal notranslate"><span class="pre">ptrdiff_t</span></code>)</p></li>
-<li><p><strong>OutputValueT</strong> – The paired value type of the &lt;offset,value&gt; tuple (Default: value type of input iterator) </p></li>
+<li><p><strong>OutputValueT</strong> – The paired value type of the &lt;offset,value&gt; tuple (Default: value type of input iterator)</p></li>
 </ul>
 </dd>
 </dl>

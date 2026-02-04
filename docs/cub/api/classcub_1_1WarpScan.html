@@ -1643,6 +1643,9 @@ threads will be <code class="docutils literal notranslate"><span class="pre">0,<
 <dt class="sig sig-object cpp" id="_CPPv4N3cub8WarpScan12InclusiveSumE1TR1T">
 <span class="target" id="classcub_1_1WarpScan_1a67362111dd1a15c8e5a0269c09dd1325"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">InclusiveSum</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_iEN3cub8WarpScanE" title="cub::WarpScan::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">input</span></span></em>, <em class="sig-param"><a class="reference internal" href="#_CPPv4I0_iEN3cub8WarpScanE" title="cub::WarpScan::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">inclusive_output</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub8WarpScan12InclusiveSumE1TR1T" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes an inclusive prefix sum across the calling warp.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncwarp()</span></code> warp-wide barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
 </ul>
@@ -1697,6 +1700,9 @@ of threads will be <code class="docutils literal notranslate"><span class="pre">
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub8WarpScan12InclusiveSumE1TR1TR1T" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes an inclusive prefix sum across the calling warp.
 Also provides every thread with the warp-wide <code class="docutils literal notranslate"><span class="pre">warp_aggregate</span></code> of all inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncwarp()</span></code> warp-wide barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
 </ul>
@@ -1749,6 +1755,9 @@ in all warps will be <code class="docutils literal notranslate"><span class="pre
 <span class="target" id="classcub_1_1WarpScan_1a55191178465b75ab9a052fcd14869843"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ExclusiveSum</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_iEN3cub8WarpScanE" title="cub::WarpScan::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">input</span></span></em>, <em class="sig-param"><a class="reference internal" href="#_CPPv4I0_iEN3cub8WarpScanE" title="cub::WarpScan::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">exclusive_output</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub8WarpScan12ExclusiveSumE1TR1T" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes an exclusive prefix sum across the calling warp. The value of 0 is applied as the
 initial value, and is assigned to <code class="docutils literal notranslate"><span class="pre">exclusive_output</span></code> in <em>lane</em><sub>0</sub>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>This operation assumes the value of obtained by the <code class="docutils literal notranslate"><span class="pre">T</span></code>’s default constructor (or by zero-initialization if no user-defined default constructor exists) is suitable as the identity value “zero” for addition.</p></li>
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncwarp()</span></code> warp-wide barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
@@ -1805,6 +1814,9 @@ of threads will be <code class="docutils literal notranslate"><span class="pre">
 <dd><p><p>Computes an exclusive prefix sum across the calling warp. The value of 0 is applied as the
 initial value, and is assigned to <code class="docutils literal notranslate"><span class="pre">exclusive_output</span></code> in <em>lane</em><sub>0</sub>.
 Also provides every thread with the warp-wide <code class="docutils literal notranslate"><span class="pre">warp_aggregate</span></code> of all inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>This operation assumes the value of obtained by the <code class="docutils literal notranslate"><span class="pre">T</span></code>’s default constructor (or by zero-initialization if no user-defined default constructor exists) is suitable as the identity value “zero” for addition.</p></li>
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncwarp()</span></code> warp-wide barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
@@ -1867,6 +1879,9 @@ in all warps will be <code class="docutils literal notranslate"><span class="pre
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub8WarpScan13InclusiveScanEv1TR1T6ScanOp" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes an inclusive prefix scan using the specified binary scan functor across the
 calling warp.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncwarp()</span></code> warp-wide barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
 </ul>
@@ -1926,6 +1941,9 @@ warp would be <code class="docutils literal notranslate"><span class="pre">0,</s
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub8WarpScan13InclusiveScanEv1TR1T1T6ScanOp" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes an inclusive prefix scan using the specified binary scan functor across the
 calling warp.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncwarp()</span></code> warp-wide barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
 </ul>
@@ -1998,6 +2016,9 @@ warp would be <code class="docutils literal notranslate"><span class="pre">{3,</
 <dd><p><p>Computes an inclusive prefix scan using the specified binary scan functor across the
 calling warp. Also provides every thread with the warp-wide <code class="docutils literal notranslate"><span class="pre">warp_aggregate</span></code> of
 all inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncwarp()</span></code> warp-wide barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
 </ul>
@@ -2063,6 +2084,9 @@ warp would be <code class="docutils literal notranslate"><span class="pre">0,</s
 <dd><p><p>Computes an inclusive prefix scan using the specified binary scan functor across the
 calling warp. Also provides every thread with the warp-wide <code class="docutils literal notranslate"><span class="pre">warp_aggregate</span></code> of
 all inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncwarp()</span></code> warp-wide barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
 </ul>
@@ -2142,6 +2166,9 @@ within a block of 128 threads (one scan per warp).</p>
 <dd><p><p>Computes an exclusive prefix scan using the specified binary scan functor across the
 calling warp. Because no initial value is supplied, the <code class="docutils literal notranslate"><span class="pre">output</span></code> computed for
 <em>lane</em><sub>0</sub> is undefined.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncwarp()</span></code> warp-wide barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
 </ul>
@@ -2202,6 +2229,9 @@ warp would be <code class="docutils literal notranslate"><span class="pre">?,</s
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub8WarpScan13ExclusiveScanEv1TR1T1T6ScanOp" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes an exclusive prefix scan using the specified binary scan functor across the
 calling warp.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncwarp()</span></code> warp-wide barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
 </ul>
@@ -2267,6 +2297,9 @@ warp would be <code class="docutils literal notranslate"><span class="pre">INT_M
 calling warp. Because no initial value is supplied, the <code class="docutils literal notranslate"><span class="pre">output</span></code> computed for
 <em>lane</em><sub>0</sub> is undefined. Also provides every thread with the warp-wide
 <code class="docutils literal notranslate"><span class="pre">warp_aggregate</span></code> of all inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncwarp()</span></code> warp-wide barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
 </ul>
@@ -2335,6 +2368,9 @@ first warp, p 62 for threads in the second warp, etc.</p>
 <dd><p><p>Computes an exclusive prefix scan using the specified binary scan functor across the
 calling warp. Also provides every thread with the warp-wide <code class="docutils literal notranslate"><span class="pre">warp_aggregate</span></code> of
 all inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncwarp()</span></code> warp-wide barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
 </ul>
@@ -2406,6 +2442,9 @@ warp would be <code class="docutils literal notranslate"><span class="pre">INT_M
 <dd><p><p>Computes both inclusive and exclusive prefix scans using the specified binary scan functor
 across the calling warp. Because no initial value is supplied, the <code class="docutils literal notranslate"><span class="pre">exclusive_output</span></code>
 computed for <em>lane</em><sub>0</sub> is undefined.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncwarp()</span></code> warp-wide barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
 </ul>
@@ -2473,6 +2512,9 @@ first warp would be <code class="docutils literal notranslate"><span class="pre"
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub8WarpScan4ScanEv1TR1TR1T1T6ScanOp" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes both inclusive and exclusive prefix scans using the specified binary scan functor
 across the calling warp.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncwarp()</span></code> warp-wide barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
 </ul>
@@ -2534,6 +2576,9 @@ be <code class="docutils literal notranslate"><span class="pre">INT_MIN,</span> 
 <dt class="sig sig-object cpp" id="_CPPv4N3cub8WarpScan9BroadcastE1Tj">
 <span class="target" id="classcub_1_1WarpScan_1a93f8cca001a707d3c83fb48474f5b3d6"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_iEN3cub8WarpScanE" title="cub::WarpScan::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Broadcast</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_iEN3cub8WarpScanE" title="cub::WarpScan::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">input</span></span></em>, <em class="sig-param"><span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">src_lane</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub8WarpScan9BroadcastE1Tj" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Broadcast the value <code class="docutils literal notranslate"><span class="pre">input</span></code> from <em>lane</em><sub>src_lane</sub> to all lanes in the warp</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncwarp()</span></code> warp-wide barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
 </ul>

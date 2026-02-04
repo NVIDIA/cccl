@@ -1629,12 +1629,20 @@ This example can be easily adapted to the storage required by BlockScan.</p>
 <dt class="sig sig-object cpp" id="_CPPv4N3cub9BlockScan9BlockScanEv">
 <span class="target" id="classcub_1_1BlockScan_1ac743e2d00dbc5e8e30d58435072579f4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BlockScan</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub9BlockScan9BlockScanEv" title="Link to this definition">#</a><br /></dt>
 <dd><p>Collective constructor using a private static allocation of shared memory as temporary storage. </p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 </dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N3cub9BlockScan9BlockScanER11TempStorage">
 <span class="target" id="classcub_1_1BlockScan_1a3b2afa31709bf024fb9723f7aca3739d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BlockScan</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4N3cub9BlockScan11TempStorageE" title="cub::BlockScan::TempStorage"><span class="n"><span class="pre">TempStorage</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">temp_storage</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub9BlockScan9BlockScanER11TempStorage" title="Link to this definition">#</a><br /></dt>
 <dd><p>Collective constructor using the specified memory allocation as temporary storage. </p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>temp_storage</strong> – <strong>[in]</strong> Reference to memory allocation having layout type <a class="reference internal" href="#structcub_1_1BlockScan_1_1TempStorage"><span class="std std-ref">TempStorage</span></a></p>
@@ -1651,6 +1659,9 @@ This example can be easily adapted to the storage required by BlockScan.</p>
 <dd><p><p>Computes an exclusive block-wide prefix scan using addition (+) as the scan operator.
 Each thread contributes one input element. The value of 0 is applied as the initial value, and is assigned
 to <code class="docutils literal notranslate"><span class="pre">output</span></code> in <em>thread</em><sub>0</sub>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>This operation assumes the value of obtained by the <code class="docutils literal notranslate"><span class="pre">T</span></code>’s default constructor (or by zero-initialization if no user-defined default constructor exists) is suitable as the identity value “zero” for addition.</p></li>
 <li><p>For multi-dimensional blocks, threads are linearly ranked in row-major order.</p></li>
@@ -1700,6 +1711,9 @@ The corresponding output <code class="docutils literal notranslate"><span class=
 Each thread contributes one input element.
 The value of 0 is applied as the initial value, and is assigned to <code class="docutils literal notranslate"><span class="pre">output</span></code> in <em>thread</em><sub>0</sub>.
 Also provides every thread with the block-wide <code class="docutils literal notranslate"><span class="pre">block_aggregate</span></code> of all inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>This operation assumes the value of obtained by the <code class="docutils literal notranslate"><span class="pre">T</span></code>’s default constructor (or by zero-initialization if no user-defined default constructor exists) is suitable as the identity value “zero” for addition.</p></li>
 <li><p>For multi-dimensional blocks, threads are linearly ranked in row-major order.</p></li>
@@ -1761,6 +1775,9 @@ Each thread contributes one input element.  Instead of using 0 as the block-wide
 <code class="docutils literal notranslate"><span class="pre">block_prefix_callback_op</span></code> is invoked by the first warp in the block, and the value returned by
 <em>lane</em><sub>0</sub> in that warp is used as the “seed” value that logically prefixes the thread block’s
 scan inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>This operation assumes the value of obtained by the <code class="docutils literal notranslate"><span class="pre">T</span></code>’s default constructor (or by zero-initialization if no user-defined default constructor exists) is suitable as the identity value “zero” for addition.</p></li>
 <li><p>The <code class="docutils literal notranslate"><span class="pre">block_prefix_callback_op</span></code> functor must implement a member function
@@ -1863,6 +1880,9 @@ the logical input sequence.</p>
 <dd><p><p>Computes an exclusive block-wide prefix scan using addition (+) as the scan operator.
 Each thread contributes an array of consecutive input elements.
 The value of 0 is applied as the initial value, and is assigned to <code class="docutils literal notranslate"><span class="pre">output[0]</span></code> in <em>thread</em><sub>0</sub>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>This operation assumes the value of obtained by the <code class="docutils literal notranslate"><span class="pre">T</span></code>’s default constructor (or by zero-initialization if no user-defined default constructor exists) is suitable as the identity value “zero” for addition.</p></li>
 <li><p>Assumes a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of (<em>block-threads</em> * <em>items-per-thread</em>) items across the thread block, where <em>thread</em><sub>i</sub> owns the <em>i</em><sup>th</sup> range of <em>items-per-thread</em> contiguous items. For multi-dimensional thread blocks, a row-major thread ordering is assumed.</p></li>
@@ -1934,6 +1954,9 @@ The corresponding output <code class="docutils literal notranslate"><span class=
 Each thread contributes an array of consecutive input elements.
 The value of 0 is applied as the initial value, and is assigned to <code class="docutils literal notranslate"><span class="pre">output[0]</span></code> in <em>thread</em><sub>0</sub>.
 Also provides every thread with the block-wide <code class="docutils literal notranslate"><span class="pre">block_aggregate</span></code> of all inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>This operation assumes the value of obtained by the <code class="docutils literal notranslate"><span class="pre">T</span></code>’s default constructor (or by zero-initialization if no user-defined default constructor exists) is suitable as the identity value “zero” for addition.</p></li>
 <li><p>Assumes a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of (<em>block-threads</em> * <em>items-per-thread</em>) items across the thread block, where <em>thread</em><sub>i</sub> owns the <em>i</em><sup>th</sup> range of <em>items-per-thread</em> contiguous items. For multi-dimensional thread blocks, a row-major thread ordering is assumed.</p></li>
@@ -2009,6 +2032,9 @@ Each thread contributes an array of consecutive input elements.
 Instead of using 0 as the block-wide prefix, the call-back functor <code class="docutils literal notranslate"><span class="pre">block_prefix_callback_op</span></code> is invoked by
 the first warp in the block, and the value returned by <em>lane</em><sub>0</sub> in that warp is used as the “seed”
 value that logically prefixes the thread block’s scan inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>This operation assumes the value of obtained by the <code class="docutils literal notranslate"><span class="pre">T</span></code>’s default constructor (or by zero-initialization if no user-defined default constructor exists) is suitable as the identity value “zero” for addition.</p></li>
 <li><p>The <code class="docutils literal notranslate"><span class="pre">block_prefix_callback_op</span></code> functor must implement a member function <code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">operator()(T</span> <span class="pre">block_aggregate)</span></code>.
@@ -2127,6 +2153,9 @@ the logical input sequence.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub9BlockScan13ExclusiveScanEv1TR1T1T6ScanOp" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes an exclusive block-wide prefix scan using the specified binary <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> functor.
 Each thread contributes one input element.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative scan operators.</p></li>
 <li><p>For multi-dimensional blocks, threads are linearly ranked in row-major order.</p></li>
@@ -2192,6 +2221,9 @@ The corresponding output <code class="docutils literal notranslate"><span class=
 <dd><p><p>Computes an exclusive block-wide prefix scan using the specified binary <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> functor.
 Each thread contributes one input element.
 Also provides every thread with the block-wide <code class="docutils literal notranslate"><span class="pre">block_aggregate</span></code> of all inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative scan operators.</p></li>
 <li><p>For multi-dimensional blocks, threads are linearly ranked in row-major order.</p></li>
@@ -2265,6 +2297,9 @@ taken into account for <code class="docutils literal notranslate"><span class="p
 Each thread contributes one input element. The call-back functor <code class="docutils literal notranslate"><span class="pre">block_prefix_callback_op</span></code> is invoked by
 the first warp in the block, and the value returned by <em>lane</em><sub>0</sub> in that warp is used as
 the “seed” value that logically prefixes the thread block’s scan inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The <code class="docutils literal notranslate"><span class="pre">block_prefix_callback_op</span></code> functor must implement a member function <code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">operator()(T</span> <span class="pre">block_aggregate)</span></code>.
 The functor will be invoked by the first warp of threads in the block, however only the return value from
@@ -2372,6 +2407,9 @@ the logical input sequence.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i0EN3cub9BlockScan13ExclusiveScanEvRA16ITEMS_PER_THREAD_1TRA16ITEMS_PER_THREAD_1T1T6ScanOp" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes an exclusive block-wide prefix scan using the specified binary <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> functor.
 Each thread contributes an array of consecutive input elements.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative scan operators.</p></li>
 <li><p>Assumes a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of (<em>block-threads</em> * <em>items-per-thread</em>) items across the thread block, where <em>thread</em><sub>i</sub> owns the <em>i</em><sup>th</sup> range of <em>items-per-thread</em> contiguous items. For multi-dimensional thread blocks, a row-major thread ordering is assumed.</p></li>
@@ -2451,6 +2489,9 @@ The corresponding output <code class="docutils literal notranslate"><span class=
 <dd><p><p>Computes an exclusive block-wide prefix scan using the specified binary <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> functor.
 Each thread contributes an array of consecutive input elements.
 Also provides every thread with the block-wide <code class="docutils literal notranslate"><span class="pre">block_aggregate</span></code> of all inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative scan operators.</p></li>
 <li><p>Assumes a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of (<em>block-threads</em> * <em>items-per-thread</em>) items across the thread block, where <em>thread</em><sub>i</sub> owns the <em>i</em><sup>th</sup> range of <em>items-per-thread</em> contiguous items. For multi-dimensional thread blocks, a row-major thread ordering is assumed.</p></li>
@@ -2532,6 +2573,9 @@ Each thread contributes an array of consecutive input elements.
 The call-back functor <code class="docutils literal notranslate"><span class="pre">block_prefix_callback_op</span></code> is invoked by the first warp in the block, and the value
 returned by <em>lane</em><sub>0</sub> in that warp is used as the “seed” value that logically prefixes the thread
 block’s scan inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The <code class="docutils literal notranslate"><span class="pre">block_prefix_callback_op</span></code> functor must implement a member function
 <code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">operator()(T</span> <span class="pre">block_aggregate)</span></code>. The functor will be invoked by the
@@ -2645,6 +2689,9 @@ the logical input sequence.</p>
 <span class="target" id="classcub_1_1BlockScan_1ac1186066f7b0d08015687ec5a7b18e3f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">InclusiveSum</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i_18BlockScanAlgorithm_i_iEN3cub9BlockScanE" title="cub::BlockScan::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">input</span></span></em>, <em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i_18BlockScanAlgorithm_i_iEN3cub9BlockScanE" title="cub::BlockScan::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">output</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub9BlockScan12InclusiveSumE1TR1T" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes an inclusive block-wide prefix scan using addition (+)
 as the scan operator. Each thread contributes one input element.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>For multi-dimensional blocks, threads are linearly ranked in row-major order.</p></li>
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code> threadblock barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
@@ -2692,6 +2739,9 @@ The corresponding output <code class="docutils literal notranslate"><span class=
 <dd><p><p>Computes an inclusive block-wide prefix scan using addition (+) as the scan operator.
 Each thread contributes one input element.
 Also provides every thread with the block-wide <code class="docutils literal notranslate"><span class="pre">block_aggregate</span></code> of all inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>For multi-dimensional blocks, threads are linearly ranked in row-major order.</p></li>
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code> threadblock barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
@@ -2752,6 +2802,9 @@ Each thread contributes one input element. Instead of using 0 as the block-wide 
 <code class="docutils literal notranslate"><span class="pre">block_prefix_callback_op</span></code> is invoked by the first warp in the block, and the value returned by
 <em>lane</em><sub>0</sub> in that warp is used as the “seed” value that logically prefixes the thread block’s
 scan inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The <code class="docutils literal notranslate"><span class="pre">block_prefix_callback_op</span></code> functor must implement a member function
 <code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">operator()(T</span> <span class="pre">block_aggregate)</span></code>. The functor will be invoked by the first warp of threads in the block,
@@ -2851,6 +2904,9 @@ to the logical input sequence.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_iEN3cub9BlockScan12InclusiveSumEvRA16ITEMS_PER_THREAD_1TRA16ITEMS_PER_THREAD_1T" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes an inclusive block-wide prefix scan using addition (+) as the scan operator.
 Each thread contributes an array of consecutive input elements.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Assumes a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of (<em>block-threads</em> * <em>items-per-thread</em>) items across the thread block, where <em>thread</em><sub>i</sub> owns the <em>i</em><sup>th</sup> range of <em>items-per-thread</em> contiguous items. For multi-dimensional thread blocks, a row-major thread ordering is assumed.</p></li>
 <li><p>Efficiency is increased with increased granularity <code class="docutils literal notranslate"><span class="pre">ITEMS_PER_THREAD</span></code>. Performance is also typically increased until the additional register pressure or shared memory allocation size causes SM occupancy to fall too low. Consider variants of <code class="docutils literal notranslate"><span class="pre">cub::BlockLoad</span></code> for efficiently gathering a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of elements across threads.</p></li>
@@ -2919,6 +2975,9 @@ where each thread owns 4 consecutive items.</p>
 <dd><p><p>Computes an inclusive block-wide prefix scan using addition (+) as the scan operator.
 Each thread contributes an array of consecutive input elements.
 Also provides every thread with the block-wide <code class="docutils literal notranslate"><span class="pre">block_aggregate</span></code> of all inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Assumes a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of (<em>block-threads</em> * <em>items-per-thread</em>) items across the thread block, where <em>thread</em><sub>i</sub> owns the <em>i</em><sup>th</sup> range of <em>items-per-thread</em> contiguous items. For multi-dimensional thread blocks, a row-major thread ordering is assumed.</p></li>
 <li><p>Efficiency is increased with increased granularity <code class="docutils literal notranslate"><span class="pre">ITEMS_PER_THREAD</span></code>. Performance is also typically increased until the additional register pressure or shared memory allocation size causes SM occupancy to fall too low. Consider variants of <code class="docutils literal notranslate"><span class="pre">cub::BlockLoad</span></code> for efficiently gathering a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of elements across threads.</p></li>
@@ -2993,6 +3052,9 @@ Each thread contributes an array of consecutive input elements.
 Instead of using 0 as the block-wide prefix, the call-back functor <code class="docutils literal notranslate"><span class="pre">block_prefix_callback_op</span></code> is invoked by
 the first warp in the block, and the value returned by <em>lane</em><sub>0</sub> in that warp is used as the “seed”
 value that logically prefixes the thread block’s scan inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The <code class="docutils literal notranslate"><span class="pre">block_prefix_callback_op</span></code> functor must implement a member function
 <code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">operator()(T</span> <span class="pre">block_aggregate)</span></code>. The functor will be invoked by the first warp of threads in the block,
@@ -3110,6 +3172,9 @@ logical input sequence.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub9BlockScan13InclusiveScanEv1TR1T6ScanOp" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes an inclusive block-wide prefix scan using the specified binary <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> functor.
 Each thread contributes one input element.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative scan operators.</p></li>
 <li><p>For multi-dimensional blocks, threads are linearly ranked in row-major order.</p></li>
@@ -3172,6 +3237,9 @@ in those threads will be <code class="docutils literal notranslate"><span class=
 <dd><p><p>Computes an inclusive block-wide prefix scan using the specified binary <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> functor.
 Each thread contributes one input element. Also provides every thread with the block-wide
 <code class="docutils literal notranslate"><span class="pre">block_aggregate</span></code> of all inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative scan operators.</p></li>
 <li><p>For multi-dimensional blocks, threads are linearly ranked in row-major order.</p></li>
@@ -3237,6 +3305,9 @@ in those threads will be <code class="docutils literal notranslate"><span class=
 Each thread contributes one input element. The call-back functor <code class="docutils literal notranslate"><span class="pre">block_prefix_callback_op</span></code>
 is invoked by the first warp in the block, and the value returned by <em>lane</em><sub>0</sub> in that warp is used as
 the “seed” value that logically prefixes the thread block’s scan inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The <code class="docutils literal notranslate"><span class="pre">block_prefix_callback_op</span></code> functor must implement a member function
 <code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">operator()(T</span> <span class="pre">block_aggregate)</span></code>. The functor’s input parameter
@@ -3356,6 +3427,9 @@ the logical input sequence.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i0EN3cub9BlockScan13InclusiveScanEvRA16ITEMS_PER_THREAD_1TRA16ITEMS_PER_THREAD_1T6ScanOp" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes an inclusive block-wide prefix scan using the specified binary <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> functor.
 Each thread contributes an array of consecutive input elements.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative scan operators.</p></li>
 <li><p>Assumes a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of (<em>block-threads</em> * <em>items-per-thread</em>) items across the thread block, where <em>thread</em><sub>i</sub> owns the <em>i</em><sup>th</sup> range of <em>items-per-thread</em> contiguous items. For multi-dimensional thread blocks, a row-major thread ordering is assumed.</p></li>
@@ -3430,6 +3504,9 @@ The corresponding output <code class="docutils literal notranslate"><span class=
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i0EN3cub9BlockScan13InclusiveScanEvRA16ITEMS_PER_THREAD_1TRA16ITEMS_PER_THREAD_1T1T6ScanOp" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes an inclusive block-wide prefix scan using the specified binary <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> functor.
 Each thread contributes an array of consecutive input elements.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative scan operators.</p></li>
 <li><p>Assumes a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of (<em>block-threads</em> * <em>items-per-thread</em>) items across the thread block, where <em>thread</em><sub>i</sub> owns the <em>i</em><sup>th</sup> range of <em>items-per-thread</em> contiguous items. For multi-dimensional thread blocks, a row-major thread ordering is assumed.</p></li>
@@ -3499,6 +3576,9 @@ where each thread owns 2 consecutive items.</p>
 <dd><p><p>Computes an inclusive block-wide prefix scan using the specified binary <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> functor.
 Each thread contributes an array of consecutive input elements. Also provides every thread
 with the block-wide <code class="docutils literal notranslate"><span class="pre">block_aggregate</span></code> of all inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative scan operators.</p></li>
 <li><p>Assumes a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of (<em>block-threads</em> * <em>items-per-thread</em>) items across the thread block, where <em>thread</em><sub>i</sub> owns the <em>i</em><sup>th</sup> range of <em>items-per-thread</em> contiguous items. For multi-dimensional thread blocks, a row-major thread ordering is assumed.</p></li>
@@ -3570,6 +3650,9 @@ Furthermore the value <code class="docutils literal notranslate"><span class="pr
 <dd><p><p>Computes an inclusive block-wide prefix scan using the specified binary <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> functor.
 Each thread contributes an array of consecutive input elements. Also provides every thread
 with the block-wide <code class="docutils literal notranslate"><span class="pre">block_aggregate</span></code> of all inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative scan operators.</p></li>
 <li><p>Assumes a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of (<em>block-threads</em> * <em>items-per-thread</em>) items across the thread block, where <em>thread</em><sub>i</sub> owns the <em>i</em><sup>th</sup> range of <em>items-per-thread</em> contiguous items. For multi-dimensional thread blocks, a row-major thread ordering is assumed.</p></li>
@@ -3649,6 +3732,9 @@ Each thread contributes an array of consecutive input elements.
 The call-back functor <code class="docutils literal notranslate"><span class="pre">block_prefix_callback_op</span></code> is invoked by the first warp in the block,
 and the value returned by <em>lane</em><sub>0</sub> in that warp is used as the “seed” value that logically prefixes the
 thread block’s scan inputs.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The <code class="docutils literal notranslate"><span class="pre">block_prefix_callback_op</span></code> functor must implement a member function <code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">operator()(T</span> <span class="pre">block_aggregate)</span></code>.
 The functor will be invoked by the first warp of threads in the block, however only the return value

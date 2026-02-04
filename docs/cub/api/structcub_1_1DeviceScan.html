@@ -1588,6 +1588,9 @@ typically proceeds at “memcpy” speeds. Our algorithm supports inplace operat
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub10DeviceScan12ExclusiveSumE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorT9NumItemsT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide exclusive prefix sum.
 The value of <code class="docutils literal notranslate"><span class="pre">0</span></code> is applied as the initial value, and is assigned to <code class="docutils literal notranslate"><span class="pre">*d_out</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative sum operators.</p></li>
 <li><p>Results are not deterministic for pseudo-associative operators (e.g.,
@@ -1669,6 +1672,9 @@ device vector.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub10DeviceScan12ExclusiveSumE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT4EnvT" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide exclusive prefix sum.
 The value of <code class="docutils literal notranslate"><span class="pre">0</span></code> is applied as the initial value, and is assigned to <code class="docutils literal notranslate"><span class="pre">*d_out</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative sum operators.</p></li>
 <li><p>Results are not deterministic for pseudo-associative operators (e.g.,
@@ -1746,6 +1752,9 @@ device vector of <code class="docutils literal notranslate"><span class="pre">fl
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I00EN3cub10DeviceScan12ExclusiveSumE11cudaError_tPvR6size_t9IteratorT9NumItemsT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide exclusive prefix sum in-place.
 The value of <code class="docutils literal notranslate"><span class="pre">0</span></code> is applied as the initial value, and is assigned to <code class="docutils literal notranslate"><span class="pre">*d_data</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative sum operators.</p></li>
 <li><p>Results are not deterministic for pseudo-associative operators (e.g.,
@@ -1826,6 +1835,9 @@ device vector.</p>
 <dd><p><p>Computes a device-wide exclusive prefix scan using the specified
 binary associative <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> functor. The <code class="docutils literal notranslate"><span class="pre">init_value</span></code> value is applied as
 the initial value, and is assigned to <code class="docutils literal notranslate"><span class="pre">*d_out</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative scan operators.</p></li>
 <li><p>Results are not deterministic for pseudo-associative operators (e.g.,
@@ -1926,6 +1938,9 @@ shall not overlap in any other way.</p></li>
 <dd><p><p>Computes a device-wide exclusive prefix scan using the specified
 binary associative <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> functor. The <code class="docutils literal notranslate"><span class="pre">init_value</span></code> value is applied as
 the initial value, and is assigned to <code class="docutils literal notranslate"><span class="pre">*d_out</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative scan operators.</p></li>
 <li><p>Results are not deterministic for pseudo-associative operators (e.g.,
@@ -2003,6 +2018,9 @@ device vector of <code class="docutils literal notranslate"><span class="pre">fl
 <dd><p><p>Computes a device-wide exclusive prefix scan using the specified
 binary associative <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> functor. The <code class="docutils literal notranslate"><span class="pre">init_value</span></code> value is applied as
 the initial value, and is assigned to <code class="docutils literal notranslate"><span class="pre">*d_data</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative scan operators.</p></li>
 <li><p>Results are not deterministic for pseudo-associative operators (e.g.,
@@ -2099,6 +2117,9 @@ the <a class="reference external" href="https://research.nvidia.com/publication/
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000000EN3cub10DeviceScan13ExclusiveScanE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorT7ScanOpT11FutureValueI10InitValueT14InitValueIterTE9NumItemsT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide exclusive prefix scan using the specified
 binary associative <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> functor. The <code class="docutils literal notranslate"><span class="pre">init_value</span></code> value is provided as a future value.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative scan operators.</p></li>
 <li><p>Results are not deterministic for pseudo-associative operators (e.g.,
@@ -2204,6 +2225,9 @@ shall not overlap in any other way.</p></li>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I00000EN3cub10DeviceScan13ExclusiveScanE11cudaError_tPvR6size_t9IteratorT7ScanOpT11FutureValueI10InitValueT14InitValueIterTE9NumItemsT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide exclusive prefix scan using the specified binary associative <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> functor.
 The <code class="docutils literal notranslate"><span class="pre">init_value</span></code> value is provided as a future value.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative scan operators.</p></li>
 <li><p>Results are not deterministic for pseudo-associative operators (e.g.,
@@ -2304,6 +2328,9 @@ the <a class="reference external" href="https://research.nvidia.com/publication/
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub10DeviceScan12InclusiveSumE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorT9NumItemsT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide inclusive prefix sum.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative sum operators.</p></li>
 <li><p>Results are not deterministic for pseudo-associative operators (e.g.,
@@ -2385,6 +2412,9 @@ shall not overlap in any other way.</p></li>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I00EN3cub10DeviceScan12InclusiveSumE11cudaError_tPvR6size_t9IteratorT9NumItemsT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide inclusive prefix sum in-place.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative sum operators.</p></li>
 <li><p>Results are not deterministic for pseudo-associative operators (e.g.,
@@ -2462,6 +2492,9 @@ the <a class="reference external" href="https://research.nvidia.com/publication/
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub10DeviceScan13InclusiveScanE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorT7ScanOpT9NumItemsT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide inclusive prefix scan using the specified binary associative <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> functor.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative scan operators.</p></li>
 <li><p>Results are not deterministic for pseudo-associative operators (e.g.,
@@ -2562,6 +2595,9 @@ shall not overlap in any other way.</p></li>
 <dd><p><p>Computes a device-wide inclusive prefix scan using the specified binary associative <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> functor.
 The result of applying the <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> binary operator to <code class="docutils literal notranslate"><span class="pre">init_value</span></code> value and <code class="docutils literal notranslate"><span class="pre">*d_in</span></code>
 is assigned to <code class="docutils literal notranslate"><span class="pre">*d_out</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative scan operators.</p></li>
 <li><p>Results are not deterministic for pseudo-associative operators (e.g.,
@@ -2643,6 +2679,9 @@ shall not overlap in any other way.</p></li>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub10DeviceScan13InclusiveScanE11cudaError_tPvR6size_t9IteratorT7ScanOpT9NumItemsT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide inclusive prefix scan using the specified binary associative <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> functor.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative scan operators.</p></li>
 <li><p>Results are not deterministic for pseudo-associative operators (e.g.,
@@ -2740,6 +2779,9 @@ the <a class="reference external" href="https://research.nvidia.com/publication/
 <dd><p><p>Computes a device-wide exclusive prefix sum-by-key with key equality
 defined by <code class="docutils literal notranslate"><span class="pre">equality_op</span></code>. The value of <code class="docutils literal notranslate"><span class="pre">0</span></code> is applied as the initial
 value, and is assigned to the beginning of each segment in <code class="docutils literal notranslate"><span class="pre">d_values_out</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative sum operators.</p></li>
 <li><p>Results are not deterministic for pseudo-associative operators (e.g.,
@@ -2836,6 +2878,9 @@ the <a class="reference external" href="https://research.nvidia.com/publication/
 specified binary associative <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> functor. The key equality is defined by
 <code class="docutils literal notranslate"><span class="pre">equality_op</span></code>.  The <code class="docutils literal notranslate"><span class="pre">init_value</span></code> value is applied as the initial
 value, and is assigned to the beginning of each segment in <code class="docutils literal notranslate"><span class="pre">d_values_out</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative scan operators.</p></li>
 <li><p>Results are not deterministic for pseudo-associative operators (e.g.,
@@ -2957,6 +3002,9 @@ the <a class="reference external" href="https://research.nvidia.com/publication/
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I00000EN3cub10DeviceScan17InclusiveSumByKeyE11cudaError_tPvR6size_t18KeysInputIteratorT20ValuesInputIteratorT21ValuesOutputIteratorT9NumItemsT11EqualityOpT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide inclusive prefix sum-by-key with key equality defined by <code class="docutils literal notranslate"><span class="pre">equality_op</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative sum operators.</p></li>
 <li><p>Results are not deterministic for pseudo-associative operators (e.g.,
@@ -3050,6 +3098,9 @@ the <a class="reference external" href="https://research.nvidia.com/publication/
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000000EN3cub10DeviceScan18InclusiveScanByKeyE11cudaError_tPvR6size_t18KeysInputIteratorT20ValuesInputIteratorT21ValuesOutputIteratorT7ScanOpT9NumItemsT11EqualityOpT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide inclusive prefix scan-by-key using the
 specified binary associative <code class="docutils literal notranslate"><span class="pre">scan_op</span></code> functor. The key equality is defined by <code class="docutils literal notranslate"><span class="pre">equality_op</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Supports non-commutative scan operators.</p></li>
 <li><p>Results are not deterministic for pseudo-associative operators (e.g.,

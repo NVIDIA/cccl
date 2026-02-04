@@ -1566,6 +1566,9 @@ from a sequence of input elements.</p>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I00000EN3cub12DeviceReduce6ReduceE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorT9NumItemsT12ReductionOpT1T12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide reduction using the specified binary <code class="docutils literal notranslate"><span class="pre">reduction_op</span></code> functor and initial value <code class="docutils literal notranslate"><span class="pre">init</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Does not support binary reduction operators that are non-commutative.</p></li>
 <li><p>Provides “run-to-run” determinism for pseudo-associative reduction
@@ -1664,6 +1667,9 @@ device vector of <code class="docutils literal notranslate"><span class="pre">in
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000000EN3cub12DeviceReduce6ReduceE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT12ReductionOpT1T4EnvT" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide reduction using the specified binary <code class="docutils literal notranslate"><span class="pre">reduction_op</span></code> functor and initial value <code class="docutils literal notranslate"><span class="pre">init</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul>
 <li><p>Does not support binary reduction operators that are non-commutative.</p></li>
 <li><p>By default, provides “run-to-run” determinism for pseudo-associative reduction
@@ -1741,6 +1747,9 @@ device vector of <code class="docutils literal notranslate"><span class="pre">in
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub12DeviceReduce3SumE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT4EnvT" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide sum using the addition (<code class="docutils literal notranslate"><span class="pre">+</span></code>) operator.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul>
 <li><p>Uses <code class="docutils literal notranslate"><span class="pre">0</span></code> as the initial value of the reduction.</p></li>
 <li><p>Does not support <code class="docutils literal notranslate"><span class="pre">+</span></code> operators that are non-commutative.</p></li>
@@ -1815,6 +1824,9 @@ device vector of <code class="docutils literal notranslate"><span class="pre">in
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub12DeviceReduce3SumE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorT9NumItemsT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide sum using the addition (<code class="docutils literal notranslate"><span class="pre">+</span></code>) operator.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Uses <code class="docutils literal notranslate"><span class="pre">0</span></code> as the initial value of the reduction.</p></li>
 <li><p>Does not support <code class="docutils literal notranslate"><span class="pre">+</span></code> operators that are non-commutative.</p></li>
@@ -1894,6 +1906,9 @@ of <code class="docutils literal notranslate"><span class="pre">int</span></code
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub12DeviceReduce3MinE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorT9NumItemsT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide minimum using the less-than (<code class="docutils literal notranslate"><span class="pre">&lt;</span></code>) operator.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Uses <code class="docutils literal notranslate"><span class="pre">cuda::std::numeric_limits&lt;T&gt;::max()</span></code> as the initial value of the reduction.</p></li>
 <li><p>Does not support <code class="docutils literal notranslate"><span class="pre">&lt;</span></code> operators that are non-commutative.</p></li>
@@ -1973,6 +1988,9 @@ because CUB can employ different tile-sizing for different architectures.</p></l
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub12DeviceReduce3MinE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT4EnvT" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide minimum using the less-than (<code class="docutils literal notranslate"><span class="pre">&lt;</span></code>) operator. The result is written to the output
 iterator.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Uses <code class="docutils literal notranslate"><span class="pre">cuda::std::numeric_limits&lt;T&gt;::max()</span></code> as the initial value of the reduction.</p></li>
 <li><p>Provides determinism based on the environment’s determinism requirements.
@@ -2037,6 +2055,9 @@ as the <cite>env</cite> parameter.</p></li>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub12DeviceReduce6ArgMinE11cudaError_tPvR6size_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Finds the first device-wide minimum using the less-than (<code class="docutils literal notranslate"><span class="pre">&lt;</span></code>) operator and also returns the index of that item.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The minimum is written to <code class="docutils literal notranslate"><span class="pre">d_min_out</span></code></p></li>
 <li><p>The offset of the returned item is written to <code class="docutils literal notranslate"><span class="pre">d_index_out</span></code>, the offset type being written is of type
@@ -2124,6 +2145,9 @@ of <code class="docutils literal notranslate"><span class="pre">int</span></code
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub12DeviceReduce6ArgMinE11cudaError_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE4EnvT" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Finds the first device-wide minimum using the less-than (<code class="docutils literal notranslate"><span class="pre">&lt;</span></code>) operator and also returns the index of that item.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The minimum is written to <code class="docutils literal notranslate"><span class="pre">d_min_out</span></code></p></li>
 <li><p>The offset of the returned item is written to <code class="docutils literal notranslate"><span class="pre">d_index_out</span></code>, the offset type being written is of type
@@ -2195,6 +2219,9 @@ as the <cite>env</cite> parameter.</p></li>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I00EN3cub12DeviceReduce6ArgMinE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorTi12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Finds the first device-wide minimum using the less-than (<code class="docutils literal notranslate"><span class="pre">&lt;</span></code>) operator, also returning the index of that item.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The output value type of <code class="docutils literal notranslate"><span class="pre">d_out</span></code> is <code class="docutils literal notranslate"><span class="pre">cub::KeyValuePair&lt;int,</span> <span class="pre">T&gt;</span></code>
 (assuming the value type of <code class="docutils literal notranslate"><span class="pre">d_in</span></code> is <code class="docutils literal notranslate"><span class="pre">T</span></code>)</p>
@@ -2278,6 +2305,9 @@ of <code class="docutils literal notranslate"><span class="pre">int</span></code
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub12DeviceReduce3MaxE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorT9NumItemsT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide maximum using the greater-than (<code class="docutils literal notranslate"><span class="pre">&gt;</span></code>) operator.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Uses <code class="docutils literal notranslate"><span class="pre">cuda::std::numeric_limits&lt;T&gt;::lowest()</span></code> as the initial value of the reduction.</p></li>
 <li><p>Does not support <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> operators that are non-commutative.</p></li>
@@ -2354,6 +2384,9 @@ because CUB can employ different tile-sizing for different architectures.</p></l
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub12DeviceReduce3MaxE11cudaError_t14InputIteratorT15OutputIteratorT9NumItemsT4EnvT" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a device-wide maximum using the greater-than (<code class="docutils literal notranslate"><span class="pre">&gt;</span></code>) operator. The result is written to the output
 iterator.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Uses <code class="docutils literal notranslate"><span class="pre">cuda::std::numeric_limits&lt;T&gt;::lowest()</span></code> as the initial value of the reduction.</p></li>
 <li><p>Provides determinism based on the environment’s determinism requirements.
@@ -2419,6 +2452,9 @@ as the <cite>env</cite> parameter.</p></li>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub12DeviceReduce6ArgMaxE11cudaError_tPvR6size_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Finds the first device-wide maximum using the greater-than (<code class="docutils literal notranslate"><span class="pre">&gt;</span></code>) operator and also returns the index of that
 item.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The maximum is written to <code class="docutils literal notranslate"><span class="pre">d_max_out</span></code></p></li>
 <li><p>The offset of the returned item is written to <code class="docutils literal notranslate"><span class="pre">d_index_out</span></code>, the offset type being written is of type
@@ -2508,6 +2544,9 @@ of <cite>int</cite> data elements.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I00EN3cub12DeviceReduce6ArgMaxE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorTi12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Finds the first device-wide maximum using the greater-than (<code class="docutils literal notranslate"><span class="pre">&gt;</span></code>)
 operator, also returning the index of that item</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The output value type of <code class="docutils literal notranslate"><span class="pre">d_out</span></code> is <code class="docutils literal notranslate"><span class="pre">cub::KeyValuePair&lt;int,</span> <span class="pre">T&gt;</span></code>
 (assuming the value type of <code class="docutils literal notranslate"><span class="pre">d_in</span></code> is <code class="docutils literal notranslate"><span class="pre">T</span></code>)</p>
@@ -2595,6 +2634,9 @@ of <cite>int</cite> data elements.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub12DeviceReduce6ArgMaxE11cudaError_t14InputIteratorT20ExtremumOutIteratorT17IndexOutIteratorTN4cudaSt7int64_tE4EnvT" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Finds the first device-wide maximum using the greater-than (<code class="docutils literal notranslate"><span class="pre">&gt;</span></code>) operator and also returns the index of that
 item.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The maximum is written to <code class="docutils literal notranslate"><span class="pre">d_max_out</span></code></p></li>
 <li><p>The offset of the returned item is written to <code class="docutils literal notranslate"><span class="pre">d_index_out</span></code>, the offset type being written is of type
@@ -2669,6 +2711,9 @@ as the <cite>env</cite> parameter.</p></li>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000000EN3cub12DeviceReduce15TransformReduceE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorT9NumItemsT12ReductionOpT12TransformOpT1T12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Fuses transform and reduce operations</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Does not support binary reduction operators that are non-commutative.</p></li>
 <li><p>Provides “run-to-run” determinism for pseudo-associative reduction
@@ -2770,6 +2815,9 @@ device vector of <cite>int</cite> data elements.</p>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000000EN3cub12DeviceReduce11ReduceByKeyE11cudaError_tPvR6size_t18KeysInputIteratorT21UniqueOutputIteratorT20ValuesInputIteratorT25AggregatesOutputIteratorT22NumRunsOutputIteratorT12ReductionOpT9NumItemsT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Reduces segments of values, where segments are demarcated by corresponding runs of identical keys.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <p>This operation computes segmented reductions within <code class="docutils literal notranslate"><span class="pre">d_values_in</span></code> using the specified binary <code class="docutils literal notranslate"><span class="pre">reduction_op</span></code>
 functor. The segments are identified by “runs” of corresponding keys in <cite>d_keys_in</cite>, where runs are maximal
 ranges of consecutive, identical keys. For the <em>i</em><sup>th</sup> run encountered, the last key of the run and

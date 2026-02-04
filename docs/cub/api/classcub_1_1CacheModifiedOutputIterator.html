@@ -1523,7 +1523,11 @@
 <dt class="sig sig-object cpp" id="_CPPv4I_18CacheStoreModifier00EN3cub27CacheModifiedOutputIteratorE">
 <span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="namespacecub_1a648d25a92a50ca41cf73e93a35f21f37.html#_CPPv4N3cub18CacheStoreModifierE" title="cub::CacheStoreModifier"><span class="n"><span class="pre">CacheStoreModifier</span></span></a><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">MODIFIER</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">ValueType</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">OffsetT</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">ptrdiff_t</span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classcub_1_1CacheModifiedOutputIterator"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CacheModifiedOutputIterator</span></span></span><a class="headerlink" href="#_CPPv4I_18CacheStoreModifier00EN3cub27CacheModifiedOutputIteratorE" title="Link to this definition">#</a><br /></dt>
 <dd><p>A random-access output wrapper for storing array values using a PTX cache-modifier. </p>
-<p><dl>
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
+ <dl>
 <dt><strong>Overview</strong></dt><dd><p><ul class="simple">
 <li><p><a class="reference internal" href="#classcub_1_1CacheModifiedOutputIterator"><span class="std std-ref">CacheModifiedOutputIterator</span></a> is a random-access output iterator that wraps a native device pointer of type <code class="docutils literal notranslate"><span class="pre">ValueType*</span></code>. <code class="docutils literal notranslate"><span class="pre">ValueType</span></code> references are made by writing <code class="docutils literal notranslate"><span class="pre">ValueType</span></code> values through stores modified by <code class="docutils literal notranslate"><span class="pre">MODIFIER</span></code>.</p></li>
 <li><p>Can be used to store any data type to memory using PTX cache store modifiers (e.g., “STORE_WB”, “STORE_CG”, “STORE_CS”, “STORE_WT”, etc.).</p></li>
@@ -1561,7 +1565,7 @@
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>CacheStoreModifier</strong> – The <a class="reference internal" href="namespacecub_1a648d25a92a50ca41cf73e93a35f21f37.html#namespacecub_1a648d25a92a50ca41cf73e93a35f21f37"><span class="std std-ref">cub::CacheStoreModifier</span></a> to use when accessing data</p></li>
 <li><p><strong>ValueType</strong> – The value type of this iterator</p></li>
-<li><p><strong>OffsetT</strong> – The difference type of this iterator (Default: <code class="docutils literal notranslate"><span class="pre">ptrdiff_t</span></code>) </p></li>
+<li><p><strong>OffsetT</strong> – The difference type of this iterator (Default: <code class="docutils literal notranslate"><span class="pre">ptrdiff_t</span></code>)</p></li>
 </ul>
 </dd>
 </dl>

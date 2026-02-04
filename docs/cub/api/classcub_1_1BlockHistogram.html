@@ -1606,12 +1606,20 @@ required by BlockHistogram.</p>
 <dt class="sig sig-object cpp" id="_CPPv4N3cub14BlockHistogram14BlockHistogramEv">
 <span class="target" id="classcub_1_1BlockHistogram_1a78e336646f791152380761d32700bf88"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BlockHistogram</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub14BlockHistogram14BlockHistogramEv" title="Link to this definition">#</a><br /></dt>
 <dd><p>Collective constructor using a private static allocation of shared memory as temporary storage. </p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 </dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N3cub14BlockHistogram14BlockHistogramER11TempStorage">
 <span class="target" id="classcub_1_1BlockHistogram_1ab0cfd7846e39783a58ae1a2a9856cab0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BlockHistogram</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4N3cub14BlockHistogram11TempStorageE" title="cub::BlockHistogram::TempStorage"><span class="n"><span class="pre">TempStorage</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">temp_storage</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub14BlockHistogram14BlockHistogramER11TempStorage" title="Link to this definition">#</a><br /></dt>
 <dd><p>Collective constructor using the specified memory allocation as temporary storage. </p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>temp_storage</strong> – <strong>[in]</strong> Reference to memory allocation having layout type <a class="reference internal" href="#structcub_1_1BlockHistogram_1_1TempStorage"><span class="std std-ref">TempStorage</span></a></p>
@@ -1632,6 +1640,9 @@ required by BlockHistogram.</p>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub14BlockHistogram13InitHistogramEvA4Bins_8CounterT" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Initialize the shared histogram counters to zero.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <section id="snippet">
 <h2>Snippet<a class="headerlink" href="#snippet" title="Link to this heading">#</a></h2>
 <p>The code snippet below illustrates a the initialization and update of a
@@ -1683,6 +1694,9 @@ where each thread owns 4 samples.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub14BlockHistogram9HistogramEvRA14ItemsPerThread_1TA4Bins_8CounterT" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Constructs a block-wide histogram in shared/device-accessible memory.
 Each thread contributes an array of input elements.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Efficiency is increased with increased granularity <code class="docutils literal notranslate"><span class="pre">ITEMS_PER_THREAD</span></code>. Performance is also typically increased until the additional register pressure or shared memory allocation size causes SM occupancy to fall too low. Consider variants of <code class="docutils literal notranslate"><span class="pre">cub::BlockLoad</span></code> for efficiently gathering a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of elements across threads.</p></li>
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code> threadblock barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
@@ -1740,6 +1754,9 @@ are partitioned across 128 threads where each thread owns 4 samples.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub14BlockHistogram9CompositeEvRA14ItemsPerThread_1TA4Bins_8CounterT" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Updates an existing block-wide histogram in shared/device-accessible memory.
 Each thread composites an array of input elements.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Efficiency is increased with increased granularity <code class="docutils literal notranslate"><span class="pre">ITEMS_PER_THREAD</span></code>. Performance is also typically increased until the additional register pressure or shared memory allocation size causes SM occupancy to fall too low. Consider variants of <code class="docutils literal notranslate"><span class="pre">cub::BlockLoad</span></code> for efficiently gathering a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of elements across threads.</p></li>
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code> threadblock barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>

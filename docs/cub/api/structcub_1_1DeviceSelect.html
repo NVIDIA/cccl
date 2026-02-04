@@ -1566,6 +1566,9 @@ items from a specified input sequence to a compact output sequence.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub12DeviceSelect7FlaggedE11cudaError_tPvR6size_t14InputIteratorT12FlagIterator15OutputIteratorT20NumSelectedIteratorTN4cudaSt7int64_tE12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Uses the <code class="docutils literal notranslate"><span class="pre">d_flags</span></code> sequence to selectively copy the corresponding items from <code class="docutils literal notranslate"><span class="pre">d_in</span></code> into <code class="docutils literal notranslate"><span class="pre">d_out</span></code>.
 The total number of items selected is written to <code class="docutils literal notranslate"><span class="pre">d_num_selected_out</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul>
 <li><p>The value type of <code class="docutils literal notranslate"><span class="pre">d_flags</span></code> must be castable to <code class="docutils literal notranslate"><span class="pre">bool</span></code> (e.g., <code class="docutils literal notranslate"><span class="pre">bool</span></code>, <code class="docutils literal notranslate"><span class="pre">char</span></code>, <code class="docutils literal notranslate"><span class="pre">int</span></code>, etc.).</p></li>
 <li><p>Copies of the selected items are compacted into <code class="docutils literal notranslate"><span class="pre">d_out</span></code> and maintain their original relative ordering.</p></li>
@@ -1654,6 +1657,9 @@ The total number of items selected is written to <code class="docutils literal n
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub12DeviceSelect7FlaggedE11cudaError_tPvR6size_t9IteratorT12FlagIterator20NumSelectedIteratorTN4cudaSt7int64_tE12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Uses the <code class="docutils literal notranslate"><span class="pre">d_flags</span></code> sequence to selectively compact the items in <cite>d_data`</cite>.
 The total number of items selected is written to <code class="docutils literal notranslate"><span class="pre">d_num_selected_out</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul>
 <li><p>The value type of <code class="docutils literal notranslate"><span class="pre">d_flags</span></code> must be castable to <code class="docutils literal notranslate"><span class="pre">bool</span></code> (e.g., <code class="docutils literal notranslate"><span class="pre">bool</span></code>, <code class="docutils literal notranslate"><span class="pre">char</span></code>, <code class="docutils literal notranslate"><span class="pre">int</span></code>, etc.).</p></li>
 <li><p>Copies of the selected items are compacted in-place and maintain their original relative ordering.</p></li>
@@ -1740,6 +1746,9 @@ The total number of items selected is written to <code class="docutils literal n
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub12DeviceSelect2IfE11cudaError_tPvR6size_t14InputIteratorT15OutputIteratorT20NumSelectedIteratorTN4cudaSt7int64_tE8SelectOp12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Uses the <code class="docutils literal notranslate"><span class="pre">select_op</span></code> functor to selectively copy items from <code class="docutils literal notranslate"><span class="pre">d_in</span></code> into <code class="docutils literal notranslate"><span class="pre">d_out</span></code>.
 The total number of items selected is written to <code class="docutils literal notranslate"><span class="pre">d_num_selected_out</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul>
 <li><p>Copies of the selected items are compacted into <code class="docutils literal notranslate"><span class="pre">d_out</span></code> and maintain
 their original relative ordering.</p></li>
@@ -1842,6 +1851,9 @@ their original relative ordering.</p></li>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub12DeviceSelect2IfE11cudaError_tPvR6size_t9IteratorT20NumSelectedIteratorTN4cudaSt7int64_tE8SelectOp12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Uses the <code class="docutils literal notranslate"><span class="pre">select_op</span></code> functor to selectively compact items in <code class="docutils literal notranslate"><span class="pre">d_data</span></code>.
 The total number of items selected is written to <code class="docutils literal notranslate"><span class="pre">d_num_selected_out</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul>
 <li><div class="line-block">
 <div class="line">Copies of the selected items are compacted in <code class="docutils literal notranslate"><span class="pre">d_data</span></code> and maintain</div>
@@ -1942,6 +1954,9 @@ The total number of items selected is written to <code class="docutils literal n
 <dd><p><p>Uses the <code class="docutils literal notranslate"><span class="pre">select_op</span></code> functor applied to <code class="docutils literal notranslate"><span class="pre">d_flags</span></code> to selectively copy the
 corresponding items from <code class="docutils literal notranslate"><span class="pre">d_in</span></code> into <code class="docutils literal notranslate"><span class="pre">d_out</span></code>.
 The total number of items selected is written to <code class="docutils literal notranslate"><span class="pre">d_num_selected_out</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul>
 <li><p>The expression <code class="docutils literal notranslate"><span class="pre">select_op(flag)</span></code> must be convertible to <code class="docutils literal notranslate"><span class="pre">bool</span></code>,
 where the type of <code class="docutils literal notranslate"><span class="pre">flag</span></code> corresponds to the value type of <code class="docutils literal notranslate"><span class="pre">FlagIterator</span></code>.</p></li>
@@ -2051,6 +2066,9 @@ their original relative ordering.</p></li>
 <dd><p><p>Uses the <code class="docutils literal notranslate"><span class="pre">select_op</span></code> functor applied to <code class="docutils literal notranslate"><span class="pre">d_flags</span></code> to selectively compact the
 corresponding items in <code class="docutils literal notranslate"><span class="pre">d_data</span></code>.
 The total number of items selected is written to <code class="docutils literal notranslate"><span class="pre">d_num_selected_out</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul>
 <li><p>The expression <code class="docutils literal notranslate"><span class="pre">select_op(flag)</span></code> must be convertible to <code class="docutils literal notranslate"><span class="pre">bool</span></code>,
 where the type of <code class="docutils literal notranslate"><span class="pre">flag</span></code> corresponds to the value type of <code class="docutils literal notranslate"><span class="pre">FlagIterator</span></code>.</p></li>
@@ -2147,6 +2165,9 @@ where the type of <code class="docutils literal notranslate"><span class="pre">f
 <dd><p><p>Given an input sequence <code class="docutils literal notranslate"><span class="pre">d_in</span></code> having runs of consecutive equal-valued keys,
 only the first key from each run is selectively copied to <code class="docutils literal notranslate"><span class="pre">d_out</span></code>.
 The total number of items selected is written to <code class="docutils literal notranslate"><span class="pre">d_num_selected_out</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul>
 <li><p>The <code class="docutils literal notranslate"><span class="pre">==</span></code> equality operator is used to determine whether keys are equivalent</p></li>
 <li><p>Copies of the selected items are compacted into <code class="docutils literal notranslate"><span class="pre">d_out</span></code> and maintain their original relative ordering.</p></li>
@@ -2237,6 +2258,9 @@ The total number of items selected is written to <code class="docutils literal n
 equal-valued keys, only the first key and its value from each run is selectively copied
 to <code class="docutils literal notranslate"><span class="pre">d_keys_out</span></code> and <code class="docutils literal notranslate"><span class="pre">d_values_out</span></code>.
 The total number of items selected is written to <code class="docutils literal notranslate"><span class="pre">d_num_selected_out</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The user-provided equality operator, <cite>equality_op</cite>, is used to determine whether keys are equivalent</p></li>
 <li><p>Copies of the selected items are compacted into <code class="docutils literal notranslate"><span class="pre">d_out</span></code> and maintain
@@ -2344,6 +2368,9 @@ any of the provided ranges:</p>
 equal-valued keys, only the first key and its value from each run is selectively copied
 to <code class="docutils literal notranslate"><span class="pre">d_keys_out</span></code> and <code class="docutils literal notranslate"><span class="pre">d_values_out</span></code>.
 The total number of items selected is written to <code class="docutils literal notranslate"><span class="pre">d_num_selected_out</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The <code class="docutils literal notranslate"><span class="pre">==</span></code> equality operator is used to determine whether keys are equivalent</p></li>
 <li><p>Copies of the selected items are compacted into <code class="docutils literal notranslate"><span class="pre">d_out</span></code> and maintain

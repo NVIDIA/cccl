@@ -1598,12 +1598,20 @@ This example can be easily adapted to the storage required by BlockDiscontinuity
 <dt class="sig sig-object cpp" id="_CPPv4N3cub18BlockDiscontinuity18BlockDiscontinuityEv">
 <span class="target" id="classcub_1_1BlockDiscontinuity_1a7e26cbf56e4b846d96ee4e0c6d8d418c"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BlockDiscontinuity</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub18BlockDiscontinuity18BlockDiscontinuityEv" title="Link to this definition">#</a><br /></dt>
 <dd><p>Collective constructor using a private static allocation of shared memory as temporary storage. </p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 </dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N3cub18BlockDiscontinuity18BlockDiscontinuityER11TempStorage">
 <span class="target" id="classcub_1_1BlockDiscontinuity_1ab12200c935c90427299d427b82fc4f6e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BlockDiscontinuity</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4N3cub18BlockDiscontinuity11TempStorageE" title="cub::BlockDiscontinuity::TempStorage"><span class="n"><span class="pre">TempStorage</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">temp_storage</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub18BlockDiscontinuity18BlockDiscontinuityER11TempStorage" title="Link to this definition">#</a><br /></dt>
 <dd><p>Collective constructor using the specified memory allocation as temporary storage. </p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>temp_storage</strong> – <strong>[in]</strong> Reference to memory allocation having layout type <a class="reference internal" href="#structcub_1_1BlockDiscontinuity_1_1TempStorage"><span class="std std-ref">TempStorage</span></a></p>
@@ -1627,6 +1635,9 @@ This example can be easily adapted to the storage required by BlockDiscontinuity
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i00EN3cub18BlockDiscontinuity9FlagHeadsEvRA16ITEMS_PER_THREAD_5FlagTRA16ITEMS_PER_THREAD_1T6FlagOp" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sets head flags indicating discontinuities between items partitioned across the thread
 block, for which the first item has no reference and is always flagged.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The flag <code class="docutils literal notranslate"><span class="pre">head_flags[i]</span></code> is set for item <code class="docutils literal notranslate"><span class="pre">input[i]</span></code> when <code class="docutils literal notranslate"><span class="pre">flag_op(previous-item,</span> <span class="pre">input[i])</span></code> returns
 <code class="docutils literal notranslate"><span class="pre">true</span></code> (where <code class="docutils literal notranslate"><span class="pre">previous-item</span></code> is either the preceding item in the same thread or the last item in
@@ -1698,6 +1709,9 @@ The corresponding output <code class="docutils literal notranslate"><span class=
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i00EN3cub18BlockDiscontinuity9FlagHeadsEvRA16ITEMS_PER_THREAD_5FlagTRA16ITEMS_PER_THREAD_1T6FlagOp1T" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sets head flags indicating discontinuities between items partitioned across the thread block.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The flag <code class="docutils literal notranslate"><span class="pre">head_flags[i]</span></code> is set for item <code class="docutils literal notranslate"><span class="pre">input[i]</span></code> when <code class="docutils literal notranslate"><span class="pre">flag_op(previous-item,</span> <span class="pre">input[i])</span></code>
 returns <code class="docutils literal notranslate"><span class="pre">true</span></code> (where <code class="docutils literal notranslate"><span class="pre">previous-item</span></code> is either the preceding item in the same thread or the last item
@@ -1780,6 +1794,9 @@ threads will be <code class="docutils literal notranslate"><span class="pre">{</
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i00EN3cub18BlockDiscontinuity9FlagTailsEvRA16ITEMS_PER_THREAD_5FlagTRA16ITEMS_PER_THREAD_1T6FlagOp" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sets tail flags indicating discontinuities between items partitioned across the thread
 block, for which the last item has no reference and is always flagged.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The flag <code class="docutils literal notranslate"><span class="pre">tail_flags[i]</span></code> is set for item <code class="docutils literal notranslate"><span class="pre">input[i]</span></code> when
 <code class="docutils literal notranslate"><span class="pre">flag_op(input[i],</span> <span class="pre">next-item)</span></code>
@@ -1852,6 +1869,9 @@ The corresponding output <code class="docutils literal notranslate"><span class=
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i00EN3cub18BlockDiscontinuity9FlagTailsEvRA16ITEMS_PER_THREAD_5FlagTRA16ITEMS_PER_THREAD_1T6FlagOp1T" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sets tail flags indicating discontinuities between items partitioned across the thread block.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The flag <code class="docutils literal notranslate"><span class="pre">tail_flags[i]</span></code> is set for item <code class="docutils literal notranslate"><span class="pre">input[i]</span></code> when <code class="docutils literal notranslate"><span class="pre">flag_op(input[i],</span> <span class="pre">next-item)</span></code>
 returns <code class="docutils literal notranslate"><span class="pre">true</span></code> (where <code class="docutils literal notranslate"><span class="pre">next-item</span></code> is either the next item in the same thread or the first item in
@@ -1937,6 +1957,9 @@ compare the last tile item (<code class="docutils literal notranslate"><span cla
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i00EN3cub18BlockDiscontinuity17FlagHeadsAndTailsEvRA16ITEMS_PER_THREAD_5FlagTRA16ITEMS_PER_THREAD_5FlagTRA16ITEMS_PER_THREAD_1T6FlagOp" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sets both head and tail flags indicating discontinuities between items partitioned across the thread block.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The flag <code class="docutils literal notranslate"><span class="pre">head_flags[i]</span></code> is set for item <code class="docutils literal notranslate"><span class="pre">input[i]</span></code> when <code class="docutils literal notranslate"><span class="pre">flag_op(previous-item,</span> <span class="pre">input[i])</span></code> returns
 <code class="docutils literal notranslate"><span class="pre">true</span></code> (where <code class="docutils literal notranslate"><span class="pre">previous-item</span></code> is either the preceding item in the same thread or the last item in
@@ -2018,6 +2041,9 @@ and the corresponding output <code class="docutils literal notranslate"><span cl
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i00EN3cub18BlockDiscontinuity17FlagHeadsAndTailsEvRA16ITEMS_PER_THREAD_5FlagTRA16ITEMS_PER_THREAD_5FlagT1TRA16ITEMS_PER_THREAD_1T6FlagOp" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sets both head and tail flags indicating discontinuities between items partitioned across the thread block.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The flag <code class="docutils literal notranslate"><span class="pre">head_flags[i]</span></code> is set for item <code class="docutils literal notranslate"><span class="pre">input[i]</span></code> when
 <code class="docutils literal notranslate"><span class="pre">flag_op(previous-item,</span> <span class="pre">input[i])</span></code> returns <code class="docutils literal notranslate"><span class="pre">true</span></code> (where <code class="docutils literal notranslate"><span class="pre">previous-item</span></code> is either the preceding item
@@ -2109,6 +2135,9 @@ the last tile item (<code class="docutils literal notranslate"><span class="pre"
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i00EN3cub18BlockDiscontinuity17FlagHeadsAndTailsEvRA16ITEMS_PER_THREAD_5FlagT1TRA16ITEMS_PER_THREAD_5FlagTRA16ITEMS_PER_THREAD_1T6FlagOp" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sets both head and tail flags indicating discontinuities between items partitioned across the thread block.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The flag <code class="docutils literal notranslate"><span class="pre">head_flags[i]</span></code> is set for item <code class="docutils literal notranslate"><span class="pre">input[i]</span></code> when <code class="docutils literal notranslate"><span class="pre">flag_op(previous-item,</span> <span class="pre">input[i])</span></code>
 returns <code class="docutils literal notranslate"><span class="pre">true</span></code> (where <code class="docutils literal notranslate"><span class="pre">previous-item</span></code> is either the preceding item in the same thread or the last item
@@ -2204,6 +2233,9 @@ in those threads will be <code class="docutils literal notranslate"><span class=
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i00EN3cub18BlockDiscontinuity17FlagHeadsAndTailsEvRA16ITEMS_PER_THREAD_5FlagT1TRA16ITEMS_PER_THREAD_5FlagT1TRA16ITEMS_PER_THREAD_1T6FlagOp" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sets both head and tail flags indicating discontinuities between items partitioned across the thread block.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The flag <code class="docutils literal notranslate"><span class="pre">head_flags[i]</span></code> is set for item <code class="docutils literal notranslate"><span class="pre">input[i]</span></code> when <code class="docutils literal notranslate"><span class="pre">flag_op(previous-item,</span> <span class="pre">input[i])</span></code>
 returns <code class="docutils literal notranslate"><span class="pre">true</span></code> (where <code class="docutils literal notranslate"><span class="pre">previous-item</span></code> is either the preceding item in the same thread or the last item in

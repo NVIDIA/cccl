@@ -1616,6 +1616,9 @@ output(s) outside the specified segments will not be accessed nor modified.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub19DeviceSegmentedSort8SortKeysE11cudaError_tPvR6size_tPK4KeyTP4KeyTN4cudaSt7int64_tEN4cudaSt7int64_tE20BeginOffsetIteratorT18EndOffsetIteratorT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sorts segments of keys into ascending order.
 Approximately <code class="docutils literal notranslate"><span class="pre">num_items</span> <span class="pre">+</span> <span class="pre">2</span> <span class="pre">*</span> <span class="pre">num_segments</span></code> auxiliary storage required.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The contents of the input data are not altered by the sorting operation.</p></li>
 <li><p>When the input is a contiguous sequence of segments, a single sequence
@@ -1723,6 +1726,9 @@ If <code class="docutils literal notranslate"><span class="pre">d_end_offsets[i]
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub19DeviceSegmentedSort18SortKeysDescendingE11cudaError_tPvR6size_tPK4KeyTP4KeyTN4cudaSt7int64_tEN4cudaSt7int64_tE20BeginOffsetIteratorT18EndOffsetIteratorT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sorts segments of keys into descending order. Approximately
 <code class="docutils literal notranslate"><span class="pre">num_items</span> <span class="pre">+</span> <span class="pre">2</span> <span class="pre">*</span> <span class="pre">num_segments</span></code> auxiliary storage required.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The contents of the input data are not altered by the sorting operation.</p></li>
 <li><p>When the input is a contiguous sequence of segments, a single sequence
@@ -1829,6 +1835,9 @@ If <code class="docutils literal notranslate"><span class="pre">d_end_offsets[i]
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub19DeviceSegmentedSort8SortKeysE11cudaError_tPvR6size_tR12DoubleBufferI4KeyTEN4cudaSt7int64_tEN4cudaSt7int64_tE20BeginOffsetIteratorT18EndOffsetIteratorT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sorts segments of keys into ascending order. Approximately <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">num_segments</span></code> auxiliary storage required.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The sorting operation is given a pair of key buffers managed by a
 DoubleBuffer structure that indicates which of the two buffers is
@@ -1946,6 +1955,9 @@ If <code class="docutils literal notranslate"><span class="pre">d_end_offsets[i]
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub19DeviceSegmentedSort18SortKeysDescendingE11cudaError_tPvR6size_tR12DoubleBufferI4KeyTEN4cudaSt7int64_tEN4cudaSt7int64_tE20BeginOffsetIteratorT18EndOffsetIteratorT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sorts segments of keys into descending order. Approximately
 <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">num_segments</span></code> auxiliary storage required.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The sorting operation is given a pair of key buffers managed by a
 DoubleBuffer structure that indicates which of the two buffers is
@@ -2064,6 +2076,9 @@ If <code class="docutils literal notranslate"><span class="pre">d_end_offsets[i]
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub19DeviceSegmentedSort14StableSortKeysE11cudaError_tPvR6size_tPK4KeyTP4KeyTN4cudaSt7int64_tEN4cudaSt7int64_tE20BeginOffsetIteratorT18EndOffsetIteratorT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sorts segments of keys into ascending order. Approximately
 <code class="docutils literal notranslate"><span class="pre">num_items</span> <span class="pre">+</span>&#160; <span class="pre">2</span> <span class="pre">*</span> <span class="pre">num_segments</span></code> auxiliary storage required.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The contents of the input data are not altered by the sorting operation.</p></li>
 <li><p>When the input is a contiguous sequence of segments, a single sequence
@@ -2173,6 +2188,9 @@ If <code class="docutils literal notranslate"><span class="pre">d_end_offsets[i]
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub19DeviceSegmentedSort24StableSortKeysDescendingE11cudaError_tPvR6size_tPK4KeyTP4KeyTN4cudaSt7int64_tEN4cudaSt7int64_tE20BeginOffsetIteratorT18EndOffsetIteratorT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sorts segments of keys into descending order.
 Approximately <code class="docutils literal notranslate"><span class="pre">num_items</span> <span class="pre">+</span> <span class="pre">2</span> <span class="pre">*</span> <span class="pre">num_segments</span></code> auxiliary storage required.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The contents of the input data are not altered by the sorting operation.</p></li>
 <li><p>When the input is a contiguous sequence of segments, a single sequence
@@ -2281,6 +2299,9 @@ considered empty.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub19DeviceSegmentedSort14StableSortKeysE11cudaError_tPvR6size_tR12DoubleBufferI4KeyTEN4cudaSt7int64_tEN4cudaSt7int64_tE20BeginOffsetIteratorT18EndOffsetIteratorT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sorts segments of keys into ascending order.
 Approximately <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">num_segments</span></code> auxiliary storage required.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The sorting operation is given a pair of key buffers managed by a
 DoubleBuffer structure that indicates which of the two buffers is
@@ -2400,6 +2421,9 @@ considered empty.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub19DeviceSegmentedSort24StableSortKeysDescendingE11cudaError_tPvR6size_tR12DoubleBufferI4KeyTEN4cudaSt7int64_tEN4cudaSt7int64_tE20BeginOffsetIteratorT18EndOffsetIteratorT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sorts segments of keys into descending order.
 Approximately <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">num_segments</span></code> auxiliary storage required.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The sorting operation is given a pair of key buffers managed by a
 DoubleBuffer structure that indicates which of the two buffers is
@@ -2524,6 +2548,9 @@ element of the <em>i</em><sup>th</sup> data segment in <code class="docutils lit
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub19DeviceSegmentedSort9SortPairsE11cudaError_tPvR6size_tPK4KeyTP4KeyTPK6ValueTP6ValueTN4cudaSt7int64_tEN4cudaSt7int64_tE20BeginOffsetIteratorT18EndOffsetIteratorT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sorts segments of key-value pairs into ascending order.
 Approximately <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">num_items</span> <span class="pre">+</span> <span class="pre">2</span> <span class="pre">*</span> <span class="pre">num_segments</span></code> auxiliary storage required.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The contents of the input data are not altered by the sorting operation.</p></li>
 <li><p>When the input is a contiguous sequence of segments, a single sequence
@@ -2645,6 +2672,9 @@ considered empty.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub19DeviceSegmentedSort19SortPairsDescendingE11cudaError_tPvR6size_tPK4KeyTP4KeyTPK6ValueTP6ValueTN4cudaSt7int64_tEN4cudaSt7int64_tE20BeginOffsetIteratorT18EndOffsetIteratorT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sorts segments of key-value pairs into descending order.
 Approximately <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">num_items</span> <span class="pre">+</span> <span class="pre">2</span> <span class="pre">*</span> <span class="pre">num_segments</span></code> auxiliary storage required.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The contents of the input data are not altered by the sorting operation.</p></li>
 <li><p>When the input is a contiguous sequence of segments, a single sequence
@@ -2764,6 +2794,9 @@ considered empty.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub19DeviceSegmentedSort9SortPairsE11cudaError_tPvR6size_tR12DoubleBufferI4KeyTER12DoubleBufferI6ValueTEN4cudaSt7int64_tEN4cudaSt7int64_tE20BeginOffsetIteratorT18EndOffsetIteratorT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sorts segments of key-value pairs into ascending order.
 Approximately <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">num_segments</span></code> auxiliary storage required.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The sorting operation is given a pair of key buffers and a corresponding
 pair of associated value buffers.  Each pair is managed by a DoubleBuffer
@@ -2894,6 +2927,9 @@ considered empty.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub19DeviceSegmentedSort19SortPairsDescendingE11cudaError_tPvR6size_tR12DoubleBufferI4KeyTER12DoubleBufferI6ValueTEN4cudaSt7int64_tEN4cudaSt7int64_tE20BeginOffsetIteratorT18EndOffsetIteratorT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sorts segments of key-value pairs into descending order.
 Approximately <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">num_segments</span></code> auxiliary storage required.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The sorting operation is given a pair of key buffers and a corresponding
 pair of associated value buffers. Each pair is managed by a DoubleBuffer
@@ -3025,6 +3061,9 @@ considered empty.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub19DeviceSegmentedSort15StableSortPairsE11cudaError_tPvR6size_tPK4KeyTP4KeyTPK6ValueTP6ValueTN4cudaSt7int64_tEN4cudaSt7int64_tE20BeginOffsetIteratorT18EndOffsetIteratorT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sorts segments of key-value pairs into ascending order.
 Approximately <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">num_items</span> <span class="pre">+</span> <span class="pre">2</span> <span class="pre">*</span> <span class="pre">num_segments</span></code> auxiliary storage required.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The contents of the input data are not altered by the sorting operation.</p></li>
 <li><p>When the input is a contiguous sequence of segments, a single sequence
@@ -3147,6 +3186,9 @@ considered empty.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub19DeviceSegmentedSort25StableSortPairsDescendingE11cudaError_tPvR6size_tPK4KeyTP4KeyTPK6ValueTP6ValueTN4cudaSt7int64_tEN4cudaSt7int64_tE20BeginOffsetIteratorT18EndOffsetIteratorT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sorts segments of key-value pairs into descending order.
 Approximately <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">num_items</span> <span class="pre">+</span> <span class="pre">2</span> <span class="pre">*</span> <span class="pre">num_segments</span></code> auxiliary storage required.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The contents of the input data are not altered by the sorting operation.</p></li>
 <li><p>When the input is a contiguous sequence of segments, a single sequence
@@ -3266,6 +3308,9 @@ considered empty.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub19DeviceSegmentedSort15StableSortPairsE11cudaError_tPvR6size_tR12DoubleBufferI4KeyTER12DoubleBufferI6ValueTEN4cudaSt7int64_tEN4cudaSt7int64_tE20BeginOffsetIteratorT18EndOffsetIteratorT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sorts segments of key-value pairs into ascending order.
 Approximately <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">num_segments</span></code> auxiliary storage required.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The sorting operation is given a pair of key buffers and a corresponding
 pair of associated value buffers. Each pair is managed by a DoubleBuffer
@@ -3397,6 +3442,9 @@ considered empty.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub19DeviceSegmentedSort25StableSortPairsDescendingE11cudaError_tPvR6size_tR12DoubleBufferI4KeyTER12DoubleBufferI6ValueTEN4cudaSt7int64_tEN4cudaSt7int64_tE20BeginOffsetIteratorT18EndOffsetIteratorT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Sorts segments of key-value pairs into descending order.
 Approximately <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">num_segments</span></code> auxiliary storage required.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The sorting operation is given a pair of key buffers and a corresponding
 pair of associated value buffers.  Each pair is managed by a DoubleBuffer

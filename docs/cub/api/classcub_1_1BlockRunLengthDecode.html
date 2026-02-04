@@ -1625,7 +1625,11 @@ A run of length zero may not be followed by a run length that is not zero.</p>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I00EN3cub20BlockRunLengthDecode20BlockRunLengthDecodeER11TempStorageRA13RunsPerThread_5ItemTRA13RunsPerThread_10RunLengthTR17TotalDecodedSizeT" title="Link to this definition">#</a><br /></dt>
 <dd><p>Constructor specialised for user-provided temporary storage, initializing using the runs’ lengths. </p>
-<p>The algorithm’s temporary storage may not be repurposed between the constructor call and subsequent <code class="docutils literal notranslate"><span class="pre">RunLengthDecode</span></code> calls. </p>
+<p>The algorithm’s temporary storage may not be repurposed between the constructor call and subsequent <code class="docutils literal notranslate"><span class="pre">RunLengthDecode</span></code> calls.</p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 </dd></dl>
 
 <dl class="cpp function">
@@ -1640,7 +1644,11 @@ A run of length zero may not be followed by a run length that is not zero.</p>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub20BlockRunLengthDecode20BlockRunLengthDecodeER11TempStorageRA13RunsPerThread_5ItemTRA13RunsPerThread_14UserRunOffsetT" title="Link to this definition">#</a><br /></dt>
 <dd><p>Constructor specialised for user-provided temporary storage, initializing using the runs’ offsets. </p>
-<p>The algorithm’s temporary storage may not be repurposed between the constructor call and subsequent <code class="docutils literal notranslate"><span class="pre">RunLengthDecode</span></code> calls. </p>
+<p>The algorithm’s temporary storage may not be repurposed between the constructor call and subsequent <code class="docutils literal notranslate"><span class="pre">RunLengthDecode</span></code> calls.</p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 </dd></dl>
 
 <dl class="cpp function">
@@ -1655,6 +1663,10 @@ A run of length zero may not be followed by a run length that is not zero.</p>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I00EN3cub20BlockRunLengthDecode20BlockRunLengthDecodeERA13RunsPerThread_5ItemTRA13RunsPerThread_10RunLengthTR17TotalDecodedSizeT" title="Link to this definition">#</a><br /></dt>
 <dd><p>Constructor specialised for static temporary storage, initializing using the runs’ lengths. </p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 </dd></dl>
 
 <dl class="cpp function">
@@ -1668,6 +1680,10 @@ A run of length zero may not be followed by a run length that is not zero.</p>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub20BlockRunLengthDecode20BlockRunLengthDecodeERA13RunsPerThread_5ItemTRA13RunsPerThread_14UserRunOffsetT" title="Link to this definition">#</a><br /></dt>
 <dd><p>Constructor specialised for static temporary storage, initializing using the runs’ offsets. </p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 </dd></dl>
 
 <dl class="cpp function">
@@ -1683,6 +1699,10 @@ A run of length zero may not be followed by a run length that is not zero.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub20BlockRunLengthDecode15RunLengthDecodeEvRA21DecodedItemsPerThread_5ItemTRA21DecodedItemsPerThread_15RelativeOffsetT14DecodedOffsetT" title="Link to this definition">#</a><br /></dt>
 <dd><p>Run-length decodes the runs previously passed via a call to Init(…) and returns the run-length decoded items in a blocked arrangement to <code class="docutils literal notranslate"><span class="pre">decoded_items</span></code>. </p>
 <p>If the number of run-length decoded items exceeds the run-length decode buffer (i.e., <code class="docutils literal notranslate"><span class="pre">DecodedItemsPerThread</span> <span class="pre">*</span> <span class="pre">BLOCK_THREADS</span></code>), only the items that fit within the buffer are returned. Subsequent calls to <code class="docutils literal notranslate"><span class="pre">RunLengthDecode</span></code> adjusting <code class="docutils literal notranslate"><span class="pre">from_decoded_offset</span></code> can be used to retrieve the remaining run-length decoded items. Calling __syncthreads() between any two calls to <code class="docutils literal notranslate"><span class="pre">RunLengthDecode</span></code> is not required. <code class="docutils literal notranslate"><span class="pre">item_offsets</span></code> can be used to retrieve each run-length decoded item’s relative index within its run. E.g., the run-length encoded array of <code class="docutils literal notranslate"><span class="pre">3,</span> <span class="pre">1,</span> <span class="pre">4</span></code> with the respective run lengths of <code class="docutils literal notranslate"><span class="pre">2,</span> <span class="pre">1,</span> <span class="pre">3</span></code> would yield the run-length decoded array of <code class="docutils literal notranslate"><span class="pre">3,</span> <span class="pre">3,</span> <span class="pre">1,</span> <span class="pre">4,</span> <span class="pre">4,</span> <span class="pre">4</span></code> with the relative offsets of <code class="docutils literal notranslate"><span class="pre">0,</span> <span class="pre">1,</span> <span class="pre">0,</span> <span class="pre">0,</span> <span class="pre">1,</span> <span class="pre">2</span></code>. A subsequent <code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code> threadblock barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1706,6 +1726,10 @@ A run of length zero may not be followed by a run length that is not zero.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub20BlockRunLengthDecode15RunLengthDecodeERA21DecodedItemsPerThread_5ItemT14DecodedOffsetT" title="Link to this definition">#</a><br /></dt>
 <dd><p>Run-length decodes the runs previously passed via a call to Init(…) and returns the run-length decoded items in a blocked arrangement to <code class="docutils literal notranslate"><span class="pre">decoded_items</span></code>. </p>
 <p>If the number of run-length decoded items exceeds the run-length decode buffer (i.e., <code class="docutils literal notranslate"><span class="pre">DecodedItemsPerThread</span> <span class="pre">*</span> <span class="pre">BLOCK_THREADS</span></code>), only the items that fit within the buffer are returned. Subsequent calls to <code class="docutils literal notranslate"><span class="pre">RunLengthDecode</span></code> adjusting <code class="docutils literal notranslate"><span class="pre">from_decoded_offset</span></code> can be used to retrieve the remaining run-length decoded items. Calling __syncthreads() between any two calls to <code class="docutils literal notranslate"><span class="pre">RunLengthDecode</span></code> is not required.</p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">

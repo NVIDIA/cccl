@@ -1561,6 +1561,9 @@ of the disjoint categories (known as <em>bins</em>).</p>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub15DeviceHistogram13HistogramEvenE11cudaError_tPvR6size_t15SampleIteratorTP8CounterTi6LevelT6LevelT7OffsetT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes an intensity histogram from a sequence of data samples using equal-width bins.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The number of histogram bins is (<code class="docutils literal notranslate"><span class="pre">num_levels</span> <span class="pre">-</span> <span class="pre">1</span></code>)</p></li>
 <li><p>All bins comprise the same width of sample values: <code class="docutils literal notranslate"><span class="pre">(upper_level</span> <span class="pre">-</span> <span class="pre">lower_level)</span> <span class="pre">/</span> <span class="pre">(num_levels</span> <span class="pre">-</span> <span class="pre">1)</span></code>.</p></li>
@@ -1662,6 +1665,9 @@ from a sequence of float samples</p>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub15DeviceHistogram13HistogramEvenE11cudaError_tPvR6size_t15SampleIteratorTP8CounterTi6LevelT6LevelT7OffsetT7OffsetT6size_t12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes an intensity histogram from a sequence of data samples using equal-width bins.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>A two-dimensional <em>region of interest</em> within <code class="docutils literal notranslate"><span class="pre">d_samples</span></code> can be specified using
 the <code class="docutils literal notranslate"><span class="pre">num_row_samples</span></code>, <code class="docutils literal notranslate"><span class="pre">num_rows</span></code>, and <code class="docutils literal notranslate"><span class="pre">row_stride_bytes</span></code> parameters.</p></li>
@@ -1775,6 +1781,9 @@ from a 2x5 region of interest within a flattened 2x7 array of float samples.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i_i0000EN3cub15DeviceHistogram18MultiHistogramEvenE11cudaError_tPvR6size_t15SampleIteratorTN4cudaSt5arrayIP8CounterT19NUM_ACTIVE_CHANNELSEEN4cudaSt5arrayIi19NUM_ACTIVE_CHANNELSEEN4cudaSt5arrayI6LevelT19NUM_ACTIVE_CHANNELSEEN4cudaSt5arrayI6LevelT19NUM_ACTIVE_CHANNELSEE7OffsetT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes per-channel intensity histograms from a sequence of multi-channel “pixel” data samples using
 equal-width bins.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The input is a sequence of <em>pixel</em> structures, where each pixel comprises
 a record of <code class="docutils literal notranslate"><span class="pre">NUM_CHANNELS</span></code> consecutive data samples
@@ -1920,6 +1929,9 @@ Implies that the number of bins for channel<sub>i</sub> is <code class="docutils
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i_i0000EN3cub15DeviceHistogram18MultiHistogramEvenE11cudaError_tPvR6size_t15SampleIteratorTN4cudaSt5arrayIP8CounterT19NUM_ACTIVE_CHANNELSEEN4cudaSt5arrayIi19NUM_ACTIVE_CHANNELSEEN4cudaSt5arrayI6LevelT19NUM_ACTIVE_CHANNELSEEN4cudaSt5arrayI6LevelT19NUM_ACTIVE_CHANNELSEE7OffsetT7OffsetT6size_t12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes per-channel intensity histograms from a sequence of
 multi-channel “pixel” data samples using equal-width bins.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The input is a sequence of <em>pixel</em> structures, where each pixel
 comprises a record of <code class="docutils literal notranslate"><span class="pre">NUM_CHANNELS</span></code> consecutive data samples (e.g., an <em>RGBA</em> pixel).</p></li>
@@ -2079,6 +2091,9 @@ Implies that the number of bins for channel<sub>i</sub> is <code class="docutils
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub15DeviceHistogram14HistogramRangeE11cudaError_tPvR6size_t15SampleIteratorTP8CounterTiPK6LevelT7OffsetT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes an intensity histogram from a sequence of data samples using the specified bin boundary levels.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The number of histogram bins is (<code class="docutils literal notranslate"><span class="pre">num_levels</span> <span class="pre">-</span> <span class="pre">1</span></code>)</p></li>
 <li><p>The value range for bin<sub>i</sub> is <code class="docutils literal notranslate"><span class="pre">[level[i],</span> <span class="pre">level[i+1])</span></code></p></li>
@@ -2169,6 +2184,9 @@ from a sequence of float samples</p>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub15DeviceHistogram14HistogramRangeE11cudaError_tPvR6size_t15SampleIteratorTP8CounterTiPK6LevelT7OffsetT7OffsetT6size_t12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes an intensity histogram from a sequence of data samples using the specified bin boundary levels.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>A two-dimensional <em>region of interest</em> within <code class="docutils literal notranslate"><span class="pre">d_samples</span></code> can be
 specified using the <code class="docutils literal notranslate"><span class="pre">num_row_samples</span></code>, <code class="docutils literal notranslate"><span class="pre">num_rows</span></code>, and <code class="docutils literal notranslate"><span class="pre">row_stride_bytes</span></code> parameters.</p></li>
@@ -2270,6 +2288,9 @@ from a 2x5 region of interest within a flattened 2x7 array of float samples.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i_i0000EN3cub15DeviceHistogram19MultiHistogramRangeE11cudaError_tPvR6size_t15SampleIteratorTN4cudaSt5arrayIP8CounterT19NUM_ACTIVE_CHANNELSEEN4cudaSt5arrayIi19NUM_ACTIVE_CHANNELSEEN4cudaSt5arrayIPK6LevelT19NUM_ACTIVE_CHANNELSEE7OffsetT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes per-channel intensity histograms from a sequence of multi-channel “pixel” data samples
 using the specified bin boundary levels.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The input is a sequence of <em>pixel</em> structures, where each pixel
 comprises a record of <code class="docutils literal notranslate"><span class="pre">NUM_CHANNELS</span></code> consecutive data samples (e.g., an <em>RGBA</em> pixel).</p></li>
@@ -2403,6 +2424,9 @@ channel<sub>i</sub> is <code class="docutils literal notranslate"><span class="p
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i_i0000EN3cub15DeviceHistogram19MultiHistogramRangeE11cudaError_tPvR6size_t15SampleIteratorTN4cudaSt5arrayIP8CounterT19NUM_ACTIVE_CHANNELSEEN4cudaSt5arrayIi19NUM_ACTIVE_CHANNELSEEN4cudaSt5arrayIPK6LevelT19NUM_ACTIVE_CHANNELSEE7OffsetT7OffsetT6size_t12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes per-channel intensity histograms from a sequence of multi-channel “pixel” data samples using
 the specified bin boundary levels.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The input is a sequence of <em>pixel</em> structures, where each pixel comprises
 a record of <code class="docutils literal notranslate"><span class="pre">NUM_CHANNELS</span></code> consecutive data samples (e.g., an <em>RGBA</em> pixel).</p></li>

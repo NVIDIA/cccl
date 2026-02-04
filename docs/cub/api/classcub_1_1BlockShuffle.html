@@ -1551,12 +1551,20 @@ The BlockShuffle abstraction allows threads to efficiently shift items either
 <dt class="sig sig-object cpp" id="_CPPv4N3cub12BlockShuffle12BlockShuffleEv">
 <span class="target" id="classcub_1_1BlockShuffle_1a0ac705fa1dec2c8a0aec2ec6858bd793"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BlockShuffle</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub12BlockShuffle12BlockShuffleEv" title="Link to this definition">#</a><br /></dt>
 <dd><p>Collective constructor using a private static allocation of shared memory as temporary storage. </p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 </dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N3cub12BlockShuffle12BlockShuffleER11TempStorage">
 <span class="target" id="classcub_1_1BlockShuffle_1a42131e3f4f7f91e9d1ec4ce4d8cb358b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BlockShuffle</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4N3cub12BlockShuffle11TempStorageE" title="cub::BlockShuffle::TempStorage"><span class="n"><span class="pre">TempStorage</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">temp_storage</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub12BlockShuffle12BlockShuffleER11TempStorage" title="Link to this definition">#</a><br /></dt>
 <dd><p>Collective constructor using the specified memory allocation as temporary storage. </p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>temp_storage</strong> – <strong>[in]</strong> Reference to memory allocation having layout type <a class="reference internal" href="#structcub_1_1BlockShuffle_1_1TempStorage"><span class="std std-ref">TempStorage</span></a></p>
@@ -1572,6 +1580,9 @@ The BlockShuffle abstraction allows threads to efficiently shift items either
 <span class="target" id="classcub_1_1BlockShuffle_1a0950b766521c7e162d22f8411c5d411f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Offset</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i_i_iEN3cub12BlockShuffleE" title="cub::BlockShuffle::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">input</span></span></em>, <em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i_i_iEN3cub12BlockShuffleE" title="cub::BlockShuffle::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">output</span></span></em>, <em class="sig-param"><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">distance</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub12BlockShuffle6OffsetE1TR1Ti" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Each <em>thread</em><sub>i</sub> obtains the <code class="docutils literal notranslate"><span class="pre">input</span></code> provided by <em>thread</em><sub>i + distance</sub>.
 The offset <code class="docutils literal notranslate"><span class="pre">distance</span></code> may be negative.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code> threadblock barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
 </ul>
@@ -1598,6 +1609,9 @@ This value is only updated for for <em>thread</em><sub>i</sub> when
 <dt class="sig sig-object cpp" id="_CPPv4N3cub12BlockShuffle6RotateE1TR1Tj">
 <span class="target" id="classcub_1_1BlockShuffle_1a91d95754e7afbe86c0f5df0b649f7d2d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Rotate</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i_i_iEN3cub12BlockShuffleE" title="cub::BlockShuffle::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">input</span></span></em>, <em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i_i_iEN3cub12BlockShuffleE" title="cub::BlockShuffle::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">output</span></span></em>, <em class="sig-param"><span class="kt"><span class="pre">unsigned</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">distance</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub12BlockShuffle6RotateE1TR1Tj" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Each <em>thread</em><sub>i</sub> obtains the <code class="docutils literal notranslate"><span class="pre">input</span></code> provided by <em>thread</em><sub>i + distance</sub>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncthreads()</span></code> threadblock barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p></li>
 </ul>
@@ -1629,6 +1643,9 @@ This value is not updated for <em>thread</em><sub>BLOCK_THREADS - 1</sub>.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_iEN3cub12BlockShuffle2UpEvRA16ITEMS_PER_THREAD_1TRA16ITEMS_PER_THREAD_1T" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>The thread block rotates its <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of
 <code class="docutils literal notranslate"><span class="pre">input</span></code> items, shifting it up by one item.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Assumes a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of (<em>block-threads</em> * <em>items-per-thread</em>) items across the thread block, where <em>thread</em><sub>i</sub> owns the <em>i</em><sup>th</sup> range of <em>items-per-thread</em> contiguous items. For multi-dimensional thread blocks, a row-major thread ordering is assumed.</p></li>
 <li><p>Efficiency is increased with increased granularity <code class="docutils literal notranslate"><span class="pre">ITEMS_PER_THREAD</span></code>. Performance is also typically increased until the additional register pressure or shared memory allocation size causes SM occupancy to fall too low. Consider variants of <code class="docutils literal notranslate"><span class="pre">cub::BlockLoad</span></code> for efficiently gathering a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of elements across threads.</p></li>
@@ -1662,6 +1679,9 @@ The item <code class="docutils literal notranslate"><span class="pre">prev[0]</s
 <dd><p><p>The thread block rotates its <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a>
 of <code class="docutils literal notranslate"><span class="pre">input</span></code> items, shifting it up by one item. All threads receive the <code class="docutils literal notranslate"><span class="pre">input</span></code> provided by
 <em>thread</em><sub>BLOCK_THREADS - 1</sub>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Assumes a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of (<em>block-threads</em> * <em>items-per-thread</em>) items across the thread block, where <em>thread</em><sub>i</sub> owns the <em>i</em><sup>th</sup> range of <em>items-per-thread</em> contiguous items. For multi-dimensional thread blocks, a row-major thread ordering is assumed.</p></li>
 <li><p>Efficiency is increased with increased granularity <code class="docutils literal notranslate"><span class="pre">ITEMS_PER_THREAD</span></code>. Performance is also typically increased until the additional register pressure or shared memory allocation size causes SM occupancy to fall too low. Consider variants of <code class="docutils literal notranslate"><span class="pre">cub::BlockLoad</span></code> for efficiently gathering a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of elements across threads.</p></li>
@@ -1696,6 +1716,9 @@ The item <code class="docutils literal notranslate"><span class="pre">prev[0]</s
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_iEN3cub12BlockShuffle4DownEvRA16ITEMS_PER_THREAD_1TRA16ITEMS_PER_THREAD_1T" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>The thread block rotates its <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a>
 of <code class="docutils literal notranslate"><span class="pre">input</span></code> items, shifting it down by one item.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Assumes a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of (<em>block-threads</em> * <em>items-per-thread</em>) items across the thread block, where <em>thread</em><sub>i</sub> owns the <em>i</em><sup>th</sup> range of <em>items-per-thread</em> contiguous items. For multi-dimensional thread blocks, a row-major thread ordering is assumed.</p></li>
 <li><p>Efficiency is increased with increased granularity <code class="docutils literal notranslate"><span class="pre">ITEMS_PER_THREAD</span></code>. Performance is also typically increased until the additional register pressure or shared memory allocation size causes SM occupancy to fall too low. Consider variants of <code class="docutils literal notranslate"><span class="pre">cub::BlockLoad</span></code> for efficiently gathering a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of elements across threads.</p></li>
@@ -1728,6 +1751,9 @@ The value <code class="docutils literal notranslate"><span class="pre">prev[0]</
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_iEN3cub12BlockShuffle4DownEvRA16ITEMS_PER_THREAD_1TRA16ITEMS_PER_THREAD_1TR1T" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>The thread block rotates its <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of input items,
 shifting it down by one item. All threads receive <code class="docutils literal notranslate"><span class="pre">input[0]</span></code> provided by <em>thread</em><sub>0</sub>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>Assumes a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of (<em>block-threads</em> * <em>items-per-thread</em>) items across the thread block, where <em>thread</em><sub>i</sub> owns the <em>i</em><sup>th</sup> range of <em>items-per-thread</em> contiguous items. For multi-dimensional thread blocks, a row-major thread ordering is assumed.</p></li>
 <li><p>Efficiency is increased with increased granularity <code class="docutils literal notranslate"><span class="pre">ITEMS_PER_THREAD</span></code>. Performance is also typically increased until the additional register pressure or shared memory allocation size causes SM occupancy to fall too low. Consider variants of <code class="docutils literal notranslate"><span class="pre">cub::BlockLoad</span></code> for efficiently gathering a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of elements across threads.</p></li>

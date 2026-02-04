@@ -1607,6 +1607,10 @@
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub12WarpExchange16BlockedToStripedEvRA16ITEMS_PER_THREAD_K6InputTRA16ITEMS_PER_THREAD_7OutputT" title="Link to this definition">#</a><br /></dt>
 <dd><p>Transposes data items from <em>blocked</em> arrangement to <em>striped</em> arrangement. </p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 <p><dl>
 <dt><strong></strong></dt><dd><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncwarp()</span></code> warp-wide barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p>
 </dd>
@@ -1662,6 +1666,10 @@
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub12WarpExchange16StripedToBlockedEvRA16ITEMS_PER_THREAD_K6InputTRA16ITEMS_PER_THREAD_7OutputT" title="Link to this definition">#</a><br /></dt>
 <dd><p>Transposes data items from <em>striped</em> arrangement to <em>blocked</em> arrangement. </p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 <p><dl>
 <dt><strong></strong></dt><dd><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncwarp()</span></code> warp-wide barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p>
 </dd>
@@ -1717,6 +1725,10 @@
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub12WarpExchange16ScatterToStripedEvRA16ITEMS_PER_THREAD_6InputTRA16ITEMS_PER_THREAD_7OffsetT" title="Link to this definition">#</a><br /></dt>
 <dd><p>Exchanges valid data items annotated by rank into <em>striped</em> arrangement. </p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 <p><dl>
 <dt><strong></strong></dt><dd><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncwarp()</span></code> warp-wide barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p>
 </dd>
@@ -1778,6 +1790,10 @@
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I00EN3cub12WarpExchange16ScatterToStripedEvRA16ITEMS_PER_THREAD_K6InputTRA16ITEMS_PER_THREAD_7OutputTRA16ITEMS_PER_THREAD_7OffsetT" title="Link to this definition">#</a><br /></dt>
 <dd><p>Exchanges valid data items annotated by rank into <em>striped</em> arrangement. </p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 <p><dl>
 <dt><strong></strong></dt><dd><p>A subsequent <code class="docutils literal notranslate"><span class="pre">__syncwarp()</span></code> warp-wide barrier should be invoked after calling this method if the collective’s temporary storage (e.g., <code class="docutils literal notranslate"><span class="pre">temp_storage</span></code>) is to be reused or repurposed.</p>
 </dd>

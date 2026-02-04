@@ -1544,6 +1544,9 @@
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub10DeviceCopy7BatchedE11cudaError_tPvR6size_t7InputIt8OutputIt13SizeIteratorTN4cudaSt7int64_tE12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Copies data from a batch of given source ranges to their corresponding destination ranges.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <section id="snippet">
 <h2>Snippet<a class="headerlink" href="#snippet" title="Link to this heading">#</a></h2>
 <p>The code snippet below illustrates usage of DeviceCopy::Batched to perform a DeviceRunLength Decode operation.</p>
@@ -1652,6 +1655,9 @@ Input ranges can alias one another.</p>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I00000000EN3cub10DeviceCopy4CopyE11cudaError_tPvR6size_tN4cudaSt6mdspanI4T_In10Extents_In9Layout_In11Accessor_InEEN4cudaSt6mdspanI5T_Out11Extents_Out10Layout_Out12Accessor_OutEE12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Copies data from a multidimensional source mdspan to a destination mdspan.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <p>This function performs a parallel copy operation between two mdspan objects with potentially different layouts but
 identical extents. The copy operation handles arbitrary-dimensional arrays and automatically manages layout
 transformations.</p>

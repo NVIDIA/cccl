@@ -1602,7 +1602,11 @@
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub15DeviceMergeSort9SortPairsE11cudaError_tPvR6size_t12KeyIteratorT14ValueIteratorT7OffsetT10CompareOpT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p>Sorts items using a merge sorting method. </p>
-<p><dl>
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
+ <dl>
 <dt><strong></strong></dt><dd><p>SortPairs is not guaranteed to be stable. That is, suppose that i and j are equivalent: neither one is less than the other. It is not guaranteed that the relative order of these two elements will be preserved by sort.</p>
 </dd>
 <dt><strong>Snippet</strong></dt><dd><p>The code snippet below illustrates the sorting of a device vector of <code class="docutils literal notranslate"><span class="pre">int</span></code> keys with associated vector of <code class="docutils literal notranslate"><span class="pre">int</span></code> values. </p>
@@ -1659,7 +1663,7 @@
 <li><p><strong>d_items</strong> – <strong>[inout]</strong> Pointer to the input sequence of unsorted input values</p></li>
 <li><p><strong>num_items</strong> – <strong>[in]</strong> Number of items to sort</p></li>
 <li><p><strong>compare_op</strong> – <strong>[in]</strong> Comparison function object which returns true if the first argument is ordered before the second</p></li>
-<li><p><strong>stream</strong> – <strong>[in]</strong> <strong>[optional]</strong> CUDA stream to launch kernels within. Default is stream<sub>0</sub>. </p></li>
+<li><p><strong>stream</strong> – <strong>[in]</strong> <strong>[optional]</strong> CUDA stream to launch kernels within. Default is stream<sub>0</sub>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1683,7 +1687,11 @@
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000000EN3cub15DeviceMergeSort13SortPairsCopyE11cudaError_tPvR6size_t17KeyInputIteratorT19ValueInputIteratorT12KeyIteratorT14ValueIteratorT7OffsetT10CompareOpT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p>Sorts items using a merge sorting method. </p>
-<p><dl>
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
+ <dl>
 <dt><strong></strong></dt><dd><p><ul class="simple">
 <li><p>SortPairsCopy is not guaranteed to be stable. That is, suppose that <code class="docutils literal notranslate"><span class="pre">i</span></code> and <code class="docutils literal notranslate"><span class="pre">j</span></code> are equivalent: neither one is less than the other. It is not guaranteed that the relative order of these two elements will be preserved by sort.</p></li>
 <li><p>Input arrays <code class="docutils literal notranslate"><span class="pre">d_input_keys</span></code> and <code class="docutils literal notranslate"><span class="pre">d_input_items</span></code> are not modified.</p></li>
@@ -1749,7 +1757,7 @@
 <li><p><strong>d_output_items</strong> – <strong>[out]</strong> Pointer to the output sequence of sorted input values</p></li>
 <li><p><strong>num_items</strong> – <strong>[in]</strong> Number of items to sort</p></li>
 <li><p><strong>compare_op</strong> – <strong>[in]</strong> Comparison function object which returns <code class="docutils literal notranslate"><span class="pre">true</span></code> if the first argument is ordered before the second</p></li>
-<li><p><strong>stream</strong> – <strong>[in]</strong> <strong>[optional]</strong> CUDA stream to launch kernels within. Default is stream<sub>0</sub>. </p></li>
+<li><p><strong>stream</strong> – <strong>[in]</strong> <strong>[optional]</strong> CUDA stream to launch kernels within. Default is stream<sub>0</sub>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1770,7 +1778,11 @@
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub15DeviceMergeSort8SortKeysE11cudaError_tPvR6size_t12KeyIteratorT7OffsetT10CompareOpT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p>Sorts items using a merge sorting method. </p>
-<p><dl>
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
+ <dl>
 <dt><strong></strong></dt><dd><p>SortKeys is not guaranteed to be stable. That is, suppose that <code class="docutils literal notranslate"><span class="pre">i</span></code> and <code class="docutils literal notranslate"><span class="pre">j</span></code> are equivalent: neither one is less than the other. It is not guaranteed that the relative order of these two elements will be preserved by sort.</p>
 </dd>
 <dt><strong>Snippet</strong></dt><dd><p>The code snippet below illustrates the sorting of a device vector of <code class="docutils literal notranslate"><span class="pre">int</span></code> keys. </p>
@@ -1823,7 +1835,7 @@
 <li><p><strong>d_keys</strong> – <strong>[inout]</strong> Pointer to the input sequence of unsorted input keys</p></li>
 <li><p><strong>num_items</strong> – <strong>[in]</strong> Number of items to sort</p></li>
 <li><p><strong>compare_op</strong> – <strong>[in]</strong> Comparison function object which returns true if the first argument is ordered before the second</p></li>
-<li><p><strong>stream</strong> – <strong>[in]</strong> <strong>[optional]</strong> CUDA stream to launch kernels within. Default is stream<sub>0</sub>. </p></li>
+<li><p><strong>stream</strong> – <strong>[in]</strong> <strong>[optional]</strong> CUDA stream to launch kernels within. Default is stream<sub>0</sub>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1845,7 +1857,11 @@
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub15DeviceMergeSort12SortKeysCopyE11cudaError_tPvR6size_t17KeyInputIteratorT12KeyIteratorT7OffsetT10CompareOpT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p>Sorts items using a merge sorting method. </p>
-<p><dl>
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
+ <dl>
 <dt><strong></strong></dt><dd><p><ul class="simple">
 <li><p>SortKeysCopy is not guaranteed to be stable. That is, suppose that <code class="docutils literal notranslate"><span class="pre">i</span></code> and <code class="docutils literal notranslate"><span class="pre">j</span></code> are equivalent: neither one is less than the other. It is not guaranteed that the relative order of these two elements will be preserved by sort.</p></li>
 <li><p>Input array d_input_keys is not modified.</p></li>
@@ -1905,7 +1921,7 @@
 <li><p><strong>d_output_keys</strong> – <strong>[out]</strong> Pointer to the output sequence of sorted input keys</p></li>
 <li><p><strong>num_items</strong> – <strong>[in]</strong> Number of items to sort</p></li>
 <li><p><strong>compare_op</strong> – <strong>[in]</strong> Comparison function object which returns true if the first argument is ordered before the second</p></li>
-<li><p><strong>stream</strong> – <strong>[in]</strong> <strong>[optional]</strong> CUDA stream to launch kernels within. Default is stream<sub>0</sub>. </p></li>
+<li><p><strong>stream</strong> – <strong>[in]</strong> <strong>[optional]</strong> CUDA stream to launch kernels within. Default is stream<sub>0</sub>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1927,7 +1943,11 @@
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub15DeviceMergeSort15StableSortPairsE11cudaError_tPvR6size_t12KeyIteratorT14ValueIteratorT7OffsetT10CompareOpT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p>Sorts items using a merge sorting method. </p>
-<p><dl>
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
+ <dl>
 <dt><strong></strong></dt><dd><p>StableSortPairs is stable: it preserves the relative ordering of equivalent elements. That is, if x and y are elements such that x precedes y, and if the two elements are equivalent (neither x &lt; y nor y &lt; x) then a postcondition of stable_sort is that x still precedes y.</p>
 </dd>
 <dt><strong>Snippet</strong></dt><dd><p>The code snippet below illustrates the sorting of a device vector of <code class="docutils literal notranslate"><span class="pre">int</span></code> keys with associated vector of <code class="docutils literal notranslate"><span class="pre">int</span></code> values. </p>
@@ -1984,7 +2004,7 @@
 <li><p><strong>d_items</strong> – <strong>[inout]</strong> Pointer to the input sequence of unsorted input values</p></li>
 <li><p><strong>num_items</strong> – <strong>[in]</strong> Number of items to sort</p></li>
 <li><p><strong>compare_op</strong> – <strong>[in]</strong> Comparison function object which returns true if the first argument is ordered before the second</p></li>
-<li><p><strong>stream</strong> – <strong>[in]</strong> <strong>[optional]</strong> CUDA stream to launch kernels within. Default is stream<sub>0</sub>. </p></li>
+<li><p><strong>stream</strong> – <strong>[in]</strong> <strong>[optional]</strong> CUDA stream to launch kernels within. Default is stream<sub>0</sub>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -2005,7 +2025,11 @@
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000EN3cub15DeviceMergeSort14StableSortKeysE11cudaError_tPvR6size_t12KeyIteratorT7OffsetT10CompareOpT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p>Sorts items using a merge sorting method. </p>
-<p><dl>
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
+ <dl>
 <dt><strong></strong></dt><dd><p>StableSortKeys is stable: it preserves the relative ordering of equivalent elements. That is, if <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> are elements such that <code class="docutils literal notranslate"><span class="pre">x</span></code> precedes <code class="docutils literal notranslate"><span class="pre">y</span></code>, and if the two elements are equivalent (neither <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">&lt;</span> <span class="pre">y</span></code> nor <code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">&lt;</span> <span class="pre">x</span></code>) then a postcondition of stable_sort is that <code class="docutils literal notranslate"><span class="pre">x</span></code> still precedes <code class="docutils literal notranslate"><span class="pre">y</span></code>.</p>
 </dd>
 <dt><strong>Snippet</strong></dt><dd><p>The code snippet below illustrates the sorting of a device vector of <code class="docutils literal notranslate"><span class="pre">int</span></code> keys. </p>
@@ -2058,7 +2082,7 @@
 <li><p><strong>d_keys</strong> – <strong>[inout]</strong> Pointer to the input sequence of unsorted input keys</p></li>
 <li><p><strong>num_items</strong> – <strong>[in]</strong> Number of items to sort</p></li>
 <li><p><strong>compare_op</strong> – <strong>[in]</strong> Comparison function object which returns true if the first argument is ordered before the second</p></li>
-<li><p><strong>stream</strong> – <strong>[in]</strong> <strong>[optional]</strong> CUDA stream to launch kernels within. Default is stream<sub>0</sub>. </p></li>
+<li><p><strong>stream</strong> – <strong>[in]</strong> <strong>[optional]</strong> CUDA stream to launch kernels within. Default is stream<sub>0</sub>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -2080,7 +2104,11 @@
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000EN3cub15DeviceMergeSort18StableSortKeysCopyE11cudaError_tPvR6size_t17KeyInputIteratorT12KeyIteratorT7OffsetT10CompareOpT12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p>Sorts items using a merge sorting method. </p>
-<p><dl>
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
+ <dl>
 <dt><strong></strong></dt><dd><p><ul class="simple">
 <li><p>StableSortKeysCopy is stable: it preserves the relative ordering of equivalent elements. That is, if <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> are elements such that <code class="docutils literal notranslate"><span class="pre">x</span></code> precedes <code class="docutils literal notranslate"><span class="pre">y</span></code>, and if the two elements are equivalent (neither <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">&lt;</span> <span class="pre">y</span></code> nor <code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">&lt;</span> <span class="pre">x</span></code>) then a postcondition of stable_sort is that <code class="docutils literal notranslate"><span class="pre">x</span></code> still precedes <code class="docutils literal notranslate"><span class="pre">y</span></code>.</p></li>
 <li><p>Input array d_input_keys is not modified</p></li>
@@ -2141,7 +2169,7 @@
 <li><p><strong>d_output_keys</strong> – <strong>[out]</strong> Pointer to the output sequence of sorted input keys</p></li>
 <li><p><strong>num_items</strong> – <strong>[in]</strong> Number of elements in d_input_keys to sort</p></li>
 <li><p><strong>compare_op</strong> – <strong>[in]</strong> Comparison function object which returns true if the first argument is ordered before the second</p></li>
-<li><p><strong>stream</strong> – <strong>[in]</strong> <strong>[optional]</strong> CUDA stream to launch kernels within. Default is stream<sub>0</sub>. </p></li>
+<li><p><strong>stream</strong> – <strong>[in]</strong> <strong>[optional]</strong> CUDA stream to launch kernels within. Default is stream<sub>0</sub>.</p></li>
 </ul>
 </dd>
 </dl>

@@ -1616,12 +1616,20 @@ memory with BlockReduce and how to re-purpose the same memory region.</p>
 <dt class="sig sig-object cpp" id="_CPPv4N3cub11BlockReduce11BlockReduceEv">
 <span class="target" id="classcub_1_1BlockReduce_1a42e0254fd4996e0330427471f2ee8f1c"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BlockReduce</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub11BlockReduce11BlockReduceEv" title="Link to this definition">#</a><br /></dt>
 <dd><p>Collective constructor using a private static allocation of shared memory as temporary storage. </p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 </dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N3cub11BlockReduce11BlockReduceER11TempStorage">
 <span class="target" id="classcub_1_1BlockReduce_1a414e8f57d3817190828f5ebd9317ade6"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BlockReduce</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4N3cub11BlockReduce11TempStorageE" title="cub::BlockReduce::TempStorage"><span class="n"><span class="pre">TempStorage</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">temp_storage</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub11BlockReduce11BlockReduceER11TempStorage" title="Link to this definition">#</a><br /></dt>
 <dd><p>Collective constructor using the specified memory allocation as temporary storage. </p>
+<p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>temp_storage</strong> – <strong>[in]</strong> Reference to memory allocation having layout type <a class="reference internal" href="#structcub_1_1BlockReduce_1_1TempStorage"><span class="std std-ref">TempStorage</span></a></p>
@@ -1644,6 +1652,9 @@ memory with BlockReduce and how to re-purpose the same memory region.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub11BlockReduce6ReduceE1T1T11ReductionOp" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a block-wide reduction for thread<sub>0</sub> using the specified binary reduction functor.
 Each thread contributes one input element.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The return value is undefined in threads other than thread<sub>0</sub>.</p></li>
 <li><p>For multi-dimensional blocks, threads are linearly ranked in row-major order.</p></li>
@@ -1699,6 +1710,9 @@ across 128 threads.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_i0EN3cub11BlockReduce6ReduceE1TRA16ITEMS_PER_THREAD_1T11ReductionOp" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a block-wide reduction for thread<sub>0</sub> using the specified binary reduction
 functor. Each thread contributes an array of consecutive input elements.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The return value is undefined in threads other than thread<sub>0</sub>.</p></li>
 <li><p>Efficiency is increased with increased granularity <code class="docutils literal notranslate"><span class="pre">ITEMS_PER_THREAD</span></code>. Performance is also typically increased until the additional register pressure or shared memory allocation size causes SM occupancy to fall too low. Consider variants of <code class="docutils literal notranslate"><span class="pre">cub::BlockLoad</span></code> for efficiently gathering a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of elements across threads.</p></li>
@@ -1759,6 +1773,9 @@ functor. Each thread contributes an array of consecutive input elements.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN3cub11BlockReduce6ReduceE1T1T11ReductionOpi" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a block-wide reduction for thread<sub>0</sub> using the specified binary reduction
 functor. The first <code class="docutils literal notranslate"><span class="pre">num_valid</span></code> threads each contribute one input element.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The return value is undefined in threads other than thread&lt;sub&gt;0&lt;/sub&gt;.</p></li>
 <li><p>For multi-dimensional blocks, threads are linearly ranked in row-major order.</p></li>
@@ -1811,6 +1828,9 @@ that are partitioned across 128 threads.</p>
 <span class="target" id="classcub_1_1BlockReduce_1ae113a80de5f5638c5d91bdd9c68ef823"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_i_20BlockReduceAlgorithm_i_iEN3cub11BlockReduceE" title="cub::BlockReduce::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Sum</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i_20BlockReduceAlgorithm_i_iEN3cub11BlockReduceE" title="cub::BlockReduce::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">input</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub11BlockReduce3SumE1T" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a block-wide reduction for thread<sub>0</sub> using addition (+) as the reduction operator.
 Each thread contributes one input element.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The return value is undefined in threads other than thread<sub>0</sub>.</p></li>
 <li><p>For multi-dimensional blocks, threads are linearly ranked in row-major order.</p></li>
@@ -1859,6 +1879,9 @@ across 128 threads.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_iEN3cub11BlockReduce3SumE1TRA16ITEMS_PER_THREAD_1T" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a block-wide reduction for thread&lt;sub&gt;0&lt;/sub&gt; using addition (+) as the reduction
 operator. Each thread contributes an array of consecutive input elements.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The return value is undefined in threads other than thread<sub>0</sub>.</p></li>
 <li><p>Efficiency is increased with increased granularity <code class="docutils literal notranslate"><span class="pre">ITEMS_PER_THREAD</span></code>. Performance is also typically increased until the additional register pressure or shared memory allocation size causes SM occupancy to fall too low. Consider variants of <code class="docutils literal notranslate"><span class="pre">cub::BlockLoad</span></code> for efficiently gathering a <a class="reference internal" href="../index.html#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of elements across threads.</p></li>
@@ -1905,6 +1928,9 @@ operator. Each thread contributes an array of consecutive input elements.</p>
 <span class="target" id="classcub_1_1BlockReduce_1a8072b19900b8dee1c0459ba55400b34e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_i_20BlockReduceAlgorithm_i_iEN3cub11BlockReduceE" title="cub::BlockReduce::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Sum</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i_20BlockReduceAlgorithm_i_iEN3cub11BlockReduceE" title="cub::BlockReduce::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">input</span></span></em>, <em class="sig-param"><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">num_valid</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub11BlockReduce3SumE1Ti" title="Link to this definition">#</a><br /></dt>
 <dd><p><p>Computes a block-wide reduction for thread<sub>0</sub> using addition (+) as the reduction
 operator. The first <code class="docutils literal notranslate"><span class="pre">num_valid</span></code> threads each contribute one input element.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
 <ul class="simple">
 <li><p>The return value is undefined in threads other than thread<sub>0</sub>.</p></li>
 <li><p>For multi-dimensional blocks, threads are linearly ranked in row-major order.</p></li>

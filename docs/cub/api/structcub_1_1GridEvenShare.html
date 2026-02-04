@@ -1524,10 +1524,14 @@
 <span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">OffsetT</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="structcub_1_1GridEvenShare"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GridEvenShare</span></span></span><a class="headerlink" href="#_CPPv4I0EN3cub13GridEvenShareE" title="Link to this definition">#</a><br /></dt>
 <dd><p><a class="reference internal" href="#structcub_1_1GridEvenShare"><span class="std std-ref">GridEvenShare</span></a> is a descriptor utility for distributing input among CUDA thread blocks in an “even-share” fashion. </p>
 <p>Each thread block gets roughly the same number of input tiles.</p>
-<p><dl class="simple">
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0: </span>First appears in CUDA Toolkit 12.3.</p>
+</div>
+</p>
+ <dl class="simple">
 <dt><strong>Overview</strong></dt><dd><p>Each thread block is assigned a consecutive sequence of input tiles. To help preserve alignment and eliminate the overhead of guarded loads for all but the last thread block, to <a class="reference internal" href="#structcub_1_1GridEvenShare"><span class="std std-ref">GridEvenShare</span></a> assigns one of three different amounts of work to a given thread block: “big”, “normal”, or “last”. The “big” workloads are one scheduling grain larger than “normal”. The “last” work unit for the last thread block may be partially-full if the input is not an even multiple of the scheduling grain size.</p>
 </dd>
-<dt><strong></strong></dt><dd><p>Before invoking a child grid, a parent thread will typically construct an instance of <a class="reference internal" href="#structcub_1_1GridEvenShare"><span class="std std-ref">GridEvenShare</span></a>. The instance can be passed to child thread blocks which can initialize their per-thread block offsets using <code class="docutils literal notranslate"><a class="reference internal" href="#structcub_1_1GridEvenShare_1a3f171b1fec1e1fdd0fdd43485fc92e97"><span class="std std-ref"><span class="pre">BlockInit()</span></span></a></code>. </p>
+<dt><strong></strong></dt><dd><p>Before invoking a child grid, a parent thread will typically construct an instance of <a class="reference internal" href="#structcub_1_1GridEvenShare"><span class="std std-ref">GridEvenShare</span></a>. The instance can be passed to child thread blocks which can initialize their per-thread block offsets using <code class="docutils literal notranslate"><a class="reference internal" href="#structcub_1_1GridEvenShare_1a3f171b1fec1e1fdd0fdd43485fc92e97"><span class="std std-ref"><span class="pre">BlockInit()</span></span></a></code>.</p>
 </dd>
 </dl>
 </p>

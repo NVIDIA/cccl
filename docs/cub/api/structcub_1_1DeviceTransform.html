@@ -1546,6 +1546,9 @@
 <p>Transforms many input sequences into one output sequence, by applying a transformation operation on corresponding
 input elements and writing the result to the corresponding output element. No guarantee is given on the identity
 (i.e. address) of the objects passed to the call operator of the transformation operation.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.8.0: </span>First appears in CUDA Toolkit 12.9.</p>
+</div>
 </section>
 <section id="a-simple-example">
 <h2>A Simple Example<a class="headerlink" href="#a-simple-example" title="Link to this heading">#</a></h2>
@@ -1591,9 +1594,13 @@ input elements and writing the result to the corresponding output element. No gu
 </dl>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I00000EN3cub15DeviceTransform9TransformE11cudaError_t22RandomAccessIteratorIn23RandomAccessIteratorOut9NumItemsT11TransformOp3Env" title="Link to this definition">#</a><br /></dt>
-<dd><p>Transforms one input sequence into one output sequence, by applying a transformation operation on each input
+<dd><p><p>Transforms one input sequence into one output sequence, by applying a transformation operation on each input
 element and writing the result to the corresponding output element. No guarantee is given on the identity (i.e.
 address) of the objects passed to the call operator of the transformation operation.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.8.0: </span>First appears in CUDA Toolkit 12.9.</p>
+</div>
+</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -1623,6 +1630,9 @@ address) of the objects passed to the call operator of the transformation operat
 <h2>Overview<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
 <p>Fills the output sequence by invoking a generator operation for each output element and writing the result to it.
 This is effectively calling Transform with no input sequences.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.8.0: </span>First appears in CUDA Toolkit 12.9.</p>
+</div>
 </section>
 </p>
 <dl class="field-list simple">
@@ -1653,6 +1663,9 @@ This is effectively calling Transform with no input sequences.</p>
 <h2>Overview<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
 <p>Fills the output sequence by writing the provided value to each element of the output sequence.
 This is effectively calling Generate with a functor returning that value.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.8.0: </span>First appears in CUDA Toolkit 12.9.</p>
+</div>
 </section>
 </p>
 <dl class="field-list simple">
@@ -1687,6 +1700,9 @@ This is effectively calling Generate with a functor returning that value.</p>
 corresponding input elements, if a given predicate is true, and writing the result to the corresponding output
 element. No guarantee is given on the identity (i.e. address) of the objects passed to the call operator of the
 predicate and transformation operation. Output elements for which the predicate returns false are not written to.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.8.0: </span>First appears in CUDA Toolkit 12.9.</p>
+</div>
 </section>
 <section id="id4">
 <h2>A Simple Example<a class="headerlink" href="#id4" title="Link to this heading">#</a></h2>
@@ -1740,6 +1756,9 @@ predicate and transformation operation. Output elements for which the predicate 
 input element, if a given predicate is true, and writing the result to the corresponding output element. No
 guarantee is given on the identity (i.e. address) of the objects passed to the call operator of the predicate and
 transformation operation. Output elements for which the predicate returns false are not written to.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.8.0: </span>First appears in CUDA Toolkit 12.9.</p>
+</div>
 </section>
 <section id="id6">
 <h2>A Simple Example<a class="headerlink" href="#id6" title="Link to this heading">#</a></h2>
@@ -1791,6 +1810,9 @@ transformation operation. Output elements for which the predicate returns false 
 <p>Transforms many input sequences into one output sequence, by applying a transformation operation on corresponding
 input elements and writing the result to the corresponding output element. The objects passed to the call operator
 of the transformation operation are guaranteed to reside in the input sequences and are never copied.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.8.0: </span>First appears in CUDA Toolkit 12.9.</p>
+</div>
 </section>
 <section id="id8">
 <h2>A Simple Example<a class="headerlink" href="#id8" title="Link to this heading">#</a></h2>
@@ -1840,9 +1862,13 @@ of the transformation operation are guaranteed to reside in the input sequences 
 </dl>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I00000EN3cub15DeviceTransform32TransformStableArgumentAddressesE11cudaError_t22RandomAccessIteratorIn23RandomAccessIteratorOut9NumItemsT11TransformOp3Env" title="Link to this definition">#</a><br /></dt>
-<dd><p>Transforms one input sequence into one output sequence, by applying a transformation operation on corresponding
+<dd><p><p>Transforms one input sequence into one output sequence, by applying a transformation operation on corresponding
 input elements and writing the result to the corresponding output element. The objects passed to the call operator
 of the transformation operation are guaranteed to reside in the input sequences and are never copied.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.8.0: </span>First appears in CUDA Toolkit 12.9.</p>
+</div>
+</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
