@@ -86,22 +86,23 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
   }
   else
   {
-    using IdT = decltype(work_id);
-
-    if (work_id < n_segments)
+    if (work_id >= n_segments)
     {
-      const auto start_offset         = work_id;
-      const auto suggested_end_offset = start_offset + num_segments_per_worker;
-
-      const auto end_offset = ::cuda::std::min<IdT>(suggested_end_offset, n_segments);
-      int size              = end_offset - start_offset;
-
-      auto worker_beg_off_d_in  = begin_offset_d_in + start_offset;
-      auto worker_end_off_d_in  = end_offset_d_in + start_offset;
-      auto worker_beg_off_d_out = begin_offset_d_out + start_offset;
-
-      agent.consume_ranges(worker_beg_off_d_in, worker_end_off_d_in, worker_beg_off_d_out, size);
+      return;
     }
+
+    const auto start_offset         = work_id;
+    const auto suggested_end_offset = start_offset + num_segments_per_worker;
+
+    using IdT             = decltype(work_id);
+    const auto end_offset = ::cuda::std::min<IdT>(suggested_end_offset, n_segments);
+    int size              = end_offset - start_offset;
+
+    auto worker_beg_off_d_in  = begin_offset_d_in + start_offset;
+    auto worker_end_off_d_in  = end_offset_d_in + start_offset;
+    auto worker_beg_off_d_out = begin_offset_d_out + start_offset;
+
+    agent.consume_ranges(worker_beg_off_d_in, worker_end_off_d_in, worker_beg_off_d_out, size);
   }
 }
 
@@ -154,39 +155,44 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t
 
   const auto work_id = num_segments_per_worker * (blockIdx.x * warps_in_block) + warp_id;
 
-  if (work_id < n_segments)
+  if (work_id >= n_segments)
   {
-    agent_t agent(temp_storage, d_in, d_out, scan_op, _init_value);
+    return;
+  }
 
-    if constexpr (policy_t::max_segments_per_warp == 1)
-    {
-      const OffsetT inp_begin_offset = begin_offset_d_in[work_id];
-      const OffsetT inp_end_offset   = end_offset_d_in[work_id];
-      const OffsetT out_begin_offset = begin_offset_d_out[work_id];
+  agent_t agent(temp_storage, d_in, d_out, scan_op, _init_value);
 
-      agent.consume_range(inp_begin_offset, inp_end_offset, out_begin_offset);
-    }
-    else
-    {
-      // agent consumes interleaved segments, to improve CTA' memory access locality
+  if constexpr (policy_t::max_segments_per_warp == 1)
+  {
+    const OffsetT inp_begin_offset = begin_offset_d_in[work_id];
+    const OffsetT inp_end_offset   = end_offset_d_in[work_id];
+    const OffsetT out_begin_offset = begin_offset_d_out[work_id];
 
-      // agent accesses offset iterators with index: thread_work_id = chunk_id * worker_thread_count + lane_id;
-      // for 0 <= chunk_id < ::cuda::ceil_div<unsigned>(n_segments, worker_thread_count)
-      //
-      //  total_offset = num_segments_per_worker * (blockIdx.x * warps_in_block) + warp_id +
-      //      warps_in_block * thread_work_id;
-      //
-      const int n_segments_per_warp =
-        (work_id + num_segments_per_worker * warps_in_block < n_segments)
-          ? num_segments_per_worker
-          : ::cuda::ceil_div(n_segments - work_id, warps_in_block);
+    agent.consume_range(inp_begin_offset, inp_end_offset, out_begin_offset);
+  }
+  else
+  {
+    // agent consumes interleaved segments, to improve CTA' memory access locality
 
-      const ::cuda::strided_iterator raked_begin_inp{begin_offset_d_in + work_id, warps_in_block};
-      const ::cuda::strided_iterator raked_end_inp{end_offset_d_in + work_id, warps_in_block};
-      const ::cuda::strided_iterator raked_begin_out{begin_offset_d_out + work_id, warps_in_block};
+    // agent accesses offset iterators with index: thread_work_id = chunk_id * worker_thread_count + lane_id;
+    // for 0 <= chunk_id < ::cuda::ceil_div<unsigned>(n_segments, worker_thread_count)
+    //
+    //  total_offset = num_segments_per_worker * (blockIdx.x * warps_in_block) + warp_id +
+    //      warps_in_block * thread_work_id;
+    //
+    using IdT                = decltype(work_id);
+    const auto segment_count = static_cast<IdT>(n_segments);
 
-      agent.consume_ranges(raked_begin_inp, raked_end_inp, raked_begin_out, n_segments_per_warp);
-    }
+    const int n_segments_per_warp =
+      (work_id + num_segments_per_worker * warps_in_block < segment_count)
+        ? num_segments_per_worker
+        : ::cuda::ceil_div(segment_count - work_id, warps_in_block);
+
+    const ::cuda::strided_iterator raked_begin_inp{begin_offset_d_in + work_id, warps_in_block};
+    const ::cuda::strided_iterator raked_end_inp{end_offset_d_in + work_id, warps_in_block};
+    const ::cuda::strided_iterator raked_begin_out{begin_offset_d_out + work_id, warps_in_block};
+
+    agent.consume_ranges(raked_begin_inp, raked_end_inp, raked_begin_out, n_segments_per_warp);
   }
 }
 
