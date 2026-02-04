@@ -270,7 +270,7 @@ add_test(
         ${libcudacxx_LIT_FLAGS}
         -j "${libcudacxx_LIT_PARALLEL_LEVEL}"
         "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
-  # gersemi: on
+    # gersemi: on
     USES_TERMINAL
 )
 
