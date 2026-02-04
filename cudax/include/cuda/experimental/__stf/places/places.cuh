@@ -1749,8 +1749,27 @@ inline bool data_place::operator==(const data_place& rhs) const
 #ifdef UNITTESTED_FILE
 UNITTEST("Data place equality")
 {
+  // Same place type should be equal
   EXPECT(data_place::managed() == data_place::managed());
+  EXPECT(data_place::host() == data_place::host());
+  EXPECT(data_place::device(0) == data_place::device(0));
+
+  // Different place types should not be equal
   EXPECT(data_place::managed() != data_place::host());
+  EXPECT(data_place::managed() != data_place::device(0));
+  EXPECT(data_place::host() != data_place::device(0));
+
+  // Different devices should not be equal
+  int ndevices = cuda_try<cudaGetDeviceCount>();
+  if (ndevices >= 2)
+  {
+    EXPECT(data_place::device(0) != data_place::device(1));
+  }
+
+  // Invalid places
+  EXPECT(data_place::invalid() == data_place::invalid());
+  EXPECT(data_place::invalid() != data_place::host());
+  EXPECT(data_place::invalid() != data_place::device(0));
 };
 #endif // UNITTESTED_FILE
 
