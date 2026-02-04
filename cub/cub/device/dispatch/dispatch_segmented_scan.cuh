@@ -213,8 +213,11 @@ struct dispatch_segmented_scan
       return cudaSuccess;
     }
 
-    const auto segments_per_block              = num_segments_per_worker * policy.WorkersPerBlock();
-    const auto int32_max                       = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
+    _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments per worker parameter must be positive");
+    const auto segments_per_block = static_cast<unsigned int>(num_segments_per_worker * policy.WorkersPerBlock());
+    _CCCL_ASSERT(segments_per_block > 0, "Number of segments to be processed by block must be positive");
+
+    constexpr auto int32_max                   = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
     const auto num_segments_per_invocation     = static_cast<::cuda::std::int64_t>(int32_max);
     const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
 
@@ -224,12 +227,15 @@ struct dispatch_segmented_scan
 
     for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
     {
-      const auto current_seg_offset = invocation_index * num_segments_per_invocation;
-      const auto num_current_segments =
-        ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
+      const auto current_seg_offset   = invocation_index * num_segments_per_invocation;
+      const auto next_seg_offset      = current_seg_offset + num_segments_per_invocation;
+      const auto this_invocation_size = ::cuda::std::min(next_seg_offset, num_segments) - current_seg_offset;
 
-      const auto grid_size = ::cuda::ceil_div(static_cast<::cuda::std::uint32_t>(num_current_segments),
-                                              static_cast<::cuda::std::uint32_t>(segments_per_block));
+      _CCCL_ASSERT(this_invocation_size <= ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max(),
+                   "num_current_segments exceeds uint32_t range");
+      const auto num_current_segments = static_cast<unsigned int>(this_invocation_size);
+
+      const auto grid_size = ::cuda::ceil_div(num_current_segments, segments_per_block);
 
       auto launcher = launcher_factory(grid_size, policy.SegmentedScan().BlockThreads(), 0, stream);
 
