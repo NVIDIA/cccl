@@ -80,6 +80,12 @@ public:
       return dstream.stream == other->dstream.stream;
     }
 
+    size_t hash() const override
+    {
+      // Hash the stream handle, not the affine data place
+      return ::std::hash<cudaStream_t>()(dstream.stream);
+    }
+
   private:
     decorated_stream dstream;
     // We create a dummy pool of streams which only consists in a single stream in practice.

@@ -271,6 +271,26 @@ public:
 
   exec_place get_affine_exec_place() const;
 
+  /**
+   * @brief Compute a hash value for this data place
+   *
+   * Used by std::hash specialization for unordered containers.
+   */
+  size_t hash() const
+  {
+    // Not implemented for composite places
+    EXPECT(!is_composite());
+
+    // Extensions provide their own hash
+    if (is_extension())
+    {
+      return extension->hash();
+    }
+
+    // For simple places, hash the devid directly
+    return ::std::hash<int>()(devid);
+  }
+
   decorated_stream getDataStream(async_resources_handle& async_resources) const;
 
 private:
@@ -628,6 +648,11 @@ public:
       return !(*this == rhs);
     }
 
+    virtual size_t hash() const
+    {
+      return affine.hash();
+    }
+
     /* Return the pool associated to this place
      *
      * If the stream is expected to perform computation, the
@@ -680,6 +705,26 @@ public:
   bool operator<(const exec_place& rhs) const
   {
     return pimpl < rhs.pimpl;
+  }
+
+  /**
+   * @brief Compute a hash value for this exec place
+   *
+   * Used by std::hash specialization for unordered containers.
+   */
+  size_t hash() const
+  {
+    return pimpl->hash();
+  }
+
+  /**
+   * @brief Compute a hash value for this execution place
+   *
+   * Used by std::hash specialization for unordered containers.
+   */
+  size_t hash() const
+  {
+    return pimpl->hash();
   }
 
   /**
@@ -1225,6 +1270,17 @@ public:
       // Compare grid-specific properties
       // Note: for grids, equality is determined by dims and places, not the affine data place
       return dims == rhs.dims && places == rhs.places;
+    }
+
+    size_t hash() const override
+    {
+      // Hash based on dims and places, consistent with operator==
+      size_t h = hash<dim4>()(dims);
+      for (const auto& p : places)
+      {
+        hash_combine(h, p.hash());
+      }
+      return h;
     }
 
     const ::std::vector<exec_place>& get_places() const
@@ -2051,16 +2107,20 @@ struct hash<data_place>
 {
   ::std::size_t operator()(const data_place& k) const
   {
-    // Not implemented for composite places
-    EXPECT(!k.is_composite());
+    return k.hash();
+  }
+};
 
-    // Extensions provide their own hash
-    if (k.is_extension())
-    {
-      return k.get_extension()->hash();
-    }
-
-    return ::std::hash<int>()(device_ordinal(k));
+/**
+ * @brief Specialization of `std::hash` for `cuda::experimental::stf::exec_place` to allow it to be used as a key in
+ * `std::unordered_map`.
+ */
+template <>
+struct hash<exec_place>
+{
+  ::std::size_t operator()(const exec_place& k) const
+  {
+    return k.hash();
   }
 };
 
@@ -2095,6 +2155,37 @@ UNITTEST("Data place as unordered_map key")
     EXPECT(map.size() == 4);
     EXPECT(map[data_place::device(0)] == 3);
     EXPECT(map[data_place::device(1)] == 4);
+  }
+};
+
+UNITTEST("Exec place as unordered_map key")
+{
+  ::std::unordered_map<exec_place, int, hash<exec_place>> map;
+
+  // Insert different exec places
+  map[exec_place::host()]    = 1;
+  map[exec_place::device(0)] = 2;
+
+  // Verify lookups work correctly
+  EXPECT(map[exec_place::host()] == 1);
+  EXPECT(map[exec_place::device(0)] == 2);
+
+  // Verify size
+  EXPECT(map.size() == 2);
+
+  // Inserting same key should update, not add
+  map[exec_place::host()] = 10;
+  EXPECT(map.size() == 2);
+  EXPECT(map[exec_place::host()] == 10);
+
+  // Test with multiple devices
+  int ndevices = cuda_try<cudaGetDeviceCount>();
+  if (ndevices >= 2)
+  {
+    map[exec_place::device(1)] = 3;
+    EXPECT(map.size() == 3);
+    EXPECT(map[exec_place::device(0)] == 2);
+    EXPECT(map[exec_place::device(1)] == 3);
   }
 };
 #endif // UNITTESTED_FILE

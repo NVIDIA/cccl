@@ -419,6 +419,12 @@ public:
       return g_ctx == other->g_ctx;
     }
 
+    size_t hash() const override
+    {
+      // Hash the green context handle, not the affine data place
+      return ::std::hash<CUgreenCtx>()(g_ctx);
+    }
+
   private:
     int devid        = -1;
     CUgreenCtx g_ctx = {};
@@ -647,12 +653,20 @@ UNITTEST("green context data_place as unordered_map key")
   auto gc0_view = gc_helper->get_view(0);
   auto gc1_view = gc_helper->get_view(1);
 
+  // Create green context-specific data places (the kind used when
+  // use_green_ctx_data_place = true). These are distinct from data_place::device(0).
   auto dp0 = data_place::green_ctx(gc0_view);
   auto dp1 = data_place::green_ctx(gc1_view);
 
+  // Different green contexts on the same device must be distinguished as different keys.
+  EXPECT(dp0 != dp1);
+  // Both are different from the regular device data place
+  EXPECT(dp0 != data_place::device(0));
+  EXPECT(dp1 != data_place::device(0));
+
   ::std::unordered_map<data_place, int, hash<data_place>> map;
 
-  // Insert green context data places
+  // Insert green context data places - different green contexts should be different keys
   map[dp0] = 100;
   map[dp1] = 200;
 
@@ -672,6 +686,55 @@ UNITTEST("green context data_place as unordered_map key")
 
   // Green context data place and device data place should be different keys
   EXPECT(map[dp0] == 100); // Still 100, not overwritten
+};
+
+UNITTEST("green context exec_place as unordered_map key")
+{
+  async_resources_handle handle;
+  auto gc_helper = handle.get_gc_helper(0, 8);
+
+  if (gc_helper->get_count() < 2)
+  {
+    return;
+  }
+
+  auto gc0_view = gc_helper->get_view(0);
+  auto gc1_view = gc_helper->get_view(1);
+
+  // Create exec_places without use_green_ctx_data_place flag (default).
+  // Their affine data_place is data_place::device(0), not a green context-specific one.
+  auto ep0 = exec_place::green_ctx(gc0_view);
+  auto ep1 = exec_place::green_ctx(gc1_view);
+
+  // Both share the same affine data_place (the device), but they must still be
+  // distinguished as different exec_place keys in the map.
+  EXPECT(ep0.affine_data_place() == ep1.affine_data_place());
+  EXPECT(ep0.affine_data_place() == data_place::device(0));
+  EXPECT(ep0 != ep1);
+
+  ::std::unordered_map<exec_place, int, hash<exec_place>> map;
+
+  // Insert green context exec places - different green contexts should be different keys
+  // even though they share the same affine data_place
+  map[ep0] = 100;
+  map[ep1] = 200;
+
+  // Verify lookups work correctly
+  EXPECT(map[ep0] == 100);
+  EXPECT(map[ep1] == 200);
+  EXPECT(map.size() == 2);
+
+  // Verify that a new exec_place for the same green context finds the same entry
+  auto ep0_copy = exec_place::green_ctx(gc0_view);
+  EXPECT(map[ep0_copy] == 100);
+
+  // Mix with regular device exec place - should be a different key
+  map[exec_place::device(0)] = 300;
+  EXPECT(map.size() == 3);
+  EXPECT(map[exec_place::device(0)] == 300);
+
+  // Green context exec place should still have its value
+  EXPECT(map[ep0] == 100);
 };
 #  endif // UNITTESTED_FILE
 } // end namespace cuda::experimental::stf
