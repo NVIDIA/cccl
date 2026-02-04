@@ -7,6 +7,7 @@ import ast
 import functools
 import inspect
 import operator
+import struct
 import textwrap
 import uuid
 from types import new_class
@@ -33,17 +34,19 @@ from numba.core.typing.templates import ConcreteTemplate
 from numba.cuda.cudadecl import registry as cuda_registry
 from numba.extending import lower_builtin, lower_cast
 
-from ._caching import CachableFunction, cache_with_registered_key_functions
-from .op import Op, OpAdapter
-from .typing import DeviceArrayLike
-import struct
-
 from . import types as cccl_types
-from ._bindings import Op, OpKind
+from ._bindings import OpKind
+from ._caching import CachableFunction, cache_with_registered_key_functions
 from ._odr_helpers import create_stateful_op_void_ptr_wrapper
 from ._utils import sanitize_identifier
-from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous, is_device_array
-
+from ._utils.protocols import (
+    get_data_pointer,
+    get_dtype,
+    is_contiguous,
+    is_device_array,
+)
+from .op import Op, OpAdapter
+from .typing import DeviceArrayLike
 
 # -----------------------------------------------------------------------------
 # Struct registration and casting

@@ -217,12 +217,13 @@ def reduce_pointer_lambda(input_array, build_only):
     h_init = np.zeros(1, dtype=input_array.dtype)
 
     # Use a lambda function directly as the reducer
-    op = lambda a, b: a + b
-    alg = cuda.compute.make_reduce_into(input_array, res, op, h_init)
+    alg = cuda.compute.make_reduce_into(input_array, res, lambda x, y: x + y, h_init)
     if not build_only:
-        temp_storage_bytes = alg(None, input_array, res, op, size, h_init)
+        temp_storage_bytes = alg(
+            None, input_array, res, lambda x, y: x + y, size, h_init
+        )
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, input_array, res, op, size, h_init)
+        alg(temp_storage, input_array, res, lambda x, y: x + y, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 
