@@ -29,6 +29,9 @@ struct DeviceMemcpy
   //! @rst
   //! Copies data from a batch of given source buffers to their corresponding destination buffer.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! .. note::
   //!
   //!    If any input buffer aliases memory from any output buffer the behavior is undefined.

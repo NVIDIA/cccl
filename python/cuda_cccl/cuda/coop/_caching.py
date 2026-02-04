@@ -5,7 +5,6 @@
 import hashlib
 import json
 import os
-import pickle
 
 _ENABLE_CACHE = "CCCL_ENABLE_CACHE" in os.environ
 if _ENABLE_CACHE:
@@ -32,7 +31,7 @@ def disk_cache(func):
             if os.path.isfile(os.path.join(_CACHE_LOCATION, h)):
                 # open it
                 with open(os.path.join(_CACHE_LOCATION, h), "rb") as f:
-                    out = pickle.load(f)
+                    out = json.load(f)
                 # return cache
                 return out
             else:
@@ -40,7 +39,7 @@ def disk_cache(func):
                 out = func(*args, **kwargs)
                 # store to file
                 with open(os.path.join(_CACHE_LOCATION, h), "wb") as f:
-                    pickle.dump(out, f)
+                    json.dump(out, f)
                 return out
         else:
             return func(*args, **kwargs)

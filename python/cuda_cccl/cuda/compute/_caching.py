@@ -14,7 +14,8 @@ try:
 except ImportError:
     from cuda.core.experimental import Device
 
-from ._utils.protocols import get_dtype
+
+from ._utils.protocols import get_dtype, is_device_array
 from .typing import DeviceArrayLike, GpuStruct
 
 # Registry thet maps type -> key function for extracting cache key
@@ -45,9 +46,16 @@ def _key_for(value: Any) -> Hashable:
     if value_type in _KEY_FUNCTIONS:
         return _KEY_FUNCTIONS[value_type](value)
 
+    # DeviceArrayLike is not a runtime-checkable protocol, so
+    # we cannot isinstance() with it.
+    if is_device_array(value):
+        return _KEY_FUNCTIONS[DeviceArrayLike](value)
+
     # Check for instance match (handles inheritance)
     for registered_type, keyer in _KEY_FUNCTIONS.items():
-        if isinstance(value, registered_type):
+        if registered_type is not DeviceArrayLike and isinstance(
+            value, registered_type
+        ):
             return keyer(value)
 
     # Fallback: use value directly (assumes it's hashable)
@@ -146,12 +154,10 @@ def _hash_device_array_like(value):
 
 
 def _make_hashable(value):
-    from .typing import DeviceArrayLike
-
     # Duck-type check for numba.cuda.CUDADispatcher (has py_func attribute)
     if hasattr(value, "py_func") and callable(value.py_func):
         return CachableFunction(value.py_func)
-    elif isinstance(value, DeviceArrayLike):
+    elif is_device_array(value):
         return _hash_device_array_like(value)
     elif isinstance(value, (list, tuple)):
         return tuple(_make_hashable(v) for v in value)
