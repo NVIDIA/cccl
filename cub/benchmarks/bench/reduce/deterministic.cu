@@ -44,25 +44,26 @@ void deterministic_sum(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(out.size());
 
   std::size_t temp_storage_bytes{};
-#if !TUNE_BASE
-  cub::detail::rfa::dispatch<input_it_t, output_it_t, int, init_t, transform_t, accum_t, policy_selector_t>(
-    nullptr, temp_storage_bytes, d_in, d_out, elements, {}, 0);
-#else
+  // we explicitly provide template arguments to override accum_t
   cub::detail::rfa::dispatch<input_it_t, output_it_t, int, init_t, transform_t, accum_t>(
-    nullptr, temp_storage_bytes, d_in, d_out, elements, {}, 0);
-#endif
+    nullptr, temp_storage_bytes, d_in, d_out, elements, init_t{}, /* stream */ 0);
 
   thrust::device_vector<nvbench::uint8_t> temp_storage(temp_storage_bytes);
   auto* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+    cub::detail::rfa::dispatch<
+      input_it_t,
+      output_it_t,
+      int,
+      init_t,
+      transform_t,
+      accum_t
 #if !TUNE_BASE
-    cub::detail::rfa::dispatch<input_it_t, output_it_t, int, init_t, transform_t, accum_t, policy_selector_t>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, elements, {}, launch.get_stream());
-#else
-    cub::detail::rfa::dispatch<input_it_t, output_it_t, int, init_t, transform_t, accum_t>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, elements, {}, launch.get_stream());
-#endif
+      ,
+      policy_selector_t
+#endif // !TUNE_BASE
+      >(d_temp_storage, temp_storage_bytes, d_in, d_out, elements, {}, launch.get_stream());
   });
 }
 
