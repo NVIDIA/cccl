@@ -863,7 +863,7 @@ def _transform_function_ast(func: Callable, state_names: List[str]) -> Callable:
 
     Then the transformed function will be:
 
-        def func(x, state): return x + state[0]
+        def func(state, x): return x + state[0]
 
     Args:
         func: The original function
