@@ -708,16 +708,6 @@ public:
   }
 
   /**
-   * @brief Compute a hash value for this exec place
-   *
-   * Used by std::hash specialization for unordered containers.
-   */
-  size_t hash() const
-  {
-    return pimpl->hash();
-  }
-
-  /**
    * @brief Compute a hash value for this execution place
    *
    * Used by std::hash specialization for unordered containers.
@@ -1275,7 +1265,7 @@ public:
     size_t hash() const override
     {
       // Hash based on dims and places, consistent with operator==
-      size_t h = hash<dim4>()(dims);
+      size_t h = ::cuda::experimental::stf::hash<dim4>{}(dims);
       for (const auto& p : places)
       {
         hash_combine(h, p.hash());
