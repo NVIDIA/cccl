@@ -119,4 +119,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./deploy
           publish_branch: gh-pages
-          keep_files: false
+          keep_files: true
+          force_orphan: true
