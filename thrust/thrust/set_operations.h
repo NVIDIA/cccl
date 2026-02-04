@@ -1598,12 +1598,12 @@ template <typename InputIterator1,
  *          \p InputIterator1 and \p InputIterator2 have the same \c value_type,
  *          \p InputIterator1's \c value_type is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>,
  *          the ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements,
- *          and \p InputIterator1's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types.
+ *          and \p InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types.
  *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
  *          \p InputIterator2's \c value_type is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>,
  *          the ordering on \p InputIterator2's \c value_type is a strict weak ordering, as defined in the <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements,
- *          and \p InputIterator2's \c value_type is convertable to a type in \p OutputIterator's set of \c value_types.
+ *          and \p InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types.
  *  \tparam InputIterator3 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
  *          and \p InputIterator3's \c value_type is convertible to a type in \p OutputIterator2's set of \c value_types.
  *  \tparam OutputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
@@ -1642,14 +1642,14 @@ template<typename InputIterator1,
          typename InputIterator3,
          typename OutputIterator1,
          typename OutputIterator2>
-  thrust::pair<OutputIterator1,OutputIterator2>
-    set_difference_by_key(InputIterator1                             keys_first1,
-                          InputIterator1                             keys_last1,
-                          InputIterator2                             keys_first2,
-                          InputIterator2                             keys_last2,
-                          InputIterator3                             values_first1,
-                          OutputIterator1                            keys_result,
-                          OutputIterator2                            values_result);
+::cuda::std::pair<OutputIterator1,OutputIterator2> set_difference_by_key(
+  InputIterator1 keys_first1,
+  InputIterator1 keys_last1,
+  InputIterator2 keys_first2,
+  InputIterator2 keys_last2,
+  InputIterator3 values_first1,
+  OutputIterator1 keys_result,
+  OutputIterator2 values_result);
 
 
 /*! \p set_difference_by_key performs a key-value difference operation from set theory.
