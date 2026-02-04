@@ -347,7 +347,7 @@ public:
               ::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>
                 && !::cuda::std::is_same_v<FlagIterator, size_t&>,
               int> = 0>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
     InputIteratorT d_in,
     FlagIterator d_flags,
     OutputIteratorT d_out,
@@ -485,7 +485,7 @@ public:
     typename EnvT = ::cuda::std::execution::env<>,
     typename ::cuda::std::
       enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(InputIteratorT d_in,
      OutputIteratorT d_out,
      NumSelectedIteratorT d_num_selected_out,

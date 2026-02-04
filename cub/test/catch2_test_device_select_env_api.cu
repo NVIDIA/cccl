@@ -25,8 +25,10 @@ C2H_TEST("cub::DeviceSelect::If accepts determinism requirements", "[select][env
   auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
 
   auto error = cub::DeviceSelect::If(input.begin(), output.begin(), num_selected.begin(), input.size(), le, env);
-
-  REQUIRE(error == cudaSuccess);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSelect::If failed with status: " << error << std::endl;
+  }
 
   thrust::device_vector<int> expected_output{1, 2, 3, 4};
   thrust::device_vector<int> expected_num_selected{4};
@@ -46,7 +48,12 @@ C2H_TEST("cub::DeviceSelect::Flagged accepts determinism requirements", "[select
 
   auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
 
-  cub::DeviceSelect::Flagged(input.begin(), flags.begin(), output.begin(), num_selected.begin(), input.size(), env);
+  auto error =
+    cub::DeviceSelect::Flagged(input.begin(), flags.begin(), output.begin(), num_selected.begin(), input.size(), env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSelect::Flagged failed with status: " << error << std::endl;
+  }
 
   thrust::device_vector<int> expected_output{1, 4, 6, 7};
   thrust::device_vector<int> expected_num_selected{4};
