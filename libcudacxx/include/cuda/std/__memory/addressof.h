@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 12)
+#if (_CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 12)) && _CCCL_HOSTED()
 #  define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 1
 #else // ^^^ has builtin std::addressof ^^^ / vvv no builtin std::addressof vvv
 #  define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 0

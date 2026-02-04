@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#ifndef _CCCL_DISABLE_CMATH
+
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/exponential_functions.h>
 #include <cuda/std/__cmath/min_max.h>
@@ -213,5 +215,7 @@ _CCCL_REQUIRES(is_arithmetic_v<_A1> _CCCL_AND is_arithmetic_v<_A2> _CCCL_AND is_
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_DISABLE_CMATH
 
 #endif // _CUDA_STD___CMATH_HYPOT_H

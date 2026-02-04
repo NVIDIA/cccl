@@ -13,6 +13,8 @@
 #  pragma system_header
 #endif // no system header
 
+#ifndef _CCCL_DISABLE_CMATH
+
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/bit_cast.h>
@@ -689,3 +691,5 @@ public:
 } // namespace detail::rfa
 
 CUB_NAMESPACE_END
+
+#endif // _CCCL_DISABLE_CMATH

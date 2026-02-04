@@ -25,7 +25,7 @@
 #include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
-#if (_CCCL_COMPILER(CLANG, >=, 17) || _CCCL_COMPILER(GCC, >=, 15)) && __cpp_lib_forward_like >= 202217L
+#if (_CCCL_COMPILER(CLANG, >=, 17) || _CCCL_COMPILER(GCC, >=, 15)) && __cpp_lib_forward_like >= 202217L && _CCCL_HOSTED()
 #  define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 1
 #else // ^^^ has builtin std::forward_like ^^^ / vvv no builtin std::forward_like vvv
 #  define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 0
@@ -43,7 +43,7 @@
 #    include <bits/move.h>
 #  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__utility/forward_like.h>)
 #    include <__utility/forward_like.h>
-#  elif !_CCCL_COMPILER(NVRTC)
+#  elif _CCCL_HOSTED()
 #    include <utility>
 #  endif
 #endif // _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE()

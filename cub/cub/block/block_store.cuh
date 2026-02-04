@@ -21,9 +21,9 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 CUB_NAMESPACE_BEGIN
 
@@ -544,7 +544,7 @@ enum BlockStoreAlgorithm
   BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED,
 };
 
-#if !_CCCL_COMPILER(NVRTC) && !defined(_CCCL_DOXYGEN_INVOKED)
+#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 inline ::std::ostream& operator<<(::std::ostream& os, BlockStoreAlgorithm algo)
 {
   switch (algo)
@@ -565,7 +565,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockStoreAlgorithm algo)
       return os << "<unknown BlockStoreAlgorithm: " << static_cast<int>(algo) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
+#endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
 //! @rst
 //! The BlockStore class provides :ref:`collective <collective-primitives>` data movement

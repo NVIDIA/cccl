@@ -26,15 +26,15 @@
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__utility/move.h>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <exception> // IWYU pragma: keep
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 namespace cuda::experimental::execution
 {
 // Since there are no exceptions in device code, we provide a stub implementation of
 // std::exception_ptr and related functions.
-#if _CCCL_COMPILER(NVRTC) || !_CCCL_HOST_COMPILATION()
+#if _CCCL_FREESTANDING() || !_CCCL_HOST_COMPILATION()
 
 struct exception_ptr
 {
@@ -100,15 +100,15 @@ public:
   ::cuda::__throw_cuda_error(cudaErrorUnknown, "unknown exception");
 }
 
-// ^^^ _CCCL_COMPILER(NVRTC) || !_CCCL_HOST_COMPILATION() ^^^
+// ^^^ _CCCL_FREESTANDING() || !_CCCL_HOST_COMPILATION() ^^^
 #else
-// vvv !_CCCL_COMPILER(NVRTC) && _CCCL_HOST_COMPILATION() vvv
+// vvv _CCCL_HOSTED() && _CCCL_HOST_COMPILATION() vvv
 
 using ::std::current_exception;
 using ::std::exception_ptr;
 using ::std::rethrow_exception;
 
-#endif // !_CCCL_COMPILER(NVRTC) && _CCCL_HOST_COMPILATION()
+#endif // _CCCL_HOSTED() && _CCCL_HOST_COMPILATION()
 } // namespace cuda::experimental::execution
 
 #endif // __CUDAX_EXECUTION_EXCEPTION

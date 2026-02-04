@@ -32,7 +32,7 @@
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <atomic> // saves 146ms compile-time over <cuda/std/atomic> (CCCL 3.1)
 #  if defined(CUB_DEFINE_RUNTIME_POLICIES)
 #    include <format>
@@ -40,7 +40,7 @@
 
 #    include <nlohmann/json.hpp>
 #  endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #if defined(CUB_ENABLE_POLICY_PTX_JSON)
 #  include <cub/detail/ptx-json/json.cuh>
@@ -153,7 +153,8 @@ CUB_RUNTIME_FUNCTION inline int DeviceCount()
   return result;
 }
 
-#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#  if _CCCL_HOSTED()
+#    ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 /**
  * \brief Per-device cache for a CUDA attribute value; the attribute is queried
  *        and stored for each device upon construction.
@@ -268,7 +269,21 @@ public:
     return entry.payload;
   }
 };
-#  endif // _CCCL_DOXYGEN_INVOKED
+#    endif // _CCCL_DOXYGEN_INVOKED
+
+template <typename Tag>
+_CCCL_HOST inline PerDeviceAttributeCache& GetPerDeviceAttributeCache()
+{
+  static PerDeviceAttributeCache cache;
+  return cache;
+}
+
+struct PtxVersionCacheTag
+{};
+struct SmVersionCacheTag
+{};
+
+#  endif // _CCCL_HOSTED()
 
 /**
  * \brief Retrieves the PTX version that will be used on the current device (major * 100 + minor * 10).
@@ -322,18 +337,7 @@ _CCCL_HOST inline cudaError_t PtxVersionUncached(int& ptx_version, int device)
   return PtxVersionUncached(ptx_version);
 }
 
-template <typename Tag>
-_CCCL_HOST inline PerDeviceAttributeCache& GetPerDeviceAttributeCache()
-{
-  static PerDeviceAttributeCache cache;
-  return cache;
-}
-
-struct PtxVersionCacheTag
-{};
-struct SmVersionCacheTag
-{};
-
+#if _CCCL_HOSTED()
 /**
  * \brief Retrieves the PTX virtual architecture that will be used on \p device (major * 100 + minor * 10). If
  * __CUDA_ARCH_LIST__ is defined, this value is one of __CUDA_ARCH_LIST__.
@@ -359,6 +363,7 @@ _CCCL_HOST inline cudaError_t PtxVersion(int& ptx_version, int device)
 
   return payload.error;
 }
+#endif // _CCCL_HOSTED()
 
 /**
  * \brief Retrieves the PTX virtual architecture that will be used on the current device (major * 100 + minor * 10).
@@ -371,10 +376,14 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersion(int& ptx_version)
   // Note: the ChainedPolicy pruning (i.e., invoke_static) requites that there's an exact match between one of the
   // architectures in __CUDA_ARCH__ and the runtime queried ptx version.
   cudaError_t result = cudaErrorUnknown;
+#if _CCCL_HOSTED()
   NV_IF_TARGET(NV_IS_HOST,
                (result = PtxVersion(ptx_version, CurrentDevice());),
                ( // NV_IS_DEVICE:
                  result = PtxVersionUncached(ptx_version);));
+#else
+  result = PtxVersionUncached(ptx_version);
+#endif // _CCCL_HOSTED()
   return result;
 }
 
@@ -392,6 +401,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t ptx_arch_id(::cuda::arch_id& arch_id)
   return cudaSuccess;
 }
 
+#if _CCCL_HOSTED()
 //! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the given device.
 _CCCL_HOST_API inline cudaError_t ptx_arch_id(::cuda::arch_id& arch_id, int device)
 {
@@ -403,6 +413,7 @@ _CCCL_HOST_API inline cudaError_t ptx_arch_id(::cuda::arch_id& arch_id, int devi
   arch_id = ::cuda::to_arch_id(::cuda::compute_capability(ptx_version / 10));
   return cudaSuccess;
 }
+#endif // _CCCL_HOSTED()
 } // namespace detail
 
 /**
@@ -441,6 +452,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = 
 {
   cudaError_t result = cudaErrorUnknown;
 
+#if _CCCL_HOSTED()
   NV_IF_TARGET(
     NV_IS_HOST,
     (auto const payload = GetPerDeviceAttributeCache<SmVersionCacheTag>()(
@@ -455,6 +467,9 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = 
      result = payload.error;),
     ( // NV_IS_DEVICE
       result = SmVersionUncached(sm_version, device);));
+#else
+  result = SmVersionUncached(sm_version, device);
+#endif // _CCCL_HOSTED()
 
   return result;
 }

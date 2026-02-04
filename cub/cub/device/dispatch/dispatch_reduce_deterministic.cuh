@@ -19,6 +19,8 @@
 #  pragma system_header
 #endif // no system header
 
+#ifndef _CCCL_DISABLE_CMATH
+
 #include <cub/agent/agent_reduce.cuh>
 #include <cub/detail/rfa.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
@@ -476,3 +478,5 @@ struct dispatch_t
 };
 } // namespace detail::rfa
 CUB_NAMESPACE_END
+
+#endif // _CCCL_DISABLE_CMATH

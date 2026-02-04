@@ -25,9 +25,9 @@
 #include <cuda/std/__cstdlib/malloc.h>
 #include <cuda/std/cstring>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <cstdlib>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include <nv/target>
 
@@ -39,7 +39,7 @@ extern "C" _CCCL_DEVICE void* __cuda_syscall_aligned_malloc(size_t, size_t);
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST void*
 __aligned_alloc_host([[maybe_unused]] size_t __nbytes, [[maybe_unused]] size_t __align) noexcept
 {
@@ -50,7 +50,7 @@ __aligned_alloc_host([[maybe_unused]] size_t __nbytes, [[maybe_unused]] size_t _
   return ::aligned_alloc(__align, __nbytes);
 #  endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 [[nodiscard]] _CCCL_API inline void* aligned_alloc(size_t __nbytes, size_t __align) noexcept
 {

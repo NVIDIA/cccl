@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#ifndef _CCCL_DISABLE_CMATH
+
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/fpclassify.h>
 #include <cuda/std/__cmath/isinf.h>
@@ -526,5 +528,7 @@ template <class _Tp, enable_if_t<__is_extended_arithmetic_v<_Tp>, int> = 0>
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_DISABLE_CMATH
 
 #endif // _CUDA_STD___CMATH_LOGARITHMS_H

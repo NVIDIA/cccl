@@ -52,7 +52,7 @@ template <class _Tp>
   return __c.imag();
 }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 
 // Unless `--expt-relaxed-constexpr` is specified, obtaining values from std::complex is not constexpr :(
 #  if defined(__CUDACC_RELAXED_CONSTEXPR__)
@@ -80,7 +80,7 @@ template <class _Tp>
   return reinterpret_cast<const _Tp(&)[2]>(__c)[1];
 }
 #  endif // ^^^ !__CUDACC_RELAXED_CONSTEXPR__ ^^^
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 _CCCL_END_NAMESPACE_CUDA
 

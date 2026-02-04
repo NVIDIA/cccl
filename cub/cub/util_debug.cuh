@@ -163,21 +163,25 @@ Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]]
  * \brief Log macro for printf statements.
  */
 #if !defined(_CubLog)
-#  define _CubLog(format, ...)                                    \
-    do                                                            \
-    {                                                             \
-      NV_IF_TARGET(                                               \
-        NV_IS_HOST,                                               \
-        (printf(format, __VA_ARGS__);),                           \
-        (printf("[block (%d,%d,%d), thread (%d,%d,%d)]: " format, \
-                blockIdx.z,                                       \
-                blockIdx.y,                                       \
-                blockIdx.x,                                       \
-                threadIdx.z,                                      \
-                threadIdx.y,                                      \
-                threadIdx.x,                                      \
-                __VA_ARGS__);));                                  \
-    } while (false)
-#endif
+#  if _CCCL_HOSTED() || _CCCL_COMPILER(NVRTC)
+#    define _CubLog(format, ...)                                    \
+      do                                                            \
+      {                                                             \
+        NV_IF_TARGET(                                               \
+          NV_IS_HOST,                                               \
+          (printf(format, __VA_ARGS__);),                           \
+          (printf("[block (%d,%d,%d), thread (%d,%d,%d)]: " format, \
+                  blockIdx.z,                                       \
+                  blockIdx.y,                                       \
+                  blockIdx.x,                                       \
+                  threadIdx.z,                                      \
+                  threadIdx.y,                                      \
+                  threadIdx.x,                                      \
+                  __VA_ARGS__);));                                  \
+      } while (false)
+#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
+#    define _CubLog(format, ...) (void(0))
+#  endif // !_CCCL_HOSTED()
+#endif // !defined(_CubLog)
 
 CUB_NAMESPACE_END

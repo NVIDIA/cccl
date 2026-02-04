@@ -26,9 +26,9 @@
 
 #include <cuda/std/__type_traits/remove_cv.h>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 CUB_NAMESPACE_BEGIN
 
@@ -219,13 +219,13 @@ public:
     return (ptr != rhs.ptr);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   /// ostream operator
   friend ::std::ostream& operator<<(::std::ostream& os, const self_type& itr)
   {
     return os;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 CUB_NAMESPACE_END

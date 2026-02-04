@@ -27,7 +27,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  define _CCCL_PREFERRED_ALIGNOF(_Tp) __alignof(_Tp)
 #else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
 #  define _CCCL_PREFERRED_ALIGNOF(_Tp) alignof(_Tp)

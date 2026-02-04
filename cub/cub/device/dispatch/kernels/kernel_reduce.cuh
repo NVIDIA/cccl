@@ -14,7 +14,9 @@
 #endif // no system header
 
 #include <cub/agent/agent_reduce.cuh>
-#include <cub/detail/rfa.cuh>
+#ifndef _CCCL_DISABLE_CMATH
+#  include <cub/detail/rfa.cuh>
+#endif // _CCCL_DISABLE_CMATH
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
 
@@ -277,6 +279,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   }
 }
 
+#ifndef _CCCL_DISABLE_CMATH
+
 /**
  * @brief Deterministically Reduce region kernel entry point (multi-block). Computes privatized
  *        reductions, one per thread block in deterministic fashion
@@ -505,6 +509,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
     detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate.conv_to_fp());
   }
 }
+
+#endif // _CCCL_DISABLE_CMATH
 
 template <typename PolicySelector,
           typename InputIteratorT,

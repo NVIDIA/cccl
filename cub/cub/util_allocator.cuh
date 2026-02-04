@@ -22,6 +22,8 @@
 #include <cub/util_debug.cuh>
 #include <cub/util_namespace.cuh>
 
+#if _CCCL_HOSTED()
+
 #include <cuda/std/__host_stdlib/math.h>
 
 #include <map>
@@ -895,3 +897,5 @@ struct CachingDeviceAllocator
 };
 
 CUB_NAMESPACE_END
+
+#endif // _CCCL_HOSTED()

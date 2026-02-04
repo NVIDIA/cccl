@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#ifndef _CCCL_DISABLE_CMATH
+
 #include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
@@ -97,5 +99,7 @@ _CCCL_API constexpr enable_if_t<is_arithmetic_v<_A1> && is_arithmetic_v<_A2> && 
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_DISABLE_CMATH
 
 #endif // _CUDA_STD___CMATH_LERP_H

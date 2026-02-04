@@ -29,7 +29,7 @@
 #  include <cuda/std/concepts>
 #endif // _CCCL_HAS_CONCEPTS()
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <ostream>
 #endif
 
@@ -65,7 +65,7 @@ enum class Algorithm
   ublkcp
 };
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 inline ::std::ostream& operator<<(::std::ostream& os, const Algorithm& algorithm)
 {
   switch (algorithm)
@@ -82,7 +82,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, const Algorithm& algorithm
       return os << "Algorithm::<unknown>";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 struct prefetch_policy
 {
@@ -103,14 +103,14 @@ struct prefetch_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const prefetch_policy& policy)
   {
     return os << "prefetch_policy { .block_threads = " << policy.block_threads << ", .items_per_thread_no_input = "
               << policy.items_per_thread_no_input << ", .min_items_per_thread = " << policy.min_items_per_thread
               << ", .max_items_per_thread = " << policy.max_items_per_thread << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct vectorized_policy
@@ -130,13 +130,13 @@ struct vectorized_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const vectorized_policy& policy)
   {
     return os << "vectorized_policy { .block_threads = " << policy.block_threads
               << ", .items_per_thread = " << policy.items_per_thread << ", .vec_size = " << policy.vec_size << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct async_copy_policy
@@ -158,14 +158,14 @@ struct async_copy_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const async_copy_policy& policy)
   {
     return os << "async_copy_policy { .block_threads = " << policy.block_threads << ", .bulk_copy_alignment = "
               << policy.bulk_copy_alignment << ", .min_items_per_thread = " << policy.min_items_per_thread
               << ", .max_items_per_thread = " << policy.max_items_per_thread << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct transform_policy
@@ -187,14 +187,14 @@ struct transform_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const transform_policy& policy)
   {
     return os << "transform_policy { .min_bytes_in_flight = " << policy.min_bytes_in_flight
               << ", .algorithm = " << policy.algorithm << ", .prefetch = " << policy.prefetch
               << ", .vectorized = " << policy.vectorized << ", .async_copy = " << policy.async_copy << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()

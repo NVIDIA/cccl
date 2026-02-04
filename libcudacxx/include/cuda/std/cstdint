@@ -23,9 +23,9 @@
 
 #include <cuda/std/version>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <cstdint>
-#else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
+#else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
 #  include <cuda/std/climits>
 
 using int8_t   = signed char;
@@ -124,7 +124,7 @@ using uintmax_t = uint64_t;
 
 #  define INTMAX_C(X)  ((::intmax_t) (X))
 #  define UINTMAX_C(X) ((::uintmax_t) (X))
-#endif // ^^^ _CCCL_COMPILER(NVRTC)
+#endif // _CCCL_FREESTANDING()
 
 #include <cuda/std/__cccl/prologue.h>
 

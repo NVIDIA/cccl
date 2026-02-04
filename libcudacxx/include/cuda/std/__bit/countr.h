@@ -91,7 +91,7 @@ template <typename _Tp>
   }
 }
 
-#  if !_CCCL_COMPILER(NVRTC)
+#  if _CCCL_HOSTED()
 template <typename _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST int __cccl_countr_zero_impl_host(_Tp __v) noexcept
 {
@@ -121,7 +121,7 @@ template <typename _Tp>
   return ::cuda::std::__cccl_countr_zero_impl_constexpr(__v);
 #    endif // _CCCL_COMPILER(MSVC)
 }
-#  endif // !_CCCL_COMPILER(NVRTC)
+#  endif // _CCCL_HOSTED()
 
 #  if _CCCL_CUDA_COMPILATION()
 template <typename _Tp>

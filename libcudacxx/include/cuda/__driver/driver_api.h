@@ -30,11 +30,14 @@
 #  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_same.h>
+
+#if _CCCL_HOSTED()
 #  if _CCCL_OS(WINDOWS)
 #    include <windows.h>
 #  else
 #    include <dlfcn.h>
 #  endif
+#endif // _CCCL_HOSTED()
 
 #  include <cuda.h>
 
@@ -53,6 +56,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
 // cudaGetDriverEntryPoint function is deprecated
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
+#if _CCCL_HOSTED()
 //! @brief Gets the cuGetProcAddress function pointer.
 [[nodiscard]] _CCCL_PUBLIC_HOST_API inline auto __getProcAddressFn() -> decltype(cuGetProcAddress)*
 {
@@ -87,6 +91,20 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 #  endif // ^^^ !_CCCL_OS(WINDOWS) ^^^
   return reinterpret_cast<decltype(cuGetProcAddress)*>(__fn);
 }
+#else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
+[[nodiscard]] _CCCL_PUBLIC_HOST_API inline auto __getProcAddressFn(
+  decltype(cuGetProcAddress)* __ptr = nullptr, bool __set = false) -> decltype(cuGetProcAddress)*
+{
+  static decltype(cuGetProcAddress)* __fn = __ptr;
+
+  if (__set)
+  {
+    __fn = __ptr;
+  }
+
+  return __fn;
+}
+#endif // !_CCCL_HOSTED()
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 

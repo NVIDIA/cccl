@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#ifndef _CCCL_DISABLE_CMATH
+
 #include <cuda/std/__cmath/copysign.h>
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__floating_point/cuda_fp_types.h>
@@ -204,5 +206,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_DISABLE_CMATH
 
 #endif // _CUDA_STD___CMATH_MODULO_H

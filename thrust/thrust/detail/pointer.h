@@ -33,9 +33,9 @@
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstddef>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 THRUST_NAMESPACE_BEGIN
 template <typename Element, typename Tag, typename Reference = use_default, typename Derived = use_default>
@@ -263,14 +263,14 @@ public:
     return detail::pointer_traits<derived_type>::pointer_to(r);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   template <typename charT, typename traits>
   _CCCL_HOST friend std::basic_ostream<charT, traits>&
   operator<<(std::basic_ostream<charT, traits>& os, const pointer& p)
   {
     return os << p.get();
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
   // NOTE: This is needed so that Thrust smart pointers can be used in `std::unique_ptr`.
   _CCCL_HOST_DEVICE friend bool operator==(::cuda::std::nullptr_t, pointer p)

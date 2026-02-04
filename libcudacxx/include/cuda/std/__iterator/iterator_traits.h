@@ -42,7 +42,7 @@
 #include <cuda/std/__utility/priority_tag.h>
 #include <cuda/std/cstddef>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  if _CCCL_COMPILER(MSVC)
 #    include <xutility> // for ::std::input_iterator_tag
 #  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
@@ -73,7 +73,7 @@ struct __cccl_std_contiguous_iterator_tag_exists : __cccl_type_is_defined<struct
 #    include <cuda/std/__cccl/epilogue.h>
 #  endif // _CCCL_STD_VER >= 2020
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -122,7 +122,7 @@ using iter_reference_t = enable_if_t<__dereferenceable<_Tp>, decltype(*declval<_
 
 #endif // _CCCL_HAS_CONCEPTS()
 
-#if _CCCL_COMPILER(NVRTC)
+#if _CCCL_FREESTANDING()
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT input_iterator_tag
 {};
@@ -137,7 +137,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT random_access_iterator_tag : public bidirec
 struct _CCCL_TYPE_VISIBILITY_DEFAULT contiguous_iterator_tag : public random_access_iterator_tag
 {};
 
-#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC) vvv
+#else // ^^^ _CCCL_FREESTANDING() ^^^ / vvv _CCCL_HOSTED() vvv
 
 using input_iterator_tag         = ::std::input_iterator_tag;
 using output_iterator_tag        = ::std::output_iterator_tag;
@@ -157,7 +157,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT contiguous_iterator_tag : public random_acc
 {};
 #  endif // _CCCL_STD_VER <= 2017
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 template <class _Iter>
 struct __iter_traits_cache
@@ -440,12 +440,12 @@ template <class>
 struct __iterator_traits
 {};
 
-#  if !_CCCL_COMPILER(NVRTC)
+#  if _CCCL_HOSTED()
 // We need to properly accept specializations of `std::iterator_traits`
 template <__specialized_from_std _Ip>
 struct __iterator_traits<_Ip> : public ::std::iterator_traits<_Ip>
 {};
-#  endif // !_CCCL_COMPILER(NVRTC)
+#  endif // _CCCL_HOSTED()
 
 // [iterator.traits]/3.1
 // If `I` has valid ([temp.deduct]) member types `difference-type`, `value-type`, `reference`, and
@@ -712,11 +712,11 @@ template <class, class = void>
 struct __iterator_traits
 {};
 
-#  if !_CCCL_COMPILER(NVRTC)
+#  if _CCCL_HOSTED()
 template <class _Ip>
 struct __iterator_traits<_Ip, enable_if_t<__specialized_from_std<_Ip>>> : public ::std::iterator_traits<_Ip>
 {};
-#  endif // !_CCCL_COMPILER(NVRTC)
+#  endif // _CCCL_HOSTED()
 
 // [iterator.traits]/3.1
 // If `I` has valid ([temp.deduct]) member types `difference-type`, `value-type`, `reference`, and

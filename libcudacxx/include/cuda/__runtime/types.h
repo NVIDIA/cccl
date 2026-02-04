@@ -40,8 +40,7 @@ _CCCL_DIAG_POP
 
 _CCCL_END_NAMESPACE_CUDA
 
-#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
-
 #include <cuda/std/__cccl/epilogue.h>
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #endif // __CUDA___RUNTIME_TYPES_H

@@ -26,7 +26,7 @@
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
-#if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 12) \
+#if ((_CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 12)) && _CCCL_HOSTED()) \
   || (_CCCL_COMPILER(NVRTC) && defined(__NV_BUILTIN_MOVE_FORWARD))
 #  define _CCCL_HAS_BUILTIN_STD_MOVE() 1
 #else // ^^^ has builtin std::move ^^^ / vvv no builtin std::move vvv
@@ -39,7 +39,7 @@
 #  define _CCCL_HAS_BUILTIN_STD_MOVE() 1
 #endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 
-#if _CCCL_COMPILER(CLANG, >=, 15)
+#if _CCCL_COMPILER(CLANG, >=, 15) && _CCCL_HOSTED()
 #  define _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() 1
 #else // ^^^ has builtin std::move_if_noexcept ^^^ / vvv no builtin std::move_if_noexcept vvv
 #  define _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() 0
@@ -57,7 +57,7 @@
 #    include <bits/move.h>
 #  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__utility/move.h>)
 #    include <__utility/move.h> // includes std::move_if_noexcept, too
-#  elif !_CCCL_COMPILER(NVRTC)
+#  elif _CCCL_HOSTED()
 #    include <utility>
 #  endif
 #endif // _CCCL_HAS_BUILTIN_STD_MOVE() || _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT()

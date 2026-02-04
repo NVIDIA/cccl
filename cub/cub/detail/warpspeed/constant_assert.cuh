@@ -12,7 +12,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/cassert>
+#include <cuda/std/__cccl/assert.h>
 
 /*
  * _WS_CONSTANT_ASSERT: an assertion that is intended to be verified at compile time.
@@ -48,5 +48,5 @@
     } while (0)
 #else
 // Host or !_WARPSPEED_FORCE_ASSERT_AT_COMPILE_TIME
-#  define _WS_CONSTANT_ASSERT(expr, msg) (assert((expr) && (msg)))
+#  define _WS_CONSTANT_ASSERT(expr, msg) _CCCL_ASSERT_HOST(expr, msg)
 #endif

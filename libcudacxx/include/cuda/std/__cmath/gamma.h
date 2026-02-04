@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#ifndef _CCCL_DISABLE_CMATH
+
 #include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -197,5 +199,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_DISABLE_CMATH
 
 #endif // _CUDA_STD___CMATH_GAMMA_H

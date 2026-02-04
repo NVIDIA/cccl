@@ -24,9 +24,9 @@
 
 #include <cuda/std/cstddef>
 
-#if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() && !_CCCL_COMPILER(NVRTC)
+#if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() && _CCCL_HOSTED()
 #  include <new> // for align_val_t
-#endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() !_CCCL_COMPILER(NVRTC)
+#endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() && _CCCL_HOSTED()
 
 // clang-cuda only provides device flavors of operator new, so we need to pull in <new> here
 #if _CCCL_CUDA_COMPILER(CLANG)

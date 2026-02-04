@@ -13,6 +13,8 @@
 
 #include <cuda/std/detail/__config>
 
+#ifndef _CCCL_DISABLE_CMATH
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -130,5 +132,6 @@ _CCCL_REQUIRES(::cuda::std::__is_extended_arithmetic_v<_Tp>)
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
+#endif // _CCCL_DISABLE_CMATH
 
 #endif // _CUDA___CMATH_SINCOS_H

@@ -23,6 +23,17 @@
 #  pragma system_header
 #endif // no system header
 
+// Freestanding environment detection
+// NVRTC is treated as freestanding since it has no access to the host standard library
+#if defined(_CCCL_ENABLE_FREESTANDING) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_FREESTANDING() 1
+#  define _CCCL_NO_TYPEID
+#else
+#  define _CCCL_FREESTANDING() 0
+#endif
+
+#define _CCCL_HOSTED() (!_CCCL_FREESTANDING())
+
 #define _CCCL_HOST_STD_LIB_LIBSTDCXX() _CCCL_VERSION_INVALID()
 #define _CCCL_HOST_STD_LIB_LIBCXX()    _CCCL_VERSION_INVALID()
 #define _CCCL_HOST_STD_LIB_STL()       _CCCL_VERSION_INVALID()
