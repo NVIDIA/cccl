@@ -33,7 +33,7 @@
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/conjunction.h>
-#include <cuda/std/__type_traits/integer_constant_like.h>
+#include <cuda/std/__type_traits/integral_constant_like.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>

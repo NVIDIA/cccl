@@ -42,7 +42,7 @@
 #include <cuda/std/__ranges/enable_borrowed_range.h>
 #include <cuda/std/__ranges/enable_view.h>
 #include <cuda/std/__ranges/size.h>
-#include <cuda/std/__type_traits/integer_constant_like.h>
+#include <cuda/std/__type_traits/integral_constant_like.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_const.h>
