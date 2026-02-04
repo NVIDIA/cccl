@@ -623,6 +623,11 @@ public:
       return affine == rhs.affine;
     }
 
+    bool operator!=(const impl& rhs) const
+    {
+      return !(*this == rhs);
+    }
+
     /* Return the pool associated to this place
      *
      * If the stream is expected to perform computation, the
@@ -1217,13 +1222,8 @@ public:
     // Compare two grids
     bool operator==(const impl& rhs) const
     {
-      // First, compare base class properties
-      if (!exec_place::impl::operator==(rhs))
-      {
-        return false;
-      }
-
       // Compare grid-specific properties
+      // Note: for grids, equality is determined by dims and places, not the affine data place
       return dims == rhs.dims && places == rhs.places;
     }
 

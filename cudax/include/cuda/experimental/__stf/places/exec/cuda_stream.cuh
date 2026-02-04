@@ -69,6 +69,17 @@ public:
       return "exec(stream id=" + ::std::to_string(dstream.id) + " dev=" + ::std::to_string(dstream.dev_id) + ")";
     }
 
+    bool operator==(const exec_place::impl& rhs) const override
+    {
+      auto other = dynamic_cast<const impl*>(&rhs);
+      if (!other)
+      {
+        return false;
+      }
+      // Compare by stream handle
+      return dstream.stream == other->dstream.stream;
+    }
+
   private:
     decorated_stream dstream;
     // We create a dummy pool of streams which only consists in a single stream in practice.

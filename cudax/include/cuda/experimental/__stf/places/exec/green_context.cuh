@@ -407,6 +407,18 @@ public:
       return *pool;
     }
 
+    bool operator==(const exec_place::impl& rhs) const override
+    {
+      // First, check if rhs is also a green context impl
+      auto other = dynamic_cast<const impl*>(&rhs);
+      if (!other)
+      {
+        return false;
+      }
+      // Compare green context handles
+      return g_ctx == other->g_ctx;
+    }
+
   private:
     int devid        = -1;
     CUgreenCtx g_ctx = {};
@@ -474,6 +486,105 @@ inline data_place data_place::green_ctx(::std::shared_ptr<green_ctx_view> gc_vie
 {
   return make_green_ctx_data_place(mv(gc_view_ptr));
 }
+
+#  ifdef UNITTESTED_FILE
+UNITTEST("green context exec_place equality")
+{
+  async_resources_handle handle;
+  auto gc_helper = handle.get_gc_helper(0, 8); // 8 SMs per green context
+
+  // Need at least 2 green contexts for the test
+  if (gc_helper->get_count() < 2)
+  {
+    return;
+  }
+
+  auto gc0_view = gc_helper->get_view(0);
+  auto gc1_view = gc_helper->get_view(1);
+
+  // Create exec_places from different green contexts (default: use_green_ctx_data_place=false)
+  auto p0a = exec_place::green_ctx(gc0_view);
+  auto p0b = exec_place::green_ctx(gc0_view); // same green context as p0a
+  auto p1  = exec_place::green_ctx(gc1_view); // different green context
+
+  // Same green context should be equal
+  EXPECT(p0a == p0b);
+  EXPECT(!(p0a != p0b));
+
+  // Different green contexts should NOT be equal
+  EXPECT(p0a != p1);
+  EXPECT(!(p0a == p1));
+
+  // Green context exec_place should not be equal to regular device exec_place
+  auto dev0 = exec_place::device(0);
+  EXPECT(p0a != dev0);
+  EXPECT(!(p0a == dev0));
+};
+
+UNITTEST("green context data_place equality")
+{
+  async_resources_handle handle;
+  auto gc_helper = handle.get_gc_helper(0, 8);
+
+  if (gc_helper->get_count() < 2)
+  {
+    return;
+  }
+
+  auto gc0_view = gc_helper->get_view(0);
+  auto gc1_view = gc_helper->get_view(1);
+
+  // Create green context data places
+  auto dp0a = data_place::green_ctx(gc0_view);
+  auto dp0b = data_place::green_ctx(gc0_view);
+  auto dp1  = data_place::green_ctx(gc1_view);
+
+  // Same green context data place should be equal
+  EXPECT(dp0a == dp0b);
+  EXPECT(!(dp0a != dp0b));
+
+  // Different green context data places should NOT be equal
+  EXPECT(dp0a != dp1);
+  EXPECT(!(dp0a == dp1));
+
+  // Green context data place should not be equal to regular device data place
+  auto dev0 = data_place::device(0);
+  EXPECT(dp0a != dev0);
+  EXPECT(!(dp0a == dev0));
+
+  // Green context data place should be an extension
+  EXPECT(dp0a.is_extension());
+  EXPECT(!dev0.is_extension());
+};
+
+UNITTEST("green context exec_place equality with green_ctx_data_place flag")
+{
+  async_resources_handle handle;
+  auto gc_helper = handle.get_gc_helper(0, 8);
+
+  if (gc_helper->get_count() < 2)
+  {
+    return;
+  }
+
+  auto gc0_view = gc_helper->get_view(0);
+  auto gc1_view = gc_helper->get_view(1);
+
+  // Create exec_places with use_green_ctx_data_place=true
+  auto p0a = exec_place::green_ctx(gc0_view, true);
+  auto p0b = exec_place::green_ctx(gc0_view, true);
+  auto p1  = exec_place::green_ctx(gc1_view, true);
+
+  // Same green context should be equal
+  EXPECT(p0a == p0b);
+
+  // Different green contexts should NOT be equal
+  EXPECT(p0a != p1);
+
+  // Affine data place should be an extension when use_green_ctx_data_place=true
+  EXPECT(p0a.affine_data_place().is_extension());
+};
+#  endif // UNITTESTED_FILE
 } // end namespace cuda::experimental::stf
 
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
