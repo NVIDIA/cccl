@@ -50,24 +50,31 @@ _CCCL_HOST_API inline void __batched_copy(
   ::cuda::std::size_t __size_bytes,
   ::cuda::stream_ref __stream)
 {
+  using ::cuda::std::size_t;
   const auto __num_copies = __src_ptrs.size();
 #if _CCCL_CTK_AT_LEAST(12, 9)
-  ::std::vector<::cuda::std::size_t> __sizes(__num_copies);
-  for (::cuda::std::size_t __i = 0; __i < __num_copies; ++__i)
+  ::std::vector<size_t> __sizes(__num_copies);
+  for (size_t __i = 0; __i < __num_copies; ++__i)
   {
     __sizes[__i] = __size_bytes;
   }
   ::cuda::__driver::__memcpyBatchAsync(
     __dst_ptrs.data(), __src_ptrs.data(), __sizes.data(), __num_copies, nullptr, nullptr, 0, __stream.get());
 #else // ^^^^^ _CCCL_CTK_AT_LEAST(12, 9) / vvvvv _CCCL_CTK_BELOW(12, 9)
-  for (::cuda::std::size_t __i = 0; __i < __num_copies; ++__i)
+  for (size_t __i = 0; __i < __num_copies; ++__i)
   {
     ::cuda::__driver::__memcpyAsync(__dst_ptrs[__i], __src_ptrs[__i], __size_bytes, __stream.get());
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 9)
 }
 
-template <int _Pos = 0, class _EngineIn, class _LayoutIn, class _EngineOut, class _LayoutOut, class... _Indices>
+template <bool _SkipLast,
+          int _Pos = 0,
+          class _EngineIn,
+          class _LayoutIn, //
+          class _EngineOut,
+          class _LayoutOut,
+          class... _Indices>
 _CCCL_HOST_API void __gather_ptrs(
   const ::cute::Tensor<_EngineIn, _LayoutIn>& __src,
   ::cute::Tensor<_EngineOut, _LayoutOut>& __dst,
@@ -76,17 +83,26 @@ _CCCL_HOST_API void __gather_ptrs(
   int& __count,
   _Indices... __indices) noexcept
 {
-  if constexpr (_Pos == _LayoutIn::rank - 1)
+  constexpr auto __rank     = ::cute::rank(__src);
+  constexpr auto __last_pos = (_SkipLast) ? __rank - 1 : __rank;
+  if constexpr (_Pos == __last_pos && _SkipLast)
   {
     __src_ptrs[__count] = static_cast<const void*>(&__src(__indices..., 0));
     __dst_ptrs[__count] = static_cast<void*>(&__dst(__indices..., 0));
     __count++;
   }
-  else if constexpr (_Pos < _LayoutIn::rank - 1)
+  else if constexpr (_Pos == __last_pos && !_SkipLast)
+  {
+    __src_ptrs[__count] = static_cast<const void*>(&__src(__indices...));
+    __dst_ptrs[__count] = static_cast<void*>(&__dst(__indices...));
+    __count++;
+  }
+  else if constexpr (_Pos < __last_pos)
   {
     for (::cuda::std::size_t __i = 0; __i < ::cute::size<_Pos>(__src); ++__i)
     {
-      ::cuda::experimental::__gather_ptrs<_Pos + 1>(__src, __dst, __src_ptrs, __dst_ptrs, __count, __indices..., __i);
+      ::cuda::experimental::__gather_ptrs<_SkipLast, _Pos + 1>(
+        __src, __dst, __src_ptrs, __dst_ptrs, __count, __indices..., __i);
     }
   }
 }
@@ -130,28 +146,48 @@ _CCCL_HOST_API void copy(::cuda::host_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyIn,
   {
     _CCCL_THROW(std::invalid_argument, "mdspan data handle must not be nullptr");
   }
-  const auto __src1 = ::cuda::experimental::to_cute(__src);
-  const auto __dst1 = ::cuda::experimental::to_cute(__dst);
-  const auto __src2 = ::cute::coalesce(__src1);
-  const auto __dst2 = ::cute::coalesce(__dst1);
+  const auto __src1        = ::cuda::experimental::to_cute(__src);
+  const auto __dst1        = ::cuda::experimental::to_cute(__dst);
+  //const auto __src2        = ::cute::coalesce(__src1);
+  //const auto __dst2        = __dst1);
+  //const auto __compose_src = __src2.compose(__dst2.layout());
+  //const auto __compose_dst = __dst2.compose(__src2.layout());
+  const auto __compose_src = ::cute::coalesce(__src1.compose(::cute::right_inverse(__dst1.layout())));
+  auto __compose_dst       = ::cute::coalesce(__dst1.compose(::cute::right_inverse(__src1.layout())));
   // check compatibility of the two tensors
-  // if (__src.extents() != __dst.extents())
-  //{
-  //  _CCCL_THROW(std::invalid_argument, "mdspan extents must be compatible");
-  //}
-
-  if constexpr (::cute::rank(__src2) == 0)
+  if (::cute::size(__compose_src) != ::cute::size(__src1) || ::cute::size(__compose_dst) != ::cute::size(__dst1))
   {
+    _CCCL_THROW(std::invalid_argument, "tensors must be compatible");
+  }
+  if (__compose_src.shape() != __compose_dst.shape())
+  {
+    _CCCL_THROW(std::invalid_argument, "tensors must be compatible");
+  }
+  constexpr auto __rank = ::cute::rank(__compose_src);
+  if constexpr (__rank == 0) // only one element to copy
+  {
+    ::cuda::__driver::__memcpyAsync(&__dst1[0], &__src1[0], sizeof(_TpIn), __stream.get());
   }
   else
   {
-    const auto __num_copies = ::cute::size(__src2) / ::cute::size<0>(__src2);
+    const auto __is_contiguous_last = (__compose_src.stride(0) == 1);
+    const auto __contiguous_size    = __is_contiguous_last ? ::cute::size<0>(__compose_src) : 1;
+    const auto __num_copies         = ::cute::size(__compose_src) / __contiguous_size;
     ::std::vector<const void*> __src_ptrs(__num_copies);
     ::std::vector<void*> __dst_ptrs(__num_copies);
     int __count = 0;
-    ::cuda::experimental::__gather_ptrs(__src2, __dst2, __src_ptrs, __dst_ptrs, __count);
-    const auto __size_bytes = ::cute::size<0>(__src2) * sizeof(_TpIn);
-    ::cuda::experimental::__batched_copy(__src_ptrs, __dst_ptrs, __size_bytes, __stream);
+    if (__is_contiguous_last)
+    {
+      ::cuda::experimental::__gather_ptrs</*SkipLast=*/true>(
+        __compose_src, __compose_dst, __src_ptrs, __dst_ptrs, __count);
+    }
+    else
+    {
+      ::cuda::experimental::__gather_ptrs</*SkipLast=*/false>(
+        __compose_src, __compose_dst, __src_ptrs, __dst_ptrs, __count);
+    }
+    const auto __copy_bytes = __contiguous_size * sizeof(_TpIn);
+    ::cuda::experimental::__batched_copy(__src_ptrs, __dst_ptrs, __copy_bytes, __stream);
   }
 }
 } // namespace cuda::experimental
