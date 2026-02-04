@@ -566,3 +566,170 @@ def test_select_with_lambda():
 
     assert num_selected == len(expected_selected)
     np.testing.assert_array_equal(d_out.get()[:num_selected], expected_selected)
+
+
+def test_select_stateful_state_updates():
+    """Test that select correctly updates state between calls with different thresholds."""
+    num_items = 20
+    d_in = cp.arange(num_items, dtype=np.int32)
+    d_out = cp.empty_like(d_in)
+    d_count = cp.zeros(2, dtype=np.uint64)
+
+    # Create two different thresholds
+    threshold_5 = cp.array([5], dtype=np.int32)
+    threshold_15 = cp.array([15], dtype=np.int32)
+
+    # Call 1: Select items > 5 (should get 14 items: 6-19)
+    def select_gt_5(x):
+        return x > threshold_5[0]
+
+    cuda.compute.select(d_in, d_out, d_count, select_gt_5, num_items)
+    count1 = int(d_count[0].get())
+    assert count1 == 14
+    expected_1 = list(range(6, 20))
+    np.testing.assert_array_equal(d_out.get()[:count1], expected_1)
+
+    # Call 2: Select items > 15 (should get 4 items: 16-19)
+    def select_gt_15(x):
+        return x > threshold_15[0]
+
+    d_count.fill(0)
+    cuda.compute.select(d_in, d_out, d_count, select_gt_15, num_items)
+    count2 = int(d_count[0].get())
+    assert count2 == 4
+    expected_2 = list(range(16, 20))
+    np.testing.assert_array_equal(d_out.get()[:count2], expected_2)
+
+    # Call 3: Back to first threshold (test cache reuse with updated state)
+    d_count.fill(0)
+    cuda.compute.select(d_in, d_out, d_count, select_gt_5, num_items)
+    count3 = int(d_count[0].get())
+    assert count3 == 14
+    np.testing.assert_array_equal(d_out.get()[:count3], expected_1)
+
+
+def test_select_stateful_same_bytecode_different_state():
+    """
+    Test that select works correctly when using factory functions that produce
+    identical bytecode but capture different state arrays.
+
+    This is a regression test for the cache collision bug where functions with
+    the same bytecode but different captured arrays would reuse stale state.
+    """
+    num_items = 20
+    d_in = cp.arange(num_items, dtype=np.int32)
+    d_out = cp.empty_like(d_in)
+    d_count = cp.zeros(2, dtype=np.uint64)
+
+    # Factory that creates functions with identical bytecode
+    def make_selector(threshold_array):
+        def selector(x):
+            return x > threshold_array[0]
+
+        return selector
+
+    threshold_5 = cp.array([5], dtype=np.int32)
+    threshold_15 = cp.array([15], dtype=np.int32)
+
+    select_5 = make_selector(threshold_5)
+    select_15 = make_selector(threshold_15)
+
+    # Call 1: threshold > 5
+    cuda.compute.select(d_in, d_out, d_count, select_5, num_items)
+    count1 = int(d_count[0].get())
+    assert count1 == 14
+
+    # Call 2: threshold > 15 (different state, same bytecode)
+    d_count.fill(0)
+    cuda.compute.select(d_in, d_out, d_count, select_15, num_items)
+    count2 = int(d_count[0].get())
+    assert count2 == 4  # If this fails, cache collision bug is present
+
+
+def test_stateful_caching_same_dtype_different_values():
+    """
+    Test that stateful ops with same dtype but different values work correctly.
+    After transformation, values are runtime parameters, so they should use the
+    same compiled code.
+    """
+    import cupy as cp
+    import numpy as np
+
+    import cuda.compute
+
+    num_items = 100
+    d_in = cp.arange(num_items, dtype=np.int32)
+    d_out = cp.empty_like(d_in)
+    d_count = cp.zeros(2, dtype=np.uint64)
+
+    # Two thresholds with SAME dtype, SAME size, DIFFERENT values
+    threshold_30 = cp.array([30], dtype=np.int32)
+    threshold_70 = cp.array([70], dtype=np.int32)
+
+    # Test with threshold_30
+    def select_gt_30(x):
+        return x > threshold_30[0]
+
+    cuda.compute.select(d_in, d_out, d_count, select_gt_30, num_items)
+    count_30 = int(d_count[0].get())
+
+    # Test with threshold_70
+    def select_gt_70(x):
+        return x > threshold_70[0]
+
+    d_out.fill(0)
+    d_count.fill(0)
+    cuda.compute.select(d_in, d_out, d_count, select_gt_70, num_items)
+    count_70 = int(d_count[0].get())
+
+    # Verify correct results (not cache collision)
+    assert count_30 == 69  # Values 31-99
+    assert count_70 == 29  # Values 71-99
+
+
+def test_stateful_caching_same_dtype_different_sizes():
+    """
+    Test that stateful ops with same dtype but different sizes create different
+    cache keys and produce correct results.
+    """
+    import cupy as cp
+    import numpy as np
+
+    import cuda.compute
+
+    num_items = 20
+    d_in = cp.arange(num_items, dtype=np.int32)
+    d_out = cp.empty_like(d_in)
+    d_count = cp.zeros(2, dtype=np.uint64)
+
+    # Two arrays: SAME dtype, DIFFERENT sizes
+    single_threshold = cp.array([5], dtype=np.int32)  # size: 1
+    multi_threshold = cp.array([3, 7, 12], dtype=np.int32)  # size: 3
+
+    # Test 1: Single threshold (x > 5)
+    def select_single(x):
+        return x > single_threshold[0]
+
+    cuda.compute.select(d_in, d_out, d_count, select_single, num_items)
+    count_1 = int(d_count[0].get())
+    selected_1 = d_out.get()[:count_1]
+
+    # Test 2: Multiple thresholds (x > all values)
+    def select_multi(x):
+        return (
+            (x > multi_threshold[0])
+            and (x > multi_threshold[1])
+            and (x > multi_threshold[2])
+        )
+
+    d_out.fill(0)
+    d_count.fill(0)
+    cuda.compute.select(d_in, d_out, d_count, select_multi, num_items)
+    count_2 = int(d_count[0].get())
+    selected_2 = d_out.get()[:count_2]
+
+    # Verify correct results
+    assert count_1 == 14  # Values 6-19
+    assert count_2 == 7  # Values 13-19 (> max(3,7,12))
+    assert list(selected_1) == list(range(6, 20))
+    assert list(selected_2) == list(range(13, 20))
