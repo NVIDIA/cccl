@@ -14,8 +14,7 @@ try:
 except ImportError:
     from cuda.core.experimental import Device
 
-
-from ._utils.protocols import get_dtype, is_device_array
+from ._utils.protocols import get_dtype, get_shape, is_device_array
 from .typing import DeviceArrayLike, GpuStruct
 
 # Registry thet maps type -> key function for extracting cache key
@@ -145,20 +144,16 @@ class _CacheWithRegisteredKeyFunctions:
 cache_with_registered_key_functions = _CacheWithRegisteredKeyFunctions()
 
 
-def _hash_device_array_like(value):
-    # hash based on pointer, shape, and dtype
-    ptr = value.__cuda_array_interface__["data"][0]
-    shape = value.__cuda_array_interface__["shape"]
-    dtype = value.__cuda_array_interface__["typestr"]
-    return hash((ptr, shape, dtype))
-
-
 def _make_hashable(value):
-    # Duck-type check for numba.cuda.CUDADispatcher (has py_func attribute)
+    # duck-type check for numba.cuda.CUDADispatcher:
     if hasattr(value, "py_func") and callable(value.py_func):
         return CachableFunction(value.py_func)
     elif is_device_array(value):
-        return _hash_device_array_like(value)
+        # Ops with device arrays in globals/closures will be handled
+        # by stateful op machinery, which enables updating the state
+        # (pointers). Thus, we only cache on the dtype and shape of
+        # the referenced array, but not its pointer.
+        return (get_dtype(value), get_shape(value))
     elif isinstance(value, (list, tuple)):
         return tuple(_make_hashable(v) for v in value)
     elif isinstance(value, dict):
@@ -196,6 +191,9 @@ class CachableFunction:
     ignoring other attributes such as their names or docstrings.
     """
 
+    # TODO: eventually, move this class to _jit.py as it only
+    # has to do with caching of Python callables that will be
+    # JIT compiled.
     def __init__(self, func):
         self._func = func
 
