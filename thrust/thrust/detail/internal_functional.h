@@ -23,6 +23,7 @@
 #include <thrust/iterator/detail/tuple_of_iterator_references.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/__functional/equal_to_value.h>
 #include <cuda/__functional/address_stability.h>
 #include <cuda/__iterator/discard_iterator.h>
 #include <cuda/__iterator/tabulate_output_iterator.h>
@@ -56,24 +57,8 @@ struct predicate_to_integral
   }
 };
 
-// note that equal_to_value does not force conversion from T2 -> T1 as equal_to does
-template <typename T2>
-struct equal_to_value
-{
-  T2 rhs;
-
-  // need this ctor for nvcc 12.0 + clang14 to make copy ctor of not_fn_t<equal_to_value> work. Check test:
-  // thrust.cpp.cuda.cpp20.test.remove.
-  _CCCL_HOST_DEVICE equal_to_value(const T2& rhs)
-      : rhs(rhs)
-  {}
-
-  template <typename T1>
-  _CCCL_HOST_DEVICE bool operator()(const T1& lhs) const
-  {
-    return lhs == rhs;
-  }
-};
+template <typename T>
+struct equal_to_value = ::cuda::__equal_to_value<T>;
 
 template <typename Predicate>
 struct tuple_binary_predicate
