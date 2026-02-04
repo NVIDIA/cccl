@@ -16,6 +16,8 @@
 #include <cuda/std/__algorithm/upper_bound.h>
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__cccl/visibility.h>
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
@@ -61,11 +63,11 @@ struct schwarz_scan_op
     {
       return o2;
     }
-    const auto o2_value    = get_value(::cuda::std::move(o2));
+    const auto o2_value    = get_value(o2);
     const auto o1_value    = get_value(o1);
     const ValueT res_value = scan_op(o1_value, o2_value);
 
-    return make_value_flag(res_value, get_flag(::cuda::std::move(o1)));
+    return make_value_flag(res_value, get_flag(o1));
   }
 };
 
@@ -139,6 +141,9 @@ struct multi_segmented_iterator
   using reference             = void;
   using pointer               = void;
 
+  static_assert(::cuda::std::is_convertible_v<::cuda::std::invoke_result_t<WriteTransformT, underlying_value_type, bool>,
+                                              underlying_value_type>,
+                "Write transform function return value must be convertible to underlying iterator value type");
   static_assert(::cuda::std::is_same_v<difference_type, typename SpanT::value_type>, "types are inconsistent");
 
   struct __mapping_proxy
@@ -214,7 +219,11 @@ struct multi_segmented_iterator
 
 private:
   // Given ordinal logical position in the sequence of input segments comprising several segments,
-  // return the segment elements is a part of, and relative position within that segment
+  // return the segment the element is a part of, and its relative position within that segment.
+
+  // This comment applies to both linear_search and binary search functions below:
+  //    m_offsets views into array of non-negative non-decreasing values, obtained as
+  //    prefix sum of segment sizes. Expectation: 0 <= pos < last element of m_offsets
 
   // Linear search
   _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::tuple<int, difference_type> locate_linear_search(difference_type n) const
