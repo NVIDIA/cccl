@@ -584,6 +584,55 @@ UNITTEST("green context exec_place equality with green_ctx_data_place flag")
   // Affine data place should be an extension when use_green_ctx_data_place=true
   EXPECT(p0a.affine_data_place().is_extension());
 };
+
+UNITTEST("green context exec_place and data_place with different data place modes")
+{
+  async_resources_handle handle;
+  auto gc_helper = handle.get_gc_helper(0, 8);
+
+  if (gc_helper->get_count() < 2)
+  {
+    return;
+  }
+
+  auto gc0_view = gc_helper->get_view(0);
+  auto gc1_view = gc_helper->get_view(1);
+
+  // Create exec_places for same green context with different use_green_ctx_data_place settings
+  auto ep0_device_affine = exec_place::green_ctx(gc0_view, false); // affine = device data place
+  auto ep0_green_affine  = exec_place::green_ctx(gc0_view, true); // affine = green ctx data place
+
+  // Same green context exec_places should be equal regardless of data place mode
+  // (exec_place identity is about the green context, not the affine data place)
+  EXPECT(ep0_device_affine == ep0_green_affine);
+
+  // But their affine data places should be different
+  EXPECT(ep0_device_affine.affine_data_place() != ep0_green_affine.affine_data_place());
+  EXPECT(!ep0_device_affine.affine_data_place().is_extension());
+  EXPECT(ep0_green_affine.affine_data_place().is_extension());
+
+  // Different green contexts should NOT be equal, regardless of data place mode
+  auto ep1_device_affine = exec_place::green_ctx(gc1_view, false);
+  auto ep1_green_affine  = exec_place::green_ctx(gc1_view, true);
+
+  EXPECT(ep0_device_affine != ep1_device_affine);
+  EXPECT(ep0_device_affine != ep1_green_affine);
+  EXPECT(ep0_green_affine != ep1_device_affine);
+  EXPECT(ep0_green_affine != ep1_green_affine);
+
+  // Test green context data places directly
+  auto dp0 = data_place::green_ctx(gc0_view);
+  auto dp1 = data_place::green_ctx(gc1_view);
+
+  // Different green context data places should NOT be equal
+  EXPECT(dp0 != dp1);
+
+  // Green context data place should NOT equal regular device data place
+  EXPECT(dp0 != data_place::device(0));
+
+  // Green context data place should equal affine of exec_place with use_green_ctx_data_place=true
+  EXPECT(dp0 == ep0_green_affine.affine_data_place());
+};
 #  endif // UNITTESTED_FILE
 } // end namespace cuda::experimental::stf
 
