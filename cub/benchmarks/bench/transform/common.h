@@ -40,8 +40,7 @@ struct policy_selector
 #    ifdef TUNE_ITEMS_PER_THREAD_NO_INPUT
     policy.items_per_thread_no_input = TUNE_ITEMS_PER_THREAD_NO_INPUT;
 #    endif // TUNE_ITEMS_PER_THREAD_NO_INPUT
-  };
-  return {min_bytes_in_flight, algorithm, policy, {}, {}};
+    return {min_bytes_in_flight, algorithm, policy, {}, {}};
 #  elif TUNE_ALGORITHM == 1
     constexpr auto algorithm = cub::detail::transform::Algorithm::vectorized;
     auto policy              = cub::detail::transform::vectorized_policy{};
@@ -51,8 +50,7 @@ struct policy_selector
 #    ifdef TUNE_ITEMS_PER_THREAD_NO_INPUT
     policy.prefetch_items_per_thread_no_input = TUNE_ITEMS_PER_THREAD_NO_INPUT;
 #    endif // TUNE_ITEMS_PER_THREAD_NO_INPUT
-  };
-  return {min_bytes_in_flight, algorithm, {}, policy, {}};
+    return {min_bytes_in_flight, algorithm, {}, policy, {}};
 #  elif TUNE_ALGORITHM == 2
     constexpr auto algorithm   = cub::detail::transform::Algorithm::memcpy_async;
     auto policy                = cub::detail::transform::async_copy_policy{};
@@ -70,9 +68,8 @@ struct policy_selector
 #  else // TUNE_ALGORITHM
 #    error Policy hub does not yet implement the specified value for algorithm
 #  endif // TUNE_ALGORITHM
-}
-}
-;
+  }
+};
 #endif // !TUNE_BASE
 
 template <typename OffsetT, typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename TransformOp>
