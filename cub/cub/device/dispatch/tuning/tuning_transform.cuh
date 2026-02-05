@@ -91,11 +91,13 @@ struct prefetch_policy
   int items_per_thread_no_input = 2; // when there are no input iterators, the kernel is just filling
   int min_items_per_thread      = 1;
   int max_items_per_thread      = 32;
+  int unroll_factor             = -1; // -1 means we leave it to the compiler
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator==(const prefetch_policy& lhs, const prefetch_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.items_per_thread_no_input == rhs.items_per_thread_no_input
-        && lhs.min_items_per_thread == rhs.min_items_per_thread && lhs.max_items_per_thread == rhs.max_items_per_thread;
+        && lhs.min_items_per_thread == rhs.min_items_per_thread && lhs.max_items_per_thread == rhs.max_items_per_thread
+        && lhs.unroll_factor == rhs.unroll_factor;
   }
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const prefetch_policy& lhs, const prefetch_policy& rhs)
@@ -106,9 +108,11 @@ struct prefetch_policy
 #if !_CCCL_COMPILER(NVRTC)
   friend ::std::ostream& operator<<(::std::ostream& os, const prefetch_policy& policy)
   {
-    return os << "prefetch_policy { .block_threads = " << policy.block_threads << ", .items_per_thread_no_input = "
-              << policy.items_per_thread_no_input << ", .min_items_per_thread = " << policy.min_items_per_thread
-              << ", .max_items_per_thread = " << policy.max_items_per_thread << " }";
+    return os
+        << "prefetch_policy { .block_threads = " << policy.block_threads << ", .items_per_thread_no_input = "
+        << policy.items_per_thread_no_input << ", .min_items_per_thread = " << policy.min_items_per_thread
+        << ", .max_items_per_thread = " << policy.max_items_per_thread << ", .unroll_factor = " << policy.unroll_factor
+        << " }";
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
@@ -146,11 +150,14 @@ struct async_copy_policy
   // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
   int min_items_per_thread = 1;
   int max_items_per_thread = 32;
+  // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
+  int unroll_factor = 1;
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator==(const async_copy_policy& lhs, const async_copy_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.bulk_copy_alignment == rhs.bulk_copy_alignment
-        && lhs.min_items_per_thread == rhs.min_items_per_thread && lhs.max_items_per_thread == rhs.max_items_per_thread;
+        && lhs.min_items_per_thread == rhs.min_items_per_thread && lhs.max_items_per_thread == rhs.max_items_per_thread
+        && lhs.unroll_factor == rhs.unroll_factor;
   }
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const async_copy_policy& lhs, const async_copy_policy& rhs)
@@ -161,9 +168,11 @@ struct async_copy_policy
 #if !_CCCL_COMPILER(NVRTC)
   friend ::std::ostream& operator<<(::std::ostream& os, const async_copy_policy& policy)
   {
-    return os << "async_copy_policy { .block_threads = " << policy.block_threads << ", .bulk_copy_alignment = "
-              << policy.bulk_copy_alignment << ", .min_items_per_thread = " << policy.min_items_per_thread
-              << ", .max_items_per_thread = " << policy.max_items_per_thread << " }";
+    return os
+        << "async_copy_policy { .block_threads = " << policy.block_threads << ", .bulk_copy_alignment = "
+        << policy.bulk_copy_alignment << ", .min_items_per_thread = " << policy.min_items_per_thread
+        << ", .max_items_per_thread = " << policy.max_items_per_thread << ", .unroll_factor = " << policy.unroll_factor
+        << " }";
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
