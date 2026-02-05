@@ -95,6 +95,7 @@ struct user_policy_hub_t
     cub::detail::MemBoundScaling<Nominal4ByteBlockThreads,
                                  Nominal4ByteItemsPerThread,
                                  segmented_scan_compute_t<ComputeT, MaxSegmentsPerBlock>>>;
+
   template <int Nominal4ByteBlockThreads,
             int Nominal4ByteItemsPerThread,
             typename ComputeT,
@@ -125,8 +126,8 @@ struct user_policy_hub_t
     LoadModifier,
     cub::detail::MemBoundScaling<Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, ComputeT>>;
 
-  using base_block_level_policy_t =
-    typename cub::detail::segmented_scan::policy_hub<void, void, AccumT, void, void>::MaxPolicy::segmented_scan_policy_t;
+  using base_block_level_policy_t = typename cub::detail::segmented_scan::policy_hub<void, void, AccumT, void, void>::
+    MaxPolicy::block_segmented_scan_policy_t;
 
   using base_warp_level_policy_t = typename cub::detail::segmented_scan::policy_hub<void, void, AccumT, void, void>::
     MaxPolicy::warp_segmented_scan_policy_t;
@@ -136,7 +137,7 @@ struct user_policy_hub_t
 
   struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
   {
-    using segmented_scan_policy_t = block_level_agent_policy_t<
+    using block_segmented_scan_policy_t = block_level_agent_policy_t<
       128,
       ItemsPerThread,
       AccumT,

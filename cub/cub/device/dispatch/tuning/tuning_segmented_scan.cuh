@@ -35,50 +35,44 @@ namespace detail::segmented_scan
 // policy wrapper for block-granularity agent
 
 template <typename PolicyT, typename = void, typename = void>
-struct segmented_scan_policy_wrapper : PolicyT
+struct block_segmented_scan_policy_wrapper : PolicyT
 {
-  CUB_RUNTIME_FUNCTION segmented_scan_policy_wrapper(PolicyT base)
+  CUB_RUNTIME_FUNCTION block_segmented_scan_policy_wrapper(PolicyT base)
       : PolicyT(base)
   {}
 };
 
 template <typename StaticPolicyT>
-struct segmented_scan_policy_wrapper<
+struct block_segmented_scan_policy_wrapper<
   StaticPolicyT,
-  ::cuda::std::void_t<decltype(StaticPolicyT::segmented_scan_policy_t::load_modifier),
-                      decltype(StaticPolicyT::segmented_scan_policy_t::max_segments_per_block)>> : StaticPolicyT
+  ::cuda::std::void_t<decltype(StaticPolicyT::block_segmented_scan_policy_t::load_modifier),
+                      decltype(StaticPolicyT::block_segmented_scan_policy_t::max_segments_per_block)>> : StaticPolicyT
 {
-  CUB_RUNTIME_FUNCTION segmented_scan_policy_wrapper(StaticPolicyT base)
+  CUB_RUNTIME_FUNCTION block_segmented_scan_policy_wrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
-  CUB_RUNTIME_FUNCTION static constexpr auto SegmentedScan()
+  CUB_RUNTIME_FUNCTION static constexpr auto Config()
   {
-    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::segmented_scan_policy_t());
+    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::block_segmented_scan_policy_t());
   }
 
   CUB_RUNTIME_FUNCTION static constexpr CacheLoadModifier LoadModifier()
   {
-    return StaticPolicyT::segmented_scan_policy_t::load_modifier;
+    return StaticPolicyT::block_segmented_scan_policy_t::load_modifier;
   }
 
   CUB_RUNTIME_FUNCTION static constexpr int WorkersPerBlock()
   {
     return 1;
   }
-
-  CUB_RUNTIME_FUNCTION constexpr void CheckLoadModifier()
-  {
-    static_assert(LoadModifier() != CacheLoadModifier::LOAD_LDG,
-                  "The memory consistency model does not apply to texture "
-                  "accesses");
-  }
 };
 
 template <typename PolicyT>
-CUB_RUNTIME_FUNCTION segmented_scan_policy_wrapper<PolicyT> make_segmented_scan_policy_wrapper(PolicyT policy)
+CUB_RUNTIME_FUNCTION block_segmented_scan_policy_wrapper<PolicyT>
+make_block_segmented_scan_policy_wrapper(PolicyT policy)
 {
-  return segmented_scan_policy_wrapper<PolicyT>{policy};
+  return block_segmented_scan_policy_wrapper<PolicyT>{policy};
 }
 
 // policy wrapper for warp-granularity agent
@@ -95,13 +89,13 @@ template <typename StaticPolicyT>
 struct warp_segmented_scan_policy_wrapper<
   StaticPolicyT,
   ::cuda::std::void_t<decltype(StaticPolicyT::warp_segmented_scan_policy_t::load_modifier),
-                      decltype(StaticPolicyT::warp_segmented_scan_policy_t::segments_per_warp)>> : StaticPolicyT
+                      decltype(StaticPolicyT::warp_segmented_scan_policy_t::max_segments_per_warp)>> : StaticPolicyT
 {
   CUB_RUNTIME_FUNCTION warp_segmented_scan_policy_wrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
-  CUB_RUNTIME_FUNCTION static constexpr auto SegmentedScan()
+  CUB_RUNTIME_FUNCTION static constexpr auto Config()
   {
     return cub::detail::MakePolicyWrapper(typename StaticPolicyT::warp_segmented_scan_policy_t());
   }
@@ -113,19 +107,14 @@ struct warp_segmented_scan_policy_wrapper<
 
   CUB_RUNTIME_FUNCTION static constexpr int WorkersPerBlock()
   {
+    static_assert(0 == (int(StaticPolicyT::warp_segmented_scan_policy_t::BLOCK_THREADS) % cub::detail::warp_threads),
+                  "Block size must be divisible by warp size");
     return (int(StaticPolicyT::warp_segmented_scan_policy_t::BLOCK_THREADS) >> cub::detail::log2_warp_threads);
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr int SegmentsPerWarp()
+  CUB_RUNTIME_FUNCTION static constexpr int MaxSegmentsPerWarp()
   {
-    return StaticPolicyT::warp_segmented_scan_policy_t::segments_per_warp;
-  }
-
-  CUB_RUNTIME_FUNCTION constexpr void CheckLoadModifier()
-  {
-    static_assert(LoadModifier() != CacheLoadModifier::LOAD_LDG,
-                  "The memory consistency model does not apply to texture "
-                  "accesses");
+    return StaticPolicyT::warp_segmented_scan_policy_t::max_segments_per_warp;
   }
 };
 
@@ -154,7 +143,7 @@ struct thread_segmented_scan_policy_wrapper<
       : StaticPolicyT(base)
   {}
 
-  CUB_RUNTIME_FUNCTION static constexpr auto SegmentedScan()
+  CUB_RUNTIME_FUNCTION static constexpr auto Config()
   {
     return cub::detail::MakePolicyWrapper(typename StaticPolicyT::thread_segmented_scan_policy_t());
   }
@@ -168,18 +157,6 @@ struct thread_segmented_scan_policy_wrapper<
   {
     return (int(StaticPolicyT::thread_segmented_scan_policy_t::BLOCK_THREADS));
   }
-
-  CUB_RUNTIME_FUNCTION static constexpr int SegmentsPerThread()
-  {
-    return StaticPolicyT::thread_segmented_scan_policy_t::segments_per_thread;
-  }
-
-  CUB_RUNTIME_FUNCTION constexpr void CheckLoadModifier()
-  {
-    static_assert(LoadModifier() != CacheLoadModifier::LOAD_LDG,
-                  "The memory consistency model does not apply to texture "
-                  "accesses");
-  }
 };
 
 template <typename PolicyT>
@@ -187,6 +164,61 @@ CUB_RUNTIME_FUNCTION thread_segmented_scan_policy_wrapper<PolicyT>
 make_thread_segmented_scan_policy_wrapper(PolicyT policy)
 {
   return thread_segmented_scan_policy_wrapper<PolicyT>{policy};
+}
+
+// policy wrapper for segmented_scan, comprising multiple agents
+
+template <typename PolicyT, typename = void, typename = void>
+struct segmented_scan_policy_wrapper : PolicyT
+{
+  CUB_RUNTIME_FUNCTION segmented_scan_policy_wrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct segmented_scan_policy_wrapper<StaticPolicyT,
+                                     ::cuda::std::void_t<typename StaticPolicyT::block_segmented_scan_policy_t,
+                                                         typename StaticPolicyT::warp_segmented_scan_policy_t,
+                                                         typename StaticPolicyT::thread_segmented_scan_policy_t>>
+    : StaticPolicyT
+{
+  static_assert(::cuda::std::is_default_constructible_v<StaticPolicyT>,
+                "A default-constructible static policy type is required");
+
+  CUB_RUNTIME_FUNCTION segmented_scan_policy_wrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  CUB_RUNTIME_FUNCTION static constexpr auto BlockWorkerSegmentedScan()
+  {
+    return make_block_segmented_scan_policy_wrapper(StaticPolicyT());
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr auto WarpWorkerSegmentedScan()
+  {
+    return make_warp_segmented_scan_policy_wrapper(StaticPolicyT());
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr auto ThreadWorkerSegmentedScan()
+  {
+    return make_thread_segmented_scan_policy_wrapper(StaticPolicyT());
+  }
+
+  CUB_RUNTIME_FUNCTION constexpr void CheckLoadModifier()
+  {
+    static_assert((StaticPolicyT::block_segmented_scan_policy_t::load_modifier != CacheLoadModifier::LOAD_LDG)
+                    && (StaticPolicyT::warp_segmented_scan_policy_t::load_modifier != CacheLoadModifier::LOAD_LDG)
+                    && (StaticPolicyT::thread_segmented_scan_policy_t::load_modifier != CacheLoadModifier::LOAD_LDG),
+                  "The memory consistency model does not apply to texture "
+                  "accesses");
+  }
+};
+
+template <typename PolicyT>
+CUB_RUNTIME_FUNCTION segmented_scan_policy_wrapper<PolicyT> make_segmented_scan_policy_wrapper(PolicyT policy)
+{
+  return segmented_scan_policy_wrapper<PolicyT>{policy};
 }
 
 template <typename InputValueT, typename OutputValueT, typename AccumT, typename OffsetT, typename ScanOpT>
@@ -204,7 +236,7 @@ public:
 
   struct default_policy
   {
-    using segmented_scan_policy_t = agent_segmented_scan_policy_t<
+    using block_segmented_scan_policy_t = agent_segmented_scan_policy_t<
       128,
       7,
       AccumT,
