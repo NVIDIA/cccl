@@ -8,85 +8,129 @@
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/__functional/equal_to_value.h>
+// <cuda/functional>
 
 // equal_to_value
 
-#include <cuda/__functional/equal_to_value.h>
+#include <cuda/functional>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
-struct dummy
+// Dummy comparable type
+struct ComparisonObject
 {
-  friend constexpr bool operator==(const dummy&, const dummy&)
+  int value;
+
+  __host__ __device__ friend bool operator==(const ComparisonObject& lhs, const ComparisonObject& rhs)
   {
-    return true;
+    return lhs.value == rhs.value;
   }
 };
 
-int main(int, char**)
+// Test suit for numeric types
+__host__ __device__ constexpr bool test_numeric_types()
 {
-  // +ve value
+  // integral values
   {
     const cuda::__equal_to_value<int> eq(1);
-    assert(eq(1));
-    assert(!eq(2));
+    static_assert(eq(1) == true, "");
+    static_assert(eq(2) == false, "");
   }
 
-  // zero value
-  {
-    const cuda::__equal_to_value<int> eq(0);
-    assert(eq(0));
-    assert(!eq(1));
-  }
-
-  // -ve value
-  {
-    const cuda::__equal_to_value<int> eq(-1);
-    assert(eq(-1));
-    assert(!eq(0));
-  }
-
-  // floating point value
+  // floating point values
   {
     const cuda::__equal_to_value<double> eq(3.14);
-    assert(eq(3.14));
-    assert(!eq(2.71));
+    static_assert(eq(3.14) == true, "");
+    static_assert(eq(2.71) == false, "");
   }
 
-  // pointer value
+  // pointer values
   {
     int x;
     const cuda::__equal_to_value<int*> eq(&x);
-    assert(eq(&x));
-    assert(!eq(nullptr));
+    static_assert(eq(&x) == true, "");
+    static_assert(eq(nullptr) == false, "");
   }
 
-  // Heterogeneous comparison
-  {
-    const cuda::__equal_to_value<int> eq(42);
-    assert(eq(42.0));
-    assert(!eq(43.0));
-    const cuda::__equal_to_value<double> eqd(42.0);
-    assert(eqd(42));
-    assert(!eqd(43));
-  }
+  return true;
+}
 
-  // User-defined type with operator==
-  {
-    const dummy a;
-    const dummy b;
-    const cuda::__equal_to_value<dummy> eq(a);
-    assert(eq(b));
-  }
+// Test suit for heterogeneous comparisons
+__host__ __device__ constexpr bool test_heterogeneous_comparisons()
+{
+  const cuda::__equal_to_value<int> eq(42);
+  static_assert(eq(42.0) == true, "");
+  static_assert(eq(43.0) == false, "");
 
-  // CTAD
-  {
-    const cuda::__equal_to_value eq(42);
-    static_assert(cuda::std::is_same_v<decltype(eq), const cuda::__equal_to_value<int>>, "");
-    assert(eq(42));
-    assert(!eq(43));
-  }
+  const cuda::__equal_to_value<double> eqd(42.0);
+  static_assert(eqd(42) == true, "");
+  static_assert(eqd(43) == false, "");
+
+  return true;
+}
+
+// Test suit for user-defined types
+__host__ __device__ constexpr bool test_user_defined_types()
+{
+  const ComparisonObject a{42};
+  const ComparisonObject b{42};
+  const ComparisonObject c{43};
+
+  const cuda::__equal_to_value<ComparisonObject> eq(a);
+  static_assert(eq(b) == true, "");
+  static_assert(eq(c) == false, "");
+
+  return true;
+}
+
+// Test suit for CTAD
+__host__ __device__ constexpr bool test_ctad()
+{
+  // built-in types
+  const cuda::__equal_to_value eq(42);
+  static_assert(cuda::std::is_same_v<decltype(eq), const cuda::__equal_to_value<int>>, "");
+  static_assert(eq(42) == true, "");
+  static_assert(eq(43) == false, "");
+
+  // user-defined types
+  const ComparisonObject obj{42};
+  const cuda::__equal_to_value eq_obj(obj);
+  static_assert(cuda::std::is_same_v<decltype(eq_obj), const cuda::__equal_to_value<ComparisonObject>>, "");
+  static_assert(eq_obj(obj) == true, "");
+  static_assert(eq_obj(ComparisonObject{43}) == false, "");
+
+  return true;
+}
+
+// Test suit for noexcept
+__host__ __device__ constexpr bool test_noexcept()
+{
+  // built-in types
+  const cuda::__equal_to_value<int> eq(42);
+  static_assert(noexcept(eq(42)) == true, "");
+  static_assert(eq(42) == true, "");
+
+  // user-defined types
+  const ComparisonObject obj{42};
+  const cuda::__equal_to_value<ComparisonObject> eq_obj(obj);
+  static_assert(noexcept(eq_obj(obj)) == true, "");
+  static_assert(eq_obj(obj) == true, "");
+
+  return true;
+}
+
+// Run all test suits
+__host__ __device__ constexpr bool test()
+{
+  return test_numeric_types() && test_heterogeneous_comparisons() && test_user_defined_types() && test_ctad()
+      && test_noexcept();
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test(), "");
+  return 0;
 }
