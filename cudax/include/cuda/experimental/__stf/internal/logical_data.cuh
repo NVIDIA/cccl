@@ -1482,7 +1482,7 @@ public:
       // typically change the current device if needed, or select an
       // appropriate affinity mask.
 
-      exec_place e_place_n = memory_node.get_affine_exec_place();
+      exec_place e_place_n = memory_node.affine_exec_place();
 
       auto saved_place = e_place_n.activate();
 
@@ -1732,7 +1732,7 @@ inline void reserved::logical_data_untyped_impl::erase()
 
       data_instance& ref_instance  = get_data_instance(ref_id);
       const data_place& ref_dplace = ref_instance.get_dplace();
-      auto e                       = ref_dplace.get_affine_exec_place();
+      auto e                       = ref_dplace.affine_exec_place();
       l.reconstruct_after_redux(ctx, ref_id, e, wb_prereqs);
 
       h_state.current_mode = access_mode::none;
