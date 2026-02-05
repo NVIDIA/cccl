@@ -37,7 +37,7 @@ template <typename ChainedPolicyT,
           typename AccumT,
           bool ForceInclusive,
           typename ActualInitValueT = typename InitValueT::value_type>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLOCK_THREADS))
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::block_segmented_scan_policy_t::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void device_segmented_scan_kernel(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -49,7 +49,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLO
     InitValueT init_value,
     int num_segments_per_worker)
 {
-  using policy_t = typename ChainedPolicyT::ActivePolicy::segmented_scan_policy_t;
+  using policy_t = typename ChainedPolicyT::ActivePolicy::block_segmented_scan_policy_t;
 
   using agent_t = cub::detail::segmented_scan::agent_segmented_scan<
     policy_t,
@@ -172,7 +172,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t
   }
   else
   {
-    // agent consumes interleaved segments, to improve CTA' memory access locality
+    // Agent consumes interleaved segments to improve CTA' memory access locality
 
     // agent accesses offset iterators with index: thread_work_id = chunk_id * worker_thread_count + lane_id;
     // for 0 <= chunk_id < ::cuda::ceil_div<unsigned>(n_segments, worker_thread_count)
@@ -240,6 +240,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::thread_segmented_scan_policy
   const ActualInitValueT _init_value = init_value;
 
   _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments to be processed by thread must be positive");
+
+  // Agent consumes interleaved segments to improve CTA' memory access locality
 
   agent_t agent(
     temp_storage, d_in, d_out, begin_offset_d_in, end_offset_d_in, begin_offset_d_out, n_segments, scan_op, _init_value);

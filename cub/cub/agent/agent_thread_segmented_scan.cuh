@@ -254,7 +254,9 @@ struct agent_thread_segmented_scan
       , initial_value(initial_value)
   {}
 
-  //! @brief
+  //! @brief consume given number of segments per thread using double-nested loop, i.e.,
+  //! iterating over segments, and then iterating within the segment in chunks of items_per_thread
+  //! This approach is not efficient when segment size is smaller than items_per_thread.
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_range_one_segment_at_a_time(int segments_per_thread)
   {
     constexpr auto segments_per_block = static_cast<OffsetT>(block_threads * segments_per_thread);
@@ -332,14 +334,10 @@ struct agent_thread_segmented_scan
     }
   }
 
-  //! @brief
+  //! @brief consume given number of segments per thread using multi_segment processing and augmented
+  //! scan operation
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_range_multi_segment(int segments_per_thread)
   {
-    // if (threadIdx.x == 0 && blockIdx.x == 0)
-    // {
-    //   printf("segments_per_thread = %d, itp: %d\n", segments_per_thread, items_per_thread);
-    // }
-
     const auto segments_per_block = static_cast<OffsetT>(block_threads * segments_per_thread);
     const OffsetT thread_work_id0 =
       static_cast<OffsetT>(blockIdx.x) * segments_per_block + static_cast<OffsetT>(threadIdx.x);
@@ -351,8 +349,15 @@ struct agent_thread_segmented_scan
     multi_segmented_seq_iterator it{
       segments_per_thread, d_inp_begin_offset, d_inp_end_offset, d_out_begin_offset, n_segments, get_work_id};
 
+    using multi_segment_helpers::augmented_value_t;
+    using multi_segment_helpers::get_flag;
+    using multi_segment_helpers::get_value;
+    using multi_segment_helpers::make_value_flag;
+
     using augmented_scan_op_t = multi_segment_helpers::schwarz_scan_op<AccumT, bool, ScanOpT>;
     using hv_t                = typename augmented_scan_op_t::fv_t;
+
+    static_assert(::cuda::std::is_same_v<hv_t, augmented_value_t<AccumT, bool>>);
 
     augmented_scan_op_t augmented_scan_op{scan_op};
 
@@ -372,22 +377,22 @@ struct agent_thread_segmented_scan
         {
           const OffsetT inp_offset = it.get_input_offset();
           flags[k]                 = it.get_head_flag();
-          items[k]                 = multi_segment_helpers::make_value_flag(d_in[inp_offset], flags[k]);
+          items[k]                 = make_value_flag(d_in[inp_offset], flags[k]);
           out_offsets[k]           = it.get_output_offset();
           ++chunk_size;
           ++it;
         }
         else
         {
-          items[k] = multi_segment_helpers::make_value_flag(AccumT{}, true);
+          items[k] = make_value_flag(AccumT{}, true);
         }
       }
 
       // compute scan
       if (chunk_id == 0)
       {
-        using augmented_init_value_t                = multi_segment_helpers::augmented_value_t<InitValueT, bool>;
-        augmented_init_value_t augmented_init_value = multi_segment_helpers::make_value_flag(initial_value, false);
+        using augmented_init_value_t                = augmented_value_t<InitValueT, bool>;
+        augmented_init_value_t augmented_init_value = make_value_flag(initial_value, false);
         scan_first_tile(items, augmented_init_value, augmented_scan_op, exclusive_prefix);
       }
       else
@@ -402,7 +407,7 @@ struct agent_thread_segmented_scan
         if (k < chunk_size)
         {
           const OffsetT oo          = out_offsets[k];
-          const augmented_accum_t v = multi_segment_helpers::get_value(items[k]);
+          const augmented_accum_t v = get_value(items[k]);
           if constexpr (is_inclusive)
           {
             d_out[oo] = v;
@@ -421,7 +426,6 @@ struct agent_thread_segmented_scan
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_range(int segments_per_thread)
   {
     consume_range_multi_segment(segments_per_thread);
-    // consume_range_one_segment_at_a_time();
   }
 
 private:

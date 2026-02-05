@@ -89,7 +89,7 @@ struct agent_policy_t
 template <int BlockThreads, int ItemsPerThread, int SegmentsPerBlock = 1>
 struct policy_wrapper
 {
-  using segmented_scan_policy_t =
+  using block_segmented_scan_policy_t =
     agent_policy_t<BlockThreads,
                    ItemsPerThread,
                    cub::BLOCK_LOAD_WARP_TRANSPOSE,
