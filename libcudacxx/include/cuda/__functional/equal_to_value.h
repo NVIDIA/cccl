@@ -43,7 +43,7 @@ struct __equal_to_value
 
   [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __lhs) const noexcept
   {
-    return __lhs == __value_;
+    return static_cast<bool>(__lhs == __value_);
   }
 
   _CCCL_TEMPLATE(class _Up)
@@ -51,7 +51,7 @@ struct __equal_to_value
   [[nodiscard]] _CCCL_API constexpr bool operator()(const _Up& __lhs) const
     noexcept(::cuda::std::__is_cpp17_nothrow_equality_comparable_v<_Tp, _Up>)
   {
-    return __lhs == __value_;
+    return static_cast<bool>(__lhs == __value_);
   }
 };
 
