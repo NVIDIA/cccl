@@ -101,6 +101,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It begin, int items)
 // global memory. No intermediate copies are taken. If the parameter type of f is a reference, taking the address of the
 // parameter yields a global memory address.
 template <int BlockThreads,
+          int UnrollFactor,
           typename Offset,
           typename Predicate,
           typename F,
@@ -131,7 +132,7 @@ _CCCL_DEVICE void transform_kernel_prefetch(
   auto process_tile = [&](auto full_tile, auto... ins2 /* nvcc fails to compile when just using the captured ins */) {
     // ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost
     // bgruber: but A6000 and H100 show small gains without pragma
-    // _CCCL_PRAGMA_NOUNROLL()
+    _CCCL_PRAGMA_UNROLL(UnrollFactor)
     for (int j = 0; j < num_elem_per_thread; ++j)
     {
       const int idx = j * block_threads + threadIdx.x;
@@ -236,7 +237,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   // if we cannot vectorize or don't have a full tile, fall back to prefetch kernel
   if (!can_vectorize || valid_items != tile_size)
   {
-    transform_kernel_prefetch<block_threads>(
+    transform_kernel_prefetch<block_threads, items_per_thread / vec_size>(
       num_items,
       num_elem_per_thread_prefetch,
       always_true_predicate{},
@@ -561,6 +562,7 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
 // note: there is no PDL in this kernel since PDL is not supported below Hopper and this kernel is intended for Ampere
 template < // const transform_policy& Policy,
   int block_threads,
+  int unroll_factor,
   typename Offset,
   typename Predicate,
   typename F,
@@ -603,8 +605,7 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   // TODO(bgruber): fbusato suggests to move the valid_items and smem_base_ptrs by threadIdx.x before the loop below
 
   auto process_tile = [&](auto full_tile) {
-    // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
-    _CCCL_PRAGMA_NOUNROLL()
+    _CCCL_PRAGMA_UNROLL(unroll_factor)
     for (int j = 0; j < num_elem_per_thread; ++j)
     {
       const int idx = j * block_threads + threadIdx.x;
@@ -715,6 +716,7 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
 template < // const transform_policy& Policy,
   int block_threads,
   int bulk_copy_alignment,
+  int unroll_factor,
   typename Offset,
   typename Predicate,
   typename F,
@@ -899,8 +901,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   out += offset;
 
   auto process_tile = [&](auto full_tile) {
-    // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
-    _CCCL_PRAGMA_NOUNROLL()
+    _CCCL_PRAGMA_UNROLL(unroll_factor)
     for (int j = 0; j < num_elem_per_thread; ++j)
     {
       // TODO(bgruber): fbusato suggests to hoist threadIdx.x out of the loop below
@@ -1030,7 +1031,7 @@ __launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTE
 
   if constexpr (policy.algorithm == Algorithm::prefetch)
   {
-    transform_kernel_prefetch<policy.prefetch.block_threads>(
+    transform_kernel_prefetch<policy.prefetch.block_threads, policy.prefetch.unroll_factor>(
       num_items,
       num_elem_per_thread,
       ::cuda::std::move(pred),
@@ -1057,7 +1058,7 @@ __launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTE
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_80,
-      (transform_kernel_ldgsts</*policy*/ policy.async_copy.block_threads>(
+      (transform_kernel_ldgsts</*policy*/ policy.async_copy.block_threads, policy.async_copy.unroll_factor>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),
@@ -1069,7 +1070,9 @@ __launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTE
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_90,
-      (transform_kernel_ublkcp</*policy*/ policy.async_copy.block_threads, policy.async_copy.bulk_copy_alignment>(
+      (transform_kernel_ublkcp</*policy*/ policy.async_copy.block_threads,
+                               policy.async_copy.bulk_copy_alignment,
+                               policy.async_copy.unroll_factor>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),

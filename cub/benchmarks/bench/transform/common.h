@@ -34,34 +34,45 @@ struct policy_selector
       cub::detail::transform::arch_to_min_bytes_in_flight(::cuda::arch_id{__CUDA_ARCH_LIST__ / 10}) + TUNE_BIF_BIAS;
 #  if TUNE_ALGORITHM == 0
     constexpr auto algorithm = cub::detail::transform::Algorithm::prefetch;
-    constexpr auto policy    = cub::detail::transform::prefetch_policy{
-      TUNE_THREADS
+    auto policy              = cub::detail::transform::prefetch_policy{};
+    policy.block_threads     = TUNE_THREADS;
+    policy.unroll_factor     = TUNE_UNROLL_FACTOR;
 #    ifdef TUNE_ITEMS_PER_THREAD_NO_INPUT
-      ,
-      TUNE_ITEMS_PER_THREAD_NO_INPUT
+    policy.items_per_thread_no_input = TUNE_ITEMS_PER_THREAD_NO_INPUT;
 #    endif // TUNE_ITEMS_PER_THREAD_NO_INPUT
-    };
-    return {min_bytes_in_flight, algorithm, policy, {}, {}};
+  };
+  return {min_bytes_in_flight, algorithm, policy, {}, {}};
 #  elif TUNE_ALGORITHM == 1
     constexpr auto algorithm = cub::detail::transform::Algorithm::vectorized;
-    constexpr auto policy    = cub::detail::transform::vectorized_policy{
-      TUNE_THREADS, (1 << TUNE_VEC_SIZE_POW2) * TUNE_VECTORS_PER_THREAD, (1 << TUNE_VEC_SIZE_POW2)};
-    return {min_bytes_in_flight, algorithm, {}, policy, {}};
+    auto policy              = cub::detail::transform::vectorized_policy{};
+    policy.block_threads     = TUNE_THREADS;
+    policy.vec_size          = (1 << TUNE_VEC_SIZE_POW2);
+    policy.items_per_thread  = policy.vec_size * TUNE_UNROLL_FACTOR;
+#    ifdef TUNE_ITEMS_PER_THREAD_NO_INPUT
+    policy.prefetch_items_per_thread_no_input = TUNE_ITEMS_PER_THREAD_NO_INPUT;
+#    endif // TUNE_ITEMS_PER_THREAD_NO_INPUT
+  };
+  return {min_bytes_in_flight, algorithm, {}, policy, {}};
 #  elif TUNE_ALGORITHM == 2
-    constexpr auto algorithm = cub::detail::transform::Algorithm::memcpy_async;
-    constexpr auto policy =
-      cub::detail::transform::async_copy_policy{TUNE_THREADS, cub::detail::transform::ldgsts_size_and_align};
+    constexpr auto algorithm   = cub::detail::transform::Algorithm::memcpy_async;
+    auto policy                = cub::detail::transform::async_copy_policy{};
+    policy.block_threads       = TUNE_THREADS;
+    policy.bulk_copy_alignment = cub::detail::transform::ldgsts_size_and_align;
+    policy.unroll_factor       = TUNE_UNROLL_FACTOR;
     return {min_bytes_in_flight, algorithm, {}, {}, policy};
 #  elif TUNE_ALGORITHM == 3
-    constexpr auto algorithm = cub::detail::transform::Algorithm::ublkcp;
-    constexpr auto policy    = cub::detail::transform::async_copy_policy{
-      TUNE_THREADS, cub::detail::transform::bulk_copy_alignment(::cuda::arch_id{__CUDA_ARCH_LIST__ / 10})};
+    constexpr auto algorithm   = cub::detail::transform::Algorithm::ublkcp;
+    auto policy                = cub::detail::transform::async_copy_policy{};
+    policy.block_threads       = TUNE_THREADS;
+    policy.bulk_copy_alignment = cub::detail::transform::bulk_copy_alignment(::cuda::arch_id{__CUDA_ARCH_LIST__ / 10});
+    policy.unroll_factor       = TUNE_UNROLL_FACTOR;
     return {min_bytes_in_flight, algorithm, {}, {}, policy};
 #  else // TUNE_ALGORITHM
 #    error Policy hub does not yet implement the specified value for algorithm
 #  endif // TUNE_ALGORITHM
-  }
-};
+}
+}
+;
 #endif // !TUNE_BASE
 
 template <typename OffsetT, typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename TransformOp>
