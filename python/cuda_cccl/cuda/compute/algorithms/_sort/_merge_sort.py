@@ -68,6 +68,7 @@ class _MergeSort:
         d_in_items: DeviceArrayLike | IteratorBase | None,
         d_out_keys: DeviceArrayLike,
         d_out_items: DeviceArrayLike | None,
+        op: Callable | OpKind | OpAdapter,
         num_items: int,
         stream=None,
     ):
@@ -81,6 +82,10 @@ class _MergeSort:
         set_cccl_iterator_state(self.d_out_keys_cccl, d_out_keys)
         if present_out_values:
             set_cccl_iterator_state(self.d_out_items_cccl, d_out_items)
+
+        # Update op state for stateful ops
+        op_adapter = make_op_adapter(op)
+        op_adapter.update_op_state(self.op_cccl)
 
         stream_handle = validate_and_get_stream(stream)
         if temp_storage is None:
@@ -172,9 +177,16 @@ def merge_sort(
     """
     sorter = make_merge_sort(d_in_keys, d_in_items, d_out_keys, d_out_items, op)
     tmp_storage_bytes = sorter(
-        None, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items, stream
+        None, d_in_keys, d_in_items, d_out_keys, d_out_items, op, num_items, stream
     )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     sorter(
-        tmp_storage, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items, stream
+        tmp_storage,
+        d_in_keys,
+        d_in_items,
+        d_out_keys,
+        d_out_items,
+        op,
+        num_items,
+        stream,
     )
