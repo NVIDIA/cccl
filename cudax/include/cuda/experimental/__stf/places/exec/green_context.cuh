@@ -91,17 +91,17 @@ public:
       return hash_all(view_.g_ctx, view_.pool, view_.devid);
     }
 
-    bool equals(const data_place_extension& other) const override
+    bool operator==(const data_place_extension& other) const override
     {
-      const auto* other_gc = dynamic_cast<const extension*>(&other);
-      if (!other_gc)
+      if (typeid(*this) != typeid(other))
       {
         return false;
       }
-      return view_ == other_gc->view_;
+      const auto& other_gc = static_cast<const extension&>(other);
+      return view_ == other_gc.view_;
     }
 
-    bool less_than(const data_place_extension& other) const override
+    bool operator<(const data_place_extension& other) const override
     {
       if (typeid(*this) != typeid(other))
       {
@@ -424,14 +424,13 @@ public:
 
     bool operator==(const exec_place::impl& rhs) const override
     {
-      // First, check if rhs is also a green context impl
-      auto other = dynamic_cast<const impl*>(&rhs);
-      if (!other)
+      if (typeid(*this) != typeid(rhs))
       {
         return false;
       }
+      const auto& other = static_cast<const impl&>(rhs);
       // Compare green context handles
-      return g_ctx == other->g_ctx;
+      return g_ctx == other.g_ctx;
     }
 
     size_t hash() const override
@@ -440,7 +439,7 @@ public:
       return ::std::hash<CUgreenCtx>()(g_ctx);
     }
 
-    bool less_than(const exec_place::impl& rhs) const override
+    bool operator<(const exec_place::impl& rhs) const override
     {
       if (typeid(*this) != typeid(rhs))
       {

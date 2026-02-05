@@ -174,7 +174,7 @@ public:
     // If both are extensions, delegate to the extension
     if (is_extension() && rhs.is_extension())
     {
-      return extension->less_than(*rhs.extension);
+      return *extension < *rhs.extension;
     }
 
     // Extensions sort after non-extensions
@@ -698,7 +698,7 @@ public:
       return affine.hash();
     }
 
-    virtual bool less_than(const impl& rhs) const
+    virtual bool operator<(const impl& rhs) const
     {
       // Different types: order by typeid
       if (typeid(*this) != typeid(rhs))
@@ -761,7 +761,7 @@ public:
   // To use in a ::std::map indexed by exec_place
   bool operator<(const exec_place& rhs) const
   {
-    return pimpl->less_than(*rhs.pimpl);
+    return *pimpl < *rhs.pimpl;
   }
 
   bool operator>(const exec_place& rhs) const
@@ -1131,7 +1131,7 @@ public:
         : exec_place::impl(data_place::host())
     {}
 
-    // less_than: base class implementation is correct (compares typeid, then device_ordinal).
+    // operator<: base class implementation is correct (compares typeid, then device_ordinal).
     // Since host is a singleton, all instances compare equal.
 
     exec_place activate() const override
@@ -1349,7 +1349,7 @@ public:
       return h;
     }
 
-    bool less_than(const exec_place::impl& rhs) const override
+    bool operator<(const exec_place::impl& rhs) const override
     {
       // Different types: order by typeid
       if (typeid(*this) != typeid(rhs))
@@ -1881,7 +1881,7 @@ inline bool data_place::operator==(const data_place& rhs) const
   if (is_extension())
   {
     _CCCL_ASSERT(devid == extension_devid, "");
-    return (rhs.devid == extension_devid && extension->equals(*rhs.extension));
+    return (rhs.devid == extension_devid && *extension == *rhs.extension);
   }
 
   return (get_grid() == rhs.get_grid() && (get_partitioner() == rhs.get_partitioner()));
