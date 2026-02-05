@@ -36,6 +36,9 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
+
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -539,3 +542,5 @@ struct DispatchScanByKey
 };
 
 CUB_NAMESPACE_END
+
+_CCCL_DIAG_POP
