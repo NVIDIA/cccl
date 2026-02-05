@@ -174,7 +174,7 @@ public:
     // If both are extensions, delegate to the extension
     if (is_extension() && rhs.is_extension())
     {
-      return extension->less_than(*rhs.extension);
+      return *extension < *rhs.extension;
     }
 
     // Extensions sort after non-extensions
@@ -1881,7 +1881,7 @@ inline bool data_place::operator==(const data_place& rhs) const
   if (is_extension())
   {
     _CCCL_ASSERT(devid == extension_devid, "");
-    return (rhs.devid == extension_devid && extension->equals(*rhs.extension));
+    return (rhs.devid == extension_devid && *extension == *rhs.extension);
   }
 
   return (get_grid() == rhs.get_grid() && (get_partitioner() == rhs.get_partitioner()));

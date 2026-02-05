@@ -71,13 +71,13 @@ public:
 
     bool operator==(const exec_place::impl& rhs) const override
     {
-      auto other = dynamic_cast<const impl*>(&rhs);
-      if (!other)
+      if (typeid(*this) != typeid(rhs))
       {
         return false;
       }
+      const auto& other = static_cast<const impl&>(rhs);
       // Compare by stream handle
-      return dstream.stream == other->dstream.stream;
+      return dstream.stream == other.dstream.stream;
     }
 
     size_t hash() const override
