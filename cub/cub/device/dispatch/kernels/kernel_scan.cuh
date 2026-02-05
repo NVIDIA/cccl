@@ -107,7 +107,7 @@ DeviceCompactInitKernel(ScanTileStateT tile_state, int num_tiles, NumSelectedIte
   }
 }
 template <typename ChainedPolicyT, typename InputIteratorT, typename OutputIteratorT, typename AccumT>
-[[nodiscard]] _CCCL_CONSTEVAL int get_device_scan_launch_bounds() noexcept
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_CONSTEVAL int get_device_scan_launch_bounds() noexcept
 {
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
   if constexpr (detail::scan::
