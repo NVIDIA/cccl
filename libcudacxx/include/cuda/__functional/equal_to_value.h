@@ -41,11 +41,6 @@ struct __equal_to_value
       : __value_(__value)
   {}
 
-  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __lhs) const noexcept
-  {
-    return static_cast<bool>(__lhs == __value_);
-  }
-
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES(::cuda::std::__is_cpp17_equality_comparable_v<_Tp, _Up>)
   [[nodiscard]] _CCCL_API constexpr bool operator()(const _Up& __lhs) const
