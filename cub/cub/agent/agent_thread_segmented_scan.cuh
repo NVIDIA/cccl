@@ -259,7 +259,7 @@ struct agent_thread_segmented_scan
   //! This approach is not efficient when segment size is smaller than items_per_thread.
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_range_one_segment_at_a_time(int segments_per_thread)
   {
-    constexpr auto segments_per_block = static_cast<OffsetT>(block_threads * segments_per_thread);
+    const auto segments_per_block = static_cast<OffsetT>(block_threads * segments_per_thread);
     const OffsetT thread_work_id0 =
       static_cast<OffsetT>(blockIdx.x) * segments_per_block + static_cast<OffsetT>(threadIdx.x);
 
@@ -280,8 +280,9 @@ struct agent_thread_segmented_scan
         augmented_accum_t items[items_per_thread];
         for (OffsetT chunk_id = 0; chunk_id < num_chunks; ++chunk_id)
         {
-          const OffsetT inp_offset = segment_beg_offset + chunk_id * max_chunk_size;
-          const OffsetT chunk_size = (::cuda::std::min) (inp_offset + max_chunk_size, segment_end_offset) - inp_offset;
+          const OffsetT chunk_beg  = segment_beg_offset + chunk_id * max_chunk_size;
+          const OffsetT chunk_end  = chunk_beg + max_chunk_size;
+          const OffsetT chunk_size = (::cuda::std::min) (chunk_end, segment_end_offset) - chunk_beg;
 
           const bool entire_tile = (chunk_size == max_chunk_size);
           // load data
@@ -290,7 +291,7 @@ struct agent_thread_segmented_scan
             _CCCL_PRAGMA_UNROLL_FULL()
             for (int k = 0; k < items_per_thread; ++k)
             {
-              items[k] = d_in[inp_offset + k];
+              items[k] = d_in[chunk_beg + k];
             }
           }
           else
@@ -298,7 +299,7 @@ struct agent_thread_segmented_scan
             _CCCL_PRAGMA_UNROLL_FULL()
             for (int k = 0; k < items_per_thread; ++k)
             {
-              items[k] = (k < chunk_size) ? d_in[inp_offset + k] : augmented_accum_t{};
+              items[k] = (k < chunk_size) ? d_in[chunk_beg + k] : augmented_accum_t{};
             }
           };
 
@@ -430,7 +431,14 @@ struct agent_thread_segmented_scan
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_range(int segments_per_thread)
   {
-    consume_range_multi_segment(segments_per_thread);
+    if (segments_per_thread == 1)
+    {
+      consume_range_one_segment_at_a_time(1);
+    }
+    else
+    {
+      consume_range_multi_segment(segments_per_thread);
+    }
   }
 
 private:
