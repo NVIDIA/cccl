@@ -1215,6 +1215,7 @@
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__cuda__stream.html">cuda::experimental::stf::exec_place_cuda_stream</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx.html">cuda::experimental::stf::exec_place_green_ctx</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__grid.html">cuda::experimental::stf::exec_place_grid</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__guard.html">cuda::experimental::stf::exec_place_guard</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__host.html">cuda::experimental::stf::exec_place_host</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1executable__graph__cache.html">cuda::experimental::stf::executable_graph_cache</a></li>
 <li class="toctree-l4"><a class="reference internal" href="cudax/api/classcuda_1_1experimental_1_1stf_1_1executable__graph__cache__stat.html">cuda::experimental::stf::executable_graph_cache_stat</a></li>
@@ -4343,6 +4344,14 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__grid.html#_CPPv4N4cuda12experimental3stf15exec_place_grid19unset_current_placeEv">cuda::experimental::stf::exec_place_grid::unset_current_place (C++ function)</a>
 </li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__guard.html#_CPPv4N4cuda12experimental3stf16exec_place_guardE">cuda::experimental::stf::exec_place_guard (C++ class)</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__guard.html#_CPPv4I00EN4cuda12experimental3stf16exec_place_guard16exec_place_guardERR1T">cuda::experimental::stf::exec_place_guard::exec_place_guard (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__guard.html#_CPPv4N4cuda12experimental3stf16exec_place_guard16exec_place_guardE10exec_place">[1]</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__guard.html#_CPPv4N4cuda12experimental3stf16exec_place_guard16exec_place_guardERK16exec_place_guard">[2]</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__guard.html#_CPPv4N4cuda12experimental3stf16exec_place_guard16exec_place_guardERR16exec_place_guard">[3]</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__guard.html#_CPPv4N4cuda12experimental3stf16exec_place_guardaSERK16exec_place_guard">cuda::experimental::stf::exec_place_guard::operator= (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__guard.html#_CPPv4N4cuda12experimental3stf16exec_place_guardaSERR16exec_place_guard">[1]</a>
+</li>
+      <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__guard.html#_CPPv4N4cuda12experimental3stf16exec_place_guardD0Ev">cuda::experimental::stf::exec_place_guard::~exec_place_guard (C++ function)</a>
+</li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__host.html#_CPPv4N4cuda12experimental3stf15exec_place_hostE">cuda::experimental::stf::exec_place_host (C++ class)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1exec__place__host.html#_CPPv4NK4cuda12experimental3stf15exec_place_host8activateEv">cuda::experimental::stf::exec_place_host::activate (C++ function)</a>
@@ -4631,12 +4640,12 @@
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4NK4cuda12experimental3stf9graph_ctxeqERK19backend_ctx_untyped">cuda::experimental::stf::graph_ctx::operator== (C++ function)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx12parallel_forE12exec_place_t1SDp4Deps">cuda::experimental::stf::graph_ctx::parallel_for (C++ function)</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx12parallel_forE13partitioner_t12exec_place_t1SDp4Deps">[1]</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx12parallel_forE15exec_place_grid1SDp4Deps">[2]</a>, <a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx12parallel_forE1SDp4Deps">[3]</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx5phaseE">cuda::experimental::stf::graph_ctx::phase (C++ enum)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx5phase9finalizedE">cuda::experimental::stf::graph_ctx::phase::finalized (C++ enumerator)</a>
 </li>
       <li><a href="cudax/api/classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#_CPPv4N4cuda12experimental3stf9graph_ctx5phase5setupE">cuda::experimental::stf::graph_ctx::phase::setup (C++ enumerator)</a>

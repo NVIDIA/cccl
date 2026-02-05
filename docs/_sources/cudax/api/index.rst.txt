@@ -43,6 +43,7 @@ Classes
 * :doc:`cuda::experimental::stf::exec_place_cuda_stream <classcuda_1_1experimental_1_1stf_1_1exec__place__cuda__stream>`
 * :doc:`cuda::experimental::stf::exec_place_green_ctx <classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx>`
 * :doc:`cuda::experimental::stf::exec_place_grid <classcuda_1_1experimental_1_1stf_1_1exec__place__grid>`
+* :doc:`cuda::experimental::stf::exec_place_guard <classcuda_1_1experimental_1_1stf_1_1exec__place__guard>`
 * :doc:`cuda::experimental::stf::exec_place_host <classcuda_1_1experimental_1_1stf_1_1exec__place__host>`
 * :doc:`cuda::experimental::stf::executable_graph_cache <classcuda_1_1experimental_1_1stf_1_1executable__graph__cache>`
 * :doc:`cuda::experimental::stf::executable_graph_cache_stat <classcuda_1_1experimental_1_1stf_1_1executable__graph__cache__stat>`
@@ -302,6 +303,7 @@ Variables
    classcuda_1_1experimental_1_1stf_1_1exec__place__cuda__stream
    classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx
    classcuda_1_1experimental_1_1stf_1_1exec__place__grid
+   classcuda_1_1experimental_1_1stf_1_1exec__place__guard
    classcuda_1_1experimental_1_1stf_1_1exec__place__host
    classcuda_1_1experimental_1_1stf_1_1executable__graph__cache
    classcuda_1_1experimental_1_1stf_1_1executable__graph__cache__stat

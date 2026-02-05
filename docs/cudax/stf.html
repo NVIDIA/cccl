@@ -1222,6 +1222,7 @@
 <li class="toctree-l4"><a class="reference internal" href="api/classcuda_1_1experimental_1_1stf_1_1exec__place__cuda__stream.html">cuda::experimental::stf::exec_place_cuda_stream</a></li>
 <li class="toctree-l4"><a class="reference internal" href="api/classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx.html">cuda::experimental::stf::exec_place_green_ctx</a></li>
 <li class="toctree-l4"><a class="reference internal" href="api/classcuda_1_1experimental_1_1stf_1_1exec__place__grid.html">cuda::experimental::stf::exec_place_grid</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/classcuda_1_1experimental_1_1stf_1_1exec__place__guard.html">cuda::experimental::stf::exec_place_guard</a></li>
 <li class="toctree-l4"><a class="reference internal" href="api/classcuda_1_1experimental_1_1stf_1_1exec__place__host.html">cuda::experimental::stf::exec_place_host</a></li>
 <li class="toctree-l4"><a class="reference internal" href="api/classcuda_1_1experimental_1_1stf_1_1executable__graph__cache.html">cuda::experimental::stf::executable_graph_cache</a></li>
 <li class="toctree-l4"><a class="reference internal" href="api/classcuda_1_1experimental_1_1stf_1_1executable__graph__cache__stat.html">cuda::experimental::stf::executable_graph_cache_stat</a></li>
@@ -3409,6 +3410,19 @@ management:</p>
 <span class="n">gc_place</span><span class="p">.</span><span class="n">deactivate</span><span class="p">(</span><span class="n">prev</span><span class="p">);</span><span class="w">  </span><span class="c1">// Restore original context</span>
 </pre></div>
 </div>
+<p><strong>RAII guard for scoped activation:</strong></p>
+<p>For exception-safe code or when you want automatic restoration, use the
+<code class="docutils literal notranslate"><span class="pre">exec_place_guard</span></code> RAII helper:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="n">exec_place_guard</span><span class="w"> </span><span class="nf">guard</span><span class="p">(</span><span class="n">exec_place</span><span class="o">::</span><span class="n">device</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
+<span class="w">    </span><span class="c1">// Device 1 is now active</span>
+<span class="w">    </span><span class="c1">// ... perform operations on device 1 ...</span>
+<span class="p">}</span>
+<span class="c1">// Previous device is automatically restored when guard goes out of scope</span>
+</pre></div>
+</div>
+<p>The guard automatically restores the previous execution place when it goes out
+of scope, making it useful for exception-safe code.</p>
 </section>
 <section id="memory-allocation-with-data-places">
 <h3>Memory allocation with data places<a class="headerlink" href="#memory-allocation-with-data-places" title="Link to this heading">#</a></h3>

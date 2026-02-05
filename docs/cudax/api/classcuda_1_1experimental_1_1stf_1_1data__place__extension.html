@@ -1222,6 +1222,7 @@
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place__cuda__stream.html">cuda::experimental::stf::exec_place_cuda_stream</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place__green__ctx.html">cuda::experimental::stf::exec_place_green_ctx</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place__grid.html">cuda::experimental::stf::exec_place_grid</a></li>
+<li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place__guard.html">cuda::experimental::stf::exec_place_guard</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place__host.html">cuda::experimental::stf::exec_place_host</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1executable__graph__cache.html">cuda::experimental::stf::executable_graph_cache</a></li>
 <li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1executable__graph__cache__stat.html">cuda::experimental::stf::executable_graph_cache_stat</a></li>
@@ -1627,7 +1628,7 @@
 
 <span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf20data_place_extension8allocateENSt9ptrdiff_tE12cudaStream_t" title="Link to this definition">#</a><br /></dt>
 <dd><p>Allocate memory for this place (raw allocation) </p>
-<p>This is the low-level allocation interface. For stream-ordered allocations (where <a class="reference internal" href="#classcuda_1_1experimental_1_1stf_1_1data__place__extension_1a38e702bb87e4abe1b8ece89da6ff0e4b"><span class="std std-ref">allocation_is_stream_ordered()</span></a> returns true), the allocation will be ordered with respect to other operations on the stream. For immediate allocations, the stream parameter is ignored.</p>
+<p>This is the low-level allocation interface. For stream-ordered allocations (where <a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place.html#classcuda_1_1experimental_1_1stf_1_1data__place__extension_1a38e702bb87e4abe1b8ece89da6ff0e4b"><span class="std std-ref">allocation_is_stream_ordered()</span></a> returns true), the allocation will be ordered with respect to other operations on the stream. For immediate allocations, the stream parameter is ignored.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
