@@ -58,7 +58,8 @@ struct predicate_to_integral
 };
 
 template <typename T>
-struct equal_to_value : ::cuda::__equal_to_value<T> {};
+struct equal_to_value : ::cuda::__equal_to_value<T>
+{};
 
 template <typename Predicate>
 struct tuple_binary_predicate
