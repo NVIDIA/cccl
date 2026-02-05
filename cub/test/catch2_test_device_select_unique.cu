@@ -62,15 +62,6 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::Unique, select_unique);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-struct equal_to_default_t
-{
-  template <typename T>
-  __host__ __device__ bool operator()(const T& a) const
-  {
-    return a == T{};
-  }
-};
-
 using all_types =
   c2h::type_list<std::uint8_t,
                  std::uint16_t,
