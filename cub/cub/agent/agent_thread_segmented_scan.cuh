@@ -287,7 +287,7 @@ struct agent_thread_segmented_scan
           // load data
           if (entire_tile)
           {
-            _CCCL_PRAGMA_UNROLL()
+            _CCCL_PRAGMA_UNROLL_FULL()
             for (int k = 0; k < items_per_thread; ++k)
             {
               items[k] = d_in[inp_offset + k];
@@ -295,7 +295,7 @@ struct agent_thread_segmented_scan
           }
           else
           {
-            _CCCL_PRAGMA_UNROLL()
+            _CCCL_PRAGMA_UNROLL_FULL()
             for (int k = 0; k < items_per_thread; ++k)
             {
               items[k] = (k < chunk_size) ? d_in[inp_offset + k] : augmented_accum_t{};
@@ -324,9 +324,13 @@ struct agent_thread_segmented_scan
           }
           else
           {
-            for (int k = 0; k < chunk_size; ++k)
+            _CCCL_PRAGMA_UNROLL()
+            for (int k = 0; k < items_per_thread; ++k)
             {
-              d_out[out_offset + k] = items[k];
+              if (k < chunk_size)
+              {
+                d_out[out_offset + k] = items[k];
+              }
             }
           };
         }
@@ -370,7 +374,7 @@ struct agent_thread_segmented_scan
     while (it)
     {
       int chunk_size = 0;
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int k = 0; k < items_per_thread; ++k)
       {
         if (it)
@@ -401,7 +405,7 @@ struct agent_thread_segmented_scan
       }
 
       // store
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int k = 0; k < items_per_thread; ++k)
       {
         if (k < chunk_size)
@@ -414,6 +418,7 @@ struct agent_thread_segmented_scan
           }
           else
           {
+            static_assert(has_init);
             d_out[oo] = (flags[k]) ? static_cast<augmented_accum_t>(initial_value) : v;
           }
         }
