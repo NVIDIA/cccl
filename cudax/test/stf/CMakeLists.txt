@@ -49,6 +49,7 @@ set(
   places/affinity_gc.cu
   places/data_place_alloc.cu
   places/data_place_vmm.cu
+  places/exec_place_guard.cu
   places/managed.cu
   places/managed_from_user.cu
   places/non_current_device.cu
