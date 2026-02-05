@@ -4,7 +4,8 @@ CUDA Runtime interactions
 =========================
 
 Some runtime objects have a non-owning ``_ref`` counterpart (for example, ``stream`` and ``stream_ref``). Prefer the
-owning type for lifetime management, and use the ``_ref`` type for code that would otherwise accept a C++ reference, but needs to interoperate with existing CUDA Runtime code.
+owning type for lifetime management, and use the ``_ref`` type for code that would otherwise accept a C++ reference but
+needs to interoperate with existing CUDA Runtime code.
 
 CCCL runtime types that wrap CUDA Runtime handles support interoperating with CUDA Runtime handles via ``get()``,
 constructors that accept native handles, ``release()``, and ``from_native_handle`` helpers. This makes it straightforward
@@ -74,4 +75,5 @@ Example: wrapping the default stream
      // Use default_stream with cccl-runtime APIs.
    }
 
-The above applies to driver API interop cases as well, where the current context is must be managed by the user instead of the current device.
+The above applies to Driver API interop cases as well, where the current context must be managed by the user rather than
+the current device setting.

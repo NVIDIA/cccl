@@ -3,6 +3,8 @@
 Events
 ======
 
+Event is a snapshot of execution state of a stream. It can be used to synchronize work submitted to a stream up to a certain point, estabilish dependency between streams or measure time passed between two events.
+
 ``cuda::event_ref``
 --------------------------------------------------
 .. _cccl-runtime-event-event-ref:
@@ -46,10 +48,9 @@ Availability: CCCL 3.1.0 / CUDA 13.1
 
    cuda::std::optional<cuda::event> query_and_record_on_stream(cuda::stream_ref stream) {
      if (stream.is_done()) {
-      return cuda::std::nullopt;
-     }
-     else {
-      return cuda::event{stream};
+       return cuda::std::nullopt;
+     } else {
+       return cuda::event{stream};
      }
    }
 

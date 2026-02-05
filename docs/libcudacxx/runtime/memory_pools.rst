@@ -3,9 +3,9 @@
 Memory Pools
 ============
 
-Memory pools provide efficient, stream-ordered memory allocation using CUDA's memory pool API. They support both synchronous and stream-ordered allocation/deallocation and can be configured with various properties and attributes.
+Memory pools provide efficient, stream-ordered memory allocation using CUDA's memory pool API. They support both synchronous and stream-ordered allocation/deallocation and can be configured with various memory spaces, properties and attributes.
 
-Memory pool objects implement the :ref:`cuda::memory_resource <libcudacxx-extended-api-memory-resources-resource>` interface with ``allocate(stream, size, alignment)`` and ``deallocate(stream, ptr, size, alignment)`` member functions. They also provide synchronous variants with ``allocate_sync(size, alignment)`` and ``deallocate_sync(ptr, size, alignment)`` member functions. For all of them the alignment argument is optional.
+Memory pool objects implement the :ref:`cuda::memory_resource <libcudacxx-extended-api-memory-resources-resource>` interface with ``allocate(stream, size, alignment)`` and ``deallocate(stream, ptr, size, alignment)`` member functions. They also provide synchronous variants with ``allocate_sync(size, alignment)`` and ``deallocate_sync(ptr, size, alignment)`` member functions. For all of them, the alignment argument is optional.
 
 For the full memory resource model and property system, see :ref:`Memory Resources (Extended API) <libcudacxx-extended-api-memory-resources>`.
 
@@ -100,7 +100,7 @@ Availability: CCCL 3.2.0 / CUDA 13.2 (requires CTK 13.0+). Not supported on Wind
 -----------------------------
 .. _cccl-runtime-memory-pools-pinned-memory-pool:
 
-``cuda::pinned_memory_pool`` allocates pinned (page-locked) host memory using CUDA's memory pool API. Pinned memory enables faster host-to-device transfers and can universally be accessed from all devices. The pool can be optionally created for a specific host NUMA node.
+``cuda::pinned_memory_pool`` allocates pinned (page-locked) host memory using CUDA's memory pool API. Pinned memory enables faster host-to-device transfers and can be accessed from all devices. The pool can be optionally created for a specific host NUMA node.
 
 Availability: CCCL 3.2.0 / CUDA 13.2 (requires CTK 12.6+)
 

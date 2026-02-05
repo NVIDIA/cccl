@@ -3,7 +3,9 @@
 Hierarchy
 =========
 
-The hierarchy API provides abstractions for representing and querying levels in CUDA thread hierarchy (grid, cluster, block, warp, thread levels). It enables compile-time and runtime queries of thread dimensions and counts across different hierarchy levels.
+The hierarchy API provides abstractions for representing and querying levels in the CUDA thread hierarchy (grid, cluster,
+block, warp, and thread levels). It enables compile-time and runtime queries of thread dimensions and counts across
+different hierarchy levels.
 
 ``cuda::hierarchy``
 -------------------

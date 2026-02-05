@@ -9,9 +9,9 @@ The buffer API provides a typed container allocated from memory resources. It ha
 ----------------
 .. _cccl-runtime-buffer-buffer:
 
-``cuda::buffer`` is a container that manages typed storage allocated from a given :ref:`memory resource <libcudacxx-extended-api-memory-resources-resource>` in stream order using a provided :ref:`stream_ref <cccl-runtime-stream-stream-ref>`. The elements are initialized during construction, which may require a kernel launch. Stream provided during construction is stored and later used for deallocation of the buffer, either explicitly or when the buffer destructor is called.
+``cuda::buffer`` is a container that manages typed storage allocated from a given :ref:`memory resource <libcudacxx-extended-api-memory-resources-resource>` in stream order using a provided :ref:`stream_ref <cccl-runtime-stream-stream-ref>`. The elements are initialized during construction, which may require a kernel launch. The stream provided during construction is stored and later used for deallocation of the buffer, either explicitly or when the buffer destructor is called.
 
-Buffer owns a copy of the memory resource, which means it must be copy constructible. In case a resource is not copy constructible, like the memory pool objects, :ref:`shared_resource <libcudacxx-extended-api-memory-resources-shared-resource>` can be used to attach shared ownership to a resource type.
+Buffer owns a copy of the memory resource, which means it must be copy-constructible. If a resource is not copy-constructible, like memory pool objects, :ref:`shared_resource <libcudacxx-extended-api-memory-resources-shared-resource>` can be used to attach shared ownership to a resource type.
 
 In addition to being typed, ``buffer`` also takes a set of :ref:`properties <libcudacxx-extended-api-memory-resources-properties>` to ensure that memory accessibility and other constraints are checked at compile time.
 
@@ -62,8 +62,8 @@ Example:
    #include <cuda/stream>
 
    void use_buffers(cuda::stream_ref stream) {
-    auto device_mr = cuda::device_default_memory_pool(cuda::devices[0]);
-    auto host_mr = cuda::pinned_default_memory_pool();
+     auto device_mr = cuda::device_default_memory_pool(cuda::devices[0]);
+     auto host_mr = cuda::pinned_default_memory_pool();
 
      cuda::device_buffer<int> dev_buf{stream, device_mr, 1000};
      cuda::host_buffer<int> host_buf{stream, host_mr, 1000};
@@ -73,7 +73,7 @@ Construction
 ------------
 .. _cccl-runtime-buffer-construction:
 
-Buffers can be constructed in several ways, for different ways to initialize the memory:
+Buffers can be constructed in several ways, depending on how you want to initialize the memory:
 
 - Empty buffer: ``buffer(stream, resource)``
 - With size (uninitialized): ``buffer(stream, resource, size, no_init)``
@@ -93,7 +93,7 @@ Example:
    #include <vector>
 
    void construct_buffers(cuda::stream_ref stream) {
-    auto mr = cuda::device_default_memory_pool(cuda::devices[0]);
+     auto mr = cuda::device_default_memory_pool(cuda::devices[0]);
 
      // Empty buffer
      cuda::device_buffer<int> buf1{stream, mr};
@@ -121,8 +121,9 @@ Buffers store a reference to the stream they were constructed with, and can have
 - ``stream()`` - Get the associated stream
 - ``set_stream(new_stream)`` - Change the associated stream (synchronizes with old stream)
 
-When the buffer is destroyed, the memory is deallocated using the stored stream. The behavior is undefined if the stream to which reference is stored in the buffer is destroyed before the buffer.
-Buffer can also be explicitly destroyed with ``destroy()`` or ``destroy(stream_ref)``, which will deallocate the memory using the provided stream.
+When the buffer is destroyed, the memory is deallocated using the stored stream. The behavior is undefined if the stream
+referenced by the buffer is destroyed before the buffer. Buffers can also be explicitly destroyed with ``destroy()`` or
+``destroy(stream_ref)``, which will deallocate the memory using the provided stream.
 
 Example:
 
@@ -134,9 +135,9 @@ Example:
    #include <cuda/stream>
 
    void manage_stream_and_deallocate() {
-    cuda::stream stream1{};
-    cuda::stream stream2{};
-    auto mr = cuda::device_default_memory_pool(cuda::devices[0]);
+     cuda::stream stream1{};
+     cuda::stream stream2{};
+     auto mr = cuda::device_default_memory_pool(cuda::devices[0]);
 
     // Allocate on stream1
     cuda::device_buffer<int> buf{stream1, mr, 1024, cuda::no_init};
@@ -153,7 +154,9 @@ Example:
 ---------------------
 .. _cccl-runtime-buffer-make-buffer:
 
-``cuda::make_buffer()`` is a factory function that creates buffers with automatic property deduction from the memory resource. It supports the same construction patterns as the buffer constructors in addiditon to an overload setting all elements of the buffer to the same value.
+``cuda::make_buffer()`` is a factory function that creates buffers with automatic property deduction from the memory
+resource. It supports the same construction patterns as the buffer constructors, in addition to an overload that sets
+all elements of the buffer to the same value.
 
 Example:
 
@@ -164,7 +167,7 @@ Example:
    #include <cuda/memory_resource>
 
    void make_buffers(cuda::stream_ref stream) {
-    auto mr = cuda::device_default_memory_pool(cuda::devices[0]);
+     auto mr = cuda::device_default_memory_pool(cuda::devices[0]);
 
      // Properties are automatically deduced from the memory resource
      // and all elements are set to 42.0f
@@ -196,12 +199,12 @@ Example:
    #include <algorithm>
 
    void iterate_buffer(cuda::stream_ref stream) {
-    auto mr = cuda::pinned_default_memory_pool();
+     auto mr = cuda::pinned_default_memory_pool();
      cuda::host_buffer<int> buf{stream, mr, {1, 2, 3, 4, 5}};
 
      // Unsynchronized element access by index
      for (cuda::std::size_t i = 0; i < buf.size(); ++i) {
-      buf.get_unsynchronized(i) += 1;
+       buf.get_unsynchronized(i) += 1;
      }
 
      // Use with algorithms

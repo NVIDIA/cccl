@@ -13,7 +13,9 @@ The launch API provides abstractions for launching CUDA kernels with a given con
 
 *Note:* Configuration won't be passed automatically into the kernel if it is an extended device lambda, it needs to be passed as the second launch function argument and as the first kernel argument.
 
-The benefit of using a callable object with a device call operator (later called a kernel functor) is that it can be have its template arguments deduced from the arguments, while a kernel function needs to be explicitly instantiated. It also allows to attach a default configuration that is later combined with the configuration passed to the launch.
+The benefit of using a callable object with a device call operator (later called a kernel functor) is that it can have its
+template arguments deduced from the arguments, while a kernel function needs to be explicitly instantiated. It also
+allows attaching a default configuration that is later combined with the configuration passed to the launch.
 
 Availability: CCCL 3.2.0 / CUDA 13.2
 
@@ -22,7 +24,6 @@ Example with kernel function:
 .. code:: cpp
 
    #include <cuda/launch>
-   #include <cuda/hierarchy>
    #include <cstdio>
 
    template <typename Configuration>
@@ -43,7 +44,6 @@ Example with kernel functor:
 .. code:: cpp
 
    #include <cuda/launch>
-   #include <cuda/hierarchy>
    #include <cstdio>
 
    struct kernel {
@@ -57,7 +57,7 @@ Example with kernel functor:
 
    void launch_kernel(cuda::stream_ref stream) {
      auto config = cuda::make_config(cuda::block_dims<128>(), cuda::grid_dims(4), cuda::cooperative_launch{});
-     // Its enough to pass the configuration object once and launch will automatically pass it into the kernel
+     // It's enough to pass the configuration object once and launch will automatically pass it into the kernel
      cuda::launch(stream, config, kernel{}, 42);
    }
 
@@ -66,7 +66,6 @@ Example with extended device lambda:
 .. code:: cpp
 
    #include <cuda/launch>
-   #include <cuda/hierarchy>
    #include <cstdio>
 
    void launch_kernel(cuda::stream_ref stream) {
@@ -76,7 +75,7 @@ Example with extended device lambda:
          printf("Hello from the GPU\n");
        }
      };
-     // notice that the configuration needs to be passed twice, unlike in other examples
+    // Note that the configuration needs to be passed twice, unlike in other examples
      cuda::launch(stream, config, lambda, config, 42);
    }
 
@@ -113,7 +112,6 @@ Example:
 .. code:: cpp
 
    #include <cuda/launch>
-   #include <cuda/hierarchy>
    #include <cooperative_groups.h>
 
    // Create config with cooperative launch

@@ -3,20 +3,23 @@
 Runtime
 =======
 
-The Runtime API provides higher-level building blocks for core CUDA functionality. It takes the existing CUDA Runtime API set and removes or replaces some problematic patterns e.g. implicit state.
-It is designed to make common patterns like resource management, work submission and memory allocation easier to express and safer
-to compose.  These APIs lower to the CUDA Driver API under the hood, but remain composable with the CUDA Runtime API by
-reusing runtime handle types (such as ``cudaStream_t``) in the interfaces. This results in an interface that applies RAII for lifetime management, but is still composable with old CUDA C++ code that manages the resources explicitly.
+The Runtime API provides higher-level building blocks for core CUDA functionality. It takes the existing CUDA Runtime API
+set and removes or replaces some problematic patterns, such as implicit state. It is designed to make common operations
+like resource management, work submission, and memory allocation easier to express and safer to compose. These APIs lower
+to the CUDA Driver API under the hood, but remain composable with the CUDA Runtime API by reusing runtime handle types
+(such as ``cudaStream_t``) in the interfaces. This results in an interface that applies RAII for lifetime management,
+while remaining composable with existing CUDA C++ code that manages resources explicitly.
 
 At a glance, the runtime layer includes:
 
-- Streams and events for non-owning and owning wrappers around CUDA runtime handles.
-- Buffers for typed, stream-ordered storage with property-checked resources.
-- Memory pools to allocate device, managed, and pinned memory with directly or through buffers.
-- Legacy memory resources as synchronous compatibility fallbacks for older toolkits.
+- Streams and events work submission and synchronization.
+- Buffers as a typed, stream-ordered storage with property-checked memory container.
+- Memory pools to allocate device, managed, and pinned memory, either directly or through buffers.
+- Launch API to configure and launch kernels.
 - Runtime algorithms like ``copy_bytes`` and ``fill_bytes`` for basic data movement.
+- Legacy memory resources as synchronous compatibility fallbacks for older toolkits.
 
-See :ref:`CUDA Runtime interactions <cccl-runtime-cudart-interactions>` if you are interested in CUDA Runtime interoperability.
+See :ref:`CUDA Runtime interactions <cccl-runtime-cudart-interactions>` if you are interested in CUDA Runtime interop.
 
 Example: vector add with buffers, pools, and launch
 ---------------------------------------------------
