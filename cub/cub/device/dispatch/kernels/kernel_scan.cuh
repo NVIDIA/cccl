@@ -15,9 +15,12 @@
 
 #include <cub/agent/agent_scan.cuh>
 #include <cub/detail/warpspeed/look_ahead.cuh>
-#include <cub/device/dispatch/kernels/kernel_scan_warpspeed.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/util_macro.cuh>
+
+#if _CCCL_CUDACC_AT_LEAST(12, 8)
+#  include <cub/device/dispatch/kernels/kernel_scan_warpspeed.cuh>
+#endif // _CCCL_CUDACC_AT_LEAST(12, 8)
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
@@ -56,12 +59,15 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
 {
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // beneficial for all problem sizes in cub.bench.scan.exclusive.sum.base
+
+#if _CCCL_CUDACC_AT_LEAST(12, 8)
   if constexpr (detail::scan::
                   scan_use_warpspeed<typename ChainedPolicyT::ActivePolicy, InputIteratorT, OutputIteratorT, AccumT>)
   {
     device_scan_init_lookahead_body(tile_state.lookahead, num_tiles);
   }
   else
+#endif // _CCCL_CUDACC_AT_LEAST(12, 8)
   {
     // Initialize tile status
     tile_state.lookback.InitializeStatus(num_tiles);
@@ -98,6 +104,21 @@ DeviceCompactInitKernel(ScanTileStateT tile_state, int num_tiles, NumSelectedIte
   if ((blockIdx.x == 0) && (threadIdx.x == 0))
   {
     *d_num_selected_out = 0;
+  }
+}
+template <typename ChainedPolicyT, typename InputIteratorT, typename OutputIteratorT, typename AccumT>
+[[nodiscard]] _CCCL_CONSTEVAL int get_device_scan_launch_bounds() noexcept
+{
+#if _CCCL_CUDACC_AT_LEAST(12, 8)
+  if constexpr (detail::scan::
+                  scan_use_warpspeed<typename ChainedPolicyT::ActivePolicy, InputIteratorT, OutputIteratorT, AccumT>)
+  {
+    return get_scan_block_threads<typename ChainedPolicyT::ActivePolicy>;
+  }
+  else
+#endif // _CCCL_CUDACC_AT_LEAST(12, 8)
+  {
+    return static_cast<int>(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS);
   }
 }
 
@@ -156,11 +177,7 @@ template <typename ChainedPolicyT,
           typename AccumT,
           bool ForceInclusive,
           typename RealInitValueT = typename InitValueT::value_type>
-__launch_bounds__(
-  detail::scan::scan_use_warpspeed<typename ChainedPolicyT::ActivePolicy, InputIteratorT, OutputIteratorT, AccumT>
-    ? get_scan_block_threads<typename ChainedPolicyT::ActivePolicy>
-    : int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS),
-  1) // TODO(bgruber): is the 1 ok?
+__launch_bounds__(get_device_scan_launch_bounds<ChainedPolicyT, InputIteratorT, OutputIteratorT, AccumT>(), 1)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanKernel(
     _CCCL_GRID_CONSTANT const InputIteratorT d_in,
     _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
@@ -172,6 +189,7 @@ __launch_bounds__(
     _CCCL_GRID_CONSTANT const int num_stages)
 {
   using ActivePolicy = typename ChainedPolicyT::ActivePolicy;
+#if _CCCL_CUDACC_AT_LEAST(12, 8)
   if constexpr (detail::scan::scan_use_warpspeed<ActivePolicy, InputIteratorT, OutputIteratorT, AccumT>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_100, ({
@@ -182,6 +200,7 @@ __launch_bounds__(
                  }));
   }
   else
+#endif // _CCCL_CUDACC_AT_LEAST(12, 8)
   {
     // Thread block type for scanning input tiles
     using AgentScanT = detail::scan::AgentScan<

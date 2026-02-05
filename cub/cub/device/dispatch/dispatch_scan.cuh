@@ -422,7 +422,7 @@ struct DispatchScan
     return cudaSuccess;
   }
 
-#if __cccl_ptx_isa >= 860
+#if _CCCL_CUDACC_AT_LEAST(12, 8)
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(ActivePolicyT)
   {
@@ -562,12 +562,12 @@ struct DispatchScan
 
     return cudaSuccess;
   }
-#endif // __cccl_ptx_isa >= 860
+#endif // _CCCL_CUDACC_AT_LEAST(12, 8)
 
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
-#if __cccl_ptx_isa >= 860
+#if _CCCL_CUDACC_AT_LEAST(12, 8)
     if constexpr (detail::scan::scan_use_warpspeed<
                     ActivePolicyT,
                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
@@ -577,7 +577,7 @@ struct DispatchScan
       return __invoke_lookahead_algorithm(active_policy);
     }
     else
-#endif // __cccl_ptx_isa >= 860
+#endif // _CCCL_CUDACC_AT_LEAST(12, 8)
     {
       return Invoke(
         kernel_source.InitKernel(), kernel_source.ScanKernel(), detail::scan::MakeScanPolicyWrapper(active_policy));
