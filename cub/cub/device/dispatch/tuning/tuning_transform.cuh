@@ -91,6 +91,7 @@ struct prefetch_policy
   int items_per_thread_no_input = 2; // when there are no input iterators, the kernel is just filling
   int min_items_per_thread      = 1;
   int max_items_per_thread      = 32;
+  int prefetch_byte_stride      = 128; // somewhat of a cache line size
   int unroll_factor             = -1; // -1 means we leave it to the compiler
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator==(const prefetch_policy& lhs, const prefetch_policy& rhs)

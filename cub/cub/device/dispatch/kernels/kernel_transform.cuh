@@ -78,19 +78,16 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch(const T* addr)
   asm volatile("prefetch.global.L2 [%0];" : : "l"(__cvta_generic_to_global(addr)) : "memory");
 }
 
-template <int BlockDim, typename It>
+template <int BlockDim, int PrefetchStride, typename It>
 _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It begin, int items)
 {
   if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<It>)
   {
-    constexpr int prefetch_byte_stride = 128; // TODO(bgruber): should correspond to cache line size. Does this need to
-                                              // be architecture dependent?
     const int items_bytes = items * sizeof(it_value_t<It>);
 
     // prefetch does not stall and unrolling just generates a lot of unnecessary computations and predicate handling
     _CCCL_PRAGMA_NOUNROLL()
-    for (int offset = threadIdx.x * prefetch_byte_stride; offset < items_bytes;
-         offset += BlockDim * prefetch_byte_stride)
+    for (int offset = threadIdx.x * PrefetchStride; offset < items_bytes; offset += BlockDim * PrefetchStride)
     {
       prefetch(reinterpret_cast<const char*>(::cuda::std::to_address(begin)) + offset);
     }
@@ -101,6 +98,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It begin, int items)
 // global memory. No intermediate copies are taken. If the parameter type of f is a reference, taking the address of the
 // parameter yields a global memory address.
 template <int BlockThreads,
+          int PrefetchByteStride,
           int UnrollFactor,
           typename Offset,
           typename Predicate,
@@ -127,7 +125,7 @@ _CCCL_DEVICE void transform_kernel_prefetch(
   }
 
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-  (..., prefetch_tile<block_threads>(ins, valid_items));
+  (..., prefetch_tile<block_threads, PrefetchByteStride>(ins, valid_items));
 
   auto process_tile = [&](auto full_tile, auto... ins2 /* nvcc fails to compile when just using the captured ins */) {
     // ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost
@@ -214,6 +212,7 @@ template < // const transform_policy& Policy,
   int block_threads,
   int items_per_thread,
   int vec_size,
+  int PrefetchByteStride,
   typename Offset,
   typename F,
   typename RandomAccessIteratorOut,
@@ -237,7 +236,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   // if we cannot vectorize or don't have a full tile, fall back to prefetch kernel
   if (!can_vectorize || valid_items != tile_size)
   {
-    transform_kernel_prefetch<block_threads, items_per_thread / vec_size>(
+    transform_kernel_prefetch<block_threads, PrefetchByteStride, items_per_thread / vec_size>(
       num_items,
       num_elem_per_thread_prefetch,
       always_true_predicate{},
@@ -1031,7 +1030,9 @@ __launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTE
 
   if constexpr (policy.algorithm == Algorithm::prefetch)
   {
-    transform_kernel_prefetch<policy.prefetch.block_threads, policy.prefetch.unroll_factor>(
+    transform_kernel_prefetch<policy.prefetch.block_threads,
+                              policy.prefetch.prefetch_byte_stride,
+                              policy.prefetch.unroll_factor>(
       num_items,
       num_elem_per_thread,
       ::cuda::std::move(pred),
@@ -1046,7 +1047,8 @@ __launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTE
 
     transform_kernel_vectorized</*policy*/ policy.vectorized.block_threads,
                                 policy.vectorized.items_per_thread,
-                                policy.vectorized.vec_size>(
+                                policy.vectorized.vec_size,
+                                policy.prefetch.prefetch_byte_stride>(
       num_items,
       num_elem_per_thread,
       can_vectorize,
