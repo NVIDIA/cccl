@@ -214,30 +214,51 @@ struct dispatch_segmented_scan
     }
 
     _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments per worker parameter must be positive");
-    const auto segments_per_block = static_cast<unsigned int>(num_segments_per_worker * policy.WorkersPerBlock());
+
+    const auto [workers_per_block, block_size] = [](auto policy, worker selector) -> ::cuda::std::tuple<int, int> {
+      switch (selector)
+      {
+        case worker::block: {
+          const auto bw = policy.BlockWorkerSegmentedScan();
+          return {bw.WorkersPerBlock(), bw.Config().BlockThreads()};
+        }
+        case worker::warp: {
+          const auto ww = policy.WarpWorkerSegmentedScan();
+          return {ww.WorkersPerBlock(), ww.Config().BlockThreads()};
+        }
+        case worker::thread: {
+          const auto tw = policy.ThreadWorkerSegmentedScan();
+          return {tw.WorkersPerBlock(), tw.Config().BlockThreads()};
+        }
+        default:
+          _CCCL_UNREACHABLE();
+      }
+      _CCCL_UNREACHABLE();
+    }(policy, worker_choice);
+    const auto segments_per_block = num_segments_per_worker * workers_per_block;
     _CCCL_ASSERT(segments_per_block > 0, "Number of segments to be processed by block must be positive");
 
-    constexpr auto int32_max                   = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
-    const auto num_segments_per_invocation     = static_cast<::cuda::std::int64_t>(int32_max);
-    const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
+    static constexpr auto int32_max                       = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
+    static constexpr auto max_num_segments_per_invocation = static_cast<::cuda::std::int64_t>(int32_max);
 
-    (void) small_segmented_scan_kernel;
-    (void) medium_segmented_scan_kernel;
-    (void) large_segmented_scan_kernel;
+    const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, max_num_segments_per_invocation);
 
     for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
     {
-      const auto current_seg_offset   = invocation_index * num_segments_per_invocation;
-      const auto next_seg_offset      = current_seg_offset + num_segments_per_invocation;
-      const auto this_invocation_size = ::cuda::std::min(next_seg_offset, num_segments) - current_seg_offset;
+      const auto current_seg_offset          = invocation_index * max_num_segments_per_invocation;
+      const auto next_seg_offset             = current_seg_offset + max_num_segments_per_invocation;
+      const auto num_segments_per_invocation = ::cuda::std::min(next_seg_offset, num_segments) - current_seg_offset;
 
-      _CCCL_ASSERT(this_invocation_size <= ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max(),
-                   "num_current_segments exceeds uint32_t range");
-      const auto num_current_segments = static_cast<unsigned int>(this_invocation_size);
+      _CCCL_ASSERT(num_segments_per_invocation <= max_num_segments_per_invocation,
+                   "data loss during narrowing: num_segments_per_invocation exceeds int32_t range");
 
-      const auto grid_size = ::cuda::ceil_div(num_current_segments, segments_per_block);
+      const auto grid_size = ::cuda::ceil_div(static_cast<int>(num_segments_per_invocation), segments_per_block);
 
-      auto launcher = launcher_factory(grid_size, policy.SegmentedScan().BlockThreads(), 0, stream);
+      auto launcher = launcher_factory(grid_size, block_size, 0, stream);
+
+      // Cast is safe, since OffsetT is integral with sizeof(OffsetT) >= 4, and num_segments_per_invocation
+      // fits in int32_t by construction
+      const auto segment_count = static_cast<OffsetT>(num_segments_per_invocation);
 
       switch (worker_choice)
       {
@@ -249,7 +270,7 @@ struct dispatch_segmented_scan
             d_input_begin_offsets,
             d_input_end_offsets,
             d_output_begin_offsets,
-            static_cast<OffsetT>(num_current_segments),
+            segment_count,
             scan_op,
             init_value,
             num_segments_per_worker);
@@ -262,7 +283,7 @@ struct dispatch_segmented_scan
             d_input_begin_offsets,
             d_input_end_offsets,
             d_output_begin_offsets,
-            static_cast<OffsetT>(num_current_segments),
+            segment_count,
             scan_op,
             init_value,
             num_segments_per_worker);
@@ -275,7 +296,7 @@ struct dispatch_segmented_scan
             d_input_begin_offsets,
             d_input_end_offsets,
             d_output_begin_offsets,
-            static_cast<OffsetT>(num_current_segments),
+            segment_count,
             scan_op,
             init_value,
             num_segments_per_worker);
@@ -292,9 +313,9 @@ struct dispatch_segmented_scan
 
       if (invocation_index + 1 < num_invocations)
       {
-        d_input_begin_offsets += num_current_segments;
-        d_input_end_offsets += num_current_segments;
-        d_output_begin_offsets += num_current_segments;
+        d_input_begin_offsets += num_segments_per_invocation;
+        d_input_end_offsets += num_segments_per_invocation;
+        d_output_begin_offsets += num_segments_per_invocation;
       }
 
       error = CubDebug(detail::DebugSyncStream(stream));
