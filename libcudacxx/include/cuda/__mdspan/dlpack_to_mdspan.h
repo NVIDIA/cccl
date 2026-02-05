@@ -26,10 +26,10 @@
 #  include <cuda/__internal/dlpack.h>
 #  include <cuda/__mdspan/host_device_mdspan.h>
 #  include <cuda/__mdspan/mdspan_to_dlpack.h>
+#  include <cuda/__mdspan/traits.h>
 #  include <cuda/__memory/is_aligned.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__utility/cmp.h>
 #  include <cuda/std/array>
 #  include <cuda/std/cstdint>
@@ -89,10 +89,6 @@ __get_layout_left_stride(const ::cuda::std::int64_t* __shapes, ::cuda::std::size
 template <typename _LayoutPolicy>
 _CCCL_HOST_API void __validate_dlpack_strides(const ::DLTensor& __tensor, [[maybe_unused]] ::cuda::std::size_t __rank)
 {
-  [[maybe_unused]] constexpr bool __is_layout_right = ::cuda::std::is_same_v<_LayoutPolicy, ::cuda::std::layout_right>;
-  [[maybe_unused]] constexpr bool __is_layout_left  = ::cuda::std::is_same_v<_LayoutPolicy, ::cuda::std::layout_left>;
-  [[maybe_unused]] constexpr bool __is_layout_stride =
-    ::cuda::std::is_same_v<_LayoutPolicy, ::cuda::std::layout_stride>;
   const auto __strides_ptr = __tensor.strides;
   if (__strides_ptr == nullptr)
   {
@@ -112,21 +108,21 @@ _CCCL_HOST_API void __validate_dlpack_strides(const ::DLTensor& __tensor, [[mayb
   }
   for (::cuda::std::size_t __pos = 0; __pos < __rank; ++__pos)
   {
-    if constexpr (__is_layout_right)
+    if constexpr (::cuda::__is_layout_right_v<_LayoutPolicy>)
     {
       if (__strides_ptr[__pos] != ::cuda::__get_layout_right_stride(__tensor.shape, __pos, __rank))
       {
         _CCCL_THROW(std::invalid_argument, "DLTensor strides are not compatible with layout_right");
       }
     }
-    else if constexpr (__is_layout_left)
+    else if constexpr (::cuda::__is_layout_left_v<_LayoutPolicy>)
     {
       if (__strides_ptr[__pos] != ::cuda::__get_layout_left_stride(__tensor.shape, __pos))
       {
         _CCCL_THROW(std::invalid_argument, "DLTensor strides are not compatible with layout_left");
       }
     }
-    else if constexpr (__is_layout_stride)
+    else if constexpr (::cuda::__is_layout_stride_v<_LayoutPolicy>)
     {
       if (__strides_ptr[__pos] <= 0)
       {
@@ -141,15 +137,12 @@ template <typename _ElementType, ::cuda::std::size_t _Rank, typename _LayoutPoli
 _CCCL_HOST_API ::cuda::std::mdspan<_ElementType, ::cuda::std::dims<_Rank, ::cuda::std::int64_t>, _LayoutPolicy>
 __to_mdspan(const ::DLTensor& __tensor)
 {
-  using __extents_type              = ::cuda::std::dims<_Rank, ::cuda::std::int64_t>;
-  using __mdspan_type               = ::cuda::std::mdspan<_ElementType, __extents_type, _LayoutPolicy>;
-  using __mapping_type              = typename _LayoutPolicy::template mapping<__extents_type>;
-  using __element_type              = typename __mdspan_type::element_type;
-  constexpr bool __is_layout_right  = ::cuda::std::is_same_v<_LayoutPolicy, ::cuda::std::layout_right>;
-  constexpr bool __is_layout_left   = ::cuda::std::is_same_v<_LayoutPolicy, ::cuda::std::layout_left>;
-  constexpr bool __is_layout_stride = ::cuda::std::is_same_v<_LayoutPolicy, ::cuda::std::layout_stride>;
+  using __extents_type = ::cuda::std::dims<_Rank, ::cuda::std::int64_t>;
+  using __mdspan_type  = ::cuda::std::mdspan<_ElementType, __extents_type, _LayoutPolicy>;
+  using __mapping_type = typename _LayoutPolicy::template mapping<__extents_type>;
+  using __element_type = typename __mdspan_type::element_type;
   // TODO: add support for layout_stride_relaxed, layout_right_padded, layout_left_padded
-  if constexpr (!__is_layout_right && !__is_layout_left && !__is_layout_stride)
+  if constexpr (!::cuda::__is_cuda_mdspan_layout_v<_LayoutPolicy>)
   {
     static_assert(::cuda::std::__always_false_v<_LayoutPolicy>, "Unsupported layout policy");
     return __mdspan_type{};
@@ -197,7 +190,7 @@ __to_mdspan(const ::DLTensor& __tensor)
         __extents_array[__i] = __tensor.shape[__i];
       }
       ::cuda::__validate_dlpack_strides<_LayoutPolicy>(__tensor, _Rank);
-      if constexpr (__is_layout_stride)
+      if constexpr (::cuda::__is_layout_stride_v<_LayoutPolicy>)
       {
         ::cuda::std::array<::cuda::std::int64_t, _Rank> __strides_array{};
         for (::cuda::std::size_t __i = 0; __i < _Rank; ++__i)
