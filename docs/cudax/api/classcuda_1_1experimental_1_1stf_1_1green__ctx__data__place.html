@@ -1312,6 +1312,7 @@
 <li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1hash_3_01cuda_1_1experimental_1_1stf_1_1green__ctx__view_01_4.html">cuda::experimental::stf::hash&lt; cuda::experimental::stf::green_ctx_view &gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1hash_3_01data__place_01_4.html">cuda::experimental::stf::hash&lt; data_place &gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1hash_3_01dim4_01_4.html">cuda::experimental::stf::hash&lt; dim4 &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1hash_3_01exec__place_01_4.html">cuda::experimental::stf::hash&lt; exec_place &gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1hash_3_01hashtable_01_4.html">cuda::experimental::stf::hash&lt; hashtable &gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1hash_3_01mdspan_3_01P_8_8_8_01_4_01_4.html">cuda::experimental::stf::hash&lt; mdspan&lt; P… &gt; &gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1hash_3_01pos4_01_4.html">cuda::experimental::stf::hash&lt; pos4 &gt;</a></li>
@@ -1622,14 +1623,14 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extension6equalsERK20data_place_extension">
-<span class="target" id="classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place_1_1extension_1af64f59575059e7aafea40b4109bd70f0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">equals</span></span></span><span class="sig-paren">(</span>
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extensioneqERK20data_place_extension">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place_1_1extension_1a8f16ad853d8bdc08b8d9e642498b4d02"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">==</span></span></span><span class="sig-paren">(</span>
 
 <dl>
 <dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1data__place__extension.html#_CPPv4N4cuda12experimental3stf20data_place_extensionE" title="cuda::experimental::stf::data_place_extension"><span class="n"><span class="pre">data_place_extension</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">other</span></span></em></dd>
 </dl>
 
-<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extension6equalsERK20data_place_extension" title="Link to this definition">#</a><br /></dt>
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extensioneqERK20data_place_extension" title="Link to this definition">#</a><br /></dt>
 <dd><p>Check equality with another extension. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1637,6 +1638,26 @@
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>true if the extensions represent the same place </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extensionltERK20data_place_extension">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1green__ctx__data__place_1_1extension_1a44139118ee12ce7ca04aeffdb51c544f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">&lt;</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1data__place__extension.html#_CPPv4N4cuda12experimental3stf20data_place_extensionE" title="cuda::experimental::stf::data_place_extension"><span class="n"><span class="pre">data_place_extension</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">other</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extensionltERK20data_place_extension" title="Link to this definition">#</a><br /></dt>
+<dd><p>Compare ordering with another extension. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>other</strong> – The other extension to compare with </p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>true if this extension is less than the other </p>
 </dd>
 </dl>
 </dd></dl>
@@ -1794,7 +1815,8 @@
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extension18get_device_ordinalEv"><code class="docutils literal notranslate"><span class="pre">get_device_ordinal()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extension9to_stringEv"><code class="docutils literal notranslate"><span class="pre">to_string()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extension4hashEv"><code class="docutils literal notranslate"><span class="pre">hash()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extension6equalsERK20data_place_extension"><code class="docutils literal notranslate"><span class="pre">equals()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extensioneqERK20data_place_extension"><code class="docutils literal notranslate"><span class="pre">operator==()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extensionltERK20data_place_extension"><code class="docutils literal notranslate"><span class="pre">operator&lt;()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extension8get_viewEv"><code class="docutils literal notranslate"><span class="pre">get_view()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extension12get_view_ptrEv"><code class="docutils literal notranslate"><span class="pre">get_view_ptr()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf20green_ctx_data_place9extension8allocateENSt9ptrdiff_tE12cudaStream_t"><code class="docutils literal notranslate"><span class="pre">allocate()</span></code></a></li>
