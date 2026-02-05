@@ -14,6 +14,7 @@
 #include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
 #include <c2h/generators.h>
+#include <c2h/operator.cuh>
 
 constexpr int max_size  = 16;
 constexpr int num_seeds = 3;
@@ -158,7 +159,7 @@ C2H_TEST("ThreadScanInclusive Integral Type Tests",
   using dist_param                 = dist_interval<value_t, op_t, num_items, accum_t, output_t>;
   using filler_dist_param          = dist_interval<accum_t, op_t, num_items, accum_t, output_t>;
   constexpr auto scan_op           = op_t{};
-  constexpr auto operator_identity = cub_operator_to_identity<accum_t, op_t>::value();
+  constexpr auto operator_identity = cuda::identity_element<op_t, accum_t>();
   const int valid_items            = GENERATE_COPY(
     take(1, random(2, cuda::std::max(2, num_items - 1))),
     take(1, random(num_items + 2, cuda::std::numeric_limits<int>::max())),
@@ -218,7 +219,7 @@ C2H_TEST("ThreadScanInclusive Floating-Point Type Tests",
   using dist_param             = dist_interval<value_t, op_t, num_items, accum_t, output_t>;
   using filler_dist_param      = dist_interval<accum_t, op_t, num_items, accum_t, output_t>;
   constexpr auto scan_op       = op_t{};
-  const auto operator_identity = cub_operator_to_identity<accum_t, op_t>::value();
+  const auto operator_identity = cuda::identity_element<op_t, accum_t>();
   const int valid_items        = GENERATE_COPY(
     take(1, random(2, cuda::std::max(2, num_items - 1))),
     take(1, random(num_items + 2, cuda::std::numeric_limits<int>::max())),
@@ -280,7 +281,7 @@ C2H_TEST("ThreadScanInclusive Narrow PrecisionType Tests",
   using dist_param             = dist_interval<value_t, op_t, num_items, accum_t, output_t>;
   using filler_dist_param      = dist_interval<accum_t, op_t, num_items, accum_t, output_t>;
   constexpr auto scan_op       = unwrap_op(std::true_type{}, op_t{});
-  const auto operator_identity = cub_operator_to_identity<accum_t, op_t>::value();
+  const auto operator_identity = identity_v<op_t, accum_t>;
   const int valid_items        = GENERATE_COPY(
     take(1, random(2, cuda::std::max(2, num_items - 1))),
     take(1, random(num_items + 2, cuda::std::numeric_limits<int>::max())),
