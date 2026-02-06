@@ -50,7 +50,7 @@ __host__ __device__ int test(bool add_delay = false)
 
     auto awaiter = LAMBDA()
     {
-      time_ref = ::cuda::std::chrono::high_resolution_clock::now();
+      time_ref = cuda::std::chrono::high_resolution_clock::now();
       while ((b->try_wait_for(cuda::std::move(*tok), delay) == false) && (measure() < timeout))
       {
       }
