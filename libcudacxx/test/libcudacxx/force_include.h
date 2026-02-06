@@ -119,7 +119,6 @@ int main(int argc, char** argv)
   if (ret != 0)
   {
     printf("Device testing returned failure\n");
-    return ret;
   }
   return ret;
 }
