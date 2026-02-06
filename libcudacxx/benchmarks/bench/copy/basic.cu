@@ -29,15 +29,42 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(elements);
 
   caching_allocator_t alloc{};
-  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               cuda::std::copy(policy.with_stream(launch.get_stream().get_stream()), in.begin(), in.end(), out.begin());
+               do_not_optimize(cuda::std::copy(cuda_policy(alloc, launch), in.begin(), in.end(), out.begin()));
              });
 }
 
-NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(all_types))
+NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))
+  .set_name("base")
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
+
+template <typename T>
+static void random_access(nvbench::state& state, nvbench::type_list<T>)
+{
+  const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
+
+  thrust::device_vector<T> out(elements, thrust::no_init);
+
+  state.add_element_count(elements);
+  state.add_global_memory_reads<T>(elements);
+  state.add_global_memory_writes<T>(elements);
+
+  caching_allocator_t alloc{};
+
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               do_not_optimize(cuda::std::copy(
+                 cuda_policy(alloc, launch),
+                 cuda::counting_iterator<std::size_t>{0},
+                 cuda::counting_iterator{elements},
+                 out.begin()));
+             });
+}
+
+NVBENCH_BENCH_TYPES(random_access, NVBENCH_TYPE_AXES(integral_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));

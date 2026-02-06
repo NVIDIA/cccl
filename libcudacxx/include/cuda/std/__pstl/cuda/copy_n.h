@@ -27,6 +27,7 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
 
+#  include <cub/detail/choose_offset.cuh>
 #  include <cub/device/device_transform.cuh>
 
 _CCCL_DIAG_POP
@@ -65,42 +66,22 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__copy_n, __execution_backend::__cuda>
 {
-  template <class _Policy, class _InputIterator, class _OutputIterator, class _UnaryPred>
+  template <class _Policy, class _InputIterator, class _Size, class _OutputIterator, class _UnaryPred>
   [[nodiscard]] _CCCL_HOST_API static _OutputIterator __par_impl(
-    const _Policy& __policy,
-    _InputIterator __first,
-    iter_difference_t<_InputIterator> __count,
-    _OutputIterator __result,
-    _UnaryPred __pred)
+    const _Policy& __policy, _InputIterator __first, _Size __count, _OutputIterator __result, _UnaryPred __pred)
   {
     auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
-    if constexpr (is_trivially_copyable_v<iter_value_t<_InputIterator>> && contiguous_iterator<_InputIterator>
-                  && contiguous_iterator<_OutputIterator>
-                  && is_same_v<_UnaryPred, CUB_NS_QUALIFIER::detail::transform::always_true_predicate>
-                  && is_same_v<iter_value_t<_InputIterator>, iter_value_t<_OutputIterator>>)
-    { // Just use cudaMemcpyAsync
-      _CCCL_TRY_CUDA_API(
-        ::cudaMemcpyAsync,
-        "__pstl_cuda_copy_n: copy of trivially copyable type failed",
-        ::cuda::std::to_address(__result),
-        ::cuda::std::to_address(__first),
-        __count * sizeof(iter_value_t<_InputIterator>),
-        ::cudaMemcpyDefault,
-        __stream.get());
-    }
-    else
-    {
-      constexpr auto __stable_address = CUB_NS_QUALIFIER::detail::transform::requires_stable_address::no;
-      _CCCL_TRY_CUDA_API(
-        CUB_NS_QUALIFIER::detail::transform::dispatch<__stable_address>,
-        "cuda::std::transform: failed inside CUDA backend",
-        tuple<_InputIterator>{::cuda::std::move(__first)},
-        ::cuda::std::move(__result),
-        __count,
-        ::cuda::std::move(__pred),
-        identity{},
-        __stream.get());
-    }
+
+    constexpr auto __stable_address = CUB_NS_QUALIFIER::detail::transform::requires_stable_address::no;
+    _CCCL_TRY_CUDA_API(
+      CUB_NS_QUALIFIER::detail::transform::dispatch<__stable_address>,
+      "__pstl_cuda_copy_n: kernel launch of device_transform failed",
+      tuple<_InputIterator>{::cuda::std::move(__first)},
+      __result,
+      __count,
+      ::cuda::std::move(__pred),
+      identity{},
+      __stream.get());
 
     __stream.sync();
     return __result + __count;
@@ -122,9 +103,14 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_n, __execution_backend::__cuda>
                   && ::cuda::std::__has_random_access_traversal<_OutputIterator>)
     {
       try
-      {
+      { // CUB requires a 32 or 64 bit offset type, so cast here
+        using _OffsetType = ::cub::detail::choose_signed_offset_t<iter_difference_t<_InputIterator>>;
         return __par_impl(
-          __policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__result), ::cuda::std::move(__pred));
+          __policy,
+          ::cuda::std::move(__first),
+          static_cast<_OffsetType>(__count),
+          ::cuda::std::move(__result),
+          ::cuda::std::move(__pred));
       }
       catch (const ::cuda::cuda_error& __err)
       {
