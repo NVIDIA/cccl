@@ -92,7 +92,7 @@
 
 // Some compilers turn on pack indexing in pre-C++26 code. We want to use it if it is
 // available.
-#if defined(__cpp_pack_indexing) && !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(CLANG, <, 20)
+#if __cpp_pack_indexing >= 202311L && !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(CLANG, <, 20)
 #  define _CCCL_HAS_PACK_INDEXING() 1
 #else // ^^^ has pack indexing ^^^ / vvv no pack indexing vvv
 #  define _CCCL_HAS_PACK_INDEXING() 0

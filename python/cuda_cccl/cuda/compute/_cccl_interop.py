@@ -90,17 +90,6 @@ def _is_well_known_op(op: OpKind) -> bool:
     return isinstance(op, OpKind) and op not in (OpKind.STATELESS, OpKind.STATEFUL)
 
 
-def to_cccl_op(op, input_types, output_type=None) -> Op:
-    if _is_well_known_op(op):
-        return Op(operator_type=op, name="", ltoir=b"", state=b"", state_alignment=1)
-    elif callable(op):
-        from ._jit import compile_op
-
-        return compile_op(op, input_types, output_type)
-    else:
-        raise ValueError(f"Invalid operator: {op}")
-
-
 def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
     if not is_contiguous(array):
         raise ValueError("Non-contiguous arrays are not supported.")
@@ -274,28 +263,3 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
         os.unlink(temp_cubin_file_name)
 
     return result
-
-
-def set_host_advance(cccl_it, array_or_iterator):
-    """
-    Set the host advance function for a CCCL iterator.
-
-    Args:
-        cccl_it: The CCCL Iterator binding object
-        array_or_iterator: The iterator instance that provides the host_advance implementation
-    """
-    from ._jit import compile_host_op
-
-    if cccl_it.is_kind_iterator():
-        it = array_or_iterator
-        fn_impl = it.host_advance
-        if fn_impl is not None:
-            # Compile the host advance function with (state_ptr, int64) signature
-            state_ptr_type = types.pointer(it.state_type)
-            cccl_it.host_advance_fn = compile_host_op(
-                fn_impl, (state_ptr_type, types.int64)
-            )
-        else:
-            raise ValueError(
-                f"Iterator of type {type(it)} does not provide definition of host_advance function"
-            )

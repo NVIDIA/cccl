@@ -23,8 +23,8 @@
 struct MyTraits : cuda::std::char_traits<char>
 {};
 
-typedef cuda::std::basic_ostringstream<char, MyTraits> StringStream;
-typedef cuda::std::basic_ostream<char, MyTraits> BasicStream;
+using StringStream = cuda::std::basic_ostringstream<char, MyTraits>;
+using BasicStream  = cuda::std::basic_ostream<char, MyTraits>;
 
 void operator&(BasicStream const&) {}
 

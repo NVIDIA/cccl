@@ -78,7 +78,7 @@ void bench_transform(nvbench::state& state,
                      OffsetT num_items,
                      TransformOp transform_op)
 {
-  state.exec(nvbench::exec_tag::gpu, [&](const nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](const nvbench::launch& launch) {
     cub::detail::transform::dispatch<cub::detail::transform::requires_stable_address::no>(
       inputs,
       output,

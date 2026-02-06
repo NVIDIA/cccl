@@ -38,7 +38,7 @@ struct MoveOnly
 int main(int, char**)
 {
   {
-    typedef cuda::std::array<MoveOnly, 1> C;
+    using C   = cuda::std::array<MoveOnly, 1>;
     const C c = {3.5};
     static_assert(cuda::std::is_same<const MoveOnly&&, decltype(cuda::std::get<0>(cuda::std::move(c)))>::value, "");
     static_assert(noexcept(cuda::std::get<0>(cuda::std::move(c))), "");
@@ -47,8 +47,8 @@ int main(int, char**)
   }
 
   {
-    typedef double MoveOnly;
-    typedef cuda::std::array<MoveOnly, 3> C;
+    using MoveOnly      = double;
+    using C             = cuda::std::array<MoveOnly, 3>;
     constexpr const C c = {1, 2, 3.5};
     static_assert(cuda::std::get<0>(cuda::std::move(c)) == 1, "");
     static_assert(cuda::std::get<1>(cuda::std::move(c)) == 2, "");

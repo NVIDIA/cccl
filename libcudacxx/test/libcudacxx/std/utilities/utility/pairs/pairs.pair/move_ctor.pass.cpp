@@ -28,7 +28,7 @@ struct Dummy
 int main(int, char**)
 {
   {
-    typedef cuda::std::pair<int, short> P1;
+    using P1 = cuda::std::pair<int, short>;
     static_assert(cuda::std::is_move_constructible<P1>::value, "");
     P1 p1(3, static_cast<short>(4));
     P1 p2 = cuda::std::move(p1);

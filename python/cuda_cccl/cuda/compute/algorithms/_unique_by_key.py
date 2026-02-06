@@ -27,7 +27,6 @@ class _UniqueByKey:
         "d_out_keys_cccl",
         "d_out_items_cccl",
         "d_out_num_selected_cccl",
-        "op",
         "op_cccl",
     ]
 
@@ -68,6 +67,7 @@ class _UniqueByKey:
         d_out_keys: DeviceArrayLike | IteratorBase,
         d_out_items: DeviceArrayLike | IteratorBase,
         d_out_num_selected: DeviceArrayLike,
+        op: Callable | OpKind | OpAdapter,
         num_items: int,
         stream=None,
     ):
@@ -76,6 +76,10 @@ class _UniqueByKey:
         set_cccl_iterator_state(self.d_out_keys_cccl, d_out_keys)
         set_cccl_iterator_state(self.d_out_items_cccl, d_out_items)
         set_cccl_iterator_state(self.d_out_num_selected_cccl, d_out_num_selected)
+
+        # Update op state for stateful ops
+        op_adapter = make_op_adapter(op)
+        op_adapter.update_op_state(self.op_cccl)
 
         stream_handle = validate_and_get_stream(stream)
         if temp_storage is None:
@@ -181,6 +185,7 @@ def unique_by_key(
         d_out_keys,
         d_out_items,
         d_out_num_selected,
+        op,
         num_items,
         stream,
     )
@@ -192,6 +197,7 @@ def unique_by_key(
         d_out_keys,
         d_out_items,
         d_out_num_selected,
+        op,
         num_items,
         stream,
     )

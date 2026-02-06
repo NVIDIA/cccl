@@ -198,6 +198,9 @@ public:
   //! @rst
   //! Computes an inclusive prefix sum across the calling warp.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @smemwarpreuse
   //!
   //! Snippet
@@ -244,6 +247,9 @@ public:
   //! @rst
   //! Computes an inclusive prefix sum across the calling warp.
   //! Also provides every thread with the warp-wide ``warp_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -301,6 +307,9 @@ public:
   //! Computes an exclusive prefix sum across the calling warp. The value of 0 is applied as the
   //! initial value, and is assigned to ``exclusive_output`` in *lane*\ :sub:`0`.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @identityzero
   //! * @smemwarpreuse
   //!
@@ -350,6 +359,9 @@ public:
   //! Computes an exclusive prefix sum across the calling warp. The value of 0 is applied as the
   //! initial value, and is assigned to ``exclusive_output`` in *lane*\ :sub:`0`.
   //! Also provides every thread with the warp-wide ``warp_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @identityzero
   //! * @smemwarpreuse
@@ -411,6 +423,9 @@ public:
   //! Computes an inclusive prefix scan using the specified binary scan functor across the
   //! calling warp.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @smemwarpreuse
   //!
   //! Snippet
@@ -466,6 +481,9 @@ public:
   //! Computes an inclusive prefix scan using the specified binary scan functor across the
   //! calling warp.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @smemwarpreuse
   //!
   //! Snippet
@@ -518,6 +536,9 @@ public:
   //! Computes an inclusive prefix scan using the specified binary scan functor across the
   //! calling warp. Also provides every thread with the warp-wide ``warp_aggregate`` of
   //! all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -580,6 +601,9 @@ public:
   //! Computes an inclusive prefix scan using the specified binary scan functor across the
   //! calling warp. Also provides every thread with the warp-wide ``warp_aggregate`` of
   //! all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -916,6 +940,9 @@ public:
   //! calling warp. Because no initial value is supplied, the ``output`` computed for
   //! *lane*\ :sub:`0` is undefined.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @smemwarpreuse
   //!
   //! Snippet
@@ -976,6 +1003,9 @@ public:
   //! @rst
   //! Computes an exclusive prefix scan using the specified binary scan functor across the
   //! calling warp.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -1045,6 +1075,9 @@ public:
   //! calling warp. Because no initial value is supplied, the ``output`` computed for
   //! *lane*\ :sub:`0` is undefined. Also provides every thread with the warp-wide
   //! ``warp_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -1116,6 +1149,9 @@ public:
   //! Computes an exclusive prefix scan using the specified binary scan functor across the
   //! calling warp. Also provides every thread with the warp-wide ``warp_aggregate`` of
   //! all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -1509,6 +1545,9 @@ public:
   //! across the calling warp. Because no initial value is supplied, the ``exclusive_output``
   //! computed for *lane*\ :sub:`0` is undefined.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @smemwarpreuse
   //!
   //! Snippet
@@ -1576,6 +1615,9 @@ public:
   //! @rst
   //! Computes both inclusive and exclusive prefix scans using the specified binary scan functor
   //! across the calling warp.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -1812,6 +1854,9 @@ public:
 
   //! @rst
   //! Broadcast the value ``input`` from *lane*\ :sub:`src_lane` to all lanes in the warp
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!

@@ -53,6 +53,9 @@
 #include <cuda/std/expected>
 #include <cuda/std/tuple>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::transform
@@ -1082,3 +1085,5 @@ __launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTE
 } // namespace detail::transform
 
 CUB_NAMESPACE_END
+
+_CCCL_DIAG_POP

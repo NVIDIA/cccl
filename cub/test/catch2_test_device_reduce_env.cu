@@ -248,8 +248,7 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
       using deterministic_add_t   = cub::detail::rfa::deterministic_sum_t<accumulator_t>;
       using reduction_op_t        = deterministic_add_t;
       using deterministic_accum_t = deterministic_add_t::DeterministicAcc;
-      using output_it_t =
-        cuda::transform_output_iterator<cub::detail::rfa::rfa_float_transform_t<accumulator_t>, decltype(d_out.begin())>;
+      using output_it_t           = decltype(d_out.begin());
 
       using dispatch_t = cub::detail::rfa::
         dispatch_t<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>;
@@ -257,28 +256,29 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
       REQUIRE(
         cudaSuccess == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
 
+      auto k1 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
+        policy_t,
+        decltype(d_in),
+        output_it_t,
+        reduction_op_t,
+        init_t,
+        deterministic_accum_t,
+        transform_t>;
+      auto k2 = cub::detail::reduce::
+        DeterministicDeviceReduceKernel<policy_t, decltype(d_in), reduction_op_t, deterministic_accum_t, transform_t>;
+      auto k3 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
+        policy_t,
+        deterministic_accum_t*,
+        output_it_t,
+        reduction_op_t,
+        init_t,
+        deterministic_accum_t,
+        transform_t>;
+      // TODO(bgruber): enable this when we have Catch2 3.13+
+      // UNSCOPED_CAPTURE(c2h::type_name<decltype(k1)>(), c2h::type_name<decltype(k2)>(),
+      // c2h::type_name<decltype(k3)>());
       return cuda::std::array<void*, 3>{
-        reinterpret_cast<void*>(
-          cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
-            policy_t,
-            decltype(d_in),
-            output_it_t,
-            reduction_op_t,
-            init_t,
-            deterministic_accum_t,
-            transform_t>),
-        reinterpret_cast<void*>(
-          cub::detail::reduce::
-            DeterministicDeviceReduceKernel<policy_t, decltype(d_in), reduction_op_t, deterministic_accum_t, transform_t>),
-        reinterpret_cast<void*>(
-          cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
-            policy_t,
-            accumulator_t*,
-            output_it_t,
-            reduction_op_t,
-            init_t,
-            deterministic_accum_t,
-            transform_t>)};
+        reinterpret_cast<void*>(k1), reinterpret_cast<void*>(k2), reinterpret_cast<void*>(k3)};
     }
   }();
 
@@ -367,8 +367,7 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
       using deterministic_add_t   = cub::detail::rfa::deterministic_sum_t<accumulator_t>;
       using reduction_op_t        = deterministic_add_t;
       using deterministic_accum_t = deterministic_add_t::DeterministicAcc;
-      using output_it_t =
-        cuda::transform_output_iterator<cub::detail::rfa::rfa_float_transform_t<accumulator_t>, decltype(d_out.begin())>;
+      using output_it_t           = decltype(d_out.begin());
 
       using dispatch_t = cub::detail::rfa::
         dispatch_t<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>;
@@ -376,28 +375,29 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
       REQUIRE(
         cudaSuccess == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
 
+      auto k1 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
+        policy_t,
+        decltype(d_in),
+        output_it_t,
+        reduction_op_t,
+        init_t,
+        deterministic_accum_t,
+        transform_t>;
+      auto k2 = cub::detail::reduce::
+        DeterministicDeviceReduceKernel<policy_t, decltype(d_in), reduction_op_t, deterministic_accum_t, transform_t>;
+      auto k3 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
+        policy_t,
+        deterministic_accum_t*,
+        output_it_t,
+        reduction_op_t,
+        init_t,
+        deterministic_accum_t,
+        transform_t>;
+      // TODO(bgruber): enable this when we have Catch2 3.13+
+      // UNSCOPED_CAPTURE(c2h::type_name<decltype(k1)>(), c2h::type_name<decltype(k2)>(),
+      // c2h::type_name<decltype(k3)>());
       return cuda::std::array<void*, 3>{
-        reinterpret_cast<void*>(
-          cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
-            policy_t,
-            decltype(d_in),
-            output_it_t,
-            reduction_op_t,
-            init_t,
-            deterministic_accum_t,
-            transform_t>),
-        reinterpret_cast<void*>(
-          cub::detail::reduce::
-            DeterministicDeviceReduceKernel<policy_t, decltype(d_in), reduction_op_t, deterministic_accum_t, transform_t>),
-        reinterpret_cast<void*>(
-          cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
-            policy_t,
-            accumulator_t*,
-            output_it_t,
-            reduction_op_t,
-            init_t,
-            deterministic_accum_t,
-            transform_t>)};
+        reinterpret_cast<void*>(k1), reinterpret_cast<void*>(k2), reinterpret_cast<void*>(k3)};
     }
   }();
 

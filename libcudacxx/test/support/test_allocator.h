@@ -24,7 +24,7 @@
 template <class Alloc>
 inline typename std::allocator_traits<Alloc>::size_type alloc_max_size(Alloc const& a)
 {
-  typedef std::allocator_traits<Alloc> AT;
+  using AT = std::allocator_traits<Alloc>;
   return AT::max_size(a);
 }
 
@@ -80,18 +80,18 @@ class test_allocator : public test_alloc_base
   friend class test_allocator;
 
 public:
-  typedef unsigned size_type;
-  typedef int difference_type;
-  typedef T value_type;
-  typedef value_type* pointer;
-  typedef const value_type* const_pointer;
-  typedef typename std::add_lvalue_reference<value_type>::type reference;
-  typedef typename std::add_lvalue_reference<const value_type>::type const_reference;
+  using size_type       = unsigned;
+  using difference_type = int;
+  using value_type      = T;
+  using pointer         = value_type*;
+  using const_pointer   = const value_type*;
+  using reference       = typename std::add_lvalue_reference<value_type>::type;
+  using const_reference = typename std::add_lvalue_reference<const value_type>::type;
 
   template <class U>
   struct rebind
   {
-    typedef test_allocator<U> other;
+    using other = test_allocator<U>;
   };
 
   test_allocator() noexcept
@@ -210,18 +210,18 @@ class non_default_test_allocator : public test_alloc_base
   friend class non_default_test_allocator;
 
 public:
-  typedef unsigned size_type;
-  typedef int difference_type;
-  typedef T value_type;
-  typedef value_type* pointer;
-  typedef const value_type* const_pointer;
-  typedef typename std::add_lvalue_reference<value_type>::type reference;
-  typedef typename std::add_lvalue_reference<const value_type>::type const_reference;
+  using size_type       = unsigned;
+  using difference_type = int;
+  using value_type      = T;
+  using pointer         = value_type*;
+  using const_pointer   = const value_type*;
+  using reference       = typename std::add_lvalue_reference<value_type>::type;
+  using const_reference = typename std::add_lvalue_reference<const value_type>::type;
 
   template <class U>
   struct rebind
   {
-    typedef non_default_test_allocator<U> other;
+    using other = non_default_test_allocator<U>;
   };
 
   //    non_default_test_allocator() noexcept : data_(0) {++count;}
@@ -310,16 +310,16 @@ class test_allocator<void> : public test_alloc_base
   friend class test_allocator;
 
 public:
-  typedef unsigned size_type;
-  typedef int difference_type;
-  typedef void value_type;
-  typedef value_type* pointer;
-  typedef const value_type* const_pointer;
+  using size_type       = unsigned;
+  using difference_type = int;
+  using value_type      = void;
+  using pointer         = value_type*;
+  using const_pointer   = const value_type*;
 
   template <class U>
   struct rebind
   {
-    typedef test_allocator<U> other;
+    using other = test_allocator<U>;
   };
 
   test_allocator() noexcept
@@ -373,7 +373,7 @@ class other_allocator
   friend class other_allocator;
 
 public:
-  typedef T value_type;
+  using value_type = T;
 
   other_allocator()
       : data_(-1)
@@ -408,9 +408,9 @@ public:
     return !(x == y);
   }
 
-  typedef std::true_type propagate_on_container_copy_assignment;
-  typedef std::true_type propagate_on_container_move_assignment;
-  typedef std::true_type propagate_on_container_swap;
+  using propagate_on_container_copy_assignment = std::true_type;
+  using propagate_on_container_move_assignment = std::true_type;
+  using propagate_on_container_swap            = std::true_type;
 };
 
 struct Ctor_Tag
@@ -552,22 +552,22 @@ class limited_allocator
 {
   template <class U, std::size_t UN>
   friend class limited_allocator;
-  typedef limited_alloc_handle<N> BuffT;
+  using BuffT = limited_alloc_handle<N>;
   std::shared_ptr<BuffT> handle_;
 
 public:
-  typedef T value_type;
-  typedef value_type* pointer;
-  typedef const value_type* const_pointer;
-  typedef value_type& reference;
-  typedef const value_type& const_reference;
-  typedef std::size_t size_type;
-  typedef std::ptrdiff_t difference_type;
+  using value_type      = T;
+  using pointer         = value_type*;
+  using const_pointer   = const value_type*;
+  using reference       = value_type&;
+  using const_reference = const value_type&;
+  using size_type       = std::size_t;
+  using difference_type = std::ptrdiff_t;
 
   template <class U>
   struct rebind
   {
-    typedef limited_allocator<U, N> other;
+    using other = limited_allocator<U, N>;
   };
 
   limited_allocator()

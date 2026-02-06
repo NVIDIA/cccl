@@ -20,8 +20,6 @@
 #include <cub/block/block_store.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/atomic>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::topk

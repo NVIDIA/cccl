@@ -25,23 +25,23 @@
 template <class T>
 struct A
 {
-  typedef T value_type;
-  typedef cuda::std::true_type propagate_on_container_swap;
+  using value_type                  = T;
+  using propagate_on_container_swap = cuda::std::true_type;
 };
 
 template <class T>
 struct B
 {
-  typedef T value_type;
+  using value_type = T;
 };
 
 template <class T>
 struct C
 {
-  typedef T value_type;
+  using value_type = T;
 
 private:
-  typedef cuda::std::true_type propagate_on_container_swap;
+  using propagate_on_container_swap = cuda::std::true_type;
 };
 
 int main(int, char**)

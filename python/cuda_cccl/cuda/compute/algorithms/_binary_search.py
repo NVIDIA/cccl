@@ -88,6 +88,7 @@ class _BinarySearch:
         d_data,
         d_values,
         d_out,
+        comp: Callable | OpKind | None,
         num_items: int,
         num_values: int,
         stream=None,
@@ -95,6 +96,12 @@ class _BinarySearch:
         set_cccl_iterator_state(self.d_data_cccl, d_data)
         set_cccl_iterator_state(self.d_values_cccl, d_values)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
+
+        # Update op state for stateful ops
+        comp_adapter = (
+            _normalize_comp(comp) if comp is not None else _normalize_comp(None)
+        )
+        comp_adapter.update_op_state(self.op_cccl)
 
         stream_handle = protocols.validate_and_get_stream(stream)
         self.build_result.compute(
@@ -226,7 +233,7 @@ def lower_bound(
         stream: CUDA stream for the operation (optional).
     """
     searcher = make_lower_bound(d_data, d_values, d_out, comp)
-    searcher(d_data, d_values, d_out, num_items, num_values, stream)
+    searcher(d_data, d_values, d_out, comp, num_items, num_values, stream)
 
 
 def upper_bound(
@@ -257,4 +264,4 @@ def upper_bound(
         stream: CUDA stream for the operation (optional).
     """
     searcher = make_upper_bound(d_data, d_values, d_out, comp)
-    searcher(d_data, d_values, d_out, num_items, num_values, stream)
+    searcher(d_data, d_values, d_out, comp, num_items, num_values, stream)

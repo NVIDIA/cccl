@@ -123,8 +123,8 @@ template <class T>
 class TypeInfo
 {
 public:
-  typedef T value_type;
-  typedef TypeID ID;
+  using value_type = T;
+  using ID         = TypeID;
   static ID const& GetID()
   {
     static ID id(&dummy_addr);
@@ -266,7 +266,7 @@ private:
   AllocatorConstructController& operator=(AllocatorConstructController const&);
 };
 
-typedef AllocatorConstructController ConstructController;
+using ConstructController = AllocatorConstructController;
 
 // getConstructController - Return the global allocator construction controller.
 inline ConstructController* getConstructController()
@@ -328,7 +328,7 @@ class ContainerTestAllocator
   };
 
 public:
-  typedef T value_type;
+  using value_type = T;
 
   int construct_called;
   int destroy_called;
@@ -390,10 +390,10 @@ public:
 
 namespace test_detail
 {
-typedef ContainerTestAllocator<int, int> A1;
-typedef std::allocator_traits<A1> A1T;
-typedef ContainerTestAllocator<float, int> A2;
-typedef std::allocator_traits<A2> A2T;
+using A1  = ContainerTestAllocator<int, int>;
+using A1T = std::allocator_traits<A1>;
+using A2  = ContainerTestAllocator<float, int>;
+using A2T = std::allocator_traits<A2>;
 
 static_assert(std::is_same<A1T::rebind_traits<float>, A2T>::value, "");
 static_assert(std::is_same<A2T::rebind_traits<int>, A1T>::value, "");
@@ -505,8 +505,8 @@ namespace std
 template <int ID>
 struct hash<::CopyInsertable<ID>>
 {
-  typedef ::CopyInsertable<ID> argument_type;
-  typedef size_t result_type;
+  using argument_type = ::CopyInsertable<ID>;
+  using result_type   = size_t;
 
   size_t operator()(argument_type const& arg) const
   {

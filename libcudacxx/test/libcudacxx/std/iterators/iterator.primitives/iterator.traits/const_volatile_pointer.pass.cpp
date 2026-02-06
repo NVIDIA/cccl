@@ -22,7 +22,7 @@ struct A
 
 int main(int, char**)
 {
-  typedef cuda::std::iterator_traits<const volatile A*> It;
+  using It = cuda::std::iterator_traits<const volatile A*>;
   static_assert((cuda::std::is_same<It::difference_type, cuda::std::ptrdiff_t>::value), "");
   static_assert((cuda::std::is_same<It::value_type, A>::value), "");
   static_assert((cuda::std::is_same<It::pointer, const volatile A*>::value), "");

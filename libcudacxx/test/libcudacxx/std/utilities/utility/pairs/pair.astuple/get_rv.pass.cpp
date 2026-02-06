@@ -26,7 +26,7 @@ int main(int, char**)
   // cuda/std/memory not supported
   /*
   {
-      typedef cuda::std::pair<cuda::std::unique_ptr<int>, short> P;
+      using P = cuda::std::pair<cuda::std::unique_ptr<int>, short>;
       P p(cuda::std::unique_ptr<int>(new int(3)), static_cast<short>(4));
       cuda::std::unique_ptr<int> ptr = cuda::std::get<0>(cuda::std::move(p));
       assert(*ptr == 3);

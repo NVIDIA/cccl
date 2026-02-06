@@ -29,7 +29,6 @@ class _Reduce:
         "d_in_cccl",
         "d_out_cccl",
         "h_init_cccl",
-        "op",
         "op_cccl",
         "build_result",
         "device_reduce_fn",
@@ -74,12 +73,17 @@ class _Reduce:
         temp_storage,
         d_in,
         d_out,
+        op: Callable | OpAdapter,
         num_items: int,
         h_init: np.ndarray | GpuStruct,
         stream=None,
     ):
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
+
+        # Update op state for stateful ops
+        op_adapter = make_op_adapter(op)
+        op_adapter.update_op_state(self.op_cccl)
 
         self.h_init_cccl.state = to_cccl_value_state(h_init)
 
@@ -172,6 +176,6 @@ def reduce_into(
         stream: CUDA stream for the operation (optional)
     """
     reducer = make_reduce_into(d_in, d_out, op, h_init, **kwargs)
-    tmp_storage_bytes = reducer(None, d_in, d_out, num_items, h_init, stream)
+    tmp_storage_bytes = reducer(None, d_in, d_out, op, num_items, h_init, stream)
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
-    reducer(tmp_storage, d_in, d_out, num_items, h_init, stream)
+    reducer(tmp_storage, d_in, d_out, op, num_items, h_init, stream)

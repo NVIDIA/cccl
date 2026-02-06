@@ -2162,6 +2162,23 @@ management:
 
     gc_place.deactivate(prev);  // Restore original context
 
+**RAII guard for scoped activation:**
+
+For exception-safe code or when you want automatic restoration, use the
+``exec_place_guard`` RAII helper:
+
+.. code:: cpp
+
+    {
+        exec_place_guard guard(exec_place::device(1));
+        // Device 1 is now active
+        // ... perform operations on device 1 ...
+    }
+    // Previous device is automatically restored when guard goes out of scope
+
+The guard automatically restores the previous execution place when it goes out
+of scope, making it useful for exception-safe code.
+
 Memory allocation with data places
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

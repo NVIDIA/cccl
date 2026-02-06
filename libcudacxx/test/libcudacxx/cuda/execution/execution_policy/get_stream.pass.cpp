@@ -20,6 +20,8 @@
 
 #include <nv/target>
 
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
+
 template <class Policy>
 void test(Policy pol)
 {

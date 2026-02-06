@@ -374,6 +374,9 @@ public:
   //! @rst
   //! Store items into a linear segment of memory.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -431,6 +434,9 @@ public:
 
   //! @rst
   //! Store items into a linear segment of memory, guarded by range.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! @smemwarpreuse
   //!

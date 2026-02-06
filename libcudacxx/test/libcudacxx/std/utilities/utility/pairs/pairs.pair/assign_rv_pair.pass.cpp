@@ -63,7 +63,7 @@ int main(int, char**)
   // cuda/std/memory not supported
   /*
   {
-      typedef cuda::std::pair<cuda::std::unique_ptr<int>, int> P;
+      using P = cuda::std::pair<cuda::std::unique_ptr<int>, int>;
       P p1(cuda::std::unique_ptr<int>(new int(3)), 4);
       P p2;
       p2 = cuda::std::move(p1);

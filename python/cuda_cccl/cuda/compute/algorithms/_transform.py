@@ -16,7 +16,7 @@ from ..typing import DeviceArrayLike
 
 
 class _UnaryTransform:
-    __slots__ = ["d_in_cccl", "d_out_cccl", "op", "op_cccl", "build_result"]
+    __slots__ = ["d_in_cccl", "d_out_cccl", "op_cccl", "build_result"]
 
     def __init__(
         self,
@@ -43,11 +43,15 @@ class _UnaryTransform:
         self,
         d_in,
         d_out,
+        op: Callable | OpAdapter,
         num_items: int,
         stream=None,
     ):
+        op_adapter = make_op_adapter(op)
+
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
+        op_adapter.update_op_state(self.op_cccl)
 
         stream_handle = protocols.validate_and_get_stream(stream)
         self.build_result.compute(
@@ -65,7 +69,6 @@ class _BinaryTransform:
         "d_in1_cccl",
         "d_in2_cccl",
         "d_out_cccl",
-        "op",
         "op_cccl",
         "build_result",
     ]
@@ -100,12 +103,16 @@ class _BinaryTransform:
         d_in1,
         d_in2,
         d_out,
+        op: Callable | OpAdapter,
         num_items: int,
         stream=None,
     ):
         set_cccl_iterator_state(self.d_in1_cccl, d_in1)
         set_cccl_iterator_state(self.d_in2_cccl, d_in2)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
+
+        op_adapter = make_op_adapter(op)
+        op_adapter.update_op_state(self.op_cccl)
 
         stream_handle = protocols.validate_and_get_stream(stream)
         self.build_result.compute(
@@ -221,8 +228,9 @@ def unary_transform(
         num_items: Number of items to transform.
         stream: CUDA stream to use for the operation.
     """
-    transformer = make_unary_transform(d_in, d_out, op)
-    transformer(d_in, d_out, num_items, stream)
+    op_adapter = make_op_adapter(op)
+    transformer = make_unary_transform(d_in, d_out, op_adapter)
+    transformer(d_in, d_out, op_adapter, num_items, stream)
 
 
 def binary_transform(
@@ -262,5 +270,6 @@ def binary_transform(
         num_items: Number of items to transform.
         stream: CUDA stream to use for the operation.
     """
-    transformer = make_binary_transform(d_in1, d_in2, d_out, op)
-    transformer(d_in1, d_in2, d_out, num_items, stream)
+    op_adapter = make_op_adapter(op)
+    transformer = make_binary_transform(d_in1, d_in2, d_out, op_adapter)
+    transformer(d_in1, d_in2, d_out, op_adapter, num_items, stream)

@@ -53,6 +53,19 @@ public:
   {
     return (g_ctx == other.g_ctx) && (pool.get() == other.pool.get()) && (devid == other.devid);
   }
+
+  bool operator<(const green_ctx_view& other) const
+  {
+    if (g_ctx != other.g_ctx)
+    {
+      return g_ctx < other.g_ctx;
+    }
+    if (pool.get() != other.pool.get())
+    {
+      return pool.get() < other.pool.get();
+    }
+    return devid < other.devid;
+  }
 };
 
 template <>

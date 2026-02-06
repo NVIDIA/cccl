@@ -24,8 +24,6 @@ class _ThreeWayPartition:
         "d_second_part_out_cccl",
         "d_unselected_out_cccl",
         "d_num_selected_out_cccl",
-        "select_first_part_op",
-        "select_second_part_op",
         "select_first_part_op_cccl",
         "select_second_part_op_cccl",
     ]
@@ -74,6 +72,8 @@ class _ThreeWayPartition:
         d_second_part_out,
         d_unselected_out,
         d_num_selected_out,
+        select_first_part_op: Callable | OpAdapter,
+        select_second_part_op: Callable | OpAdapter,
         num_items: int,
         stream=None,
     ):
@@ -82,6 +82,12 @@ class _ThreeWayPartition:
         set_cccl_iterator_state(self.d_second_part_out_cccl, d_second_part_out)
         set_cccl_iterator_state(self.d_unselected_out_cccl, d_unselected_out)
         set_cccl_iterator_state(self.d_num_selected_out_cccl, d_num_selected_out)
+
+        # Update op state for stateful ops
+        first_op_adapter = make_op_adapter(select_first_part_op)
+        second_op_adapter = make_op_adapter(select_second_part_op)
+        first_op_adapter.update_op_state(self.select_first_part_op_cccl)
+        second_op_adapter.update_op_state(self.select_second_part_op_cccl)
 
         stream_handle = protocols.validate_and_get_stream(stream)
 
@@ -193,14 +199,18 @@ def three_way_partition(
         num_items: Number of items to partition
         stream: CUDA stream for the operation (optional)
     """
+    # Create adapters to support stateful ops
+    first_op_adapter = make_op_adapter(select_first_part_op)
+    second_op_adapter = make_op_adapter(select_second_part_op)
+
     partitioner = make_three_way_partition(
         d_in,
         d_first_part_out,
         d_second_part_out,
         d_unselected_out,
         d_num_selected_out,
-        select_first_part_op,
-        select_second_part_op,
+        first_op_adapter,
+        second_op_adapter,
     )
     tmp_storage_bytes = partitioner(
         None,
@@ -209,6 +219,8 @@ def three_way_partition(
         d_second_part_out,
         d_unselected_out,
         d_num_selected_out,
+        first_op_adapter,
+        second_op_adapter,
         num_items,
         stream,
     )
@@ -220,6 +232,8 @@ def three_way_partition(
         d_second_part_out,
         d_unselected_out,
         d_num_selected_out,
+        first_op_adapter,
+        second_op_adapter,
         num_items,
         stream,
     )

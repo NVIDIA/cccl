@@ -21,11 +21,11 @@ template <class Type>
 struct Identity : Type
 {};
 
-typedef cuda::std::true_type TrueT;
-typedef cuda::std::false_type FalseT;
+using TrueT  = cuda::std::true_type;
+using FalseT = cuda::std::false_type;
 
-typedef Identity<TrueT> LazyTrueT;
-typedef Identity<FalseT> LazyFalseT;
+using LazyTrueT  = Identity<TrueT>;
+using LazyFalseT = Identity<FalseT>;
 
 // A type that cannot be instantiated
 template <class T>
@@ -37,7 +37,7 @@ struct CannotInst
 template <int Value>
 struct NextInt
 {
-  typedef NextInt<Value + 1> type;
+  using type             = NextInt<Value + 1>;
   static const int value = Value;
 };
 
@@ -52,7 +52,7 @@ struct HasTypeImp
   template <class>
   __host__ __device__ static FalseT test(...);
 
-  typedef decltype(test<Type>(0)) type;
+  using type = decltype(test<Type>(0));
 };
 
 // A metafunction that returns True if Type has a nested 'type' typedef
@@ -64,18 +64,18 @@ struct HasType : HasTypeImp<Type>::type
 __host__ __device__ void LazyNotTest()
 {
   {
-    typedef cuda::std::_Not<LazyTrueT> NotT;
+    using NotT = cuda::std::_Not<LazyTrueT>;
     static_assert(cuda::std::is_same<typename NotT::type, FalseT>::value, "");
     static_assert(NotT::value == false, "");
   }
   {
-    typedef cuda::std::_Not<LazyFalseT> NotT;
+    using NotT = cuda::std::_Not<LazyFalseT>;
     static_assert(cuda::std::is_same<typename NotT::type, TrueT>::value, "");
     static_assert(NotT::value == true, "");
   }
   {
     // Check that CannotInst<int> is not instantiated.
-    typedef cuda::std::_Not<CannotInst<int>> NotT;
+    using NotT = cuda::std::_Not<CannotInst<int>>;
 
     static_assert(cuda::std::is_same<NotT, NotT>::value, "");
   }

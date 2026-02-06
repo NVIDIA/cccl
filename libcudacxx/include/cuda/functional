@@ -24,6 +24,7 @@
 #include <cuda/__functional/address_stability.h>
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/__functional/proclaim_return_type.h>
 #include <cuda/__iterator/zip_function.h>
 #include <cuda/__memory/get_device_address.h>

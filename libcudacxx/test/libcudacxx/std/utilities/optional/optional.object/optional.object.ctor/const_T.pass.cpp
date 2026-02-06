@@ -65,7 +65,7 @@ struct Z
 
 void test_exceptions()
 {
-  typedef Z T;
+  using T = Z;
   try
   {
     const T t(3);

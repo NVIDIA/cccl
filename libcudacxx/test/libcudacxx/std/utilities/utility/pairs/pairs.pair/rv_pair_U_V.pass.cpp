@@ -75,8 +75,8 @@ int main(int, char**)
   // cuda/std/memory not supported
   /*
   {
-      typedef cuda::std::pair<cuda::std::unique_ptr<Derived>, int> P1;
-      typedef cuda::std::pair<cuda::std::unique_ptr<Base>, long> P2;
+      using P1 = cuda::std::pair<cuda::std::unique_ptr<Derived>, int>;
+      using P2 = cuda::std::pair<cuda::std::unique_ptr<Base>, long>;
       P1 p1(cuda::std::unique_ptr<Derived>(), 4);
       P2 p2 = cuda::std::move(p1);
       assert(p2.first == nullptr);

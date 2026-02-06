@@ -29,7 +29,7 @@ __host__ __device__ void test()
 {
   {
     using T = __int128_t;
-    typedef cuda::atomic_ref<T, ThreadScope> A;
+    using A = cuda::atomic_ref<T, ThreadScope>;
     Selector<T, constructor_initializer> sel;
     T& t = *sel.construct();
     t    = T(0);
@@ -40,7 +40,7 @@ __host__ __device__ void test()
   }
   {
     using T = __uint128_t;
-    typedef cuda::atomic_ref<T, ThreadScope> A;
+    using A = cuda::atomic_ref<T, ThreadScope>;
     Selector<T, constructor_initializer> sel;
     T& t = *sel.construct();
     t    = T(0);

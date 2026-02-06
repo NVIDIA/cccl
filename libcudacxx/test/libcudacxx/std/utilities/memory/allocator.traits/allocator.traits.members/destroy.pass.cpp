@@ -29,7 +29,7 @@
 template <class T>
 struct NoDestroy
 {
-  typedef T value_type;
+  using value_type = T;
 
   __host__ __device__ TEST_CONSTEXPR_CXX20 T* allocate(cuda::std::size_t n)
   {
@@ -51,7 +51,7 @@ struct CountDestroy
 
   __host__ __device__ TEST_CONSTEXPR_CXX20 ~CountDestroy() {}
 
-  typedef T value_type;
+  using value_type = T;
 
   __host__ __device__ TEST_CONSTEXPR_CXX20 T* allocate(cuda::std::size_t n)
   {
@@ -119,8 +119,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 #if !TEST_COMPILER(MSVC) && TEST_STD_VER >= 2020 // incomplete type not allowed
   if (!TEST_IS_CONSTANT_EVALUATED())
   {
-    typedef IncompleteHolder* T;
-    typedef NoDestroy<T> Alloc;
+    using T     = IncompleteHolder*;
+    using Alloc = NoDestroy<T>;
     Alloc alloc;
     T* pool = cuda::std::allocator_traits<Alloc>::allocate(alloc, 1);
     cuda::std::allocator_traits<Alloc>::construct(alloc, pool, nullptr);
