@@ -571,3 +571,39 @@ def test_stateful_transform_same_bytecode_different_sizes():
 
     cuda.compute.unary_transform(d_in, d_out, op2, len(d_in))
     np.testing.assert_array_equal(np.asarray([False, False, True]), d_out.get())
+
+
+@pytest.mark.no_verify_sass(reason="LDL/STL instructions emitted for this test.")
+def test_transform_caching_with_global_np_ufunc():
+    # regression test for a case where if multiple, identically named,
+    # ops referenced dotted globals like `np.<func>` those
+    # ops would all hash to the same value.
+
+    d_in = cp.asarray([1.0, 2.0, 3.0])
+    d_out = cp.empty_like(d_in)
+
+    def make_op():
+        sin = np.sin
+
+        def op(x):
+            return sin(x)
+
+        return op
+
+    d_out = cp.empty_like(d_in)
+
+    cuda.compute.unary_transform(d_in, d_out, make_op(), len(d_in))
+    cp.testing.assert_allclose(d_out, cp.sin(d_in))
+
+    def make_op():
+        cos = np.cos
+
+        def op(x):
+            return cos(x)
+
+        return op
+
+    cuda.compute.unary_transform(d_in, d_out, make_op(), len(d_in))
+    cp.testing.assert_allclose(d_out, cp.cos(d_in))
+
+    d_in = cp.asarray([1.0, 2.0, 3.0])
