@@ -28,14 +28,11 @@ using namespace cuda::experimental::stf;
 // Global for the sake of simplicity !
 stream_ctx ctx;
 
-/* Get a CUBLAS handle valid on the current device, or initialize it lazily */
-cublasHandle_t& get_cublas_handle()
+/* Get a CUBLAS handle valid on the current execution place, or initialize it lazily */
+cublasHandle_t& get_cublas_handle(const exec_place& ep = exec_place::current_device())
 {
-  int dev;
-  cuda_safe_call(cudaGetDevice(&dev));
-
-  static std::unordered_map<int, cublasHandle_t> cublas_handles;
-  auto& result = cublas_handles[dev];
+  static std::unordered_map<exec_place, cublasHandle_t, hash<exec_place>> cublas_handles;
+  auto& result = cublas_handles[ep];
   if (result == cublasHandle_t())
   { // not found, default value inserted
     // Lazy initialization, and save the handle for future use
@@ -44,14 +41,11 @@ cublasHandle_t& get_cublas_handle()
   return result;
 }
 
-/* Get a CUSOLVER handle valid on the current device, or initialize it lazily */
-cusolverDnHandle_t& get_cusolver_handle()
+/* Get a CUSOLVER handle valid on the current execution place, or initialize it lazily */
+cusolverDnHandle_t& get_cusolver_handle(const exec_place& ep = exec_place::current_device())
 {
-  int dev;
-  cuda_safe_call(cudaGetDevice(&dev));
-
-  static std::unordered_map<int, cusolverDnHandle_t> cusolver_handles;
-  auto& result = cusolver_handles[dev];
+  static std::unordered_map<exec_place, cusolverDnHandle_t, hash<exec_place>> cusolver_handles;
+  auto& result = cusolver_handles[ep];
   if (result == cusolverDnHandle_t())
   { // not found, default value inserted
     // Lazy initialization, and save the handle for future use
