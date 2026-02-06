@@ -165,6 +165,7 @@ struct dispatch_segmented_scan
       return cudaSuccess;
     }
 
+    const auto segments_per_block              = policy.SegmentsPerBlock();
     const auto int32_max                       = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
     const auto num_segments_per_invocation     = static_cast<::cuda::std::int64_t>(int32_max);
     const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
@@ -175,8 +176,9 @@ struct dispatch_segmented_scan
       const auto num_current_segments =
         ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
 
-      launcher_factory(
-        static_cast<::cuda::std::uint32_t>(num_current_segments), policy.SegmentedScan().BlockThreads(), 0, stream)
+      const auto grid_size = ::cuda::ceil_div(static_cast<::cuda::std::uint32_t>(num_current_segments),
+                                              static_cast<::cuda::std::uint32_t>(segments_per_block));
+      launcher_factory(grid_size, policy.SegmentedScan().BlockThreads(), 0, stream)
         .doit(segmented_scan_kernel,
               d_in,
               d_out,
