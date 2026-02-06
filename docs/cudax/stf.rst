@@ -1005,7 +1005,10 @@ place using an ``std::unordered_map`` keyed by ``exec_place``:
      static std::unordered_map<exec_place, cublasHandle_t, hash<exec_place>> handles;
      auto& h = handles[ep];
      if (h == cublasHandle_t{})
+     {
+       exec_place_guard guard(ep);
        cuda_safe_call(cublasCreate(&h));
+     }
      return h;
    }
 
