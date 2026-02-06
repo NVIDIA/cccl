@@ -114,7 +114,7 @@ private:
       { // Vectorize loads
         const OffsetT num_vec_items = ::cuda::ceil_div(num_items, wrapped_op_t::vec_size);
 
-        return detail::for_each::dispatch_t<OffsetT, wrapped_op_t>::dispatch(
+        return detail::for_each::dispatch<OffsetT, wrapped_op_t>(
           num_vec_items,
           wrapped_op_t{
             unwrapped_first, op, num_items % wrapped_op_t::vec_size ? num_vec_items - 1 : num_vec_items, num_items},
@@ -127,7 +127,7 @@ private:
     else
     {
       using wrapped_op_t = detail::for_each::op_wrapper_t<OffsetT, OpT, RandomAccessOrContiguousIteratorT>;
-      return detail::for_each::dispatch_t<OffsetT, wrapped_op_t>::dispatch(num_items, wrapped_op_t{first, op}, stream);
+      return detail::for_each::dispatch<OffsetT, wrapped_op_t>(num_items, wrapped_op_t{first, op}, stream);
     }
   }
 
@@ -563,7 +563,7 @@ public:
       return cudaSuccess;
     }
     using offset_t = ShapeT;
-    return detail::for_each::dispatch_t<offset_t, OpT>::dispatch(static_cast<offset_t>(shape), op, stream);
+    return detail::for_each::dispatch<offset_t, OpT>(static_cast<offset_t>(shape), op, stream);
   }
 
 private:
