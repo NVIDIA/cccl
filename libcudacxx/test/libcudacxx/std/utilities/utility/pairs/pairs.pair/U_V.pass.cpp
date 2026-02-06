@@ -57,7 +57,7 @@ int main(int, char**)
   // cuda/std/memory not supported
   /*
   {
-      typedef cuda::std::pair<cuda::std::unique_ptr<int>, short*> P;
+      using P = cuda::std::pair<cuda::std::unique_ptr<int>, short*>;
       P p(cuda::std::unique_ptr<int>(new int(3)), nullptr);
       assert(*p.first == 3);
       assert(p.second == nullptr);

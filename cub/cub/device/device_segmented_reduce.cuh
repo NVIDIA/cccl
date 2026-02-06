@@ -82,6 +82,9 @@ struct DeviceSegmentedReduce
   //! Computes a device-wide segmented reduction using the specified
   //! binary ``reduction_op`` functor.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Does not support binary reduction operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -214,6 +217,9 @@ struct DeviceSegmentedReduce
   //! Computes a device-wide segmented reduction using the specified
   //! binary ``reduction_op`` functor and a fixed segment size.
   //!
+  //! .. versionadded:: 3.2.0
+  //!    First appears in CUDA Toolkit 13.2.
+  //!
   //! - Does not support binary reduction operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -301,6 +307,9 @@ struct DeviceSegmentedReduce
 
   //! @rst
   //! Computes a device-wide segmented sum using the addition (``+``) operator.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``0`` as the initial value of the reduction for each segment.
   //! - When input a contiguous sequence of segments, a single sequence
@@ -416,6 +425,9 @@ struct DeviceSegmentedReduce
 
   //! @rst
   //! Computes a device-wide segmented sum using the addition (``+``) operator.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``0`` as the initial value of the reduction for each segment.
   //! - When input a contiguous sequence of segments, a single sequence
@@ -594,6 +606,9 @@ struct DeviceSegmentedReduce
   //! @rst
   //! Computes a device-wide segmented sum using the addition (``+``) operator.
   //!
+  //! .. versionadded:: 3.2.0
+  //!    First appears in CUDA Toolkit 13.2.
+  //!
   //! - Uses ``0`` as the initial value of the reduction for each segment.
   //! - @devicestorage
   //!
@@ -671,6 +686,9 @@ struct DeviceSegmentedReduce
 
   //! @rst
   //! Computes a device-wide segmented minimum using the less-than (``<``) operator.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``::cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction for each segment.
   //! - When input a contiguous sequence of segments, a single sequence
@@ -793,6 +811,9 @@ struct DeviceSegmentedReduce
   //! @rst
   //! Computes a device-wide segmented minimum using the less-than (``<``) operator.
   //!
+  //! .. versionadded:: 3.2.0
+  //!    First appears in CUDA Toolkit 13.2.
+  //!
   //! - Uses ``::cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction for each segment.
   //!
   //! Snippet
@@ -876,6 +897,9 @@ struct DeviceSegmentedReduce
   //! @rst
   //! Finds the first device-wide minimum in each segment using the
   //! less-than (``<``) operator, also returning the in-segment index of that item.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The output value type of ``d_out`` is ``cub::KeyValuePair<int, T>``
   //!   (assuming the value type of ``d_in`` is ``T``)
@@ -1018,6 +1042,9 @@ struct DeviceSegmentedReduce
   //! Finds the first device-wide minimum in each segment using the
   //! less-than (``<``) operator, also returning the in-segment index of that item.
   //!
+  //! .. versionadded:: 3.2.0
+  //!    First appears in CUDA Toolkit 13.2.
+  //!
   //! - The output value type of ``d_out`` is ``::cuda::std::pair<int, T>``
   //!   (assuming the value type of ``d_in`` is ``T``)
   //!
@@ -1128,6 +1155,9 @@ struct DeviceSegmentedReduce
 
   //! @rst
   //! Computes a device-wide segmented maximum using the greater-than (``>``) operator.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``::cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
   //! - When input a contiguous sequence of segments, a single sequence
@@ -1245,6 +1275,9 @@ struct DeviceSegmentedReduce
   //! @rst
   //! Computes a device-wide segmented maximum using the greater-than (``>``) operator.
   //!
+  //! .. versionadded:: 3.2.0
+  //!    First appears in CUDA Toolkit 13.2.
+  //!
   //! - Uses ``::cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
   //!
   //! Snippet
@@ -1322,6 +1355,9 @@ struct DeviceSegmentedReduce
   //! @rst
   //! Finds the first device-wide maximum in each segment using the
   //! greater-than (``>``) operator, also returning the in-segment index of that item
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The output value type of ``d_out`` is ``cub::KeyValuePair<int, T>``
   //!   (assuming the value type of ``d_in`` is ``T``)
@@ -1466,6 +1502,9 @@ struct DeviceSegmentedReduce
   //! @rst
   //! Finds the first device-wide maximum in each segment using the
   //! greater-than (``>``) operator, also returning the in-segment index of that item
+  //!
+  //! .. versionadded:: 3.2.0
+  //!    First appears in CUDA Toolkit 13.2.
   //!
   //! - The output value type of ``d_out`` is ``::cuda::std::pair<int, T>``
   //!   (assuming the value type of ``d_in`` is ``T``)

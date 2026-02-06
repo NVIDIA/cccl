@@ -14,10 +14,10 @@
 //   : public iterator<output_iterator_tag, void, void, void, void>
 // {
 // public:
-//   typedef charT                          char_type;
-//   typedef traits                         traits_type;
-//   typedef basic_streambuf<charT, traits> streambuf_type;
-//   typedef basic_ostream<charT, traits>   ostream_type;
+//   using char_type      = charT;
+//   using traits_type    = traits;
+//   using streambuf_type = basic_streambuf<charT, traits>;
+//   using ostream_type   = basic_ostream<charT, traits>;
 //   ...
 
 #include <cuda/std/iterator>
@@ -29,7 +29,7 @@
 
 int main(int, char**)
 {
-  typedef cuda::std::ostreambuf_iterator<char> I1;
+  using I1 = cuda::std::ostreambuf_iterator<char>;
 
   static_assert((cuda::std::is_same<I1::iterator_category, cuda::std::output_iterator_tag>::value), "");
   static_assert((cuda::std::is_same<I1::value_type, void>::value), "");
@@ -41,7 +41,7 @@ int main(int, char**)
   static_assert((cuda::std::is_same<I1::streambuf_type, cuda::std::streambuf>::value), "");
   static_assert((cuda::std::is_same<I1::ostream_type, cuda::std::ostream>::value), "");
 
-  typedef cuda::std::ostreambuf_iterator<wchar_t> I2;
+  using I2 = cuda::std::ostreambuf_iterator<wchar_t>;
 
   static_assert((cuda::std::is_same<I2::iterator_category, cuda::std::output_iterator_tag>::value), "");
   static_assert((cuda::std::is_same<I2::value_type, void>::value), "");

@@ -64,6 +64,8 @@ test-cu13 = [
   "cupy-cuda13x",
   "pytest-benchmark",
 ]
+bench-cu12 = ["cuda-cccl[cu12]", "cuda-bench[cu12]"]
+bench-cu13 = ["cuda-cccl[cu13]", "cuda-bench[cu13]"]
 
 [project.urls]
 Homepage = "https://github.com/NVIDIA/cccl"
@@ -102,7 +104,7 @@ python_version = "3.10"
 [[tool.mypy.overrides]]
 module = [
   "numba.*",
-  "llvmlite",
+  "llvmlite.*",
   "cuda.cccl.headers.*",
   "cuda.cccl._cuda_version_utils.*",
   "cuda.bindings.*",

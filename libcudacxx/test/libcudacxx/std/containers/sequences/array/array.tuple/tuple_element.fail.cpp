@@ -17,8 +17,8 @@
 int main(int, char**)
 {
   {
-    typedef double T;
-    typedef cuda::std::array<T, 3> C;
+    using T = double;
+    using C = cuda::std::array<T, 3>;
     cuda::std::tuple_element<3, C> foo; // expected-note {{requested here}}
     // expected-error-re@array:* {{{{(static_assert|static assertion)}} failed{{( due to requirement '3U[L]{0,2} <
     // 3U[L]{0,2}')?}}{{.*}}Index out of bounds in cuda::std::tuple_element<> (cuda::std::array)}}

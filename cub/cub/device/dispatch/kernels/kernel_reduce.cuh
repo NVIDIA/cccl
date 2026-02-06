@@ -228,7 +228,7 @@ template <typename PolicySelector,
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).single_tile.block_threads),
   1) void DeviceReduceSingleTileKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
-                                       _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
+                                       OutputIteratorT d_out,
                                        _CCCL_GRID_CONSTANT const OffsetT num_items,
                                        ReductionOpT reduction_op,
                                        _CCCL_GRID_CONSTANT const InitT init,

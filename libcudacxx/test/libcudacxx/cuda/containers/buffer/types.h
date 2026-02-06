@@ -28,11 +28,11 @@ class forward_iterator
   friend class forward_iterator;
 
 public:
-  typedef cuda::std::forward_iterator_tag iterator_category;
-  typedef typename cuda::std::iterator_traits<It>::value_type value_type;
-  typedef typename cuda::std::iterator_traits<It>::difference_type difference_type;
-  typedef It pointer;
-  typedef typename cuda::std::iterator_traits<It>::reference reference;
+  using iterator_category = cuda::std::forward_iterator_tag;
+  using value_type        = typename cuda::std::iterator_traits<It>::value_type;
+  using difference_type   = typename cuda::std::iterator_traits<It>::difference_type;
+  using pointer           = It;
+  using reference         = typename cuda::std::iterator_traits<It>::reference;
 
   __host__ __device__ constexpr forward_iterator()
       : it_()
