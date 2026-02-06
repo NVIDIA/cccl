@@ -208,7 +208,14 @@ class CachableFunction:
             func.__code__.co_consts,
             tuple(contents),
             tuple(
-                _make_hashable(func.__globals__.get(name, None))
+                # if `name` is found in __globals__, try and hash
+                # the referenced object. If `name` is not found in
+                # __globals__, (e.g., `name` is part of a dotted
+                # name like `np.argmax`), for caching purposes we
+                # use the hash of the name itself. Assumes numba
+                # known how to interpret the dotted name at JIT
+                # time.
+                _make_hashable(func.__globals__.get(name, name))
                 for name in func.__code__.co_names
             ),
         )
