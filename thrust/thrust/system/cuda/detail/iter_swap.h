@@ -24,6 +24,9 @@
 
 #  include <nv/target>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
+
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
@@ -62,5 +65,9 @@ inline _CCCL_HOST_DEVICE void iter_swap(thrust::cuda::execution_policy<DerivedPo
 
 } // end iter_swap()
 } // namespace cuda_cub
+
 THRUST_NAMESPACE_END
+
+_CCCL_DIAG_POP
+
 #endif // _CCCL_CUDA_COMPILATION()
