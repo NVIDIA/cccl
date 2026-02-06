@@ -141,6 +141,9 @@ public:
   //! `bulk <https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2300r5.html#design-sender-adaptor-bulk>`_
   //! from P2300.
   //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
+  //!
   //! - The return value of ``op``, if any, is ignored.
   //! - @devicestorage
   //!
@@ -204,6 +207,9 @@ public:
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! Applies the function object ``op`` to each element in the range ``[first, first + num_items)``
+  //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
   //!
   //! - The return value of ``op``, if any, is ignored.
   //! - @devicestorage
@@ -278,6 +284,9 @@ public:
   //!
   //! Applies the function object ``op`` to each element in the range ``[first, last)``
   //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
+  //!
   //! - The return value of ``op``, if any, is ignored.
   //! - @devicestorage
   //!
@@ -349,6 +358,9 @@ public:
   //! Applies the function object ``op`` to each element in the range ``[first, first + num_items)``.
   //! Unlike the ``ForEachN`` algorithm, ``ForEachCopyN`` is allowed to invoke ``op`` on copies of the elements.
   //! This relaxation allows ``ForEachCopyN`` to vectorize loads.
+  //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
   //!
   //! - Allowed to invoke ``op`` on copies of the elements
   //! - The return value of ``op``, if any, is ignored.
@@ -426,6 +438,9 @@ public:
   //! Unlike the ``ForEach`` algorithm, ``ForEachCopy`` is allowed to invoke ``op`` on copies of the elements.
   //! This relaxation allows ``ForEachCopy`` to vectorize loads.
   //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
+  //!
   //! - Allowed to invoke ``op`` on copies of the elements
   //! - The return value of ``op``, if any, is ignored.
   //! - @devicestorage
@@ -500,6 +515,9 @@ public:
   //! `bulk <https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2300r5.html#design-sender-adaptor-bulk>`_
   //! from P2300.
   //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
+  //!
   //! - The return value of ``op``, if any, is ignored.
   //!
   //! A Simple Example
@@ -570,6 +588,9 @@ public:
   //!
   //! Applies the function object ``op`` to each element in the range ``[first, first + num_items)``
   //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
+  //!
   //! - The return value of ``op``, if any, is ignored.
   //!
   //! A Simple Example
@@ -624,6 +645,9 @@ public:
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! Applies the function object ``op`` to each element in the range ``[first, last)``
+  //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
   //!
   //! - The return value of ``op``, if any, is ignored.
   //!
@@ -694,6 +718,9 @@ public:
   //! Unlike the ``ForEachN`` algorithm, ``ForEachCopyN`` is allowed to invoke ``op`` on copies of the elements.
   //! This relaxation allows ``ForEachCopyN`` to vectorize loads.
   //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
+  //!
   //! - Allowed to invoke ``op`` on copies of the elements
   //! - The return value of ``op``, if any, is ignored.
   //!
@@ -751,6 +778,9 @@ public:
   //! Applies the function object ``op`` to each element in the range ``[first, last)``.
   //! Unlike the ``ForEach`` algorithm, ``ForEachCopy`` is allowed to invoke ``op`` on copies of the elements.
   //! This relaxation allows ``ForEachCopy`` to vectorize loads.
+  //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
   //!
   //! - Allowed to invoke ``op`` on copies of the elements
   //! - The return value of ``op``, if any, is ignored.
@@ -811,6 +841,9 @@ public:
   //!
   //! Iterate through a multi-dimensional extents into a single linear index and a list of indices for each extent
   //! dimension.
+  //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
   //!
   //! - a single linear index that represents the current iteration
   //! - indices of each extent dimension
@@ -890,6 +923,9 @@ public:
   //!
   //! Iterate through a multi-dimensional extents producing
   //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
+  //!
   //! - a single linear index that represents the current iteration
   //! - list of indices containing the coordinates for each extent dimension
   //!
@@ -957,6 +993,9 @@ public:
   //!
   //! Iterate through multi-dimensional extents using a specific mdspan layout, applying a function object for each
   //! element, passing
+  //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
   //!
   //! - a single linear index that represents the current iteration
   //! - a list of indices containing the coordinates for each extent dimension

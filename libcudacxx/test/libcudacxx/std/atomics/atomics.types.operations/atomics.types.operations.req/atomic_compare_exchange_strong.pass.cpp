@@ -34,7 +34,7 @@ struct TestFn
   __host__ __device__ void operator()() const
   {
     {
-      typedef cuda::std::atomic<T> A;
+      using A = cuda::std::atomic<T>;
       Selector<A, constructor_initializer> sel;
       A& a = *sel.construct();
       T t(T(1));
@@ -47,7 +47,7 @@ struct TestFn
       assert(t == T(2));
     }
     {
-      typedef cuda::std::atomic<T> A;
+      using A = cuda::std::atomic<T>;
       Selector<volatile A, constructor_initializer> sel;
       volatile A& a = *sel.construct();
       T t(T(1));

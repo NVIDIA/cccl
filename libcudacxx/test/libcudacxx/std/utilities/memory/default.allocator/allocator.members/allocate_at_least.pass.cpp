@@ -58,7 +58,7 @@ int AlignedType<Align>::constructed = 0;
 template <cuda::std::size_t Align>
 __host__ __device__ void test_aligned()
 {
-  typedef AlignedType<Align> T;
+  using T        = AlignedType<Align>;
   T::constructed = 0;
   globalMemCounter.reset();
   cuda::std::allocator<T> a;
@@ -91,7 +91,7 @@ __host__ __device__ void test_aligned()
 template <cuda::std::size_t Align>
 __host__ __device__ constexpr bool test_aligned_constexpr()
 {
-  typedef AlignedType<Align> T;
+  using T = AlignedType<Align>;
   cuda::std::allocator<T> a;
   cuda::std::same_as<cuda::std::allocation_result<T*>> decltype(auto) ap = a.allocate_at_least(3);
   assert(ap.count >= 3);

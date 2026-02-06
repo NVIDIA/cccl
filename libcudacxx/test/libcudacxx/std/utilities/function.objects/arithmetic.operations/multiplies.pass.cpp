@@ -39,7 +39,7 @@ __global__ void test_global_kernel()
 
 int main(int, char**)
 {
-  typedef cuda::std::multiplies<int> F;
+  using F   = cuda::std::multiplies<int>;
   const F f = F();
 #if TEST_STD_VER <= 2017
   static_assert((cuda::std::is_same<int, F::first_argument_type>::value), "");
@@ -48,7 +48,7 @@ int main(int, char**)
 #endif // TEST_STD_VER <= 2017
   assert(f(3, 2) == 6);
 
-  typedef cuda::std::multiplies<> F2;
+  using F2    = cuda::std::multiplies<>;
   const F2 f2 = F2();
   assert(f2(3, 2) == 6);
   assert(f2(3.0, 2) == 6);

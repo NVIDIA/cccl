@@ -241,6 +241,9 @@ public:
   //! @rst
   //! Computes a device-wide reduction using the specified binary ``reduction_op`` functor and initial value ``init``.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Does not support binary reduction operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -363,6 +366,9 @@ public:
 
   //! @rst
   //! Computes a device-wide reduction using the specified binary ``reduction_op`` functor and initial value ``init``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Does not support binary reduction operators that are non-commutative.
   //! - By default, provides "run-to-run" determinism for pseudo-associative reduction
@@ -510,6 +516,9 @@ public:
   //! @rst
   //! Computes a device-wide sum using the addition (``+``) operator.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Uses ``0`` as the initial value of the reduction.
   //! - Does not support ``+`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
@@ -619,6 +628,9 @@ public:
   //! @rst
   //! Computes a device-wide sum using the addition (``+``) operator.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Uses ``0`` as the initial value of the reduction.
   //! - Does not support ``+`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
@@ -723,6 +735,9 @@ public:
 
   //! @rst
   //! Computes a device-wide minimum using the less-than (``<``) operator.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction.
   //! - Does not support ``<`` operators that are non-commutative.
@@ -835,6 +850,9 @@ public:
   //! Computes a device-wide minimum using the less-than (``<``) operator. The result is written to the output
   //! iterator.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Uses ``cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction.
   //! - Provides determinism based on the environment's determinism requirements.
   //!   To request "run-to-run" determinism, pass ``cuda::execution::require(cuda::execution::determinism::run_to_run)``
@@ -927,6 +945,9 @@ public:
 
   //! @rst
   //! Finds the first device-wide minimum using the less-than (``<``) operator and also returns the index of that item.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The minimum is written to ``d_min_out``
   //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
@@ -1065,6 +1086,9 @@ public:
 
   //! @rst
   //! Finds the first device-wide minimum using the less-than (``<``) operator and also returns the index of that item.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The minimum is written to ``d_min_out``
   //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
@@ -1227,6 +1251,9 @@ public:
   //! @rst
   //! Finds the first device-wide minimum using the less-than (``<``) operator, also returning the index of that item.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The output value type of ``d_out`` is ``cub::KeyValuePair<int, T>``
   //!   (assuming the value type of ``d_in`` is ``T``)
   //!
@@ -1346,6 +1373,9 @@ public:
   //! @rst
   //! Computes a device-wide maximum using the greater-than (``>``) operator.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Uses ``cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
   //! - Does not support ``>`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
@@ -1455,6 +1485,9 @@ public:
   //! Computes a device-wide maximum using the greater-than (``>``) operator. The result is written to the output
   //! iterator.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Uses ``cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
   //! - Provides determinism based on the environment's determinism requirements.
   //!   To request "run-to-run" determinism, pass ``cuda::execution::require(cuda::execution::determinism::run_to_run)``
@@ -1549,6 +1582,9 @@ public:
   //! @rst
   //! Finds the first device-wide maximum using the greater-than (``>``) operator and also returns the index of that
   //! item.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The maximum is written to ``d_max_out``
   //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
@@ -1688,6 +1724,9 @@ public:
   //! Finds the first device-wide maximum using the greater-than (``>``)
   //! operator, also returning the index of that item
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The output value type of ``d_out`` is ``cub::KeyValuePair<int, T>``
   //!   (assuming the value type of ``d_in`` is ``T``)
   //!
@@ -1810,6 +1849,9 @@ public:
   //! @rst
   //! Finds the first device-wide maximum using the greater-than (``>``) operator and also returns the index of that
   //! item.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The maximum is written to ``d_max_out``
   //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
@@ -1972,6 +2014,9 @@ public:
   //! @rst
   //! Fuses transform and reduce operations
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Does not support binary reduction operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -2109,6 +2154,9 @@ public:
 
   //! @rst
   //! Reduces segments of values, where segments are demarcated by corresponding runs of identical keys.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! This operation computes segmented reductions within ``d_values_in`` using the specified binary ``reduction_op``
   //! functor. The segments are identified by "runs" of corresponding keys in `d_keys_in`, where runs are maximal

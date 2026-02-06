@@ -55,7 +55,7 @@ public:
 template <class T>
 __host__ __device__ void test()
 {
-  typedef cuda::std::reference_wrapper<T> Wrap;
+  using Wrap = cuda::std::reference_wrapper<T>;
   static_assert(cuda::std::is_copy_constructible<Wrap>::value, "");
   static_assert(cuda::std::is_copy_assignable<Wrap>::value, "");
   static_assert(cuda::std::is_trivially_copyable<Wrap>::value, "");
