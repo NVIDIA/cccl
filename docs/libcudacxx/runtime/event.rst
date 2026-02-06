@@ -3,7 +3,7 @@
 Events
 ======
 
-Event is a snapshot of execution state of a stream. It can be used to synchronize work submitted to a stream up to a certain point, estabilish dependency between streams or measure time passed between two events.
+Event is a snapshot of execution state of a stream. It can be used to synchronize work submitted to a stream up to a certain point, establish dependency between streams or measure time passed between two events.
 
 ``cuda::event_ref``
 --------------------------------------------------
