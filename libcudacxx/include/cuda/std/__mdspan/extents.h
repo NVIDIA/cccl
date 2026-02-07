@@ -395,6 +395,25 @@ _CCCL_REQUIRES(integral<_To>)
   }
   return true;
 }
+
+// ------------------------------------------------------------------
+// ------------ __mul_overflow --------------------------------------
+// ------------------------------------------------------------------
+
+// Multiplies two values and detects overflow. Returns true if overflow occurred.
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr bool __mul_overflow(_Tp __x, _Tp __y, _Tp* __res) noexcept
+{
+  *__res = __x * __y;
+  return __x && ((*__res / __x) != __y);
+}
+
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr bool __mul_overflow(_Tp __x, _Tp __y) noexcept
+{
+  const auto __res = __x * __y;
+  return __x && ((__res / __x) != __y);
+}
 } // namespace __mdspan_detail
 
 // ------------------------------------------------------------------
@@ -684,6 +703,31 @@ _CCCL_HOST_DEVICE extents(_IndexTypes...) -> extents<size_t, __to_dynamic_extent
 
 namespace __mdspan_detail
 {
+// ------------------------------------------------------------------
+// ------------ __required_span_size_is_representable ---------------
+// ------------------------------------------------------------------
+
+// Checks if the product of extents is representable as index_type without overflow
+template <class _Extents>
+[[nodiscard]] _CCCL_API constexpr bool __required_span_size_is_representable(const _Extents& __ext) noexcept
+{
+  using ::cuda::std::__mdspan_detail::__mul_overflow;
+  if constexpr (_Extents::rank() != 0)
+  {
+    using __index_type  = typename _Extents::index_type;
+    using __rank_type   = typename _Extents::rank_type;
+    __index_type __prod = __ext.extent(0);
+    for (__rank_type __r = 1; __r < _Extents::rank(); __r++)
+    {
+      if (__mul_overflow(__prod, __ext.extent(__r), &__prod))
+      {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 // Function to check whether a set of indices are a multidimensional
 // index into extents. This is a word of power in the C++ standard
 // requiring that the indices are larger than 0 and smaller than
