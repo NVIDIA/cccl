@@ -35,6 +35,7 @@ enum class __pstl_algorithm
   __for_each_n,
   __generate_n,
   __reduce,
+  __select_if,
   __transform,
 };
 
