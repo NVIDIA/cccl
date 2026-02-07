@@ -223,9 +223,10 @@ struct uncommon_plus
 C2H_TEST("DeviceTransform::Transform uncommon types", "[device][transform]", uncommon_types)
 {
   using type = c2h::get<0, TestType>;
-  CAPTURE(c2h::type_name<type>());
 
   const int num_items = GENERATE(0, 1, 100, 1'000, 100'000); // try to hit the small and full tile code paths
+  CAPTURE(num_items, c2h::type_name<type>());
+
   c2h::device_vector<int8_t> a(num_items, thrust::default_init); // put some bytes at the front, so SMEM has to handle
                                                                  // padding between tiles to align them
   c2h::device_vector<type> b(num_items, thrust::default_init);
