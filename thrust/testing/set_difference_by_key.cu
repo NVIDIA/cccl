@@ -110,7 +110,40 @@ void TestSetDifferenceByKeySimple()
 }
 DECLARE_VECTOR_UNITTEST(TestSetDifferenceByKeySimple);
 
-template <typename T>
+template<typename Vector>
+void TestSetDifferenceByKeyOverride(void)
+{
+  typedef typename Vector::iterator Iterator;
+
+  Vector a_key{0, 2, 4, 5}, b_key{0, 3, 3, 4, 6};
+  Vector a_val(4, 0);
+
+  Vector ref_key(2), ref_val(2);
+  ref_key[0] = 2;
+  ref_key[1] = 5;
+  ref_val[0] = 0;
+  ref_val[1] = 0;
+
+  Vector result_key(2), result_val(2);
+
+  cuda::std::pair<Iterator,Iterator> end = thrust::set_difference_by_key(
+    a_key.begin(),
+    a_key.end(),
+    b_key.begin(),
+    b_key.end(),
+    a_val.begin(),
+    result_key.begin(),
+    result_val.begin());
+
+  ASSERT_EQUAL_QUIET(result_key.end(), end.first);
+  ASSERT_EQUAL_QUIET(result_val.end(), end.second);
+  ASSERT_EQUAL(ref_key, result_key);
+  ASSERT_EQUAL(ref_val, result_val);
+}
+DECLARE_VECTOR_UNITTEST(TestSetDifferenceByKeyOverride);
+
+
+template<typename T>
 void TestSetDifferenceByKey(const size_t n)
 {
   thrust::host_vector<T> random_keys = unittest::random_integers<unittest::int8_t>(n);
