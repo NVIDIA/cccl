@@ -99,7 +99,7 @@ function(thrust_add_header_test thrust_target label definitions)
     endif()
 
     if (lang STREQUAL "CUDA")
-      thrust_configure_cuda_target(${headertest_target} RDC ${THRUST_FORCE_RDC})
+      cccl_set_rdc(${headertest_target} ${THRUST_FORCE_RDC})
     endif()
 
     if ("TBB" IN_LIST config_systems)
