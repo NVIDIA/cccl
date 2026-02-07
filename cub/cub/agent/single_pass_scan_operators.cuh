@@ -33,6 +33,10 @@
 
 #include <nv/target>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif
+
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -538,6 +542,133 @@ struct exponential_backon_constructor_t
   }
 #endif // CUB_ENABLE_POLICY_PTX_JSON
 };
+
+enum class delay_constructor_kind
+{
+  no_delay,
+  fixed_delay,
+  exponential_backoff,
+  exponential_backoff_jitter,
+  exponential_backoff_jitter_window,
+  exponential_backon_jitter_window,
+  exponential_backon_jitter,
+  exponential_backon
+};
+
+#if !_CCCL_COMPILER(NVRTC)
+inline ::std::ostream& operator<<(::std::ostream& os, delay_constructor_kind kind)
+{
+  switch (kind)
+  {
+    case delay_constructor_kind::no_delay:
+      return os << "delay_constructor_kind::no_delay";
+    case delay_constructor_kind::fixed_delay:
+      return os << "delay_constructor_kind::fixed_delay";
+    case delay_constructor_kind::exponential_backoff:
+      return os << "delay_constructor_kind::exponential_backoff";
+    case delay_constructor_kind::exponential_backoff_jitter:
+      return os << "delay_constructor_kind::exponential_backoff_jitter";
+    case delay_constructor_kind::exponential_backoff_jitter_window:
+      return os << "delay_constructor_kind::exponential_backoff_jitter_window";
+    case delay_constructor_kind::exponential_backon_jitter_window:
+      return os << "delay_constructor_kind::exponential_backon_jitter_window";
+    case delay_constructor_kind::exponential_backon_jitter:
+      return os << "delay_constructor_kind::exponential_backon_jitter";
+    case delay_constructor_kind::exponential_backon:
+      return os << "delay_constructor_kind::exponential_backon";
+    default:
+      return os << "<unknown delay_constructor_kind: " << static_cast<int>(kind) << ">";
+  }
+}
+#endif // !_CCCL_COMPILER(NVRTC)
+
+// Describes the parameters of a delay constructor, used for tuning policies
+struct delay_constructor_policy
+{
+  delay_constructor_kind kind;
+  unsigned int delay;
+  unsigned int l2_write_latency;
+
+  _CCCL_API constexpr friend bool operator==(const delay_constructor_policy& lhs, const delay_constructor_policy& rhs)
+  {
+    return lhs.kind == rhs.kind && lhs.delay == rhs.delay && lhs.l2_write_latency == rhs.l2_write_latency;
+  }
+
+  _CCCL_API constexpr friend bool operator!=(const delay_constructor_policy& lhs, const delay_constructor_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const delay_constructor_policy& p)
+  {
+    return os << "delay_constructor_policy { .kind = " << p.kind << ", .delay = " << p.delay
+              << ", .l2_write_latency = " << p.l2_write_latency << " }";
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
+};
+
+// Converts a delay constructor type to its corresponding policy struct
+template <typename DelayConstructor>
+inline constexpr auto delay_constructor_policy_from_type = 0;
+
+template <unsigned int L2WriteLatency>
+inline constexpr auto delay_constructor_policy_from_type<no_delay_constructor_t<L2WriteLatency>> =
+  delay_constructor_policy{delay_constructor_kind::no_delay, 0, L2WriteLatency};
+
+template <unsigned int Delay, unsigned int L2WriteLatency>
+inline constexpr auto delay_constructor_policy_from_type<fixed_delay_constructor_t<Delay, L2WriteLatency>> =
+  delay_constructor_policy{delay_constructor_kind::fixed_delay, Delay, L2WriteLatency};
+
+template <unsigned int Delay, unsigned int L2WriteLatency>
+inline constexpr auto delay_constructor_policy_from_type<exponential_backoff_constructor_t<Delay, L2WriteLatency>> =
+  delay_constructor_policy{delay_constructor_kind::exponential_backoff, Delay, L2WriteLatency};
+
+template <unsigned int Delay, unsigned int L2WriteLatency>
+inline constexpr auto
+  delay_constructor_policy_from_type<exponential_backoff_jitter_constructor_t<Delay, L2WriteLatency>> =
+    delay_constructor_policy{delay_constructor_kind::exponential_backoff_jitter, Delay, L2WriteLatency};
+
+template <unsigned int Delay, unsigned int L2WriteLatency>
+inline constexpr auto
+  delay_constructor_policy_from_type<exponential_backoff_jitter_window_constructor_t<Delay, L2WriteLatency>> =
+    delay_constructor_policy{delay_constructor_kind::exponential_backoff_jitter_window, Delay, L2WriteLatency};
+
+template <unsigned int Delay, unsigned int L2WriteLatency>
+inline constexpr auto
+  delay_constructor_policy_from_type<exponential_backon_jitter_window_constructor_t<Delay, L2WriteLatency>> =
+    delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, Delay, L2WriteLatency};
+
+template <unsigned int Delay, unsigned int L2WriteLatency>
+inline constexpr auto delay_constructor_policy_from_type<exponential_backon_jitter_constructor_t<Delay, L2WriteLatency>> =
+  delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, Delay, L2WriteLatency};
+
+template <unsigned int Delay, unsigned int L2WriteLatency>
+inline constexpr auto delay_constructor_policy_from_type<exponential_backon_constructor_t<Delay, L2WriteLatency>> =
+  delay_constructor_policy{delay_constructor_kind::exponential_backon, Delay, L2WriteLatency};
+
+// TODO(bgruber): this is modeled after <look_back_helper.cuh>, unify this
+template <delay_constructor_kind Kind, unsigned int Delay, unsigned int L2WriteLatency>
+struct __delay_constructor_t_helper
+{
+private:
+  using delay_constructors = ::cuda::std::__type_list<
+    no_delay_constructor_t<L2WriteLatency>,
+    fixed_delay_constructor_t<Delay, L2WriteLatency>,
+    exponential_backoff_constructor_t<Delay, L2WriteLatency>,
+    exponential_backoff_jitter_constructor_t<Delay, L2WriteLatency>,
+    exponential_backoff_jitter_window_constructor_t<Delay, L2WriteLatency>,
+    exponential_backon_jitter_window_constructor_t<Delay, L2WriteLatency>,
+    exponential_backon_jitter_constructor_t<Delay, L2WriteLatency>,
+    exponential_backon_constructor_t<Delay, L2WriteLatency>>;
+
+public:
+  using type = ::cuda::std::__type_at_c<static_cast<int>(Kind), delay_constructors>;
+};
+
+// Converts delay constructor policy values to the corresponding delay constructor type
+template <delay_constructor_kind Kind, unsigned int Delay, unsigned int L2WriteLatency>
+using delay_constructor_t = typename __delay_constructor_t_helper<Kind, Delay, L2WriteLatency>::type;
 
 using default_no_delay_constructor_t = no_delay_constructor_t<450>;
 using default_no_delay_t             = default_no_delay_constructor_t::delay_t;
