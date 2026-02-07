@@ -344,10 +344,16 @@
 </ul>
 </details></li>
 <li class="toctree-l3 current active has-children"><a class="reference internal" href="../runtime.html">Runtime</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="cudart_interactions.html">CUDA Runtime interactions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="stream.html">Streams</a></li>
 <li class="toctree-l4"><a class="reference internal" href="event.html">Events</a></li>
 <li class="toctree-l4 current active"><a class="current reference internal" href="#">Algorithm</a></li>
 <li class="toctree-l4"><a class="reference internal" href="device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="legacy_resources.html">Legacy resources</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -1518,7 +1524,7 @@
                   
   <section id="algorithm">
 <span id="cccl-runtime-algorithm"></span><h1>Algorithm<a class="headerlink" href="#algorithm" title="Link to this heading">#</a></h1>
-<p>The <code class="docutils literal notranslate"><span class="pre">runtime</span></code> part of the <code class="docutils literal notranslate"><span class="pre">cuda/algorithm</span></code> header provide stream-ordered, byte-wise primitives that operate on <code class="docutils literal notranslate"><span class="pre">cuda::std::span</span></code> and
+<p>The <code class="docutils literal notranslate"><span class="pre">runtime</span></code> part of the <code class="docutils literal notranslate"><span class="pre">cuda/algorithm</span></code> header provides stream-ordered, byte-wise primitives that operate on <code class="docutils literal notranslate"><span class="pre">cuda::std::span</span></code> and
 <code class="docutils literal notranslate"><span class="pre">cuda::std::mdspan</span></code>-compatible types. They require a <code class="docutils literal notranslate"><span class="pre">cuda::stream_ref</span></code> to enqueue work.</p>
 <section id="cuda-copy-bytes">
 <h2><code class="docutils literal notranslate"><span class="pre">cuda::copy_bytes</span></code><a class="headerlink" href="#cuda-copy-bytes" title="Link to this heading">#</a></h2>
@@ -1526,7 +1532,7 @@
 <ul class="simple">
 <li><p>Overloads accept <code class="docutils literal notranslate"><span class="pre">cuda::std::span</span></code>-convertible contiguous ranges or <code class="docutils literal notranslate"><span class="pre">cuda::std::mdspan</span></code>-convertible multi-dimensional views.</p></li>
 <li><p>Elements must be trivially copyable</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">cuda::std::mdspan</span></code>-convertible types must convert to a mdspan that is exhaustive</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cuda::std::mdspan</span></code>-convertible types must convert to an mdspan that is exhaustive</p></li>
 <li><p>Source access order (during the copy call or in stream order) can be configured with <code class="docutils literal notranslate"><span class="pre">cuda::copy_configuration</span></code></p></li>
 </ul>
 <p>Availability: CCCL 3.1.0 / CUDA 13.1</p>
@@ -1548,7 +1554,7 @@
 <ul class="simple">
 <li><p>Overloads accept <code class="docutils literal notranslate"><span class="pre">cuda::std::span</span></code>-convertible or <code class="docutils literal notranslate"><span class="pre">cuda::std::mdspan</span></code>-convertible destinations.</p></li>
 <li><p>Elements must be trivially copyable</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">cuda::std::mdspan</span></code>-convertible types must convert to a mdspan that is exhaustive</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cuda::std::mdspan</span></code>-convertible types must convert to an mdspan that is exhaustive</p></li>
 </ul>
 <p>Availability: CCCL 3.1.0 / CUDA 13.1</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/algorithm&gt;</span>

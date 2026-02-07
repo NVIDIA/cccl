@@ -82,14 +82,15 @@ See the :ref:`Extended API <libcudacxx-extended-api>` section for more informati
 Fundamental CUDA-specific Abstractions
 --------------------------------------
 
-Some abstractions that libcu++ provide have no equivalent in the C++ Standard Library, but are otherwise abstractions
-fundamental to the CUDA C++ programming model.
+Some abstractions that libcu++ provides have no equivalent in the C++ Standard Library, but are fundamental to the CUDA
+C++ programming model. They include CUDA-specific vocabulary types, device-side APIs for certain hardware features, and
+abstractions for the CUDA Runtime APIs.
 
 For example, :ref:`cuda::memcpy_async <libcudacxx-extended-api-asynchronous-operations-memcpy-async>` is a vital abstraction
 for asynchronous data movement between global and shared memory. This abstracts hardware features such as ``LDGSTS`` on
 Ampere, and the Tensor Memory Accelerator (TMA) on Hopper.
 
-See the :ref:`Extended API <libcudacxx-extended-api>` section for more information.
+See the :ref:`Extended API <libcudacxx-extended-api>` and :ref:`Runtime API <libcudacxx-runtime-api>` sections for more information.
 
 Summary: ``std::``, ``cuda::`` and ``cuda::std::``
 --------------------------------------------------

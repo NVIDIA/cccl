@@ -58,7 +58,7 @@
 
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="PTX API" href="../ptx_api.html" />
+    <link rel="next" title="Hierarchy" href="hierarchy.html" />
     <link rel="prev" title="Algorithm" href="algorithm.html" />
 
 
@@ -344,10 +344,16 @@
 </ul>
 </details></li>
 <li class="toctree-l3 current active has-children"><a class="reference internal" href="../runtime.html">Runtime</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="cudart_interactions.html">CUDA Runtime interactions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="stream.html">Streams</a></li>
 <li class="toctree-l4"><a class="reference internal" href="event.html">Events</a></li>
 <li class="toctree-l4"><a class="reference internal" href="algorithm.html">Algorithm</a></li>
 <li class="toctree-l4 current active"><a class="current reference internal" href="#">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="legacy_resources.html">Legacy resources</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -1520,7 +1526,7 @@
 <span id="cccl-runtime-device"></span><h1>Devices<a class="headerlink" href="#devices" title="Link to this heading">#</a></h1>
 <section id="cuda-device-ref">
 <h2><code class="docutils literal notranslate"><span class="pre">cuda::device_ref</span></code><a class="headerlink" href="#cuda-device-ref" title="Link to this heading">#</a></h2>
-<p id="cccl-runtime-device-device-ref"><code class="docutils literal notranslate"><span class="pre">cuda::device_ref</span></code> is a lightweight, non-owning handle to a CUDA device ordinal.
+<p id="cccl-runtime-device-device-ref"><code class="docutils literal notranslate"><span class="pre">cuda::device_ref</span></code> is a lightweight, non-owning handle to a CUDA device ordinal. It allows to query information about a device and serves as an argument to other runtime APIs which are tied to a specific device.
 It offers:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">get()</span></code>: native device ordinal</p></li>
@@ -1534,7 +1540,8 @@ It offers:</p>
 </section>
 <section id="cuda-devices">
 <h2><code class="docutils literal notranslate"><span class="pre">cuda::devices</span></code><a class="headerlink" href="#cuda-devices" title="Link to this heading">#</a></h2>
-<p id="cccl-runtime-device-devices"><code class="docutils literal notranslate"><span class="pre">cuda::devices</span></code> is a random-access view of all available CUDA devices in form of <code class="docutils literal notranslate"><span class="pre">cuda::device_ref</span></code> objects`. It provides indexing, size, and iteration for use
+<p id="cccl-runtime-device-devices"><code class="docutils literal notranslate"><span class="pre">cuda::devices</span></code> is a random-access view of all available CUDA devices in the form of <code class="docutils literal notranslate"><span class="pre">cuda::device_ref</span></code> objects. It
+provides indexing, size, and iteration for use
 in range-based loops.</p>
 <p>Availability: CCCL 3.1.0 / CUDA 13.1</p>
 <p>Example:</p>
@@ -1542,9 +1549,9 @@ in range-based loops.</p>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
 
 <span class="kt">void</span><span class="w"> </span><span class="nf">print_devices</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">dev</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">devices</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">   </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Device &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">dev</span><span class="p">.</span><span class="n">get</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">dev</span><span class="p">.</span><span class="n">name</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-<span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">dev</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">devices</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Device &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">dev</span><span class="p">.</span><span class="n">get</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">dev</span><span class="p">.</span><span class="n">name</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -1587,19 +1594,17 @@ Compared to <code class="docutils literal notranslate"><span class="pre">device_
 
 <span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="n">cuda</span><span class="o">::</span><span class="n">arch_id</span><span class="w"> </span><span class="n">Arch</span><span class="o">&gt;</span>
 <span class="n">__device__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">fn</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">traits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">arch_traits</span><span class="o">&lt;</span><span class="n">Arch</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">traits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">arch_traits</span><span class="o">&lt;</span><span class="n">Arch</span><span class="o">&gt;</span><span class="p">();</span>
 <span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="p">(</span><span class="n">traits</span><span class="p">.</span><span class="n">cluster_supported</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="c1">// cluster specific code</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="w">  </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="c1">// non-cluster code</span>
 <span class="w">  </span><span class="p">}</span>
-
 <span class="p">}</span>
 
-<span class="w"> </span><span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">kernel</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">   </span><span class="n">fn</span><span class="o">&lt;</span><span class="n">cuda</span><span class="o">::</span><span class="n">arch_id</span><span class="o">::</span><span class="n">sm_90</span><span class="o">&gt;</span><span class="p">();</span>
-<span class="w"> </span><span class="p">}</span>
+<span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">kernel</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">fn</span><span class="o">&lt;</span><span class="n">cuda</span><span class="o">::</span><span class="n">arch_id</span><span class="o">::</span><span class="n">sm_90</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </section>
@@ -1625,11 +1630,11 @@ Compared to <code class="docutils literal notranslate"><span class="pre">device_
       </div>
     </a>
     <a class="right-next"
-       href="../ptx_api.html"
+       href="hierarchy.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">PTX API</p>
+        <p class="prev-next-title">Hierarchy</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

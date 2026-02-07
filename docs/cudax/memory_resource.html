@@ -340,10 +340,16 @@
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/stream.html">Streams</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/event.html">Events</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/algorithm.html">Algorithm</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/legacy_resources.html">Legacy resources</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -1655,16 +1661,16 @@
 <p>The <code class="docutils literal notranslate"><span class="pre">&lt;cuda/experimental/memory_resource.cuh&gt;</span></code> header provides:</p>
 <blockquote>
 <div><ul class="simple">
-<li><p><span class="xref std std-ref">any_synchronous_resource</span> and
-<span class="xref std std-ref">any_resource</span> type erased memory resources similar to
-<code class="docutils literal notranslate"><span class="pre">std::any</span></code>. In contrast to <a class="reference internal" href="../libcudacxx/extended_api/memory_resource/resource_ref.html#libcudacxx-extended-api-memory-resources-resource-ref"><span class="std std-ref">resource_ref</span></a> they
+<li><p><a class="reference internal" href="../libcudacxx/extended_api/memory_resource/wrappers.html#libcudacxx-memory-resource-any-resource"><span class="std std-ref">any_synchronous_resource</span></a> and
+<a class="reference internal" href="../libcudacxx/extended_api/memory_resource/wrappers.html#libcudacxx-memory-resource-any-async-resource"><span class="std std-ref">any_resource</span></a> type erased memory resources similar to
+<code class="docutils literal notranslate"><span class="pre">std::any</span></code>. In contrast to <a class="reference internal" href="../libcudacxx/extended_api/memory_resource/wrappers.html#libcudacxx-extended-api-memory-resources-resource-ref"><span class="std std-ref">resource_ref</span></a> they
 own the contained resource.</p></li>
 <li><p><a class="reference internal" href="../libcudacxx/api/classpinned__memory__pool__ref.html#libcudacxx-memory-resource-async"><span class="std std-ref">device_memory_resource</span></a> A standard C++ interface for <em>heterogeneous</em>,
 <em>stream-ordered</em> memory allocation tailored to the needs of CUDA C++ developers. This design builds off of the
 success of the <a class="reference external" href="https://github.com/rapidsai/rmm">RAPIDS Memory Manager (RMM)</a> project and evolves the design
 based on lessons learned.</p></li>
 <li><p><a class="reference internal" href="../libcudacxx/api/structshared__resource.html#libcudacxx-memory-resource-shared-resource"><span class="std std-ref">shared_resource</span></a> a type erased reference counted memory resource.
-In contrast to <span class="xref std std-ref">any_resource</span> it additionally provides shared ownership
+In contrast to <a class="reference internal" href="../libcudacxx/extended_api/memory_resource/wrappers.html#libcudacxx-memory-resource-any-resource"><span class="std std-ref">any_resource</span></a> it additionally provides shared ownership
 semantics.</p></li>
 </ul>
 </div></blockquote>

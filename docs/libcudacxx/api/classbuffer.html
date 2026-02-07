@@ -344,10 +344,16 @@
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../runtime/stream.html">Streams</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../runtime/event.html">Events</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../runtime/algorithm.html">Algorithm</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/legacy_resources.html">Legacy resources</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -1934,7 +1940,7 @@ property, implement <a class="reference internal" href="../extended_api/memory_r
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4NK6buffer15memory_resourceEv">
 <span class="target" id="classbuffer_1aee00601c486fb8824da62ca3e0cbd7fd"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">__resource_t</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">memory_resource</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK6buffer15memory_resourceEv" title="Link to this definition">#</a><br /></dt>
-<dd><p>Returns a c const reference to the <span class="xref std std-ref">any_resource</span> that holds the
+<dd><p>Returns a c const reference to the <a class="reference internal" href="../extended_api/memory_resource/wrappers.html#libcudacxx-memory-resource-any-resource"><span class="std std-ref">any_resource</span></a> that holds the
 memory resource used to allocate the buffer</p>
 </dd></dl>
 

@@ -59,7 +59,7 @@
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="Events" href="event.html" />
-    <link rel="prev" title="Runtime" href="../runtime.html" />
+    <link rel="prev" title="CUDA Runtime interactions" href="cudart_interactions.html" />
 
 
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -344,10 +344,16 @@
 </ul>
 </details></li>
 <li class="toctree-l3 current active has-children"><a class="reference internal" href="../runtime.html">Runtime</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="cudart_interactions.html">CUDA Runtime interactions</a></li>
 <li class="toctree-l4 current active"><a class="current reference internal" href="#">Streams</a></li>
 <li class="toctree-l4"><a class="reference internal" href="event.html">Events</a></li>
 <li class="toctree-l4"><a class="reference internal" href="algorithm.html">Algorithm</a></li>
 <li class="toctree-l4"><a class="reference internal" href="device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="legacy_resources.html">Legacy resources</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -1518,6 +1524,7 @@
                   
   <section id="streams">
 <span id="cccl-runtime-stream"></span><h1>Streams<a class="headerlink" href="#streams" title="Link to this heading">#</a></h1>
+<p>Stream is conceptually a queue of operations for a specific device. It is passed as an argument to all asynchronous operations like kernel launch, memory copy and allocations.</p>
 <section id="cuda-stream-ref">
 <h2><code class="docutils literal notranslate"><span class="pre">cuda::stream_ref</span></code><a class="headerlink" href="#cuda-stream-ref" title="Link to this heading">#</a></h2>
 <p id="cccl-runtime-stream-stream-ref"><code class="docutils literal notranslate"><span class="pre">cuda::stream_ref</span></code> is a non-owning wrapper around a <code class="docutils literal notranslate"><span class="pre">cudaStream_t</span></code>. It prevents unsafe implicit constructions from
@@ -1540,7 +1547,7 @@
 
 <span class="c1">// compare against other stream_ref or cudaStream_t</span>
 <span class="n">assert</span><span class="p">(</span><span class="n">ref</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">stream</span><span class="p">);</span>
-<span class="n">assert</span><span class="p">(</span><span class="n">ref</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">stream_ref</span><span class="p">{</span><span class="k">nullptr</span><span class="p">});</span>
+<span class="n">assert</span><span class="p">(</span><span class="n">ref</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">invalid_stream</span><span class="p">);</span>
 
 <span class="n">cudaStreamDestroy</span><span class="p">(</span><span class="n">stream</span><span class="p">);</span>
 </pre></div>
@@ -1550,8 +1557,8 @@
 <h2><code class="docutils literal notranslate"><span class="pre">cuda::stream</span></code><a class="headerlink" href="#cuda-stream" title="Link to this heading">#</a></h2>
 <p id="cccl-runtime-stream-stream"><code class="docutils literal notranslate"><span class="pre">cuda::stream</span></code> is an owning wrapper around a <code class="docutils literal notranslate"><span class="pre">cudaStream_t</span></code> that manages the lifetime of the underlying CUDA stream.
 It derives from <code class="docutils literal notranslate"><span class="pre">stream_ref</span></code>, provides all of its functionality, and can be used anywhere a <code class="docutils literal notranslate"><span class="pre">stream_ref</span></code> is expected.
-It can be constructed for a specific <code class="docutils literal notranslate"><span class="pre">cuda::device_ref</span></code>, moved (but not copied), converted from/to a cudaStream_t via
-<code class="docutils literal notranslate"><span class="pre">from_native_handle</span></code>/<code class="docutils literal notranslate"><span class="pre">release()</span></code>.</p>
+It can be constructed for a specific <code class="docutils literal notranslate"><span class="pre">cuda::device_ref</span></code>, moved (but not copied), and converted from or to a
+<code class="docutils literal notranslate"><span class="pre">cudaStream_t</span></code> via <code class="docutils literal notranslate"><span class="pre">from_native_handle</span></code>/<code class="docutils literal notranslate"><span class="pre">release()</span></code>.</p>
 <p>Availability: CCCL 3.1.0 / CUDA 13.1</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/stream&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/devices&gt;</span>
@@ -1561,7 +1568,7 @@ It can be constructed for a specific <code class="docutils literal notranslate">
 <span class="w">    </span><span class="c1">// Create a stream on a specific device</span>
 <span class="w">    </span><span class="n">cuda</span><span class="o">::</span><span class="n">stream</span><span class="w"> </span><span class="n">s</span><span class="p">{</span><span class="n">cuda</span><span class="o">::</span><span class="n">devices</span><span class="p">[</span><span class="mi">0</span><span class="p">]};</span>
 
-<span class="w">    </span><span class="c1">// Pass to a stream ordered API</span>
+<span class="w">   </span><span class="c1">// Pass to a stream-ordered API</span>
 
 <span class="w">    </span><span class="c1">// Synchronize the stream</span>
 <span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">sync</span><span class="p">();</span>
@@ -1583,12 +1590,12 @@ It can be constructed for a specific <code class="docutils literal notranslate">
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../runtime.html"
+       href="cudart_interactions.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Runtime</p>
+        <p class="prev-next-title">CUDA Runtime interactions</p>
       </div>
     </a>
     <a class="right-next"

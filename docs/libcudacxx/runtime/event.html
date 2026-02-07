@@ -344,10 +344,16 @@
 </ul>
 </details></li>
 <li class="toctree-l3 current active has-children"><a class="reference internal" href="../runtime.html">Runtime</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="cudart_interactions.html">CUDA Runtime interactions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="stream.html">Streams</a></li>
 <li class="toctree-l4 current active"><a class="current reference internal" href="#">Events</a></li>
 <li class="toctree-l4"><a class="reference internal" href="algorithm.html">Algorithm</a></li>
 <li class="toctree-l4"><a class="reference internal" href="device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="legacy_resources.html">Legacy resources</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -1518,6 +1524,7 @@
                   
   <section id="events">
 <span id="cccl-runtime-event"></span><h1>Events<a class="headerlink" href="#events" title="Link to this heading">#</a></h1>
+<p>Event is a snapshot of execution state of a stream. It can be used to synchronize work submitted to a stream up to a certain point, establish dependency between streams or measure time passed between two events.</p>
 <section id="cuda-event-ref">
 <h2><code class="docutils literal notranslate"><span class="pre">cuda::event_ref</span></code><a class="headerlink" href="#cuda-event-ref" title="Link to this heading">#</a></h2>
 <p id="cccl-runtime-event-event-ref"><code class="docutils literal notranslate"><span class="pre">cuda::event_ref</span></code> is a non-owning wrapper around a <code class="docutils literal notranslate"><span class="pre">cudaEvent_t</span></code>. It prevents unsafe implicit constructions from
@@ -1547,13 +1554,13 @@ It also creates and destroys the native event, can be moved (but not copied), an
 <p>Availability: CCCL 3.1.0 / CUDA 13.1</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/stream&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/devices&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/std/optional&gt;</span>
 
 <span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">cuda</span><span class="o">::</span><span class="n">event</span><span class="o">&gt;</span><span class="w"> </span><span class="n">query_and_record_on_stream</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">stream_ref</span><span class="w"> </span><span class="n">stream</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">stream</span><span class="p">.</span><span class="n">is_done</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
-<span class="w">   </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="w">  </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
-<span class="w">   </span><span class="k">return</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">event</span><span class="p">{</span><span class="n">stream</span><span class="p">};</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">event</span><span class="p">{</span><span class="n">stream</span><span class="p">};</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>

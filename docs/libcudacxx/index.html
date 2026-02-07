@@ -344,10 +344,16 @@
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="runtime/stream.html">Streams</a></li>
 <li class="toctree-l4"><a class="reference internal" href="runtime/event.html">Events</a></li>
 <li class="toctree-l4"><a class="reference internal" href="runtime/algorithm.html">Algorithm</a></li>
 <li class="toctree-l4"><a class="reference internal" href="runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="runtime/legacy_resources.html">Legacy resources</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -1573,12 +1579,13 @@ that controls the strength of the memory fence.</p>
 </section>
 <section id="fundamental-cuda-specific-abstractions">
 <h2>Fundamental CUDA-specific Abstractions<a class="headerlink" href="#fundamental-cuda-specific-abstractions" title="Link to this heading">#</a></h2>
-<p>Some abstractions that libcu++ provide have no equivalent in the C++ Standard Library, but are otherwise abstractions
-fundamental to the CUDA C++ programming model.</p>
+<p>Some abstractions that libcu++ provides have no equivalent in the C++ Standard Library, but are fundamental to the CUDA
+C++ programming model. They include CUDA-specific vocabulary types, device-side APIs for certain hardware features, and
+abstractions for the CUDA Runtime APIs.</p>
 <p>For example, <a class="reference internal" href="extended_api/asynchronous_operations/memcpy_async.html#libcudacxx-extended-api-asynchronous-operations-memcpy-async"><span class="std std-ref">cuda::memcpy_async</span></a> is a vital abstraction
 for asynchronous data movement between global and shared memory. This abstracts hardware features such as <code class="docutils literal notranslate"><span class="pre">LDGSTS</span></code> on
 Ampere, and the Tensor Memory Accelerator (TMA) on Hopper.</p>
-<p>See the <a class="reference internal" href="extended_api.html#libcudacxx-extended-api"><span class="std std-ref">Extended API</span></a> section for more information.</p>
+<p>See the <a class="reference internal" href="extended_api.html#libcudacxx-extended-api"><span class="std std-ref">Extended API</span></a> and <a class="reference internal" href="runtime.html#libcudacxx-runtime-api"><span class="std std-ref">Runtime API</span></a> sections for more information.</p>
 </section>
 <section id="summary-std-cuda-and-cuda-std">
 <h2>Summary: <code class="docutils literal notranslate"><span class="pre">std::</span></code>, <code class="docutils literal notranslate"><span class="pre">cuda::</span></code> and <code class="docutils literal notranslate"><span class="pre">cuda::std::</span></code><a class="headerlink" href="#summary-std-cuda-and-cuda-std" title="Link to this heading">#</a></h2>

@@ -58,7 +58,7 @@
 
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Streams" href="runtime/stream.html" />
+    <link rel="next" title="CUDA Runtime interactions" href="runtime/cudart_interactions.html" />
     <link rel="prev" title="Work stealing" href="extended_api/work_stealing.html" />
 
 
@@ -201,6 +201,10 @@
   
 
   
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
 </div>
 
     </header>
@@ -340,10 +344,16 @@
 </ul>
 </details></li>
 <li class="toctree-l3 current active has-children"><a class="current reference internal" href="#">Runtime</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="runtime/stream.html">Streams</a></li>
 <li class="toctree-l4"><a class="reference internal" href="runtime/event.html">Events</a></li>
 <li class="toctree-l4"><a class="reference internal" href="runtime/algorithm.html">Algorithm</a></li>
 <li class="toctree-l4"><a class="reference internal" href="runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="runtime/legacy_resources.html">Legacy resources</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -1510,7 +1520,61 @@
                 <article class="bd-article">
                   
   <section id="runtime">
-<span id="cccl-runtime"></span><h1>Runtime<a class="headerlink" href="#runtime" title="Link to this heading">#</a></h1>
+<span id="libcudacxx-runtime-api"></span><h1>Runtime<a class="headerlink" href="#runtime" title="Link to this heading">#</a></h1>
+<p>The Runtime API provides higher-level building blocks for core CUDA functionality. It takes the existing CUDA Runtime API
+set and removes or replaces some problematic patterns, such as implicit state. It is designed to make common operations
+like resource management, work submission, and memory allocation easier to express and safer to compose. These APIs lower
+to the CUDA Driver API under the hood, but remain composable with the CUDA Runtime API by reusing runtime handle types
+(such as <code class="docutils literal notranslate"><span class="pre">cudaStream_t</span></code>) in the interfaces. This results in an interface that applies RAII for lifetime management,
+while remaining composable with existing CUDA C++ code that manages resources explicitly.</p>
+<p>At a glance, the runtime layer includes:</p>
+<ul class="simple">
+<li><p>Streams and events work submission and synchronization.</p></li>
+<li><p>Buffers as a typed, stream-ordered storage with property-checked memory container.</p></li>
+<li><p>Memory pools to allocate device, managed, and pinned memory, either directly or through buffers.</p></li>
+<li><p>Launch API to configure and launch kernels.</p></li>
+<li><p>Runtime algorithms like <code class="docutils literal notranslate"><span class="pre">copy_bytes</span></code> and <code class="docutils literal notranslate"><span class="pre">fill_bytes</span></code> for basic data movement.</p></li>
+<li><p>Legacy memory resources as synchronous compatibility fallbacks for older toolkits.</p></li>
+</ul>
+<p>See <a class="reference internal" href="runtime/cudart_interactions.html#cccl-runtime-cudart-interactions"><span class="std std-ref">CUDA Runtime interactions</span></a> if you are interested in CUDA Runtime interop.</p>
+<section id="example-vector-add-with-buffers-pools-and-launch">
+<h2>Example: vector add with buffers, pools, and launch<a class="headerlink" href="#example-vector-add-with-buffers-pools-and-launch" title="Link to this heading">#</a></h2>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/devices&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/stream&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/std/span&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/buffer&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/memory_pool&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/launch&gt;</span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">kernel</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">Config</span><span class="o">&gt;</span>
+<span class="w">  </span><span class="n">__device__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="k">operator</span><span class="p">()(</span><span class="n">Config</span><span class="w"> </span><span class="n">config</span><span class="p">,</span>
+<span class="w">                             </span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="n">A</span><span class="p">,</span>
+<span class="w">                             </span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="n">B</span><span class="p">,</span>
+<span class="w">                             </span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">span</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="n">C</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">tid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">gpu_thread</span><span class="p">.</span><span class="n">rank</span><span class="p">(</span><span class="n">cuda</span><span class="o">::</span><span class="n">grid</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tid</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">A</span><span class="p">.</span><span class="n">size</span><span class="p">())</span>
+<span class="w">      </span><span class="n">C</span><span class="p">[</span><span class="n">tid</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A</span><span class="p">[</span><span class="n">tid</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">B</span><span class="p">[</span><span class="n">tid</span><span class="p">];</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">};</span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">cuda</span><span class="o">::</span><span class="n">device_ref</span><span class="w"> </span><span class="n">device</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">devices</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+<span class="w">  </span><span class="n">cuda</span><span class="o">::</span><span class="n">stream</span><span class="w"> </span><span class="n">stream</span><span class="p">{</span><span class="n">device</span><span class="p">};</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">pool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">device_default_memory_pool</span><span class="p">(</span><span class="n">device</span><span class="p">);</span>
+
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">num_elements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1000</span><span class="p">;</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">make_buffer</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="n">pool</span><span class="p">,</span><span class="w"> </span><span class="n">num_elements</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0</span><span class="p">);</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">make_buffer</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="n">pool</span><span class="p">,</span><span class="w"> </span><span class="n">num_elements</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0</span><span class="p">);</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">C</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">make_buffer</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="n">pool</span><span class="p">,</span><span class="w"> </span><span class="n">num_elements</span><span class="p">,</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">no_init</span><span class="p">);</span>
+
+<span class="w">  </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">threads_per_block</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">256</span><span class="p">;</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">distribute</span><span class="o">&lt;</span><span class="n">threads_per_block</span><span class="o">&gt;</span><span class="p">(</span><span class="n">num_elements</span><span class="p">);</span>
+
+<span class="w">  </span><span class="n">cuda</span><span class="o">::</span><span class="n">launch</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">kernel</span><span class="p">{},</span><span class="w"> </span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="n">B</span><span class="p">,</span><span class="w"> </span><span class="n">C</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
 <div class="toctree-wrapper compound">
 </div>
 <div class="pst-scrollable-table-container"><table class="table">
@@ -1521,7 +1585,7 @@
 <col style="width: 23.1%" />
 </colgroup>
 <thead>
-<tr class="row-odd"><th class="head"><p><strong>Header</strong></p></th>
+<tr class="row-odd"><th class="head"><p><strong>API</strong></p></th>
 <th class="head"><p><strong>Content</strong></p></th>
 <th class="head"><p><strong>CCCL Availability</strong></p></th>
 <th class="head"><p><strong>CUDA Toolkit Availability</strong></p></th>
@@ -1578,14 +1642,70 @@
 <td><p>CCCL 3.1.0</p></td>
 <td><p>CUDA 13.1</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="extended_api/memory_resource.html#libcudacxx-extended-api-memory-resources"><span class="std std-ref">Memory Resources</span></a></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">cuda::mr</span></code> interfaces (resources, wrappers, properties) usable with streams</p></td>
-<td><p>CCCL 2.2.0 (experimental), CCCL 3.1.0 (stable)</p></td>
-<td><p>CUDA 12.3 (experimental), CUDA 13.1 (stable)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="runtime/hierarchy.html#cccl-runtime-hierarchy-hierarchy"><span class="std std-ref">hierarchy</span></a></p></td>
+<td><p>Representation of CUDA thread hierarchies (grid, cluster, block, warp, thread)</p></td>
+<td><p>CCCL 3.2.0</p></td>
+<td><p>CUDA 13.2</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="runtime/launch.html#cccl-runtime-launch-launch"><span class="std std-ref">launch</span></a></p></td>
+<td><p>Kernel launch with configuration and options</p></td>
+<td><p>CCCL 3.2.0</p></td>
+<td><p>CUDA 13.2</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="runtime/launch.html#cccl-runtime-launch-kernel-config"><span class="std std-ref">kernel_config</span></a></p></td>
+<td><p>Kernel launch configuration combining hierarchy dimensions and launch options</p></td>
+<td><p>CCCL 3.2.0</p></td>
+<td><p>CUDA 13.2</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="runtime/launch.html#cccl-runtime-launch-make-config"><span class="std std-ref">make_config</span></a></p></td>
+<td><p>Factory function to create kernel configurations from hierarchy dimensions and launch options</p></td>
+<td><p>CCCL 3.2.0</p></td>
+<td><p>CUDA 13.2</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="runtime/memory_pools.html#cccl-runtime-memory-pools-device-memory-pool"><span class="std std-ref">device_memory_pool</span></a></p></td>
+<td><p>Stream-ordered device memory pool using CUDA memory pool API</p></td>
+<td><p>CCCL 3.2.0</p></td>
+<td><p>CUDA 13.2</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="runtime/memory_pools.html#cccl-runtime-memory-pools-managed-memory-pool"><span class="std std-ref">managed_memory_pool</span></a></p></td>
+<td><p>Stream-ordered managed (unified) memory pool</p></td>
+<td><p>CCCL 3.2.0</p></td>
+<td><p>CUDA 13.2</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="runtime/memory_pools.html#cccl-runtime-memory-pools-pinned-memory-pool"><span class="std std-ref">pinned_memory_pool</span></a></p></td>
+<td><p>Stream-ordered pinned (page-locked) host memory pool</p></td>
+<td><p>CCCL 3.2.0</p></td>
+<td><p>CUDA 13.2</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="runtime/memory_pools.html#cccl-runtime-memory-pools-device-default"><span class="std std-ref">device_default_memory_pool</span></a></p></td>
+<td><p>Get the default device memory pool for a device</p></td>
+<td><p>CCCL 3.2.0</p></td>
+<td><p>CUDA 13.2</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="runtime/memory_pools.html#cccl-runtime-memory-pools-managed-default"><span class="std std-ref">managed_default_memory_pool</span></a></p></td>
+<td><p>Get the default managed (unified) memory pool</p></td>
+<td><p>CCCL 3.2.0</p></td>
+<td><p>CUDA 13.2</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="runtime/memory_pools.html#cccl-runtime-memory-pools-pinned-default"><span class="std std-ref">pinned_default_memory_pool</span></a></p></td>
+<td><p>Get the default pinned (page-locked) host memory pool</p></td>
+<td><p>CCCL 3.2.0</p></td>
+<td><p>CUDA 13.2</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="runtime/buffer.html#cccl-runtime-buffer-buffer"><span class="std std-ref">buffer</span></a></p></td>
+<td><p>Typed data container allocated from memory resources. It handles stream-ordered allocation, initialization, and deallocation of memory.</p></td>
+<td><p>CCCL 3.2.0</p></td>
+<td><p>CUDA 13.2</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="runtime/legacy_resources.html#cccl-runtime-legacy-resources"><span class="std std-ref">legacy resources</span></a></p></td>
+<td><p>Synchronous compatibility resources backed by legacy CUDA allocation APIs.</p></td>
+<td><p>CCCL 3.2.0</p></td>
+<td><p>CUDA 13.2</p></td>
 </tr>
 </tbody>
 </table>
 </div>
+</section>
 </section>
 
 
@@ -1608,11 +1728,11 @@
       </div>
     </a>
     <a class="right-next"
-       href="runtime/stream.html"
+       href="runtime/cudart_interactions.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Streams</p>
+        <p class="prev-next-title">CUDA Runtime interactions</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -1623,9 +1743,25 @@
             
             
 
-<div class="bd-sidebar-secondary"></div>
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
 
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example-vector-add-with-buffers-pools-and-launch">Example: vector add with buffers, pools, and launch</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
               
             
 

@@ -58,7 +58,7 @@
 
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
-    <link rel="next" title="cuda::resource_ref: a type-constrained resource wrapper" href="resource_ref.html" />
+    <link rel="next" title="Type-erased resource wrappers" href="wrappers.html" />
     <link rel="prev" title="Properties" href="properties.html" />
 
 
@@ -340,10 +340,16 @@
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../runtime/stream.html">Streams</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../runtime/event.html">Events</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../runtime/algorithm.html">Algorithm</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/legacy_resources.html">Legacy resources</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -1516,7 +1522,7 @@
                 <article class="bd-article">
                   
   <section id="the-cuda-synchronous-resource-concept">
-<span id="libcudacxx-extended-api-memory-resources-resource"></span><h1>The <code class="docutils literal notranslate"><span class="pre">cuda::synchronous_resource</span></code> concept<a class="headerlink" href="#the-cuda-synchronous-resource-concept" title="Link to this heading">#</a></h1>
+<span id="libcudacxx-extended-api-memory-resources-synchronous-resource"></span><span id="libcudacxx-extended-api-memory-resources-resource"></span><h1>The <code class="docutils literal notranslate"><span class="pre">cuda::synchronous_resource</span></code> concept<a class="headerlink" href="#the-cuda-synchronous-resource-concept" title="Link to this heading">#</a></h1>
 <p>The <a class="reference external" href="https://en.cppreference.com/w/cpp/header/memory_resource">std::pmr::memory_resource</a> feature provides only a
 single <code class="docutils literal notranslate"><span class="pre">allocate</span></code> interface, which is sufficient for homogeneous memory systems. However, CUDA provides both
 synchronous and <a class="reference external" href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#stream-ordered-memory-allocator">stream-ordered allocation</a>.</p>
@@ -1529,9 +1535,9 @@ For cases where stream-ordered allocation is not possible, <code class="docutils
 <p>The <code class="docutils literal notranslate"><span class="pre">cuda::mr::synchronous_resource</span></code> concept provides basic type checks to ensure that a given memory resource provides the
 expected <code class="docutils literal notranslate"><span class="pre">allocate_sync</span></code> / <code class="docutils literal notranslate"><span class="pre">deallocate_sync</span></code> interface and is also equality comparable, which covers the whole API surface of
 <a class="reference external" href="https://en.cppreference.com/w/cpp/header/memory_resource">std::pmr::memory_resource</a>.
-See below for different memory resources and potential pitfals.</p>
+See below for different memory resources and potential pitfalls.</p>
 <p>To demonstrate, the following example defines several resources, only some of which are valid implementations of the
-<code class="docutils literal notranslate"><span class="pre">cuda::mr::synchronous_resource</span></code> concept. The <code class="docutils literal notranslate"><span class="pre">static_assertion</span></code>’s will result in compile-time errors for the invalid resources.</p>
+<code class="docutils literal notranslate"><span class="pre">cuda::mr::synchronous_resource</span></code> concept. The <code class="docutils literal notranslate"><span class="pre">static_assertions</span></code> will result in compile-time errors for the invalid resources.</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">valid_resource</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="nf">allocate_sync</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
 <span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">deallocate_sync</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{}</span>
@@ -1672,11 +1678,11 @@ concept. The <code class="docutils literal notranslate"><span class="pre">{synch
       </div>
     </a>
     <a class="right-next"
-       href="resource_ref.html"
+       href="wrappers.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">cuda::resource_ref</span></code>: a type-constrained resource wrapper</p>
+        <p class="prev-next-title">Type-erased resource wrappers</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

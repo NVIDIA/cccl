@@ -340,10 +340,16 @@
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../runtime/stream.html">Streams</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../runtime/event.html">Events</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../runtime/algorithm.html">Algorithm</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/legacy_resources.html">Legacy resources</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -1513,7 +1519,7 @@
                 <article class="bd-article">
                   
   <section id="memory-resources">
-<span id="libcudacxx-extended-api-memory-resources"></span><h1>Memory Resources<a class="headerlink" href="#memory-resources" title="Link to this heading">#</a></h1>
+<span id="libcudacxx-memory-resource-async"></span><span id="libcudacxx-extended-api-memory-resources"></span><h1>Memory Resources<a class="headerlink" href="#memory-resources" title="Link to this heading">#</a></h1>
 <div class="toctree-wrapper compound">
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">&lt;cuda/memory_resource&gt;</span></code> header provides a standard C++ interface for <em>heterogeneous</em>, <em>stream-ordered</em> memory
@@ -1539,8 +1545,21 @@ interfaces.</p>
 <td><p>Concepts that provide proper constraints for arbitrary memory resources.</p></td>
 <td><p>stable CCCL 3.1.0 / CUDA 13.1, experimental CCCL 2.2.0 / CUDA 12.3</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="memory_resource/resource_ref.html#libcudacxx-extended-api-memory-resources-resource-ref"><span class="std std-ref">cuda::mr::{synchronous_}resource_ref</span></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="memory_resource/wrappers.html#libcudacxx-extended-api-memory-resources-resource-ref"><span class="std std-ref">cuda::mr::{synchronous_}resource_ref</span></a></p></td>
 <td><p>A non-owning type-erased memory resource wrapper that enables consumers to specify properties of resources that they expect.</p></td>
+<td><p>stable CCCL 3.2.0 / CUDA 13.2, experimental CCCL 2.2.0 / CUDA 12.3</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="memory_resource/wrappers.html#libcudacxx-extended-api-memory-resources-any-resource"><span class="std std-ref">cuda::mr::any_resource</span></a> and
+<a class="reference internal" href="memory_resource/wrappers.html#libcudacxx-extended-api-memory-resources-any-synchronous-resource"><span class="std std-ref">cuda::mr::any_synchronous_resource</span></a></p></td>
+<td><p>Owning type-erased wrappers for stream-ordered and synchronous resources.</p></td>
+<td><p>stable CCCL 3.2.0 / CUDA 13.2, experimental CCCL 2.2.0 / CUDA 12.3</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="memory_resource/resource_utilities.html#libcudacxx-extended-api-memory-resources-shared-resource"><span class="std std-ref">cuda::mr::shared_resource</span></a></p></td>
+<td><p>Reference-counted wrapper to share a resource instance across objects.</p></td>
+<td><p>stable CCCL 3.2.0 / CUDA 13.2, experimental CCCL 2.2.0 / CUDA 12.3</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="memory_resource/resource_utilities.html#libcudacxx-extended-api-memory-resources-synchronous-adapter"><span class="std std-ref">cuda::mr::synchronous_resource_adapter</span></a></p></td>
+<td><p>Adapter that enables synchronous resources to work with streams.</p></td>
 <td><p>stable CCCL 3.2.0 / CUDA 13.2, experimental CCCL 2.2.0 / CUDA 12.3</p></td>
 </tr>
 </tbody>
