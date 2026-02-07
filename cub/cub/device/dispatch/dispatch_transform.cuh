@@ -387,12 +387,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
   if (!ipt)
   {
     // otherwise, set up the prefetch kernel
-    const auto fallback_prefetch_policy = prefetch_policy{
-      policy.vectorized.block_threads,
-      policy.vectorized.prefetch_items_per_thread_no_input,
-      policy.vectorized.prefetch_min_items_per_thread,
-      policy.vectorized.prefetch_max_items_per_thread};
-    const auto prefetch_policy = policy.algorithm == Algorithm::prefetch ? policy.prefetch : fallback_prefetch_policy;
+    auto prefetch_policy = policy.prefetch;
+    if (policy.algorithm != Algorithm::prefetch)
+    {
+      // if tuning selected the vectorized path we compiled the kernel for it, so we need to use the same block size
+      prefetch_policy.block_threads = policy.vectorized.block_threads;
+    }
 
     auto loaded_bytes_per_iter           = kernel_source.LoadedBytesPerIteration();
     const auto items_per_thread_no_input = prefetch_policy.items_per_thread_no_input;
