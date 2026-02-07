@@ -89,29 +89,6 @@ enum class address_space
       return __p;
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
     }
-    case address_space::shared: {
-      // smem can start at address 0x0 before sm_90
-#  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3)
-      unsigned __ret;
-      asm volatile(
-        "{\n\t"
-        "  .reg .pred p;\n\t"
-        "  isspacep.shared p, %1;\n\t"
-        "  selp.u32 %0, 1, 0, p;\n\t"
-        "}\n\t"
-        : "=r"(__ret)
-        : "l"(__ptr));
-      return static_cast<bool>(__ret);
-#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^ /
-        // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
-      bool __p = static_cast<bool>(::__isShared(__ptr));
-      if (__p)
-      {
-        _CCCL_ASSUME(__p);
-      }
-      return __p;
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
-    }
     case address_space::constant: {
 #  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3)
       unsigned __ret;
@@ -192,7 +169,7 @@ enum class address_space
                       "  selp.u32 %0, 1, 0, p;\n\t"
                       "}\n\t" : "=r"(__ret) : "l"(__ptr));
          return static_cast<bool>(__ret);),
-        (return ::cuda::device::__internal_is_address_from(__ptr, address_space::shared);))
+        (/* Fall through to `case shared:` */;))
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^ /
         // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
       NV_IF_ELSE_TARGET(
@@ -203,7 +180,31 @@ enum class address_space
            _CCCL_ASSUME(__p); //
          } //
          return __p;),
-        (return ::cuda::device::__internal_is_address_from(__ptr, address_space::shared);))
+        (/* Fall through to `case shared:` */;))
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
+    }
+    [[fallthrough]];
+    case address_space::shared: {
+      // smem can start at address 0x0 before sm_90
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3)
+      unsigned __ret;
+      asm volatile(
+        "{\n\t"
+        "  .reg .pred p;\n\t"
+        "  isspacep.shared p, %1;\n\t"
+        "  selp.u32 %0, 1, 0, p;\n\t"
+        "}\n\t"
+        : "=r"(__ret)
+        : "l"(__ptr));
+      return static_cast<bool>(__ret);
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^ /
+        // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
+      bool __p = static_cast<bool>(::__isShared(__ptr));
+      if (__p)
+      {
+        _CCCL_ASSUME(__p);
+      }
+      return __p;
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
     }
     default:
