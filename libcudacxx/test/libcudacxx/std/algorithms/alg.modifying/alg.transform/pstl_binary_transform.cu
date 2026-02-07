@@ -40,6 +40,68 @@ struct equal_to_one
   }
 };
 
+template <class Policy>
+void test_transform(const Policy& policy, thrust::device_vector<int>& output)
+{
+  { // empty should not access anything
+    cuda::std::transform(
+      policy,
+      static_cast<int*>(nullptr),
+      static_cast<int*>(nullptr),
+      static_cast<int*>(nullptr),
+      output.begin(),
+      cuda::std::minus<>{});
+  }
+
+  { // same type
+    thrust::fill(output.begin(), output.end(), 0);
+    cuda::std::transform(
+      policy,
+      cuda::counting_iterator{1},
+      cuda::counting_iterator{size + 1},
+      cuda::counting_iterator{0ull},
+      output.begin(),
+      cuda::std::minus<>{});
+    CHECK(thrust::all_of(output.begin(), output.end(), equal_to_one{}));
+  }
+
+  { // convertible transform arg
+    thrust::fill(output.begin(), output.end(), 0);
+    cuda::std::transform(
+      policy,
+      cuda::counting_iterator{1},
+      cuda::counting_iterator{size + 1},
+      cuda::counting_iterator{0ull},
+      output.begin(),
+      cuda::std::minus<long long>{});
+    CHECK(thrust::all_of(output.begin(), output.end(), equal_to_one{}));
+  }
+
+  { // convertible type
+    thrust::fill(output.begin(), output.end(), 0);
+    cuda::std::transform(
+      policy,
+      cuda::counting_iterator<short>{1},
+      cuda::counting_iterator<short>{size + 1},
+      cuda::counting_iterator{0ull},
+      output.begin(),
+      cuda::std::minus<>{});
+    CHECK(thrust::all_of(output.begin(), output.end(), equal_to_one{}));
+  }
+
+  { // convertible second range
+    thrust::fill(output.begin(), output.end(), 0);
+    cuda::std::transform(
+      policy,
+      cuda::counting_iterator{1},
+      cuda::counting_iterator{size + 1},
+      cuda::counting_iterator<short>{0ull},
+      output.begin(),
+      cuda::std::minus<>{});
+    CHECK(thrust::all_of(output.begin(), output.end(), equal_to_one{}));
+  }
+}
+
 C2H_TEST("cuda::std::transform", "[parallel algorithm]")
 {
   thrust::device_vector<int> output(size, thrust::no_init);
@@ -47,42 +109,21 @@ C2H_TEST("cuda::std::transform", "[parallel algorithm]")
   SECTION("with default stream")
   {
     const auto policy = cuda::execution::__cub_par_unseq;
-    cuda::std::transform(
-      policy,
-      cuda::counting_iterator{1},
-      cuda::counting_iterator{size + 1},
-      cuda::counting_iterator{0ull},
-      output.begin(),
-      cuda::std::minus<>{});
-    CHECK(thrust::all_of(output.begin(), output.end(), equal_to_one{}));
+    test_transform(policy, output);
   }
 
   SECTION("with provided stream")
   {
     cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::__cub_par_unseq.with_stream(stream);
-    cuda::std::transform(
-      policy,
-      cuda::counting_iterator{1},
-      cuda::counting_iterator{size + 1},
-      cuda::counting_iterator{0ull},
-      output.begin(),
-      cuda::std::minus<>{});
-    CHECK(thrust::all_of(output.begin(), output.end(), equal_to_one{}));
+    test_transform(policy, output);
   }
 
   SECTION("with provided memory_resource")
   {
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
     const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource);
-    cuda::std::transform(
-      policy,
-      cuda::counting_iterator{1},
-      cuda::counting_iterator{size + 1},
-      cuda::counting_iterator{0ull},
-      output.begin(),
-      cuda::std::minus<>{});
-    CHECK(thrust::all_of(output.begin(), output.end(), equal_to_one{}));
+    test_transform(policy, output);
   }
 
   SECTION("with provided stream and memory_resource")
@@ -90,13 +131,6 @@ C2H_TEST("cuda::std::transform", "[parallel algorithm]")
     cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource).with_stream(stream);
-    cuda::std::transform(
-      policy,
-      cuda::counting_iterator{1},
-      cuda::counting_iterator{size + 1},
-      cuda::counting_iterator{0ull},
-      output.begin(),
-      cuda::std::minus<>{});
-    CHECK(thrust::all_of(output.begin(), output.end(), equal_to_one{}));
+    test_transform(policy, output);
   }
 }

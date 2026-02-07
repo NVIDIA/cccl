@@ -29,12 +29,10 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(elements);
 
   caching_allocator_t alloc{};
-  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               cuda::std::generate(
-                 policy.with_stream(launch.get_stream().get_stream()), output.begin(), output.end(), generator<T>{});
+               cuda::std::generate(cuda_policy(alloc, launch), output.begin(), output.end(), generator<T>{});
              });
 }
 
