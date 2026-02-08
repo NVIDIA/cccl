@@ -24,7 +24,7 @@
 template <class T>
 struct A
 {
-  typedef T value_type;
+  using value_type = T;
   value_type* allocate(cuda::std::size_t n);
   value_type* allocate(cuda::std::size_t n, const void* p);
 };

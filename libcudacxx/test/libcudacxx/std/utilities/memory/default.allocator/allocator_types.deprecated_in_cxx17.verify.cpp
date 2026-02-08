@@ -16,12 +16,12 @@
 // class allocator
 // {
 // public:
-//     typedef T*                                           pointer;
-//     typedef const T*                                     const_pointer;
-//     typedef typename add_lvalue_reference<T>::type       reference;
-//     typedef typename add_lvalue_reference<const T>::type const_reference;
+//     using pointer         = T*;
+//     using const_pointer   = const T*;
+//     using reference       = typename add_lvalue_reference<T>::type;
+//     using const_reference = typename add_lvalue_reference<const T>::type;
 //
-//     template <class U> struct rebind {typedef allocator<U> other;};
+//     template <class U> struct rebind {using other = allocator<U>;};
 // ...
 // };
 
@@ -32,30 +32,30 @@
 __host__ __device__ void f()
 {
   {
-    typedef cuda::std::allocator<char>::pointer Pointer; // expected-warning {{'pointer' is deprecated}}
-    typedef cuda::std::allocator<char>::const_pointer ConstPointer; // expected-warning {{'const_pointer' is
+    using Pointer      = cuda::std::allocator<char>::pointer; // expected-warning {{'pointer' is deprecated}}
+    using ConstPointer = cuda::std::allocator<char>::const_pointer; // expected-warning {{'const_pointer' is
                                                                     // deprecated}}
-    typedef cuda::std::allocator<char>::reference Reference; // expected-warning {{'reference' is deprecated}}
-    typedef cuda::std::allocator<char>::const_reference ConstReference; // expected-warning {{'const_reference' is
+    using Reference      = cuda::std::allocator<char>::reference; // expected-warning {{'reference' is deprecated}}
+    using ConstReference = cuda::std::allocator<char>::const_reference; // expected-warning {{'const_reference' is
                                                                         // deprecated}}
-    typedef cuda::std::allocator<char>::rebind<int>::other Rebind; // expected-warning {{'rebind<int>' is deprecated}}
+    using Rebind = cuda::std::allocator<char>::rebind<int>::other; // expected-warning {{'rebind<int>' is deprecated}}
   }
   {
-    typedef cuda::std::allocator<char const>::pointer Pointer; // expected-warning {{'pointer' is deprecated}}
-    typedef cuda::std::allocator<char const>::const_pointer ConstPointer; // expected-warning {{'const_pointer' is
+    using Pointer      = cuda::std::allocator<char const>::pointer; // expected-warning {{'pointer' is deprecated}}
+    using ConstPointer = cuda::std::allocator<char const>::const_pointer; // expected-warning {{'const_pointer' is
                                                                           // deprecated}}
-    typedef cuda::std::allocator<char const>::reference Reference; // expected-warning {{'reference' is deprecated}}
-    typedef cuda::std::allocator<char const>::const_reference ConstReference; // expected-warning {{'const_reference' is
+    using Reference = cuda::std::allocator<char const>::reference; // expected-warning {{'reference' is deprecated}}
+    using ConstReference = cuda::std::allocator<char const>::const_reference; // expected-warning {{'const_reference' is
                                                                               // deprecated}}
-    typedef cuda::std::allocator<char const>::rebind<int>::other Rebind; // expected-warning {{'rebind<int>' is
+    using Rebind = cuda::std::allocator<char const>::rebind<int>::other; // expected-warning {{'rebind<int>' is
                                                                          // deprecated}}
   }
   {
-    typedef cuda::std::allocator<void>::pointer Pointer; // expected-warning {{'pointer' is deprecated}}
-    typedef cuda::std::allocator<void>::const_pointer ConstPointer; // expected-warning {{'const_pointer' is
+    using Pointer      = cuda::std::allocator<void>::pointer; // expected-warning {{'pointer' is deprecated}}
+    using ConstPointer = cuda::std::allocator<void>::const_pointer; // expected-warning {{'const_pointer' is
                                                                     // deprecated}}
     // reference and const_reference are not provided by cuda::std::allocator<void>
-    typedef cuda::std::allocator<void>::rebind<int>::other Rebind; // expected-warning {{'rebind<int>' is deprecated}}
+    using Rebind = cuda::std::allocator<void>::rebind<int>::other; // expected-warning {{'rebind<int>' is deprecated}}
   }
 }
 

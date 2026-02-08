@@ -17,9 +17,9 @@ def select_pointer(inp, out, num_selected, build_only):
 
     selector = cuda.compute.make_select(inp, out, num_selected, even_op)
     if not build_only:
-        temp_bytes = selector(None, inp, out, num_selected, size)
+        temp_bytes = selector(None, inp, out, num_selected, even_op, size)
         temp_storage = cp.empty(temp_bytes, dtype=np.uint8)
-        selector(temp_storage, inp, out, num_selected, size)
+        selector(temp_storage, inp, out, num_selected, even_op, size)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -32,9 +32,9 @@ def select_iterator(size, d_in, out, num_selected, build_only):
 
     selector = cuda.compute.make_select(d_in_iter, out, num_selected, less_than_50)
     if not build_only:
-        temp_bytes = selector(None, d_in_iter, out, num_selected, size)
+        temp_bytes = selector(None, d_in_iter, out, num_selected, less_than_50, size)
         temp_storage = cp.empty(temp_bytes, dtype=np.uint8)
-        selector(temp_storage, d_in_iter, out, num_selected, size)
+        selector(temp_storage, d_in_iter, out, num_selected, less_than_50, size)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -53,9 +53,9 @@ def select_struct(inp, out, num_selected, build_only):
 
     selector = cuda.compute.make_select(inp, out, num_selected, in_first_quadrant)
     if not build_only:
-        temp_bytes = selector(None, inp, out, num_selected, size)
+        temp_bytes = selector(None, inp, out, num_selected, in_first_quadrant, size)
         temp_storage = cp.empty(temp_bytes, dtype=np.uint8)
-        selector(temp_storage, inp, out, num_selected, size)
+        selector(temp_storage, inp, out, num_selected, in_first_quadrant, size)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -68,9 +68,9 @@ def select_stateful(inp, out, num_selected, threshold_state, build_only):
 
     selector = cuda.compute.make_select(inp, out, num_selected, threshold_select)
     if not build_only:
-        temp_bytes = selector(None, inp, out, num_selected, size)
+        temp_bytes = selector(None, inp, out, num_selected, threshold_select, size)
         temp_storage = cp.empty(temp_bytes, dtype=np.uint8)
-        selector(temp_storage, inp, out, num_selected, size)
+        selector(temp_storage, inp, out, num_selected, threshold_select, size)
 
     cp.cuda.runtime.deviceSynchronize()
 

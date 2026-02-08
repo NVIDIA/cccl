@@ -32,6 +32,11 @@
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 
+// Used only for unit tests, not in the actual implementation
+#ifdef UNITTESTED_FILE
+#  include <map>
+#endif
+
 #if _CCCL_CTK_AT_LEAST(12, 4)
 
 namespace cuda::experimental::stf
@@ -86,14 +91,24 @@ public:
       return hash_all(view_.g_ctx, view_.pool, view_.devid);
     }
 
-    bool equals(const data_place_extension& other) const override
+    bool operator==(const data_place_extension& other) const override
     {
-      const auto* other_gc = dynamic_cast<const extension*>(&other);
-      if (!other_gc)
+      if (typeid(*this) != typeid(other))
       {
         return false;
       }
-      return view_ == other_gc->view_;
+      const auto& other_gc = static_cast<const extension&>(other);
+      return view_ == other_gc.view_;
+    }
+
+    bool operator<(const data_place_extension& other) const override
+    {
+      if (typeid(*this) != typeid(other))
+      {
+        return typeid(*this).before(typeid(other));
+      }
+      const auto& other_gc = static_cast<const extension&>(other);
+      return view_ < other_gc.view_;
     }
 
     /**
@@ -407,6 +422,33 @@ public:
       return *pool;
     }
 
+    bool operator==(const exec_place::impl& rhs) const override
+    {
+      if (typeid(*this) != typeid(rhs))
+      {
+        return false;
+      }
+      const auto& other = static_cast<const impl&>(rhs);
+      // Compare green context handles
+      return g_ctx == other.g_ctx;
+    }
+
+    size_t hash() const override
+    {
+      // Hash the green context handle, not the affine data place
+      return ::std::hash<CUgreenCtx>()(g_ctx);
+    }
+
+    bool operator<(const exec_place::impl& rhs) const override
+    {
+      if (typeid(*this) != typeid(rhs))
+      {
+        return typeid(*this).before(typeid(rhs));
+      }
+      const auto& other = static_cast<const impl&>(rhs);
+      return g_ctx < other.g_ctx;
+    }
+
   private:
     int devid        = -1;
     CUgreenCtx g_ctx = {};
@@ -474,6 +516,334 @@ inline data_place data_place::green_ctx(::std::shared_ptr<green_ctx_view> gc_vie
 {
   return make_green_ctx_data_place(mv(gc_view_ptr));
 }
+
+#  ifdef UNITTESTED_FILE
+UNITTEST("green context exec_place equality")
+{
+  async_resources_handle handle;
+  auto gc_helper = handle.get_gc_helper(0, 8); // 8 SMs per green context
+
+  // Need at least 2 green contexts for the test
+  if (gc_helper->get_count() < 2)
+  {
+    return;
+  }
+
+  auto gc0_view = gc_helper->get_view(0);
+  auto gc1_view = gc_helper->get_view(1);
+
+  // Create exec_places from different green contexts (default: use_green_ctx_data_place=false)
+  auto p0a = exec_place::green_ctx(gc0_view);
+  auto p0b = exec_place::green_ctx(gc0_view); // same green context as p0a
+  auto p1  = exec_place::green_ctx(gc1_view); // different green context
+
+  // Same green context should be equal
+  EXPECT(p0a == p0b);
+  EXPECT(!(p0a != p0b));
+
+  // Different green contexts should NOT be equal
+  EXPECT(p0a != p1);
+  EXPECT(!(p0a == p1));
+
+  // Green context exec_place should not be equal to regular device exec_place
+  auto dev0 = exec_place::device(0);
+  EXPECT(p0a != dev0);
+  EXPECT(!(p0a == dev0));
+};
+
+UNITTEST("green context data_place equality")
+{
+  async_resources_handle handle;
+  auto gc_helper = handle.get_gc_helper(0, 8);
+
+  if (gc_helper->get_count() < 2)
+  {
+    return;
+  }
+
+  auto gc0_view = gc_helper->get_view(0);
+  auto gc1_view = gc_helper->get_view(1);
+
+  // Create green context data places
+  auto dp0a = data_place::green_ctx(gc0_view);
+  auto dp0b = data_place::green_ctx(gc0_view);
+  auto dp1  = data_place::green_ctx(gc1_view);
+
+  // Same green context data place should be equal
+  EXPECT(dp0a == dp0b);
+  EXPECT(!(dp0a != dp0b));
+
+  // Different green context data places should NOT be equal
+  EXPECT(dp0a != dp1);
+  EXPECT(!(dp0a == dp1));
+
+  // Green context data place should not be equal to regular device data place
+  auto dev0 = data_place::device(0);
+  EXPECT(dp0a != dev0);
+  EXPECT(!(dp0a == dev0));
+
+  // Green context data place should be an extension
+  EXPECT(dp0a.is_extension());
+  EXPECT(!dev0.is_extension());
+};
+
+UNITTEST("green context exec_place equality with green_ctx_data_place flag")
+{
+  async_resources_handle handle;
+  auto gc_helper = handle.get_gc_helper(0, 8);
+
+  if (gc_helper->get_count() < 2)
+  {
+    return;
+  }
+
+  auto gc0_view = gc_helper->get_view(0);
+  auto gc1_view = gc_helper->get_view(1);
+
+  // Create exec_places with use_green_ctx_data_place=true
+  auto p0a = exec_place::green_ctx(gc0_view, true);
+  auto p0b = exec_place::green_ctx(gc0_view, true);
+  auto p1  = exec_place::green_ctx(gc1_view, true);
+
+  // Same green context should be equal
+  EXPECT(p0a == p0b);
+
+  // Different green contexts should NOT be equal
+  EXPECT(p0a != p1);
+
+  // Affine data place should be an extension when use_green_ctx_data_place=true
+  EXPECT(p0a.affine_data_place().is_extension());
+};
+
+UNITTEST("green context exec_place and data_place with different data place modes")
+{
+  async_resources_handle handle;
+  auto gc_helper = handle.get_gc_helper(0, 8);
+
+  if (gc_helper->get_count() < 2)
+  {
+    return;
+  }
+
+  auto gc0_view = gc_helper->get_view(0);
+  auto gc1_view = gc_helper->get_view(1);
+
+  // Create exec_places for same green context with different use_green_ctx_data_place settings
+  auto ep0_device_affine = exec_place::green_ctx(gc0_view, false); // affine = device data place
+  auto ep0_green_affine  = exec_place::green_ctx(gc0_view, true); // affine = green ctx data place
+
+  // Same green context exec_places should be equal regardless of data place mode
+  // (exec_place identity is about the green context, not the affine data place)
+  EXPECT(ep0_device_affine == ep0_green_affine);
+
+  // But their affine data places should be different
+  EXPECT(ep0_device_affine.affine_data_place() != ep0_green_affine.affine_data_place());
+  EXPECT(!ep0_device_affine.affine_data_place().is_extension());
+  EXPECT(ep0_green_affine.affine_data_place().is_extension());
+
+  // Different green contexts should NOT be equal, regardless of data place mode
+  auto ep1_device_affine = exec_place::green_ctx(gc1_view, false);
+  auto ep1_green_affine  = exec_place::green_ctx(gc1_view, true);
+
+  EXPECT(ep0_device_affine != ep1_device_affine);
+  EXPECT(ep0_device_affine != ep1_green_affine);
+  EXPECT(ep0_green_affine != ep1_device_affine);
+  EXPECT(ep0_green_affine != ep1_green_affine);
+
+  // Test green context data places directly
+  auto dp0 = data_place::green_ctx(gc0_view);
+  auto dp1 = data_place::green_ctx(gc1_view);
+
+  // Different green context data places should NOT be equal
+  EXPECT(dp0 != dp1);
+
+  // Green context data place should NOT equal regular device data place
+  EXPECT(dp0 != data_place::device(0));
+
+  // Green context data place should equal affine of exec_place with use_green_ctx_data_place=true
+  EXPECT(dp0 == ep0_green_affine.affine_data_place());
+};
+
+UNITTEST("green context data_place as unordered_map key")
+{
+  async_resources_handle handle;
+  auto gc_helper = handle.get_gc_helper(0, 8);
+
+  if (gc_helper->get_count() < 2)
+  {
+    return;
+  }
+
+  auto gc0_view = gc_helper->get_view(0);
+  auto gc1_view = gc_helper->get_view(1);
+
+  // Create green context-specific data places (the kind used when
+  // use_green_ctx_data_place = true). These are distinct from data_place::device(0).
+  auto dp0 = data_place::green_ctx(gc0_view);
+  auto dp1 = data_place::green_ctx(gc1_view);
+
+  // Different green contexts on the same device must be distinguished as different keys.
+  EXPECT(dp0 != dp1);
+  // Both are different from the regular device data place
+  EXPECT(dp0 != data_place::device(0));
+  EXPECT(dp1 != data_place::device(0));
+
+  ::std::unordered_map<data_place, int, hash<data_place>> map;
+
+  // Insert green context data places - different green contexts should be different keys
+  map[dp0] = 100;
+  map[dp1] = 200;
+
+  // Verify lookups work correctly
+  EXPECT(map[dp0] == 100);
+  EXPECT(map[dp1] == 200);
+  EXPECT(map.size() == 2);
+
+  // Verify that a new data_place for the same green context finds the same entry
+  auto dp0_copy = data_place::green_ctx(gc0_view);
+  EXPECT(map[dp0_copy] == 100);
+
+  // Mix with regular device data place
+  map[data_place::device(0)] = 300;
+  EXPECT(map.size() == 3);
+  EXPECT(map[data_place::device(0)] == 300);
+
+  // Green context data place and device data place should be different keys
+  EXPECT(map[dp0] == 100); // Still 100, not overwritten
+};
+
+UNITTEST("green context exec_place as unordered_map key")
+{
+  async_resources_handle handle;
+  auto gc_helper = handle.get_gc_helper(0, 8);
+
+  if (gc_helper->get_count() < 2)
+  {
+    return;
+  }
+
+  auto gc0_view = gc_helper->get_view(0);
+  auto gc1_view = gc_helper->get_view(1);
+
+  // Create exec_places without use_green_ctx_data_place flag (default).
+  // Their affine data_place is data_place::device(0), not a green context-specific one.
+  auto ep0 = exec_place::green_ctx(gc0_view);
+  auto ep1 = exec_place::green_ctx(gc1_view);
+
+  // Both share the same affine data_place (the device), but they must still be
+  // distinguished as different exec_place keys in the map.
+  EXPECT(ep0.affine_data_place() == ep1.affine_data_place());
+  EXPECT(ep0.affine_data_place() == data_place::device(0));
+  EXPECT(ep0 != ep1);
+
+  ::std::unordered_map<exec_place, int, hash<exec_place>> map;
+
+  // Insert green context exec places - different green contexts should be different keys
+  // even though they share the same affine data_place
+  map[ep0] = 100;
+  map[ep1] = 200;
+
+  // Verify lookups work correctly
+  EXPECT(map[ep0] == 100);
+  EXPECT(map[ep1] == 200);
+  EXPECT(map.size() == 2);
+
+  // Verify that a new exec_place for the same green context finds the same entry
+  auto ep0_copy = exec_place::green_ctx(gc0_view);
+  EXPECT(map[ep0_copy] == 100);
+
+  // Mix with regular device exec place - should be a different key
+  map[exec_place::device(0)] = 300;
+  EXPECT(map.size() == 3);
+  EXPECT(map[exec_place::device(0)] == 300);
+
+  // Green context exec place should still have its value
+  EXPECT(map[ep0] == 100);
+};
+
+UNITTEST("green context data_place as std::map key")
+{
+  async_resources_handle handle;
+  auto gc_helper = handle.get_gc_helper(0, 8);
+
+  if (gc_helper->get_count() < 2)
+  {
+    return;
+  }
+
+  auto gc0_view = gc_helper->get_view(0);
+  auto gc1_view = gc_helper->get_view(1);
+
+  auto dp0 = data_place::green_ctx(gc0_view);
+  auto dp1 = data_place::green_ctx(gc1_view);
+
+  // Different green contexts must be distinguished
+  EXPECT(dp0 != dp1);
+
+  ::std::map<data_place, int> map;
+
+  // Insert green context data places
+  map[dp0] = 100;
+  map[dp1] = 200;
+
+  // Verify lookups work correctly
+  EXPECT(map[dp0] == 100);
+  EXPECT(map[dp1] == 200);
+  EXPECT(map.size() == 2);
+
+  // Verify that a new data_place for the same green context finds the same entry
+  auto dp0_copy = data_place::green_ctx(gc0_view);
+  EXPECT(map[dp0_copy] == 100);
+
+  // Mix with regular device data place
+  map[data_place::device(0)] = 300;
+  EXPECT(map.size() == 3);
+  EXPECT(map[data_place::device(0)] == 300);
+  EXPECT(map[dp0] == 100); // Still 100, not overwritten
+};
+
+UNITTEST("green context exec_place as std::map key")
+{
+  async_resources_handle handle;
+  auto gc_helper = handle.get_gc_helper(0, 8);
+
+  if (gc_helper->get_count() < 2)
+  {
+    return;
+  }
+
+  auto gc0_view = gc_helper->get_view(0);
+  auto gc1_view = gc_helper->get_view(1);
+
+  auto ep0 = exec_place::green_ctx(gc0_view);
+  auto ep1 = exec_place::green_ctx(gc1_view);
+
+  // Both share the same affine data_place but must be distinguished
+  EXPECT(ep0.affine_data_place() == ep1.affine_data_place());
+  EXPECT(ep0 != ep1);
+
+  ::std::map<exec_place, int> map;
+
+  // Insert green context exec places
+  map[ep0] = 100;
+  map[ep1] = 200;
+
+  // Verify lookups work correctly
+  EXPECT(map[ep0] == 100);
+  EXPECT(map[ep1] == 200);
+  EXPECT(map.size() == 2);
+
+  // Verify that a new exec_place for the same green context finds the same entry
+  auto ep0_copy = exec_place::green_ctx(gc0_view);
+  EXPECT(map[ep0_copy] == 100);
+
+  // Mix with regular device exec place
+  map[exec_place::device(0)] = 300;
+  EXPECT(map.size() == 3);
+  EXPECT(map[exec_place::device(0)] == 300);
+  EXPECT(map[ep0] == 100); // Still 100
+};
+#  endif // UNITTESTED_FILE
 } // end namespace cuda::experimental::stf
 
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
