@@ -205,64 +205,12 @@ try
   const auto output_it_value_t = cccl_type_enum_to_name(output_it.value_type.type);
 
   const auto policy_sel = [&] {
-    using cub::detail::op_kind_t;
-    using cub::detail::type_t;
     using cub::detail::scan::policy_selector;
     using cub::detail::scan::primitive_accum;
     using cub::detail::scan::primitive_op;
 
-    auto accum_type = type_t::other;
-    switch (accum_t.type)
-    {
-      case CCCL_INT8:
-        accum_type = type_t::int8;
-        break;
-      case CCCL_INT16:
-        accum_type = type_t::int16;
-        break;
-      case CCCL_INT32:
-        accum_type = type_t::int32;
-        break;
-      case CCCL_INT64:
-        accum_type = type_t::int64;
-        break;
-      case CCCL_UINT8:
-        accum_type = type_t::uint8;
-        break;
-      case CCCL_UINT16:
-        accum_type = type_t::uint16;
-        break;
-      case CCCL_UINT32:
-        accum_type = type_t::uint32;
-        break;
-      case CCCL_UINT64:
-        accum_type = type_t::uint64;
-        break;
-      case CCCL_FLOAT32:
-        accum_type = type_t::float32;
-        break;
-      case CCCL_FLOAT64:
-        accum_type = type_t::float64;
-        break;
-      default:
-        break;
-    }
-
-    auto operation_t = op_kind_t::other;
-    switch (op.type)
-    {
-      case CCCL_PLUS:
-        operation_t = op_kind_t::plus;
-        break;
-      case CCCL_MINIMUM:
-        operation_t = op_kind_t::min;
-        break;
-      case CCCL_MAXIMUM:
-        operation_t = op_kind_t::max;
-        break;
-      default:
-        break;
-    }
+    const auto accum_type  = cccl_type_enum_to_cub_type(accum_t.type);
+    const auto operation_t = cccl_op_kind_to_cub_op(op.type);
 
     auto primitive_accum_t = primitive_accum::no;
     switch (accum_t.type)
@@ -285,10 +233,7 @@ try
         break;
     }
 
-    const auto primitive_op_t =
-      (op.type == CCCL_PLUS || op.type == CCCL_MINIMUM || op.type == CCCL_MAXIMUM)
-        ? primitive_op::yes
-        : primitive_op::no;
+    const auto primitive_op_t = (operation_t == cub::detail::op_kind_t::other) ? primitive_op::no : primitive_op::yes;
 
     const auto input_type      = input_it.value_type.type;
     const auto output_type     = output_it.value_type.type;
