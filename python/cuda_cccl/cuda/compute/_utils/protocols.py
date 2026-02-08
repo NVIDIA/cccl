@@ -1,4 +1,4 @@
-# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -65,6 +65,21 @@ def get_shape(arr: DeviceArrayLike) -> Tuple[int]:
         return arr.shape  # type: ignore
     except AttributeError:
         return arr.__cuda_array_interface__["shape"]
+
+
+def get_size(arr: DeviceArrayLike) -> int:
+    """Get the total number of elements in an array."""
+    # Try fast path via .size attribute
+    try:
+        return int(arr.size)  # type: ignore
+    except AttributeError:
+        pass
+
+    # Fall back to computing from shape
+    shape = get_shape(arr)
+    import math
+
+    return math.prod(shape)
 
 
 def is_contiguous(arr: DeviceArrayLike) -> bool:
