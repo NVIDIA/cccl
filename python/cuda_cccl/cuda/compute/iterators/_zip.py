@@ -12,23 +12,7 @@ from .._bindings import Op, OpKind
 from .._cpp_compile import compile_cpp_to_ltoir
 from ..types import struct
 from ._base import IteratorBase, compose_iterator_states
-
-CUDA_PREAMBLE = """#include <cuda/std/cstdint>
-#include <cuda_fp16.h>
-#include <cuda/std/cstring>
-using namespace cuda::std;
-"""
-
-
-def _ensure_iterator(obj):
-    """Wrap array in PointerIterator if needed."""
-    from ._pointer import PointerIterator
-
-    if isinstance(obj, IteratorBase):
-        return obj
-    if hasattr(obj, "__cuda_array_interface__"):
-        return PointerIterator(obj)
-    raise TypeError("ZipIterator requires iterators or device arrays")
+from ._common import CUDA_PREAMBLE, ensure_iterator
 
 
 class ZipIterator(IteratorBase):
@@ -67,7 +51,7 @@ class ZipIterator(IteratorBase):
             raise ValueError("ZipIterator requires at least one iterator")
 
         # Wrap arrays in PointerIterator
-        iterators = [_ensure_iterator(it) for it in iterators]
+        iterators = [ensure_iterator(it) for it in iterators]
 
         self._iterators = list(iterators)
 

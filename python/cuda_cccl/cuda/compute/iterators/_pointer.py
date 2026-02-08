@@ -9,22 +9,13 @@ from __future__ import annotations
 import ctypes
 import sys
 from textwrap import dedent
-from typing import TYPE_CHECKING
 
 from .._bindings import Op, OpKind
 from .._cpp_compile import compile_cpp_to_ltoir, cpp_type_from_descriptor
 from .._utils.protocols import get_data_pointer, get_dtype
 from ..types import from_numpy_dtype
 from ._base import IteratorBase
-
-CUDA_PREAMBLE = """#include <cuda/std/cstdint>
-#include <cuda_fp16.h>
-#include <cuda/std/cstring>
-using namespace cuda::std;
-"""
-
-if TYPE_CHECKING:
-    pass
+from ._common import CUDA_PREAMBLE
 
 
 class PointerIterator(IteratorBase):
@@ -63,6 +54,10 @@ class PointerIterator(IteratorBase):
             state_alignment=8,  # pointer alignment
             value_type=value_type,
         )
+
+    @property
+    def array(self):
+        return self._array
 
     def _make_advance_op(self) -> Op:
         symbol = self._make_advance_symbol()
@@ -172,20 +167,11 @@ class PointerIterator(IteratorBase):
 
     def _clone_with_pointer(self, pointer_value: int):
         """Clone this iterator with a different pointer value."""
-        clone = PointerIterator.__new__(PointerIterator)
-        clone._cpp_type = self._cpp_type
-        clone._element_size = self._element_size
-        clone._array = self._array
-        # Set new pointer value
+        clone = PointerIterator(self._array)
         state_bytes_buffer = (ctypes.c_char * 8)()
         ptr_obj = ctypes.c_void_p(pointer_value)
         ctypes.memmove(state_bytes_buffer, ctypes.byref(ptr_obj), 8)
         clone._state_bytes = bytes(state_bytes_buffer)
-        clone._state_alignment = 8
-        clone._value_type = self._value_type
-        clone._advance_op = None
-        clone._input_deref_op = None
-        clone._output_deref_op = None
         clone._uid_cached = None
         return clone
 

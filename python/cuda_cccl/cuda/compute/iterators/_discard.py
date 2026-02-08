@@ -12,12 +12,7 @@ from .._utils.protocols import get_dtype
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..types import TypeDescriptor, from_numpy_dtype
 from ._base import IteratorBase
-
-CUDA_PREAMBLE = """#include <cuda/std/cstdint>
-#include <cuda_fp16.h>
-#include <cuda/std/cstring>
-using namespace cuda::std;
-"""
+from ._common import CUDA_PREAMBLE
 
 
 class DiscardIterator(IteratorBase):
@@ -105,10 +100,4 @@ extern "C" __device__ void {symbol}(void*, void*) {{
         )
 
     def __add__(self, offset: int) -> "DiscardIterator":
-        """Return a new DiscardIterator (stateless, so position doesn't matter)."""
-        # DiscardIterator is stateless - advance is a no-op
-        # If reference_iterator supports advance, advance it; otherwise use as-is
-        ref = self._reference_iterator
-        if isinstance(ref, IteratorBase) and hasattr(ref, "__add__"):
-            ref = ref + offset  # type: ignore[operator]
-        return DiscardIterator(ref)
+        return DiscardIterator(self._reference_iterator)

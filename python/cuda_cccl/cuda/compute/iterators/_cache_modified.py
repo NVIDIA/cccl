@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import struct
 from textwrap import dedent
 from typing import Literal
 
@@ -14,12 +15,7 @@ from .._cpp_compile import compile_cpp_to_ltoir, cpp_type_from_descriptor
 from .._utils.protocols import get_data_pointer, get_dtype
 from ..types import from_numpy_dtype
 from ._base import IteratorBase
-
-CUDA_PREAMBLE = """#include <cuda/std/cstdint>
-#include <cuda_fp16.h>
-#include <cuda/std/cstring>
-using namespace cuda::std;
-"""
+from ._common import CUDA_PREAMBLE
 
 # Map modifier names to PTX cache operators and C++ intrinsics
 _CACHE_MODIFIERS = {
@@ -82,8 +78,6 @@ class CacheModifiedInputIterator(IteratorBase):
             )
 
         # State is just the pointer (8 bytes on 64-bit)
-        import struct
-
         state_bytes = struct.pack("Q", ptr)
 
         super().__init__(
@@ -145,23 +139,12 @@ class CacheModifiedInputIterator(IteratorBase):
 
     def __add__(self, offset: int) -> "CacheModifiedInputIterator":
         """Advance the iterator by offset elements."""
-        import struct
-
-        from .._utils.protocols import get_dtype
-
-        dtype = get_dtype(self._array)
-        offset_ptr = self._ptr + offset * dtype.itemsize
-
-        # Create a new instance with the offset pointer
-        clone = CacheModifiedInputIterator.__new__(CacheModifiedInputIterator)
-        clone._modifier = self._modifier
-        clone._array = self._array
-        clone._ptr = offset_ptr
-        clone._state_bytes = struct.pack("Q", offset_ptr)
-        clone._state_alignment = 8
-        clone._value_type = self._value_type
-        clone._uid_cached = None
-        return clone
+        out = CacheModifiedInputIterator(self._array, self._modifier)
+        offset_ptr = self._ptr + offset * get_dtype(out._array).itemsize
+        out._ptr = offset_ptr
+        out._state_bytes = struct.pack("Q", offset_ptr)
+        out._uid_cached = None
+        return out
 
     @property
     def kind(self):

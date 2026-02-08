@@ -191,11 +191,6 @@ class IteratorBase:
 
         Returns:
             Op object with compiled LTOIR
-
-        Subclasses can use any compilation approach:
-        - compile_cpp_source_to_ltoir() for C++ source, then construct Op
-        - Pre-compiled LTOIR bytes, then construct Op
-        - Other compilation backends
         """
         raise NotImplementedError
 
@@ -205,11 +200,6 @@ class IteratorBase:
 
         Returns:
             Op object with compiled LTOIR, or None if not supported
-
-        Subclasses can use any compilation approach:
-        - compile_cpp_source_to_ltoir() for C++ source, then construct Op
-        - Pre-compiled LTOIR bytes, then construct Op
-        - Other compilation backends
         """
         raise NotImplementedError
 
@@ -219,11 +209,6 @@ class IteratorBase:
 
         Returns:
             Op object with compiled LTOIR, or None if not supported
-
-        Subclasses can use any compilation approach:
-        - compile_cpp_source_to_ltoir() for C++ source, then construct Op
-        - Pre-compiled LTOIR bytes, then construct Op
-        - Other compilation backends
         """
         raise NotImplementedError
 

@@ -13,12 +13,7 @@ from .._cpp_compile import compile_cpp_to_ltoir, make_variable_declaration
 from ..op import make_op_adapter
 from ..types import TypeDescriptor, signature_from_annotations
 from ._base import IteratorBase
-
-CUDA_PREAMBLE = """#include <cuda/std/cstdint>
-#include <cuda_fp16.h>
-#include <cuda/std/cstring>
-using namespace cuda::std;
-"""
+from ._common import CUDA_PREAMBLE, ensure_iterator
 
 
 class TransformIterator(IteratorBase):
@@ -71,11 +66,7 @@ class TransformIterator(IteratorBase):
                             For output iterators: must be provided or have annotations.
             is_input: True for input iterator, False for output iterator
         """
-        # Wrap device arrays in PointerIterator
-        if hasattr(underlying, "__cuda_array_interface__"):
-            from ._pointer import PointerIterator
-
-            underlying = PointerIterator(underlying)
+        underlying = ensure_iterator(underlying)
 
         self._underlying = underlying
         self._transform_op = make_op_adapter(transform_op)

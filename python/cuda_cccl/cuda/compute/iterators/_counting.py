@@ -14,12 +14,7 @@ from .._bindings import Op, OpKind
 from .._cpp_compile import compile_cpp_to_ltoir, cpp_type_from_descriptor
 from ..types import from_numpy_dtype
 from ._base import IteratorBase
-
-CUDA_PREAMBLE = """#include <cuda/std/cstdint>
-#include <cuda_fp16.h>
-#include <cuda/std/cstring>
-using namespace cuda::std;
-"""
+from ._common import CUDA_PREAMBLE
 
 
 class CountingIterator(IteratorBase):
