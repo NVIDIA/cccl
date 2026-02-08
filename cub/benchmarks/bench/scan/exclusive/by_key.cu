@@ -106,7 +106,7 @@ static void scan(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT
     static_cast<int>(elements),
     0 /* stream */);
 
-  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size);
+  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
   nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
