@@ -369,7 +369,7 @@ public:
       ::std::vector<::std::shared_ptr<stackable_logical_data_impl_state_base>> pushed_data;
 
       // Where was the push() called ?
-      _CUDA_VSTD::source_location callsite;
+      ::cuda::std::source_location callsite;
 
       // The async resource handle used in this context
       ::std::optional<async_resources_handle> async_handle;
@@ -420,7 +420,7 @@ public:
       // Constructor for graph contexts with optional conditional support via config
       graph_ctx_node(ctx_node_base* parent_node,
                      async_resources_handle handle,
-                     const _CUDA_VSTD::source_location& loc,
+                     const ::cuda::std::source_location& loc,
                      [[maybe_unused]] const push_while_config& config = push_while_config{})
       {
         // Graph context nodes create and set up the internal CUDA graph
@@ -773,7 +773,7 @@ public:
       display_graph_stats                 = (display_graph_stats_str && atoi(display_graph_stats_str) != 0);
 
       // Create the root node
-      push(_CUDA_VSTD::source_location::current(), true /* is_root */);
+      push(::cuda::std::source_location::current(), true /* is_root */);
     }
 
     ~impl()
@@ -813,7 +813,7 @@ public:
      *
      * head_offset is the offset of thread's current top context (-1 if none)
      */
-    void push(const _CUDA_VSTD::source_location& loc,
+    void push(const ::cuda::std::source_location& loc,
               bool is_root                                     = false,
               [[maybe_unused]] const push_while_config& config = push_while_config{})
     {
@@ -884,9 +884,9 @@ public:
 
 #if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
     void push_while(cudaGraphConditionalHandle* phandle_out,
-                    unsigned int default_launch_value     = 0,
-                    unsigned int flags                    = cudaGraphCondAssignDefault,
-                    const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
+                    unsigned int default_launch_value      = 0,
+                    unsigned int flags                     = cudaGraphCondAssignDefault,
+                    const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
     {
       _CCCL_ASSERT(phandle_out != nullptr, "push_while requires non-null conditional handle output parameter");
 
@@ -1188,7 +1188,7 @@ public:
     // Create a map indexed by source locations, the value stored are a map of stats indexed per (nnodes,nedges) pairs
     using stored_type_t =
       ::std::unordered_map<::std::pair<size_t, size_t>, executable_graph_cache_stat, hash<::std::pair<size_t, size_t>>>;
-    ::std::unordered_map<_CUDA_VSTD::source_location,
+    ::std::unordered_map<::cuda::std::source_location,
                          stored_type_t,
                          reserved::source_location_hash,
                          reserved::source_location_equal>
@@ -1285,16 +1285,16 @@ public:
     pimpl->set_head_offset(offset);
   }
 
-  void push(const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
+  void push(const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
   {
     pimpl->push(loc);
   }
 
 #if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
   void push_while(cudaGraphConditionalHandle* phandle_out,
-                  unsigned int default_launch_value     = 0,
-                  unsigned int flags                    = cudaGraphCondAssignDefault,
-                  const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
+                  unsigned int default_launch_value      = 0,
+                  unsigned int flags                     = cudaGraphCondAssignDefault,
+                  const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
   {
     pimpl->push_while(phandle_out, default_launch_value, flags, loc);
   }
@@ -1333,7 +1333,7 @@ public:
     using context_type = stackable_ctx;
 
     explicit graph_scope_guard(stackable_ctx& ctx,
-                               const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current())
+                               const ::cuda::std::source_location& loc = ::cuda::std::source_location::current())
         : ctx_(ctx)
     {
       ctx_.push(loc);
@@ -1366,9 +1366,9 @@ public:
 
     explicit while_graph_scope_guard(
       stackable_ctx& ctx,
-      unsigned int default_launch_value      = 0,
-      unsigned int flags                     = cudaGraphCondAssignDefault,
-      const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current())
+      unsigned int default_launch_value       = 0,
+      unsigned int flags                      = cudaGraphCondAssignDefault,
+      const ::cuda::std::source_location& loc = ::cuda::std::source_location::current())
         : ctx_(ctx)
     {
       ctx_.push_while(&conditional_handle_, default_launch_value, flags, loc);
@@ -1469,7 +1469,7 @@ public:
   //!
   //! \param loc Source location for debugging (defaults to call site)
   //! \return graph_scope_guard object that manages the nested context lifetime
-  [[nodiscard]] auto graph_scope(const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current())
+  [[nodiscard]] auto graph_scope(const ::cuda::std::source_location& loc = ::cuda::std::source_location::current())
   {
     return graph_scope_guard(*this, loc);
   }
@@ -1497,9 +1497,10 @@ public:
   //! \param loc Source location for debugging (defaults to call site)
   //! \return while_graph_scope_guard object that manages the while context lifetime and provides access to the
   //! conditional handle
-  [[nodiscard]] auto while_graph_scope(unsigned int default_launch_value      = 1,
-                                       unsigned int flags                     = cudaGraphCondAssignDefault,
-                                       const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current())
+  [[nodiscard]] auto while_graph_scope(
+    unsigned int default_launch_value       = 1,
+    unsigned int flags                      = cudaGraphCondAssignDefault,
+    const ::cuda::std::source_location& loc = ::cuda::std::source_location::current())
   {
     return while_graph_scope_guard(*this, default_launch_value, flags, loc);
   }
@@ -1536,9 +1537,9 @@ public:
   //! \return repeat_graph_scope_guard object that manages the repeat loop lifetime
   [[nodiscard]] auto repeat_graph_scope(
     size_t count,
-    unsigned int default_launch_value      = 1,
-    unsigned int flags                     = cudaGraphCondAssignDefault,
-    const _CUDA_VSTD::source_location& loc = _CUDA_VSTD::source_location::current());
+    unsigned int default_launch_value       = 1,
+    unsigned int flags                      = cudaGraphCondAssignDefault,
+    const ::cuda::std::source_location& loc = ::cuda::std::source_location::current());
 #endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
   template <typename T>

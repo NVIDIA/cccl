@@ -1335,7 +1335,7 @@ public:
     init_counter_value(ctx_, counter_, count);
 
     // only create the while guard now - this starts the while loop context
-    while_guard_.emplace(ctx_, default_launch_value, flags, _CUDA_VSTD::source_location::current());
+    while_guard_.emplace(ctx_, default_launch_value, flags, ::cuda::std::source_location::current());
 
     // Set up the condition update logic
     setup_condition_update(*while_guard_, counter_);
@@ -1355,7 +1355,7 @@ private:
 
 // Implementation of repeat_graph_scope method - defined here after repeat_graph_scope_guard class is complete
 inline auto stackable_ctx::repeat_graph_scope(
-  size_t count, unsigned int default_launch_value, unsigned int flags, const _CUDA_VSTD::source_location& loc)
+  size_t count, unsigned int default_launch_value, unsigned int flags, const ::cuda::std::source_location& loc)
 {
   // Note: loc parameter is provided for API consistency but not currently used in repeat_graph_scope_guard
   (void) loc; // Suppress unused parameter warning
