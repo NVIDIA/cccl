@@ -45,6 +45,7 @@
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/move.h>
 
@@ -131,7 +132,6 @@ private:
     {
       return input_iterator_tag{};
     }
-    _CCCL_UNREACHABLE();
   }
 
 public:
@@ -408,7 +408,7 @@ public:
     return ::cuda::std::ranges::iter_swap(__x.__current_, __y.__current_);
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(move_iterator);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(move_iterator);
 _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(move_iterator)
 
 // Some compilers have issues determining __is_fancy_pointer

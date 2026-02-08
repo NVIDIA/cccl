@@ -23,13 +23,9 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/fp.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
-
-#if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG) || !_CCCL_CUDA_COMPILATION()
-#  include <math.h>
-#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG) || !_CCCL_CUDA_COMPILATION()
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -43,7 +39,7 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool __isnan_impl(_Tp __x) noexcept
 {
   static_assert(is_floating_point_v<_Tp>, "Only standard floating-point types are supported");
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     return ::isnan(__x);
   }
@@ -83,7 +79,7 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool isnan(__half __x) noexcept
 {
 #  if _LIBCUDACXX_HAS_NVFP16()
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     return ::__hisnan(__x);
   }
@@ -99,7 +95,7 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool isnan(__nv_bfloat16 __x) noexcept
 {
 #  if _LIBCUDACXX_HAS_NVFP16()
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     return ::__hisnan(__x);
   }
@@ -158,7 +154,7 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool isnan(__float128 __x) noexcept
 {
   // __builtin_isnan is not efficient for __float128, prefer __nv_fp128_isnan at run-time
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_isnan(__x);)) // preserve NaN behavior even with optimization
                                                                         // flags

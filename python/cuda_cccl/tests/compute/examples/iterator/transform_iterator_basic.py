@@ -4,46 +4,31 @@
 
 # example-begin
 """
-Demonstrate reduction with transform iterator.
+Using ``reduce_into`` with a ``TransformIterator`` to compute the
+sum of squares of a sequence of numbers.
 """
-
-import functools
 
 import cupy as cp
 import numpy as np
 
-import cuda.compute
 from cuda.compute import (
-    CountingIterator,
     OpKind,
     TransformIterator,
+    reduce_into,
 )
-
-
-def transform_op(a):
-    return -a if a % 2 == 0 else a
-
 
 # Prepare the input and output arrays.
-first_item = 10
-num_items = 100
+d_input = cp.arange(10, dtype=np.int32)
+d_output = cp.empty(1, dtype=np.int32)
+h_init = np.array([0], dtype=np.int32)  # Initial value for the reduction
 
-transform_it = TransformIterator(
-    CountingIterator(np.int32(first_item)), transform_op
-)  # Input sequence
-h_init = np.array([0], dtype=np.int64)  # Initial value for the reduction
-d_output = cp.empty(1, dtype=np.int64)  # Storage for output
+# Create a TransformIterator to (lazily) apply the square
+it_input = TransformIterator(d_input, lambda a: a**2)
 
-# Perform the reduction.
-cuda.compute.reduce_into(transform_it, d_output, OpKind.PLUS, num_items, h_init)
+# Use `reduce_into` to compute the sum of the squares of the input.
+reduce_into(it_input, d_output, OpKind.PLUS, len(d_input), h_init)
 
 # Verify the result.
-expected_output = functools.reduce(
-    lambda a, b: a + b,
-    [-a if a % 2 == 0 else a for a in range(first_item, first_item + num_items)],
-)
-
-# Test assertions
-print(f"Transform iterator result: {d_output[0]} (expected: {expected_output})")
-assert (d_output == expected_output).all()
+expected_output = cp.sum(d_input**2).get()
 assert d_output[0] == expected_output
+print(f"Transform iterator result: {d_output[0]} (expected: {expected_output})")

@@ -5,7 +5,6 @@
 
 import cupy as cp
 import numba.cuda
-import numba.types
 import numpy as np
 import pytest
 
@@ -353,3 +352,101 @@ def test_reverse_output_iterator():
 
     expected = np.asarray([9, 1, -1, 0, 0, -4, -6, -3, -5, -5])
     np.testing.assert_equal(d_output.get(), expected)
+
+
+@pytest.mark.parametrize(
+    "force_inclusive",
+    [True, False],
+)
+def test_future_init_value(force_inclusive):
+    num_items = 1024
+    dtype = np.dtype("int32")
+
+    d_input = cp.random.randint(0, 256, num_items, dtype=dtype)
+    d_output = cp.empty_like(d_input)
+    init_value = cp.array([42], dtype=dtype)
+
+    scan_device(d_input, d_output, num_items, OpKind.PLUS, init_value, force_inclusive)
+
+    got = d_output.get()
+    expected = scan_host(
+        d_input.get(), lambda a, b: a + b, init_value.get(), force_inclusive
+    )
+    np.testing.assert_array_equal(expected, got)
+
+
+def test_no_init_value(monkeypatch):
+    force_inclusive = True
+    num_items = 1024
+    dtype = np.dtype("int32")
+
+    # Skip SASS check for CC 9.0 due to LDL/STL CI failure.
+    cc_major, _ = numba.cuda.get_current_device().compute_capability
+    if cc_major >= 9:
+        import cuda.compute._cccl_interop
+
+        monkeypatch.setattr(
+            cuda.compute._cccl_interop,
+            "_check_sass",
+            False,
+        )
+
+    d_input = cp.random.randint(0, 256, num_items, dtype=dtype)
+    d_output = cp.empty_like(d_input)
+
+    scan_device(d_input, d_output, num_items, OpKind.PLUS, None, force_inclusive)
+
+    got = d_output.get()
+    expected = scan_host(d_input.get(), lambda a, b: a + b, [0], force_inclusive)
+    np.testing.assert_array_equal(expected, got)
+
+
+def test_no_init_value_iterator():
+    force_inclusive = True
+    num_items = 1024
+    dtype = np.dtype("float64")
+
+    d_input = CountingIterator(np.float64(0))
+    d_output = cp.empty(num_items, dtype=dtype)
+
+    scan_device(d_input, d_output, num_items, OpKind.PLUS, None, force_inclusive)
+
+    got = d_output.get()
+    expected = scan_host(
+        np.arange(0, num_items, dtype=dtype), lambda a, b: a + b, [0], force_inclusive
+    )
+
+    np.testing.assert_array_equal(expected, got)
+
+
+def test_inclusive_scan_with_lambda():
+    """Test inclusive_scan with a lambda function as the scan operator."""
+    h_init = np.array([0], dtype=np.int32)
+    d_input = cp.array([1, 2, 3, 4, 5], dtype=np.int32)
+    d_output = cp.empty_like(d_input)
+
+    # Use a lambda function directly as the scan operator
+    cuda.compute.inclusive_scan(
+        d_input, d_output, lambda a, b: a + b, h_init, len(d_input)
+    )
+
+    expected = np.array([1, 3, 6, 10, 15], dtype=np.int32)
+    np.testing.assert_array_equal(d_output.get(), expected)
+
+
+@pytest.mark.parametrize("force_inclusive", [True, False])
+def test_scan_bool_maximum(force_inclusive):
+    h_init = np.array([False], dtype=np.bool_)
+    d_input = cp.array([False, True, False, True], dtype=np.bool_)
+    d_output = cp.empty_like(d_input)
+
+    scan_device(
+        d_input, d_output, len(d_input), OpKind.MAXIMUM, h_init, force_inclusive
+    )
+
+    if force_inclusive:
+        expected = np.array([False, True, True, True], dtype=np.bool_)
+    else:
+        expected = np.array([False, False, True, True], dtype=np.bool_)
+
+    np.testing.assert_array_equal(d_output.get(), expected)

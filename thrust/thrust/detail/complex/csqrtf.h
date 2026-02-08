@@ -1,19 +1,6 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *  Copyright 2013 Filipe RNC Maia
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation
+// SPDX-FileCopyrightText: Copyright (c) 2013, Filipe RNC Maia
+// SPDX-License-Identifier: Apache-2.0
 
 /*-
  * Copyright (c) 2007 David Schultz <das@FreeBSD.ORG>
@@ -53,15 +40,18 @@
 #include <thrust/complex.h>
 #include <thrust/detail/complex/math_private.h>
 
-#include <cuda/std/cmath>
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/copysign.h>
+#include <cuda/std/__cmath/hypot.h>
+#include <cuda/std/__cmath/isinf.h>
+#include <cuda/std/__cmath/isnan.h>
+#include <cuda/std/__cmath/roots.h>
+#include <cuda/std/__cmath/signbit.h>
 #include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
-namespace detail
+namespace detail::complex
 {
-namespace complex
-{
-
 using thrust::complex;
 
 _CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
@@ -79,16 +69,16 @@ _CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
   {
     return (complex<float>(0, b));
   }
-  if (isinf(b))
+  if (::cuda::std::isinf(b))
   {
     return (complex<float>(::cuda::std::numeric_limits<float>::infinity(), b));
   }
-  if (isnan(a))
+  if (::cuda::std::isnan(a))
   {
     t = (b - b) / (b - b); /* raise invalid if b is not a NaN */
     return (complex<float>(a, t)); /* return NaN + NaN i */
   }
-  if (isinf(a))
+  if (::cuda::std::isinf(a))
   {
     /*
      * csqrtf(inf + NaN i)  = inf +  NaN i
@@ -96,13 +86,13 @@ _CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
      * csqrtf(-inf + NaN i) = NaN +- inf i
      * csqrtf(-inf + y i)   = 0   +  inf i
      */
-    if (signbit(a))
+    if (::cuda::std::signbit(a))
     {
-      return (complex<float>(fabsf(b - b), copysignf(a, b)));
+      return (complex<float>(::cuda::std::fabsf(b - b), ::cuda::std::copysignf(a, b)));
     }
     else
     {
-      return (complex<float>(a, copysignf(b - b, b)));
+      return (complex<float>(a, ::cuda::std::copysignf(b - b, b)));
     }
   }
   /*
@@ -119,14 +109,14 @@ _CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
   const float low_thresh = 2.35098870164458e-38f;
   scale                  = 0;
 
-  if (fabsf(a) >= THRESH || fabsf(b) >= THRESH)
+  if (::cuda::std::fabsf(a) >= THRESH || ::cuda::std::fabsf(b) >= THRESH)
   {
     /* Scale to avoid overflow. */
     a *= 0.25f;
     b *= 0.25f;
     scale = 1;
   }
-  else if (fabsf(a) <= low_thresh && fabsf(b) <= low_thresh)
+  else if (::cuda::std::fabsf(a) <= low_thresh && ::cuda::std::fabsf(b) <= low_thresh)
   {
     /* Scale to avoid underflow. */
     a *= 4.f;
@@ -137,13 +127,13 @@ _CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
   /* Algorithm 312, CACM vol 10, Oct 1967. */
   if (a >= 0.0f)
   {
-    t      = sqrtf((a + hypotf(a, b)) * 0.5f);
+    t      = ::cuda::std::sqrtf((a + ::cuda::std::hypotf(a, b)) * 0.5f);
     result = complex<float>(t, b / (2.0f * t));
   }
   else
   {
-    t      = sqrtf((-a + hypotf(a, b)) * 0.5f);
-    result = complex<float>(fabsf(b) / (2.0f * t), copysignf(t, b));
+    t      = ::cuda::std::sqrtf((-a + ::cuda::std::hypotf(a, b)) * 0.5f);
+    result = complex<float>(::cuda::std::fabsf(b) / (2.0f * t), ::cuda::std::copysignf(t, b));
   }
 
   /* Rescale. */
@@ -160,10 +150,7 @@ _CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
     return (result);
   }
 }
-
-} // namespace complex
-
-} // namespace detail
+} // namespace detail::complex
 
 template <>
 _CCCL_HOST_DEVICE inline complex<float> sqrt(const complex<float>& z)

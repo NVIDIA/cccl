@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -26,7 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -36,6 +23,9 @@
 #  include <cuda/std/__utility/swap.h>
 
 #  include <nv/target>
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -74,7 +64,10 @@ inline _CCCL_HOST_DEVICE void iter_swap(thrust::cuda::execution_policy<DerivedPo
                 swap(*thrust::raw_pointer_cast(a), *thrust::raw_pointer_cast(b));));
 
 } // end iter_swap()
-
 } // namespace cuda_cub
+
 THRUST_NAMESPACE_END
-#endif
+
+_CCCL_DIAG_POP
+
+#endif // _CCCL_CUDA_COMPILATION()

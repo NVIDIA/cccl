@@ -12,6 +12,11 @@
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+#  include <cuda/memory_resource>
+#  include <cuda/stream>
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+
 #include <map>
 #include <stdexcept>
 
@@ -33,7 +38,17 @@ NVBENCH_DECLARE_TYPE_STRINGS(uint128_t, "U128", "uint128_t");
 
 using complex = cuda::std::complex<float>;
 
-NVBENCH_DECLARE_TYPE_STRINGS(complex, "C64", "complex");
+#if _CCCL_HAS_NVFP16()
+NVBENCH_DECLARE_TYPE_STRINGS(__half, "F16", "half");
+NVBENCH_DECLARE_TYPE_STRINGS(cuda::std::complex<__half>, "C16", "complex_half");
+#endif
+#if _CCCL_HAS_NVBF16()
+NVBENCH_DECLARE_TYPE_STRINGS(__nv_bfloat16, "BF16", "bfloat16");
+NVBENCH_DECLARE_TYPE_STRINGS(cuda::std::complex<__nv_bfloat16>, "CB16", "complex_bfloat16");
+#endif
+NVBENCH_DECLARE_TYPE_STRINGS(complex, "C32", "complex32");
+NVBENCH_DECLARE_TYPE_STRINGS(cuda::std::complex<double>, "C64", "complex64");
+
 NVBENCH_DECLARE_TYPE_STRINGS(::cuda::std::false_type, "false", "false_type");
 NVBENCH_DECLARE_TYPE_STRINGS(::cuda::std::true_type, "true", "true_type");
 NVBENCH_DECLARE_TYPE_STRINGS(cub::ArgMin, "ArgMin", "cub::ArgMin");
@@ -54,7 +69,6 @@ struct nvbench::type_strings<::cuda::std::integral_constant<T, I>>
 
 namespace detail
 {
-
 template <class List, class... Ts>
 struct push_back
 {};
@@ -64,7 +78,6 @@ struct push_back<nvbench::type_list<As...>, Ts...>
 {
   using type = nvbench::type_list<As..., Ts...>;
 };
-
 } // namespace detail
 
 template <class List, class... Ts>
@@ -218,7 +231,6 @@ template <typename T>
 
 namespace detail
 {
-
 void do_not_optimize(const void* ptr);
 
 template <typename T>
@@ -251,7 +263,6 @@ void gen_power_law_segment_offsets_device(seed_t seed, cuda::std::span<T> segmen
 
 namespace
 {
-
 struct generator_base_t
 {
   seed_t m_seed{};
@@ -433,7 +444,6 @@ struct gen_t
   gen_power_law_t power_law{};
 };
 } // namespace
-
 } // namespace detail
 
 inline detail::gen_t generate;
@@ -568,6 +578,31 @@ struct caching_allocator_t
     free_blocks.insert(std::make_pair(num_bytes, ptr));
   }
 
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  void* allocate_sync(size_t num_bytes, size_t)
+  {
+    return allocate(num_bytes);
+  }
+
+  void deallocate_sync(void* ptr, size_t num_bytes, size_t)
+  {
+    deallocate(static_cast<char*>(ptr), num_bytes);
+  }
+
+  void* allocate(::cuda::stream_ref __stream, size_t num_bytes, size_t)
+  {
+    void* __res = allocate(num_bytes);
+    __stream.sync();
+    return __res;
+  }
+
+  void deallocate(::cuda::stream_ref __stream, void* ptr, size_t num_bytes, size_t)
+  {
+    deallocate(static_cast<char*>(ptr), num_bytes);
+    __stream.sync();
+  }
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+
 private:
   using free_blocks_type      = std::multimap<std::ptrdiff_t, char*>;
   using allocated_blocks_type = std::map<char*, std::ptrdiff_t>;
@@ -611,6 +646,20 @@ private:
     delete[] ptr;
 #endif
   }
+
+  friend bool operator==(const caching_allocator_t& lhs, const caching_allocator_t& rhs)
+  {
+    return lhs.free_blocks == rhs.free_blocks && lhs.allocated_blocks == rhs.allocated_blocks;
+  }
+
+  friend bool operator!=(const caching_allocator_t& lhs, const caching_allocator_t& rhs)
+  {
+    return lhs.free_blocks == rhs.free_blocks && lhs.allocated_blocks == rhs.allocated_blocks;
+  }
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  friend constexpr void get_property(const caching_allocator_t&, cuda::mr::device_accessible) noexcept {}
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 };
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
@@ -636,5 +685,4 @@ auto policy(caching_allocator_t&, nvbench::launch&)
   return thrust::device;
 }
 #endif
-
 } // namespace

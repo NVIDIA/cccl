@@ -1,19 +1,6 @@
-/*
- *  Copyright 2008-2021 NVIDIA Corporation
- *  Copyright 2013 Filipe RNC Maia
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2021, NVIDIA Corporation
+// SPDX-FileCopyrightText: Copyright (c) 2013, Filipe RNC Maia
+// SPDX-License-Identifier: Apache-2.0
 
 /*-
  * Copyright (c) 2012 Stephen Montgomery-Smith <stephen@FreeBSD.ORG>
@@ -50,12 +37,14 @@
 #include <thrust/complex.h>
 #include <thrust/detail/complex/math_private.h>
 
-THRUST_NAMESPACE_BEGIN
-namespace detail
-{
-namespace complex
-{
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/hypot.h>
+#include <cuda/std/__cmath/inverse_trigonometric_functions.h>
+#include <cuda/std/__cmath/logarithms.h>
 
+THRUST_NAMESPACE_BEGIN
+namespace detail::complex
+{
 using thrust::complex;
 
 /* round down to 8 = 24/3 bits */
@@ -85,11 +74,11 @@ _CCCL_HOST_DEVICE inline complex<float> clogf(const complex<float>& z)
   /* Handle NaNs using the general formula to mix them right. */
   if (x != x || y != y)
   {
-    return (complex<float>(std::log(norm(z)), std::atan2(y, x)));
+    return (complex<float>(::cuda::std::log(norm(z)), ::cuda::std::atan2(y, x)));
   }
 
-  ax = std::abs(x);
-  ay = std::abs(y);
+  ax = ::cuda::std::abs(x);
+  ay = ::cuda::std::abs(y);
   if (ax < ay)
   {
     t  = ax;
@@ -108,15 +97,15 @@ _CCCL_HOST_DEVICE inline complex<float> clogf(const complex<float>& z)
   // We expect that for values at or below ay = 1e34f this should not happen
   if (ay > 1e34f)
   {
-    return (complex<float>(std::log(hypotf(x / e, y / e)) + 1.0f, std::atan2(y, x)));
+    return (complex<float>(::cuda::std::log(::cuda::std::hypotf(x / e, y / e)) + 1.0f, ::cuda::std::atan2(y, x)));
   }
   if (ax == 1.f)
   {
     if (ay < 1e-19f)
     {
-      return (complex<float>((ay * 0.5f) * ay, std::atan2(y, x)));
+      return (complex<float>((ay * 0.5f) * ay, ::cuda::std::atan2(y, x)));
     }
-    return (complex<float>(log1pf(ay * ay) * 0.5f, std::atan2(y, x)));
+    return (complex<float>(log1pf(ay * ay) * 0.5f, ::cuda::std::atan2(y, x)));
   }
 
   /*
@@ -125,7 +114,7 @@ _CCCL_HOST_DEVICE inline complex<float> clogf(const complex<float>& z)
    */
   if (ax < 1e-6f || ay < 1e-6f || ax > 1e6f || ay > 1e6f)
   {
-    return (complex<float>(std::log(hypotf(x, y)), std::atan2(y, x)));
+    return (complex<float>(::cuda::std::log(::cuda::std::hypotf(x, y)), ::cuda::std::atan2(y, x)));
   }
 
   /*
@@ -137,12 +126,12 @@ _CCCL_HOST_DEVICE inline complex<float> clogf(const complex<float>& z)
 
   if (ax >= 1.0f)
   {
-    return (complex<float>(log1pf((ax - 1.f) * (ax + 1.f) + ay * ay) * 0.5f, atan2(y, x)));
+    return (complex<float>(::cuda::std::log1pf((ax - 1.f) * (ax + 1.f) + ay * ay) * 0.5f, ::cuda::std::atan2(y, x)));
   }
 
   if (ax * ax + ay * ay <= 0.7f)
   {
-    return (complex<float>(std::log(ax * ax + ay * ay) * 0.5f, std::atan2(y, x)));
+    return (complex<float>(::cuda::std::log(ax * ax + ay * ay) * 0.5f, ::cuda::std::atan2(y, x)));
   }
 
   /*
@@ -194,12 +183,9 @@ _CCCL_HOST_DEVICE inline complex<float> clogf(const complex<float>& z)
   {
     hm1 += val[i];
   }
-  return (complex<float>(0.5f * log1pf(hm1), atan2(y, x)));
+  return (complex<float>(0.5f * ::cuda::std::log1pf(hm1), ::cuda::std::atan2(y, x)));
 }
-
-} // namespace complex
-
-} // namespace detail
+} // namespace detail::complex
 
 template <>
 _CCCL_HOST_DEVICE inline complex<float> log(const complex<float>& z)

@@ -23,6 +23,7 @@
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/require.h>
+#include <cuda/__functional/call_or.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 
@@ -78,7 +79,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
                 "unsorted.");
 
   // Query relevant properties from the environment
-  auto stream = ::cuda::std::execution::__query_or(env, ::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}});
+  auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
 
   return topk::DispatchTopK<
     KeyInputIteratorT,
@@ -100,24 +101,34 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
 } // namespace detail
 
 //! @rst
-//! @brief DeviceTopK provides device-wide, parallel operations for finding the largest (or smallest) K items from
-//! sequences of unordered data items residing within device-accessible memory.
+//! DeviceTopK provides device-wide, parallel operations for finding the largest (or smallest) K items from sequences of
+//! unordered data items residing within device-accessible memory.
 //!
-//! @par Overview
+//! Overview
+//! ++++++++++++++++++++++++++
+//!
 //! The TopK algorithm tries to find the largest (or smallest) K items in an unordered list. A related problem is called
-//! [*K selection problem*](https://en.wikipedia.org/wiki/Selection_algorithm), which finds the Kth largest
+//! `K selection problem <https://en.wikipedia.org/wiki/Selection_algorithm>`_, which finds the Kth largest
 //! (or smallest) values in a list.
 //! DeviceTopK will return K items in an unspecified order as results. It is based on an algorithm called
-//! [*AIR TopK*](https://dl.acm.org/doi/10.1145/3581784.3607062).
+//! `AIR TopK <https://dl.acm.org/doi/10.1145/3581784.3607062>`_.
 //!
-//! @par Supported Types
+//! Supported Types
+//! ++++++++++++++++++++++++++
+//!
 //! DeviceTopK can process all of the built-in C++ numeric primitive types (`unsigned char`, `int`, `double`, etc.) as
 //! well as CUDA's `__half`  and `__nv_bfloat16` 16-bit floating-point types.
 //!
-//! @par Stability
-//! DeviceTopK currently only provides an unstable version.
+//! Determinism
+//! ++++++++++++++++++++++++++
+//!
+//! DeviceTopK currently only supports unordered output, which may be non-deterministic for certain inputs.
+//! That is, if there are multiple items across the k-th position that compare equal, the subset of tied elements that
+//! ends up in the returned top‑k is not uniquely defined and may vary between runs. This behavior has to be explicitly
+//! acknowledged by the user by passing `cuda::execution::determinism::not_guaranteed`.
+//!
 //! Usage Considerations
-//! +++++++++++++++++++++++++++++++++++++++++++++
+//! ++++++++++++++++++++++++++
 //!
 //! @cdp_class{DeviceTopK}
 //!
@@ -135,7 +146,13 @@ struct DeviceTopK
   //!
   //! Finds the largest K keys and their corresponding values from an unordered input sequence of key-value pairs.
   //!
+  //! .. note::
+  //!
+  //!    The behavior is undefined if the input and output ranges overlap in any way.
+  //!
   //! - @devicestorage
+  //!
+  //! .. versionadded:: 3.3.0
   //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -238,7 +255,13 @@ struct DeviceTopK
   //!
   //! Finds the lowest K keys and their corresponding values from an unordered input sequence of key-value pairs.
   //!
+  //! .. note::
+  //!
+  //!    The behavior is undefined if the input and output ranges overlap in any way.
+  //!
   //! - @devicestorage
+  //!
+  //! .. versionadded:: 3.3.0
   //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -341,7 +364,13 @@ struct DeviceTopK
   //!
   //! Finds the largest K keys from an unordered input sequence of keys.
   //!
+  //! .. note::
+  //!
+  //!    The behavior is undefined if the input and output ranges overlap in any way.
+  //!
   //! - @devicestorage
+  //!
+  //! .. versionadded:: 3.3.0
   //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -427,7 +456,13 @@ struct DeviceTopK
   //!
   //! Finds the lowest K keys from an unordered input sequence of keys.
   //!
+  //! .. note::
+  //!
+  //!    The behavior is undefined if the input and output ranges overlap in any way.
+  //!
   //! - @devicestorage
+  //!
+  //! .. versionadded:: 3.3.0
   //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++

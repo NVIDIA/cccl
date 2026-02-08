@@ -133,7 +133,6 @@ struct __logical_device_access
     return logical_device(__id, __context, __k);
   }
 };
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

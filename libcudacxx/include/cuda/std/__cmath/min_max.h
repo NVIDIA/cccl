@@ -90,7 +90,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 #  if _CCCL_CTK_AT_LEAST(12, 2)
     return ::__hmax(__x, __y);
 #  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
                       (return ::__hmax(__x, __y);),
                       (return ::__float2bfloat16(::cuda::std::fmax(::__bfloat162float(__x), ::__bfloat162float(__y)));))
 #  endif // !_CCCL_CTK_AT_LEAST(12, 2)
@@ -103,17 +103,16 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
     }
     else
     {
-      if (!::cuda::std::__cccl_default_is_constant_evaluated())
+      _CCCL_IF_NOT_CONSTEVAL_DEFAULT
       {
 #if _CCCL_HAS_FLOAT128()
         if constexpr (is_same_v<_Tp, __float128>)
         {
           NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fmax(__x, __y);))
         }
-        else
 #endif // _CCCL_HAS_FLOAT128()
 #if _CCCL_USE_BUILTIN_FMAX()
-          if constexpr (is_floating_point_v<_Tp>)
+        if constexpr (is_floating_point_v<_Tp>)
         {
 // GCC builtins do not treat NaN properly
 #  if _CCCL_COMPILER(GCC)
@@ -214,7 +213,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 #  if _CCCL_CTK_AT_LEAST(12, 2)
     return ::__hmin(__x, __y);
 #  else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv !_CCCL_CTK_AT_LEAST(12, 2) vvv
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
                       (return ::__hmin(__x, __y);),
                       (return ::__float2bfloat16(::cuda::std::fmin(::__bfloat162float(__x), ::__bfloat162float(__y)));))
 #  endif // !_CCCL_CTK_AT_LEAST(12, 2)
@@ -227,7 +226,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
     }
     else
     {
-      if (!::cuda::std::__cccl_default_is_constant_evaluated())
+      _CCCL_IF_NOT_CONSTEVAL_DEFAULT
       {
 #if _CCCL_HAS_FLOAT128()
         if constexpr (is_same_v<_Tp, __float128>)

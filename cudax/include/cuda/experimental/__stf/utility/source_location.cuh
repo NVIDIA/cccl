@@ -30,7 +30,6 @@
 
 namespace cuda::experimental::stf::reserved
 {
-
 struct source_location_hash
 {
   /* We use const char * and not string because these are string literals,
@@ -54,5 +53,4 @@ struct source_location_equal
         && lhs.function_name() == rhs.function_name();
   }
 };
-
 } // end namespace cuda::experimental::stf::reserved

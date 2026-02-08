@@ -11,10 +11,10 @@
 #ifndef FENCE_H
 #define FENCE_H
 
+#include <format>
 #include <string>
 
 #include "definitions.h"
-#include <fmt/format.h>
 
 inline std::string membar_scope(Scope sco)
 {
@@ -32,7 +32,7 @@ inline void FormatFence(std::ostream& out)
   // Argument ID Reference
   // 0 - Membar scope tag
   // 1 - Membar scope
-  const std::string intrinsic_membar = R"XXX(
+  constexpr auto intrinsic_membar = R"XXX(
 static inline _CCCL_DEVICE void __cuda_atomic_membar({0})
 {{ asm volatile("membar{1};" ::: "memory"); }})XXX";
 
@@ -44,7 +44,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_membar({0})
 
   for (const auto& sco : membar_scopes)
   {
-    out << fmt::format(intrinsic_membar, scope_tag(sco.first), sco.second);
+    out << std::format(intrinsic_membar, scope_tag(sco.first), sco.second);
   }
 
   // Argument ID Reference
@@ -52,7 +52,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_membar({0})
   // 1 - Fence scope
   // 2 - Fence order tag
   // 3 - Fence order
-  const std::string intrinsic_fence = R"XXX(
+  constexpr auto intrinsic_fence = R"XXX(
 static inline _CCCL_DEVICE void __cuda_atomic_fence({0}, {2})
 {{ asm volatile("fence{1}{3};" ::: "memory"); }})XXX";
 
@@ -72,7 +72,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fence({0}, {2})
   {
     for (const auto& sem : fence_semantics)
     {
-      out << fmt::format(intrinsic_fence, scope_tag(sco), semantic(sem), semantic_tag(sem), scope(sco));
+      out << std::format(intrinsic_fence, scope_tag(sco), semantic(sem), semantic_tag(sem), scope(sco));
     }
   }
   out << "\n"
@@ -88,7 +88,7 @@ static inline _CCCL_DEVICE void __atomic_thread_fence_cuda(int __memorder, _Sco)
         case __ATOMIC_ACQ_REL: [[fallthrough]];
         case __ATOMIC_RELEASE: __cuda_atomic_fence(_Sco{}, __atomic_cuda_acq_rel{}); break;
         case __ATOMIC_RELAXED: break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     ),
     NV_IS_DEVICE, (
@@ -99,7 +99,7 @@ static inline _CCCL_DEVICE void __atomic_thread_fence_cuda(int __memorder, _Sco)
         case __ATOMIC_ACQ_REL: [[fallthrough]];
         case __ATOMIC_RELEASE: __cuda_atomic_membar(_Sco{}); break;
         case __ATOMIC_RELAXED: break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     )
   )

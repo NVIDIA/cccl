@@ -29,8 +29,16 @@
 
 #include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
+#include <cuda/experimental/__stf/places/data_place_extension.cuh>
 #include <cuda/experimental/__stf/places/exec/green_ctx_view.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
+
+#include <typeinfo>
+
+// Used only for unit tests, not in the actual implementation
+#ifdef UNITTESTED_FILE
+#  include <map>
+#endif
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
@@ -41,7 +49,6 @@
 
 namespace cuda::experimental::stf
 {
-
 class backend_ctx_untyped;
 class exec_place;
 class exec_place_host;
@@ -147,6 +154,7 @@ public:
 
 #if _CCCL_CTK_AT_LEAST(12, 4)
   static data_place green_ctx(const green_ctx_view& gc_view);
+  static data_place green_ctx(::std::shared_ptr<green_ctx_view> gc_view_ptr);
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   bool operator==(const data_place& rhs) const;
@@ -154,6 +162,44 @@ public:
   bool operator!=(const data_place& rhs) const
   {
     return !(*this == rhs);
+  }
+
+  // To use in a ::std::map indexed by data_place
+  bool operator<(const data_place& rhs) const
+  {
+    // Not implemented for composite places
+    EXPECT(!is_composite());
+    EXPECT(!rhs.is_composite());
+
+    // If both are extensions, delegate to the extension
+    if (is_extension() && rhs.is_extension())
+    {
+      return *extension < *rhs.extension;
+    }
+
+    // Extensions sort after non-extensions
+    if (is_extension() != rhs.is_extension())
+    {
+      return rhs.is_extension(); // non-extension < extension
+    }
+
+    // For simple places, compare devid
+    return devid < rhs.devid;
+  }
+
+  bool operator>(const data_place& rhs) const
+  {
+    return rhs < *this;
+  }
+
+  bool operator<=(const data_place& rhs) const
+  {
+    return !(rhs < *this);
+  }
+
+  bool operator>=(const data_place& rhs) const
+  {
+    return !(*this < rhs);
   }
 
   /// checks if this data place is a composite data place
@@ -164,17 +210,11 @@ public:
     return (devid == composite_devid);
   }
 
-  /// checks if this data place is a green context data place
-  bool is_green_ctx() const
+  /// checks if this data place has an extension (green context, etc.)
+  bool is_extension() const
   {
-#if _CCCL_CTK_AT_LEAST(12, 4)
-    // If the devid indicates green_ctx_devid then we must have a descriptor
-    _CCCL_ASSERT(devid != green_ctx_devid || gc_view != nullptr, "invalid state");
-
-    return (devid == green_ctx_devid);
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^ / vvv _CCCL_CTK_BELOW(12, 4) vvv
-    return false;
-#endif // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^
+    _CCCL_ASSERT(devid != extension_devid || extension != nullptr, "invalid state");
+    return (devid == extension_devid);
   }
 
   bool is_invalid() const
@@ -228,9 +268,9 @@ public:
       return "invalid";
     }
 
-    if (is_green_ctx())
+    if (is_extension())
     {
-      return "green ctx";
+      return extension->to_string();
     }
 
     if (is_composite())
@@ -259,13 +299,9 @@ public:
    */
   friend inline int device_ordinal(const data_place& p)
   {
-    if (p.is_green_ctx())
+    if (p.is_extension())
     {
-#if _CCCL_CTK_AT_LEAST(12, 4)
-      return p.gc_view->devid;
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^ / vvv _CCCL_CTK_BELOW(12, 4) vvv
-      assert(0);
-#endif // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^
+      return p.extension->get_device_ordinal();
     }
 
     // TODO: restrict this function, i.e. sometimes it's called with invalid places.
@@ -280,6 +316,26 @@ public:
 
   exec_place get_affine_exec_place() const;
 
+  /**
+   * @brief Compute a hash value for this data place
+   *
+   * Used by std::hash specialization for unordered containers.
+   */
+  size_t hash() const
+  {
+    // Not implemented for composite places
+    EXPECT(!is_composite());
+
+    // Extensions provide their own hash
+    if (is_extension())
+    {
+      return extension->hash();
+    }
+
+    // For simple places, hash the devid directly
+    return ::std::hash<int>()(devid);
+  }
+
   decorated_stream getDataStream(async_resources_handle& async_resources) const;
 
 private:
@@ -293,19 +349,243 @@ private:
   int devid = invalid_devid; // invalid by default
   // Stores the fields specific to composite data places
   ::std::shared_ptr<composite_state> composite_desc;
+  // Extension for custom place types (green contexts, etc.)
+  ::std::shared_ptr<data_place_extension> extension;
+  //} state
 
 public:
-#if _CCCL_CTK_AT_LEAST(12, 4)
-  ::std::shared_ptr<green_ctx_view> gc_view;
-#endif // _CCCL_CTK_AT_LEAST(12, 4)
-  //} state
+  /**
+   * @brief Check if this data place has a custom extension
+   */
+  bool has_extension() const
+  {
+    return extension != nullptr;
+  }
+
+  /**
+   * @brief Get the extension (may be nullptr for standard place types)
+   */
+  const ::std::shared_ptr<data_place_extension>& get_extension() const
+  {
+    return extension;
+  }
+
+  /**
+   * @brief Create a data_place from an extension
+   *
+   * This factory method allows custom place types to be created from
+   * data_place_extension implementations.
+   */
+  static data_place from_extension(::std::shared_ptr<data_place_extension> ext)
+  {
+    data_place result(extension_devid);
+    result.extension = mv(ext);
+    return result;
+  }
+
+  /**
+   * @brief Create a physical memory allocation for this place (VMM API)
+   *
+   * This method is used by localized arrays (composite_slice) to create physical
+   * memory segments that are then mapped into a contiguous virtual address space.
+   * It delegates to the extension's mem_create if present (enabling custom place
+   * types to override memory allocation), otherwise creates a standard pinned
+   * allocation on this place's device or host.
+   *
+   * Managed memory is not supported by the VMM API.
+   *
+   * @note For regular memory allocation (not VMM-based), use the allocate() method
+   *       instead, which provides stream-ordered allocation via cudaMallocAsync.
+   *
+   * @param handle Output parameter for the allocation handle
+   * @param size Size of the allocation in bytes
+   * @return CUresult indicating success or failure
+   *
+   * @see allocate() for regular memory allocation
+   */
+  CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const
+  {
+    if (extension)
+    {
+      return extension->mem_create(handle, size);
+    }
+
+    int dev_ordinal = device_ordinal(*this);
+
+    CUmemAllocationProp prop = {};
+    prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
+    if (dev_ordinal >= 0)
+    {
+      // Device memory
+      prop.location.type = CU_MEM_LOCATION_TYPE_DEVICE;
+      prop.location.id   = dev_ordinal;
+    }
+#if _CCCL_CTK_AT_LEAST(12, 2)
+    else if (dev_ordinal == -1)
+    {
+      // Host memory (device ordinal -1)
+      // CU_MEM_LOCATION_TYPE_HOST requires CUDA 12.2+
+      prop.location.type = CU_MEM_LOCATION_TYPE_HOST;
+      prop.location.id   = 0;
+    }
+    else
+    {
+      // Managed memory (-2) is not supported by the VMM API
+      _CCCL_ASSERT(false, "mem_create: managed memory is not supported by the VMM API");
+      return CUDA_ERROR_NOT_SUPPORTED;
+    }
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv _CCCL_CTK_BELOW(12, 2) vvv
+    else if (dev_ordinal == -1)
+    {
+      // Host VMM requires CU_MEM_LOCATION_TYPE_HOST which is only available in CUDA 12.2+
+      _CCCL_ASSERT(false, "mem_create: host VMM requires CUDA 12.2+ (CU_MEM_LOCATION_TYPE_HOST not available)");
+      return CUDA_ERROR_NOT_SUPPORTED;
+    }
+    else
+    {
+      // Managed memory (-2) is not supported by the VMM API
+      _CCCL_ASSERT(false, "mem_create: managed memory is not supported by the VMM API");
+      return CUDA_ERROR_NOT_SUPPORTED;
+    }
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
+    return cuMemCreate(handle, size, &prop, 0);
+  }
+
+  /**
+   * @brief Allocate memory at this data place (raw allocation)
+   *
+   * This is the low-level allocation interface that handles all place types:
+   * - For extensions: delegates to extension->allocate()
+   * - For host: uses cudaMallocHost (immediate, stream ignored)
+   * - For managed: uses cudaMallocManaged (immediate, stream ignored)
+   * - For device: uses cudaMallocAsync (stream-ordered)
+   *
+   * @param size Size of the allocation in bytes
+   * @param stream CUDA stream for stream-ordered allocations (ignored for immediate allocations, defaults to nullptr)
+   * @return Pointer to allocated memory
+   */
+  void* allocate(::std::ptrdiff_t size, cudaStream_t stream = nullptr) const
+  {
+    // Delegate to extension if present
+    if (extension)
+    {
+      return extension->allocate(size, stream);
+    }
+
+    void* result = nullptr;
+
+    if (is_host())
+    {
+      cuda_safe_call(cudaMallocHost(&result, size));
+    }
+    else if (is_managed())
+    {
+      cuda_safe_call(cudaMallocManaged(&result, size));
+    }
+    else
+    {
+      // Device allocation
+      EXPECT(!is_composite(), "Composite places don't support direct allocation");
+      const int prev_dev   = cuda_try<cudaGetDevice>();
+      const int target_dev = devid;
+
+      if (prev_dev != target_dev)
+      {
+        cuda_safe_call(cudaSetDevice(target_dev));
+      }
+
+      SCOPE(exit)
+      {
+        if (prev_dev != target_dev)
+        {
+          cuda_safe_call(cudaSetDevice(prev_dev));
+        }
+      };
+
+      cuda_safe_call(cudaMallocAsync(&result, size, stream));
+    }
+
+    return result;
+  }
+
+  /**
+   * @brief Deallocate memory at this data place (raw deallocation)
+   *
+   * For immediate deallocations (host, managed), the stream is ignored.
+   * Note that cudaFree (used for managed memory) may introduce implicit synchronization.
+   *
+   * @param ptr Pointer to memory to deallocate
+   * @param size Size of the allocation
+   * @param stream CUDA stream for stream-ordered deallocations (ignored for immediate deallocations, defaults to
+   * nullptr)
+   */
+  void deallocate(void* ptr, size_t size, cudaStream_t stream = nullptr) const
+  {
+    // Delegate to extension if present
+    if (extension)
+    {
+      extension->deallocate(ptr, size, stream);
+      return;
+    }
+
+    if (is_host())
+    {
+      cuda_safe_call(cudaFreeHost(ptr));
+    }
+    else if (is_managed())
+    {
+      cuda_safe_call(cudaFree(ptr));
+    }
+    else
+    {
+      // Device deallocation
+      const int prev_dev   = cuda_try<cudaGetDevice>();
+      const int target_dev = devid;
+
+      if (prev_dev != target_dev)
+      {
+        cuda_safe_call(cudaSetDevice(target_dev));
+      }
+
+      SCOPE(exit)
+      {
+        if (prev_dev != target_dev)
+        {
+          cuda_safe_call(cudaSetDevice(prev_dev));
+        }
+      };
+
+      cuda_safe_call(cudaFreeAsync(ptr, stream));
+    }
+  }
+
+  /**
+   * @brief Returns true if allocation/deallocation is stream-ordered
+   *
+   * When this returns true, the allocation uses stream-ordered APIs like
+   * cudaMallocAsync, and allocators should use stream_async_op to synchronize
+   * prerequisites before allocation.
+   *
+   * When this returns false, the allocation is immediate (like cudaMallocHost)
+   * and the stream parameter is ignored. Note that immediate deallocations
+   * (e.g., cudaFree) may introduce implicit synchronization.
+   */
+  bool allocation_is_stream_ordered() const
+  {
+    if (extension)
+    {
+      return extension->allocation_is_stream_ordered();
+    }
+    // Host and managed are immediate (stream ignored), device is stream-ordered
+    return !is_host() && !is_managed();
+  }
 
 private:
   /* Constants to implement data_place::invalid(), data_place::host(), etc. */
   enum devid : int
   {
     invalid_devid     = ::std::numeric_limits<int>::min(),
-    green_ctx_devid   = -6,
+    extension_devid   = -6, // For any custom extension-based place
     composite_devid   = -5,
     device_auto_devid = -4,
     affine_devid      = -3,
@@ -338,7 +618,7 @@ public:
         : affine(mv(place))
     {}
 
-    virtual exec_place activate(backend_ctx_untyped&) const
+    virtual exec_place activate() const
     {
       if (affine.is_device())
       {
@@ -355,7 +635,7 @@ public:
       return exec_place();
     }
 
-    virtual void deactivate(backend_ctx_untyped&, const exec_place& prev) const
+    virtual void deactivate(const exec_place& prev) const
     {
       if (affine.is_device())
       {
@@ -406,6 +686,28 @@ public:
     virtual bool operator==(const impl& rhs) const
     {
       return affine == rhs.affine;
+    }
+
+    bool operator!=(const impl& rhs) const
+    {
+      return !(*this == rhs);
+    }
+
+    virtual size_t hash() const
+    {
+      return affine.hash();
+    }
+
+    virtual bool operator<(const impl& rhs) const
+    {
+      // Different types: order by typeid
+      if (typeid(*this) != typeid(rhs))
+      {
+        return typeid(*this).before(typeid(rhs));
+      }
+      // Same type (both base impl): compare by device ID
+      // (base impl stores devid in affine, so we extract it via device_ordinal)
+      return device_ordinal(affine) < device_ordinal(rhs.affine);
     }
 
     /* Return the pool associated to this place
@@ -459,7 +761,32 @@ public:
   // To use in a ::std::map indexed by exec_place
   bool operator<(const exec_place& rhs) const
   {
-    return pimpl < rhs.pimpl;
+    return *pimpl < *rhs.pimpl;
+  }
+
+  bool operator>(const exec_place& rhs) const
+  {
+    return rhs < *this;
+  }
+
+  bool operator<=(const exec_place& rhs) const
+  {
+    return !(rhs < *this);
+  }
+
+  bool operator>=(const exec_place& rhs) const
+  {
+    return !(*this < rhs);
+  }
+
+  /**
+   * @brief Compute a hash value for this execution place
+   *
+   * Used by std::hash specialization for unordered containers.
+   */
+  size_t hash() const
+  {
+    return pimpl->hash();
   }
 
   /**
@@ -535,9 +862,104 @@ public:
     return pimpl->get_stream_pool(async_resources, for_computation);
   }
 
+  /**
+   * @brief Get a decorated stream from the stream pool associated to this execution place.
+   *
+   * This method can be used to obtain CUDA streams from execution places without requiring
+   * a CUDASTF context. This is useful when you want to use CUDASTF's place abstractions
+   * (devices, green contexts) for stream management without the full task-based model.
+   *
+   * @note If you are using a CUDASTF context, use `ctx.async_resources()` to ensure the
+   *       same stream pools are shared between your code and the context's internal operations.
+   *
+   * @param async_resources Handle managing the stream pools. Create a standalone
+   *        `async_resources_handle` for context-free usage, or use `ctx.async_resources()`
+   *        when working alongside a CUDASTF context.
+   * @param for_computation Hint for selecting which pool to use. When true, returns a stream
+   *        from the computation pool; when false, returns a stream from the data transfer pool.
+   *        Using separate pools for computation and transfers can improve overlapping.
+   *        This is a performance hint and does not affect correctness.
+   * @return A decorated_stream containing the CUDA stream and metadata (device ID, pool index)
+   */
   decorated_stream getStream(async_resources_handle& async_resources, bool for_computation) const
   {
     return pimpl->getStream(async_resources, for_computation);
+  }
+
+  /**
+   * @brief Get a CUDA stream from the stream pool associated to this execution place.
+   *
+   * This method can be used to obtain CUDA streams from execution places without requiring
+   * a CUDASTF context. This is useful when you want to use CUDASTF's place abstractions
+   * (devices, green contexts) for stream management without the full task-based model.
+   *
+   * Example usage without a context:
+   * @code
+   * async_resources_handle resources;
+   * exec_place place = exec_place::device(0);
+   * cudaStream_t stream = place.pick_stream(resources);
+   * myKernel<<<grid, block, 0, stream>>>(...);
+   * @endcode
+   *
+   * Example usage with a context (sharing resources):
+   * @code
+   * stream_ctx ctx;
+   * exec_place place = exec_place::device(0);
+   * cudaStream_t stream = place.pick_stream(ctx.async_resources());
+   * // Stream comes from the same pool used by ctx internally
+   * @endcode
+   *
+   * @note If you are using a CUDASTF context, use `ctx.async_resources()` to ensure the
+   *       same stream pools are shared between your code and the context's internal operations.
+   *
+   * @param async_resources Handle managing the stream pools. Create a standalone
+   *        `async_resources_handle` for context-free usage, or use `ctx.async_resources()`
+   *        when working alongside a CUDASTF context.
+   * @param for_computation Hint for selecting which pool to use. When true, returns a stream
+   *        from the computation pool; when false, returns a stream from the data transfer pool.
+   *        Using separate pools for computation and transfers can improve overlapping.
+   *        This is a performance hint and does not affect correctness. Defaults to true.
+   * @return A CUDA stream associated with this execution place
+   */
+  cudaStream_t pick_stream(async_resources_handle& async_resources, bool for_computation = true) const
+  {
+    return getStream(async_resources, for_computation).stream;
+  }
+
+  /**
+   * @brief Get the number of streams available in the pool for this execution place.
+   *
+   * @param async_resources Handle managing the stream pools
+   * @param for_computation Hint for selecting which pool to query (computation or transfer pool)
+   * @return The number of stream slots in the pool
+   */
+  size_t stream_pool_size(async_resources_handle& async_resources, bool for_computation = true) const
+  {
+    return get_stream_pool(async_resources, for_computation).size();
+  }
+
+  /**
+   * @brief Get all streams from the pool associated to this execution place.
+   *
+   * This method returns a vector containing all CUDA streams in the pool. Streams are
+   * created lazily, so calling this method will create any streams that haven't been
+   * created yet.
+   *
+   * @param async_resources Handle managing the stream pools
+   * @param for_computation Hint for selecting which pool to use (computation or transfer pool)
+   * @return A vector of CUDA streams from the pool
+   */
+  ::std::vector<cudaStream_t>
+  pick_all_streams(async_resources_handle& async_resources, bool for_computation = true) const
+  {
+    auto& pool = get_stream_pool(async_resources, for_computation);
+    ::std::vector<cudaStream_t> result;
+    result.reserve(pool.size());
+    for (size_t i = 0; i < pool.size(); ++i)
+    {
+      result.push_back(pool.next().stream);
+    }
+    return result;
   }
 
   // TODO make protected !
@@ -551,9 +973,9 @@ public:
    *
    * @return `exec_place` The previous execution place. See `deactivate` below.
    */
-  exec_place activate(backend_ctx_untyped& state) const
+  exec_place activate() const
   {
-    return pimpl->activate(state);
+    return pimpl->activate();
   }
 
   /**
@@ -561,9 +983,9 @@ public:
    *
    * @warning Undefined behavior if you don't pass the result of `activate`.
    */
-  void deactivate(backend_ctx_untyped& state, const exec_place& p) const
+  void deactivate(const exec_place& p) const
   {
-    pimpl->deactivate(state, p);
+    pimpl->deactivate(p);
   }
 
   bool is_host() const
@@ -605,8 +1027,16 @@ public:
 
 // Green contexts are only supported since CUDA 12.4
 #if _CCCL_CTK_AT_LEAST(12, 4)
-  static exec_place green_ctx(const green_ctx_view& gc_view);
-  static exec_place green_ctx(const ::std::shared_ptr<green_ctx_view>& gc_view_ptr);
+  /**
+   * @brief Create a green context execution place
+   *
+   * @param gc_view The green context view
+   * @param use_green_ctx_data_place If true, use a green context data place as the
+   *        affine data place. If false (default), use a regular device data place instead.
+   */
+  static exec_place green_ctx(const green_ctx_view& gc_view, bool use_green_ctx_data_place = false);
+  static exec_place green_ctx(const ::std::shared_ptr<green_ctx_view>& gc_view_ptr,
+                              bool use_green_ctx_data_place = false);
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   static exec_place_cuda_stream cuda_stream(cudaStream_t stream);
@@ -687,24 +1117,95 @@ private:
 };
 
 /**
+ * @brief RAII guard that activates an execution place and restores the previous one on destruction.
+ *
+ * This class provides a scoped mechanism for temporarily switching the active execution place.
+ * When constructed, it activates the given execution place (e.g., sets the current CUDA device).
+ * When destroyed, it restores the previous execution place that was active before construction.
+ *
+ * The guard is non-copyable and non-movable to ensure proper RAII semantics.
+ *
+ * @note This class only accepts `exec_place` objects. Implicit conversions from other types
+ *       (such as `data_place`) are explicitly disabled to prevent accidental misuse.
+ *
+ * Example usage:
+ * @code
+ * // Assume current device is 0
+ * {
+ *   exec_place_guard guard(exec_place::device(1));
+ *   // Device 1 is now active
+ *   // ... perform operations on device 1 ...
+ * }
+ * // Device 0 is restored
+ * @endcode
+ */
+class exec_place_guard
+{
+public:
+  /**
+   * @brief Constructs the guard and activates the given execution place.
+   *
+   * @param place The execution place to activate. Must be an `exec_place` object;
+   *              implicit conversions from other types are disabled.
+   */
+  explicit exec_place_guard(exec_place place)
+      : place_(mv(place))
+      , prev_(place_.activate())
+  {}
+
+  /**
+   * @brief Destructor that restores the previous execution place.
+   */
+  ~exec_place_guard()
+  {
+    place_.deactivate(prev_);
+  }
+
+  // Non-copyable
+  exec_place_guard(const exec_place_guard&)            = delete;
+  exec_place_guard& operator=(const exec_place_guard&) = delete;
+
+  // Non-movable
+  exec_place_guard(exec_place_guard&&)            = delete;
+  exec_place_guard& operator=(exec_place_guard&&) = delete;
+
+  // Prevent implicit conversions from other types (e.g., data_place)
+  template <typename T,
+            typename = ::std::enable_if_t<!::std::is_same_v<::std::decay_t<T>, exec_place>
+                                          && !::std::is_base_of_v<exec_place, ::std::decay_t<T>>>>
+  exec_place_guard(T&&)
+  {
+    static_assert(!::std::is_same_v<T, T>, "exec_place_guard requires an exec_place, not a data_place or other type.");
+  }
+
+private:
+  exec_place place_;
+  exec_place prev_;
+};
+
+/**
  * @brief Designates execution that is to run on the host.
  *
  */
 class exec_place_host : public exec_place
 {
 public:
-  // Implementation of the exec_place_device class
+  // Implementation of the exec_place_host class
   class impl : public exec_place::impl
   {
   public:
     impl()
         : exec_place::impl(data_place::host())
     {}
-    exec_place activate(backend_ctx_untyped&) const override
+
+    // operator<: base class implementation is correct (compares typeid, then device_ordinal).
+    // Since host is a singleton, all instances compare equal.
+
+    exec_place activate() const override
     {
       return exec_place();
     } // no-op
-    void deactivate(backend_ctx_untyped&, const exec_place& p) const override
+    void deactivate(const exec_place& p) const override
     {
       _CCCL_ASSERT(!p.get_impl(), "");
     } // no-op
@@ -858,14 +1359,14 @@ public:
       return ::std::string("GRID place");
     }
 
-    exec_place activate(backend_ctx_untyped&) const override
+    exec_place activate() const override
     {
       // No-op
       return exec_place();
     }
 
     // TODO : shall we deactivate the current place, if any ?
-    void deactivate(backend_ctx_untyped&, const exec_place& _prev) const override
+    void deactivate(const exec_place& _prev) const override
     {
       // No-op
       EXPECT(!_prev.get_impl(), "Invalid execution place.");
@@ -899,14 +1400,39 @@ public:
     // Compare two grids
     bool operator==(const impl& rhs) const
     {
-      // First, compare base class properties
-      if (!exec_place::impl::operator==(rhs))
-      {
-        return false;
-      }
-
       // Compare grid-specific properties
+      // Note: for grids, equality is determined by dims and places, not the affine data place
       return dims == rhs.dims && places == rhs.places;
+    }
+
+    size_t hash() const override
+    {
+      // Hash based on dims and places, consistent with operator==
+      size_t h = ::cuda::experimental::stf::hash<dim4>{}(dims);
+      for (const auto& p : places)
+      {
+        hash_combine(h, p.hash());
+      }
+      return h;
+    }
+
+    bool operator<(const exec_place::impl& rhs) const override
+    {
+      // Different types: order by typeid
+      if (typeid(*this) != typeid(rhs))
+      {
+        return typeid(*this).before(typeid(rhs));
+      }
+      // Same type: safe to cast
+      const auto& other = static_cast<const impl&>(rhs);
+      // Compare dims first, then places
+      if (!(dims == other.dims))
+      {
+        // Use tuple comparison for consistent ordering
+        return ::std::tie(dims.x, dims.y, dims.z, dims.t)
+             < ::std::tie(other.dims.x, other.dims.y, other.dims.z, other.dims.t);
+      }
+      return places < other.places;
     }
 
     const ::std::vector<exec_place>& get_places() const
@@ -914,16 +1440,16 @@ public:
       return places;
     }
 
-    exec_place grid_activate(backend_ctx_untyped& ctx, size_t i) const
+    exec_place grid_activate(size_t i) const
     {
       const auto& v = get_places();
-      return v[i].activate(ctx);
+      return v[i].activate();
     }
 
-    void grid_deactivate(backend_ctx_untyped& ctx, size_t i, exec_place p) const
+    void grid_deactivate(size_t i, exec_place p) const
     {
       const auto& v = get_places();
-      v[i].deactivate(ctx, p);
+      v[i].deactivate(p);
     }
 
     const exec_place& get_current_place()
@@ -932,35 +1458,35 @@ public:
     }
 
     // Set the current place from the 1D index within the grid (flattened grid)
-    void set_current_place(backend_ctx_untyped& ctx, size_t p_index)
+    void set_current_place(size_t p_index)
     {
       // Unset the previous place, if any
       if (current_p_1d >= 0)
       {
         // First deactivate the previous place
-        grid_deactivate(ctx, current_p_1d, old_place);
+        grid_deactivate(current_p_1d, old_place);
       }
 
       // get the 1D index for that position
       current_p_1d = (::std::ptrdiff_t) p_index;
 
       // The returned value contains the state to restore when we deactivate the place
-      old_place = grid_activate(ctx, current_p_1d);
+      old_place = grid_activate(current_p_1d);
     }
 
     // Set the current place, given the position in the grid
-    void set_current_place(backend_ctx_untyped& ctx, pos4 p)
+    void set_current_place(pos4 p)
     {
       size_t p_index = dims.get_index(p);
-      set_current_place(ctx, p_index);
+      set_current_place(p_index);
     }
 
-    void unset_current_place(backend_ctx_untyped& ctx)
+    void unset_current_place()
     {
       EXPECT(current_p_1d >= 0, "unset_current_place() called without corresponding call to set_current_place()");
 
       // First deactivate the previous place
-      grid_deactivate(ctx, current_p_1d, old_place);
+      grid_deactivate(current_p_1d, old_place);
       current_p_1d = -1;
     }
 
@@ -1078,9 +1604,9 @@ public:
   }
 
   // Set the current place from the 1D index within the grid (flattened grid)
-  void set_current_place(backend_ctx_untyped& ctx, size_t p_index)
+  void set_current_place(size_t p_index)
   {
-    return get_impl()->set_current_place(ctx, p_index);
+    return get_impl()->set_current_place(p_index);
   }
 
   // Get the current execution place
@@ -1090,14 +1616,14 @@ public:
   }
 
   // Set the current place, given the position in the grid
-  void set_current_place(backend_ctx_untyped& ctx, pos4 p)
+  void set_current_place(pos4 p)
   {
-    return get_impl()->set_current_place(ctx, p);
+    return get_impl()->set_current_place(p);
   }
 
-  void unset_current_place(backend_ctx_untyped& ctx)
+  void unset_current_place()
   {
-    return get_impl()->unset_current_place(ctx);
+    return get_impl()->unset_current_place();
   }
 
   ::std::shared_ptr<impl> get_impl() const
@@ -1350,16 +1876,6 @@ inline data_place data_place::composite(get_executor_func_t f, const exec_place_
   return result;
 }
 
-#if _CCCL_CTK_AT_LEAST(12, 4)
-inline data_place data_place::green_ctx(const green_ctx_view& gc_view)
-{
-  data_place result;
-  result.devid   = green_ctx_devid;
-  result.gc_view = ::std::make_shared<green_ctx_view>(gc_view);
-  return result;
-}
-#endif // _CCCL_CTK_AT_LEAST(12, 4)
-
 // User-visible API when the same partitioner as the one of the grid
 template <typename partitioner_t>
 data_place data_place::composite(partitioner_t, const exec_place_grid& g)
@@ -1389,13 +1905,10 @@ inline exec_place data_place::get_affine_exec_place() const
     return get_grid();
   }
 
-#if _CCCL_CTK_AT_LEAST(12, 4)
-  if (is_green_ctx())
+  if (is_extension())
   {
-    EXPECT(gc_view != nullptr);
-    return exec_place::green_ctx(gc_view);
+    return extension->get_affine_exec_place();
   }
-#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   // This must be a device
   return exec_place::device(devid);
@@ -1422,24 +1935,20 @@ inline bool data_place::operator==(const data_place& rhs) const
     return false;
   }
 
-  if (is_green_ctx() != rhs.is_green_ctx())
+  if (is_extension() != rhs.is_extension())
   {
     return false;
   }
 
-  if (!is_composite())
+  if (!is_composite() && !is_extension())
   {
     return devid == rhs.devid;
   }
 
-  if (is_green_ctx())
+  if (is_extension())
   {
-#if _CCCL_CTK_AT_LEAST(12, 4)
-    _CCCL_ASSERT(devid == green_ctx_devid, "");
-    return (rhs.devid == green_ctx_devid && *gc_view == *rhs.gc_view);
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^ / vvv _CCCL_CTK_BELOW(12, 4) vvv
-    assert(0);
-#endif // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^
+    _CCCL_ASSERT(devid == extension_devid, "");
+    return (rhs.devid == extension_devid && *extension == *rhs.extension);
   }
 
   return (get_grid() == rhs.get_grid() && (get_partitioner() == rhs.get_partitioner()));
@@ -1448,9 +1957,29 @@ inline bool data_place::operator==(const data_place& rhs) const
 #ifdef UNITTESTED_FILE
 UNITTEST("Data place equality")
 {
+  // Same place type should be equal
   EXPECT(data_place::managed() == data_place::managed());
+  EXPECT(data_place::host() == data_place::host());
+  EXPECT(data_place::device(0) == data_place::device(0));
+
+  // Different place types should not be equal
   EXPECT(data_place::managed() != data_place::host());
+  EXPECT(data_place::managed() != data_place::device(0));
+  EXPECT(data_place::host() != data_place::device(0));
+
+  // Different devices should not be equal
+  int ndevices = cuda_try<cudaGetDeviceCount>();
+  if (ndevices >= 2)
+  {
+    EXPECT(data_place::device(0) != data_place::device(1));
+  }
+
+  // Invalid places
+  EXPECT(data_place::invalid() == data_place::invalid());
+  EXPECT(data_place::invalid() != data_place::host());
+  EXPECT(data_place::invalid() != data_place::device(0));
 };
+
 #endif // UNITTESTED_FILE
 
 /**
@@ -1730,21 +2259,150 @@ struct hash<data_place>
 {
   ::std::size_t operator()(const data_place& k) const
   {
-    // Not implemented for composite places
-    EXPECT(!k.is_composite());
-
-    // TODO fix gc_view visibility or provide a getter
-    if (k.is_green_ctx())
-    {
-#if _CCCL_CTK_AT_LEAST(12, 4)
-      return hash<green_ctx_view>()(*(k.gc_view));
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^ / vvv _CCCL_CTK_BELOW(12, 4) vvv
-      assert(0);
-#endif // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^
-    }
-
-    return ::std::hash<int>()(device_ordinal(k));
+    return k.hash();
   }
 };
 
+/**
+ * @brief Specialization of `std::hash` for `cuda::experimental::stf::exec_place` to allow it to be used as a key in
+ * `std::unordered_map`.
+ */
+template <>
+struct hash<exec_place>
+{
+  ::std::size_t operator()(const exec_place& k) const
+  {
+    return k.hash();
+  }
+};
+
+#ifdef UNITTESTED_FILE
+UNITTEST("Data place as unordered_map key")
+{
+  ::std::unordered_map<data_place, int, hash<data_place>> map;
+
+  // Insert different data places
+  map[data_place::host()]    = 1;
+  map[data_place::managed()] = 2;
+  map[data_place::device(0)] = 3;
+
+  // Verify lookups work correctly
+  EXPECT(map[data_place::host()] == 1);
+  EXPECT(map[data_place::managed()] == 2);
+  EXPECT(map[data_place::device(0)] == 3);
+
+  // Verify size
+  EXPECT(map.size() == 3);
+
+  // Inserting same key should update, not add
+  map[data_place::host()] = 10;
+  EXPECT(map.size() == 3);
+  EXPECT(map[data_place::host()] == 10);
+
+  // Test with multiple devices
+  int ndevices = cuda_try<cudaGetDeviceCount>();
+  if (ndevices >= 2)
+  {
+    map[data_place::device(1)] = 4;
+    EXPECT(map.size() == 4);
+    EXPECT(map[data_place::device(0)] == 3);
+    EXPECT(map[data_place::device(1)] == 4);
+  }
+};
+
+UNITTEST("Exec place as unordered_map key")
+{
+  ::std::unordered_map<exec_place, int, hash<exec_place>> map;
+
+  // Insert different exec places
+  map[exec_place::host()]    = 1;
+  map[exec_place::device(0)] = 2;
+
+  // Verify lookups work correctly
+  EXPECT(map[exec_place::host()] == 1);
+  EXPECT(map[exec_place::device(0)] == 2);
+
+  // Verify size
+  EXPECT(map.size() == 2);
+
+  // Inserting same key should update, not add
+  map[exec_place::host()] = 10;
+  EXPECT(map.size() == 2);
+  EXPECT(map[exec_place::host()] == 10);
+
+  // Test with multiple devices
+  int ndevices = cuda_try<cudaGetDeviceCount>();
+  if (ndevices >= 2)
+  {
+    map[exec_place::device(1)] = 3;
+    EXPECT(map.size() == 3);
+    EXPECT(map[exec_place::device(0)] == 2);
+    EXPECT(map[exec_place::device(1)] == 3);
+  }
+};
+
+UNITTEST("Data place as std::map key")
+{
+  ::std::map<data_place, int> map;
+
+  // Insert different data places
+  map[data_place::host()]    = 1;
+  map[data_place::managed()] = 2;
+  map[data_place::device(0)] = 3;
+
+  // Verify lookups work correctly
+  EXPECT(map[data_place::host()] == 1);
+  EXPECT(map[data_place::managed()] == 2);
+  EXPECT(map[data_place::device(0)] == 3);
+
+  // Verify size
+  EXPECT(map.size() == 3);
+
+  // Inserting same key should update, not add
+  map[data_place::host()] = 10;
+  EXPECT(map.size() == 3);
+  EXPECT(map[data_place::host()] == 10);
+
+  // Test with multiple devices
+  int ndevices = cuda_try<cudaGetDeviceCount>();
+  if (ndevices >= 2)
+  {
+    map[data_place::device(1)] = 4;
+    EXPECT(map.size() == 4);
+    EXPECT(map[data_place::device(0)] == 3);
+    EXPECT(map[data_place::device(1)] == 4);
+  }
+};
+
+UNITTEST("Exec place as std::map key")
+{
+  ::std::map<exec_place, int> map;
+
+  // Insert different exec places
+  map[exec_place::host()]    = 1;
+  map[exec_place::device(0)] = 2;
+
+  // Verify lookups work correctly
+  EXPECT(map[exec_place::host()] == 1);
+  EXPECT(map[exec_place::device(0)] == 2);
+
+  // Verify size
+  EXPECT(map.size() == 2);
+
+  // Inserting same key should update, not add
+  map[exec_place::host()] = 10;
+  EXPECT(map.size() == 2);
+  EXPECT(map[exec_place::host()] == 10);
+
+  // Test with multiple devices
+  int ndevices = cuda_try<cudaGetDeviceCount>();
+  if (ndevices >= 2)
+  {
+    map[exec_place::device(1)] = 3;
+    EXPECT(map.size() == 3);
+    EXPECT(map[exec_place::device(0)] == 2);
+    EXPECT(map[exec_place::device(1)] == 3);
+  }
+};
+#endif // UNITTESTED_FILE
 } // end namespace cuda::experimental::stf

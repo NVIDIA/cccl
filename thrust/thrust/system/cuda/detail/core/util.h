@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -37,19 +14,20 @@
 #endif // no system header
 #include <thrust/system/cuda/config.h>
 
+#include <thrust/detail/type_traits/has_nested_type.h>
 #include <thrust/system/cuda/detail/util.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/cstdint>
 
 #include <nv/target>
 
 THRUST_NAMESPACE_BEGIN
 
-namespace cuda_cub
-{
-namespace core
-{
-namespace detail
+namespace cuda_cub::core::detail
 {
 /// Typelist - a container of types
 template <typename...>
@@ -62,19 +40,13 @@ struct typelist;
 
 struct sm52
 {
-  enum
-  {
-    ver      = 520,
-    warpSize = 32
-  };
+  static constexpr int ver      = 520;
+  static constexpr int warpSize = 32;
 };
 struct sm60
 {
-  enum
-  {
-    ver      = 600,
-    warpSize = 32
-  };
+  static constexpr int ver      = 600;
+  static constexpr int warpSize = 32;
 };
 
 // list of sm, checked from left to right order
@@ -220,10 +192,7 @@ struct has_enough_shmem_impl<V, A, S, typelist<Head, Tail...>>
 template <bool V, class A, size_t S>
 struct has_enough_shmem_impl<V, A, S, typelist<>>
 {
-  enum
-  {
-    value = V
-  };
+  static constexpr bool value = V;
   using type = ::cuda::std::conditional_t<value, thrust::detail::true_type, thrust::detail::false_type>;
 };
 
@@ -501,10 +470,7 @@ struct uninitialized
 {
   using DeviceWord = typename cub::UnitWord<T>::DeviceWord;
 
-  enum
-  {
-    WORDS = sizeof(T) / sizeof(DeviceWord)
-  };
+  static constexpr int WORDS = sizeof(T) / sizeof(DeviceWord);
 
   DeviceWord storage[WORDS];
 
@@ -522,12 +488,12 @@ struct uninitialized
 // uninitialized_array
 // --------------
 // allocates uninitialized data on stack
-template <class T, size_t N>
+template <class T, size_t N, size_t Alignment = alignof(T)>
 struct uninitialized_array
 {
   using value_type = T;
   static constexpr ::cuda::std::integral_constant<size_t, N> size{};
-  alignas(T) char data_[N * sizeof(T)];
+  alignas(Alignment) char data_[N * sizeof(T)];
 
   _CCCL_HOST_DEVICE T* data()
   {
@@ -582,12 +548,9 @@ template <int ALLOCATIONS>
 THRUST_RUNTIME_FUNCTION cudaError_t alias_storage(
   void* storage_ptr, size_t& storage_size, void* (&allocations)[ALLOCATIONS], size_t (&allocation_sizes)[ALLOCATIONS])
 {
-  return cub::detail::AliasTemporaries(storage_ptr, storage_size, allocations, allocation_sizes);
+  return cub::detail::alias_temporaries(storage_ptr, storage_size, allocations, allocation_sizes);
 }
 #endif // !_CCCL_COMPILER(NVRTC)
-
-} // namespace detail
-} // namespace core
-} // namespace cuda_cub
+} // namespace cuda_cub::core::detail
 
 THRUST_NAMESPACE_END

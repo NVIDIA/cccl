@@ -51,9 +51,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT thread_context
     }
   }
 
-  _CCCL_HOST_API auto get_scheduler()
+  _CCCL_API auto get_scheduler()
   {
     return __loop_.get_scheduler();
+  }
+
+  _CCCL_HOST_API auto get_id() const noexcept
+  {
+    return __thrd_.get_id();
   }
 
 private:

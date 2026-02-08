@@ -31,7 +31,6 @@
 
 namespace cuda::experimental::stf
 {
-
 #if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 
 class stream_ctx;
@@ -42,7 +41,6 @@ struct owning_container_of;
 
 namespace reserved
 {
-
 /*
  * @brief A CUDA kernel for executing a function `f` in parallel over `n` threads.
  *
@@ -1066,5 +1064,4 @@ private:
 } // end namespace reserved
 
 #endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
-
 } // end namespace cuda::experimental::stf

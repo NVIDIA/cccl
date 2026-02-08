@@ -4,51 +4,17 @@
 #include <cuda/std/complex>
 
 #include <c2h/generators.h>
-#include <c2h/vector.h>
-
-#if C2H_HAS_CURAND
-#  include <curand.h>
-#else
-#  include <thrust/random.h>
-#endif
 
 namespace c2h::detail
 {
+// called once from main to set up the generator state
+void init_generator();
 
-class generator_t
-{
-public:
-  generator_t()
-  {
-#if C2H_HAS_CURAND
-    curandCreateGenerator(&m_gen, CURAND_RNG_PSEUDO_DEFAULT);
-#endif
-  }
+// sets the seed and resizes the distribution vector, fills it, and returns a pointer the start of the data
+float* prepare_random_data(seed_t seed, std::size_t num_items);
 
-  ~generator_t()
-  {
-#if C2H_HAS_CURAND
-    curandDestroyGenerator(m_gen);
-#endif
-  }
-
-  // sets the seed and resizes the distribution vector, fills it by calling generate(), and returns a pointer the start
-  // of the data
-  float* prepare_random_generator(seed_t seed, std::size_t num_items);
-
-  // re-fills the currently held distribution vector with new random values
-  void generate();
-
-private:
-#if C2H_HAS_CURAND
-  curandGenerator_t m_gen;
-#else
-  thrust::default_random_engine m_re;
-#endif
-  c2h::device_vector<float> m_distribution;
-};
-
-inline generator_t generator;
+// called once before main returns to clean up the generator state
+void cleanup_generator();
 
 template <typename T, bool = ::cuda::is_floating_point_v<T>>
 struct random_to_item_t
@@ -101,5 +67,4 @@ struct random_to_item_t<cuda::std::complex<T>, false>
     return (m_max - m_min) * cuda::std::complex<T>(random_value) + m_min;
   }
 };
-
 } // namespace c2h::detail

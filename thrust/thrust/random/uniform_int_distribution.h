@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file uniform_int_distribution.h
  *  \brief A uniform distribution of integer-valued numbers
@@ -29,9 +16,9 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/pair.h>
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/__utility/pair.h>
 #include <cuda/std/limits>
 
 #include <iostream>
@@ -40,7 +27,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-
 /*! \addtogroup random_number_distributions Random Number Distributions Class Templates
  *  \ingroup random
  *  \{
@@ -106,7 +92,7 @@ public:
   /*! \typedef param_type
    *  \brief The type of the object encapsulating this \p uniform_int_distribution's parameters.
    */
-  using param_type = thrust::pair<IntType, IntType>;
+  using param_type = ::cuda::std::pair<IntType, IntType>;
 
   // constructors and reset functions
 
@@ -251,7 +237,6 @@ operator>>(std::basic_istream<CharT, Traits>& is, uniform_int_distribution<IntTy
 
 /*! \} // end random_number_distributions
  */
-
 } // namespace random
 
 using random::uniform_int_distribution;

@@ -19,6 +19,8 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+build.log
+.python-version
 
 # CMake
 CMakeFiles/

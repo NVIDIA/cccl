@@ -33,7 +33,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief A constant piece of data that relies on frozen logical data
  */
@@ -121,5 +120,4 @@ public:
 private:
   ::std::shared_ptr<impl> pimpl = nullptr;
 };
-
 } // end namespace cuda::experimental::stf

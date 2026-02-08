@@ -1,11 +1,10 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -22,15 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__exception/msg_storage.h>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/source_location>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <cstdio>
-#  include <stdexcept>
 #endif // !_CCCL_COMPILER(NVRTC)
-
-#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -42,18 +40,11 @@ using __cuda_error_t = ::cudaError_t;
 using __cuda_error_t = int;
 #endif
 
-#if _CCCL_HAS_EXCEPTIONS()
-
+#if !_CCCL_COMPILER(NVRTC)
 namespace __detail
 {
-
-struct __msg_storage
-{
-  char __buffer[512]{0};
-};
-
 static char* __format_cuda_error(
-  __msg_storage& __msg_buffer,
+  ::cuda::__msg_storage& __msg_buffer,
   const int __status,
   const char* __msg,
   const char* __api                  = nullptr,
@@ -76,7 +67,6 @@ static char* __format_cuda_error(
     __msg);
   return __msg_buffer.__buffer;
 }
-
 } // namespace __detail
 
 /**
@@ -87,10 +77,10 @@ class cuda_error : public ::std::runtime_error
 public:
   cuda_error(const __cuda_error_t __status,
              const char* __msg,
-             const char* __api                    = nullptr,
-             ::cuda::std::source_location __loc   = ::cuda::std::source_location::current(),
-             __detail::__msg_storage __msg_buffer = {}) noexcept
-      : ::std::runtime_error(__detail::__format_cuda_error(__msg_buffer, __status, __msg, __api, __loc))
+             const char* __api                  = nullptr,
+             ::cuda::std::source_location __loc = ::cuda::std::source_location::current(),
+             __msg_storage __msg_buffer         = {}) noexcept
+      : ::std::runtime_error(::cuda::__detail::__format_cuda_error(__msg_buffer, __status, __msg, __api, __loc))
       , __status_(__status)
   {}
 
@@ -102,6 +92,7 @@ public:
 private:
   __cuda_error_t __status_;
 };
+#endif // !_CCCL_COMPILER(NVRTC)
 
 [[noreturn]] _CCCL_API inline void __throw_cuda_error(
   [[maybe_unused]] const __cuda_error_t __status,
@@ -109,28 +100,8 @@ private:
   [[maybe_unused]] const char* __api                  = nullptr,
   [[maybe_unused]] ::cuda::std::source_location __loc = ::cuda::std::source_location::current())
 {
-  NV_IF_TARGET(NV_IS_HOST, (throw ::cuda::cuda_error(__status, __msg, __api, __loc);), (::cuda::std::terminate();))
+  _CCCL_THROW(cuda::cuda_error, __status, __msg, __api, __loc);
 }
-#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-class cuda_error
-{
-public:
-  _CCCL_API inline cuda_error(const __cuda_error_t,
-                              const char*,
-                              const char*                  = nullptr,
-                              ::cuda::std::source_location = ::cuda::std::source_location::current()) noexcept
-  {}
-};
-
-[[noreturn]] _CCCL_API inline void __throw_cuda_error(
-  const __cuda_error_t,
-  const char*,
-  const char*                  = nullptr,
-  ::cuda::std::source_location = ::cuda::std::source_location::current())
-{
-  ::cuda::std::terminate();
-}
-#endif // !_CCCL_HAS_EXCEPTIONS()
 
 _CCCL_END_NAMESPACE_CUDA
 

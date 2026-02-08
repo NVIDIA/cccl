@@ -344,18 +344,18 @@ C2H_TEST("let_value has the values_type corresponding to the given values", "[ad
 C2H_TEST("let_value keeps error_types from input sender", "[adaptors][let_value]")
 {
   dummy_scheduler sched1{};
-  error_scheduler sched2{::std::exception_ptr{}};
+  error_scheduler sched2{ex::exception_ptr{}};
   error_scheduler<int> sched3{43};
 
-  check_error_types<std::exception_ptr>( //
+  check_error_types<ex::exception_ptr>( //
     ex::just() | ex::continues_on(sched1) | ex::let_value([] {
       return ex::just();
     }));
-  check_error_types<std::exception_ptr>( //
+  check_error_types<ex::exception_ptr>( //
     ex::just() | ex::continues_on(sched2) | ex::let_value([] {
       return ex::just();
     }));
-  check_error_types<int, std::exception_ptr>( //
+  check_error_types<int, ex::exception_ptr>( //
     ex::just() | ex::continues_on(sched3) | ex::let_value([] {
       return ex::just();
     }));
@@ -365,7 +365,7 @@ C2H_TEST("let_value keeps error_types from input sender", "[adaptors][let_value]
   //   ex::just() | ex::continues_on(sched1) | ex::let_value([]_CCCL_HOST_DEVICE() noexcept {
   //     return ex::just();
   //   }));
-  // check_error_types<std::exception_ptr>( //
+  // check_error_types<ex::exception_ptr>( //
   //   ex::just() | ex::continues_on(sched2) | ex::let_value([]_CCCL_HOST_DEVICE() noexcept {
   //     return ex::just();
   //   }));
@@ -453,7 +453,7 @@ C2H_TEST("let_value works when the function returns a dependent sender", "[adapt
 //   bool& completed_;
 // };
 
-// C2H_TEST("let_value does not add std::exception_ptr even if the receiver is bad", "[adaptors][let_value]")
+// C2H_TEST("let_value does not add ex::exception_ptr even if the receiver is bad", "[adaptors][let_value]")
 // {
 //   auto sndr = ex::let_value(ex::just(), []_CCCL_HOST_DEVICE() noexcept {
 //     return ex::just();
@@ -498,5 +498,4 @@ C2H_TEST("let_value has the correct completion domain", "[adaptors][let_value]")
   auto dom   = ex::get_completion_domain<ex::set_value_t>(ex::get_env(sndr));
   static_assert(::cuda::std::is_same_v<decltype(dom), let_value_test_domain>);
 }
-
 } // namespace

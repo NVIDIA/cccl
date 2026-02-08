@@ -146,12 +146,14 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 // - requires(BOOL-EXPR...)
 // - typename(TYPE...)
 // - _Same_as(TYPE...) EXPR...
+// - _Satisfies(CONCEPT...) EXPR...
 //
 // The last 4 are handled below:
-#define _CCCL_CONCEPT_REQUIREMENT_SWITCH_requires _CCCL_PP_CASE(REQUIRES)
-#define _CCCL_CONCEPT_REQUIREMENT_SWITCH_noexcept _CCCL_PP_CASE(NOEXCEPT)
-#define _CCCL_CONCEPT_REQUIREMENT_SWITCH_typename _CCCL_PP_CASE(TYPENAME)
-#define _CCCL_CONCEPT_REQUIREMENT_SWITCH__Same_as _CCCL_PP_CASE(SAME_AS)
+#define _CCCL_CONCEPT_REQUIREMENT_SWITCH_requires   _CCCL_PP_CASE(REQUIRES)
+#define _CCCL_CONCEPT_REQUIREMENT_SWITCH_noexcept   _CCCL_PP_CASE(NOEXCEPT)
+#define _CCCL_CONCEPT_REQUIREMENT_SWITCH_typename   _CCCL_PP_CASE(TYPENAME)
+#define _CCCL_CONCEPT_REQUIREMENT_SWITCH__Same_as   _CCCL_PP_CASE(SAME_AS)
+#define _CCCL_CONCEPT_REQUIREMENT_SWITCH__Satisfies _CCCL_PP_CASE(SATISFIES)
 
 // Converts "requires(ARGS...)" to "ARGS..."
 #define _CCCL_CONCEPT_EAT_REQUIRES_(...)         _CCCL_PP_CAT(_CCCL_CONCEPT_EAT_REQUIRES_, __VA_ARGS__)
@@ -175,13 +177,24 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 #define _CCCL_CONCEPT_EAT_SAME_AS_(...) _CCCL_PP_CAT(_CCCL_CONCEPT_EAT_SAME_AS_, __VA_ARGS__)
 #define _CCCL_CONCEPT_EAT_SAME_AS__Same_as(...)
 
-// Converts "_Same_as(TYPE) EXPR..." to "TYPE" (The ridiculous concatenation of _CCCL_PP_
-// with EXPAND(__VA_ARGS__) is the only way to get MSVC's broken preprocessor to do macro
+// Converts "_Same_as(TYPE) EXPR..." to "TYPE" (The ridiculous concatenation of _CCCL with
+// _PP_EXPAND(__VA_ARGS__) is the only way to get MSVC's broken preprocessor to do macro
 // expansion here.)
 #define _CCCL_CONCEPT_GET_TYPE_FROM_SAME_AS_(...) \
-  _CCCL_PP_CAT(_CCCL_PP_,                         \
-               _CCCL_PP_EVAL(_CCCL_PP_FIRST, _CCCL_PP_CAT(_CCCL_CONCEPT_GET_TYPE_FROM_SAME_AS_, __VA_ARGS__)))
-#define _CCCL_CONCEPT_GET_TYPE_FROM_SAME_AS__Same_as(...) EXPAND(__VA_ARGS__),
+  _CCCL_PP_CAT(_CCCL, _CCCL_PP_EVAL(_CCCL_PP_FIRST, _CCCL_PP_CAT(_CCCL_CONCEPT_GET_TYPE_FROM_SAME_AS_, __VA_ARGS__)))
+#define _CCCL_CONCEPT_GET_TYPE_FROM_SAME_AS__Same_as(...) _PP_EXPAND(__VA_ARGS__),
+
+// Converts "_Satisfies(TYPE) EXPR..." to "EXPR..."
+#define _CCCL_CONCEPT_EAT_SATISFIES_(...) _CCCL_PP_CAT(_CCCL_CONCEPT_EAT_SATISFIES_, __VA_ARGS__)
+#define _CCCL_CONCEPT_EAT_SATISFIES__Satisfies(...)
+
+// Converts "_Satisfies(TYPE) EXPR..." to "TYPE" (The ridiculous concatenation of _CCCL_PP_
+// with EXPAND(__VA_ARGS__) is the only way to get MSVC's broken preprocessor to do macro
+// expansion here.)
+#define _CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES_(...) \
+  _CCCL_PP_CAT(_CCCL_PP_,                              \
+               _CCCL_PP_EVAL(_CCCL_PP_FIRST, _CCCL_PP_CAT(_CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES_, __VA_ARGS__)))
+#define _CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES__Satisfies(...) EXPAND(__VA_ARGS__),
 
 // Here are the implementations of the internal macros, first for when concepts
 // are available, and then for when they're not.
@@ -207,6 +220,8 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
     _CCCL_CONCEPT_TRY_ADD_TYPENAME_(_CCCL_CONCEPT_EAT_TYPENAME_(_REQ))
 #  define _CCCL_CONCEPT_REQUIREMENT_CASE_SAME_AS(_REQ) \
     {_CCCL_CONCEPT_EAT_SAME_AS_(_REQ)}->_CCCL_CONCEPT_VSTD::same_as<_CCCL_CONCEPT_GET_TYPE_FROM_SAME_AS_(_REQ)>
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE_SATISFIES(_REQ) \
+    {_CCCL_CONCEPT_EAT_SATISFIES_(_REQ)}->_CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES_(_REQ)
 
 #  define _CCCL_FRAGMENT(_NAME, ...) _NAME<__VA_ARGS__>
 
@@ -251,6 +266,9 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
     static_cast<::__cccl_tag<_CCCL_CONCEPT_EAT_TYPENAME_(_REQ)>*>(nullptr)
 #  define _CCCL_CONCEPT_REQUIREMENT_CASE_SAME_AS(_REQ) \
     ::__cccl_requires<::cuda::std::same_as<_CCCL_CONCEPT_SAME_AS_REQUIREMENT_(_REQ)>>
+#  define _CCCL_CONCEPT_REQUIREMENT_CASE_SATISFIES(_REQ)                                                               \
+    ::__cccl_requires < _CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES_(_REQ) < decltype(_CCCL_CONCEPT_EAT_SATISFIES_(_REQ)) \
+      >>
 
 // Converts "_Same_as(TYPE) EXPR..." to "TYPE, decltype(EXPR...)"
 #  define _CCCL_CONCEPT_SAME_AS_REQUIREMENT_(_REQ) \
@@ -290,7 +308,7 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
-#  define _CCCL_REQUIRES_EXPR(_TY, ...) _CCCL_REQUIRES_EXPR_IMPL(_TY, _CCCL_COUNTER(), __VA_ARGS__)
+#  define _CCCL_REQUIRES_EXPR(_TY, ...) _CCCL_REQUIRES_EXPR_IMPL(_TY, _CCCL_REQUIRES_EXPR_ID(_TY), __VA_ARGS__)
 #  define _CCCL_REQUIRES_EXPR_IMPL(_TY, _ID, ...)                                                                    \
     ::__cccl_requires_expr_impl<                                                                                     \
       struct _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID) _CCCL_REQUIRES_EXPR_TPARAM_REFS                         \
@@ -319,6 +337,32 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 #  define _CCCL_REQUIRES_EXPR_TPARAM_REF_SWITCH_variadic    _CCCL_PP_CASE(VARIADIC)
 #  define _CCCL_REQUIRES_EXPR_TPARAM_REF_CASE_DEFAULT(_TY)  _TY
 #  define _CCCL_REQUIRES_EXPR_TPARAM_REF_CASE_VARIADIC(_TY) _CCCL_PP_CAT(_CCCL_REQUIRES_EXPR_EAT_VARIADIC_, _TY)...
+
+// NVRTC does not support __COUNTER__ so we need a better way of defining unique identifiers
+#  if _CCCL_COMPILER(NVRTC)
+
+// Expands ((Ty...), Ty...) into _CCCL_REQUIRES_EXPR_ID_NO_PAREN(Ty...)
+#    define _CCCL_REQUIRES_EXPR_ID(_TY, ...) _CCCL_REQUIRES_EXPR_ID_NO_PAREN _TY
+
+// Expands "T1, T2, variadic T3" to "T1_T2_T3_##__LINE__"
+#    define _CCCL_REQUIRES_EXPR_ID_NO_PAREN(...) \
+      _CCCL_REQUIRES_EXPR_ID_CONCAT_ALL(_CCCL_PP_FOR_EACH(_CCCL_REQUIRES_EXPR_ID_IMPL, __VA_ARGS__), _CCCL_COUNTER())
+
+// Expands "T1, T2, T3" to "T1T2T3"
+#    define _CCCL_REQUIRES_EXPR_ID_CONCAT_ALL_IMPL(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, ...) \
+      _0##_1##_2##_3##_4##_5##_6##_7##_8##_9
+#    define _CCCL_REQUIRES_EXPR_ID_CONCAT_ALL(...) \
+      _CCCL_PP_EVAL(_CCCL_REQUIRES_EXPR_ID_CONCAT_ALL_IMPL, __VA_ARGS__, , , , , , , , , )
+
+// Expands "TY" to "TY" and "variadic TY" to "TY"
+#    define _CCCL_REQUIRES_EXPR_ID_IMPL(_TY)               , _CCCL_PP_SWITCH2(_CCCL_REQUIRES_EXPR_ID_IMPL, _TY)
+#    define _CCCL_REQUIRES_EXPR_ID_IMPL_SWITCH_variadic    _CCCL_PP_CASE(VARIADIC)
+#    define _CCCL_REQUIRES_EXPR_ID_IMPL_CASE_DEFAULT(_TY)  _TY
+#    define _CCCL_REQUIRES_EXPR_ID_IMPL_CASE_VARIADIC(_TY) _CCCL_PP_CAT(_CCCL_REQUIRES_EXPR_EAT_VARIADIC_, _TY)
+
+#  else // ^^^ _CCCL_COMPILER(NVRTC) ^^^^/ vvv !_CCCL_COMPILER(NVRTC)
+#    define _CCCL_REQUIRES_EXPR_ID(...) _CCCL_COUNTER()
+#  endif // !_CCCL_COMPILER(NVRTC)
 
 #  define _CCCL_REQUIRES_EXPR_EAT_VARIADIC_variadic
 

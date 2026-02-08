@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2024 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2024, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file
  *  \brief C++14's
@@ -32,9 +19,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/type_traits>
-#include <cuda/std/utility>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -114,7 +100,6 @@ using make_index_sequence = ::cuda::std::make_index_sequence<N>;
 
 namespace detail
 {
-
 /*! \brief Create a new \c integer_sequence containing the elements of \c
  *  Sequence0 followed by the elements of \c Sequence1. \c Sequence1::size() is
  *  added to each element from \c Sequence0 in the new sequence.
@@ -148,7 +133,6 @@ struct merge_and_renumber_reversed_integer_sequences_impl<integer_sequence<T, Is
 {
   using type = integer_sequence<T, (sizeof...(Is1) + Is0)..., Is1...>;
 };
-
 } // namespace detail
 
 /*! \endcond
@@ -207,7 +191,6 @@ using integer_sequence_push_back = typename detail::integer_sequence_push_back_i
 
 namespace detail
 {
-
 template <typename T, ::cuda::std::size_t N>
 struct make_reversed_integer_sequence_impl
 {
@@ -246,7 +229,6 @@ struct integer_sequence_push_back_impl<T, I0, integer_sequence<T, Is...>>
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-
 } // namespace detail
 
 /*! \endcond

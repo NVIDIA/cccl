@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2025, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * @file
@@ -48,6 +24,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -77,7 +54,7 @@ struct WarpReduceSmem
   static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == warp_threads);
 
   /// Whether the logical warp size is a power-of-two
-  static constexpr bool IS_POW_OF_TWO = PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE;
+  static constexpr bool IS_POW_OF_TWO = ::cuda::is_power_of_two(LOGICAL_WARP_THREADS);
 
   /// The number of warp reduction steps
   static constexpr int STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE;
@@ -286,13 +263,6 @@ struct WarpReduceSmem
   _CCCL_DEVICE _CCCL_FORCEINLINE T
   SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, ::cuda::std::false_type /*has_ballot*/)
   {
-    enum
-    {
-      UNSET = 0x0, // Is initially unset
-      SET   = 0x1, // Is initially set
-      SEEN  = 0x2, // Has seen another head flag from a successor peer
-    };
-
     // Alias flags onto shared data storage
     SmemFlag* flag_storage = temp_storage.flags;
 

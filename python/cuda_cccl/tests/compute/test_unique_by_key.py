@@ -11,6 +11,7 @@ import pytest
 import cuda.compute
 from cuda.compute import (
     CacheModifiedInputIterator,
+    DiscardIterator,
     OpKind,
     gpu_struct,
 )
@@ -89,14 +90,19 @@ def unique_by_key_host(keys, items, is_equal=is_equal_func):
 
     prev_key = keys[0]
     keys_out = [prev_key]
-    items_out = [items[0]]
+
+    if len(items) > 0:
+        items_out = [items[0]]
+    else:
+        items_out = []
 
     for idx, (previous, next) in enumerate(zip(keys, keys[1:])):
         if not is_equal(previous, next):
             keys_out.append(next)
 
-            # add 1 since we are enumerating over pairs
-            items_out.append(items[idx + 1])
+            if len(items) > 0:
+                # add 1 since we are enumerating over pairs
+                items_out.append(items[idx + 1])
 
     return np.array(keys_out), np.array(items_out)
 
@@ -212,6 +218,38 @@ def test_unique_by_key_iterators(dtype, num_items, op, monkeypatch):
 
     np.testing.assert_array_equal(h_out_keys, expected_keys)
     np.testing.assert_array_equal(h_out_items, expected_items)
+
+
+def test_unique_by_key_keys_only():
+    num_items = 100000
+    h_in_keys = random_array(num_items, np.int32, max_value=20)
+    h_out_keys = np.empty(num_items, dtype=np.int32)
+    h_out_num_selected = np.empty(1, np.int32)
+
+    d_in_keys = numba.cuda.to_device(h_in_keys)
+    d_out_keys = numba.cuda.to_device(h_out_keys)
+    d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
+
+    unique_by_key_device(
+        d_in_keys,
+        DiscardIterator(),
+        d_out_keys,
+        DiscardIterator(),
+        d_out_num_selected,
+        OpKind.EQUAL_TO,
+        num_items,
+    )
+
+    h_out_num_selected = d_out_num_selected.copy_to_host()
+    num_selected = h_out_num_selected[0]
+    h_out_keys = d_out_keys.copy_to_host()[:num_selected]
+
+    expected_keys, _ = unique_by_key_host(
+        h_in_keys,
+        np.empty(0, dtype=np.float32),
+    )
+
+    np.testing.assert_array_equal(h_out_keys, expected_keys)
 
 
 def test_unique_by_key_complex():

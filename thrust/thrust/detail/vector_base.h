@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file vector_base.h
  *  \brief Defines the interface to a base class for
@@ -37,9 +24,11 @@
 #include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__iterator/reverse_iterator.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/swap.h>
 #include <cuda/std/initializer_list>
-#include <cuda/std/iterator>
-#include <cuda/std/utility>
 
 #include <vector>
 
@@ -58,7 +47,6 @@ inline constexpr no_init_t no_init;
 
 namespace detail
 {
-
 template <typename T, typename Alloc>
 class vector_base
 {
@@ -605,7 +593,6 @@ bool operator!=(const vector_base<T1, Alloc1>& lhs, const std::vector<T2, Alloc2
 
 template <typename T1, typename Alloc1, typename T2, typename Alloc2>
 bool operator!=(const std::vector<T1, Alloc1>& lhs, const vector_base<T2, Alloc2>& rhs);
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

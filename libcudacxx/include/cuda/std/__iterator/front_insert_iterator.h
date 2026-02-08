@@ -24,6 +24,7 @@
 #include <cuda/std/__iterator/iterator.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstddef>
 
@@ -84,7 +85,7 @@ public:
   }
 };
 _CCCL_SUPPRESS_DEPRECATED_POP
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(front_insert_iterator);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(front_insert_iterator);
 
 template <class _Container>
 [[nodiscard]] _CCCL_API constexpr front_insert_iterator<_Container> front_inserter(_Container& __x) noexcept

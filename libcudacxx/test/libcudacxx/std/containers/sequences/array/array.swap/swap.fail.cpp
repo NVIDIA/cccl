@@ -17,10 +17,10 @@
 int main(int, char**)
 {
   {
-    typedef double T;
-    typedef cuda::std::array<const T, 0> C;
-    C c  = {};
-    C c2 = {};
+    using T = double;
+    using C = cuda::std::array<const T, 0>;
+    C c     = {};
+    C c2    = {};
     // expected-error-re@array:* {{{{(static_assert|static assertion)}} failed{{.*}}cannot swap zero-sized array of type
     // 'const T'}}
     c.swap(c2); // expected-note {{requested here}}

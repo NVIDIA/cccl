@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*
  * Copyright Jens Maurer 2000-2001
@@ -32,18 +19,16 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/pair.h>
 #include <thrust/random/uniform_real_distribution.h>
 
-#include <cuda/std/cmath>
+#include <cuda/std/__cmath/logarithms.h>
+#include <cuda/std/__cmath/roots.h>
+#include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
-namespace random
+namespace random::detail
 {
-namespace detail
-{
-
 // this version samples the normal distribution directly
 // and uses the non-standard math function erfcinv
 template <typename RealType>
@@ -148,13 +133,12 @@ private:
 template <typename RealType>
 struct normal_distribution_base
 {
-#if _CCCL_HAS_CUDA_COMPILER() && !_CCCL_CUDA_COMPILER(NVHPC)
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)
   using type = normal_distribution_nvcc<RealType>;
-#else
+#else // ^^^ _CCCL_CUDA_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC) ^^^ /
+      // vvv !_CCCL_CUDA_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC) vvv
   using type = normal_distribution_portable<RealType>;
-#endif
+#endif // ^^^ !_CCCL_CUDA_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC) ^^^
 };
-
-} // namespace detail
-} // namespace random
+} // namespace random::detail
 THRUST_NAMESPACE_END

@@ -20,13 +20,10 @@
 #include <cub/block/block_store.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/atomic>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::topk
 {
-
 //! @brief Parameterizable tuning policy type for AgentTopK
 //!
 //! @tparam BlockThreads
@@ -759,6 +756,5 @@ struct AgentTopK
     }
   }
 };
-
 } // namespace detail::topk
 CUB_NAMESPACE_END

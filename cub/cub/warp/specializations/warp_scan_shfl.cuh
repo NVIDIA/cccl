@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * @file
@@ -78,28 +54,22 @@ struct WarpScanShfl
   // Constants and type definitions
   //---------------------------------------------------------------------
 
-  enum
-  {
-    /// Whether the logical warp size and the PTX warp size coincide
-    IS_ARCH_WARP = (LOGICAL_WARP_THREADS == warp_threads),
+  /// Whether the logical warp size and the PTX warp size coincide
+  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == warp_threads);
 
-    /// The number of warp scan steps
-    STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE,
+  /// The number of warp scan steps
+  static constexpr int STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE;
 
-    /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
-    SHFL_C = (warp_threads - LOGICAL_WARP_THREADS) << 8
-  };
+  /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
+  static constexpr int SHFL_C = (warp_threads - LOGICAL_WARP_THREADS) << 8;
 
   template <typename S>
   struct IntegerTraits
   {
-    enum
-    {
-      /// Whether the data type is a small (32b or less) integer for which we can use a single SFHL instruction per
-      /// exchange
-      IS_SMALL_UNSIGNED =
-        ::cuda::std::is_integral_v<S> && ::cuda::std::is_unsigned_v<S> && (sizeof(S) <= sizeof(unsigned int)),
-    };
+    /// Whether the data type is a small (32b or less) integer for which we can use a single SFHL instruction per
+    /// exchange
+    static constexpr bool IS_SMALL_UNSIGNED =
+      ::cuda::std::is_integral_v<S> && ::cuda::std::is_unsigned_v<S> && (sizeof(S) <= sizeof(unsigned int));
   };
 
   /// Shared memory storage layout type
@@ -408,13 +378,13 @@ struct WarpScanShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  template <typename _T, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T InclusiveScanStep(_T input, ScanOpT scan_op, int first_lane, int offset)
+  template <typename _Tp, typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp InclusiveScanStep(_Tp input, ScanOpT scan_op, int first_lane, int offset)
   {
-    _T temp = ShuffleUp<LOGICAL_WARP_THREADS>(input, offset, first_lane, member_mask);
+    _Tp temp = ShuffleUp<LOGICAL_WARP_THREADS>(input, offset, first_lane, member_mask);
 
     // Perform scan op if from a valid peer
-    _T output = scan_op(temp, input);
+    _Tp output = scan_op(temp, input);
     if (static_cast<int>(lane_id) < first_lane + offset)
     {
       output = input;
@@ -441,19 +411,19 @@ struct WarpScanShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  template <typename _T, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T
-  InclusiveScanStepPartial(_T input, ScanOpT scan_op, int valid_items, int first_lane, int offset)
+  template <typename _Tp, typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp
+  InclusiveScanStepPartial(_Tp input, ScanOpT scan_op, int valid_items, int first_lane, int offset)
   {
     _CCCL_ASSERT((first_lane >= 0) && (first_lane <= static_cast<int>(lane_id)),
                  "first_lane must be in range [0, lane_id]");
     _CCCL_ASSERT((offset > 0) && (offset < LOGICAL_WARP_THREADS),
                  "offset must be in the range [1, LOGICAL_WARP_THREADS)");
     _CCCL_ASSERT(::cuda::std::has_single_bit(static_cast<unsigned>(offset)), "offset must be a power of two");
-    _T temp = ::cuda::device::warp_shuffle_up<LOGICAL_WARP_THREADS>(input, offset, member_mask);
+    _Tp temp = ::cuda::device::warp_shuffle_up<LOGICAL_WARP_THREADS>(input, offset, member_mask);
 
     // Perform scan op if from a valid peer
-    _T output = input;
+    _Tp output = input;
     if (static_cast<int>(lane_id) >= first_lane + offset && static_cast<int>(lane_id) < valid_items)
     {
       output = scan_op(temp, input);
@@ -479,9 +449,9 @@ struct WarpScanShfl
    * @param[in] is_small_unsigned
    *   Marker type indicating whether T is a small integer
    */
-  template <typename _T, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T
-  InclusiveScanStep(_T input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::true_type /*is_small_unsigned*/)
+  template <typename _Tp, typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp InclusiveScanStep(
+    _Tp input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::true_type /*is_small_unsigned*/)
   {
     return InclusiveScanStep(input, scan_op, first_lane, offset);
   }
@@ -505,9 +475,9 @@ struct WarpScanShfl
    * @param[in] is_small_unsigned
    *   Marker type indicating whether T is a small integer
    */
-  template <typename _T, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T InclusiveScanStep(
-    _T input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
+  template <typename _Tp, typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp InclusiveScanStep(
+    _Tp input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
   {
     return InclusiveScanStep(input, scan_op, first_lane, offset);
   }
@@ -550,8 +520,8 @@ struct WarpScanShfl
    * @param[in] scan_op
    *   Binary scan operator
    */
-  template <typename _T, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(_T input, _T& inclusive_output, ScanOpT scan_op)
+  template <typename _Tp, typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(_Tp input, _Tp& inclusive_output, ScanOpT scan_op)
   {
     inclusive_output = input;
 
@@ -586,9 +556,9 @@ struct WarpScanShfl
    * @param[in] valid_items
    *   Number of valid items in warp
    */
-  template <typename _T, typename ScanOpT>
+  template <typename _Tp, typename ScanOpT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  InclusiveScanPartial(_T input, _T& inclusive_output, ScanOpT scan_op, int valid_items)
+  InclusiveScanPartial(_Tp input, _Tp& inclusive_output, ScanOpT scan_op, int valid_items)
   {
     if (static_cast<int>(lane_id) < valid_items)
     {

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2022 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2022, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file type_traits.h
  *  \brief Temporarily define some type traits
@@ -31,7 +18,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__type_traits/conjunction.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/type_identity.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -65,7 +59,7 @@ template <typename T>
 inline constexpr bool is_proxy_reference_v = false;
 
 template <typename Boolean>
-struct not_ : public integral_constant<bool, !Boolean::value>
+struct not_ : public ::cuda::std::integral_constant<bool, !Boolean::value>
 {}; // end not_
 
 template <bool, typename Then, typename Else>
@@ -123,7 +117,7 @@ struct larger_type
 {};
 
 template <class F, class... Us>
-using invoke_result = ::cuda::std::__invoke_of<F, Us...>;
+using invoke_result = ::cuda::std::invoke_result<F, Us...>;
 
 template <class F, class... Us>
 using invoke_result_t = typename invoke_result<F, Us...>::type;

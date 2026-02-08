@@ -23,7 +23,6 @@
 
 namespace __cccl_internal
 {
-
 #if _CCCL_CUDA_COMPILATION()
 template <class _Tp>
 __host__ __device__ _Tp&& __cccl_declval(int);
@@ -67,7 +66,6 @@ struct __is_non_narrowing_convertible<_Dest,
 {
   static constexpr bool value = true;
 };
-
 } // namespace __cccl_internal
 
 #endif // __CCCL_IS_NON_NARROWING_CONVERTIBLE_H

@@ -1,27 +1,6 @@
-/***********************************************************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2025, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
- * following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
- * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
- * OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- **********************************************************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * @file
@@ -127,7 +106,6 @@ struct ArgMin
 
 namespace detail
 {
-
 /// @brief Arg max functor (keeps the value and offset of the first occurrence
 ///        of the larger item)
 struct arg_max
@@ -405,7 +383,6 @@ struct ReduceByKeyOp
 
 namespace detail
 {
-
 //----------------------------------------------------------------------------------------------------------------------
 // Predefined operators
 
@@ -602,85 +579,6 @@ template <typename Operator>
     return op;
   }
 }
-
-//----------------------------------------------------------------------------------------------------------------------
-// Identity
-
-template <typename Op, typename T = void>
-inline constexpr T identity_v;
-
-template <typename T>
-inline constexpr T identity_v<::cuda::minimum<>, T> = ::cuda::std::numeric_limits<T>::max();
-
-template <typename T>
-inline constexpr T identity_v<::cuda::minimum<T>, T> = ::cuda::std::numeric_limits<T>::max();
-
-template <typename T>
-inline constexpr T identity_v<::cuda::minimum<T>, void> = ::cuda::std::numeric_limits<T>::max();
-
-template <typename T>
-inline constexpr T identity_v<::cuda::maximum<>, T> = ::cuda::std::numeric_limits<T>::lowest();
-
-template <typename T>
-inline constexpr T identity_v<::cuda::maximum<T>, T> = ::cuda::std::numeric_limits<T>::lowest();
-
-template <typename T>
-inline constexpr T identity_v<::cuda::maximum<T>, void> = ::cuda::std::numeric_limits<T>::lowest();
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::plus<T>, T> = T{};
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::plus<>, T> = T{};
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::plus<T>, void> = T{};
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::bit_and<>, T> = static_cast<T>(~T{});
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::bit_and<T>, T> = static_cast<T>(~T{});
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::bit_and<T>, void> = static_cast<T>(~T{});
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::bit_or<>, T> = T{};
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::bit_or<T>, T> = T{};
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::bit_or<T>, void> = T{};
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::bit_xor<>, T> = T{};
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::bit_xor<T>, T> = T{};
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::bit_xor<T>, void> = T{};
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::logical_and<>, T> = true;
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::logical_and<T>, T> = true;
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::logical_and<T>, void> = true;
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::logical_or<>, T> = false;
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::logical_or<T>, T> = false;
-
-template <typename T>
-inline constexpr T identity_v<::cuda::std::logical_or<T>, void> = false;
-
 } // namespace detail
 
 #endif // !_CCCL_DOXYGEN_INVOKED

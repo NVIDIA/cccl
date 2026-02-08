@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file partition.h
  *  \brief Sequential implementations of partition functions.
@@ -31,22 +18,20 @@
 #endif // no system header
 #include <thrust/detail/function.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/pair.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
+
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 // XXX WAR an unfortunate circular #inclusion problem
 template <typename, typename>
 class temporary_array;
-
 } // namespace detail
 
 namespace system::detail::sequential
 {
-
 template <typename ForwardIterator1, typename ForwardIterator2>
 _CCCL_HOST_DEVICE void iter_swap(ForwardIterator1 iter1, ForwardIterator2 iter2)
 {
@@ -233,7 +218,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator first,
   InputIterator last,
@@ -258,7 +243,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partitio
     } // end else
   }
 
-  return thrust::make_pair(out_true, out_false);
+  return ::cuda::std::make_pair(out_true, out_false);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -268,7 +253,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   sequential::execution_policy<DerivedPolicy>&,
   InputIterator1 first,
   InputIterator1 last,
@@ -294,8 +279,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partitio
     } // end else
   }
 
-  return thrust::make_pair(out_true, out_false);
+  return ::cuda::std::make_pair(out_true, out_false);
 }
-
 } // namespace system::detail::sequential
 THRUST_NAMESPACE_END

@@ -28,9 +28,9 @@ template <class _Tp>
 class _CCCL_TYPE_VISIBILITY_DEFAULT optional;
 
 template <class _Tp>
-inline constexpr bool __is_std_optional_v = false;
+inline constexpr bool __is_cuda_std_optional_v = false;
 template <class _Tp>
-inline constexpr bool __is_std_optional_v<optional<_Tp>> = true;
+inline constexpr bool __is_cuda_std_optional_v<optional<_Tp>> = true;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

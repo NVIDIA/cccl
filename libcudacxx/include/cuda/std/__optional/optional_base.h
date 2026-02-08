@@ -32,6 +32,7 @@
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_object.h>
@@ -41,6 +42,7 @@
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
 #include <cuda/std/__type_traits/is_trivially_move_constructible.h>
 #include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
@@ -187,7 +189,7 @@ struct __optional_destruct_base<_Tp, true>
 template <class _Tp>
 struct __optional_storage_base : __optional_destruct_base<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__optional_storage_base, __optional_destruct_base, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__optional_storage_base, __optional_destruct_base, _Tp);
 
   using value_type = _Tp;
 
@@ -211,6 +213,11 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
   [[nodiscard]] _CCCL_API constexpr const value_type&& __get() const&& noexcept
   {
     return ::cuda::std::move(this->__storage_.__val_);
+  }
+
+  _CCCL_API constexpr void __set_engaged(bool __engaged) noexcept
+  {
+    this->__engaged_ = __engaged;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -266,13 +273,13 @@ inline constexpr __smf_availability __optional_can_copy_construct =
 template <class _Tp, __smf_availability = __optional_can_copy_construct<_Tp>>
 struct __optional_copy_base : __optional_storage_base<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__optional_copy_base, __optional_storage_base, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__optional_copy_base, __optional_storage_base, _Tp);
 };
 
 template <class _Tp>
 struct __optional_copy_base<_Tp, __smf_availability::__available> : __optional_storage_base<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__optional_copy_base, __optional_storage_base, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__optional_copy_base, __optional_storage_base, _Tp);
 
   // This ctor shouldn't need to initialize the base explicitly, but g++ 9 considers it to be uninitialized
   // during constexpr evaluation if it isn't initialized explicitly. This can be replaced with the pattern
@@ -292,7 +299,7 @@ struct __optional_copy_base<_Tp, __smf_availability::__available> : __optional_s
 template <class _Tp>
 struct __optional_copy_base<_Tp, __smf_availability::__deleted> : __optional_storage_base<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__optional_copy_base, __optional_storage_base, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__optional_copy_base, __optional_storage_base, _Tp);
   _CCCL_HIDE_FROM_ABI __optional_copy_base(const __optional_copy_base&)            = delete;
   _CCCL_HIDE_FROM_ABI __optional_copy_base(__optional_copy_base&&)                 = default;
   _CCCL_HIDE_FROM_ABI __optional_copy_base& operator=(const __optional_copy_base&) = default;
@@ -309,13 +316,13 @@ inline constexpr __smf_availability __optional_can_move_construct =
 template <class _Tp, __smf_availability = __optional_can_move_construct<_Tp>>
 struct __optional_move_base : __optional_copy_base<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__optional_move_base, __optional_copy_base, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__optional_move_base, __optional_copy_base, _Tp);
 };
 
 template <class _Tp>
 struct __optional_move_base<_Tp, __smf_availability::__available> : __optional_copy_base<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__optional_move_base, __optional_copy_base, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__optional_move_base, __optional_copy_base, _Tp);
 
   _CCCL_HIDE_FROM_ABI __optional_move_base(const __optional_move_base&) = default;
 
@@ -331,7 +338,7 @@ struct __optional_move_base<_Tp, __smf_availability::__available> : __optional_c
 template <class _Tp>
 struct __optional_move_base<_Tp, __smf_availability::__deleted> : __optional_copy_base<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__optional_move_base, __optional_copy_base, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__optional_move_base, __optional_copy_base, _Tp);
 
   _CCCL_HIDE_FROM_ABI __optional_move_base(const __optional_move_base&)            = default;
   _CCCL_HIDE_FROM_ABI __optional_move_base(__optional_move_base&&)                 = delete;
@@ -350,13 +357,13 @@ inline constexpr __smf_availability __optional_can_copy_assign =
 template <class _Tp, __smf_availability = __optional_can_copy_assign<_Tp>>
 struct __optional_copy_assign_base : __optional_move_base<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__optional_copy_assign_base, __optional_move_base, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__optional_copy_assign_base, __optional_move_base, _Tp);
 };
 
 template <class _Tp>
 struct __optional_copy_assign_base<_Tp, __smf_availability::__available> : __optional_move_base<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__optional_copy_assign_base, __optional_move_base, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__optional_copy_assign_base, __optional_move_base, _Tp);
 
   _CCCL_HIDE_FROM_ABI __optional_copy_assign_base(const __optional_copy_assign_base&) = default;
   _CCCL_HIDE_FROM_ABI __optional_copy_assign_base(__optional_copy_assign_base&&)      = default;
@@ -373,7 +380,7 @@ struct __optional_copy_assign_base<_Tp, __smf_availability::__available> : __opt
 template <class _Tp>
 struct __optional_copy_assign_base<_Tp, __smf_availability::__deleted> : __optional_move_base<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__optional_copy_assign_base, __optional_move_base, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__optional_copy_assign_base, __optional_move_base, _Tp);
 
   _CCCL_HIDE_FROM_ABI __optional_copy_assign_base(const __optional_copy_assign_base&)            = default;
   _CCCL_HIDE_FROM_ABI __optional_copy_assign_base(__optional_copy_assign_base&&)                 = default;
@@ -392,13 +399,13 @@ inline constexpr __smf_availability __optional_can_move_assign =
 template <class _Tp, __smf_availability = __optional_can_move_assign<_Tp>>
 struct __optional_move_assign_base : __optional_copy_assign_base<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__optional_move_assign_base, __optional_copy_assign_base, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__optional_move_assign_base, __optional_copy_assign_base, _Tp);
 };
 
 template <class _Tp>
 struct __optional_move_assign_base<_Tp, __smf_availability::__available> : __optional_copy_assign_base<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__optional_move_assign_base, __optional_copy_assign_base, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__optional_move_assign_base, __optional_copy_assign_base, _Tp);
 
   _CCCL_HIDE_FROM_ABI __optional_move_assign_base(const __optional_move_assign_base& __opt)      = default;
   _CCCL_HIDE_FROM_ABI __optional_move_assign_base(__optional_move_assign_base&&)                 = default;
@@ -415,7 +422,7 @@ struct __optional_move_assign_base<_Tp, __smf_availability::__available> : __opt
 template <class _Tp>
 struct __optional_move_assign_base<_Tp, __smf_availability::__deleted> : __optional_copy_assign_base<_Tp>
 {
-  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__optional_move_assign_base, __optional_copy_assign_base, _Tp);
+  _CCCL_DELEGATE_CONSTRUCTORS(__optional_move_assign_base, __optional_copy_assign_base, _Tp);
 
   _CCCL_HIDE_FROM_ABI __optional_move_assign_base(const __optional_move_assign_base& __opt)      = default;
   _CCCL_HIDE_FROM_ABI __optional_move_assign_base(__optional_move_assign_base&&)                 = default;

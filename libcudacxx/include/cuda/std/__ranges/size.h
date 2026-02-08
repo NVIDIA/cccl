@@ -36,7 +36,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 template <class>
 inline constexpr bool disable_sized_range = false;
@@ -194,7 +194,7 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto ssize = __ssize::__fn{};
 } // namespace __cpo
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

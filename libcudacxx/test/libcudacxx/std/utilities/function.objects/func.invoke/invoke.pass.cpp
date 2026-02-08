@@ -120,18 +120,18 @@ template <class Signature, class Expect, class Functor>
 __host__ __device__ void test_b12(Functor&& f)
 {
   // Create the callable object.
-  typedef Signature TestClass::* ClassFunc;
+  using ClassFunc    = Signature TestClass::*;
   ClassFunc func_ptr = &TestClass::operator();
 
   // Create the dummy arg.
   NonCopyable arg;
 
   // Check that the deduced return type of invoke is what is expected.
-  typedef decltype(cuda::std::invoke(func_ptr, cuda::std::forward<Functor>(f), cuda::std::move(arg))) DeducedReturnType;
+  using DeducedReturnType = decltype(cuda::std::invoke(func_ptr, cuda::std::forward<Functor>(f), cuda::std::move(arg)));
   static_assert((cuda::std::is_same<DeducedReturnType, Expect>::value), "");
 
   // Check that result_of_t matches Expect.
-  typedef typename cuda::std::result_of<ClassFunc && (Functor&&, NonCopyable&&)>::type ResultOfReturnType;
+  using ResultOfReturnType = typename cuda::std::result_of<ClassFunc && (Functor&&, NonCopyable&&)>::type;
   static_assert((cuda::std::is_same<ResultOfReturnType, Expect>::value), "");
 
   // Run invoke and check the return value.
@@ -143,15 +143,15 @@ template <class Expect, class Functor>
 __host__ __device__ void test_b34(Functor&& f)
 {
   // Create the callable object.
-  typedef int TestClass::* ClassFunc;
+  using ClassFunc    = int TestClass::*;
   ClassFunc func_ptr = &TestClass::data;
 
   // Check that the deduced return type of invoke is what is expected.
-  typedef decltype(cuda::std::invoke(func_ptr, cuda::std::forward<Functor>(f))) DeducedReturnType;
+  using DeducedReturnType = decltype(cuda::std::invoke(func_ptr, cuda::std::forward<Functor>(f)));
   static_assert((cuda::std::is_same<DeducedReturnType, Expect>::value), "");
 
   // Check that result_of_t matches Expect.
-  typedef typename cuda::std::result_of<ClassFunc && (Functor&&)>::type ResultOfReturnType;
+  using ResultOfReturnType = typename cuda::std::result_of<ClassFunc && (Functor&&)>::type;
   static_assert((cuda::std::is_same<ResultOfReturnType, Expect>::value), "");
 
   // Run invoke and check the return value.
@@ -165,11 +165,11 @@ __host__ __device__ void test_b5(Functor&& f)
   NonCopyable arg;
 
   // Check that the deduced return type of invoke is what is expected.
-  typedef decltype(cuda::std::invoke(cuda::std::forward<Functor>(f), cuda::std::move(arg))) DeducedReturnType;
+  using DeducedReturnType = decltype(cuda::std::invoke(cuda::std::forward<Functor>(f), cuda::std::move(arg)));
   static_assert((cuda::std::is_same<DeducedReturnType, Expect>::value), "");
 
   // Check that result_of_t matches Expect.
-  typedef typename cuda::std::result_of<Functor && (NonCopyable&&)>::type ResultOfReturnType;
+  using ResultOfReturnType = typename cuda::std::result_of<Functor && (NonCopyable&&)>::type;
   static_assert((cuda::std::is_same<ResultOfReturnType, Expect>::value), "");
 
   // Run invoke and check the return value.
@@ -203,8 +203,6 @@ __host__ __device__ void bullet_one_two_tests()
     test_b12<int volatile && (NonCopyable&&) volatile&&, int volatile&&>(cuda::std::move(cl));
     test_b12<int const volatile && (NonCopyable&&) const volatile&&, int const volatile&&>(cuda::std::move(cl));
   }
-#ifndef __cuda_std__
-  // uncomment when reenabling reference_wrapper
   {
     TestClass cl_obj(42);
     cuda::std::reference_wrapper<TestClass> cl(cl_obj);
@@ -231,7 +229,6 @@ __host__ __device__ void bullet_one_two_tests()
     test_b12<int volatile&(NonCopyable&&) volatile&, int volatile&>(cuda::std::move(cl));
     test_b12<int const volatile&(NonCopyable&&) const volatile&, int const volatile&>(cuda::std::move(cl));
   }
-#endif
   {
     TestClass cl_obj(42);
     TestClass* cl = &cl_obj;
@@ -253,7 +250,7 @@ __host__ __device__ void bullet_one_two_tests()
 __host__ __device__ void bullet_three_four_tests()
 {
   {
-    typedef TestClass Fn;
+    using Fn = TestClass;
     Fn cl(42);
     test_b34<int&>(cl);
     test_b34<int const&>(static_cast<Fn const&>(cl));
@@ -266,7 +263,7 @@ __host__ __device__ void bullet_three_four_tests()
     test_b34<int const volatile&&>(static_cast<Fn const volatile&&>(cl));
   }
   {
-    typedef DerivedFromTestClass Fn;
+    using Fn = DerivedFromTestClass;
     Fn cl(42);
     test_b34<int&>(cl);
     test_b34<int const&>(static_cast<Fn const&>(cl));
@@ -278,10 +275,8 @@ __host__ __device__ void bullet_three_four_tests()
     test_b34<int volatile&&>(static_cast<Fn volatile&&>(cl));
     test_b34<int const volatile&&>(static_cast<Fn const volatile&&>(cl));
   }
-#ifndef __cuda_std__
-  // uncomment when reenabling reference_wrapper
   {
-    typedef TestClass Fn;
+    using Fn = TestClass;
     Fn cl(42);
     test_b34<int&>(cuda::std::reference_wrapper<Fn>(cl));
     test_b34<int const&>(cuda::std::reference_wrapper<Fn const>(cl));
@@ -289,16 +284,15 @@ __host__ __device__ void bullet_three_four_tests()
     test_b34<int const volatile&>(cuda::std::reference_wrapper<Fn const volatile>(cl));
   }
   {
-    typedef DerivedFromTestClass Fn;
+    using Fn = DerivedFromTestClass;
     Fn cl(42);
     test_b34<int&>(cuda::std::reference_wrapper<Fn>(cl));
     test_b34<int const&>(cuda::std::reference_wrapper<Fn const>(cl));
     test_b34<int volatile&>(cuda::std::reference_wrapper<Fn volatile>(cl));
     test_b34<int const volatile&>(cuda::std::reference_wrapper<Fn const volatile>(cl));
   }
-#endif
   {
-    typedef TestClass Fn;
+    using Fn = TestClass;
     Fn cl_obj(42);
     Fn* cl = &cl_obj;
     test_b34<int&>(cl);
@@ -307,7 +301,7 @@ __host__ __device__ void bullet_three_four_tests()
     test_b34<int const volatile&>(static_cast<Fn const volatile*>(cl));
   }
   {
-    typedef DerivedFromTestClass Fn;
+    using Fn = DerivedFromTestClass;
     Fn cl_obj(42);
     Fn* cl = &cl_obj;
     test_b34<int&>(cl);
@@ -329,7 +323,7 @@ __host__ __device__ void bullet_five_tests()
     test_b5<int&>(fn);
   }
   {
-    typedef TestClass Fn;
+    using Fn = TestClass;
     Fn cl(42);
     test_b5<int&>(cl);
     test_b5<int const&>(static_cast<Fn const&>(cl));

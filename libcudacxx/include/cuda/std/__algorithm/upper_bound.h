@@ -45,7 +45,7 @@ __upper_bound(_Iter __first, _Sent __last, const _Tp& __value, _Compare&& __comp
   {
     auto __half_len = ::cuda::std::__half_positive(__len);
     auto __mid      = _IterOps<_AlgPolicy>::next(__first, __half_len);
-    if (::cuda::std::__invoke(__comp, __value, ::cuda::std::__invoke(__proj, *__mid)))
+    if (::cuda::std::invoke(__comp, __value, ::cuda::std::invoke(__proj, *__mid)))
     {
       __len = __half_len;
     }

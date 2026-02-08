@@ -32,20 +32,22 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/initializer_list>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 #if _CCCL_HAS_CONCEPTS()
 template <range _Rp>
-  requires movable<_Rp> && (!__is_std_initializer_list<remove_cvref_t<_Rp>>)
+  requires movable<_Rp> && (!__is_cuda_std_initializer_list<remove_cvref_t<_Rp>>)
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Rp,
-          enable_if_t<range<_Rp>, int>                                      = 0,
-          enable_if_t<movable<_Rp>, int>                                    = 0,
-          enable_if_t<!__is_std_initializer_list<remove_cvref_t<_Rp>>, int> = 0>
+          enable_if_t<range<_Rp>, int>                                           = 0,
+          enable_if_t<movable<_Rp>, int>                                         = 0,
+          enable_if_t<!__is_cuda_std_initializer_list<remove_cvref_t<_Rp>>, int> = 0>
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 class owning_view : public view_interface<owning_view<_Rp>>
 {
@@ -149,12 +151,12 @@ public:
     return ::cuda::std::ranges::data(__r_);
   }
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(owning_view);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(owning_view);
 
 template <class _Rp>
 inline constexpr bool enable_borrowed_range<owning_view<_Rp>> = enable_borrowed_range<_Rp>;
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

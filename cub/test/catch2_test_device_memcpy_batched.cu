@@ -6,14 +6,13 @@
 
 #include <thrust/copy.h>
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/transform.h>
 
+#include <cuda/iterator>
+
 #include "catch2_test_device_memcpy_batched_common.cuh"
 #include "catch2_test_launch_helper.h"
-#include "thrust/iterator/transform_iterator.h"
 #include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -90,12 +89,12 @@ try
   // Prepare d_buffer_srcs
   offset_to_ptr_op<src_ptr_t> src_transform_op{thrust::raw_pointer_cast(d_in.data())};
   auto d_buffer_srcs =
-    thrust::make_transform_iterator(thrust::raw_pointer_cast(d_buffer_src_offsets.data()), src_transform_op);
+    cuda::transform_iterator(thrust::raw_pointer_cast(d_buffer_src_offsets.data()), src_transform_op);
 
   // Prepare d_buffer_dsts
   offset_to_ptr_op<dst_ptr_t> dst_transform_op{thrust::raw_pointer_cast(d_out.data())};
   auto d_buffer_dsts =
-    thrust::make_transform_iterator(thrust::raw_pointer_cast(d_buffer_dst_offsets.data()), dst_transform_op);
+    cuda::transform_iterator(thrust::raw_pointer_cast(d_buffer_dst_offsets.data()), dst_transform_op);
 
   // Invoke device-side algorithm
   memcpy_batched(d_buffer_srcs, d_buffer_dsts, d_buffer_sizes.begin(), num_buffers);
@@ -128,13 +127,13 @@ try
   c2h::device_vector<data_t> d_in(num_items);
   c2h::device_vector<data_t> d_out(num_items, 42);
 
-  auto input_data_it = thrust::make_counting_iterator(data_t{42});
+  auto input_data_it = cuda::counting_iterator(data_t{42});
   thrust::copy(input_data_it, input_data_it + num_items, d_in.begin());
 
   const auto num_buffers = 1;
-  auto d_buffer_srcs     = thrust::make_constant_iterator(static_cast<void*>(thrust::raw_pointer_cast(d_in.data())));
-  auto d_buffer_dsts     = thrust::make_constant_iterator(static_cast<void*>(thrust::raw_pointer_cast(d_out.data())));
-  auto d_buffer_sizes    = thrust::make_constant_iterator(num_bytes);
+  auto d_buffer_srcs     = cuda::constant_iterator(static_cast<void*>(thrust::raw_pointer_cast(d_in.data())));
+  auto d_buffer_dsts     = cuda::constant_iterator(static_cast<void*>(thrust::raw_pointer_cast(d_out.data())));
+  auto d_buffer_sizes    = cuda::constant_iterator(num_bytes);
   memcpy_batched(d_buffer_srcs, d_buffer_dsts, d_buffer_sizes, num_buffers);
 
   const bool all_equal = thrust::equal(d_out.cbegin(), d_out.cend(), input_data_it);
@@ -186,28 +185,28 @@ try
   // Prepare d_buffer_srcs
   offset_to_ptr_op<src_ptr_t> src_transform_op{thrust::raw_pointer_cast(d_in.data())};
   auto d_buffer_srcs =
-    thrust::make_transform_iterator(thrust::raw_pointer_cast(d_buffer_src_offsets.data()), src_transform_op);
+    cuda::transform_iterator(thrust::raw_pointer_cast(d_buffer_src_offsets.data()), src_transform_op);
 
   // Return nullptr for the first num_empty_buffers and only the actual destination pointers for the rest
   prepend_n_constants_op<decltype(d_buffer_srcs), src_ptr_t> src_skip_first_n_op{
     d_buffer_srcs, nullptr, num_empty_buffers};
   auto d_buffer_srcs_skipped =
-    thrust::make_transform_iterator(thrust::make_counting_iterator(buffer_offset_t{0}), src_skip_first_n_op);
+    cuda::transform_iterator(cuda::counting_iterator(buffer_offset_t{0}), src_skip_first_n_op);
 
   // Prepare d_buffer_dsts
   offset_to_ptr_op<dst_ptr_t> dst_transform_op{thrust::raw_pointer_cast(d_out.data())};
-  thrust::transform_iterator<offset_to_ptr_op<dst_ptr_t>, byte_offset_t*> d_buffer_dsts(
+  cuda::transform_iterator<offset_to_ptr_op<dst_ptr_t>, byte_offset_t*> d_buffer_dsts(
     thrust::raw_pointer_cast(d_buffer_dst_offsets.data()), dst_transform_op);
 
   // Return nullptr for the first num_empty_buffers and only the actual destination pointers for the rest
   prepend_n_constants_op<decltype(d_buffer_dsts), dst_ptr_t> dst_skip_first_n_op{
     d_buffer_dsts, nullptr, num_empty_buffers};
   auto d_buffer_dsts_skipped =
-    thrust::make_transform_iterator(thrust::make_counting_iterator(buffer_offset_t{0}), dst_skip_first_n_op);
+    cuda::transform_iterator(cuda::counting_iterator(buffer_offset_t{0}), dst_skip_first_n_op);
 
   // Return 0 for the first num_empty_buffers and only the actual buffer sizes for the rest
-  auto d_buffer_sizes_skipped = thrust::make_transform_iterator(
-    thrust::make_counting_iterator(buffer_offset_t{0}),
+  auto d_buffer_sizes_skipped = cuda::transform_iterator(
+    cuda::counting_iterator(buffer_offset_t{0}),
     prepend_n_constants_op<decltype(d_buffer_sizes.cbegin()), buffer_size_t>{
       d_buffer_sizes.cbegin(), buffer_size_t{0}, num_empty_buffers});
 

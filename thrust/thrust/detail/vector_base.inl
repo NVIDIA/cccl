@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -26,27 +13,33 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/advance.h>
 #include <thrust/detail/copy.h>
 #include <thrust/detail/overlapped_copy.h>
 #include <thrust/detail/temporary_array.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/vector_base.h>
-#include <thrust/distance.h>
 #include <thrust/equal.h>
 #include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/type_traits>
-
-#include <stdexcept>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__iterator/advance.h>
+#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__iterator/next.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_trivially_constructible.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/initializer_list>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename T, typename Alloc>
 vector_base<T, Alloc>::vector_base()
     : m_storage()
@@ -158,7 +151,13 @@ vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(const vector_base& v)
   {
     m_storage.destroy_on_allocator_mismatch(v.m_storage, begin(), end());
     m_storage.deallocate_on_allocator_mismatch(v.m_storage);
-
+    if constexpr (::cuda::std::allocator_traits<Alloc>::propagate_on_container_copy_assignment::value)
+    {
+      if (m_storage.get_allocator() != v.m_storage.get_allocator())
+      {
+        m_size = 0;
+      }
+    }
     m_storage.propagate_allocator(v.m_storage);
 
     assign(v.begin(), v.end());
@@ -1204,7 +1203,6 @@ bool operator!=(const std::vector<T1, Alloc1>& lhs, const vector_base<T2, Alloc2
 {
   return !(lhs == rhs);
 }
-
 } // end namespace detail
 
 THRUST_NAMESPACE_END

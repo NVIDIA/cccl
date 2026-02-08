@@ -23,6 +23,7 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__device/compute_capability.h>
 #  include <cuda/__device/device_ref.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
@@ -277,6 +278,19 @@ struct __dev_attr<::cudaDevAttrNumaConfig> //
   static constexpr type numa_node = ::cudaDeviceNumaConfigNumaNode;
 };
 #  endif // _CCCL_CTK_AT_LEAST(12, 2)
+
+#  if _CCCL_CTK_AT_LEAST(12, 6)
+template <>
+struct __dev_attr<::cudaDevAttrHostNumaMemoryPoolsSupported>
+    : __dev_attr_impl<::cudaDevAttrHostNumaMemoryPoolsSupported, bool>
+{};
+#  endif // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^
+
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+template <>
+struct __dev_attr<::cudaDevAttrHostMemoryPoolsSupported> : __dev_attr_impl<::cudaDevAttrHostMemoryPoolsSupported, bool>
+{};
+#  endif // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^
 
 namespace device_attributes
 {
@@ -735,16 +749,26 @@ using numa_id_t = __dev_attr<::cudaDevAttrNumaId>;
 static constexpr numa_id_t numa_id{};
 #  endif // _CCCL_CTK_AT_LEAST(12, 2)
 
+#  if _CCCL_CTK_AT_LEAST(12, 6)
+using host_numa_memory_pools_supported_t = __dev_attr<::cudaDevAttrHostNumaMemoryPoolsSupported>;
+static constexpr host_numa_memory_pools_supported_t host_numa_memory_pools_supported{};
+#  endif // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^
+
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+using host_memory_pools_supported_t = __dev_attr<::cudaDevAttrHostMemoryPoolsSupported>;
+static constexpr host_memory_pools_supported_t host_memory_pools_supported{};
+#  endif // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^
+
 // Combines major and minor compute capability in a 100 * major + 10 * minor format, allows to query full compute
 // capability in a single query
 struct compute_capability_t
 {
-  using type = int;
+  using type = ::cuda::compute_capability;
 
   [[nodiscard]] _CCCL_HOST_API type operator()(device_ref __dev_id) const
   {
-    return 10 * ::cuda::device_attributes::compute_capability_major(__dev_id)
-         + ::cuda::device_attributes::compute_capability_minor(__dev_id);
+    return type{::cuda::device_attributes::compute_capability_major(__dev_id),
+                ::cuda::device_attributes::compute_capability_minor(__dev_id)};
   }
 };
 static constexpr compute_capability_t compute_capability{};

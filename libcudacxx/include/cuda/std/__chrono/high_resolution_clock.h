@@ -30,13 +30,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace chrono
 {
-
 #if _LIBCUDACXX_HAS_MONOTONIC_CLOCK()
 using high_resolution_clock = steady_clock;
 #else // ^^^ _LIBCUDACXX_HAS_MONOTONIC_CLOCK() ^^^ / vvv !_LIBCUDACXX_HAS_MONOTONIC_CLOCK() vvv
 using high_resolution_clock = system_clock;
 #endif // !_LIBCUDACXX_HAS_MONOTONIC_CLOCK()
-
 } // namespace chrono
 
 _CCCL_END_NAMESPACE_CUDA_STD

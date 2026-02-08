@@ -80,11 +80,14 @@ template <class _Tp>
   // Doesn't need to be too exact, enough to cover extremal cases.
   // overflow bound = sqrt(MAX_FLOAT / 2)
   // underflow bound similar, but tweaked to allow for normalizing denormal calculation.
+  // The static_casts have extra parentheses around them to avoid MSVC's:
+  //   warning C4554: '<<': check operator precedence for possible error; use parentheses to clarify precedence
   constexpr __uint_t __overflow_bound_exp =
-    (static_cast<__uint_t>((static_cast<__uint_t>(__max_exponent - 1) >> 1) + __exp_bias) << __mant_nbits)
+    ((static_cast<__uint_t>(((static_cast<__uint_t>(__max_exponent - 1)) >> 1) + __exp_bias)) << __mant_nbits)
     | __fp_explicit_bit_mask_of_v<_Tp>;
   constexpr __uint_t __underflow_bound_exp =
-    (static_cast<__uint_t>((static_cast<__uint_t>(-__max_exponent + __mant_nbits) >> 1) + __exp_bias) << __mant_nbits)
+    ((static_cast<__uint_t>(((static_cast<__uint_t>(-__max_exponent + __mant_nbits)) >> 1) + __exp_bias))
+     << __mant_nbits)
     | __fp_explicit_bit_mask_of_v<_Tp>;
 
   _Tp __overflow_bound  = ::cuda::std::__fp_from_storage<_Tp>(__overflow_bound_exp);

@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_LIBCUDACXX_HAS_THREAD_API_CUDA)
+#if defined(_CCCL_HAS_THREAD_API_CUDA)
 
 #  include <cuda/std/__chrono/duration.h>
 #  include <cuda/std/climits>
@@ -31,17 +31,17 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_API inline void __cccl_thread_yield() {}
 
-_CCCL_API inline void __cccl_thread_sleep_for(::cuda::std::chrono::nanoseconds __ns)
-{
-  NV_IF_TARGET(NV_IS_DEVICE,
-               (auto const __step = __ns.count(); assert(__step < numeric_limits<unsigned>::max());
-                asm volatile("nanosleep.u32 %0;" ::"r"((unsigned) __step) :);))
-}
+_CCCL_API inline void __cccl_thread_sleep_for(::cuda::std::chrono::nanoseconds __ns){
+  NV_IF_TARGET(NV_PROVIDES_SM_70, ({
+                 auto const __step = __ns.count();
+                 _CCCL_ASSERT(__step < numeric_limits<unsigned>::max(), "invalid nanoseconds count");
+                 ::__nanosleep((unsigned) __step);
+               }))}
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX_HAS_THREAD_API_CUDA
+#endif // _CCCL_HAS_THREAD_API_CUDA
 
 #endif // _CUDA_STD___THREAD_THREADING_SUPPORT_CUDA_H

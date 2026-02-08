@@ -24,7 +24,7 @@
 
 struct S
 {
-  typedef short (*FreeFunc)(long);
+  using FreeFunc = short (*)(long);
   __host__ __device__ operator FreeFunc() const;
   __host__ __device__ double operator()(char, int&);
   __host__ __device__ double const& operator()(char, int&) const;
@@ -41,7 +41,7 @@ struct NotDerived
 template <class Tp>
 struct Voider
 {
-  typedef void type;
+  using type = void;
 };
 
 template <class T, class = void>
@@ -104,7 +104,7 @@ __host__ __device__ void test_lambda(Fn&&)
 
 int main(int, char**)
 {
-  typedef NotDerived ND;
+  using ND = NotDerived;
   { // functor object
     test_result_of<S(int), short>();
     test_result_of<S&(unsigned char, int&), double>();
@@ -113,21 +113,21 @@ int main(int, char**)
     test_result_of<S const volatile&(unsigned char, int&), double const volatile&>();
   }
   { // pointer to function
-    typedef bool (&RF0)();
-    typedef bool* (&RF1)(int);
-    typedef bool& (&RF2)(int, int);
-    typedef bool const& (&RF3)(int, int, int);
-    typedef bool (&RF4)(int, ...);
-    typedef bool (*PF0)();
-    typedef bool* (*PF1)(int);
-    typedef bool& (*PF2)(int, int);
-    typedef bool const& (*PF3)(int, int, int);
-    typedef bool (*PF4)(int, ...);
-    typedef bool (*&PRF0)();
-    typedef bool* (*&PRF1)(int);
-    typedef bool& (*&PRF2)(int, int);
-    typedef bool const& (*&PRF3)(int, int, int);
-    typedef bool (*&PRF4)(int, ...);
+    using RF0  = bool (&)();
+    using RF1  = bool* (&) (int);
+    using RF2  = bool& (&) (int, int);
+    using RF3  = bool const& (&) (int, int, int);
+    using RF4  = bool (&)(int, ...);
+    using PF0  = bool (*)();
+    using PF1  = bool* (*) (int);
+    using PF2  = bool& (*) (int, int);
+    using PF3  = bool const& (*) (int, int, int);
+    using PF4  = bool (*)(int, ...);
+    using PRF0 = bool (*&)();
+    using PRF1 = bool* (*&) (int);
+    using PRF2 = bool& (*&) (int, int);
+    using PRF3 = bool const& (*&) (int, int, int);
+    using PRF4 = bool (*&)(int, ...);
     test_result_of<RF0(), bool>();
     test_result_of<RF1(int), bool*>();
     test_result_of<RF2(int, long), bool&>();
@@ -146,10 +146,10 @@ int main(int, char**)
   }
   { // pointer to member function
 
-    typedef int (S::*PMS0)();
-    typedef int* (S::*PMS1)(long);
-    typedef int& (S::*PMS2)(long, int);
-    typedef const int& (S::*PMS3)(int, ...);
+    using PMS0 = int (S::*)();
+    using PMS1 = int* (S::*) (long);
+    using PMS2 = int& (S::*) (long, int);
+    using PMS3 = const int& (S::*) (int, ...);
     test_result_of<PMS0(S), int>();
     test_result_of<PMS0(S&), int>();
     test_result_of<PMS0(S*), int>();
@@ -232,10 +232,10 @@ int main(int, char**)
     test_result_of<PMS3(S&, int), const int&>();
     test_result_of<PMS3(S&, int, long), const int&>();
 
-    typedef int (S::*PMS0C)() const;
-    typedef int* (S::*PMS1C)(long) const;
-    typedef int& (S::*PMS2C)(long, int) const;
-    typedef const int& (S::*PMS3C)(int, ...) const;
+    using PMS0C = int (S::*)() const;
+    using PMS1C = int* (S::*) (long) const;
+    using PMS2C = int& (S::*) (long, int) const;
+    using PMS3C = const int& (S::*) (int, ...) const;
     test_result_of<PMS0C(S), int>();
     test_result_of<PMS0C(S&), int>();
     test_result_of<PMS0C(const S&), int>();
@@ -288,10 +288,10 @@ int main(int, char**)
     test_result_of<PMS3C(S&, int), const int&>();
     test_result_of<PMS3C(S&, int, long), const int&>();
 
-    typedef int (S::*PMS0V)() volatile;
-    typedef int* (S::*PMS1V)(long) volatile;
-    typedef int& (S::*PMS2V)(long, int) volatile;
-    typedef const int& (S::*PMS3V)(int, ...) volatile;
+    using PMS0V = int (S::*)() volatile;
+    using PMS1V = int* (S::*) (long) volatile;
+    using PMS2V = int& (S::*) (long, int) volatile;
+    using PMS3V = const int& (S::*) (int, ...) volatile;
     test_result_of<PMS0V(S), int>();
     test_result_of<PMS0V(S&), int>();
     test_result_of<PMS0V(volatile S&), int>();
@@ -334,10 +334,10 @@ int main(int, char**)
     test_result_of<PMS3V(S&, int), const int&>();
     test_result_of<PMS3V(S&, int, long), const int&>();
 
-    typedef int (S::*PMS0CV)() const volatile;
-    typedef int* (S::*PMS1CV)(long) const volatile;
-    typedef int& (S::*PMS2CV)(long, int) const volatile;
-    typedef const int& (S::*PMS3CV)(int, ...) const volatile;
+    using PMS0CV = int (S::*)() const volatile;
+    using PMS1CV = int* (S::*) (long) const volatile;
+    using PMS2CV = int& (S::*) (long, int) const volatile;
+    using PMS3CV = const int& (S::*) (int, ...) const volatile;
     test_result_of<PMS0CV(S), int>();
     test_result_of<PMS0CV(S&), int>();
     test_result_of<PMS0CV(const S&), int>();
@@ -393,7 +393,7 @@ int main(int, char**)
     test_result_of<PMS3CV(S&, int, long), const int&>();
   }
   { // pointer to member data
-    typedef char S::* PMD;
+    using PMD = char S::*;
     test_result_of<PMD(S&), char&>();
     test_result_of<PMD(S*), char&>();
     test_result_of<PMD(S* const), char&>();
@@ -417,6 +417,7 @@ int main(int, char**)
   }
 #if TEST_CUDA_COMPILER(NVCC)
   { // extended lambda
+#  if _CCCL_CUDACC_AT_LEAST(12, 3)
     NV_IF_TARGET(
       NV_IS_DEVICE,
       (test_lambda<int>([] __host__ __device__() -> int {
@@ -428,6 +429,7 @@ int main(int, char**)
        test_lambda<SD>([] __host__ __device__() -> SD {
          return {};
        });))
+#  endif // _CCCL_CUDACC_AT_LEAST(12, 3)
     test_lambda<double>(cuda::proclaim_return_type<double>([] __device__() -> double {
       return 42.0;
     }));

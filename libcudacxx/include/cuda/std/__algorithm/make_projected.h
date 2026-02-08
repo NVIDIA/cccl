@@ -47,26 +47,18 @@ struct _ProjectedPred
   {}
 
   template <class _Tp>
-  typename __invoke_of<
-    _Pred&,
-    decltype(::cuda::std::__invoke(::cuda::std::declval<_Proj&>(), ::cuda::std::declval<_Tp>()))>::type constexpr
-    _CCCL_API inline
-    operator()(_Tp&& __v) const
+  invoke_result_t<_Pred&, invoke_result_t<_Proj&, _Tp>> constexpr _CCCL_API inline operator()(_Tp&& __v) const
   {
-    return ::cuda::std::__invoke(__pred, ::cuda::std::__invoke(__proj, ::cuda::std::forward<_Tp>(__v)));
+    return ::cuda::std::invoke(__pred, ::cuda::std::invoke(__proj, ::cuda::std::forward<_Tp>(__v)));
   }
 
   template <class _T1, class _T2>
-  typename __invoke_of<
-    _Pred&,
-    decltype(::cuda::std::__invoke(::cuda::std::declval<_Proj&>(), ::cuda::std::declval<_T1>())),
-    decltype(::cuda::std::__invoke(::cuda::std::declval<_Proj&>(), ::cuda::std::declval<_T2>()))>::type constexpr
-    _CCCL_API inline
-    operator()(_T1&& __lhs, _T2&& __rhs) const
+  invoke_result_t<_Pred&, invoke_result_t<_Proj&, _T1>, invoke_result_t<_Proj&, _T2>> _CCCL_API inline
+  operator()(_T1&& __lhs, _T2&& __rhs) const
   {
-    return ::cuda::std::__invoke(__pred,
-                                 ::cuda::std::__invoke(__proj, ::cuda::std::forward<_T1>(__lhs)),
-                                 ::cuda::std::__invoke(__proj, ::cuda::std::forward<_T2>(__rhs)));
+    return ::cuda::std::invoke(__pred,
+                               ::cuda::std::invoke(__proj, ::cuda::std::forward<_T1>(__lhs)),
+                               ::cuda::std::invoke(__proj, ::cuda::std::forward<_T2>(__rhs)));
   }
 };
 

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file
  *  \brief A reference to an object which resides in memory associated with the
@@ -187,6 +174,10 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see device_ptr
  *  \see device_vector
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 class device_reference : public thrust::reference<T, thrust::device_ptr<T>, thrust::device_reference<T>>
@@ -234,6 +225,10 @@ public:
    *
    *  \note This constructor is templated primarily to allow initialization of
    *  <tt>device_reference<const T></tt> from <tt>device_reference<T></tt>.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename OtherT>
   _CCCL_HOST_DEVICE
@@ -270,6 +265,10 @@ public:
    *  *ptr = 13;
    *  assert(ref == 13);
    *  \endcode
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE explicit device_reference(const pointer& ptr)
       : super_t(ptr)
@@ -286,6 +285,10 @@ public:
    *
    *  \param other The \p device_reference to assign from.
    *  \return <tt>*this</tt>
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   template <typename OtherT>
   _CCCL_HOST_DEVICE const device_reference& operator=(const device_reference<OtherT>& other) const
@@ -298,6 +301,10 @@ public:
    *
    *  \param x The value to assign from.
    *  \return <tt>*this</tt>
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE const device_reference& operator=(const value_type& x) const
   {
@@ -313,6 +320,10 @@ public:
    *
    *  \return A \p device_ptr pointing to the object this
    *  \p device_reference references.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE pointer operator&(void) const;
 
@@ -321,11 +332,19 @@ public:
    *  \p device_reference.
    *
    *  \return A copy of the object referenced by this \p device_reference.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE operator value_type(void) const;
 
   /*! swaps the value this \p device_reference references with another.
    *  \p other The other \p device_reference with which to swap.
+   *
+   *  \verbatim embed:rst:leading-asterisk
+   *     .. versionadded:: 2.2.0
+   *  \endverbatim
    */
   _CCCL_HOST_DEVICE void swap(device_reference other);
 
@@ -956,6 +975,10 @@ public:
 /*! swaps the value of one \p device_reference with another.
  *  \p x The first \p device_reference of interest.
  *  \p y The second \p device_reference of interest.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 // note: this is not a hidden friend, because nvcc 12.0 will miscompile with: error: incomplete type is not allowed
 template <typename T>
@@ -972,6 +995,10 @@ _CCCL_HOST_DEVICE void swap(device_reference<T> x, device_reference<T> y) noexce
  *  \param os The output stream.
  *  \param y The \p device_reference to output.
  *  \return os.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T, typename charT, typename traits>
 std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& os, const device_reference<T>& y);

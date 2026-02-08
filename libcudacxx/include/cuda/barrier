@@ -29,7 +29,6 @@
 #include <cuda/__barrier/barrier_arrive_tx.h>
 #include <cuda/__barrier/barrier_block_scope.h>
 #include <cuda/__barrier/barrier_expect_tx.h>
-#include <cuda/__barrier/barrier_native_handle.h>
 #include <cuda/__barrier/barrier_thread_scope.h>
 #include <cuda/__memcpy_async/memcpy_async.h>
 #include <cuda/__memcpy_async/memcpy_async_tx.h>
@@ -69,8 +68,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL
 // device compilation begins.
 #ifdef __cccl_lib_experimental_ctk12_cp_async_exposure
 
+//! Deprecated [Since 3.2]
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
-inline _CCCL_DEVICE void cp_async_bulk_global_to_shared(
+CCCL_DEPRECATED_BECAUSE("Use cuda::ptx::cp_async_bulk instead") inline _CCCL_DEVICE void cp_async_bulk_global_to_shared(
   void* __dest, const void* __src, ::cuda::std::uint32_t __size, ::cuda::barrier<::cuda::thread_scope_block>& __bar)
 {
   _CCCL_ASSERT(__size % 16 == 0, "Size must be multiple of 16.");
@@ -88,8 +88,10 @@ inline _CCCL_DEVICE void cp_async_bulk_global_to_shared(
     ::cuda::device::barrier_native_handle(__bar));
 }
 
+//! Deprecated [Since 3.2]
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
-inline _CCCL_DEVICE void cp_async_bulk_shared_to_global(void* __dest, const void* __src, ::cuda::std::uint32_t __size)
+CCCL_DEPRECATED_BECAUSE("Use cuda::ptx::cp_async_bulk instead") inline _CCCL_DEVICE void
+cp_async_bulk_shared_to_global(void* __dest, const void* __src, ::cuda::std::uint32_t __size)
 {
   _CCCL_ASSERT(__size % 16 == 0, "Size must be multiple of 16.");
   _CCCL_ASSERT(::cuda::device::is_address_from(__dest, ::cuda::device::address_space::global),
@@ -100,8 +102,10 @@ inline _CCCL_DEVICE void cp_async_bulk_shared_to_global(void* __dest, const void
   ::cuda::ptx::cp_async_bulk(::cuda::ptx::space_global, ::cuda::ptx::space_shared, __dest, __src, __size);
 }
 
+//! Deprecated [Since 3.2]
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
-inline _CCCL_DEVICE void cp_async_bulk_tensor_1d_global_to_shared(
+CCCL_DEPRECATED_BECAUSE("Use cuda::ptx::cp_async_bulk_tensor instead") inline _CCCL_DEVICE void
+cp_async_bulk_tensor_1d_global_to_shared(
   void* __dest, const CUtensorMap* __tensor_map, int __c0, ::cuda::barrier<::cuda::thread_scope_block>& __bar)
 {
   const ::cuda::std::int32_t __coords[]{__c0};
@@ -115,8 +119,10 @@ inline _CCCL_DEVICE void cp_async_bulk_tensor_1d_global_to_shared(
     ::cuda::device::barrier_native_handle(__bar));
 }
 
+//! Deprecated [Since 3.2]
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
-inline _CCCL_DEVICE void cp_async_bulk_tensor_2d_global_to_shared(
+CCCL_DEPRECATED_BECAUSE("Use cuda::ptx::cp_async_bulk_tensor instead") inline _CCCL_DEVICE void
+cp_async_bulk_tensor_2d_global_to_shared(
   void* __dest, const CUtensorMap* __tensor_map, int __c0, int __c1, ::cuda::barrier<::cuda::thread_scope_block>& __bar)
 {
   const ::cuda::std::int32_t __coords[]{__c0, __c1};
@@ -130,8 +136,10 @@ inline _CCCL_DEVICE void cp_async_bulk_tensor_2d_global_to_shared(
     ::cuda::device::barrier_native_handle(__bar));
 }
 
+//! Deprecated [Since 3.2]
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
-inline _CCCL_DEVICE void cp_async_bulk_tensor_3d_global_to_shared(
+CCCL_DEPRECATED_BECAUSE("Use cuda::ptx::cp_async_bulk_tensor instead") inline _CCCL_DEVICE void
+cp_async_bulk_tensor_3d_global_to_shared(
   void* __dest,
   const CUtensorMap* __tensor_map,
   int __c0,
@@ -150,8 +158,10 @@ inline _CCCL_DEVICE void cp_async_bulk_tensor_3d_global_to_shared(
     ::cuda::device::barrier_native_handle(__bar));
 }
 
+//! Deprecated [Since 3.2]
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
-inline _CCCL_DEVICE void cp_async_bulk_tensor_4d_global_to_shared(
+CCCL_DEPRECATED_BECAUSE("Use cuda::ptx::cp_async_bulk_tensor instead") inline _CCCL_DEVICE void
+cp_async_bulk_tensor_4d_global_to_shared(
   void* __dest,
   const CUtensorMap* __tensor_map,
   int __c0,
@@ -171,8 +181,10 @@ inline _CCCL_DEVICE void cp_async_bulk_tensor_4d_global_to_shared(
     ::cuda::device::barrier_native_handle(__bar));
 }
 
+//! Deprecated [Since 3.2]
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
-inline _CCCL_DEVICE void cp_async_bulk_tensor_5d_global_to_shared(
+CCCL_DEPRECATED_BECAUSE("Use cuda::ptx::cp_async_bulk_tensor instead") inline _CCCL_DEVICE void
+cp_async_bulk_tensor_5d_global_to_shared(
   void* __dest,
   const CUtensorMap* __tensor_map,
   int __c0,
@@ -193,8 +205,9 @@ inline _CCCL_DEVICE void cp_async_bulk_tensor_5d_global_to_shared(
     ::cuda::device::barrier_native_handle(__bar));
 }
 
+//! Deprecated [Since 3.2]
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
-inline _CCCL_DEVICE void
+CCCL_DEPRECATED_BECAUSE("Use cuda::ptx::cp_async_bulk_tensor instead") inline _CCCL_DEVICE void
 cp_async_bulk_tensor_1d_shared_to_global(const CUtensorMap* __tensor_map, int __c0, const void* __src)
 {
   const ::cuda::std::int32_t __coords[]{__c0};
@@ -202,8 +215,9 @@ cp_async_bulk_tensor_1d_shared_to_global(const CUtensorMap* __tensor_map, int __
   ::cuda::ptx::cp_async_bulk_tensor(::cuda::ptx::space_global, ::cuda::ptx::space_shared, __tensor_map, __coords, __src);
 }
 
+//! Deprecated [Since 3.2]
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
-inline _CCCL_DEVICE void
+CCCL_DEPRECATED_BECAUSE("Use cuda::ptx::cp_async_bulk_tensor instead") inline _CCCL_DEVICE void
 cp_async_bulk_tensor_2d_shared_to_global(const CUtensorMap* __tensor_map, int __c0, int __c1, const void* __src)
 {
   const ::cuda::std::int32_t __coords[]{__c0, __c1};
@@ -211,8 +225,10 @@ cp_async_bulk_tensor_2d_shared_to_global(const CUtensorMap* __tensor_map, int __
   ::cuda::ptx::cp_async_bulk_tensor(::cuda::ptx::space_global, ::cuda::ptx::space_shared, __tensor_map, __coords, __src);
 }
 
+//! Deprecated [Since 3.2]
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
-inline _CCCL_DEVICE void cp_async_bulk_tensor_3d_shared_to_global(
+CCCL_DEPRECATED_BECAUSE("Use cuda::ptx::cp_async_bulk_tensor instead") inline _CCCL_DEVICE void
+cp_async_bulk_tensor_3d_shared_to_global(
   const CUtensorMap* __tensor_map, int __c0, int __c1, int __c2, const void* __src)
 {
   const ::cuda::std::int32_t __coords[]{__c0, __c1, __c2};
@@ -220,8 +236,10 @@ inline _CCCL_DEVICE void cp_async_bulk_tensor_3d_shared_to_global(
   ::cuda::ptx::cp_async_bulk_tensor(::cuda::ptx::space_global, ::cuda::ptx::space_shared, __tensor_map, __coords, __src);
 }
 
+//! Deprecated [Since 3.2]
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
-inline _CCCL_DEVICE void cp_async_bulk_tensor_4d_shared_to_global(
+CCCL_DEPRECATED_BECAUSE("Use cuda::ptx::cp_async_bulk_tensor instead") inline _CCCL_DEVICE void
+cp_async_bulk_tensor_4d_shared_to_global(
   const CUtensorMap* __tensor_map, int __c0, int __c1, int __c2, int __c3, const void* __src)
 {
   const ::cuda::std::int32_t __coords[]{__c0, __c1, __c2, __c3};
@@ -229,8 +247,10 @@ inline _CCCL_DEVICE void cp_async_bulk_tensor_4d_shared_to_global(
   ::cuda::ptx::cp_async_bulk_tensor(::cuda::ptx::space_global, ::cuda::ptx::space_shared, __tensor_map, __coords, __src);
 }
 
+//! Deprecated [Since 3.2]
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
-inline _CCCL_DEVICE void cp_async_bulk_tensor_5d_shared_to_global(
+CCCL_DEPRECATED_BECAUSE("Use cuda::ptx::cp_async_bulk_tensor instead") inline _CCCL_DEVICE void
+cp_async_bulk_tensor_5d_shared_to_global(
   const CUtensorMap* __tensor_map, int __c0, int __c1, int __c2, int __c3, int __c4, const void* __src)
 {
   const ::cuda::std::int32_t __coords[]{__c0, __c1, __c2, __c3, __c4};
@@ -238,21 +258,27 @@ inline _CCCL_DEVICE void cp_async_bulk_tensor_5d_shared_to_global(
   ::cuda::ptx::cp_async_bulk_tensor(::cuda::ptx::space_global, ::cuda::ptx::space_shared, __tensor_map, __coords, __src);
 }
 
+//! Deprecated [Since 3.2]
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-membar
-inline _CCCL_DEVICE void fence_proxy_async_shared_cta()
+CCCL_DEPRECATED_BECAUSE("Use cuda::ptx::fence_proxy_async instead") inline _CCCL_DEVICE void
+fence_proxy_async_shared_cta()
 {
   ::cuda::ptx::fence_proxy_async(::cuda::ptx::space_shared);
 }
 
+//! Deprecated [Since 3.2]
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-commit-group
-inline _CCCL_DEVICE void cp_async_bulk_commit_group()
+CCCL_DEPRECATED_BECAUSE("Use cuda::ptx::cp_async_bulk_commit_group instead") inline _CCCL_DEVICE void
+cp_async_bulk_commit_group()
 {
   ::cuda::ptx::cp_async_bulk_commit_group();
 }
 
+//! Deprecated [Since 3.2]
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-wait-group
 template <int __n_prior>
-inline _CCCL_DEVICE void cp_async_bulk_wait_group_read()
+CCCL_DEPRECATED_BECAUSE("Use cuda::ptx::cp_async_bulk_wait_group_read instead") inline _CCCL_DEVICE void
+cp_async_bulk_wait_group_read()
 {
   static_assert(__n_prior <= 63, "cp_async_bulk_wait_group_read: waiting for more than 63 groups is not supported.");
   ::cuda::ptx::cp_async_bulk_wait_group_read(::cuda::ptx::n32_t<__n_prior>{});

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -35,7 +22,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename InputIterator, typename OutputIterator>
 OutputIterator sequential_copy(InputIterator first, InputIterator last, OutputIterator result)
 {
@@ -63,7 +49,6 @@ sequential_copy_backward(BidirectionalIterator1 first, BidirectionalIterator1 la
 
 namespace dispatch
 {
-
 template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
 RandomAccessIterator2 overlapped_copy(
   cpp::execution_policy<DerivedPolicy>&,
@@ -101,7 +86,6 @@ RandomAccessIterator2 overlapped_copy(
   thrust::detail::temporary_array<value_type, DerivedPolicy> temp(exec, first, last);
   return thrust::copy(exec, temp.begin(), temp.end(), result);
 } // end overlapped_copy()
-
 } // namespace dispatch
 
 template <typename RandomAccessIterator1, typename RandomAccessIterator2>
@@ -118,7 +102,6 @@ overlapped_copy(RandomAccessIterator1 first, RandomAccessIterator1 last, RandomA
 
   return thrust::detail::dispatch::overlapped_copy(system, first, last, result);
 } // end overlapped_copy()
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

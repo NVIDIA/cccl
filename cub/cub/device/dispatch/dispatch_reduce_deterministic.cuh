@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * @file This file device-wide, parallel operations for
@@ -70,14 +46,10 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::rfa
 {
-
-namespace rfa
-{
-
 template <typename Invocable, typename InputT>
-using transformed_input_t = ::cuda::std::decay_t<typename ::cuda::std::__invoke_of<Invocable, InputT>::type>;
+using transformed_input_t = ::cuda::std::decay_t<::cuda::std::invoke_result_t<Invocable, InputT>>;
 
 template <typename InitT, typename InputIteratorT, typename TransformOpT>
 using accum_t =
@@ -87,7 +59,7 @@ template <typename FloatType                                                    
           typename ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<FloatType>>* = nullptr>
 struct deterministic_sum_t
 {
-  using DeterministicAcc = detail::rfa::ReproducibleFloatingAccumulator<FloatType>;
+  using DeterministicAcc = ReproducibleFloatingAccumulator<FloatType>;
 
   _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc acc, FloatType f)
   {
@@ -113,8 +85,6 @@ struct deterministic_sum_t
   }
 };
 
-} // namespace rfa
-
 /******************************************************************************
  * Single-problem dispatch
  *****************************************************************************/
@@ -138,12 +108,13 @@ template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
           typename InitT,
-          typename TransformOpT = ::cuda::std::identity,
-          typename AccumT       = rfa::accum_t<InitT, InputIteratorT, TransformOpT>,
-          typename PolicyHub    = detail::rfa::policy_hub<AccumT, OffsetT, ::cuda::std::plus<>>>
-struct DispatchReduceDeterministic
+          typename TransformOpT          = ::cuda::std::identity,
+          typename AccumT                = accum_t<InitT, InputIteratorT, TransformOpT>,
+          typename PolicyHub             = policy_hub<AccumT, OffsetT, ::cuda::std::plus<>>,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+struct dispatch_t
 {
-  using deterministic_add_t = rfa::deterministic_sum_t<AccumT>;
+  using deterministic_add_t = deterministic_sum_t<AccumT>;
   using reduction_op_t      = deterministic_add_t;
 
   using deterministic_accum_t = typename deterministic_add_t::DeterministicAcc;
@@ -183,6 +154,8 @@ struct DispatchReduceDeterministic
 
   TransformOpT transform_op = {};
 
+  KernelLauncherFactory launcher_factory;
+
   //---------------------------------------------------------------------------
   // Small-problem (single tile) invocation
   //---------------------------------------------------------------------------
@@ -220,21 +193,14 @@ struct DispatchReduceDeterministic
             ActivePolicyT::SingleTilePolicy::ITEMS_PER_THREAD);
 #endif
     // Invoke single_reduce_sweep_kernel
-    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
-      .doit(single_tile_kernel, d_in, d_out, static_cast<int>(num_items), reduction_op, init, transform_op);
-    // Check for failure to launch
-    auto error = CubDebug(cudaPeekAtLastError());
-    if (cudaSuccess != error)
+    if (const auto error = CubDebug(
+          launcher_factory(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
+            .doit(single_tile_kernel, d_in, d_out, static_cast<int>(num_items), reduction_op, init, transform_op)))
     {
       return error;
     }
     // Sync the stream if specified to flush runtime errors
-    error = CubDebug(detail::DebugSyncStream(stream));
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
-    return cudaSuccess;
+    return CubDebug(detail::DebugSyncStream(stream));
   }
 
   //---------------------------------------------------------------------------
@@ -266,22 +232,19 @@ struct DispatchReduceDeterministic
     const auto tile_size = ActivePolicyT::ReducePolicy::BLOCK_THREADS * ActivePolicyT::ReducePolicy::ITEMS_PER_THREAD;
     // Get device ordinal
     int device_ordinal;
-    auto error = CubDebug(cudaGetDevice(&device_ordinal));
-    if (cudaSuccess != error)
+    if (const auto error = CubDebug(cudaGetDevice(&device_ordinal)))
     {
       return error;
     }
 
     int sm_count;
-    error = CubDebug(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal));
-    if (cudaSuccess != error)
+    if (const auto error = CubDebug(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal)))
     {
       return error;
     }
 
     KernelConfig reduce_config;
-    error = CubDebug(reduce_config.Init<typename ActivePolicyT::ReducePolicy>(reduce_kernel));
-    if (cudaSuccess != error)
+    if (const auto error = CubDebug(reduce_config.Init<typename ActivePolicyT::ReducePolicy>(reduce_kernel)))
     {
       return error;
     }
@@ -312,8 +275,8 @@ struct DispatchReduceDeterministic
 
     // Alias the temporary allocations from the single storage blob (or
     // compute the necessary size of the blob)
-    error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
-    if (cudaSuccess != error)
+    if (const auto error =
+          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
     {
       return error;
     }
@@ -348,19 +311,15 @@ struct DispatchReduceDeterministic
               reduce_config.sm_occupancy);
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-        current_grid_size, ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
-        .doit(reduce_kernel,
-              d_in,
-              d_chunk_block_reductions,
-              num_current_items,
-              reduction_op,
-              transform_op,
-              current_grid_size);
-
-      // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(
+            launcher_factory(current_grid_size, ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
+              .doit(reduce_kernel,
+                    d_in,
+                    d_chunk_block_reductions,
+                    num_current_items,
+                    reduction_op,
+                    transform_op,
+                    current_grid_size)))
       {
         return error;
       }
@@ -372,8 +331,7 @@ struct DispatchReduceDeterministic
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -388,30 +346,21 @@ struct DispatchReduceDeterministic
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
     // Invoke DeterministicDeviceReduceSingleTileKernel
-    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
-      .doit(single_tile_kernel,
-            d_block_reductions,
-            d_out,
-            reduce_grid_size, // triple_chevron is not type safe, make sure to use int
-            reduction_op,
-            init,
-            ::cuda::std::identity{});
-
-    // Check for failure to launch
-    error = CubDebug(cudaPeekAtLastError());
-    if (cudaSuccess != error)
+    if (const auto error = CubDebug(
+          launcher_factory(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
+            .doit(single_tile_kernel,
+                  d_block_reductions,
+                  d_out,
+                  reduce_grid_size, // triple_chevron is not type safe, make sure to use int
+                  reduction_op,
+                  init,
+                  ::cuda::std::identity{})))
     {
       return error;
     }
 
     // Sync the stream if specified to flush runtime errors
-    error = CubDebug(detail::DebugSyncStream(stream));
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
-
-    return cudaSuccess;
+    return CubDebug(detail::DebugSyncStream(stream));
   }
 
   //---------------------------------------------------------------------------
@@ -493,16 +442,14 @@ struct DispatchReduceDeterministic
     InputIteratorT d_in,
     OutputIteratorT d_out,
     OffsetT num_items,
-    InitT init                = {},
-    cudaStream_t stream       = {},
-    TransformOpT transform_op = {})
+    InitT init                             = {},
+    cudaStream_t stream                    = {},
+    TransformOpT transform_op              = {},
+    KernelLauncherFactory launcher_factory = {})
   {
-    cudaError error = cudaSuccess;
-
     // Get PTX version
     int ptx_version = 0;
-    error           = CubDebug(PtxVersion(ptx_version));
-    if (cudaSuccess != error)
+    if (const auto error = CubDebug(PtxVersion(ptx_version)))
     {
       return error;
     }
@@ -510,7 +457,7 @@ struct DispatchReduceDeterministic
     input_unwrapped_it_t d_in_unwrapped = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in);
 
     // Create dispatch functor
-    DispatchReduceDeterministic dispatch{
+    dispatch_t dispatch{
       d_temp_storage,
       temp_storage_bytes,
       d_in_unwrapped,
@@ -520,12 +467,12 @@ struct DispatchReduceDeterministic
       init,
       stream,
       ptx_version,
-      transform_op};
+      transform_op,
+      launcher_factory};
 
     // Dispatch to chained policy
-    error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
-    return error;
+    return CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
   }
 };
-} // namespace detail
+} // namespace detail::rfa
 CUB_NAMESPACE_END

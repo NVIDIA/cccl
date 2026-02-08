@@ -26,7 +26,7 @@
 int main(int, char**)
 {
   {
-    typedef cuda::std::pair<int, short> P;
+    using P = cuda::std::pair<int, short>;
     P p1(3, static_cast<short>(4));
     P p2(3, static_cast<short>(4));
     assert((p1 == p2));
@@ -37,7 +37,7 @@ int main(int, char**)
     assert((p1 >= p2));
   }
   {
-    typedef cuda::std::pair<int, short> P;
+    using P = cuda::std::pair<int, short>;
     P p1(2, static_cast<short>(4));
     P p2(3, static_cast<short>(4));
     assert(!(p1 == p2));
@@ -48,7 +48,7 @@ int main(int, char**)
     assert(!(p1 >= p2));
   }
   {
-    typedef cuda::std::pair<int, short> P;
+    using P = cuda::std::pair<int, short>;
     P p1(3, static_cast<short>(2));
     P p2(3, static_cast<short>(4));
     assert(!(p1 == p2));
@@ -59,7 +59,7 @@ int main(int, char**)
     assert(!(p1 >= p2));
   }
   {
-    typedef cuda::std::pair<int, short> P;
+    using P = cuda::std::pair<int, short>;
     P p1(3, static_cast<short>(4));
     P p2(2, static_cast<short>(4));
     assert(!(p1 == p2));
@@ -70,7 +70,7 @@ int main(int, char**)
     assert((p1 >= p2));
   }
   {
-    typedef cuda::std::pair<int, short> P;
+    using P = cuda::std::pair<int, short>;
     P p1(3, static_cast<short>(4));
     P p2(3, static_cast<short>(2));
     assert(!(p1 == p2));
@@ -82,7 +82,7 @@ int main(int, char**)
   }
 
   {
-    typedef cuda::std::pair<int, short> P;
+    using P = cuda::std::pair<int, short>;
     constexpr P p1(3, static_cast<short>(4));
     constexpr P p2(3, static_cast<short>(2));
     static_assert(!(p1 == p2), "");

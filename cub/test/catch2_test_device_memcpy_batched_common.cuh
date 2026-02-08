@@ -5,9 +5,10 @@
 #include <cub/util_macro.cuh>
 
 #include <thrust/gather.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/scatter.h>
 #include <thrust/shuffle.h>
+
+#include <cuda/iterator>
 
 #include <c2h/catch2_test_helper.h>
 
@@ -54,7 +55,7 @@ auto get_shuffled_buffer_offsets(const c2h::device_vector<BufferSizeT>& buffer_s
 
   // We're remapping the i-th buffer to pmt_idxs[i]
   c2h::device_vector<BufferOffsetT> pmt_idxs(num_buffers);
-  const auto buffer_index_it = thrust::make_counting_iterator(BufferOffsetT{0});
+  const auto buffer_index_it = cuda::counting_iterator(BufferOffsetT{0});
   thrust::shuffle_copy(
     buffer_index_it,
     buffer_index_it + num_buffers,
@@ -62,6 +63,7 @@ auto get_shuffled_buffer_offsets(const c2h::device_vector<BufferSizeT>& buffer_s
     thrust::default_random_engine(static_cast<std::uint32_t>(seed.get())));
 
   c2h::device_vector<ByteOffsetT> permuted_offsets(num_buffers);
+  // TODO(opavlyk): using cuda::make_permutation_iterator cause build break
   auto permuted_buffer_sizes_it = thrust::make_permutation_iterator(buffer_sizes.begin(), pmt_idxs.begin());
   thrust::exclusive_scan(permuted_buffer_sizes_it, permuted_buffer_sizes_it + num_buffers, permuted_offsets.begin());
 

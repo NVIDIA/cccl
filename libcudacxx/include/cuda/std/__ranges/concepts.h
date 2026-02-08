@@ -44,7 +44,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 #if _CCCL_HAS_CONCEPTS()
 
@@ -126,18 +126,12 @@ template <class _Tp>
 concept common_range = range<_Tp> && same_as<iterator_t<_Tp>, sentinel_t<_Tp>>;
 
 template <class _Tp>
-inline constexpr bool __is_std_initializer_list = false;
-
-template <class _Ep>
-inline constexpr bool __is_std_initializer_list<initializer_list<_Ep>> = true;
-
-template <class _Tp>
 concept viewable_range =
   range<_Tp>
   && ((view<remove_cvref_t<_Tp>> && constructible_from<remove_cvref_t<_Tp>, _Tp>)
       || (!view<remove_cvref_t<_Tp>>
           && (is_lvalue_reference_v<_Tp>
-              || (movable<remove_reference_t<_Tp>> && !__is_std_initializer_list<remove_cvref_t<_Tp>>) )));
+              || (movable<remove_reference_t<_Tp>> && !__is_cuda_std_initializer_list<remove_cvref_t<_Tp>>) )));
 
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 // [range.range]
@@ -273,20 +267,14 @@ template <class _Tp>
 _CCCL_CONCEPT common_range = _CCCL_FRAGMENT(__common_range_, _Tp);
 
 template <class _Tp>
-inline constexpr bool __is_std_initializer_list = false;
-
-template <class _Ep>
-inline constexpr bool __is_std_initializer_list<initializer_list<_Ep>> = true;
-
-template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(
   __viewable_range_,
-  requires()(
-    requires(range<_Tp>),
-    requires(((view<remove_cvref_t<_Tp>> && constructible_from<remove_cvref_t<_Tp>, _Tp>)
-              || (!view<remove_cvref_t<_Tp>>
-                  && (is_lvalue_reference_v<_Tp>
-                      || (movable<remove_reference_t<_Tp>> && !__is_std_initializer_list<remove_cvref_t<_Tp>>) ))))));
+  requires()(requires(range<_Tp>),
+             requires(((view<remove_cvref_t<_Tp>> && constructible_from<remove_cvref_t<_Tp>, _Tp>)
+                       || (!view<remove_cvref_t<_Tp>>
+                           && (is_lvalue_reference_v<_Tp>
+                               || (movable<remove_reference_t<_Tp>>
+                                   && !__is_cuda_std_initializer_list<remove_cvref_t<_Tp>>) ))))));
 
 template <class _Tp>
 _CCCL_CONCEPT viewable_range = _CCCL_FRAGMENT(__viewable_range_, _Tp);
@@ -307,7 +295,7 @@ template <class _Range, class _Tp>
 _CCCL_CONCEPT __container_compatible_range = _CCCL_FRAGMENT(__container_compatible_range_, _Range, _Tp);
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

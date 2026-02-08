@@ -49,9 +49,12 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
     CCCLRT_REQUIRE(device_ref{0} == device_ref{0});
     CCCLRT_REQUIRE(device_ref{0} == 0);
     CCCLRT_REQUIRE(0 == device_ref{0});
-    CCCLRT_REQUIRE(device_ref{1} != device_ref{0});
-    CCCLRT_REQUIRE(device_ref{1} != 2);
-    CCCLRT_REQUIRE(1 != device_ref{2});
+    if (cuda::devices.size() > 1)
+    {
+      CCCLRT_REQUIRE(device_ref{1} != device_ref{0});
+      CCCLRT_REQUIRE(device_ref{1} != 0);
+      CCCLRT_REQUIRE(0 != device_ref{1});
+    }
   }
 
   SECTION("Attributes")
@@ -281,10 +284,10 @@ C2H_CCCLRT_TEST("Smoke", "[device]")
 
     SECTION("Compute capability")
     {
-      int compute_cap       = device_ref(0).attribute(attributes::compute_capability);
-      int compute_cap_major = device_ref(0).attribute(attributes::compute_capability_major);
-      int compute_cap_minor = device_ref(0).attribute(attributes::compute_capability_minor);
-      CCCLRT_REQUIRE(compute_cap == 10 * compute_cap_major + compute_cap_minor);
+      cuda::compute_capability compute_cap = device_ref(0).attribute(attributes::compute_capability);
+      int compute_cap_major                = device_ref(0).attribute(attributes::compute_capability_major);
+      int compute_cap_minor                = device_ref(0).attribute(attributes::compute_capability_minor);
+      CCCLRT_REQUIRE(compute_cap.get() == 10 * compute_cap_major + compute_cap_minor);
     }
   }
   SECTION("Name")
@@ -352,7 +355,10 @@ C2H_CCCLRT_TEST("memory location", "[device]")
   CCCLRT_REQUIRE(loc.type == ::cudaMemLocationTypeDevice);
   CCCLRT_REQUIRE(loc.id == 0);
 
-  loc = cuda::device_ref{1};
-  CCCLRT_REQUIRE(loc.type == ::cudaMemLocationTypeDevice);
-  CCCLRT_REQUIRE(loc.id == 1);
+  if (cuda::devices.size() > 1)
+  {
+    loc = cuda::device_ref{1};
+    CCCLRT_REQUIRE(loc.type == ::cudaMemLocationTypeDevice);
+    CCCLRT_REQUIRE(loc.id == 1);
+  }
 }

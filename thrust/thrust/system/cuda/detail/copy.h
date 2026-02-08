@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -48,9 +25,9 @@
 #include <thrust/system/cuda/detail/util.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  include <cub/device/dispatch/tuning/tuning_transform.cuh>
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 #include <cuda/__fwd/zip_iterator.h>
 #include <cuda/std/tuple>
@@ -131,7 +108,7 @@ OutputIt _CCCL_HOST non_trivial_cross_system_copy_n(
   return ret;
 }
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 // non-trivial copy D->H, only supported with NVCC compiler
 // because copy ctor must have  __device__ annotations, which is nvcc-only
 // feature
@@ -158,7 +135,7 @@ OutputIt _CCCL_HOST non_trivial_cross_system_copy_n(
   OutputIt ret = thrust::copy_n(host_s, temp_host.data(), num_items, result);
   return ret;
 }
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 template <class System1, class System2, class InputIt, class Size, class OutputIt>
 OutputIt _CCCL_HOST cross_system_copy_n(cross_system<System1, System2> systems, InputIt begin, Size n, OutputIt result)
@@ -188,7 +165,7 @@ OutputIt _CCCL_HOST cross_system_copy_n(cross_system<System1, System2> systems, 
   }
 }
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 template <class Derived, class InputIt, class OutputIt>
 OutputIt THRUST_RUNTIME_FUNCTION
 device_to_device(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
@@ -229,10 +206,10 @@ device_to_device(execution_policy<Derived>& policy, InputIt first, InputIt last,
       policy, first, last, result, ::cuda::proclaim_copyable_arguments(::cuda::std::identity{}));
   }
 }
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 } // namespace __copy
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class System, class InputIterator, class OutputIterator>
@@ -253,7 +230,7 @@ copy_n(execution_policy<System>& system, InputIterator first, Size n, OutputIter
                       (result = thrust::copy_n(cvt_to_seq(derived_cast(system)), first, n, result);));
   return result;
 }
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 template <class System1, class System2, class InputIterator, class OutputIterator>
 OutputIterator _CCCL_HOST
@@ -268,6 +245,5 @@ copy_n(cross_system<System1, System2> systems, InputIterator first, Size n, Outp
 {
   return __copy::cross_system_copy_n(systems, first, n, result);
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END

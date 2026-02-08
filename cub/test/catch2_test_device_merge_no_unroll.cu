@@ -10,7 +10,6 @@
 
 #include <cub/device/device_merge.cuh>
 
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/sort.h>
 
 #include <algorithm>

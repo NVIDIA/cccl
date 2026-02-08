@@ -38,7 +38,7 @@ void TestSetIntersectionByKeyDevice(ExecutionPolicy exec)
   Vector ref_key{0, 4}, ref_val{0, 0};
   Vector result_key(2), result_val(2);
 
-  using iter_pair = thrust::pair<Iterator, Iterator>;
+  using iter_pair = cuda::std::pair<Iterator, Iterator>;
   thrust::device_vector<iter_pair> end_vec(1);
 
   set_intersection_by_key_kernel<<<1, 1>>>(
@@ -54,7 +54,7 @@ void TestSetIntersectionByKeyDevice(ExecutionPolicy exec)
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
 
-  thrust::pair<Iterator, Iterator> end = end_vec.front();
+  cuda::std::pair<Iterator, Iterator> end = end_vec.front();
 
   ASSERT_EQUAL_QUIET(result_key.end(), end.first);
   ASSERT_EQUAL_QUIET(result_val.end(), end.second);
@@ -98,7 +98,7 @@ void TestSetIntersectionByKeyCudaStreams(ExecutionPolicy policy)
 
   auto streampolicy = policy.on(s);
 
-  thrust::pair<Iterator, Iterator> end = thrust::set_intersection_by_key(
+  cuda::std::pair<Iterator, Iterator> end = thrust::set_intersection_by_key(
     streampolicy,
     a_key.begin(),
     a_key.end(),

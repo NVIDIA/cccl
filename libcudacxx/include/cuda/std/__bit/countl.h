@@ -24,7 +24,6 @@
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
@@ -36,7 +35,23 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(builtin_clz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
+#  define _CCCL_BUILTIN_CLZ(...)   __builtin_clz(__VA_ARGS__)
+#  define _CCCL_BUILTIN_CLZLL(...) __builtin_clzll(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_clz)
+
+#if _CCCL_CHECK_BUILTIN(builtin_clzg)
+#  define _CCCL_BUILTIN_CLZG(...) __builtin_clzg(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_clzg)
+
+// nvcc doesn't support this builtin in device code and before 13.0 not even in host code
+#if (_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()) || _CCCL_CUDA_COMPILER(NVCC, <, 13)
+#  undef _CCCL_BUILTIN_CLZG
+#endif // (_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()) || _CCCL_CUDA_COMPILER(NVCC, <, 13)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if !defined(_CCCL_BUILTIN_CLZG)
 
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr int __cccl_countl_zero_impl_constexpr(_Tp __v) noexcept
@@ -50,9 +65,9 @@ template <typename _Tp>
 
   if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
-#if defined(_CCCL_BUILTIN_CLZ)
+#  if defined(_CCCL_BUILTIN_CLZ)
     return _CCCL_BUILTIN_CLZ(__v);
-#else // ^^^ _CCCL_BUILTIN_CLZ ^^^ // vvv !_CCCL_BUILTIN_CLZ vvv
+#  else // ^^^ _CCCL_BUILTIN_CLZ ^^^ // vvv !_CCCL_BUILTIN_CLZ vvv
     uint32_t __res = 0;
     for (uint32_t __i = __digits / 2; __i >= 1; __i /= 2)
     {
@@ -64,39 +79,39 @@ template <typename _Tp>
       }
     }
     return __digits - 1 - __res;
-#endif // ^^^ !_CCCL_BUILTIN_CLZ ^^^
+#  endif // ^^^ !_CCCL_BUILTIN_CLZ ^^^
   }
   else
   {
-#if defined(_CCCL_BUILTIN_CLZLL)
+#  if defined(_CCCL_BUILTIN_CLZLL)
     return _CCCL_BUILTIN_CLZLL(__v);
-#else // ^^^ _CCCL_BUILTIN_CLZLL ^^^ // vvv !_CCCL_BUILTIN_CLZLL vvv
+#  else // ^^^ _CCCL_BUILTIN_CLZLL ^^^ // vvv !_CCCL_BUILTIN_CLZLL vvv
     const auto __hi = static_cast<uint32_t>(__v >> 32);
     const auto __lo = static_cast<uint32_t>(__v);
     return (__hi != 0) ? ::cuda::std::__cccl_countl_zero_impl_constexpr(__hi)
                        : (numeric_limits<uint32_t>::digits + ::cuda::std::__cccl_countl_zero_impl_constexpr(__lo));
-#endif // ^^^ !_CCCL_BUILTIN_CLZLL ^^^
+#  endif // ^^^ !_CCCL_BUILTIN_CLZLL ^^^
   }
 }
 
-#if !_CCCL_COMPILER(NVRTC)
+#  if !_CCCL_COMPILER(NVRTC)
 template <typename _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST int __cccl_countl_zero_impl_host(_Tp __v) noexcept
 {
-#  if _CCCL_COMPILER(MSVC)
+#    if _CCCL_COMPILER(MSVC)
   constexpr auto __digits = numeric_limits<_Tp>::digits;
   unsigned long __where{};
   const auto __res = sizeof(_Tp) == sizeof(uint32_t)
                      ? ::_BitScanReverse(&__where, static_cast<uint32_t>(__v))
                      : ::_BitScanReverse64(&__where, static_cast<uint64_t>(__v));
   return (__res) ? (__digits - 1 - static_cast<int>(__where)) : __digits;
-#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ // vvv !_CCCL_COMPILER(MSVC) vvv
+#    else // ^^^ _CCCL_COMPILER(MSVC) ^^^ // vvv !_CCCL_COMPILER(MSVC) vvv
   return ::cuda::std::__cccl_countl_zero_impl_constexpr(__v);
-#  endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
+#    endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#  endif // !_CCCL_COMPILER(NVRTC)
 
-#if _CCCL_CUDA_COMPILATION()
+#  if _CCCL_CUDA_COMPILATION()
 template <typename _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE int __cccl_countl_zero_impl_device(_Tp __v) noexcept
 {
@@ -109,13 +124,13 @@ template <typename _Tp>
     return static_cast<int>(::__clzll(static_cast<long long>(__v)));
   }
 }
-#endif // _CCCL_CUDA_COMPILATION()
+#  endif // _CCCL_CUDA_COMPILATION()
 
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr int __cccl_countl_zero_impl(_Tp __v) noexcept
 {
   static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       (return ::cuda::std::__cccl_countl_zero_impl_host(__v);),
@@ -123,6 +138,8 @@ template <typename _Tp>
   }
   return ::cuda::std::__cccl_countl_zero_impl_constexpr(__v);
 }
+
+#endif // !_CCCL_BUILTIN_CLZG
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)

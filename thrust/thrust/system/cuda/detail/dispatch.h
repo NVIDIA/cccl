@@ -1,18 +1,5 @@
-/*
- *  Copyright 2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -26,15 +13,35 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/integer_math.h>
 #include <thrust/detail/preprocessor.h>
 
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__exception/throw_error.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/detail/libcxx/include/stdexcept>
 #include <cuda/std/limits>
-#include <cuda/std/type_traits>
 
 #include <string>
+
+THRUST_NAMESPACE_BEGIN
+namespace detail
+{
+_CCCL_TEMPLATE(typename T)
+_CCCL_REQUIRES(::cuda::std::is_arithmetic_v<T>)
+[[nodiscard]] _CCCL_API constexpr bool is_negative([[maybe_unused]] T x) noexcept
+{
+  if constexpr (::cuda::std::is_unsigned_v<T>)
+  {
+    return false;
+  }
+  else
+  {
+    return x < 0;
+  }
+}
+} // namespace detail
+THRUST_NAMESPACE_END
 
 #if defined(THRUST_FORCE_32_BIT_OFFSET_TYPE) && defined(THRUST_FORCE_64_BIT_OFFSET_TYPE)
 #  error "Only THRUST_FORCE_32_BIT_OFFSET_TYPE or THRUST_FORCE_64_BIT_OFFSET_TYPE may be defined!"

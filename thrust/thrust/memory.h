@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/memory.h
  *  \brief Abstractions for Thrust's memory model.
@@ -75,6 +62,10 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see free
  *  \see device_malloc
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy>
 _CCCL_HOST_DEVICE pointer<void, DerivedPolicy>
@@ -114,6 +105,10 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::
  *
  *  \see free
  *  \see device_malloc
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T, typename DerivedPolicy>
 _CCCL_HOST_DEVICE pointer<T, DerivedPolicy>
@@ -148,7 +143,7 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::
  *  // allocate storage for 100 ints with thrust::get_temporary_buffer
  *  const int N = 100;
  *
- *  using ptr_and_size_t = thrust::pair<
+ *  using ptr_and_size_t = cuda::std::pair<
  *    thrust::pointer<int,thrust::device_system_tag>,
  *    std::ptrdiff_t
  *  >;
@@ -168,10 +163,14 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::
  *
  *  \see malloc
  *  \see return_temporary_buffer
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T, typename DerivedPolicy>
-_CCCL_HOST_DEVICE
-thrust::pair<thrust::pointer<T, DerivedPolicy>, typename thrust::pointer<T, DerivedPolicy>::difference_type>
+_CCCL_HOST_DEVICE ::cuda::std::pair<thrust::pointer<T, DerivedPolicy>,
+                                    typename thrust::pointer<T, DerivedPolicy>::difference_type>
 get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>& system,
                      typename thrust::pointer<T, DerivedPolicy>::difference_type n);
 
@@ -203,6 +202,10 @@ get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>&
  *  // deallocate ptr with thrust::free
  *  thrust::free(device_sys, ptr);
  *  \endcode
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename Pointer>
 _CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedPolicy>& system, Pointer ptr);
@@ -230,7 +233,7 @@ _CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedP
  *  // allocate storage for 100 ints with thrust::get_temporary_buffer
  *  const int N = 100;
  *
- *  using ptr_and_size_t = thrust::pair<
+ *  using ptr_and_size_t = cuda::std::pair<
  *    thrust::pointer<int,thrust::device_system_tag>,
  *    std::ptrdiff_t
  *  >;
@@ -250,6 +253,10 @@ _CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedP
  *
  *  \see free
  *  \see get_temporary_buffer
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename Pointer>
 _CCCL_HOST_DEVICE void return_temporary_buffer(
@@ -261,6 +268,10 @@ _CCCL_HOST_DEVICE void return_temporary_buffer(
  *  \param ptr The pointer of interest.
  *  \return <tt>ptr.get()</tt>, if the expression is well formed; <tt>ptr</tt>, otherwise.
  *  \see raw_reference_cast
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename Pointer>
 _CCCL_HOST_DEVICE typename thrust::detail::pointer_traits<Pointer>::raw_pointer raw_pointer_cast(Pointer ptr);
@@ -275,6 +286,10 @@ _CCCL_HOST_DEVICE typename thrust::detail::pointer_traits<Pointer>::raw_pointer 
  *  \note There are two versions of \p raw_reference_cast. One for <tt>const</tt> references,
  *        and one for non-<tt>const</tt>.
  *  \see raw_pointer_cast
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T& ref);
@@ -289,6 +304,10 @@ _CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T& 
  *  \note There are two versions of \p raw_reference_cast. One for <tt>const</tt> references,
  *        and one for non-<tt>const</tt>.
  *  \see raw_pointer_cast
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE typename detail::raw_reference<const T>::type raw_reference_cast(const T& ref);

@@ -18,7 +18,6 @@
 
 namespace MyNS
 {
-
 // Make the test types non-copyable so that generic cuda::std::swap is not valid.
 struct A
 {
@@ -57,7 +56,6 @@ struct DeletedSwap
 {
   __host__ __device__ friend void swap(DeletedSwap&, DeletedSwap&) = delete;
 };
-
 } // namespace MyNS
 
 #if 0 // We cannot test this because we need to avoid defining ambiguous overloads

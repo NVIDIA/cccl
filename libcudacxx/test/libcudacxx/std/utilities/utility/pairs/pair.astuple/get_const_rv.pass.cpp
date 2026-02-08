@@ -30,7 +30,7 @@ int main(int, char**)
   // cuda/std/memory not supported
   /*
   {
-  typedef cuda::std::pair<cuda::std::unique_ptr<int>, short> P;
+  using P = cuda::std::pair<cuda::std::unique_ptr<int>, short>;
   const P p(cuda::std::unique_ptr<int>(new int(3)), static_cast<short>(4));
   static_assert(cuda::std::is_same<const cuda::std::unique_ptr<int>&&,
   decltype(cuda::std::get<0>(cuda::std::move(p)))>::value, "");
@@ -60,7 +60,7 @@ int main(int, char**)
   }
 
   {
-    typedef cuda::std::pair<int, short> P;
+    using P = cuda::std::pair<int, short>;
     constexpr const P p1(3, static_cast<short>(4));
     static_assert(cuda::std::get<0>(cuda::std::move(p1)) == 3, "");
     static_assert(cuda::std::get<1>(cuda::std::move(p1)) == 4, "");

@@ -37,7 +37,7 @@ In order to adapt this example to your project, you will need to do the followin
    target_link_libraries(your_executable PRIVATE CCCL::CCCL)
 
    # Alternatively, if you're building a library
-   add_library(your_library your_file.cu)
+   add_library(your_library SHARED your_file.cu)
    target_link_libraries(your_library PRIVATE CCCL::CCCL)
    ```
    See the [CMakeLists.txt](CMakeLists.txt) file in this directory for a complete example.

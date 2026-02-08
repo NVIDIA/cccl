@@ -35,16 +35,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-_CCCL_TEMPLATE(class... _Iterators)
-_CCCL_REQUIRES((sizeof...(_Iterators) != 2))
-[[nodiscard]] _CCCL_API constexpr auto __tuple_or_pair_impl() noexcept -> ::cuda::std::tuple<_Iterators...>;
-
-template <class _Tp, class _Up>
-[[nodiscard]] _CCCL_API constexpr auto __tuple_or_pair_impl() noexcept -> ::cuda::std::pair<_Tp, _Up>;
-
-template <class... _Iterators>
-using __tuple_or_pair = decltype(::cuda::__tuple_or_pair_impl<_Iterators...>());
-
 template <class... _Iterators>
 struct __zip_iter_constraints
 {
@@ -99,14 +89,13 @@ template <class... _Iterators>
   {
     return ::cuda::std::input_iterator_tag();
   }
-  _CCCL_UNREACHABLE();
 }
 
 //! @note Not static functions because nvc++ sometimes has issues with class static functions in device code
 struct __zip_op_star
 {
   template <class... _Iterators>
-  using reference = __tuple_or_pair<::cuda::std::iter_reference_t<_Iterators>...>;
+  using reference = ::cuda::std::tuple<::cuda::std::iter_reference_t<_Iterators>...>;
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Iterators>
@@ -140,7 +129,7 @@ struct __zip_op_decrement
 struct __zip_iter_move
 {
   template <class... _Iterators>
-  using __iter_move_ret = __tuple_or_pair<::cuda::std::iter_rvalue_reference_t<_Iterators>...>;
+  using __iter_move_ret = ::cuda::std::tuple<::cuda::std::iter_rvalue_reference_t<_Iterators>...>;
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Iterators>

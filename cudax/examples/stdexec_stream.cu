@@ -17,48 +17,54 @@
 #include <cuda_runtime_api.h>
 
 namespace cudax = cuda::experimental;
-namespace task  = cudax::execution;
+namespace ex    = cudax::execution;
 
 // This example demonstrates how to use the experimental CUDA implementation of
 // C++26's std::execution async tasking framework.
 
-struct say_hello
+int main()
 {
-  __device__ int operator()() const
-  {
-    printf("Hello from lambda on device!\n");
-    return value;
-  }
-
-  int value;
-};
-
-__host__ void run()
-{
-  /*
   try
   {
-    task::thread_context tctx;
-    task::stream_context sctx{cuda::device_ref{0}};
-    auto sch = sctx.get_scheduler();
+    auto tctx = ex::thread_context{};
+    auto sctx = ex::stream_context{cuda::device_ref{0}};
+    auto gpu  = sctx.get_scheduler();
 
-    auto start = //
-      task::schedule(sch) // begin work on the GPU
-      | task::then(say_hello{42}) // enqueue a function object on the GPU
-      | task::then([] __device__(int i) noexcept -> int { // enqueue a lambda on the GPU
-          printf("Hello again from lambda on device! i = %d\n", i);
-          return i + 1;
+    const auto bulk_shape = 10;
+    const auto bulk_fn    = [] __device__(const int index, int i) noexcept {
+      const int tid = blockIdx.x * blockDim.x + threadIdx.x;
+      if (tid < bulk_shape)
+      {
+        printf("Hello from bulk task on device! index = %d, i = %d\n", index, i);
+      }
+    };
+
+    auto start =
+      // begin work on the GPU:
+      ex::schedule(gpu)
+
+      // execute a device lambda on the GPU:
+      | ex::then([] __device__() noexcept -> int {
+          printf("Hello from lambda on device!\n");
+          return 42;
         })
-      | task::continues_on(tctx.get_scheduler()) // continue work on the CPU
-      | task::then([] __host__ __device__(int i) noexcept -> int { // run a lambda on the CPU
+
+      // do some parallel work on the GPU:
+      | ex::bulk(ex::par, bulk_shape, bulk_fn) //
+
+      // transfer execution back to the CPU:
+      | ex::continues_on(tctx.get_scheduler())
+
+      // execute a host/device lambda on the CPU:
+      | ex::then([] __host__ __device__(int i) noexcept -> int {
           NV_IF_TARGET(NV_IS_HOST,
                        (printf("Hello from lambda on host! i = %d\n", i);),
                        (printf("OOPS! still on the device! i = %d\n", i);))
-          return i;
+          return i + 1;
         });
 
     // run the task, wait for it to finish, and get the result
-    auto [i] = task::sync_wait(std::move(start)).value();
+    auto [i] = ex::sync_wait(std::move(start)).value();
     printf("All done on the host! result = %d\n", i);
   }
   catch (cuda::cuda_error const& e)
@@ -73,10 +79,4 @@ __host__ void run()
   {
     std::printf("Unknown exception\n");
   }
-  */
-}
-
-int main()
-{
-  run();
 }

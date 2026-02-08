@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -29,12 +16,14 @@
 #include <thrust/detail/function.h>
 #include <thrust/detail/temporary_array.h>
 #include <thrust/detail/type_traits.h>
-#include <thrust/distance.h>
 #include <thrust/for_each.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/system/detail/generic/scalar/binary_search.h>
 #include <thrust/system/detail/generic/select_system.h>
+
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/distance.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -48,7 +37,6 @@ namespace system::detail::generic
 {
 namespace detail
 {
-
 // short names to avoid nvcc bug
 struct lbf
 {
@@ -103,7 +91,7 @@ struct binary_search_functor
   template <typename Tuple>
   _CCCL_HOST_DEVICE void operator()(Tuple t)
   {
-    thrust::get<1>(t) = func(begin, end, thrust::get<0>(t), comp);
+    ::cuda::std::get<1>(t) = func(begin, end, ::cuda::std::get<0>(t), comp);
   }
 }; // binary_search_functor
 
@@ -183,20 +171,6 @@ _CCCL_HOST_DEVICE OutputType binary_search(
 
   return output;
 }
-
-// this functor differs from ::cuda::std::less<T>
-// because it allows the types of lhs & rhs to differ
-// which is required by the binary search functions
-// XXX use C++14 ::cuda::std::less<> when it's ready
-struct binary_search_less
-{
-  template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE bool operator()(const T1& lhs, const T2& rhs) const
-  {
-    return lhs < rhs;
-  }
-};
-
 } // end namespace detail
 
 //////////////////////
@@ -207,8 +181,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE ForwardIterator
 lower_bound(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator begin, ForwardIterator end, const T& value)
 {
-  namespace p = thrust::placeholders;
-  return thrust::lower_bound(exec, begin, end, value, detail::binary_search_less());
+  return thrust::lower_bound(exec, begin, end, value, ::cuda::std::less<>{});
 }
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
@@ -228,8 +201,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE ForwardIterator
 upper_bound(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator begin, ForwardIterator end, const T& value)
 {
-  namespace p = thrust::placeholders;
-  return thrust::upper_bound(exec, begin, end, value, detail::binary_search_less());
+  return thrust::upper_bound(exec, begin, end, value, ::cuda::std::less<>{});
 }
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
@@ -249,7 +221,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE bool
 binary_search(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator begin, ForwardIterator end, const T& value)
 {
-  return thrust::binary_search(exec, begin, end, value, detail::binary_search_less());
+  return thrust::binary_search(exec, begin, end, value, ::cuda::std::less<>{});
 }
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
@@ -276,8 +248,7 @@ _CCCL_HOST_DEVICE OutputIterator lower_bound(
   InputIterator values_end,
   OutputIterator output)
 {
-  namespace p = thrust::placeholders;
-  return thrust::lower_bound(exec, begin, end, values_begin, values_end, output, detail::binary_search_less());
+  return thrust::lower_bound(exec, begin, end, values_begin, values_end, output, ::cuda::std::less<>{});
 }
 
 template <typename DerivedPolicy,
@@ -306,8 +277,7 @@ _CCCL_HOST_DEVICE OutputIterator upper_bound(
   InputIterator values_end,
   OutputIterator output)
 {
-  namespace p = thrust::placeholders;
-  return thrust::upper_bound(exec, begin, end, values_begin, values_end, output, detail::binary_search_less());
+  return thrust::upper_bound(exec, begin, end, values_begin, values_end, output, ::cuda::std::less<>{});
 }
 
 template <typename DerivedPolicy,
@@ -336,8 +306,7 @@ _CCCL_HOST_DEVICE OutputIterator binary_search(
   InputIterator values_end,
   OutputIterator output)
 {
-  namespace p = thrust::placeholders;
-  return thrust::binary_search(exec, begin, end, values_begin, values_end, output, detail::binary_search_less());
+  return thrust::binary_search(exec, begin, end, values_begin, values_end, output, ::cuda::std::less<>{});
 }
 
 template <typename DerivedPolicy,
@@ -358,17 +327,17 @@ _CCCL_HOST_DEVICE OutputIterator binary_search(
 }
 
 template <typename DerivedPolicy, typename ForwardIterator, typename LessThanComparable>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> equal_range(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> equal_range(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
   const LessThanComparable& value)
 {
-  return thrust::equal_range(exec, first, last, value, detail::binary_search_less());
+  return thrust::equal_range(exec, first, last, value, ::cuda::std::less<>{});
 }
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> equal_range(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> equal_range(
   thrust::execution_policy<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -377,8 +346,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> equal_range(
 {
   ForwardIterator lb = thrust::lower_bound(exec, first, last, value, comp);
   ForwardIterator ub = thrust::upper_bound(exec, first, last, value, comp);
-  return thrust::make_pair(lb, ub);
+  return ::cuda::std::make_pair(lb, ub);
 }
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

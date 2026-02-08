@@ -38,7 +38,7 @@ template <thread_scope _Sco,
           typename _CompF,
           bool _Is_mbarrier = (_Sco == thread_scope_block)
                            && ::cuda::std::is_same_v<_CompF, ::cuda::std::__empty_completion>>
-_CCCL_API inline bool __is_local_smem_barrier(barrier<_Sco, _CompF>& __barrier)
+_CCCL_API inline bool __is_local_smem_barrier([[maybe_unused]] barrier<_Sco, _CompF>& __barrier)
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,

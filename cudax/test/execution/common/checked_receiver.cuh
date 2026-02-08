@@ -10,7 +10,8 @@
 
 #pragma once
 
-#include <cuda/std/__cccl/rtti.h>
+#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__utility/typeid.h>
 #include <cuda/std/string_view> // IWYU pragma: keep
 #include <cuda/std/type_traits>
 
@@ -31,19 +32,34 @@ struct checked_value_receiver
       : _values{values...}
   {}
 
+  _CCCL_HOST_DEVICE checked_value_receiver(checked_value_receiver&& other) noexcept
+      : _called{::cuda::std::exchange(other._called, true)}
+      , _values{::cuda::std::move(other._values)}
+  {}
+
+  _CCCL_HOST_DEVICE ~checked_value_receiver()
+  {
+    CUDAX_CHECK(_called);
+  }
+
   // This overload is needed to avoid an nvcc compiler bug where a variadic
   // pack is not visible within the scope of a lambda.
   _CCCL_HOST_DEVICE void set_value() && noexcept
   {
     if constexpr (!::cuda::std::is_same_v<::cuda::std::__type_list<Values...>, ::cuda::std::__type_list<>>)
     {
-      CUDAX_FAIL("expected a value completion; got a different value");
+      CUDAX_FAIL("expected a value completion; got no values");
+    }
+    else
+    {
+      _called = true;
     }
   }
 
   template <class... As>
   _CCCL_HOST_DEVICE void set_value(As... as) && noexcept
   {
+    _called = true;
     if constexpr (::cuda::std::is_same_v<::cuda::std::__type_list<Values...>, ::cuda::std::__type_list<As...>>)
     {
       ::cuda::std::__apply(
@@ -61,21 +77,24 @@ struct checked_value_receiver
   template <class Error>
   _CCCL_HOST_DEVICE void set_error(Error) && noexcept
   {
+    _called = true;
     CUDAX_FAIL("expected a value completion; got an error");
   }
 
   _CCCL_HOST_DEVICE void set_stopped() && noexcept
   {
+    _called = true;
     CUDAX_FAIL("expected a value completion; got stopped");
   }
 
+  bool _called = false;
   ::cuda::std::__tuple<Values...> _values;
 };
 
 template <class... Values>
 _CCCL_HOST_DEVICE checked_value_receiver(Values...) -> checked_value_receiver<Values...>;
 
-template <class Error = ::std::exception_ptr>
+template <class Error = cudax::execution::exception_ptr>
 struct checked_error_receiver
 {
   using receiver_concept = cudax_async::receiver_t;
@@ -91,7 +110,7 @@ struct checked_error_receiver
   {
     if constexpr (::cuda::std::is_same_v<Error, Ty>)
     {
-      if (!::cuda::std::is_same_v<Error, ::std::exception_ptr>)
+      if (!::cuda::std::is_same_v<Error, cudax::execution::exception_ptr>)
       {
         CUDAX_CHECK(ty == _error);
       }
@@ -102,14 +121,13 @@ struct checked_error_receiver
     }
   }
 
-#if _CCCL_HAS_EXCEPTIONS() && _CCCL_HOST_COMPILATION()
-  void set_error(::std::exception_ptr eptr) && noexcept
+  _CCCL_HOST_DEVICE void set_error(cudax::execution::exception_ptr eptr) && noexcept
   {
-    try
+    _CCCL_TRY
     {
-      ::std::rethrow_exception(eptr);
+      cudax::execution::rethrow_exception(eptr);
     }
-    catch (Error& e)
+    _CCCL_CATCH (Error & e)
     {
       if constexpr (cuda::std::derived_from<Error, ::std::exception>)
       {
@@ -120,22 +138,21 @@ struct checked_error_receiver
         SUCCEED();
       }
     }
-    catch (::std::exception& e)
+    _CCCL_CATCH (::std::exception & e)
     {
-#  ifndef _CCCL_NO_RTTI
-      INFO("expected an error completion; got a different error. what: " << e.what() << ", type: " << typeid(e).name());
-#  else
+#if defined(_CCCL_NO_TYPEID)
       INFO("expected an error completion; got a different error. what: " << e.what());
-#  endif
-      CHECK(false);
+#else
+      INFO("expected an error completion; got a different error. what: " << e.what() << ", type: " << typeid(e).name());
+#endif
+      CUDAX_CHECK(false);
     }
-    catch (...)
+    _CCCL_CATCH_ALL
     {
       INFO("expected an error completion; got a different error");
-      CHECK(false);
+      CUDAX_CHECK(false);
     }
   }
-#endif
 
   _CCCL_HOST_DEVICE void set_stopped() && noexcept
   {
@@ -199,5 +216,4 @@ struct proxy_value_receiver
 
 template <class Ty>
 _CCCL_HOST_DEVICE proxy_value_receiver(Ty&) -> proxy_value_receiver<Ty>;
-
 } // namespace

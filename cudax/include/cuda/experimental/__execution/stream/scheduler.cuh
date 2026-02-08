@@ -40,16 +40,17 @@
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
+_CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 namespace cuda::experimental
 {
 namespace execution
 {
-template <int _BlockThreads, class _Tag, class _Rcvr, class... _Args>
-_CCCL_VISIBILITY_HIDDEN __launch_bounds__(_BlockThreads) __global__
-  void __stream_complete(_Tag, _Rcvr* __rcvr, _Args... __args)
+template <int _BlockThreads, class _Tag, class _Rcvr>
+//_CCCL_VISIBILITY_HIDDEN
+__launch_bounds__(_BlockThreads) __global__ void __stream_complete(_Tag, _Rcvr* __rcvr)
 {
-  _Tag{}(static_cast<_Rcvr&&>(*__rcvr), static_cast<_Args&&>(__args)...);
+  _Tag{}(static_cast<_Rcvr&&>(*__rcvr));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -91,11 +92,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
     [[nodiscard]] _CCCL_API constexpr auto query(get_completion_domain_t<set_error_t>, _Env&& __env) const noexcept
       -> __call_result_t<get_domain_t, _Env&>
     {
-      return execution::get_domain(__env);
-    }
-
-    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(get_domain_override_t) const noexcept -> stream_domain
-    {
       return {};
     }
 
@@ -119,8 +115,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __stream_{__stream_ref}
     {
-      _CCCL_ASSERT(execution::__get_pointer_attributes(this).type == cudaMemoryTypeManaged,
-                   "stream scheduler's operation state must be allocated in managed memory");
+      NV_IF_TARGET(NV_IS_HOST,
+                   (_CCCL_ASSERT(execution::__get_pointer_attributes(this).type == cudaMemoryTypeManaged,
+                                 "stream scheduler's operation state must be allocated in managed memory");))
     }
 
     _CCCL_IMMOVABLE(__opstate_t);
@@ -136,18 +133,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
       // Read the launch configuration passed to us by the parent operation. When we launch
       // the completion kernel, we will be completing the parent's receiver, so we must let
       // the receiver tell us how to launch the kernel.
-      auto const __launch_dims      = get_launch_config(execution::get_env(__rcvr_)).dims;
-      constexpr int __block_threads = decltype(__launch_dims)::static_count(experimental::thread, experimental::block);
-      int const __grid_blocks       = __launch_dims.count(experimental::block, experimental::grid);
+      auto const __config           = get_launch_config(execution::get_env(__rcvr_));
+      constexpr int __block_threads = cuda::gpu_thread.count(cuda::block, __config);
+      int const __grid_blocks       = cuda::block.count(cuda::grid, __config);
       static_assert(__block_threads != ::cuda::std::dynamic_extent);
-
-      // printf("Launching completion kernel for stream_scheduler with %d block threads and %d grid blocks\n",
-      //        __block_threads,
-      //        __grid_blocks);
 
       // Launch the kernel that completes the receiver with the launch configuration from
       // the receiver.
-      __stream_complete<__block_threads><<<__grid_blocks, __block_threads, 0, __stream_.get()>>>(set_value, &__rcvr_);
+      __stream_complete<__block_threads, set_value_t, _Rcvr>
+        <<<__grid_blocks, __block_threads, 0, __stream_.get()>>>(set_value, &__rcvr_);
 
       if (auto __status = cudaGetLastError(); __status != cudaSuccess)
       {
@@ -158,12 +152,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
     // TODO: untested
     _CCCL_DEVICE_API void __device_start() noexcept
     {
-      using __launch_dims_t         = decltype(get_launch_config(execution::get_env(__rcvr_)).dims);
-      constexpr int __block_threads = __launch_dims_t::static_count(experimental::thread, experimental::block);
+      auto __config                 = get_launch_config(execution::get_env(__rcvr_));
+      constexpr int __block_threads = cuda::gpu_thread.count(cuda::block, __config);
 
       // without the following, the kernel in __host_start will fail to launch with
       // cudaErrorInvalidDeviceFunction.
-      ::__cccl_unused(&__stream_complete<__block_threads, set_value_t, _Rcvr>);
+      ::cuda::std::ignore = &__stream_complete<__block_threads, set_value_t, _Rcvr>;
+
       execution::set_value(static_cast<_Rcvr&&>(__rcvr_));
     }
 
@@ -175,7 +170,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_scheduler
   {};
 
 public:
-  _CCCL_API explicit constexpr stream_scheduler(stream_ref __stream) noexcept
+  _CCCL_API constexpr stream_scheduler(stream_ref __stream) noexcept
       : __stream_{__stream}
   {}
 
@@ -206,7 +201,7 @@ public:
       return __opstate_t<_Rcvr>{static_cast<_Rcvr&&>(__rcvr), __attrs_.__stream_};
     }
 
-    _CCCL_NO_UNIQUE_ADDRESS __tag_t __tag_;
+    /*_CCCL_NO_UNIQUE_ADDRESS*/ __tag_t __tag_;
     __attrs_t __attrs_;
   };
 
@@ -258,20 +253,41 @@ private:
 template <>
 struct stream_domain::__apply_t<stream_scheduler::__tag_t> : stream_domain::__apply_passthru_t
 {};
-
 } // namespace execution
 
-_CCCL_HOST_API inline auto stream_ref::schedule() const noexcept
+_CCCL_API inline auto stream_ref::schedule() const noexcept
 {
   return execution::schedule(execution::stream_scheduler{*this});
 }
 
-[[nodiscard]] _CCCL_API constexpr auto stream_ref::query(const execution::get_domain_t&) const noexcept
+[[nodiscard]] _CCCL_API constexpr auto
+stream_ref::query(const execution::get_completion_scheduler_t<execution::set_value_t>&) const noexcept -> stream_ref
+{
+  return *this;
+}
+
+template <class _Env>
+[[nodiscard]] _CCCL_API constexpr auto stream_ref::query(
+  const execution::get_completion_scheduler_t<execution::set_error_t>&, const _Env& __env) const noexcept
+  -> execution::__scheduler_of_t<const _Env&>
+{
+  return execution::get_scheduler(__env);
+}
+
+[[nodiscard]] _CCCL_API constexpr auto
+stream_ref::query(const execution::get_completion_domain_t<execution::set_value_t>&) const noexcept
   -> execution::stream_domain
 {
   return {};
 }
 
+template <class _Env>
+[[nodiscard]] _CCCL_API constexpr auto
+stream_ref::query(const execution::get_completion_domain_t<execution::set_error_t>&, const _Env& __env) const noexcept
+  -> __call_result_t<execution::get_domain_t, const _Env&>
+{
+  return {};
+}
 } // namespace cuda::experimental
 
 _CCCL_DIAG_POP

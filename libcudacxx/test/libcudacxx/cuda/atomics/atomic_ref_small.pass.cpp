@@ -32,7 +32,7 @@ Launch 1024 threads, fetch_add(1), checking for 0x01FF01FF.
 template <class T, int Inc>
 __host__ __device__ void fetch_add_into_window(T* window, uint16_t* atomHistory)
 {
-  typedef cuda::atomic_ref<T, cuda::thread_scope_block> Atom;
+  using Atom = cuda::atomic_ref<T, cuda::thread_scope_block>;
 
   Atom a(*window);
   *atomHistory = a.fetch_add(Inc);

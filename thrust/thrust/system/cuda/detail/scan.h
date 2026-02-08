@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -36,20 +13,21 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_scan.cuh>
 
-#  include <thrust/detail/integer_math.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/detail/type_traits.h>
-#  include <thrust/distance.h>
 #  include <thrust/iterator/iterator_traits.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
 
+#  include <cuda/std/__functional/invoke.h>
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -57,7 +35,6 @@ namespace cuda_cub
 {
 namespace detail
 {
-
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Derived, typename InputIt, typename Size, typename OutputIt, typename ScanOp>
 _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
@@ -225,7 +202,6 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
 
   return result + num_items;
 }
-
 } // namespace detail
 
 //-------------------------
@@ -333,10 +309,9 @@ exclusive_scan(thrust::cuda_cub::execution_policy<Derived>& policy, InputIt firs
   using init_type = thrust::detail::it_value_t<InputIt>;
   return cuda_cub::exclusive_scan(policy, first, last, result, init_type{});
 };
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 
 #  include <thrust/scan.h>
 
-#endif // NVCC
+#endif // _CCCL_CUDA_COMPILATION()

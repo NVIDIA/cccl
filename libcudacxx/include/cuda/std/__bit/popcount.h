@@ -23,7 +23,6 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -34,37 +33,54 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(builtin_popcount) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) \
+  || _CCCL_COMPILER(NVHPC)
+#  define _CCCL_BUILTIN_POPCOUNT(...)   __builtin_popcount(__VA_ARGS__)
+#  define _CCCL_BUILTIN_POPCOUNTLL(...) __builtin_popcountll(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_popcount)
+
+#if _CCCL_CHECK_BUILTIN(builtin_popcountg)
+#  define _CCCL_BUILTIN_POPCOUNTG(...) __builtin_popcountg(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_popcountg)
+
+// nvcc doesn't support this builtin in device code and before 13.0 not even in host code
+#if (_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()) || _CCCL_CUDA_COMPILER(NVCC, <, 13)
+#  undef _CCCL_BUILTIN_POPCOUNTG
+#endif // (_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()) || _CCCL_CUDA_COMPILER(NVCC, <, 13)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if !defined(_CCCL_BUILTIN_POPCOUNTG)
 
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr int __cccl_popcount_impl_constexpr(_Tp __v) noexcept
 {
   if constexpr (is_same_v<_Tp, uint32_t>)
   {
-#if defined(_CCCL_BUILTIN_POPCOUNT)
+#  if defined(_CCCL_BUILTIN_POPCOUNT)
     return _CCCL_BUILTIN_POPCOUNT(__v);
-#else // ^^^ _CCCL_BUILTIN_POPCOUNT ^^^ / vvv !_CCCL_BUILTIN_POPCOUNT vvv
+#  else // ^^^ _CCCL_BUILTIN_POPCOUNT ^^^ / vvv !_CCCL_BUILTIN_POPCOUNT vvv
     __v = __v - ((__v >> 1) & 0x55555555);
     __v = (__v & 0x33333333) + ((__v >> 2) & 0x33333333);
     return (((__v + (__v >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24;
-#endif // ^^^ !_CCCL_BUILTIN_POPCOUNT ^^^
+#  endif // ^^^ !_CCCL_BUILTIN_POPCOUNT ^^^
   }
   else
   {
-#if defined(_CCCL_BUILTIN_POPCOUNTLL)
+#  if defined(_CCCL_BUILTIN_POPCOUNTLL)
     return _CCCL_BUILTIN_POPCOUNTLL(__v);
-#else // ^^^ _CCCL_BUILTIN_POPCOUNTLL ^^^ / vvv !_CCCL_BUILTIN_POPCOUNTLL vvv
+#  else // ^^^ _CCCL_BUILTIN_POPCOUNTLL ^^^ / vvv !_CCCL_BUILTIN_POPCOUNTLL vvv
     return ::cuda::std::__cccl_popcount_impl_constexpr(static_cast<uint32_t>(__v))
          + ::cuda::std::__cccl_popcount_impl_constexpr(static_cast<uint32_t>(__v >> 32));
-#endif // ^^^ !_CCCL_BUILTIN_POPCOUNTLL ^^^
+#  endif // ^^^ !_CCCL_BUILTIN_POPCOUNTLL ^^^
   }
 }
 
-#if !_CCCL_COMPILER(NVRTC)
+#  if !_CCCL_COMPILER(NVRTC)
 template <typename _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST int __cccl_popcount_impl_host(_Tp __v) noexcept
 {
-#  if _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64)
+#    if _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64)
   if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
     return static_cast<int>(::__popcnt(__v));
@@ -74,7 +90,7 @@ template <typename _Tp>
     return static_cast<int>(::__popcnt64(__v));
   }
   // _CountOneBits exists after MSVC 1931
-#  elif _CCCL_COMPILER(MSVC, >, 19, 30) && _CCCL_ARCH(ARM64)
+#    elif _CCCL_COMPILER(MSVC, >, 19, 30) && _CCCL_ARCH(ARM64)
   if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
     return static_cast<int>(::_CountOneBits(__v));
@@ -83,13 +99,13 @@ template <typename _Tp>
   {
     return static_cast<int>(::_CountOneBits64(__v));
   }
-#  else // ^^^ msvc intrinsics ^^^ / vvv other vvv
+#    else // ^^^ msvc intrinsics ^^^ / vvv other vvv
   return ::cuda::std::__cccl_popcount_impl_constexpr(__v);
-#  endif // ^^^ other ^^^
+#    endif // ^^^ other ^^^
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#  endif // !_CCCL_COMPILER(NVRTC)
 
-#if _CCCL_CUDA_COMPILATION()
+#  if _CCCL_CUDA_COMPILATION()
 template <typename _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE int __cccl_popcount_impl_device(_Tp __v) noexcept
 {
@@ -102,14 +118,14 @@ template <typename _Tp>
     return static_cast<int>(::__popcll(__v));
   }
 }
-#endif // _CCCL_CUDA_COMPILATION()
+#  endif // _CCCL_CUDA_COMPILATION()
 
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr int __cccl_popcount_impl(_Tp __v) noexcept
 {
   static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
 
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       (return ::cuda::std::__cccl_popcount_impl_host(__v);),
@@ -117,6 +133,8 @@ template <typename _Tp>
   }
   return ::cuda::std::__cccl_popcount_impl_constexpr(__v);
 }
+
+#endif // !_CCCL_BUILTIN_POPCOUNTG
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)

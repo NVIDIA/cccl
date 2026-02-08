@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -31,12 +18,12 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/system/detail/generic/copy.h>
 #include <thrust/transform.h>
-#include <thrust/tuple.h>
+
+#include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
-
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator
 copy(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
@@ -52,13 +39,12 @@ copy_n(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Size 
 
   using functor_type = thrust::detail::unary_transform_functor<xfrm_type>;
 
-  using iterator_tuple = thrust::tuple<InputIterator, OutputIterator>;
+  using iterator_tuple = ::cuda::std::tuple<InputIterator, OutputIterator>;
   using zip_iter       = thrust::zip_iterator<iterator_tuple>;
 
   zip_iter zipped = thrust::make_zip_iterator(first, result);
 
-  return thrust::get<1>(thrust::for_each_n(exec, zipped, n, functor_type{xfrm_type()}).get_iterator_tuple());
+  return ::cuda::std::get<1>(thrust::for_each_n(exec, zipped, n, functor_type{xfrm_type()}).get_iterator_tuple());
 } // end copy_n()
-
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file temporary_array.h
  *  \brief Container-like class temporary storage inside algorithms.
@@ -33,28 +20,26 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 // Forward declare temporary_array, as it's used by the CUDA copy backend, which
 // is included in contiguous_storage's definition.
 template <typename T, typename System>
 class temporary_array;
-
 } // namespace detail
 THRUST_NAMESPACE_END
 
 #include <thrust/detail/allocator/no_throw_allocator.h>
 #include <thrust/detail/allocator/temporary_allocator.h>
 #include <thrust/detail/contiguous_storage.h>
-#include <thrust/detail/memory_wrapper.h>
 #include <thrust/iterator/detail/tagged_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__host_stdlib/memory>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/type_identity.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
 template <typename T, typename System>
 class temporary_array : public contiguous_storage<T, no_throw_allocator<temporary_allocator<T, System>>>
 {
@@ -146,7 +131,6 @@ public:
       : super_t(to_system, from_system, first, last)
   {}
 };
-
 } // namespace detail
 THRUST_NAMESPACE_END
 

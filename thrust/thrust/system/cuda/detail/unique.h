@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -36,16 +13,14 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_select.cuh>
 #  include <cub/util_math.cuh>
 
-#  include <thrust/advance.h>
 #  include <thrust/count.h>
-#  include <thrust/distance.h>
 #  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
@@ -53,6 +28,10 @@
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/advance.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__iterator/next.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -83,7 +62,6 @@ namespace cuda_cub
 {
 namespace detail
 {
-
 template <cub::SelectImpl SelectionOpt,
           typename Derived,
           typename InputIt,
@@ -134,7 +112,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t dispatch_select_unique(
                             stream);
   _CUDA_CUB_RET_IF_FAIL(status);
 
-  status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+  status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
   _CUDA_CUB_RET_IF_FAIL(status);
 
   // Return if we're only querying temporary storage requirements
@@ -212,7 +190,6 @@ select_unique(execution_policy<Derived>& policy, InputIt first, InputIt last, Ou
 
   return output;
 }
-
 } // namespace detail
 
 //-------------------------
@@ -259,7 +236,7 @@ struct zip_adj_not_predicate
   template <typename TupleType>
   bool _CCCL_HOST_DEVICE operator()(TupleType&& tuple)
   {
-    return !binary_pred(thrust::get<0>(tuple), thrust::get<1>(tuple));
+    return !binary_pred(::cuda::std::get<0>(tuple), ::cuda::std::get<1>(tuple));
   }
 
   BinaryPred binary_pred;
@@ -279,11 +256,10 @@ unique_count(execution_policy<Derived>& policy, ForwardIt first, ForwardIt last,
   return 1
        + thrust::count_if(policy, it, ::cuda::std::next(it, size - 1), zip_adj_not_predicate<BinaryPred>{binary_pred});
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 
 //
 #  include <thrust/memory.h>
 #  include <thrust/unique.h>
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

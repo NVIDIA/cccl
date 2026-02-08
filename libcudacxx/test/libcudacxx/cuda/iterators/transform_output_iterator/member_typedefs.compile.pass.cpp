@@ -27,6 +27,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::value_type, void>);
     static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::output_iterator<Iter, int>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
 
   {
@@ -38,6 +39,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::value_type, void>);
     static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::output_iterator<Iter, int>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
 
   {
@@ -49,6 +51,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::value_type, void>);
     static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::output_iterator<Iter, int>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
 
   {
@@ -60,6 +63,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::value_type, void>);
     static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::output_iterator<Iter, int>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
 }
 

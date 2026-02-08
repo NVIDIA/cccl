@@ -788,8 +788,6 @@ class Configuration(object):
         compute_archs = self.get_lit_conf("compute_archs")
         if self.cxx.type == "nvrtcc":
             self.config.available_features.add("nvrtc")
-            self.cxx.compile_flags += ["-device-int128"]
-            self.cxx.compile_flags += ["-device-float128"]
         if self.cxx.type == "nvcc":
             self.cxx.compile_flags += ["--extended-lambda"]
         real_arch_format = "-gencode=arch=compute_{0},code=sm_{0}"
@@ -825,6 +823,7 @@ class Configuration(object):
                 compute_archs = self.get_all_major_compute_capabilities()
 
             compute_archs = sorted(set(re.split("\\s|;|,", compute_archs)))
+            arch_flags = []
             for s in compute_archs:
                 # Split arch and mode i.e. 80-virtual -> 80, virtual
                 arch, *mode = re.split("-", s)
@@ -847,10 +846,11 @@ class Configuration(object):
                     pre_sm_90 = True
                 if arch < 90 or (arch == 90 and subarchitecture < "a"):
                     pre_sm_90a = True
-                arch_flag = real_arch_format.format(str(arch) + subarchitecture)
+                arch = str(arch) + subarchitecture
+                arch_flags += [real_arch_format.format(arch)]
                 if mode.count("virtual"):
-                    arch_flag = virt_arch_format.format(str(arch) + subarchitecture)
-                self.cxx.compile_flags += [arch_flag]
+                    arch_flags += [virt_arch_format.format(arch)]
+            self.cxx.compile_flags += sorted(arch_flags)
         if pre_sm_32:
             self.config.available_features.add("pre-sm-32")
         if pre_sm_60:
@@ -1049,9 +1049,13 @@ class Configuration(object):
         #    self.cxx.compile_flags += ['-nostdinc++']
         if cxx_headers is None:
             cxx_headers = os.path.join(self.libcudacxx_src_root, "include")
+            thrust_headers = os.path.join(self.libcudacxx_src_root, "../thrust/")
+            cub_headers = os.path.join(self.libcudacxx_src_root, "../cub/")
         if not os.path.isdir(cxx_headers):
             self.lit_config.fatal("cxx_headers='%s' is not a directory." % cxx_headers)
         self.cxx.compile_flags += ["-I" + cxx_headers]
+        self.cxx.compile_flags += ["-I" + thrust_headers]
+        self.cxx.compile_flags += ["-I" + cub_headers]
         if self.libcudacxx_obj_root is not None:
             cxxabi_headers = os.path.join(
                 self.libcudacxx_obj_root, "include", "c++build"
@@ -1372,7 +1376,6 @@ class Configuration(object):
             return
         if debug_level not in ["0", "1"]:
             self.lit_config.fatal('Invalid value for debug_level "%s".' % debug_level)
-        self.cxx.compile_flags += ["-D_LIBCUDACXX_DEBUG=%s" % debug_level]
 
     def configure_warnings(self):
         default_enable_warnings = (
@@ -1464,7 +1467,7 @@ class Configuration(object):
             if "nvcc" not in self.config.available_features:
                 # The '#define static_assert' provided by libc++ in C++03 mode
                 # causes an unused local typedef whenever it is used.
-                self.cxx.addWarningFlagIfSupported("-Wno-unused-local-typedef")
+                self.cxx.addWarningFlagIfSupported("-Wno-unused-local-typedefs")
 
     def configure_sanitizer(self):
         san = self.get_lit_conf("use_sanitizer", "").strip()

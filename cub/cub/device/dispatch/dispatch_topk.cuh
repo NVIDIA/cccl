@@ -18,6 +18,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_topk.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_topk.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
@@ -31,14 +32,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::topk
 {
-enum class select
-{
-  // Select the K elements with the lowest values
-  min,
-  // Select the K elements with the highest values
-  max
-};
-
 // Get the bin ID from the value of element
 template <typename T, select SelectDirection, int BitsPerPass>
 struct extract_bin_op_t
@@ -334,7 +327,7 @@ struct DispatchTopK
     // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
     void* allocations[allocations_array_size] = {};
 
-    error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+    error = CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
     if (cudaSuccess != error)
     {
       return error;
@@ -387,15 +380,13 @@ struct DispatchTopK
         return error;
       }
 
-      _CubLog("Invoking topk_kernel<<<{%d,%d,%d}, %d, 0, "
+      _CubLog("Invoking topk_kernel<<<%d, %d, 0, "
               "%lld>>>(), %d items per thread, %d SM occupancy\n",
-              topk_grid_size.x,
-              topk_grid_size.y,
-              topk_grid_size.z,
+              topk_grid_size,
               block_threads,
               (long long) stream,
               items_per_thread,
-              topk_blocks_per_sm);
+              main_kernel_blocks_per_sm);
     }
 #endif // CUB_DEBUG_LOG
 
@@ -439,47 +430,55 @@ struct DispatchTopK
         const auto topk_first_pass_grid_size = ::cuda::std::min(first_pass_kernel_max_occupancy, num_tiles);
 
         // Compute histogram of the first pass
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(topk_first_pass_grid_size, block_threads, 0, stream)
-          .doit(
-            topk_first_pass_kernel,
-            d_keys_in,
-            d_keys_out,
-            d_values_in,
-            d_values_out,
-            in_buf,
-            in_idx_buf,
-            out_buf,
-            out_idx_buf,
-            counter,
-            histogram,
-            num_items,
-            k,
-            candidate_buffer_length,
-            extract_bin_op,
-            identify_candidates_op,
-            pass);
+        error = CubDebug(
+          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(topk_first_pass_grid_size, block_threads, 0, stream)
+            .doit(topk_first_pass_kernel,
+                  d_keys_in,
+                  d_keys_out,
+                  d_values_in,
+                  d_values_out,
+                  in_buf,
+                  in_idx_buf,
+                  out_buf,
+                  out_idx_buf,
+                  counter,
+                  histogram,
+                  num_items,
+                  k,
+                  candidate_buffer_length,
+                  extract_bin_op,
+                  identify_candidates_op,
+                  pass));
+        if (cudaSuccess != error)
+        {
+          return error;
+        }
       }
       else
       {
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(topk_grid_size, block_threads, 0, stream)
-          .doit(
-            topk_kernel,
-            d_keys_in,
-            d_keys_out,
-            d_values_in,
-            d_values_out,
-            in_buf,
-            in_idx_buf,
-            out_buf,
-            out_idx_buf,
-            counter,
-            histogram,
-            num_items,
-            k,
-            candidate_buffer_length,
-            extract_bin_op,
-            identify_candidates_op,
-            pass);
+        error = CubDebug(
+          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(topk_grid_size, block_threads, 0, stream)
+            .doit(topk_kernel,
+                  d_keys_in,
+                  d_keys_out,
+                  d_values_in,
+                  d_values_out,
+                  in_buf,
+                  in_idx_buf,
+                  out_buf,
+                  out_idx_buf,
+                  counter,
+                  histogram,
+                  num_items,
+                  k,
+                  candidate_buffer_length,
+                  extract_bin_op,
+                  identify_candidates_op,
+                  pass));
+        if (cudaSuccess != error)
+        {
+          return error;
+        }
       }
     }
 
@@ -492,20 +491,25 @@ struct DispatchTopK
     }
     const auto last_filter_kernel_max_occupancy = static_cast<unsigned int>(last_filter_kernel_blocks_per_sm * num_sms);
     const auto last_filter_grid_size            = ::cuda::std::min(last_filter_kernel_max_occupancy, num_tiles);
-    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(last_filter_grid_size, block_threads, 0, stream)
-      .doit(topk_last_filter_kernel,
-            d_keys_in,
-            d_keys_out,
-            d_values_in,
-            d_values_out,
-            out_buf,
-            out_idx_buf,
-            counter,
-            num_items,
-            k,
-            candidate_buffer_length,
-            identify_candidates_op,
-            pass);
+    error                                       = CubDebug(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(last_filter_grid_size, block_threads, 0, stream)
+        .doit(topk_last_filter_kernel,
+              d_keys_in,
+              d_keys_out,
+              d_values_in,
+              d_values_out,
+              out_buf,
+              out_idx_buf,
+              counter,
+              num_items,
+              k,
+              candidate_buffer_length,
+              identify_candidates_op,
+              pass));
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
 
     // pass==num_passes to align with the usage of identify_candidates_op in previous passes.
     return error;
@@ -623,7 +627,6 @@ struct DispatchTopK
     return CubDebug(max_policy_t::Invoke(ptx_version, dispatch));
   }
 };
-
 } // namespace detail::topk
 
 CUB_NAMESPACE_END

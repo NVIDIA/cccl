@@ -33,6 +33,12 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
+// clang complains about missing braces in CUmemLocation constructor but GCC complains if we add them
+
+::cuda::std::size_t __physical_devices_count();
+
 //! @brief A non-owning representation of a CUDA device
 class device_ref
 {
@@ -42,7 +48,17 @@ public:
   //! @brief Create a `device_ref` object from a native device ordinal.
   /*implicit*/ _CCCL_HOST_API constexpr device_ref(int __id) noexcept
       : __id_(__id)
-  {}
+  {
+    _CCCL_IF_CONSTEVAL_DEFAULT
+    {
+      _CCCL_VERIFY(__id >= 0, "Device ID must be a valid GPU device ordinal");
+    }
+    else
+    {
+      _CCCL_VERIFY(__id >= 0 && static_cast<::cuda::std::size_t>(__id) < ::cuda::__physical_devices_count(),
+                   "Device ID must be a valid GPU device ordinal");
+    }
+  }
 
   //! @brief Retrieve the native ordinal of the `device_ref`
   //!
@@ -133,16 +149,6 @@ public:
       ::cuda::__driver::__deviceGet(get()), ::cuda::__driver::__deviceGet(__other_dev.get()));
   }
 
-  //! @brief Retrieve architecture traits of this device.
-  //!
-  //! Architecture traits object contains information about certain traits
-  //! that are shared by all devices belonging to given architecture.
-  //!
-  //! @return A reference to `arch_traits_t` object containing architecture traits of this device
-  [[nodiscard]] _CCCL_HOST_API const arch::traits_t& arch_traits() const; // implemented in
-                                                                          // <cuda/__device/physical_device.h> to avoid
-                                                                          // circular dependency
-
   // TODO this might return some more complex type in the future
   // TODO we might want to include the calling device, depends on what we decide
   // peer access APIs
@@ -156,6 +162,8 @@ public:
                                                                                   // <cuda/__device/physical_device.h>
                                                                                   // to avoid circular dependency
 };
+
+_CCCL_DIAG_POP
 
 _CCCL_END_NAMESPACE_CUDA
 

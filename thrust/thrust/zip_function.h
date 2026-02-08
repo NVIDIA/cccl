@@ -1,4 +1,3 @@
-
 /*! \file thrust/zip_function.h
  *  \brief Adaptor type that turns an N-ary function object into one that takes
  *         a tuple of size N so it can easily be used with algorithms taking zip
@@ -18,10 +17,9 @@
 #endif // no system header
 
 #include <thrust/detail/type_deduction.h>
-#include <thrust/tuple.h>
-#include <thrust/type_traits/integer_sequence.h>
 
 #include <cuda/functional>
+#include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -33,29 +31,6 @@ THRUST_NAMESPACE_BEGIN
  *  \ingroup function_objects
  *  \{
  */
-
-namespace detail
-{
-namespace zip_detail
-{
-
-// Add workaround for decltype(auto) on C++11-only compilers:
-_CCCL_EXEC_CHECK_DISABLE
-template <typename Function, typename Tuple, std::size_t... Is>
-_CCCL_HOST_DEVICE decltype(auto) apply_impl(Function&& func, Tuple&& args, index_sequence<Is...>)
-{
-  return func(thrust::get<Is>(THRUST_FWD(args))...);
-}
-
-template <typename Function, typename Tuple>
-_CCCL_HOST_DEVICE decltype(auto) apply(Function&& func, Tuple&& args)
-{
-  constexpr auto tuple_size = thrust::tuple_size<::cuda::std::decay_t<Tuple>>::value;
-  return apply_impl(THRUST_FWD(func), THRUST_FWD(args), make_index_sequence<tuple_size>{});
-}
-
-} // namespace zip_detail
-} // namespace detail
 
 /*! \p zip_function is a function object that allows the easy use of N-ary
  *  function objects with \p zip_iterators without redefining them to take a
@@ -78,7 +53,7 @@ _CCCL_HOST_DEVICE decltype(auto) apply(Function&& func, Tuple&& args)
  *
  *  struct SumTuple {
  *    float operator()(auto tup) const {
- *      return thrust::get<0>(tup) + thrust::get<1>(tup) + thrust::get<2>(tup);
+ *      return cuda::std::get<0>(tup) + cuda::std::get<1>(tup) + ::cuda::std::get<2>(tup);
  *    }
  *  };
  *  struct SumArgs {
@@ -117,6 +92,10 @@ _CCCL_HOST_DEVICE decltype(auto) apply(Function&& func, Tuple&& args)
  *
  *  \see make_zip_function
  *  \see zip_iterator
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename Function>
 class zip_function
@@ -129,12 +108,10 @@ public:
       : func(::cuda::std::move(func))
   {}
 
-  // Add workaround for decltype(auto) on C++11-only compilers:
-
   template <typename Tuple>
   _CCCL_HOST_DEVICE decltype(auto) operator()(Tuple&& args) const
   {
-    return detail::zip_detail::apply(func, THRUST_FWD(args));
+    return ::cuda::std::apply(func, ::cuda::std::forward<Tuple>(args));
   }
 
   //! Returns a reference to the underlying function.
@@ -153,6 +130,10 @@ private:
  *  \return A \p zip_function that takes a N-tuple.
  *
  *  \see zip_function
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename Function>
 _CCCL_HOST_DEVICE zip_function<::cuda::std::decay_t<Function>> make_zip_function(Function&& fun)
@@ -165,6 +146,10 @@ _CCCL_HOST_DEVICE zip_function<::cuda::std::decay_t<Function>> make_zip_function
  */
 
 /*! \} // end function_objects
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 
 THRUST_NAMESPACE_END

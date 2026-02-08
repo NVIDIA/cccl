@@ -29,6 +29,17 @@ The easiest way to install ``cuda-cccl`` is using pip:
 
 This will install ``cuda-cccl`` along with all required dependencies.
 
+Install from conda-forge
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alternatively, you can install ``cuda-cccl`` using conda:
+
+.. code-block:: bash
+
+   conda install -c conda-forge cccl-python
+
+This will install the CCCL Python libraries and their dependencies from the conda-forge channel.
+
 Install from Source
 ~~~~~~~~~~~~~~~~~~~
 

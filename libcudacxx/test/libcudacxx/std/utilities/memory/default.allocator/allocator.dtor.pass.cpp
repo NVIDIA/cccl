@@ -31,15 +31,15 @@ int main(int, char**)
 {
   test<int>();
   test<void>();
-#ifdef _LIBCUDACXX_VERSION // extension
+#ifdef _CUDA_STD_VERSION // extension
   test<int const>();
-#endif // _LIBCUDACXX_VERSION
+#endif // _CUDA_STD_VERSION
 
   static_assert(test<int>());
   static_assert(test<void>());
-#ifdef _LIBCUDACXX_VERSION // extension
+#ifdef _CUDA_STD_VERSION // extension
   static_assert(test<int const>());
-#endif // _LIBCUDACXX_VERSION
+#endif // _CUDA_STD_VERSION
 
   return 0;
 }

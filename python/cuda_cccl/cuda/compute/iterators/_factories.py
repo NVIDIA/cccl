@@ -1,4 +1,7 @@
-import numba
+# Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from ._iterators import (
     CacheModifiedPointer as _CacheModifiedPointer,
@@ -10,9 +13,13 @@ from ._iterators import (
     CountingIterator as _CountingIterator,
 )
 from ._iterators import (
+    DiscardIterator as _DiscardIterator,
+)
+from ._iterators import (
     make_reverse_iterator,
     make_transform_iterator,
 )
+from ._permutation_iterator import make_permutation_iterator
 from ._zip_iterator import make_zip_iterator
 
 
@@ -38,11 +45,13 @@ def CacheModifiedInputIterator(device_array, modifier):
     Returns:
         A ``CacheModifiedInputIterator`` object initialized with ``device_array``
     """
+    from .. import types
+
     if modifier != "stream":
         raise NotImplementedError("Only stream modifier is supported")
     return _CacheModifiedPointer(
         device_array.__cuda_array_interface__["data"][0],
-        numba.from_dtype(device_array.dtype),
+        types.from_numpy_dtype(device_array.dtype),
     )
 
 
@@ -90,6 +99,29 @@ def CountingIterator(offset):
         A ``CountingIterator`` object initialized to ``offset``
     """
     return _CountingIterator(offset)
+
+
+def DiscardIterator(reference_iterator=None):
+    """Returns an Input or Output Iterator that discards all values written to it.
+
+    Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1discard__iterator.html
+
+    Args:
+        reference_iterator: Optional iterator to use as a reference for value_type and state_type.
+                          If not provided, defaults to uint8.
+
+    Example:
+        The code snippet below demonstrates the usage of a ``DiscardIterator`` to discard items in a unique by key operation:
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/discard_iterator_basic.py
+            :language: python
+            :start-after: # example-begin
+
+
+    Returns:
+        A ``DiscardIterator`` object
+    """
+    return _DiscardIterator(reference_iterator)
 
 
 def ReverseIterator(sequence):
@@ -165,6 +197,33 @@ def TransformOutputIterator(it, op):
     return make_transform_iterator(it, op, "output")
 
 
+def PermutationIterator(values, indices):
+    """Returns an Iterator that accesses values through an index mapping.
+
+    Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1permutation__iterator.html
+
+    The permutation iterator accesses elements from the values collection using indices
+    from the indices collection, effectively computing values[indices[i]] at position i.
+    This is useful for gather/scatter operations and indirect array access patterns.
+
+    Example:
+        The code snippet below demonstrates the usage of a ``PermutationIterator``
+        to access values in a permuted order:
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/permutation_iterator_basic.py
+            :language: python
+            :start-after: # example-begin
+
+    Args:
+        values: The values array or iterator to be permuted
+        indices: An iterator or device array providing the indices for permutation
+
+    Returns:
+        A ``PermutationIterator`` object that yields values[indices[i]] at position i
+    """
+    return make_permutation_iterator(values, indices)
+
+
 def ZipIterator(*iterators):
     """Returns an Iterator representing a zipped sequence of values from N iterators.
 
@@ -179,6 +238,12 @@ def ZipIterator(*iterators):
         combining two device arrays:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/zip_iterator_elementwise.py
+            :language: python
+            :start-after: # example-begin
+
+        ZipIterator can also be used with nested gpu_struct types:
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/struct/nested_struct_zip_iterator.py
             :language: python
             :start-after: # example-begin
 

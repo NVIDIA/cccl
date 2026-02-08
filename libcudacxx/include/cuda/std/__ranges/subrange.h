@@ -57,7 +57,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4848)
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 #if _CCCL_HAS_CONCEPTS()
 template <class _From, class _To>
@@ -433,19 +433,17 @@ _CCCL_API constexpr auto get(const subrange<_Iter, _Sent, _Kind>& __subrange)
   {
     return __subrange.end();
   }
-  _CCCL_UNREACHABLE();
 }
 
 #if _CCCL_HAS_CONCEPTS()
 template <size_t _Index, class _Iter, class _Sent, subrange_kind _Kind>
   requires(_Index < 2)
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
-template <
-  size_t _Index,
-  class _Iter,
-  class _Sent,
-  subrange_kind _Kind,
-  enable_if_t<_Index<2, int>>
+template <size_t _Index,
+          class _Iter,
+          class _Sent,
+          subrange_kind _Kind,
+          enable_if_t<_Index<2, int>>
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 _CCCL_API constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __subrange)
 {
@@ -457,7 +455,6 @@ _CCCL_API constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __subrange)
   {
     return __subrange.end();
   }
-  _CCCL_UNREACHABLE();
 }
 
 template <class _Ip, class _Sp, subrange_kind _Kp>
@@ -466,7 +463,7 @@ inline constexpr bool enable_borrowed_range<subrange<_Ip, _Sp, _Kp>> = true;
 template <class _Rp>
 using borrowed_subrange_t = enable_if_t<range<_Rp>, _If<borrowed_range<_Rp>, subrange<iterator_t<_Rp>>, dangling>>;
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 // [range.subrange.general]
 

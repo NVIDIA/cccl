@@ -53,7 +53,7 @@ private:
     using __tuple_t               = ::cuda::std::__tuple<_Ts...>;
 
     _CCCL_API constexpr explicit __opstate_t(_Rcvr&& __rcvr, __tuple_t __values)
-        : __rcvr_{__rcvr}
+        : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __values_{static_cast<__tuple_t&&>(__values)}
     {}
 
@@ -82,7 +82,7 @@ private:
 public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class... _Ts>
-  _CCCL_NODEBUG_API constexpr auto operator()(_Ts... __ts) const;
+  _CCCL_API constexpr auto operator()(_Ts... __ts) const;
 };
 
 struct just_t : __just_t<just_t, set_value_t>
@@ -132,10 +132,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_JustTag, _SetTag>::__sndr_base_t
 
   [[nodiscard]] _CCCL_API static constexpr auto get_env() noexcept
   {
-    return __inln_attrs_t<__set_tag_t>{};
+    return __inln_attrs_t{};
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS __just_tag_t __tag_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ __just_tag_t __tag_;
   ::cuda::std::__tuple<_Ts...> __values_;
 };
 
@@ -159,18 +159,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT just_stopped_t::__sndr_t
 _CCCL_EXEC_CHECK_DISABLE
 template <class _JustTag, class _SetTag>
 template <class... _Ts>
-_CCCL_NODEBUG_API constexpr auto __just_t<_JustTag, _SetTag>::operator()(_Ts... __ts) const
+_CCCL_API constexpr auto __just_t<_JustTag, _SetTag>::operator()(_Ts... __ts) const
 {
   using __sndr_t = typename _JustTag::template __sndr_t<_Ts...>;
   return __sndr_t{{{}, {static_cast<_Ts&&>(__ts)...}}};
 }
 
 template <class... _Ts>
-inline constexpr size_t structured_binding_size<just_t::__sndr_t<_Ts...>> = 2;
+inline constexpr int structured_binding_size<just_t::__sndr_t<_Ts...>> = 2;
 template <class... _Ts>
-inline constexpr size_t structured_binding_size<just_error_t::__sndr_t<_Ts...>> = 2;
+inline constexpr int structured_binding_size<just_error_t::__sndr_t<_Ts...>> = 2;
 template <class... _Ts>
-inline constexpr size_t structured_binding_size<just_stopped_t::__sndr_t<_Ts...>> = 2;
+inline constexpr int structured_binding_size<just_stopped_t::__sndr_t<_Ts...>> = 2;
 
 _CCCL_GLOBAL_CONSTANT auto just         = just_t{};
 _CCCL_GLOBAL_CONSTANT auto just_error   = just_error_t{};

@@ -37,7 +37,6 @@
 
 namespace cuda::experimental::stf
 {
-
 // Hack setenv on Windows
 #if _CCCL_COMPILER(MSVC)
 /**
@@ -302,7 +301,6 @@ constexpr auto tuple_prepend(T&& prefix, ::std::tuple<P...> tuple)
 
 namespace reserved
 {
-
 // Like ::std::make_tuple, but skips all values of the same type as `::std::ignore`.
 inline constexpr auto make_tuple()
 {
@@ -323,7 +321,6 @@ constexpr auto make_tuple([[maybe_unused]] T t, P... p)
     return tuple_prepend(mv(t), make_tuple(mv(p)...));
   }
 }
-
 } // namespace reserved
 
 /**
@@ -729,5 +726,4 @@ _3197bc91feaf98030b2cc0b441d7b0ea(>=);
 #  undef _3197bc91feaf98030b2cc0b441d7b0ea
 
 #endif // _CCCL_DOXYGEN_INVOKED
-
 } // namespace cuda::experimental::stf

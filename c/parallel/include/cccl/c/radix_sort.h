@@ -41,6 +41,7 @@ typedef struct cccl_device_radix_sort_build_result_t
   CUkernel exclusive_sum_kernel;
   CUkernel onesweep_kernel;
   cccl_sort_order_t order;
+  void* runtime_policy;
 } cccl_device_radix_sort_build_result_t;
 
 CCCL_C_API CUresult cccl_device_radix_sort_build(

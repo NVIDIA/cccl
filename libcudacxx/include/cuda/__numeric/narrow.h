@@ -20,11 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <stdexcept>
-#endif // !_CCCL_COMPILER(NVRTC)
-
 #include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_signed.h>

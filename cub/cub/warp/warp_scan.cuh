@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 //! @file
 //! @rst
@@ -114,6 +90,7 @@ CUB_NAMESPACE_BEGIN
 //!        // Compute warp-wide prefix sums
 //!        int warp_id = threadIdx.x / 32;
 //!        WarpScan(temp_storage[warp_id]).ExclusiveSum(thread_data, thread_data);
+//!    }
 //!
 //! Suppose the set of input ``thread_data`` across the block of threads is
 //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps of
@@ -143,6 +120,8 @@ CUB_NAMESPACE_BEGIN
 //!
 //!            // Compute warp-wide prefix sums
 //!            WarpScan(temp_storage).ExclusiveSum(thread_data, thread_data);
+//!        }
+//!    }
 //!
 //! Suppose the set of input ``thread_data`` across the warp of threads is
 //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` will be
@@ -165,17 +144,14 @@ private:
    * Constants and type definitions
    ******************************************************************************/
 
-  enum
-  {
-    /// Whether the logical warp size and the PTX warp size coincide
-    IS_ARCH_WARP = (LOGICAL_WARP_THREADS == detail::warp_threads),
+  /// Whether the logical warp size and the PTX warp size coincide
+  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == detail::warp_threads);
 
-    /// Whether the logical warp size is a power-of-two
-    IS_POW_OF_TWO = ((LOGICAL_WARP_THREADS & (LOGICAL_WARP_THREADS - 1)) == 0),
+  /// Whether the logical warp size is a power-of-two
+  static constexpr bool IS_POW_OF_TWO = ((LOGICAL_WARP_THREADS & (LOGICAL_WARP_THREADS - 1)) == 0);
 
-    /// Whether the data type is an integer (which has fully-associative addition)
-    IS_INTEGER = cuda::std::is_integral_v<T>
-  };
+  /// Whether the data type is an integer (which has fully-associative addition)
+  static constexpr bool IS_INTEGER = cuda::std::is_integral_v<T>;
 
   /// Internal specialization.
   /// Use SHFL-based scan if LOGICAL_WARP_THREADS is a power-of-two
@@ -215,12 +191,15 @@ public:
       , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS)
   {}
 
-  //! @}  end member group
+  //! @}
   //! @name Inclusive prefix sums
   //! @{
 
   //! @rst
   //! Computes an inclusive prefix sum across the calling warp.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -248,6 +227,7 @@ public:
   //!        // Compute inclusive warp-wide prefix sums
   //!        int warp_id = threadIdx.x / 32;
   //!        WarpScan(temp_storage[warp_id]).InclusiveSum(thread_data, thread_data);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps
@@ -267,6 +247,9 @@ public:
   //! @rst
   //! Computes an inclusive prefix sum across the calling warp.
   //! Also provides every thread with the warp-wide ``warp_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -294,9 +277,8 @@ public:
   //!        // Compute inclusive warp-wide prefix sums
   //!        int warp_aggregate;
   //!        int warp_id = threadIdx.x / 32;
-  //!        WarpScan(temp_storage[warp_id]).InclusiveSum(thread_data,
-  //!                                                     thread_data,
-  //!                                                     warp_aggregate);
+  //!        WarpScan(temp_storage[warp_id]).InclusiveSum(thread_data, thread_data, warp_aggregate);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps
@@ -317,13 +299,16 @@ public:
     InclusiveScan(input, inclusive_output, ::cuda::std::plus<>{}, warp_aggregate);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Exclusive prefix sums
   //! @{
 
   //! @rst
   //! Computes an exclusive prefix sum across the calling warp. The value of 0 is applied as the
   //! initial value, and is assigned to ``exclusive_output`` in *lane*\ :sub:`0`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @identityzero
   //! * @smemwarpreuse
@@ -352,6 +337,7 @@ public:
   //!        // Compute exclusive warp-wide prefix sums
   //!        int warp_id = threadIdx.x / 32;
   //!        WarpScan(temp_storage[warp_id]).ExclusiveSum(thread_data, thread_data);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps
@@ -373,6 +359,9 @@ public:
   //! Computes an exclusive prefix sum across the calling warp. The value of 0 is applied as the
   //! initial value, and is assigned to ``exclusive_output`` in *lane*\ :sub:`0`.
   //! Also provides every thread with the warp-wide ``warp_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @identityzero
   //! * @smemwarpreuse
@@ -426,13 +415,16 @@ public:
     ExclusiveScan(input, exclusive_output, initial_value, ::cuda::std::plus<>{}, warp_aggregate);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Inclusive prefix scans
   //! @{
 
   //! @rst
   //! Computes an inclusive prefix scan using the specified binary scan functor across the
   //! calling warp.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -489,6 +481,9 @@ public:
   //! Computes an inclusive prefix scan using the specified binary scan functor across the
   //! calling warp.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @smemwarpreuse
   //!
   //! Snippet
@@ -541,6 +536,9 @@ public:
   //! Computes an inclusive prefix scan using the specified binary scan functor across the
   //! calling warp. Also provides every thread with the warp-wide ``warp_aggregate`` of
   //! all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -603,6 +601,9 @@ public:
   //! Computes an inclusive prefix scan using the specified binary scan functor across the
   //! calling warp. Also provides every thread with the warp-wide ``warp_aggregate`` of
   //! all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -930,7 +931,7 @@ public:
 
 #endif // _CCCL_DOXYGEN_INVOKED  // Do not document partial inclusive scans
 
-  //! @}  end member group
+  //! @}
   //! @name Exclusive prefix scans
   //! @{
 
@@ -938,6 +939,9 @@ public:
   //! Computes an exclusive prefix scan using the specified binary scan functor across the
   //! calling warp. Because no initial value is supplied, the ``output`` computed for
   //! *lane*\ :sub:`0` is undefined.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -999,6 +1003,9 @@ public:
   //! @rst
   //! Computes an exclusive prefix scan using the specified binary scan functor across the
   //! calling warp.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -1068,6 +1075,9 @@ public:
   //! calling warp. Because no initial value is supplied, the ``output`` computed for
   //! *lane*\ :sub:`0` is undefined. Also provides every thread with the warp-wide
   //! ``warp_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -1139,6 +1149,9 @@ public:
   //! Computes an exclusive prefix scan using the specified binary scan functor across the
   //! calling warp. Also provides every thread with the warp-wide ``warp_aggregate`` of
   //! all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -1523,7 +1536,7 @@ public:
 
 #endif // _CCCL_DOXYGEN_INVOKED  // Do not document partial exclusive scans
 
-  //! @}  end member group
+  //! @}
   //! @name Combination (inclusive & exclusive) prefix scans
   //! @{
 
@@ -1531,6 +1544,9 @@ public:
   //! Computes both inclusive and exclusive prefix scans using the specified binary scan functor
   //! across the calling warp. Because no initial value is supplied, the ``exclusive_output``
   //! computed for *lane*\ :sub:`0` is undefined.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -1599,6 +1615,9 @@ public:
   //! @rst
   //! Computes both inclusive and exclusive prefix scans using the specified binary scan functor
   //! across the calling warp.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -1829,12 +1848,15 @@ public:
 
 #endif // _CCCL_DOXYGEN_INVOKED  // Do not document partial combined scans
 
-  //! @}  end member group
+  //! @}
   //! @name Data exchange
   //! @{
 
   //! @rst
   //! Broadcast the value ``input`` from *lane*\ :sub:`src_lane` to all lanes in the warp
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -1880,7 +1902,7 @@ public:
     return InternalWarpScan(temp_storage).Broadcast(input, src_lane);
   }
 
-  //@}  end member group
+  //@}
 };
 
 CUB_NAMESPACE_END

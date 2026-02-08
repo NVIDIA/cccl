@@ -10,6 +10,7 @@
 //
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-90
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 // <cuda/barrier>
 
@@ -30,7 +31,7 @@ __global__ void test_bulk_tensor(CUtensorMap* map)
   __shared__ int smem;
 #if _CCCL_CUDA_COMPILER(CLANG)
   __shared__ char barrier_data[sizeof(barrier)];
-  barrier& bar = cuda::std::bit_cast<barrier>(barrier_data);
+  barrier& bar = reinterpret_cast<barrier&>(barrier_data);
 #else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG)
   __shared__ barrier bar;
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
@@ -57,7 +58,7 @@ __global__ void test_bulk(void* gmem)
 {
   __shared__ int smem;
   __shared__ char barrier_data[sizeof(barrier)];
-  barrier& bar = *reinterpret_cast<barrier*>(&barrier_data);
+  barrier& bar = reinterpret_cast<barrier&>(barrier_data);
   if (threadIdx.x == 0)
   {
     init(&bar, blockDim.x);

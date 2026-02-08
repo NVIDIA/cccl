@@ -147,14 +147,13 @@ template <class _IndexType, size_t _Index, class... _Slices>
       return 0;
     }
   }
-  _CCCL_UNREACHABLE();
 }
 
 template <size_t _Index, class _Extents, class... _Slices>
 [[nodiscard]] _CCCL_API constexpr typename _Extents::index_type
 __last_extent_from_slice(const _Extents& __src, _Slices... __slices) noexcept
 {
-  static_assert(__mdspan_detail::__is_extents_v<_Extents>,
+  static_assert(__is_cuda_std_extents_v<_Extents>,
                 "[mdspan.sub.helpers] mandates Extents to be a specialization of extents");
   using _IndexType                     = typename _Extents::index_type;
   using _SliceType                     = __get_slice_type<_Index, _Slices...>;
@@ -179,7 +178,6 @@ __last_extent_from_slice(const _Extents& __src, _Slices... __slices) noexcept
       return ::cuda::std::__index_cast<_IndexType>(__src.extent(_Index));
     }
   }
-  _CCCL_UNREACHABLE();
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

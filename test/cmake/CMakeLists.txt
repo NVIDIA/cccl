@@ -1,7 +1,8 @@
-set(cmake_opts
-  -D "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-  -D "CMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
-  -D "CMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+set(
+  cmake_opts
+  "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+  "-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
+  "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
 )
 
 # Temporary installation prefix for tests against installed project:
@@ -29,19 +30,23 @@ foreach (root_type IN ITEMS SOURCE INSTALL)
     endif()
     foreach (package_type IN LISTS package_types)
       string(TOLOWER "${root_type}.${package_type}.${components}" suffix)
-      cccl_add_compile_test(test_name
+      cccl_add_compile_test(
+        test_name
         cccl.test.cmake
         test_export
         "${suffix}"
         ${cmake_opts}
-        -D "CCCL_ROOT=${cccl_root}"
-        -D "COMPONENTS=${components}"
-        -D "PACKAGE_TYPE=${package_type}"
-        -D "CCCL_ENABLE_UNSTABLE=${CCCL_ENABLE_UNSTABLE}"
+        "-DCCCL_ROOT=${cccl_root}"
+        "-DCOMPONENTS=${components}"
+        "-DPACKAGE_TYPE=${package_type}"
+        "-DCCCL_ENABLE_UNSTABLE=${CCCL_ENABLE_UNSTABLE}"
       )
 
       if (root_type STREQUAL "INSTALL")
-        set_tests_properties(${test_name} PROPERTIES FIXTURES_REQUIRED install_tree)
+        set_tests_properties(
+          ${test_name}
+          PROPERTIES FIXTURES_REQUIRED install_tree
+        )
       endif()
     endforeach() # package_type
   endforeach() # components
@@ -49,18 +54,25 @@ endforeach() # root_type
 
 ################################################################################
 # Install tree fixtures
-add_test(NAME cccl.test.cmake.install_tree.install
-  COMMAND "${CMAKE_COMMAND}"
-    --install "${CCCL_BINARY_DIR}"
-    --prefix "${tmp_install_prefix}"
+add_test(
+  NAME cccl.test.cmake.install_tree.install
+  # gersemi: off
+  COMMAND
+    "${CMAKE_COMMAND}"
+      --install "${CCCL_BINARY_DIR}"
+      --prefix "${tmp_install_prefix}"
+  # gersemi: on
 )
-set_tests_properties(cccl.test.cmake.install_tree.install PROPERTIES
-  FIXTURES_SETUP install_tree
+set_tests_properties(
+  cccl.test.cmake.install_tree.install
+  PROPERTIES FIXTURES_SETUP install_tree
 )
 
-add_test(NAME cccl.test.cmake.install_tree.cleanup
+add_test(
+  NAME cccl.test.cmake.install_tree.cleanup
   COMMAND "${CMAKE_COMMAND}" -E rm -rf "${tmp_install_prefix}"
 )
-set_tests_properties(cccl.test.cmake.install_tree.cleanup PROPERTIES
-  FIXTURES_CLEANUP install_tree
+set_tests_properties(
+  cccl.test.cmake.install_tree.cleanup
+  PROPERTIES FIXTURES_CLEANUP install_tree
 )

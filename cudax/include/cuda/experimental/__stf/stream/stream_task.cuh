@@ -36,7 +36,6 @@
 
 namespace cuda::experimental::stf
 {
-
 class stream_ctx;
 
 template <typename... Data>
@@ -216,12 +215,12 @@ public:
 
   void set_current_place(pos4 p)
   {
-    get_exec_place().as_grid().set_current_place(ctx, p);
+    get_exec_place().as_grid().set_current_place(p);
   }
 
   void unset_current_place()
   {
-    return get_exec_place().as_grid().unset_current_place(ctx);
+    return get_exec_place().as_grid().unset_current_place();
   }
 
   const exec_place& get_current_place()
@@ -888,5 +887,4 @@ public:
   }
 };
 #endif // _CCCL_DOXYGEN_INVOKED
-
 } // namespace cuda::experimental::stf

@@ -23,6 +23,7 @@
 
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/type_list.h>
@@ -151,7 +152,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
       }
       _CCCL_CATCH_ALL
       {
-        execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), ::std::current_exception());
+        execution::set_error(static_cast<_Rcvr&&>(__state_->__rcvr_), execution::current_exception());
       }
     }
 
@@ -206,17 +207,17 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class _Sndr, class _Pred, class _Then, class _Else>
-  _CCCL_NODEBUG_API constexpr auto operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const;
+  _CCCL_API constexpr auto operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const;
 
   template <class _Pred, class _Then, class _Else>
-  _CCCL_NODEBUG_API constexpr auto operator()(_Pred __pred, _Then __then, _Else __else) const;
+  _CCCL_API constexpr auto operator()(_Pred __pred, _Then __then, _Else __else) const;
 };
 
 template <class _Pred, class _Then, class _Else, class _Sndr>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__sndr_t<conditional_t::__closure_base_t<_Pred, _Then, _Else>, _Sndr>
 {
   using __params_t _CCCL_NODEBUG_ALIAS = conditional_t::__closure_base_t<_Pred, _Then, _Else>;
-  _CCCL_NO_UNIQUE_ADDRESS conditional_t __tag_;
+  /*_CCCL_NO_UNIQUE_ADDRESS*/ conditional_t __tag_;
   __params_t __params_;
   _Sndr __sndr_;
 
@@ -255,12 +256,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__sndr_t<conditional_t::__cl
 template <class _Pred, class _Then, class _Else>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__closure_base_t
 {
-  _Pred pred;
-  _Then on_true;
-  _Else on_false;
-
   template <class _Sndr>
-  _CCCL_NODEBUG_API auto __mk_sender(_Sndr&& __sndr) -> __sndr_t<__closure_base_t, _Sndr>
+  _CCCL_API auto operator()(_Sndr __sndr) &&
   {
     using __sndr_t = conditional_t::__sndr_t<__closure_base_t, _Sndr>;
 
@@ -268,42 +265,46 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__closure_base_t
     // the composed sender immediately.
     if constexpr (!dependent_sender<_Sndr>)
     {
-      __assert_valid_completion_signatures(get_completion_signatures<__sndr_t>());
+      __assert_valid_completion_signatures(execution::get_completion_signatures<__sndr_t>());
     }
 
     return __sndr_t{{}, static_cast<__closure_base_t&&>(*this), static_cast<_Sndr&&>(__sndr)};
   }
 
   template <class _Sndr>
-  _CCCL_NODEBUG_API auto operator()(_Sndr __sndr) -> __sndr_t<__closure_base_t, _Sndr>
+  _CCCL_API auto operator()(_Sndr __sndr) const&
   {
-    return __mk_sender(static_cast<_Sndr&&>(__sndr));
+    return __closure_base_t(*this)(static_cast<_Sndr&&>(__sndr));
   }
 
   template <class _Sndr>
-  _CCCL_NODEBUG_API friend auto operator|(_Sndr __sndr, __closure_base_t __self) -> __sndr_t<__closure_base_t, _Sndr>
+  _CCCL_API friend auto operator|(_Sndr __sndr, __closure_base_t __self)
   {
-    return __self.__mk_sender(static_cast<_Sndr&&>(__sndr));
+    return static_cast<__closure_base_t&&>(__self)(static_cast<_Sndr&&>(__sndr));
   }
+
+  _Pred pred;
+  _Then on_true;
+  _Else on_false;
 };
 
 template <class _Sndr, class _Pred, class _Then, class _Else>
-_CCCL_NODEBUG_API constexpr auto conditional_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const
+_CCCL_API constexpr auto conditional_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const
 {
   using __params_t _CCCL_NODEBUG_ALIAS = __closure_base_t<_Pred, _Then, _Else>;
   __params_t __params{static_cast<_Pred&&>(__pred), static_cast<_Then&&>(__then), static_cast<_Else&&>(__else)};
-  return static_cast<__params_t&&>(__params).__mk_sender(static_cast<_Sndr&&>(__sndr));
+  return static_cast<__params_t&&>(__params)(static_cast<_Sndr&&>(__sndr));
 }
 
 template <class _Pred, class _Then, class _Else>
-_CCCL_NODEBUG_API constexpr auto conditional_t::operator()(_Pred __pred, _Then __then, _Else __else) const
+_CCCL_API constexpr auto conditional_t::operator()(_Pred __pred, _Then __then, _Else __else) const
 {
   return __closure_base_t<_Pred, _Then, _Else>{
     static_cast<_Pred&&>(__pred), static_cast<_Then&&>(__then), static_cast<_Else&&>(__else)};
 }
 
 template <class _Params, class _Sndr>
-inline constexpr size_t structured_binding_size<conditional_t::__sndr_t<_Params, _Sndr>> = 3;
+inline constexpr int structured_binding_size<conditional_t::__sndr_t<_Params, _Sndr>> = 3;
 
 _CCCL_GLOBAL_CONSTANT conditional_t conditional{};
 } // namespace cuda::experimental::execution

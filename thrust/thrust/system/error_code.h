@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file error_code.h
  *  \brief An object used to hold error values, such as those originating from the
@@ -41,7 +28,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace system
 {
-
 /*! \addtogroup system_diagnostics
  *  \{
  */
@@ -64,7 +50,6 @@ struct is_error_condition_enum : public thrust::detail::false_type
 // XXX N3092 prefers enum class errc { ... }
 namespace errc
 {
-
 /*! An enum containing common error codes.
  */
 enum errc_t
@@ -148,7 +133,6 @@ enum errc_t
   value_too_large                    = detail::eoverflow,
   wrong_protocol_type                = detail::eprototype
 }; // end errc_t
-
 } // end namespace errc
 
 /*! Specialization of \p is_error_condition_enum for \p errc::errc_t
@@ -487,7 +471,6 @@ inline bool operator!=(const error_condition& lhs, const error_condition& rhs);
 
 /*! \} // end system_diagnostics
  */
-
 } // namespace system
 
 // import names into thrust::

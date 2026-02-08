@@ -21,7 +21,7 @@
 //   constexpr range_value_t<R>
 //     ranges::min(R&& r, Comp comp = {}, Proj proj = {});
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/functional>

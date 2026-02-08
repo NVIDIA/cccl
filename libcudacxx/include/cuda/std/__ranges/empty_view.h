@@ -26,7 +26,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_object_v<_Tp>)
@@ -58,9 +58,9 @@ public:
 template <class _Tp>
 inline constexpr bool enable_borrowed_range<empty_view<_Tp>> = true;
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
-_CCCL_BEGIN_NAMESPACE_VIEWS
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
 
 #if _CCCL_COMPILER(MSVC)
 template <class _Tp>
@@ -70,7 +70,7 @@ template <class _Tp>
 _CCCL_GLOBAL_CONSTANT empty_view<_Tp> empty{};
 #endif // !_CCCL_COMPILER_MSVC
 
-_CCCL_END_NAMESPACE_VIEWS
+_CCCL_END_NAMESPACE_CUDA_STD_VIEWS
 
 #include <cuda/std/__cccl/epilogue.h>
 

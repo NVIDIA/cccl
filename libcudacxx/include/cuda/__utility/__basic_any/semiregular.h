@@ -35,6 +35,7 @@
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/movable.h>
 #include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -50,18 +51,21 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! semi-regular overrides
 //!
 
+//! @note We use `::cuda::std::enable_if_t` here instead of requires-clauses
+//! to avoid ABI differences between C++17 and C++20 modes.
+
 _CCCL_EXEC_CHECK_DISABLE
-_CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(::cuda::std::movable<_Tp>)
-_CCCL_PUBLIC_API auto __move_fn(_Tp& __src, void* __dst) noexcept -> void
+template <class _Tp>
+_CCCL_PUBLIC_API auto __move_fn(_Tp& __src, void* __dst) noexcept
+  -> ::cuda::std::enable_if_t<::cuda::std::movable<_Tp>, void>
 {
   ::new (__dst) _Tp(static_cast<_Tp&&>(__src));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
-_CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(::cuda::std::movable<_Tp>)
-[[nodiscard]] _CCCL_PUBLIC_API auto __try_move_fn(_Tp& __src, void* __dst, size_t __size, size_t __align) -> bool
+template <class _Tp>
+[[nodiscard]] _CCCL_PUBLIC_API auto __try_move_fn(_Tp& __src, void* __dst, size_t __size, size_t __align)
+  -> ::cuda::std::enable_if_t<::cuda::std::movable<_Tp>, bool>
 {
   if (::cuda::__is_small<_Tp>(__size, __align))
   {
@@ -76,9 +80,9 @@ _CCCL_REQUIRES(::cuda::std::movable<_Tp>)
 }
 
 _CCCL_EXEC_CHECK_DISABLE
-_CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(::cuda::std::copyable<_Tp>)
-[[nodiscard]] _CCCL_PUBLIC_API auto __copy_fn(_Tp const& __src, void* __dst, size_t __size, size_t __align) -> bool
+template <class _Tp>
+[[nodiscard]] _CCCL_PUBLIC_API auto __copy_fn(_Tp const& __src, void* __dst, size_t __size, size_t __align)
+  -> ::cuda::std::enable_if_t<::cuda::std::copyable<_Tp>, bool>
 {
   if (::cuda::__is_small<_Tp>(__size, __align))
   {
@@ -93,10 +97,10 @@ _CCCL_REQUIRES(::cuda::std::copyable<_Tp>)
 }
 
 _CCCL_EXEC_CHECK_DISABLE
-_CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(::cuda::std::equality_comparable<_Tp>)
+template <class _Tp>
 [[nodiscard]] _CCCL_PUBLIC_API auto
-__equal_fn(_Tp const& __self, ::cuda::std::__type_info_ref __type, void const* __other) -> bool
+__equal_fn(_Tp const& __self, ::cuda::std::__type_info_ref __type, void const* __other)
+  -> ::cuda::std::enable_if_t<::cuda::std::equality_comparable<_Tp>, bool>
 {
   if (_CCCL_TYPEID(_Tp) == __type)
   {
@@ -106,9 +110,9 @@ __equal_fn(_Tp const& __self, ::cuda::std::__type_info_ref __type, void const* _
 }
 
 _CCCL_EXEC_CHECK_DISABLE
-_CCCL_TEMPLATE(class _From, class _To)
-_CCCL_REQUIRES(::cuda::std::convertible_to<_From, _To>)
-[[nodiscard]] _CCCL_PUBLIC_API _To __conversion_fn(::cuda::std::type_identity_t<_From> __self)
+template <class _From, class _To>
+[[nodiscard]] _CCCL_PUBLIC_API auto __conversion_fn(::cuda::std::type_identity_t<_From> __self)
+  -> ::cuda::std::enable_if_t<::cuda::std::convertible_to<_From, _To>, _To>
 {
   return static_cast<_To>(static_cast<_From&&>(__self));
 }
@@ -119,8 +123,7 @@ _CCCL_REQUIRES(::cuda::std::convertible_to<_From, _To>)
 template <class...>
 struct __imovable : __basic_interface<__imovable>
 {
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(::cuda::std::movable<_Tp>)
+  template <class _Tp>
   using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Tp, &::cuda::__try_move_fn<_Tp>, &::cuda::__move_fn<_Tp>>;
 
   _CCCL_API auto __move_to(void* __pv) noexcept -> void
@@ -137,8 +140,7 @@ struct __imovable : __basic_interface<__imovable>
 template <class...>
 struct __icopyable : __basic_interface<__icopyable, __extends<__imovable<>>>
 {
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(::cuda::std::copyable<_Tp>)
+  template <class _Tp>
   using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Tp, &::cuda::__copy_fn<_Tp>>;
 
   [[nodiscard]] _CCCL_API auto __copy_to(void* __pv, size_t __size, size_t __align) const -> bool

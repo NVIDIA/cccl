@@ -26,13 +26,9 @@
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/fp.h>
+#include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/limits>
-
-// MSVC and clang cuda need the host side functions included
-#if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
-#  include <math.h>
-#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -52,9 +48,7 @@
 #  ifndef FP_NORMAL
 #    define FP_NORMAL 4
 #  endif // ! FP_NORMAL
-#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ ^/  vvv !_CCCL_COMPILER(NVRTC) vvv
-#  include <math.h>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_COMPILER(NVRTC)
 
 #ifndef FP_ILOGB0
 #  define FP_ILOGB0 (-INT_MAX - 1)
@@ -125,7 +119,7 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_FPCLASSIFY)
   return _CCCL_BUILTIN_FPCLASSIFY(FP_NAN, FP_INFINITE, FP_NORMAL, FP_SUBNORMAL, FP_ZERO, __x);
 #else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_TARGET(NV_IS_HOST, (return ::fpclassify(__x);))
   }
@@ -138,7 +132,7 @@ template <class _Tp>
 #if defined(_CCCL_BUILTIN_FPCLASSIFY)
   return _CCCL_BUILTIN_FPCLASSIFY(FP_NAN, FP_INFINITE, FP_NORMAL, FP_SUBNORMAL, FP_ZERO, __x);
 #else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_TARGET(NV_IS_HOST, (return ::fpclassify(__x);))
   }
@@ -152,7 +146,7 @@ template <class _Tp>
 #  if defined(_CCCL_BUILTIN_FPCLASSIFY)
   return _CCCL_BUILTIN_FPCLASSIFY(FP_NAN, FP_INFINITE, FP_NORMAL, FP_SUBNORMAL, FP_ZERO, __x);
 #  else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
-  if (!::cuda::std::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_TARGET(NV_IS_HOST, (return ::fpclassify(__x);))
   }

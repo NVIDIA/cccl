@@ -39,19 +39,19 @@ on:
 jobs:
   build-matx:
     name: Build MatX
-    runs-on: ${{ github.repository == 'NVIDIA/cccl' && 'linux-amd64-cpu32' || 'ubuntu-latest' }}
+    runs-on: linux-amd64-cpu16m
     permissions:
       id-token: write
       contents: read
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Add NVCC problem matcher
         run: echo "::add-matcher::$(pwd)/.github/problem-matchers/problem-matcher.json"
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v5
         if: ${{ github.repository == 'NVIDIA/cccl' }}
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
@@ -66,7 +66,7 @@ jobs:
           #! /usr/bin/env bash
           set -eo pipefail
 
-          ~/cccl/ci/matx/build_matx.sh;
+          ~/cccl/ci/matx/build_matx.sh
           sccache --show-adv-stats
           EOF
 
@@ -92,7 +92,7 @@ jobs:
 
           .devcontainer/launch.sh \
             --docker \
-            --cuda 12.9 \
+            --cuda 13.1 \
             --host gcc14 \
             --cuda-ext \
             --env "CCCL_TAG=${CCCL_TAG}" \

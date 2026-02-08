@@ -32,12 +32,13 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_RANGES
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
 
 // CRTP base that one can derive from in order to be considered a range adaptor closure
 // by the library. When deriving from this class, a pipe operator will be provided to
@@ -59,7 +60,7 @@ struct __pipeable
       : _Fn(::cuda::std::move(__f))
   {}
 };
-_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(__pipeable);
+_CCCL_CTAD_SUPPORTED_FOR_TYPE(__pipeable);
 
 template <class _Tp>
 _CCCL_HOST_DEVICE _Tp __derived_from_range_adaptor_closure(__range_adaptor_closure<_Tp>*);
@@ -103,7 +104,7 @@ template <class _Tp, enable_if_t<is_class_v<_Tp>, int> = 0, enable_if_t<same_as<
 class range_adaptor_closure : public __range_adaptor_closure<_Tp>
 {};
 
-_CCCL_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -41,8 +41,9 @@ def discover_examples():
             # Calculate the relative path from the tests directory
             rel_path = python_file.relative_to(tests_dir)
 
-            # Convert path to module name (e.g., "coop/examples/block/reduce.py" -> "coop.examples.block.reduce")
-            module_name = str(rel_path.with_suffix("")).replace("/", ".")
+            # Convert path to module name (OS-agnostic)
+            # Example: coop/examples/block/reduce.py -> coop.examples.block.reduce
+            module_name = ".".join(rel_path.with_suffix("").parts)
 
             # Extract category info for display
             parts = rel_path.parts

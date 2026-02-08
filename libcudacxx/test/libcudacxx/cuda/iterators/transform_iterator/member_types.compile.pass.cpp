@@ -11,6 +11,7 @@
 #include <cuda/iterator>
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
+#include <cuda/std/type_traits>
 
 #include "test_iterators.h"
 #include "test_macros.h"
@@ -36,6 +37,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<typename TIter::reference, int&>);
     static_assert(cuda::std::same_as<typename TIter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<TIter>);
+    static_assert(cuda::std::is_trivially_copyable_v<TIter>);
   }
   {
     // Member typedefs for random access iterator.
@@ -46,6 +48,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<typename TIter::reference, int&>);
     static_assert(cuda::std::same_as<typename TIter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<TIter>);
+    static_assert(cuda::std::is_trivially_copyable_v<TIter>);
   }
   {
     // Member typedefs for random access iterator, LWG3798 rvalue reference.
@@ -56,6 +59,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<typename TIter::reference, int&&>);
     static_assert(cuda::std::same_as<typename TIter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<TIter>);
+    static_assert(cuda::std::is_trivially_copyable_v<TIter>);
   }
   {
     // Member typedefs for random access iterator/not-lvalue-ref.
@@ -66,6 +70,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<typename TIter::reference, int>);
     static_assert(cuda::std::same_as<typename TIter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<TIter>);
+    static_assert(cuda::std::is_trivially_copyable_v<TIter>);
   }
   {
     // Member typedefs for bidirectional iterator.
@@ -76,6 +81,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<typename TIter::reference, int&>);
     static_assert(cuda::std::same_as<typename TIter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::bidirectional_iterator<TIter>);
+    static_assert(cuda::std::is_trivially_copyable_v<TIter>);
   }
   {
     // Member typedefs for forward iterator.
@@ -86,6 +92,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<typename TIter::reference, int&>);
     static_assert(cuda::std::same_as<typename TIter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::forward_iterator<TIter>);
+    static_assert(cuda::std::is_trivially_copyable_v<TIter>);
   }
   {
     // Member typedefs for input iterator.
@@ -96,6 +103,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<typename TIter::reference, int&>);
     static_assert(cuda::std::same_as<typename TIter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::input_iterator<TIter>);
+    static_assert(cuda::std::is_trivially_copyable_v<TIter>);
   }
 
   {
@@ -107,6 +115,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<typename TIter::reference, int>);
     static_assert(cuda::std::same_as<typename TIter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<TIter>);
+    static_assert(cuda::std::is_trivially_copyable_v<TIter>);
   }
 
   {
@@ -118,6 +127,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<typename TIter::reference, int>);
     static_assert(cuda::std::same_as<typename TIter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<TIter>);
+    static_assert(cuda::std::is_trivially_copyable_v<TIter>);
   }
 
   return true;

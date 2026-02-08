@@ -37,13 +37,13 @@ template <__disposition _Disposition>
 struct __completion_tag
 {
   template <__disposition _OtherDisposition>
-  _CCCL_NODEBUG_API constexpr auto operator==(__completion_tag<_OtherDisposition>) const noexcept -> bool
+  _CCCL_TRIVIAL_API constexpr auto operator==(__completion_tag<_OtherDisposition>) const noexcept -> bool
   {
     return _Disposition == _OtherDisposition;
   }
 
   template <__disposition _OtherDisposition>
-  _CCCL_NODEBUG_API constexpr auto operator!=(__completion_tag<_OtherDisposition>) const noexcept -> bool
+  _CCCL_TRIVIAL_API constexpr auto operator!=(__completion_tag<_OtherDisposition>) const noexcept -> bool
   {
     return _Disposition != _OtherDisposition;
   }
@@ -63,7 +63,7 @@ struct set_value_t : __completion_tag<__disposition::__value>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Rcvr, class... _Ts)
   _CCCL_REQUIRES(__has_set_value_mbr<_Rcvr, _Ts...>)
-  _CCCL_NODEBUG_API constexpr void operator()(_Rcvr&& __rcvr, _Ts&&... __ts) const noexcept
+  _CCCL_TRIVIAL_API constexpr void operator()(_Rcvr&& __rcvr, _Ts&&... __ts) const noexcept
   {
     static_assert(__same_as<decltype(static_cast<_Rcvr&&>(__rcvr).set_value(static_cast<_Ts&&>(__ts)...)), void>);
     static_assert(noexcept(static_cast<_Rcvr&&>(__rcvr).set_value(static_cast<_Ts&&>(__ts)...)));
@@ -83,7 +83,7 @@ struct set_error_t : __completion_tag<__disposition::__error>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Rcvr, class _Ey)
   _CCCL_REQUIRES(__has_set_error_mbr<_Rcvr, _Ey>)
-  _CCCL_NODEBUG_API constexpr void operator()(_Rcvr&& __rcvr, _Ey&& __e) const noexcept
+  _CCCL_TRIVIAL_API constexpr void operator()(_Rcvr&& __rcvr, _Ey&& __e) const noexcept
   {
     static_assert(__same_as<decltype(static_cast<_Rcvr&&>(__rcvr).set_error(static_cast<_Ey&&>(__e))), void>);
     static_assert(noexcept(static_cast<_Rcvr&&>(__rcvr).set_error(static_cast<_Ey&&>(__e))));
@@ -103,7 +103,7 @@ struct set_stopped_t : __completion_tag<__disposition::__stopped>
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Rcvr)
   _CCCL_REQUIRES(__has_set_stopped_mbr<_Rcvr>)
-  _CCCL_NODEBUG_API constexpr void operator()(_Rcvr&& __rcvr) const noexcept
+  _CCCL_TRIVIAL_API constexpr void operator()(_Rcvr&& __rcvr) const noexcept
   {
     static_assert(__same_as<decltype(static_cast<_Rcvr&&>(__rcvr).set_stopped()), void>);
     static_assert(noexcept(static_cast<_Rcvr&&>(__rcvr).set_stopped()));
@@ -123,7 +123,7 @@ struct start_t
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OpState)
   _CCCL_REQUIRES(__has_start_mbr<_OpState>)
-  _CCCL_NODEBUG_API constexpr void operator()(_OpState& __opstate) const noexcept
+  _CCCL_TRIVIAL_API constexpr void operator()(_OpState& __opstate) const noexcept
   {
     static_assert(__same_as<decltype(__opstate.start()), void>);
     static_assert(noexcept(__opstate.start()));
@@ -131,15 +131,39 @@ struct start_t
   }
 };
 
+template <class _Sndr, class _Rcvr>
+_CCCL_CONCEPT __has_connect_mbr = //
+  _CCCL_REQUIRES_EXPR((_Sndr, _Rcvr), _Sndr& __sndr, _Rcvr& __rcvr) //
+  ( //
+    static_cast<_Sndr&&>(__sndr).connect(static_cast<_Rcvr&&>(__rcvr)) //
+  );
+
 // connect
 struct connect_t
 {
+private:
   template <class _Sndr, class _Rcvr>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
-    noexcept(noexcept(transform_sender(declval<_Sndr>(), get_env(declval<_Rcvr>())).connect(declval<_Rcvr>())))
-      -> decltype(transform_sender(declval<_Sndr>(), get_env(declval<_Rcvr>())).connect(declval<_Rcvr>()))
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __get_declfn() noexcept
   {
-    return transform_sender(static_cast<_Sndr&&>(__sndr), get_env(__rcvr)).connect(static_cast<_Rcvr&&>(__rcvr));
+    using __new_sender_t = transform_sender_result_t<_Sndr, env_of_t<_Rcvr>>;
+    if constexpr (__has_connect_mbr<__new_sender_t, _Rcvr>)
+    {
+      constexpr auto __sndr       = __declfn<_Sndr>;
+      constexpr auto __rcvr       = __declfn<_Rcvr>;
+      using __result_t            = decltype(transform_sender(__sndr(), get_env(__rcvr())).connect(__rcvr()));
+      constexpr bool __is_nothrow = noexcept(transform_sender(__sndr(), get_env(__rcvr())).connect(__rcvr()));
+      return __declfn<__result_t, __is_nothrow>;
+    }
+  }
+
+public:
+  template <class _Sndr, class _Rcvr, auto _DeclFn = __get_declfn<_Sndr, _Rcvr>()>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const noexcept(noexcept(_DeclFn()))
+    -> decltype(_DeclFn())
+  {
+    auto&& __env = get_env(__rcvr);
+    return transform_sender(static_cast<_Sndr&&>(__sndr), static_cast<decltype(__env)>(__env))
+      .connect(static_cast<_Rcvr&&>(__rcvr));
   }
 };
 
@@ -147,7 +171,7 @@ struct schedule_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Sch>
-  _CCCL_NODEBUG_API constexpr auto operator()(_Sch&& __sch) const noexcept
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Sch&& __sch) const noexcept
   {
     static_assert(noexcept(static_cast<_Sch&&>(__sch).schedule()));
     return static_cast<_Sch&&>(__sch).schedule();

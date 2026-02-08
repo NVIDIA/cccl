@@ -164,7 +164,7 @@ void TestReduceByKeyDevice(ExecutionPolicy exec)
   thrust::device_vector<T> values;
 
   using iterator_pair =
-    typename thrust::pair<typename thrust::device_vector<T>::iterator, typename thrust::device_vector<T>::iterator>;
+    typename cuda::std::pair<typename thrust::device_vector<T>::iterator, typename thrust::device_vector<T>::iterator>;
 
   thrust::device_vector<iterator_pair> new_last_vec(1);
   iterator_pair new_last;
@@ -293,7 +293,7 @@ void TestReduceByKeyCudaStreams(ExecutionPolicy policy)
   Vector keys;
   Vector values;
 
-  thrust::pair<Vector::iterator, Vector::iterator> new_last;
+  cuda::std::pair<Vector::iterator, Vector::iterator> new_last;
 
   // basic test
   initialize_keys(keys);

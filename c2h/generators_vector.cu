@@ -53,7 +53,7 @@ struct random_to_vec_item_t
     template <>                                                                                                   \
     void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)                                 \
     {                                                                                                             \
-      const auto* dist = generator.prepare_random_generator(seed, data.size());                                   \
+      const auto* dist = prepare_random_data(seed, data.size());                                                  \
       auto op          = random_to_vec_item_t<T, ::cuda::std::tuple_size_v<T>>{min, max, dist, data.data()};      \
       thrust::for_each(                                                                                           \
         device_policy, thrust::counting_iterator<size_t>{0}, thrust::counting_iterator<size_t>{data.size()}, op); \
@@ -83,12 +83,11 @@ VEC_SPECIALIZATION(int4);
 
 VEC_SPECIALIZATION(long2);
 VEC_SPECIALIZATION(long3);
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-VEC_SPECIALIZATION(long4);
-_CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 VEC_SPECIALIZATION(long4_16a);
 VEC_SPECIALIZATION(long4_32a);
+#  else
+VEC_SPECIALIZATION(long4);
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 // VEC_SPECIALIZATION(ulong2);
@@ -97,22 +96,20 @@ VEC_SPECIALIZATION(long4_32a);
 
 VEC_SPECIALIZATION(longlong2);
 VEC_SPECIALIZATION(longlong3);
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-VEC_SPECIALIZATION(longlong4);
-_CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 VEC_SPECIALIZATION(longlong4_16a);
 VEC_SPECIALIZATION(longlong4_32a);
+#  else
+VEC_SPECIALIZATION(longlong4);
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 VEC_SPECIALIZATION(ulonglong2);
 // VEC_SPECIALIZATION(ulonglong3);
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-VEC_SPECIALIZATION(ulonglong4);
-_CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 VEC_SPECIALIZATION(ulonglong4_16a);
 VEC_SPECIALIZATION(ulonglong4_32a);
+#  else
+VEC_SPECIALIZATION(ulonglong4);
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 VEC_SPECIALIZATION(float2);
@@ -121,20 +118,21 @@ VEC_SPECIALIZATION(float4);
 
 VEC_SPECIALIZATION(double2);
 VEC_SPECIALIZATION(double3);
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-VEC_SPECIALIZATION(double4);
-_CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 VEC_SPECIALIZATION(double4_16a);
 VEC_SPECIALIZATION(double4_32a);
+#  else
+VEC_SPECIALIZATION(double4);
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
-#  if TEST_HALF_T()
+#  if CCCL_VERSION > 3001000
+#    if TEST_HALF_T()
 VEC_SPECIALIZATION(__half2);
-#  endif // TEST_HALF_T()
-#  if TEST_BF_T()
+#    endif // TEST_HALF_T()
+#    if TEST_BF_T()
 VEC_SPECIALIZATION(__nv_bfloat162);
-#  endif // TEST_BF_T()
+#    endif // TEST_BF_T()
+#  endif // CCCL_VERSION > 3001000
 
 template <typename VecType, typename Type>
 struct counter_to_cyclic_vector_t
@@ -167,8 +165,3 @@ VEC_GEN_MOD_SPECIALIZATION(ulonglong4, unsigned long long);
 VEC_GEN_MOD_SPECIALIZATION(ushort4, unsigned short);
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 } // namespace c2h::detail
-
-// Suppress deprecation warnings for use of vector types in the `*cudafe1.stub.c` file
-#if _CCCL_CTK_AT_LEAST(13, 0) && _CCCL_COMPILER(CLANG)
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-#endif // _CCCL_CTK_AT_LEAST(13, 0) && _CCCL_COMPILER(CLANG)

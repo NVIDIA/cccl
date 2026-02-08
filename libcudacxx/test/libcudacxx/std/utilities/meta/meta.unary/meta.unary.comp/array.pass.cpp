@@ -35,9 +35,9 @@ __host__ __device__ void test_array()
   test_array_imp<const volatile T>();
 }
 
-typedef char array[3];
-typedef const char const_array[3];
-typedef char incomplete_array[];
+using array            = char[3];
+using const_array      = const char[3];
+using incomplete_array = char[];
 
 class incomplete_type;
 

@@ -22,13 +22,9 @@
 #endif // no system header
 
 #include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
-
-// MSVC and clang cuda need the host side functions included
-#if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
-#  include <math.h>
-#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
 
 #include <cuda/std/__cccl/prologue.h>
 

@@ -266,7 +266,6 @@ struct iter_move_swap_iterator
     ++y.iter_swap_called_times;
   }
 };
-
 } // namespace adltest
 
 // This is for testing that zip iterator never calls underlying iterator's >, >=, <=, !=.

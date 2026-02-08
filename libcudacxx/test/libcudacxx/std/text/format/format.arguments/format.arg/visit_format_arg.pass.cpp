@@ -12,9 +12,9 @@
 // template<class Visitor, class Context>
 //   see below visit_format_arg(Visitor&& vis, basic_format_arg<Context> arg); // Deprecated in C++26
 
-#include <cuda/std/__algorithm_>
 #include <cuda/std/__format_>
 #include <cuda/std/__string_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>

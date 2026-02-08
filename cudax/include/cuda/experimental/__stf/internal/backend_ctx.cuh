@@ -41,10 +41,6 @@
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/localization/composite_slice.cuh>
 
-// XXX there is currently a dependency on this header for places.h
-// Until we find a solution we need to include this
-#include <cuda/experimental/__stf/places/exec/green_context.cuh>
-
 #include <atomic>
 #include <fstream>
 #include <sstream>
@@ -53,7 +49,6 @@
 
 namespace cuda::experimental::stf
 {
-
 template <typename T>
 class logical_data;
 
@@ -70,7 +65,6 @@ class stream_ctx;
 
 namespace reserved
 {
-
 template <typename Ctx, typename exec_place_t, typename shape_t, typename partitioner_t, typename... DepsAndOps>
 class parallel_for_scope;
 
@@ -85,7 +79,6 @@ class cuda_kernel_scope;
 
 // We need to have a map of logical data stored in the ctx.
 class logical_data_untyped_impl;
-
 } // end namespace reserved
 
 /**
@@ -1199,5 +1192,4 @@ private:
     return ::std::make_shared<typename Engine::template data_interface<T>>(::std::forward<P>(p)...);
   }
 };
-
 } // end namespace cuda::experimental::stf

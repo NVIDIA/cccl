@@ -24,10 +24,6 @@
 #include <cuda/__fwd/complex.h>
 #include <cuda/std/__fwd/complex.h>
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <complex>
-#endif // !_CCCL_COMPILER(NVRTC)
-
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA

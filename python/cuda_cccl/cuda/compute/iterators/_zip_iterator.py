@@ -1,17 +1,14 @@
-# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import ctypes
 
-import numba
-from llvmlite import ir  # noqa: F401
-from numba import cuda, types  # noqa: F401
-from numba.core.datamodel.registry import default_manager  # noqa: F401
-from numba.core.extending import intrinsic  # noqa: F401
+from numba import cuda
 
-from .._utils.protocols import get_dtype
-from ..struct import gpu_struct_from_numba_types
+from .. import types
+from .._caching import cache_with_registered_key_functions
 from ._iterators import (
     IteratorBase,
     IteratorKind,
@@ -20,41 +17,53 @@ from ._iterators import (
 
 
 class ZipIteratorKind(IteratorKind):
-    pass
+    def __init__(
+        self,
+        value_type: types.TypeDescriptor,
+        iterators_kinds: tuple[IteratorKind, ...],
+    ):
+        self.iterators_kinds = iterators_kinds
+        self.value_type = value_type
+
+    def __repr__(self):
+        return f"ZipIteratorKind({self.value_type}, {self.iterators_kinds})"
+
+    def __eq__(self, other):
+        return (
+            type(self) is type(other)
+            and self.value_type == other.value_type
+            and self.iterators_kinds == other.iterators_kinds
+        )
+
+    def __hash__(self):
+        return hash((type(self), self.value_type, self.iterators_kinds))
 
 
 def _get_zip_iterator_metadata(iterators):
-    # return the cvalue, state_type, and value_type for the zip iterator
-    # composed of the input iterators
+    from ..struct import gpu_struct
 
-    n_iterators = len(iterators)
-
-    # ctypes struct for the combined state:
+    # Create ctypes struct for cvalue
     fields = [(f"iter_{i}", it.cvalue.__class__) for i, it in enumerate(iterators)]
     ZipCValueStruct = type("ZipCValueStruct", (ctypes.Structure,), {"_fields_": fields})
 
-    # this iterator's state is a struct composed of the states of the input iterators:
-    state_field_names = tuple(f"state_{i}" for i in range(n_iterators))
-    state_field_types = tuple(it.state_type for it in iterators)
-    ZipState = gpu_struct_from_numba_types(
-        "ZipState", state_field_names, state_field_types
-    )
+    # Create state struct using gpu_struct
+    state_fields = {f"state_{i}": it.state_type for i, it in enumerate(iterators)}
+    ZipState = gpu_struct(state_fields, name="ZipState")
+    state_type = ZipState._type_descriptor
 
-    # this iterator's value is a struct composed of the values of the input iterators:
-    value_field_names = tuple(f"value_{i}" for i in range(n_iterators))
-    value_field_types = tuple(it.value_type for it in iterators)
-    ZipValue = gpu_struct_from_numba_types(
-        "ZipValue", value_field_names, value_field_types
-    )
+    # Create value struct using gpu_struct
+    value_fields = {f"value_{i}": it.value_type for i, it in enumerate(iterators)}
+    ZipValue = gpu_struct(value_fields, name="ZipValue")
+    value_type = ZipValue._type_descriptor
 
     cvalue = ZipCValueStruct(
         **{f"iter_{i}": it.cvalue for i, it in enumerate(iterators)}
     )
-    state_type = ZipState._numba_type
-    value_type = ZipValue._numba_type
     return cvalue, state_type, value_type
 
 
+# Automatic: iterators tuple → (kind, kind, ...) or (dtype, dtype, ...)
+@cache_with_registered_key_functions
 def _get_advance_and_dereference_functions(iterators):
     # Generate the advance and dereference functions for the zip iterator
     # composed of the input iterators
@@ -62,57 +71,69 @@ def _get_advance_and_dereference_functions(iterators):
     # iterator, and the dereference method invokes the dereference method of each
     # input iterator.
 
+    from .._intrinsics import make_struct_field_ptr_intrinsic
+
     n_iterators = len(iterators)
+
+    # Create a local namespace for this zip iterator to avoid polluting globals
+    # and prevent name collisions when nesting zip iterators
+    local_ns = {}
 
     # Within the advance and dereference methods of this iterator, we need a way
     # to get pointers to the fields of the state struct (advance and dereference),
-    # and the value struct (dereference). This needs `n` custom intrinsics, one
-    # for each field. The loop below defines those intrinsics:
+    # and the value struct (dereference). This needs `n` intrinsics, one
+    # for each field. Create them using the factory:
     for field_idx in range(n_iterators):
-        func_name = f"get_field_ptr_{field_idx}"
-
-        # Create the intrinsic function
-        intrinsic_code = f"""
-@intrinsic
-def {func_name}(context, struct_ptr_type):
-    def codegen(context, builder, sig, args):
-        struct_ptr = args[0]
-        # Use GEP to get pointer to field at index {field_idx}
-        field_ptr = builder.gep(
-            struct_ptr,
-            [ir.Constant(ir.IntType(32), 0), ir.Constant(ir.IntType(32), {field_idx})],
+        local_ns[f"get_field_ptr_{field_idx}"] = make_struct_field_ptr_intrinsic(
+            field_idx
         )
-        return field_ptr
-
-    struct_model = default_manager.lookup(struct_ptr_type.dtype)
-    field_type = struct_model._members[{field_idx}]
-    return types.CPointer(field_type)(struct_ptr_type), codegen
-"""
-        # Execute the code to create the intrinsic function in global namespace
-        exec(intrinsic_code, globals())
 
     # Now we can define the advance and dereference methods of this iterator,
     # which also need to be defined dynamically because they will use the
     # intrinsics defined above.
     for i, it in enumerate(iterators):
-        globals()[f"advance_{i}"] = cuda.jit(it.advance, device=True)
-        globals()[f"dereference_{i}"] = cuda.jit(
-            it.input_dereference, device=True
-        )  # only input_dereference for now
+        local_ns[f"advance_{i}"] = cuda.jit(it.advance, device=True)
+        local_ns[f"input_dereference_{i}"] = cuda.jit(it.input_dereference, device=True)
+        # Also compile output_dereference if available
+        try:
+            output_deref = it.output_dereference
+            if output_deref is not None:
+                local_ns[f"output_dereference_{i}"] = cuda.jit(
+                    output_deref, device=True
+                )
+        except AttributeError:
+            # Iterator doesn't support output operations
+            pass
 
     # Generate the advance method, which advances each input iterator:
     advance_lines = []  # lines of code for the advance method
-    dereference_lines = []  # lines of code for the dereference method
+    input_dereference_lines = []  # lines of code for input dereference method
+    output_dereference_lines = []  # lines of code for output dereference method
+
+    # Check if all iterators support output operations
+    def supports_output(it):
+        try:
+            return it.output_dereference is not None
+        except AttributeError:
+            return False
+
+    all_support_output = all(supports_output(it) for it in iterators)
+
     for i in range(n_iterators):
         advance_lines.append(
             f"    state_ptr_{i} = get_field_ptr_{i}(state)\n"
             f"    advance_{i}(state_ptr_{i}, distance)"
         )
-        dereference_lines.append(
+        input_dereference_lines.append(
             f"    state_ptr_{i} = get_field_ptr_{i}(state)\n"
             f"    result_ptr_{i} = get_field_ptr_{i}(result)\n"
-            f"    dereference_{i}(state_ptr_{i}, result_ptr_{i})"
+            f"    input_dereference_{i}(state_ptr_{i}, result_ptr_{i})"
         )
+        if all_support_output:
+            output_dereference_lines.append(
+                f"    state_ptr_{i} = get_field_ptr_{i}(state)\n"
+                f"    output_dereference_{i}(state_ptr_{i}, x.value_{i})"
+            )
 
     advance_method_code = f"""
 def input_advance(state, distance):
@@ -120,20 +141,31 @@ def input_advance(state, distance):
 {chr(10).join(advance_lines)}
 """  # chr(10) is '\n'
 
-    dereference_method_code = f"""
+    input_dereference_method_code = f"""
 def input_dereference(state, result):
     # Dereference each iterator using dynamically created field pointer functions
-{chr(10).join(dereference_lines)}
+{chr(10).join(input_dereference_lines)}
 """  # chr(10) is '\n'
 
-    # Execute the method codes:
-    exec(advance_method_code, globals())
-    exec(dereference_method_code, globals())
+    # Execute the method codes in local namespace:
+    exec(advance_method_code, local_ns)
+    exec(input_dereference_method_code, local_ns)
 
-    advance_func = globals()["input_advance"]
-    dereference_func = globals()["input_dereference"]
+    advance_func = local_ns["input_advance"]
+    input_dereference_func = local_ns["input_dereference"]
 
-    return advance_func, dereference_func
+    # Generate output_dereference if all iterators support it
+    output_dereference_func = None
+    if all_support_output:
+        output_dereference_method_code = f"""
+def output_dereference(state, x):
+    # Write to each iterator using dynamically created field pointer functions
+{chr(10).join(output_dereference_lines)}
+"""
+        exec(output_dereference_method_code, local_ns)
+        output_dereference_func = local_ns["output_dereference"]
+
+    return advance_func, input_dereference_func, output_dereference_func
 
 
 def make_zip_iterator(*iterators):
@@ -153,7 +185,7 @@ def make_zip_iterator(*iterators):
     processed_iterators = []
     for it in iterators:
         if hasattr(it, "__cuda_array_interface__"):
-            it = pointer(it, numba.from_dtype(get_dtype(it)))
+            it = pointer(it)
         processed_iterators.append(it)
 
     # Validate all are iterators
@@ -163,25 +195,31 @@ def make_zip_iterator(*iterators):
 
     cvalue, state_type, value_type = _get_zip_iterator_metadata(processed_iterators)
 
-    advance_func, dereference_func = _get_advance_and_dereference_functions(
-        processed_iterators
+    advance_func, input_dereference_func, output_dereference_func = (
+        _get_advance_and_dereference_functions(processed_iterators)
     )
 
-    class ZipIterator(IteratorBase):
-        iterator_kind_type = ZipIteratorKind
+    # Check if all underlying iterators support output
+    def supports_output(it):
+        try:
+            return it.output_dereference is not None
+        except AttributeError:
+            return False
 
+    all_support_output = all(supports_output(it) for it in processed_iterators)
+
+    class ZipIterator(IteratorBase):
         def __init__(self, iterators_list):
             self._iterators = iterators_list
             self._n_iterators = len(iterators_list)
 
             kinds = [it.kind for it in iterators_list]
+            kind = ZipIteratorKind(value_type, tuple(kinds))
             super().__init__(
+                kind=kind,
                 cvalue=cvalue,
                 state_type=state_type,
                 value_type=value_type,
-            )
-            self.kind_ = self.__class__.iterator_kind_type(
-                (value_type, *kinds), self.state_type
             )
 
         @property
@@ -194,6 +232,30 @@ def make_zip_iterator(*iterators):
 
         @property
         def input_dereference(self):
-            return dereference_func
+            return input_dereference_func
+
+        @property
+        def output_dereference(self):
+            if not all_support_output:
+                raise AttributeError(
+                    "ZipIterator cannot be used as output iterator when not all "
+                    "underlying iterators support output"
+                )
+            return output_dereference_func
+
+        @property
+        def children(self):
+            return tuple(self._iterators)
+
+        def _rebuild_value_type_from_children(self):
+            from ..struct import gpu_struct
+
+            if not self._iterators:
+                raise ValueError("Zip iterator has no children")
+            value_fields = {
+                f"value_{i}": child.value_type
+                for i, child in enumerate(self._iterators)
+            }
+            self.value_type = gpu_struct(value_fields, name="ZipValue")._type_descriptor
 
     return ZipIterator(processed_iterators)

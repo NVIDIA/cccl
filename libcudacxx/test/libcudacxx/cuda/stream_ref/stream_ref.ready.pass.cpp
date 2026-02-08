@@ -4,23 +4,25 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: nvrtc
 
 #include <cuda/std/cassert>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include "test_macros.h"
+
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 
 void test_ready(cuda::stream_ref& ref)
 {
 #if TEST_HAS_EXCEPTIONS()
   try
   {
-    assert(ref.is_done());
+    assert(ref.ready());
   }
   catch (...)
   {
@@ -31,12 +33,19 @@ void test_ready(cuda::stream_ref& ref)
 #endif // TEST_HAS_EXCEPTIONS()
 }
 
+bool test()
+{
+  cudaStream_t stream;
+  assert(cudaStreamCreate(&stream) == cudaSuccess);
+  cuda::stream_ref ref{stream};
+  test_ready(ref);
+  assert(cudaStreamDestroy(stream) == cudaSuccess);
+
+  return true;
+}
+
 int main(int argc, char** argv)
 {
-  NV_IF_TARGET(NV_IS_HOST,
-               ( // passing case
-                 cudaStream_t stream; cudaStreamCreate(&stream); cuda::stream_ref ref{stream}; test_ready(ref);
-                 cudaStreamDestroy(stream);))
-
+  NV_IF_TARGET(NV_IS_HOST, (test();))
   return 0;
 }

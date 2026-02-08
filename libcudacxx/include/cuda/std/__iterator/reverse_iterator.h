@@ -38,11 +38,6 @@
 #include <cuda/std/__iterator/prev.h>
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__memory/addressof.h>
-#ifdef _LIBCUDACXX_HAS_RANGES
-#  include <cuda/std/__ranges/access.h>
-#  include <cuda/std/__ranges/concepts.h>
-#  include <cuda/std/__ranges/subrange.h>
-#endif // _LIBCUDACXX_HAS_RANGES
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_assignable.h>
@@ -74,6 +69,15 @@ template <class _Iter, class _Iter2>
 inline constexpr bool __noexcept_rev_iter_iter_swap<_Iter, _Iter2, enable_if_t<indirectly_swappable<_Iter, _Iter2>>> =
   is_nothrow_copy_constructible_v<_Iter> && is_nothrow_copy_constructible_v<_Iter2>
   && noexcept(::cuda::std::ranges::iter_swap(--declval<_Iter&>(), --declval<_Iter2&>()));
+
+// MSVC has issues with `is_nothrow_convertible_v` sometimes, so do the noexcept expression
+template <class _Iter, class _Iter2, class = void>
+inline constexpr bool __noexcept_rev_iter_convertible = false;
+
+template <class _Iter, class _Iter2>
+inline constexpr bool
+  __noexcept_rev_iter_convertible<_Iter, _Iter2, enable_if_t<is_convertible_v<_Iter const&, _Iter2>>> =
+    noexcept(_Iter2(::cuda::std::declval<const _Iter&>()));
 
 _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
 
@@ -119,7 +123,7 @@ public:
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES((!is_same_v<_Up, _Iter>) _CCCL_AND is_convertible_v<_Up const&, _Iter>)
   _CCCL_API constexpr reverse_iterator(const reverse_iterator<_Up>& __u) noexcept(
-    is_nothrow_convertible_v<_Up const&, _Iter>)
+    __noexcept_rev_iter_convertible<_Up, _Iter>)
       : current(__u.base())
   {}
 

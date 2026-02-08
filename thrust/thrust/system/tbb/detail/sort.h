@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -25,21 +12,241 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/detail/copy.h>
+#include <thrust/detail/seq.h>
+#include <thrust/detail/temporary_array.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/merge.h>
+#include <thrust/sort.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
 
+#include <cuda/std/__iterator/distance.h>
+
+#include <tbb/parallel_invoke.h>
+
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::tbb::detail
 {
-namespace tbb
+namespace sort_detail
 {
-namespace detail
+// TODO tune this based on data type and comp
+const static int threshold = 128 * 1024;
+
+template <typename DerivedPolicy, typename Iterator1, typename Iterator2, typename StrictWeakOrdering>
+void merge_sort(execution_policy<DerivedPolicy>& exec,
+                Iterator1 first1,
+                Iterator1 last1,
+                Iterator2 first2,
+                StrictWeakOrdering comp,
+                bool inplace);
+
+template <typename DerivedPolicy, typename Iterator1, typename Iterator2, typename StrictWeakOrdering>
+struct merge_sort_closure
 {
+  execution_policy<DerivedPolicy>& exec;
+  Iterator1 first1, last1;
+  Iterator2 first2;
+  StrictWeakOrdering comp;
+  bool inplace;
+
+  merge_sort_closure(
+    execution_policy<DerivedPolicy>& exec,
+    Iterator1 first1,
+    Iterator1 last1,
+    Iterator2 first2,
+    StrictWeakOrdering comp,
+    bool inplace)
+      : exec(exec)
+      , first1(first1)
+      , last1(last1)
+      , first2(first2)
+      , comp(comp)
+      , inplace(inplace)
+  {}
+
+  void operator()(void) const
+  {
+    merge_sort(exec, first1, last1, first2, comp, inplace);
+  }
+};
+
+template <typename DerivedPolicy, typename Iterator1, typename Iterator2, typename StrictWeakOrdering>
+void merge_sort(execution_policy<DerivedPolicy>& exec,
+                Iterator1 first1,
+                Iterator1 last1,
+                Iterator2 first2,
+                StrictWeakOrdering comp,
+                bool inplace)
+{
+  using difference_type = thrust::detail::it_difference_t<Iterator1>;
+
+  difference_type n = ::cuda::std::distance(first1, last1);
+
+  if (n < threshold)
+  {
+    thrust::stable_sort(thrust::seq, first1, last1, comp);
+
+    if (!inplace)
+    {
+      thrust::copy(thrust::seq, first1, last1, first2);
+    }
+
+    return;
+  }
+
+  Iterator1 mid1  = first1 + (n / 2);
+  Iterator2 mid2  = first2 + (n / 2);
+  Iterator2 last2 = first2 + n;
+
+  using Closure = merge_sort_closure<DerivedPolicy, Iterator1, Iterator2, StrictWeakOrdering>;
+
+  Closure left(exec, first1, mid1, first2, comp, !inplace);
+  Closure right(exec, mid1, last1, mid2, comp, !inplace);
+
+  ::tbb::parallel_invoke(left, right);
+
+  if (inplace)
+  {
+    thrust::merge(exec, first2, mid2, mid2, last2, first1, comp);
+  }
+  else
+  {
+    thrust::merge(exec, first1, mid1, mid1, last1, first2, comp);
+  }
+}
+} // end namespace sort_detail
+
+namespace sort_by_key_detail
+{
+// TODO tune this based on data type and comp
+const static int threshold = 128 * 1024;
+
+template <typename DerivedPolicy,
+          typename Iterator1,
+          typename Iterator2,
+          typename Iterator3,
+          typename Iterator4,
+          typename StrictWeakOrdering>
+void merge_sort_by_key(
+  execution_policy<DerivedPolicy>& exec,
+  Iterator1 first1,
+  Iterator1 last1,
+  Iterator2 first2,
+  Iterator3 first3,
+  Iterator4 first4,
+  StrictWeakOrdering comp,
+  bool inplace);
+
+template <typename DerivedPolicy,
+          typename Iterator1,
+          typename Iterator2,
+          typename Iterator3,
+          typename Iterator4,
+          typename StrictWeakOrdering>
+struct merge_sort_by_key_closure
+{
+  execution_policy<DerivedPolicy>& exec;
+  Iterator1 first1, last1;
+  Iterator2 first2;
+  Iterator3 first3;
+  Iterator4 first4;
+  StrictWeakOrdering comp;
+  bool inplace;
+
+  merge_sort_by_key_closure(
+    execution_policy<DerivedPolicy>& exec,
+    Iterator1 first1,
+    Iterator1 last1,
+    Iterator2 first2,
+    Iterator3 first3,
+    Iterator4 first4,
+    StrictWeakOrdering comp,
+    bool inplace)
+      : exec(exec)
+      , first1(first1)
+      , last1(last1)
+      , first2(first2)
+      , first3(first3)
+      , first4(first4)
+      , comp(comp)
+      , inplace(inplace)
+  {}
+
+  void operator()(void) const
+  {
+    merge_sort_by_key(exec, first1, last1, first2, first3, first4, comp, inplace);
+  }
+};
+
+template <typename DerivedPolicy,
+          typename Iterator1,
+          typename Iterator2,
+          typename Iterator3,
+          typename Iterator4,
+          typename StrictWeakOrdering>
+void merge_sort_by_key(
+  execution_policy<DerivedPolicy>& exec,
+  Iterator1 first1,
+  Iterator1 last1,
+  Iterator2 first2,
+  Iterator3 first3,
+  Iterator4 first4,
+  StrictWeakOrdering comp,
+  bool inplace)
+{
+  using difference_type = thrust::detail::it_difference_t<Iterator1>;
+
+  difference_type n = ::cuda::std::distance(first1, last1);
+
+  Iterator1 mid1  = first1 + (n / 2);
+  Iterator2 mid2  = first2 + (n / 2);
+  Iterator3 mid3  = first3 + (n / 2);
+  Iterator4 mid4  = first4 + (n / 2);
+  Iterator2 last2 = first2 + n;
+  Iterator3 last3 = first3 + n;
+
+  if (n < threshold)
+  {
+    thrust::stable_sort_by_key(thrust::seq, first1, last1, first2, comp);
+
+    if (!inplace)
+    {
+      thrust::copy(thrust::seq, first1, last1, first3);
+      thrust::copy(thrust::seq, first2, last2, first4);
+    }
+
+    return;
+  }
+
+  using Closure =
+    merge_sort_by_key_closure<DerivedPolicy, Iterator1, Iterator2, Iterator3, Iterator4, StrictWeakOrdering>;
+
+  Closure left(exec, first1, mid1, first2, first3, first4, comp, !inplace);
+  Closure right(exec, mid1, last1, mid2, mid3, mid4, comp, !inplace);
+
+  ::tbb::parallel_invoke(left, right);
+
+  if (inplace)
+  {
+    thrust::merge_by_key(exec, first3, mid3, mid3, last3, first4, mid4, first1, first2, comp);
+  }
+  else
+  {
+    thrust::merge_by_key(exec, first1, mid1, mid1, last1, first2, mid2, first3, first4, comp);
+  }
+}
+} // namespace sort_by_key_detail
 
 template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
-void stable_sort(execution_policy<DerivedPolicy>& exec,
-                 RandomAccessIterator first,
-                 RandomAccessIterator last,
-                 StrictWeakOrdering comp);
+void stable_sort(
+  execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp)
+{
+  using key_type = thrust::detail::it_value_t<RandomAccessIterator>;
+
+  thrust::detail::temporary_array<key_type, DerivedPolicy> temp(exec, first, last);
+
+  sort_detail::merge_sort(exec, first, last, temp.begin(), comp, true);
+}
 
 template <typename DerivedPolicy,
           typename RandomAccessIterator1,
@@ -47,14 +254,20 @@ template <typename DerivedPolicy,
           typename StrictWeakOrdering>
 void stable_sort_by_key(
   execution_policy<DerivedPolicy>& exec,
-  RandomAccessIterator1 keys_first,
-  RandomAccessIterator1 keys_last,
-  RandomAccessIterator2 values_first,
-  StrictWeakOrdering comp);
+  RandomAccessIterator1 first1,
+  RandomAccessIterator1 last1,
+  RandomAccessIterator2 first2,
+  StrictWeakOrdering comp)
+{
+  using key_type = thrust::detail::it_value_t<RandomAccessIterator1>;
+  using val_type = thrust::detail::it_value_t<RandomAccessIterator2>;
 
-} // end namespace detail
-} // end namespace tbb
-} // end namespace system
+  RandomAccessIterator2 last2 = first2 + ::cuda::std::distance(first1, last1);
+
+  thrust::detail::temporary_array<key_type, DerivedPolicy> temp1(exec, first1, last1);
+  thrust::detail::temporary_array<val_type, DerivedPolicy> temp2(exec, first2, last2);
+
+  sort_by_key_detail::merge_sort_by_key(exec, first1, last1, first2, temp1.begin(), temp2.begin(), comp, true);
+}
+} // end namespace system::tbb::detail
 THRUST_NAMESPACE_END
-
-#include <thrust/system/tbb/detail/sort.inl>

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -32,17 +19,16 @@
 #include <thrust/detail/allocator/value_initialize_range.h>
 #include <thrust/detail/contiguous_storage.h>
 
-#include <cuda/std/utility> // for use of std::swap in the WAR below
+#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/swap.h>
 
 #include <nv/target>
-
-#include <stdexcept> // for std::runtime_error
 
 THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 _CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename Alloc>
 _CCCL_HOST_DEVICE contiguous_storage<T, Alloc>::contiguous_storage(const Alloc& alloc)
@@ -254,7 +240,7 @@ _CCCL_HOST_DEVICE contiguous_storage<T, Alloc>& contiguous_storage<T, Alloc>::op
   {
     deallocate();
   }
-  if constexpr (allocator_traits<Alloc>::propagate_on_container_move_assignment::value)
+  if constexpr (::cuda::std::allocator_traits<Alloc>::propagate_on_container_move_assignment::value)
   {
     m_allocator = ::cuda::std::move(other.m_allocator);
   }
@@ -267,7 +253,6 @@ _CCCL_HOST_DEVICE contiguous_storage<T, Alloc>& contiguous_storage<T, Alloc>::op
 
   return *this;
 }
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

@@ -33,6 +33,9 @@ struct DeviceCopy
   //! @rst
   //! Copies data from a batch of given source ranges to their corresponding destination ranges.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! .. note::
   //!
   //!    If any input range aliases any output range the behavior is undefined.
@@ -163,6 +166,9 @@ struct DeviceCopy
 
   //! @rst
   //! Copies data from a multidimensional source mdspan to a destination mdspan.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! This function performs a parallel copy operation between two mdspan objects with potentially different layouts but
   //! identical extents. The copy operation handles arbitrary-dimensional arrays and automatically manages layout

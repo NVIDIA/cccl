@@ -29,6 +29,9 @@ __host__ __device__ constexpr void test(Stride stride)
     ++iter;
     assert(iter[2] == *(buffer + 3 * iter.stride()));
     assert(cuda::std::addressof(iter[2]) == buffer + 3 * iter.stride());
+
+    iter[3] = 5;
+    assert(buffer[4 * iter.stride()] == 5);
     static_assert(noexcept(iter[2]));
     static_assert(cuda::std::is_same_v<decltype(iter[2]), cuda::std::iter_reference_t<int*>>);
   }

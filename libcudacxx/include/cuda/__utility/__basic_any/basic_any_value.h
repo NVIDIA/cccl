@@ -32,6 +32,7 @@
 #include <cuda/__utility/__basic_any/virtual_tables.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_callable.h>
@@ -133,32 +134,10 @@ public:
     __emplace_from<_Up>(static_cast<_Fn&&>(__fn), static_cast<_Args&&>(__args)...);
   }
 
-#if _CCCL_HAS_CONCEPTS() || defined(_CCCL_DOXYGEN_INVOKED)
-  //! @brief Move constructs a `__basic_any` object.
-  //! @pre `_Interface` must extend `__imovable<>`.
-  //! @post `__other.has_value() == false` and `has_value()` is `true` if and
-  //! only if `__other.has_value()` was `true`.
-  _CCCL_API __basic_any(__basic_any&& __other) noexcept
-    requires(__movable)
-  {
-    __convert_from(::cuda::std::move(__other));
-  }
-
-  //! @brief Copy constructs a `__basic_any` object.
-  //! @pre `_Interface` must extend `__icopyable<>`.
-  //! @post `has_value() == __other.has_value()`. If `_Interface` extends
-  //! `__iequality_comparable<>`, then `*this == __other` is `true`.
-  _CCCL_API __basic_any(__basic_any const& __other)
-    requires(__copyable)
-  {
-    __convert_from(__other);
-  }
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
-  // Without real concepts, we use base classes to implement movability and
-  // copyability. All we need here is to accept the default implementations.
+  // We use base classes to implement movability and copyability. All we need here is to
+  // accept the default implementations.
   __basic_any(__basic_any&& __other)      = default;
   __basic_any(__basic_any const& __other) = default;
-#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   //! @brief Converting constructor that move constructs from a compatible
   //! `__basic_any` object.
@@ -212,33 +191,12 @@ public:
     reset();
   }
 
-#if _CCCL_HAS_CONCEPTS() || defined(_CCCL_DOXYGEN_INVOKED)
-  //! @brief Move assigns a `__basic_any` object.
-  //! @pre `_Interface` must extend `__imovable<>`.
-  //! @post `__other.has_value() == false` and `has_value()` is `true` if and
-  //! only if `__other.has_value()` was `true`.
-  _CCCL_API __basic_any& operator=(__basic_any&& __other) noexcept
-    requires(__extension_of<_Interface, __imovable<>>)
-  {
-    return __assign_from(::cuda::std::move(__other));
-  }
-
-  //! @brief Copy assigns a `__basic_any` object.
-  //! @pre `_Interface` must extend `__icopyable<>`.
-  //! @post `has_value() == __other.has_value()`. If `_Interface` extends
-  //! `__iequality_comparable<>`, then `*this == __other` is `true`.
-  _CCCL_API __basic_any& operator=(__basic_any const& __other)
-    requires(__extension_of<_Interface, __icopyable<>>)
-  {
-    return __assign_from(__other);
-  }
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
-  // Without real concepts, we use base classes to implement movability and
-  // copyability. All we need here is to accept the default implementations.
+  // We use base classes to implement movability and copyability. All we need here is to
+  // accept the default implementations.
   auto operator=(__basic_any&& __other) -> __basic_any&      = default;
   auto operator=(__basic_any const& __other) -> __basic_any& = default;
-#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
+#if !_CCCL_CUDA_COMPILER(NVCC, <, 12, 9)
   //! @brief Converting move assignment operator from a compatible `__basic_any`
   //! object.
   //!
@@ -272,6 +230,25 @@ public:
   {
     return __assign_from(__other);
   }
+#else
+  // nvcc 12.0 has a bug with its concepts implementation where substitution occurs too
+  // early here causing a hard error. So we use SFINAE to work around it.
+  template <class _OtherInterface,
+            ::cuda::std::enable_if_t<!::cuda::std::same_as<_OtherInterface, _Interface>, int>              = 0,
+            ::cuda::std::enable_if_t<__any_convertible_to<__basic_any<_OtherInterface>, __basic_any>, int> = 0>
+  _CCCL_API auto operator=(__basic_any<_OtherInterface>&& __other) -> __basic_any&
+  {
+    return __assign_from(::cuda::std::move(__other));
+  }
+
+  template <class _OtherInterface,
+            ::cuda::std::enable_if_t<!::cuda::std::same_as<_OtherInterface, _Interface>, int>                     = 0,
+            ::cuda::std::enable_if_t<__any_convertible_to<__basic_any<_OtherInterface> const&, __basic_any>, int> = 0>
+  _CCCL_API auto operator=(__basic_any<_OtherInterface> const& __other) -> __basic_any&
+  {
+    return __assign_from(__other);
+  }
+#endif
 
 #if _CCCL_COMPILER(CLANG, <, 12) || _CCCL_COMPILER(GCC, <, 11)
   // Older versions of clang and gcc need help disambiguating between

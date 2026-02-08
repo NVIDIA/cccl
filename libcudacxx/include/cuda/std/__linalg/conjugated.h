@@ -42,7 +42,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace linalg
 {
-
 template <class _NestedAccessor>
 class conjugated_accessor
 {
@@ -116,7 +115,6 @@ template <class _ElementType, class _Extents, class _Layout, class _Accessor>
     return mdspan<__return_element_type, _Extents, _Layout, __return_accessor_type>{
       __a.data_handle(), __a.mapping(), __return_accessor_type(__a.accessor())};
   }
-  _CCCL_UNREACHABLE();
 }
 
 // Conjugation is self-annihilating
@@ -129,7 +127,6 @@ conjugated(mdspan<_ElementType, _Extents, _Layout, conjugated_accessor<_NestedAc
   return mdspan<__return_element_type, _Extents, _Layout, __return_accessor_type>(
     __a.data_handle(), __a.mapping(), __a.accessor().nested_accessor());
 }
-
 } // end namespace linalg
 
 _CCCL_END_NAMESPACE_CUDA_STD

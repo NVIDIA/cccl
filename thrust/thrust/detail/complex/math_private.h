@@ -1,19 +1,6 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *  Copyright 2013 Filipe RNC Maia
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation
+// SPDX-FileCopyrightText: Copyright (c) 2013, Filipe RNC Maia
+// SPDX-License-Identifier: Apache-2.0
 
 /*
  * ====================================================
@@ -38,11 +25,8 @@
 #include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
-namespace detail
+namespace detail::complex
 {
-namespace complex
-{
-
 using thrust::complex;
 
 using ieee_float_shape_type = union
@@ -128,11 +112,6 @@ _CCCL_HOST_DEVICE inline void extract_words(int32_t& ix0, int32_t& ix1, double d
   (ix0)      = ew_u.parts.msw;
   (ix1)      = ew_u.parts.lsw;
 }
-
-} // namespace complex
-
-} // namespace detail
+} // namespace detail::complex
 
 THRUST_NAMESPACE_END
-
-#include <thrust/detail/complex/c99math.h>

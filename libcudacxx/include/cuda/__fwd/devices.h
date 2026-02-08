@@ -27,15 +27,18 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+#if _CCCL_HAS_CTK()
 class __physical_device;
 class device_ref;
 template <::cudaDeviceAttr _Attr>
 struct __dev_attr;
+#endif // _CCCL_HAS_CTK()
 
-namespace arch
-{
-struct traits_t;
-} // namespace arch
+struct arch_traits_t;
+class compute_capability;
+enum class arch_id : int;
+
+inline constexpr int __arch_specific_id_multiplier = 100000;
 
 _CCCL_END_NAMESPACE_CUDA
 

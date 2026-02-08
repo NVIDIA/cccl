@@ -17,6 +17,8 @@ Math
    math/neg
    math/uabs
    math/fast_mod_div
+   math/mul_hi
+   math/sincos
 
 .. list-table::
    :widths: 25 45 30 30
@@ -34,13 +36,13 @@ Math
 
    * - :ref:`round_up <libcudacxx-extended-api-math-round-up>`
      - Round up to the next multiple
-     - CCCL 2.9.0
-     - CUDA 12.9
+     - CCCL 3.0.0
+     - CUDA 13.0
 
    * - :ref:`round_down <libcudacxx-extended-api-math-round-down>`
      - Round down to the previous multiple
-     - CCCL 2.9.0
-     - CUDA 12.9
+     - CCCL 3.0.0
+     - CUDA 13.0
 
    * - :ref:`ilog2 <libcudacxx-extended-api-math-ilog>`
      - Integer logarithm to the base 2
@@ -91,3 +93,13 @@ Math
      - Fast Modulo/Division
      - CCCL 3.1.0
      - CUDA 13.1
+
+   * - :ref:`mul_hi <libcudacxx-extended-api-math-mul-hi>`
+     - Most significant half of the product
+     - CCCL 3.2.0
+     - CUDA 13.2
+
+   * - :ref:`sincos <libcudacxx-extended-api-math-sincos>`
+     - Computes sine and cosine of a value at the same time.
+     - CCCL 3.3.0
+     - CUDA 13.3

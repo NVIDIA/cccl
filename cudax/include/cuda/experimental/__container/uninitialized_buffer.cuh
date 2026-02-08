@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__memory_resource/any_resource.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/std/__memory/align.h>
 #include <cuda/std/__new/launder.h>
@@ -30,18 +31,12 @@
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/span>
 
-#include <cuda/experimental/__memory_resource/any_resource.cuh>
-#include <cuda/experimental/__memory_resource/properties.cuh>
-
 #include <cuda/std/__cccl/prologue.h>
-
-#if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 //! @file
 //! The \c uninitialized_buffer class provides a typed buffer allocated from a given memory resource.
 namespace cuda::experimental
 {
-
 //! @rst
 //! .. _cudax-containers-uninitialized-buffer:
 //!
@@ -69,7 +64,7 @@ private:
                 "The properties of cuda::experimental::uninitialized_buffer must contain at least one execution space "
                 "property!");
 
-  using __resource = ::cuda::experimental::any_synchronous_resource<_Properties...>;
+  using __resource = ::cuda::mr::any_synchronous_resource<_Properties...>;
 
   __resource __mr_;
   size_t __count_ = 0;
@@ -106,9 +101,9 @@ private:
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _Tp2 = _Tp>
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
-  transform_device_argument(::cuda::stream_ref, uninitialized_buffer& __self) noexcept
+  transform_launch_argument(::cuda::stream_ref, uninitialized_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(::cuda::std::span<_Tp>)(
-      ::cuda::std::same_as<_Tp, _Tp2>&& ::cuda::std::__is_included_in_v<device_accessible, _Properties...>)
+      ::cuda::std::same_as<_Tp, _Tp2>&& ::cuda::std::__is_included_in_v<::cuda::mr::device_accessible, _Properties...>)
   {
     return {__self.__get_data(), __self.size()};
   }
@@ -117,9 +112,9 @@ private:
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _Tp2 = _Tp>
   [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
-  transform_device_argument(::cuda::stream_ref, const uninitialized_buffer& __self) noexcept
+  transform_launch_argument(::cuda::stream_ref, const uninitialized_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(::cuda::std::span<const _Tp>)(
-      ::cuda::std::same_as<_Tp, _Tp2>&& ::cuda::std::__is_included_in_v<device_accessible, _Properties...>)
+      ::cuda::std::same_as<_Tp, _Tp2>&& ::cuda::std::__is_included_in_v<::cuda::mr::device_accessible, _Properties...>)
   {
     return {__self.__get_data(), __self.size()};
   }
@@ -261,7 +256,7 @@ public:
   }
 
   //! @rst
-  //! Returns a \c const reference to the :ref:`any_resource <cudax-memory-resource-any-resource>`
+  //! Returns a \c const reference to the :ref:`any_resource <libcudacxx-memory-resource-any-resource>`
   //! that holds the memory resource used to allocate the buffer
   //! @endrst
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const __resource& memory_resource() const noexcept
@@ -281,7 +276,7 @@ public:
   _CCCL_HIDE_FROM_ABI uninitialized_buffer __replace_allocation(const size_t __count)
   {
     // Create a new buffer with a reference to the stored memory resource and swap allocation information
-    uninitialized_buffer __ret{synchronous_resource_ref<_Properties...>{__mr_}, __count};
+    uninitialized_buffer __ret{::cuda::mr::synchronous_resource_ref<_Properties...>{__mr_}, __count};
     ::cuda::std::swap(__count_, __ret.__count_);
     ::cuda::std::swap(__buf_, __ret.__buf_);
     return __ret;
@@ -289,11 +284,8 @@ public:
 };
 
 template <class _Tp>
-using uninitialized_device_buffer = uninitialized_buffer<_Tp, device_accessible>;
-
+using uninitialized_device_buffer = uninitialized_buffer<_Tp, ::cuda::mr::device_accessible>;
 } // namespace cuda::experimental
-
-#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #include <cuda/std/__cccl/epilogue.h>
 

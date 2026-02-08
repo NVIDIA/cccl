@@ -13,7 +13,7 @@
 //   constexpr OutIter         // constexpr after C++17
 //   remove_copy(InIter first, InIter last, OutIter result, const T& value);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"

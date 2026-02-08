@@ -16,7 +16,6 @@ INPUT                  = ../../cudax/include/cuda/experimental/__container \
                          ../../cudax/include/cuda/experimental/__graph \
                          ../../cudax/include/cuda/experimental/__hierarchy \
                          ../../cudax/include/cuda/experimental/__launch \
-                         ../../cudax/include/cuda/experimental/__memory_resource \
                          ../../cudax/include/cuda/experimental/__stream \
                          ../../cudax/include/cuda/experimental/stf.cuh \
                          ../../cudax/include/cuda/experimental/__stf \
@@ -107,6 +106,7 @@ PREDEFINED = \
     "_CCCL_END_NAMESPACE_CUDA_STD=}" \
     "_CCCL_CATCH=catch" \
     "_CCCL_CATCH_ALL=catch (...)" \
+    "_CCCL_CATCH_FALLTHROUGH=" \
     "_CCCL_CONSTEXPR_FRIEND=friend " \
     "_CCCL_CTK_AT_LEAST(x, y)=1" \
     "_CCCL_CTK_BELOW(x, y)=0" \
@@ -143,7 +143,6 @@ PREDEFINED = \
     "CUB_NAMESPACE_BEGIN=namespace cub {" \
     "CUB_NAMESPACE_END=}" \
     "CUB_RUNTIME_FUNCTION=" \
-    "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE" \
     "THRUST_FWD(x)=x" \
     "THRUST_NAMESPACE_BEGIN=namespace thrust {" \
     "THRUST_NAMESPACE_END=}" \
