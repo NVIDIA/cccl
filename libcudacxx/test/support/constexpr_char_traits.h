@@ -19,11 +19,11 @@
 template <class _CharT>
 struct constexpr_char_traits
 {
-  typedef _CharT char_type;
-  typedef int int_type;
-  typedef std::streamoff off_type;
-  typedef std::streampos pos_type;
-  typedef std::mbstate_t state_type;
+  using char_type  = _CharT;
+  using int_type   = int;
+  using off_type   = std::streamoff;
+  using pos_type   = std::streampos;
+  using state_type = std::mbstate_t;
 
   static constexpr void assign(char_type& __c1, const char_type& __c2) noexcept
   {

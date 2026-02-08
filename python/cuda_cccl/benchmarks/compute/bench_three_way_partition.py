@@ -35,6 +35,8 @@ def three_way_partition_pointer(
             second_out,
             unselected_out,
             num_selected,
+            less_than_op,
+            greater_equal_op,
             size,
         )
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
@@ -45,6 +47,8 @@ def three_way_partition_pointer(
             second_out,
             unselected_out,
             num_selected,
+            less_than_op,
+            greater_equal_op,
             size,
         )
 
@@ -80,6 +84,8 @@ def three_way_partition_iterator(
             second_out,
             unselected_out,
             num_selected,
+            less_than_op,
+            greater_equal_op,
             size,
         )
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
@@ -90,6 +96,8 @@ def three_way_partition_iterator(
             second_out,
             unselected_out,
             num_selected,
+            less_than_op,
+            greater_equal_op,
             size,
         )
 
@@ -131,6 +139,8 @@ def three_way_partition_struct(
             second_out,
             unselected_out,
             num_selected,
+            less_than_op,
+            greater_equal_op,
             size,
         )
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
@@ -141,6 +151,8 @@ def three_way_partition_struct(
             second_out,
             unselected_out,
             num_selected,
+            less_than_op,
+            greater_equal_op,
             size,
         )
 

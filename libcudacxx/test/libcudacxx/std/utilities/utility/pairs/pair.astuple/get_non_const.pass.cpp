@@ -40,7 +40,7 @@ __device__ __host__ constexpr cuda::std::pair<int, int> getP()
 int main(int, char**)
 {
   {
-    typedef cuda::std::pair<int, short> P;
+    using P = cuda::std::pair<int, short>;
     P p(3, static_cast<short>(4));
     assert(cuda::std::get<0>(p) == 3);
     assert(cuda::std::get<1>(p) == 4);

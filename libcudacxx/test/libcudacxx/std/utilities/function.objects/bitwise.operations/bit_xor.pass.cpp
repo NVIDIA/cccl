@@ -40,7 +40,7 @@ __global__ void test_global_kernel()
 int main(int, char**)
 {
   {
-    typedef cuda::std::bit_xor<int> F;
+    using F   = cuda::std::bit_xor<int>;
     const F f = F();
 #if TEST_STD_VER <= 2017
     static_assert((cuda::std::is_same<int, F::first_argument_type>::value), "");
@@ -55,7 +55,7 @@ int main(int, char**)
   }
 
   {
-    typedef cuda::std::bit_xor<> F2;
+    using F2   = cuda::std::bit_xor<>;
     const F2 f = F2();
     assert(f(0xEA95, 0xEA95) == 0);
     assert(f(0xEA95L, 0xEA95) == 0);

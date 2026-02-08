@@ -124,7 +124,7 @@ struct TakeNImp;
 template <class ArgList, class... Args>
 struct TakeNImp<true, 0, ArgList, Args...>
 {
-  typedef ArgList type;
+  using type = ArgList;
 };
 
 template <size_t N, class... A1, class F, class... R>
@@ -138,7 +138,7 @@ struct TakeNArgs : TakeNImp<N == 0, N, ArgumentListID<>, Args...>
 template <class T>
 struct Identity
 {
-  typedef T type;
+  using type = T;
 };
 
 template <class T>
@@ -310,7 +310,7 @@ template <class Alloc, size_t Arity>
 class UsesAllocatorV1 : public UsesAllocatorTestBase<UsesAllocatorV1<Alloc, Arity>, Alloc>
 {
 public:
-  typedef Alloc allocator_type;
+  using allocator_type = Alloc;
 
   using Base      = UsesAllocatorTestBase<UsesAllocatorV1, Alloc>;
   using CtorAlloc = typename Base::CtorAlloc;
@@ -349,7 +349,7 @@ template <class Alloc, size_t Arity>
 class UsesAllocatorV2 : public UsesAllocatorTestBase<UsesAllocatorV2<Alloc, Arity>, Alloc>
 {
 public:
-  typedef Alloc allocator_type;
+  using allocator_type = Alloc;
 
   using Base      = UsesAllocatorTestBase<UsesAllocatorV2, Alloc>;
   using CtorAlloc = typename Base::CtorAlloc;
@@ -381,7 +381,7 @@ template <class Alloc, size_t Arity>
 class UsesAllocatorV3 : public UsesAllocatorTestBase<UsesAllocatorV3<Alloc, Arity>, Alloc>
 {
 public:
-  typedef Alloc allocator_type;
+  using allocator_type = Alloc;
 
   using Base      = UsesAllocatorTestBase<UsesAllocatorV3, Alloc>;
   using CtorAlloc = typename Base::CtorAlloc;

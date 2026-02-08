@@ -72,9 +72,9 @@ int main(int, char**)
 #endif
   {
     constexpr const char* p = "123456789";
-    typedef cuda::std::move_iterator<const char*> MI;
-    constexpr MI it1 = cuda::std::make_move_iterator(p);
-    constexpr MI it2 = cuda::std::make_move_iterator(p + 1);
+    using MI                = cuda::std::move_iterator<const char*>;
+    constexpr MI it1        = cuda::std::make_move_iterator(p);
+    constexpr MI it2        = cuda::std::make_move_iterator(p + 1);
     static_assert(*it1 == p[0], "");
     static_assert(*it2 == p[1], "");
   }

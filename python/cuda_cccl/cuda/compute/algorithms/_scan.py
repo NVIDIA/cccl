@@ -16,7 +16,11 @@ from .._cccl_interop import (
     set_cccl_iterator_state,
     to_cccl_value_state,
 )
-from .._utils.protocols import get_data_pointer, validate_and_get_stream
+from .._utils.protocols import (
+    get_data_pointer,
+    is_device_array,
+    validate_and_get_stream,
+)
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators._iterators import IteratorBase
 from ..op import OpAdapter, OpKind, make_op_adapter
@@ -29,7 +33,7 @@ def get_init_kind(
     match init_value:
         case None:
             return _bindings.InitKind.NO_INIT
-        case _ if isinstance(init_value, DeviceArrayLike):
+        case _ if is_device_array(init_value):
             return _bindings.InitKind.FUTURE_VALUE_INIT
         case _:
             return _bindings.InitKind.VALUE_INIT
@@ -41,7 +45,6 @@ class _Scan:
         "d_in_cccl",
         "d_out_cccl",
         "init_value_cccl",
-        "op",
         "op_cccl",
         "device_scan_fn",
         "init_kind",
@@ -115,12 +118,17 @@ class _Scan:
         temp_storage,
         d_in,
         d_out,
+        op: Callable | OpAdapter,
         num_items: int,
         init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
         stream=None,
     ):
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
+
+        # Update op state for stateful ops
+        op_adapter = make_op_adapter(op)
+        op_adapter.update_op_state(self.op_cccl)
 
         match self.init_kind:
             case _bindings.InitKind.FUTURE_VALUE_INIT:
@@ -222,9 +230,9 @@ def exclusive_scan(
         stream: CUDA stream for the operation (optional)
     """
     scanner = make_exclusive_scan(d_in, d_out, op, init_value)
-    tmp_storage_bytes = scanner(None, d_in, d_out, num_items, init_value, stream)
+    tmp_storage_bytes = scanner(None, d_in, d_out, op, num_items, init_value, stream)
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
-    scanner(tmp_storage, d_in, d_out, num_items, init_value, stream)
+    scanner(tmp_storage, d_in, d_out, op, num_items, init_value, stream)
 
 
 # TODO Figure out `sum` without operator and initial value
@@ -289,6 +297,6 @@ def inclusive_scan(
         stream: CUDA stream for the operation (optional)
     """
     scanner = make_inclusive_scan(d_in, d_out, op, init_value)
-    tmp_storage_bytes = scanner(None, d_in, d_out, num_items, init_value, stream)
+    tmp_storage_bytes = scanner(None, d_in, d_out, op, num_items, init_value, stream)
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
-    scanner(tmp_storage, d_in, d_out, num_items, init_value, stream)
+    scanner(tmp_storage, d_in, d_out, op, num_items, init_value, stream)

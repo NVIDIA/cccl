@@ -69,6 +69,33 @@ public:
       return "exec(stream id=" + ::std::to_string(dstream.id) + " dev=" + ::std::to_string(dstream.dev_id) + ")";
     }
 
+    bool operator==(const exec_place::impl& rhs) const override
+    {
+      if (typeid(*this) != typeid(rhs))
+      {
+        return false;
+      }
+      const auto& other = static_cast<const impl&>(rhs);
+      // Compare by stream handle
+      return dstream.stream == other.dstream.stream;
+    }
+
+    size_t hash() const override
+    {
+      // Hash the stream handle, not the affine data place
+      return ::std::hash<cudaStream_t>()(dstream.stream);
+    }
+
+    bool operator<(const exec_place::impl& rhs) const override
+    {
+      if (typeid(*this) != typeid(rhs))
+      {
+        return typeid(*this).before(typeid(rhs));
+      }
+      const auto& other = static_cast<const impl&>(rhs);
+      return dstream.stream < other.dstream.stream;
+    }
+
   private:
     decorated_stream dstream;
     // We create a dummy pool of streams which only consists in a single stream in practice.

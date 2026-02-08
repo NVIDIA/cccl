@@ -64,17 +64,17 @@ template <class Tp>
 __host__ __device__ void test_not_is_default_constructible()
 {
   {
-    typedef cuda::std::pair<int, Tp> P;
+    using P = cuda::std::pair<int, Tp>;
     static_assert(!cuda::std::is_default_constructible<P>::value, "");
     static_assert(cuda::std::is_constructible<P, int, Tp>::value, "");
   }
   {
-    typedef cuda::std::pair<Tp, int> P;
+    using P = cuda::std::pair<Tp, int>;
     static_assert(!cuda::std::is_default_constructible<P>::value, "");
     static_assert(cuda::std::is_constructible<P, Tp, int>::value, "");
   }
   {
-    typedef cuda::std::pair<Tp, Tp> P;
+    using P = cuda::std::pair<Tp, Tp>;
     static_assert(!cuda::std::is_default_constructible<P>::value, "");
     static_assert(cuda::std::is_constructible<P, Tp, Tp>::value, "");
   }
@@ -84,15 +84,15 @@ template <class Tp>
 __host__ __device__ void test_is_default_constructible()
 {
   {
-    typedef cuda::std::pair<int, Tp> P;
+    using P = cuda::std::pair<int, Tp>;
     static_assert(cuda::std::is_default_constructible<P>::value, "");
   }
   {
-    typedef cuda::std::pair<Tp, int> P;
+    using P = cuda::std::pair<Tp, int>;
     static_assert(cuda::std::is_default_constructible<P>::value, "");
   }
   {
-    typedef cuda::std::pair<Tp, Tp> P;
+    using P = cuda::std::pair<Tp, Tp>;
     static_assert(cuda::std::is_default_constructible<P>::value, "");
   }
 }
@@ -109,7 +109,7 @@ struct IllFormedDefaultImp
   int value;
 };
 
-typedef IllFormedDefaultImp<int> IllFormedDefault;
+using IllFormedDefault = IllFormedDefaultImp<int>;
 // A class which provides a constexpr default constructor with a valid
 // signature but an ill-formed body. The A compile error will be emitted if
 // the default constructor is instantiated.
@@ -123,20 +123,20 @@ typedef IllFormedDefaultImp<int> IllFormedDefault;
 __host__ __device__ void test_illformed_default()
 {
   {
-    typedef cuda::std::pair<IllFormedDefault, int> P;
+    using P = cuda::std::pair<IllFormedDefault, int>;
     static_assert((cuda::std::is_constructible<P, IllFormedDefault, int>::value), "");
     constexpr P p(IllFormedDefault(42), -5);
     static_assert(p.first.value == 42 && p.second == -5);
   }
   {
-    typedef cuda::std::pair<int, IllFormedDefault> P;
+    using P = cuda::std::pair<int, IllFormedDefault>;
     static_assert((cuda::std::is_constructible<P, int, IllFormedDefault>::value), "");
     constexpr IllFormedDefault dd(-5);
     constexpr P p(42, dd);
     static_assert(p.first == 42 && p.second.value == -5);
   }
   {
-    typedef cuda::std::pair<IllFormedDefault, IllFormedDefault> P;
+    using P = cuda::std::pair<IllFormedDefault, IllFormedDefault>;
     static_assert((cuda::std::is_constructible<P, IllFormedDefault, IllFormedDefault>::value), "");
     constexpr P p(IllFormedDefault(42), IllFormedDefault(-5));
     static_assert(p.first.value == 42 && p.second.value == -5);

@@ -32,9 +32,9 @@ struct MyArray
 template <class T, cuda::std::size_t Size>
 __host__ __device__ void test()
 {
-  typedef T CArrayT[Size == 0 ? 1 : Size];
-  typedef cuda::std::array<T, Size> ArrayT;
-  typedef MyArray<T, Size == 0 ? 1 : Size> MyArrayT;
+  using CArrayT  = T[Size == 0 ? 1 : Size];
+  using ArrayT   = cuda::std::array<T, Size>;
+  using MyArrayT = MyArray<T, Size == 0 ? 1 : Size>;
   static_assert(sizeof(ArrayT) == sizeof(CArrayT), "");
   static_assert(sizeof(ArrayT) == sizeof(MyArrayT), "");
   static_assert(alignof(ArrayT) == alignof(MyArrayT), "");

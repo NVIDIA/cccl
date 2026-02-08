@@ -24,7 +24,7 @@ __host__ __device__ void test(const T&)
 
 int main(int, char**)
 {
-  typedef cuda::std::chrono::high_resolution_clock C;
+  using C = cuda::std::chrono::high_resolution_clock;
   static_assert((cuda::std::is_same<C::rep, C::duration::rep>::value), "");
   static_assert((cuda::std::is_same<C::period, C::duration::period>::value), "");
   static_assert((cuda::std::is_same<C::duration, C::time_point::duration>::value), "");
