@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cub/detail/choose_offset.cuh>
@@ -35,25 +35,9 @@
 #  elif TUNE_LOAD == 1
 #    define TUNE_LOAD_MODIFIER cub::LOAD_CA
 #  endif // TUNE_LOAD
-
-struct policy_hub_t
-{
-  struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
-  {
-    using ScanByKeyPolicyT = cub::AgentScanByKeyPolicy<
-      TUNE_THREADS,
-      TUNE_ITEMS,
-      // TODO Tune
-      TUNE_LOAD_ALGORITHM,
-      TUNE_LOAD_MODIFIER,
-      cub::BLOCK_SCAN_WARP_SCANS,
-      TUNE_STORE_ALGORITHM,
-      delay_constructor_t>;
-  };
-
-  using MaxPolicy = policy_t;
-};
 #endif // !TUNE_BASE
+
+#include "../../policy_selector.h"
 
 namespace impl
 {
@@ -307,15 +291,6 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<BitsetT, Of
 
   using ZpT = impl::ZpT;
 
-#if !TUNE_BASE
-  using policy_t   = policy_hub_t<accum_t>;
-  using dispatch_t = cub::
-    DispatchScan<input_it_t, output_it_t, op_t, wrapped_init_t, offset_t, accum_t, cub::ForceInclusive::No, policy_t>;
-#else
-  using dispatch_t =
-    cub::DispatchScan<input_it_t, output_it_t, op_t, wrapped_init_t, offset_t, accum_t, cub::ForceInclusive::No>;
-#endif
-
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
 
   thrust::device_vector<input_t> input = generate(elements);
@@ -337,13 +312,26 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<BitsetT, Of
   cudaStream_t bench_stream = state.get_cuda_stream().get_stream();
 
   size_t tmp_size;
-  dispatch_t::Dispatch(nullptr, tmp_size, inp_it, out_it, op_t{p}, wrapped_init_t{}, input.size(), bench_stream);
+  cub::detail::scan::dispatch_with_accum<accum_t>(
+    nullptr,
+    tmp_size,
+    inp_it,
+    out_it,
+    op_t{p},
+    wrapped_init_t{},
+    input.size(),
+    bench_stream
+#if !TUNE_BASE
+    ,
+    policy_selector<accum_t>{}
+#endif // !TUNE_BASE
+  );
 
   thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
   nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
+    cub::detail::scan::dispatch_with_accum<accum_t>(
       d_tmp,
       tmp_size,
       inp_it,
@@ -351,7 +339,12 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<BitsetT, Of
       op_t{p},
       wrapped_init_t{},
       input.size(),
-      launch.get_stream());
+      launch.get_stream()
+#if !TUNE_BASE
+        ,
+      policy_selector<accum_t>{}
+#endif // !TUNE_BASE
+    );
   });
 
   // for validation uncomment these two lines

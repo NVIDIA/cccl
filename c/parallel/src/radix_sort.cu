@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -213,18 +213,7 @@ try
   std::string offset_t;
   check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
-  // TODO(bgruber): generalize this somewhere
-  const auto key_type = [&] {
-    switch (input_keys_it.value_type.type)
-    {
-      case CCCL_FLOAT32:
-        return cub::detail::type_t::float32;
-      case CCCL_FLOAT64:
-        return cub::detail::type_t::float64;
-      default:
-        return cub::detail::type_t::other;
-    }
-  }();
+  const auto key_type = cccl_type_enum_to_cub_type(input_keys_it.value_type.type);
 
   const auto policy_sel = cub::detail::radix_sort::policy_selector{
     static_cast<int>(input_keys_it.value_type.size),
