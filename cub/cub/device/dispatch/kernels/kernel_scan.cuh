@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 #pragma once
@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_scan.cuh>
+#include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/util_macro.cuh>
 
 CUB_NAMESPACE_BEGIN
@@ -82,8 +83,8 @@ DeviceCompactInitKernel(ScanTileStateT tile_state, int num_tiles, NumSelectedIte
  * @brief Scan kernel entry point (multi-block)
  *
  *
- * @tparam ChainedPolicyT
- *   Chained tuning policy
+ * @tparam PolicySelector
+ *   Policy selector for tuning
  *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading scan inputs @iterator
@@ -126,7 +127,7 @@ DeviceCompactInitKernel(ScanTileStateT tile_state, int num_tiles, NumSelectedIte
  * @paramTotal num_items
  *   number of scan items for the entire problem
  */
-template <typename ChainedPolicyT,
+template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename ScanTileStateT,
@@ -136,7 +137,7 @@ template <typename ChainedPolicyT,
           typename AccumT,
           bool ForceInclusive,
           typename RealInitValueT = typename InitValueT::value_type>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
+__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanKernel(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -146,7 +147,23 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
     InitValueT init_value,
     OffsetT num_items)
 {
-  using ScanPolicyT = typename ChainedPolicyT::ActivePolicy::ScanPolicyT;
+  static constexpr scan_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static_assert(policy.load_modifier != CacheLoadModifier::LOAD_LDG,
+                "The memory consistency model does not apply to texture "
+                "accesses");
+
+  using ScanPolicyT = AgentScanPolicy<
+    policy.block_threads,
+    policy.items_per_thread,
+    AccumT,
+    policy.load_algorithm,
+    policy.load_modifier,
+    policy.store_algorithm,
+    policy.scan_algorithm,
+    NoScaling<policy.block_threads, policy.items_per_thread>,
+    delay_constructor_t<policy.delay_constructor.kind,
+                        policy.delay_constructor.delay,
+                        policy.delay_constructor.l2_write_latency>>;
 
   // Thread block type for scanning input tiles
   using AgentScanT = detail::scan::AgentScan<
