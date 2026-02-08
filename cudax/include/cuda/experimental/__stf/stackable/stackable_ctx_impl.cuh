@@ -39,7 +39,6 @@
 
 namespace cuda::experimental::stf
 {
-
 template <typename T>
 class stackable_logical_data;
 
@@ -1870,5 +1869,4 @@ public:
 public:
   ::std::shared_ptr<impl> pimpl;
 };
-
 } // end namespace cuda::experimental::stf

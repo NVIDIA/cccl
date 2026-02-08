@@ -65,7 +65,6 @@
 
 namespace cuda::experimental::stf
 {
-
 //! Logical data type used in a stackable_ctx context type.
 //!
 //! It should behaves exactly like a logical_data with additional API to import
@@ -1029,7 +1028,6 @@ private:
 #  ifdef __CUDACC__
 namespace reserved
 {
-
 template <typename T>
 static __global__ void kernel_set(T* addr, T val)
 {
@@ -1052,7 +1050,6 @@ static __global__ void kernel_check_value(T* addr, T val)
     ::cuda::std::terminate();
   }
 }
-
 } // namespace reserved
 
 UNITTEST("stackable host_launch")
@@ -1365,5 +1362,4 @@ inline auto stackable_ctx::repeat_graph_scope(
   return repeat_graph_scope_guard(*this, count, default_launch_value, flags);
 }
 #endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
-
 } // end namespace cuda::experimental::stf

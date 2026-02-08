@@ -25,13 +25,11 @@
 
 namespace cuda::experimental::stf
 {
-
 template <typename T, typename reduce_op, bool initialize>
 class stackable_task_dep;
 
 namespace reserved
 {
-
 template <typename T>
 struct is_stackable_task_dep : ::std::false_type
 {};
@@ -59,7 +57,5 @@ decltype(auto) to_task_dep(U&& u)
     return ::std::forward<U>(u);
   }
 }
-
 } // end namespace reserved
-
 } // end namespace cuda::experimental::stf

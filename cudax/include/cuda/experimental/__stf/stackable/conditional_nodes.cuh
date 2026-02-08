@@ -27,10 +27,8 @@
 
 namespace cuda::experimental::stf
 {
-
 namespace reserved
 {
-
 #if _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 // This kernel is used by the update_cond method to update the conditional handle. The device function passed as an
 // argument returns a boolean value which defines the new value of the conditional handle.
@@ -49,7 +47,6 @@ __global__ void condition_reset(cudaGraphConditionalHandle conditional_handle)
   cudaGraphSetConditional(conditional_handle, value);
 }
 #endif // _CCCL_CTK_AT_LEAST(12, 4) && !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
-
 } // end namespace reserved
 
 //! \brief Configuration class for push_while operations
@@ -86,5 +83,4 @@ struct push_while_config
   {}
 #endif
 };
-
 } // end namespace cuda::experimental::stf
