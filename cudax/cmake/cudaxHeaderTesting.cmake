@@ -7,6 +7,8 @@
 # Meta target for all configs' header builds:
 add_custom_target(cudax.all.headers)
 
+find_package(CUDAToolkit REQUIRED)
+
 function(cudax_add_header_test label definitions)
   ###################
   # Non-STF headers #

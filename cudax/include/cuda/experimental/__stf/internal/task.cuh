@@ -118,6 +118,15 @@ private:
     // acquire the logical_data_untypeds accessed by the task
     event_list input_events;
 
+    // We make it mutable because presumably read-only access using this list
+    // may optimize it too
+    mutable event_list ready_prereqs;
+
+    auto& get_ready_prereqs() const
+    {
+      return ready_prereqs;
+    }
+
     // A string useful for debugging purpose
     mutable ::std::string symbol;
 
@@ -347,6 +356,16 @@ public:
     return pimpl->input_events;
   }
 
+  void set_ready_prereqs(event_list _ready_prereqs)
+  {
+    pimpl->ready_prereqs = mv(_ready_prereqs);
+  }
+
+  event_list& get_ready_prereqs() const
+  {
+    return pimpl->ready_prereqs;
+  }
+
   // Get the unique task identifier
   int get_unique_id() const
   {
@@ -372,6 +391,17 @@ public:
   bool is_capture_enabled() const
   {
     return pimpl->enable_capture;
+  }
+
+  // Get the base task - for consistency with unified_task, stream_task, graph_task
+  ::cuda::experimental::stf::task& get_base_task()
+  {
+    return *this;
+  }
+
+  const ::cuda::experimental::stf::task& get_base_task() const
+  {
+    return *this;
   }
 
   /**
