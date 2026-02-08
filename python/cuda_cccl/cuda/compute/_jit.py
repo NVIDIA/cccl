@@ -522,21 +522,14 @@ def compile_op(op, input_types, output_type=None):
     return _compile_op_impl(cachable_op, tuple(input_types), output_type)
 
 
-class _JitOp(OpAdapter):
-    __slots__ = ("_func", "_cachable")
-
-    def __init__(self, func: Callable):
-        self._func = func
-        self._cachable = CachableFunction(func)
-
-    def get_return_type(self, input_types):
-        return _infer_return_type(self._func, input_types)
-
-
-class _StatelessOp(_JitOp):
+class _StatelessOp(OpAdapter):
     """Adapter for stateless callables."""
 
     __slots__ = ()
+
+    def __init__(self, func):
+        self._func = func
+        self._cachable = CachableFunction(func)
 
     def compile(self, input_types, output_type=None) -> Op:
         return compile_op(self._func, input_types, output_type)
@@ -553,6 +546,9 @@ class _StatelessOp(_JitOp):
         return hash(
             self._cachable,
         )
+
+    def get_return_type(self, input_types):
+        return _infer_return_type(self._func, input_types)
 
 
 # -----------------------------------------------------------------------------
@@ -860,11 +856,12 @@ class _JitOpState:
         return struct.pack(f"{len(state_ptrs)}P", *state_ptrs)
 
 
-class _StatefulOp(_JitOp):
+class _StatefulOp(OpAdapter):
     __slots__ = "_state"
 
     def __init__(self, func, state):
-        super().__init__(func)
+        self._func = func
+        self._cachable = CachableFunction(func)
         self._state = state
 
     @property
@@ -899,8 +896,8 @@ class _StatefulOp(_JitOp):
         """Access the wrapped callable."""
         return self._func
 
-    def __hash__(self):
-        return self.get_cache_key()
+    def __hash__(self) -> int:
+        return hash(self.get_cache_key())
 
     def __eq__(self, other):
         return (self._cachable == other._cachable) and (self._state == other._state)

@@ -11,11 +11,13 @@ from __future__ import annotations
 import functools
 
 from cuda.cccl import get_include_paths
+from cuda.core import Device, Program, ProgramOptions
+
+from ._bindings import TypeEnum
 
 
 def _get_arch_string() -> str:
     """Get the compute capability string for the current device."""
-    from cuda.core import Device
 
     device = Device()
     cc_major, cc_minor = device.compute_capability
@@ -52,7 +54,6 @@ def compile_cpp_to_ltoir(
         '''
         ltoir = compile_cpp_to_ltoir(source)
     """
-    from cuda.core import Program, ProgramOptions
 
     if arch is None:
         arch = _get_arch_string()
@@ -65,7 +66,7 @@ def compile_cpp_to_ltoir(
         arch=arch,
         relocatable_device_code=True,
         link_time_optimization=True,
-        std="c++17",
+        std="c++20",
         include_path=include_paths,
     )
 
@@ -79,12 +80,11 @@ def compile_cpp_to_ltoir(
 def cpp_type_from_descriptor(type_desc) -> str | None:
     """
     Get the C++ type name from a TypeDescriptor.
-    """
-    # Careful!!!
-    # For efficiency, this function returns None for non-primitive types.
-    # Callers must take care to handle that case appropriately.
-    from ._bindings import TypeEnum
 
+    Important: for efficiency, this function returns None
+    for non-primitive types. Callers must take care
+    to handle that case appropriately.
+    """
     # Map TypeEnum to C++ types
     type_map = {
         TypeEnum.INT8: "int8_t",
@@ -99,13 +99,9 @@ def cpp_type_from_descriptor(type_desc) -> str | None:
         TypeEnum.FLOAT32: "float",
         TypeEnum.FLOAT64: "double",
         TypeEnum.BOOLEAN: "bool",
+        TypeEnum.STORAGE: None,
     }
-
-    if type_desc.info.typenum in type_map:
-        return type_map[type_desc.info.typenum]
-
-    # STORAGE types have no type name
-    return None
+    return type_map[type_desc.info.typenum]
 
 
 def make_variable_declaration(type_desc, name: str) -> str:

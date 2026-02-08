@@ -7,37 +7,12 @@
 from __future__ import annotations
 
 from textwrap import dedent
-from typing import TYPE_CHECKING
 
 from .._bindings import Op, OpKind
 from .._cpp_compile import compile_cpp_to_ltoir
-from .._utils.protocols import get_size, is_device_array
+from .._utils.protocols import is_device_array
 from ._base import IteratorBase
-
-CUDA_PREAMBLE = """#include <cuda/std/cstdint>
-#include <cuda_fp16.h>
-#include <cuda/std/cstring>
-using namespace cuda::std;
-"""
-
-if TYPE_CHECKING:
-    pass
-
-
-def _ensure_iterator(obj):
-    """Wrap array in PointerIterator at the END of the array for reverse iteration."""
-    from ._pointer import PointerIterator
-
-    if isinstance(obj, PointerIterator):
-        array_len = get_size(obj._array)
-        return obj + (array_len - 1)
-    if is_device_array(obj):
-        array_len = get_size(obj)
-        return PointerIterator(obj) + (array_len - 1)
-    if isinstance(obj, IteratorBase):
-        return obj
-
-    raise TypeError("ReverseIterator requires a device array or iterator")
+from ._common import CUDA_PREAMBLE, ensure_iterator
 
 
 class ReverseIterator(IteratorBase):
@@ -58,7 +33,14 @@ class ReverseIterator(IteratorBase):
         Args:
             underlying: The underlying iterator or array to reverse
         """
-        self._underlying = _ensure_iterator(underlying)
+
+        if is_device_array(underlying):
+            # TODO: this is probably incorrect behaviour. In C++, initializing
+            # with a pointer to the end of the array is left to be done explicitly
+            # by the user.
+            self._underlying = ensure_iterator(underlying) + (len(underlying) - 1)
+        else:
+            self._underlying = ensure_iterator(underlying)
 
         super().__init__(
             state_bytes=bytes(self._underlying.state),
