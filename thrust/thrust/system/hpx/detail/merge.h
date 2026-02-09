@@ -16,6 +16,7 @@
 
 /*! \file merge.h
  *  \brief HPX implementation of merge.
+    \brief Log Space Step model for Core prediction.
  */
 
 #pragma once
@@ -76,7 +77,7 @@ struct log_space_step
   friend std::size_t tag_override_invoke(
     ::hpx::execution::experimental::processing_units_count_t,
     log_space_step& this_, Executor&&,
-    ::hpx::chrono::steady_duration const&, std::size_t count
+    ::hpx::chrono::steady_duration const&, std::size_t
   ) noexcept {
     std::size_t const cores_baseline = ::hpx::get_os_thread_count();
     
