@@ -406,44 +406,282 @@ _CCCL_API inline complex<__half> asinh(const complex<__half>& __x) noexcept
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline complex<_Tp> acosh(const complex<_Tp>& __x)
 {
-  constexpr _Tp __pi = __numbers<_Tp>::__pi();
-  if (::cuda::std::isinf(__x.real()))
+  // Uint of the same size as our fp type.
+  using __uint_t = __fp_storage_of_t<_Tp>;
+
+  constexpr int32_t __mant_nbits = __fp_mant_nbits_v<__fp_format_of_v<_Tp>>;
+  constexpr int32_t __exp_max    = __fp_exp_max_v<__fp_format_of_v<_Tp>>;
+  constexpr int32_t __exp_bias   = __fp_exp_bias_v<__fp_format_of_v<_Tp>>;
+
+  constexpr _Tp __pi  = __numbers<_Tp>::__pi();
+  constexpr _Tp __ln2 = __numbers<_Tp>::__ln2();
+
+  _Tp __realx = ::cuda::std::fabs(__x.real());
+  _Tp __imagx = ::cuda::std::fabs(__x.imag());
+
+  // Special cases that do not pass through:
+  if (!::cuda::std::isfinite(__realx) || !::cuda::std::isfinite(__imagx))
   {
-    if (::cuda::std::isnan(__x.imag()))
+    // If z is (x,+inf) (for any finite x), the result is (+inf,pi/2).
+    if (::cuda::std::isfinite(__realx) && ::cuda::std::isinf(__imagx))
     {
-      return complex<_Tp>(::cuda::std::abs(__x.real()), __x.imag());
+      return complex<_Tp>(numeric_limits<_Tp>::infinity(), ::cuda::std::copysign(_Tp{0.5} * __pi, __x.imag()));
     }
-    if (::cuda::std::isinf(__x.imag()))
+
+    // If z is (-pi,y) (for any positive finite y), the result is (+inf,pi).
+    // If z is (+pi,y) (for any positive finite y), the result is (+inf,+0).
+    if (::cuda::std::isinf(__realx) && ::cuda::std::isfinite(__imagx))
     {
-      if (__x.real() > _Tp(0))
-      {
-        return complex<_Tp>(__x.real(), ::cuda::std::copysign(__pi * _Tp(0.25), __x.imag()));
-      }
-      else
-      {
-        return complex<_Tp>(-__x.real(), ::cuda::std::copysign(__pi * _Tp(0.75), __x.imag()));
-      }
+      const _Tp __imag_ret_value = (__x.real() == numeric_limits<_Tp>::infinity()) ? _Tp{0.0} : __pi;
+      return complex<_Tp>(__realx, ::cuda::std::copysign(__imag_ret_value, __x.imag()));
     }
-    if (__x.real() < _Tp(0))
+
+    // If z is (-inf, +-inf), the result is (+inf ,+-3pi/4).
+    if ((__x.real() == -numeric_limits<_Tp>::infinity()) && ::cuda::std::isinf(__imagx))
     {
-      return complex<_Tp>(-__x.real(), ::cuda::std::copysign(__pi, __x.imag()));
+      return complex<_Tp>(numeric_limits<_Tp>::infinity(), ::cuda::std::copysign(_Tp{0.75} * __pi, __x.imag()));
     }
-    return complex<_Tp>(__x.real(), ::cuda::std::copysign(_Tp(0), __x.imag()));
+
+    // If z is (+inf,+inf), the result is (+inf, pi/4)
+    if ((__x.real() == numeric_limits<_Tp>::infinity()) && ::cuda::std::isinf(__imagx))
+    {
+      return complex<_Tp>(numeric_limits<_Tp>::infinity(), ::cuda::std::copysign(_Tp{0.25} * __pi, __x.imag()));
+    }
+
+    // If z is (NaN,+inf), the result is (+inf,NaN).
+    if (::cuda::std::isnan(__realx) && ::cuda::std::isinf(__imagx))
+    {
+      return complex<_Tp>(numeric_limits<_Tp>::infinity(), NAN);
+    }
+
+    // If z is (+-inf,NaN), the result is (+inf,NaN).
+    if (::cuda::std::isinf(__realx) && ::cuda::std::isnan(__imagx))
+    {
+      return complex<_Tp>(numeric_limits<_Tp>::infinity(), __x.imag());
+    }
+
+    // If z is (x,NaN) (for any[1] finite x), the result is (NaN,NaN) and FE_INVALID may be raised.
+    //       per C11 DR471, this holds for non-zero x only. If z is (0,NaN), the result should be (NaN,pi/2).
+    if ((__realx == _Tp{0}) && ::cuda::std::isnan(__imagx))
+    {
+      return complex<_Tp>(numeric_limits<_Tp>::quiet_NaN(), _Tp{0.5} * __pi);
+    }
   }
-  if (::cuda::std::isnan(__x.real()))
+
+  // A case that for various reasons does not pass
+  // easily through the algorithm below:
+  if ((__realx == _Tp{1}) && (__imagx == _Tp{0}))
   {
-    if (::cuda::std::isinf(__x.imag()))
-    {
-      return complex<_Tp>(::cuda::std::abs(__x.imag()), __x.real());
-    }
-    return complex<_Tp>(__x.real(), __x.real());
+    const _Tp __imag_ret_value = (__x.real() == _Tp{1}) ? _Tp{0} : __pi;
+    return complex<_Tp>(_Tp{0}, ::cuda::std::copysign(__imag_ret_value, __x.imag()));
   }
-  if (::cuda::std::isinf(__x.imag()))
+
+  // The easiest place to account for large values appears to be here at the start.
+  // Use acosh(x) ~ log(2x) for large x.
+  // Get the largest exponent that passes through the algorithm without issue.
+  // This is ~(max_exponent / 4), with a small bias to make sure edge cases get caught
+  // ~254 for double, ~30 for float
+  constexpr int32_t __max_allowed_exponent = (__exp_max / 4) - 2;
+  constexpr __uint_t __max_allowed_val_as_uint =
+    (__uint_t(__max_allowed_exponent + __exp_bias) << __mant_nbits) | __fp_explicit_bit_mask_of_v<_Tp>;
+
+  //  Check if the largest component of __x is > 2^__max_allowed_exponent:
+  _Tp __x_big_factor = _Tp{0};
+  const _Tp __max    = ::cuda::std::fmax(__realx, __imagx);
+  const bool __x_big = ::cuda::std::__fp_get_storage(__max) > __max_allowed_val_as_uint;
+
+  if (__x_big)
   {
-    return complex<_Tp>(::cuda::std::abs(__x.imag()), ::cuda::std::copysign(__pi / _Tp(2), __x.imag()));
+    // We need __max to be <= ~(2^__max_allowed_exponent),
+    // but not small enough that the acosh(x) ~ log(2x) estimate does
+    // not break down. We are not able to reduce this with a single simple reduction,
+    // so we do a fast/inlined frexp/ldexp:
+    const int32_t __exp_biased = static_cast<int32_t>(::cuda::std::__fp_get_storage(__max) >> __mant_nbits);
+
+    // Get a factor such that (__max * __exp_mul_factor) <= __max_allowed_exponent
+    const __uint_t __exp_reduce_factor =
+      (__uint_t((2 * __exp_max) + __max_allowed_exponent - __exp_biased) << __mant_nbits)
+      | __fp_explicit_bit_mask_of_v<_Tp>;
+    const _Tp __exp_mul_factor = ::cuda::std::__fp_from_storage<_Tp>(__exp_reduce_factor);
+
+    // Scale down to a working range.
+    __realx *= __exp_mul_factor;
+    __imagx *= __exp_mul_factor;
+
+    __x_big_factor = static_cast<_Tp>((__exp_biased - __exp_max) - __max_allowed_exponent) * __ln2;
   }
-  complex<_Tp> __z = ::cuda::std::log(__x + ::cuda::std::sqrt(::cuda::std::__sqr(__x) - _Tp(1)));
-  return complex<_Tp>(::cuda::std::copysign(__z.real(), _Tp(0)), ::cuda::std::copysign(__z.imag(), __x.imag()));
+
+  const _Tp __diffx_m1 = (__realx - _Tp{1}) * (__realx + _Tp{1}) - __imagx * __imagx;
+
+  // Get the real and imag parts of |sqrt(z^2 - 1)|^2 via pure algebra.
+  // This equates to calculating:
+  //     sqrt((im*im + (re + 1.0)*(re + 1.0))*(im*im + (re - 1.0)*(re - 1.0)));
+  // Where we need both the term inside the sqrt in extended precision, as well
+  // as evaluation the sqrt itself in extended precision.
+
+  // Get re^2 + im^2 + 1 in extended precision.
+  // The low part of re^2 doesn't seem to matter.
+  const _Tp __realx_sq_hi = __realx * __realx;
+  const _Tp __realx_sq_lo = ::cuda::std::fma(__realx, __realx, -__realx_sq_hi);
+
+  const _Tp __x_abs_sq_hi = __realx_sq_hi;
+  const _Tp __x_abs_sq_lo = ::cuda::std::fma(__imagx, __imagx, __realx_sq_lo);
+
+  // Add one:
+  const _Tp __x_abs_sq_p1_hi = (__x_abs_sq_hi + _Tp{1});
+  const _Tp __x_abs_sq_p1_lo = __x_abs_sq_lo - ((__x_abs_sq_p1_hi - _Tp{1}) - __x_abs_sq_hi);
+
+  // square:
+  const _Tp __x_abs_sq_p1_sq_hi = __x_abs_sq_p1_hi * __x_abs_sq_p1_hi;
+  _Tp __x_abs_sq_p1_sq_lo       = ::cuda::std::fma(__x_abs_sq_p1_hi, __x_abs_sq_p1_hi, -__x_abs_sq_p1_sq_hi);
+
+  // Add in the lower square terms, all needed
+  __x_abs_sq_p1_sq_lo =
+    ::cuda::std::fma(__x_abs_sq_p1_lo, (2.0 * __x_abs_sq_p1_hi + __x_abs_sq_p1_lo), __x_abs_sq_p1_sq_lo);
+
+  // Get __x_abs_sq_p1_sq_hi/lo - 4.0*__realx_sq_hi/lo:
+  // Subtract high parts:
+  _Tp __inner_most_term_hi = __x_abs_sq_p1_sq_hi - _Tp{4} * __realx_sq_hi;
+  _Tp __inner_most_term_lo = ((__x_abs_sq_p1_sq_hi - __inner_most_term_hi) - _Tp{4} * __realx_sq_hi);
+  // lo parts, all needed:
+  __inner_most_term_lo += __x_abs_sq_p1_sq_lo - _Tp{4} * __realx_sq_lo;
+
+  // Differs from asinh slightly here, we can still get some cancellation when
+  // real = (1.0 - eps) and imag ~ 0.0 but it's nowhere near as bad as in asinh.
+  // We need a much smaller interval check than asinh in this case.
+  // Bounds found experimentally.
+  _Tp __realx_close_bound = _Tp{0.99999};
+  _Tp __imagx_small_bound = _Tp{1.0e-8};
+
+  if constexpr (is_same_v<_Tp, float>)
+  {
+    __realx_close_bound = _Tp{0.99f};
+    __imagx_small_bound = _Tp{1.0e-5f};
+  }
+
+  // Calculate the same thing, but in a more stable way on this interval.
+  if ((__imagx < __imagx_small_bound) && (__realx_close_bound < __realx) && (__realx <= _Tp{1}))
+  {
+    // Need to get (imag^2 + (real - 1)^2) * (imag^2 + (1 + real)^2) in double-double:
+    // term1 = (imag^2 + (real - 1)^2)
+    const _Tp __term1_hi = (_Tp{1} - __realx) * (_Tp{1} - __realx);
+    const _Tp __term1_lo = ::cuda::std::fma(_Tp{1} - __realx, _Tp{1} - __realx, -__term1_hi) + __imagx * __imagx;
+
+    // Need (1.0 + __realx)^2 with nearly full accuracy.
+    const _Tp __term2_sum_hi = (_Tp{1} + __realx);
+    const _Tp __term2_sum_lo = ((_Tp{1} - __term2_sum_hi) + __realx);
+
+    const _Tp __term2_sq_hi = __term2_sum_hi * __term2_sum_hi;
+    _Tp __term2_sq_lo       = ::cuda::std::fma(__term2_sum_hi, __term2_sum_hi, -__term2_sq_hi);
+    __term2_sq_lo += _Tp{2} * __term2_sum_hi * __term2_sum_lo;
+
+    // Multiple __term1_hi/lo and __term2_sq_hi/lo:
+    __inner_most_term_hi = __term1_hi * __term2_sq_hi;
+    __inner_most_term_lo = ::cuda::std::fma(__term1_hi, __term2_sq_hi, -__inner_most_term_hi);
+    // All needed:
+    __inner_most_term_lo += __term1_hi * __term2_sq_lo + __term1_lo * __term2_sq_hi;
+  }
+
+  // Normalize the above (needed for calling the sqrt function below):
+  const _Tp __norm_hi  = __inner_most_term_hi + __inner_most_term_lo;
+  const _Tp __norm_lo  = -((__norm_hi - __inner_most_term_hi) - __inner_most_term_lo);
+  __inner_most_term_hi = __norm_hi;
+  __inner_most_term_lo = __norm_lo;
+
+  const __cccl_asinh_sqrt_return_hilo<_Tp> __extended_sqrt_hilo =
+    ::cuda::std::__internal_double_Tp_sqrt_unsafe<_Tp>(__inner_most_term_hi, __inner_most_term_lo);
+
+  _Tp __extended_sqrt_hi = __extended_sqrt_hilo.__hi;
+  _Tp __extended_sqrt_lo = __extended_sqrt_hilo.__lo;
+
+  // 0.0, and some very particular values, do not survive this unsafe sqrt function.
+  // This case occurs when (1 + x^2) is zero or denormal. (and rsqrt(x)*rsqrt(x) become inf).
+  constexpr __uint_t __min_normal_bits = __uint_t{0x1} << __mant_nbits;
+  const _Tp __min_normal               = ::cuda::std::__fp_from_storage<_Tp>(__min_normal_bits);
+
+  if (__inner_most_term_hi <= _Tp{2} * __min_normal)
+  {
+    __extended_sqrt_hi = _Tp{2} * __imagx;
+    __extended_sqrt_lo = _Tp{0};
+  }
+
+  // Get sqrt(0.5*(__diffx_m1 + __extended_sqrt_hi)
+  // This can result in catastrophic cancellation if __diffx_m1 < 0, in this case
+  // We instead use the equivalent
+  //     __realx*__imagx/sqrt(0.5*(-__diffx_m1 + __extended_sqrt_hi)
+  const _Tp __inside_sqrt_term = _Tp{0.5} * (::cuda::std::fabs(__diffx_m1) + __extended_sqrt_hi);
+
+  // Allow for rsqrt optimization:
+  // We can have two slightly different paths depending on whether rsqrt is available
+  // or not, aka are we on device or host.
+  const _Tp __recip_sqrt = ::cuda::std::__internal_rsqrt_inverse_hyperbloic<_Tp>(__inside_sqrt_term);
+  _Tp __pos_evaluation_real;
+
+  // This reuses the sqrt calculated on CPU already in __recip_sqrt,
+  // And gets sqrt quickly on device using the rsqrt already calculated.
+#if _CCCL_CUDA_COMPILATION()
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    (__pos_evaluation_real = (__recip_sqrt * __inside_sqrt_term);),
+                    (__pos_evaluation_real = ::cuda::std::sqrt(__inside_sqrt_term);))
+#else
+  __pos_evaluation_real = ::cuda::std::sqrt(__inside_sqrt_term);
+#endif // _CCCL_CUDA_COMPILATION()
+
+  // Here, in a happy coincidence(?), we happen to intermediately calculate an accurate
+  // return value for the real part of the answer in the case that __imagx is small,
+  // as you would obtain from the Taylor expansion of asinh. (~ real/sqrt(1 - imag^2)).
+  // The following parts of the calculation result in bad catastrophic cancellation for
+  // this case, so we save this intermediate value:
+  const _Tp __small_x_imag_return_val = __imagx * __recip_sqrt;
+  const _Tp __pos_evaluation_imag     = __realx * __small_x_imag_return_val;
+
+  const _Tp __sqrt_real_part = (__diffx_m1 > _Tp{0}) ? __pos_evaluation_real : __pos_evaluation_imag;
+  const _Tp __sqrt_imag_part = (__diffx_m1 > _Tp{0}) ? __pos_evaluation_imag : __pos_evaluation_real;
+
+  // for an accurate log, we calculate |(__sqrt_real_part + i*__sqrt_imag_part)| - 1 and use log1p.
+  // We need evaluate this without any cancellations.
+
+  // This can normally have bad catastrophic cancellation, however
+  // we have a lot of retained enough accuracy to subtract fairly simply:
+  const _Tp __m1  = __extended_sqrt_hi - _Tp{1};
+  const _Tp __rem = -((__m1 + _Tp{1}) - __extended_sqrt_hi);
+
+  __extended_sqrt_hi = __m1;
+  __extended_sqrt_lo += __rem;
+
+  // Final sum before sending it to log1p, all terms needed.
+  // Add our sum via three terms, there might be a better order.
+  const _Tp __sum1 = (__x_abs_sq_hi + __extended_sqrt_hi);
+  const _Tp __sum2 = _Tp{2} * (__imagx * __sqrt_imag_part + __realx * __sqrt_real_part);
+  const _Tp __sum3 = (__extended_sqrt_lo + __x_abs_sq_lo);
+
+  const _Tp __abs_sqrt_part_sq = __sum1 + (__sum2 + __sum3);
+
+  // A small quirk of acosh, due to the position of the
+  // branch cut when we call atan2 adding in signs helps:
+  const _Tp __atan2_input1 = ::cuda::std::copysign(__imagx + __sqrt_imag_part, __x.imag());
+  const _Tp __atan2_input2 = ::cuda::std::copysign(__realx + __sqrt_real_part, __x.real());
+
+  _Tp __ans_real       = _Tp{0.5} * ::cuda::std::log1p(__abs_sqrt_part_sq);
+  const _Tp __ans_imag = ::cuda::std::atan2(__atan2_input1, __atan2_input2);
+
+  // The small |real| case, as mentioned above.
+  // Bounds found by testing.
+  _Tp __imagx_small_bound_override = _Tp{1.0e-14};
+
+  if constexpr (is_same_v<_Tp, float>)
+  {
+    __imagx_small_bound_override = _Tp{6.0e-08f};
+  }
+  if (__imagx < __imagx_small_bound_override && __realx < _Tp{1})
+  {
+    __ans_real = __small_x_imag_return_val;
+  }
+
+  __ans_real += __x_big_factor;
+
+  // Copy signs back in
+  return complex<_Tp>(__ans_real, ::cuda::std::copysign(__ans_imag, __x.imag()));
 }
 
 // We have performance issues with some trigonometric functions with extended floating point types
