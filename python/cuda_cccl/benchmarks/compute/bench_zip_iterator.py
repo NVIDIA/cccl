@@ -34,9 +34,9 @@ def reduce_zip_array(input_array, build_only):
 
     alg = cuda.compute.make_reduce_into(zip_iter, res, my_add, h_init)
     if not build_only:
-        temp_storage_bytes = alg(None, zip_iter, res, size, h_init)
+        temp_storage_bytes = alg(None, zip_iter, res, my_add, size, h_init)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, zip_iter, res, size, h_init)
+        alg(temp_storage, zip_iter, res, my_add, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -53,9 +53,9 @@ def reduce_zip_iterator(inp, size, build_only):
 
     alg = cuda.compute.make_reduce_into(zip_iter, res, my_add, h_init)
     if not build_only:
-        temp_storage_bytes = alg(None, zip_iter, res, size, h_init)
+        temp_storage_bytes = alg(None, zip_iter, res, my_add, size, h_init)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, zip_iter, res, size, h_init)
+        alg(temp_storage, zip_iter, res, my_add, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -73,9 +73,9 @@ def reduce_zip_array_iterator(input_array, size, build_only):
 
     alg = cuda.compute.make_reduce_into(zip_iter, res, my_add, h_init)
     if not build_only:
-        temp_storage_bytes = alg(None, zip_iter, res, size, h_init)
+        temp_storage_bytes = alg(None, zip_iter, res, my_add, size, h_init)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, zip_iter, res, size, h_init)
+        alg(temp_storage, zip_iter, res, my_add, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -93,7 +93,7 @@ def transform_zip_array_iterator(zip_iter1, zip_iter2, size, build_only):
     alg = cuda.compute.make_binary_transform(zip_iter1, zip_iter2, res, my_transform)
 
     if not build_only:
-        alg(zip_iter1, zip_iter2, res, size)
+        alg(zip_iter1, zip_iter2, res, my_transform, size)
 
     cp.cuda.runtime.deviceSynchronize()
 
