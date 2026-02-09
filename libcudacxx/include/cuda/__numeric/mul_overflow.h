@@ -125,12 +125,10 @@ template <class _Tp>
       return {__result, __overflow};
     }
     else
-#  else // ^^^ _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_ARCH(X86_64) ^^^ /
-        // vvv _CCCL_COMPILER(MSVC, <, 19, 37) || !_CCCL_ARCH(X86_64) vvv
+#  endif // _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_ARCH(X86_64)
     {
       return ::cuda::__mul_overflow_generic<_Tp>(__lhs, __rhs);
     }
-#  endif // ^^^ _CCCL_COMPILER(MSVC, <, 19, 37) || !_CCCL_ARCH(X86_64) ^^^
   }
   else // ^^^ signed types ^^^ / vvv unsigned types vvv
   {
@@ -163,12 +161,10 @@ template <class _Tp>
       return {__lo, __overflow};
     }
     else
-#  else // ^^^ _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_ARCH(X86_64) ^^^ /
-        // vvv _CCCL_COMPILER(MSVC, <, 19, 37) || !_CCCL_ARCH(X86_64) vvv
+#  endif // _CCCL_COMPILER(MSVC, >=, 19, 37) && _CCCL_ARCH(X86_64)
     {
       return ::cuda::__mul_overflow_generic<_Tp>(__lhs, __rhs);
     }
-#  endif // ^^^ _CCCL_COMPILER(MSVC, <, 19, 37) || !_CCCL_ARCH(X86_64) ^^^
   } // ^^^ unsigned types ^^^
 }
 #endif // !_CCCL_COMPILER(NVRTC)
