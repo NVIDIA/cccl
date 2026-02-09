@@ -249,7 +249,10 @@ __host__ __device__ bool test_extended_floating_point()
 int main(int, char**)
 {
   assert(test());
+#if _CCCL_HAS_CONSTEXPR_BIT_CAST()
   static_assert(test());
+#endif // _CCCL_HAS_CONSTEXPR_BIT_CAST
+
   assert(test_extended_floating_point()); // run-time only
   return 0;
 }
