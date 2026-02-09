@@ -1594,22 +1594,32 @@ template <typename InputIterator1,
  *  \return A \p pair \c p such that <tt>p.first</tt> is the end of the output range of keys,
  *          and such that <tt>p.second</tt> is the end of the output range of values.
  *
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>,
  *          \p InputIterator1 and \p InputIterator2 have the same \c value_type,
- *          \p InputIterator1's \c value_type is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>,
- *          the ordering on \p InputIterator1's \c value_type is a strict weak ordering, as defined in the <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements,
- *          and \p InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types.
- *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
+ *          \p InputIterator1's \c value_type is a model of <a
+ * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
+ * InputIterator1's \c value_type is a strict weak ordering, as defined in the <a
+ * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
+ * InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types.
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>,
  *          \p InputIterator2 and \p InputIterator1 have the same \c value_type,
- *          \p InputIterator2's \c value_type is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>,
- *          the ordering on \p InputIterator2's \c value_type is a strict weak ordering, as defined in the <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements,
- *          and \p InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types.
- *  \tparam InputIterator3 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          and \p InputIterator3's \c value_type is convertible to a type in \p OutputIterator2's set of \c value_types.
- *  \tparam OutputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
- *  \tparam OutputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
+ *          \p InputIterator2's \c value_type is a model of <a
+ * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on \p
+ * InputIterator2's \c value_type is a strict weak ordering, as defined in the <a
+ * href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and \p
+ * InputIterator2's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types.
+ *  \tparam InputIterator3 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>, and \p InputIterator3's \c value_type is convertible to a type in \p OutputIterator2's set of \c
+ * value_types.
+ *  \tparam OutputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
+ * Iterator</a>.
+ *  \tparam OutputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
+ * Iterator</a>.
  *
- *  \pre The ranges <tt>[keys_first1, keys_last1)</tt> and <tt>[keys_first2, keys_last2)</tt> shall be sorted with respect to <tt>operator<</tt>.
+ *  \pre The ranges <tt>[keys_first1, keys_last1)</tt> and <tt>[keys_first2, keys_last2)</tt> shall be sorted with
+ * respect to <tt>operator<</tt>.
  *  \pre The resulting ranges shall not overlap with any input range.
  *
  *  The following code snippet demonstrates how to use \p set_difference_by_key to compute the
@@ -1626,7 +1636,8 @@ template <typename InputIterator1,
  *  int keys_result[3];
  *  int vals_result[3];
  *
- *  thrust::pair<int*,int*> end = thrust::set_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5, A_vals, keys_result, vals_result);
+ *  thrust::pair<int*,int*> end = thrust::set_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5, A_vals,
+ * keys_result, vals_result);
  *  // keys_result is now {0, 4, 6}
  *  // vals_result is now {0, 0, 0}
  *  \endcode
@@ -1637,12 +1648,12 @@ template <typename InputIterator1,
  *  \see \p sort_by_key
  *  \see \p is_sorted
  */
-template<typename InputIterator1,
-         typename InputIterator2,
-         typename InputIterator3,
-         typename OutputIterator1,
-         typename OutputIterator2>
-::cuda::std::pair<OutputIterator1,OutputIterator2> set_difference_by_key(
+template <typename InputIterator1,
+          typename InputIterator2,
+          typename InputIterator3,
+          typename OutputIterator1,
+          typename OutputIterator2>
+::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -1650,7 +1661,6 @@ template<typename InputIterator1,
   InputIterator3 values_first1,
   OutputIterator1 keys_result,
   OutputIterator2 values_result);
-
 
 /*! \p set_difference_by_key performs a key-value difference operation from set theory.
  *  \p set_difference_by_key constructs a sorted range that is the difference of the sorted

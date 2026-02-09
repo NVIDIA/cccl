@@ -4,6 +4,7 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
 #include "thrust/iterator/constant_iterator.h"
 #include "thrust/iterator/detail/iterator_traits.inl"
 
@@ -585,12 +586,12 @@ template <typename InputIterator1,
     values_result);
 } // end set_difference_by_key()
 
-template<typename InputIterator1,
-         typename InputIterator2,
-         typename InputIterator3,
-         typename OutputIterator1,
-         typename OutputIterator2>
-::cuda::std::pair<OutputIterator1,OutputIterator2> set_difference_by_key(
+template <typename InputIterator1,
+          typename InputIterator2,
+          typename InputIterator3,
+          typename OutputIterator1,
+          typename OutputIterator2>
+::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
   InputIterator2 keys_first2,
@@ -611,11 +612,11 @@ template<typename InputIterator1,
   constant_iterator values_first2 = thrust::make_constant_iterator(value_type1());
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
-  using System2 =  typename thrust::iterator_system<InputIterator2>::type;
-  using System3 =  typename thrust::iterator_system<InputIterator3>::type;
-  using System4 =  typename thrust::iterator_system<constant_iterator>::type;
+  using System2 = typename thrust::iterator_system<InputIterator2>::type;
+  using System3 = typename thrust::iterator_system<InputIterator3>::type;
+  using System4 = typename thrust::iterator_system<constant_iterator>::type;
   using System5 = typename thrust::iterator_system<OutputIterator1>::type;
-  using System6 =  typename thrust::iterator_system<OutputIterator2>::type;
+  using System6 = typename thrust::iterator_system<OutputIterator2>::type;
 
   System1 system1;
   System2 system2;
@@ -624,20 +625,26 @@ template<typename InputIterator1,
   System5 system5;
   System6 system6;
 
-  return thrust::set_difference_by_key(select_system(system1,system2,system3,system4,system5,system6), keys_first1, keys_last1, keys_first2, keys_last2, values_first1, values_first2, keys_result, values_result);
+  return thrust::set_difference_by_key(
+    select_system(system1, system2, system3, system4, system5, system6),
+    keys_first1,
+    keys_last1,
+    keys_first2,
+    keys_last2,
+    values_first1,
+    values_first2,
+    keys_result,
+    values_result);
 } // end set_difference_by_key()
 
-
-template<typename InputIterator1,
-         typename InputIterator2,
-         typename OutputIterator,
-         typename StrictWeakOrdering>
-  OutputIterator set_intersection(InputIterator1 first1,
-                                  InputIterator1 last1,
-                                  InputIterator2 first2,
-                                  InputIterator2 last2,
-                                  OutputIterator result,
-                                  StrictWeakOrdering comp)
+template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename StrictWeakOrdering>
+OutputIterator set_intersection(
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  InputIterator2 last2,
+  OutputIterator result,
+  StrictWeakOrdering comp)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::set_intersection");
   using thrust::system::detail::generic::select_system;
