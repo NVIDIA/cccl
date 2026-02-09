@@ -183,7 +183,6 @@ enum class address_space
         (/* Fall through to `case shared:` */;))
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
     }
-      [[fallthrough]];
     case address_space::shared: {
       // smem can start at address 0x0 before sm_90
 #  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3)
