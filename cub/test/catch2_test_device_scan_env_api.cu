@@ -108,3 +108,93 @@ C2H_TEST("cub::DeviceScan::ExclusiveSum accepts stream and not_guaranteed determ
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
 }
+
+C2H_TEST("cub::DeviceScan::InclusiveScan accepts environment", "[scan][env]")
+{
+  // example-begin inclusive-scan-env
+  auto op     = cuda::std::plus{};
+  auto input  = thrust::device_vector<int>{1, 2, 3, 4};
+  auto output = thrust::device_vector<int>(4);
+
+  auto error = cub::DeviceScan::InclusiveScan(input.begin(), output.begin(), op, input.size());
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceScan::InclusiveScan failed with status: " << error << std::endl;
+  }
+
+  thrust::device_vector<int> expected{1, 3, 6, 10};
+  // example-end inclusive-scan-env
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output == expected);
+}
+
+C2H_TEST("cub::DeviceScan::InclusiveScan accepts stream environment", "[scan][env]")
+{
+  // example-begin inclusive-scan-env-stream
+  auto op     = cuda::std::plus{};
+  auto input  = thrust::device_vector<float>{1.0f, 2.0f, 3.0f, 4.0f};
+  auto output = thrust::device_vector<float>(4);
+
+  cudaStream_t legacy_stream = 0;
+  cuda::stream_ref stream_ref{legacy_stream};
+  auto env = cuda::std::execution::env{stream_ref};
+
+  auto error = cub::DeviceScan::InclusiveScan(input.begin(), output.begin(), op, input.size(), env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceScan::InclusiveScan failed with status: " << error << std::endl;
+  }
+
+  thrust::device_vector<float> expected{1.0f, 3.0f, 6.0f, 10.0f};
+  // example-end inclusive-scan-env-stream
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output == expected);
+}
+
+C2H_TEST("cub::DeviceScan::InclusiveScanInit accepts environment", "[scan][env]")
+{
+  // example-begin inclusive-scan-init-env
+  auto op     = cuda::std::plus{};
+  auto input  = thrust::device_vector<int>{1, 2, 3, 4};
+  auto output = thrust::device_vector<int>(4);
+  auto init   = 10;
+
+  auto error = cub::DeviceScan::InclusiveScanInit(input.begin(), output.begin(), op, init, input.size());
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceScan::InclusiveScanInit failed with status: " << error << std::endl;
+  }
+
+  thrust::device_vector<int> expected{11, 13, 16, 20};
+  // example-end inclusive-scan-init-env
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output == expected);
+}
+
+C2H_TEST("cub::DeviceScan::InclusiveScanInit accepts stream environment", "[scan][env]")
+{
+  // example-begin inclusive-scan-init-env-stream
+  auto op     = cuda::std::plus{};
+  auto input  = thrust::device_vector<float>{1.0f, 2.0f, 3.0f, 4.0f};
+  auto output = thrust::device_vector<float>(4);
+  auto init   = 10.0f;
+
+  cudaStream_t legacy_stream = 0;
+  cuda::stream_ref stream_ref{legacy_stream};
+  auto env = cuda::std::execution::env{stream_ref};
+
+  auto error = cub::DeviceScan::InclusiveScanInit(input.begin(), output.begin(), op, init, input.size(), env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceScan::InclusiveScanInit failed with status: " << error << std::endl;
+  }
+
+  thrust::device_vector<float> expected{11.0f, 13.0f, 16.0f, 20.0f};
+  // example-end inclusive-scan-init-env-stream
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output == expected);
+}
