@@ -537,7 +537,7 @@ template <class _Tp>
 
   // Add in the lower square terms, all needed
   __x_abs_sq_p1_sq_lo =
-    ::cuda::std::fma(__x_abs_sq_p1_lo, (2.0 * __x_abs_sq_p1_hi + __x_abs_sq_p1_lo), __x_abs_sq_p1_sq_lo);
+    ::cuda::std::fma(__x_abs_sq_p1_lo, (_Tp{2} * __x_abs_sq_p1_hi + __x_abs_sq_p1_lo), __x_abs_sq_p1_sq_lo);
 
   // Get __x_abs_sq_p1_sq_hi/lo - 4.0*__realx_sq_hi/lo:
   // Subtract high parts:
