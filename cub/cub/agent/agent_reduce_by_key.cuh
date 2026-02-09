@@ -11,6 +11,8 @@
 
 #include <cub/config.cuh>
 
+#include <cuda/__functional/operator_properties.h>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -201,11 +203,6 @@ struct AgentReduceByKey
   static constexpr int ITEMS_PER_THREAD  = AgentReduceByKeyPolicyT::ITEMS_PER_THREAD;
   static constexpr int TILE_ITEMS        = BLOCK_THREADS * ITEMS_PER_THREAD;
   static constexpr int TWO_PHASE_SCATTER = (ITEMS_PER_THREAD > 1);
-
-  // Whether or not the scan operation has a zero-valued identity value (true
-  // if we're performing addition on a primitive type)
-  static constexpr int HAS_IDENTITY_ZERO =
-    (::cuda::std::is_same_v<ReductionOpT, ::cuda::std::plus<>>) && (is_primitive<AccumT>::value);
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
   // for keys Wrap the native input pointer with

@@ -180,10 +180,18 @@ struct ReduceByKeyAgent
   static constexpr int ITEMS_PER_TILE     = ptx_plan::ITEMS_PER_TILE;
   static constexpr bool TWO_PHASE_SCATTER = (ITEMS_PER_THREAD > 1);
 
-  // Whether or not the scan operation has a zero-valued identity value
-  // (true if we're performing addition on a primitive type)
-  static constexpr bool HAS_IDENTITY_ZERO =
-    ::cuda::std::is_same_v<ReductionOp, ::cuda::std::plus<value_type>> && ::cuda::std::is_arithmetic_v<value_type>;
+  // Whether or not the scan operation has a zero-valued identity value (true
+  // if we're performing addition on a primitive type)
+  static constexpr int HAS_IDENTITY_ZERO = [] {
+    if constexpr (::cuda::has_identity_element_v<ReductionOp, value_type>)
+    {
+      return ::cuda::identity_element<ReductionOp, value_type>() == value_type{};
+    }
+    else
+    {
+      return false;
+    }
+  }();
 
   struct impl
   {
@@ -204,49 +212,30 @@ struct ReduceByKeyAgent
     // Block scan utility methods
     //---------------------------------------------------------------------
 
-    // Scan with identity (first tile)
-    //
+    // Scan first tile
+    // Without an identity, the first output item is undefined.
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+    scan_first_tile(size_value_pair_t (&scan_items)[ITEMS_PER_THREAD], size_value_pair_t& tile_aggregate)
+    {
+      if constexpr (HAS_IDENTITY_ZERO)
+      {
+        size_value_pair_t identity;
+        identity.value = 0;
+        identity.key   = 0;
+        BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, identity, scan_op, tile_aggregate);
+      }
+      else
+      {
+        BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, tile_aggregate);
+      }
+    }
+
+    // Scan subsequent tile
+    // Without an identity, the first output item is undefined.
     _CCCL_DEVICE_API _CCCL_FORCEINLINE void
     scan_tile(size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
               size_value_pair_t& tile_aggregate,
-              thrust::detail::true_type /* has_identity */)
-    {
-      size_value_pair_t identity;
-      identity.value = 0;
-      identity.key   = 0;
-      BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, identity, scan_op, tile_aggregate);
-    }
-
-    // Scan without identity (first tile).
-    // Without an identity, the first output item is undefined.
-    //
-    _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-    scan_tile(size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
-              size_value_pair_t& tile_aggregate,
-              thrust::detail::false_type /* has_identity */)
-    {
-      BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, tile_aggregate);
-    }
-
-    // Scan with identity (subsequent tile)
-    //
-    _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_tile(
-      size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
-      size_value_pair_t& tile_aggregate,
-      TilePrefixCallback& prefix_op,
-      thrust::detail::true_type /*  has_identity */)
-    {
-      BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, prefix_op);
-      tile_aggregate = prefix_op.GetBlockAggregate();
-    }
-
-    // Scan without identity (subsequent tile).
-    // Without an identity, the first output item is undefined.
-    _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_tile(
-      size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
-      size_value_pair_t& tile_aggregate,
-      TilePrefixCallback& prefix_op,
-      thrust::detail::false_type /* has_identity */)
+              TilePrefixCallback& prefix_op)
     {
       BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, prefix_op);
       tile_aggregate = prefix_op.GetBlockAggregate();
@@ -469,7 +458,7 @@ struct ReduceByKeyAgent
 
       // Exclusive scan of values and segment_flags
       size_value_pair_t tile_aggregate;
-      scan_tile(scan_items, tile_aggregate, is_true<HAS_IDENTITY_ZERO>());
+      scan_first_tile(scan_items, tile_aggregate);
 
       if (threadIdx.x == 0)
       {
@@ -554,7 +543,7 @@ struct ReduceByKeyAgent
       // Exclusive scan of values and segment_flags
       size_value_pair_t tile_aggregate;
       TilePrefixCallback prefix_op(tile_state, storage.scan_storage.prefix, scan_op, tile_idx);
-      scan_tile(scan_items, tile_aggregate, prefix_op, is_true<HAS_IDENTITY_ZERO>());
+      scan_tile(scan_items, tile_aggregate, prefix_op);
       size_value_pair_t tile_inclusive_prefix = prefix_op.GetInclusivePrefix();
 
       // Unzip values and segment indices
