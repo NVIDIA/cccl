@@ -10,7 +10,7 @@ from textwrap import dedent
 
 from .._bindings import Op, OpKind
 from .._cpp_compile import compile_cpp_to_ltoir
-from .._utils.protocols import is_device_array
+from .._utils.protocols import get_size, is_device_array
 from ._base import IteratorBase
 from ._common import CUDA_PREAMBLE, ensure_iterator
 
@@ -38,7 +38,7 @@ class ReverseIterator(IteratorBase):
             # TODO: this is probably incorrect behaviour. In C++, initializing
             # with a pointer to the end of the array is left to be done explicitly
             # by the user.
-            self._underlying = ensure_iterator(underlying) + (len(underlying) - 1)
+            self._underlying = ensure_iterator(underlying) + (get_size(underlying) - 1)
         else:
             self._underlying = ensure_iterator(underlying)
 
