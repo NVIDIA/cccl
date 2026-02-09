@@ -24,8 +24,10 @@ cd "${workdir}"
 
 # Configure and build
 rm -rf build
-mkdir build
-cd build
-# Explicitly compile for hopper since the CI machine does not have a gpu:
-cmake -G Ninja .. -DCMAKE_CXX_STANDARD="${CXX_STANDARD}" -DCMAKE_CXX_FLAGS="-gpu=cc90"
-cmake --build .
+
+cmake -B build -S . -G Ninja \
+  -DCMAKE_CXX_STANDARD="${CXX_STANDARD}" \
+  `# Explicitly compile for hopper since the CI machine does not have a gpu:` \
+  -DCMAKE_CXX_FLAGS="-gpu=cc90"
+
+cmake --build build -j ${PARALLEL_LEVEL:-}
