@@ -11,8 +11,6 @@
 
 #include <cub/config.cuh>
 
-#include <cuda/__functional/operator_properties.h>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -28,6 +26,7 @@
 #include <cub/block/block_store.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
