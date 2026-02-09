@@ -16,11 +16,11 @@
 //                       charT>
 // {
 // public:
-//     typedef charT                         char_type;
-//     typedef traits                        traits_type;
-//     typedef typename traits::int_type     int_type;
-//     typedef basic_streambuf<charT,traits> streambuf_type;
-//     typedef basic_istream<charT,traits>   istream_type;
+//     using char_type      = charT;
+//     using traits_type    = traits;
+//     using int_type       = typename traits::int_type;
+//     using streambuf_type = basic_streambuf<charT,traits>;
+//     using istream_type   = basic_istream<charT,traits>;
 //     ...
 //
 // All specializations of istreambuf_iterator shall have a trivial copy constructor,
@@ -35,7 +35,7 @@
 
 int main(int, char**)
 {
-  typedef cuda::std::istreambuf_iterator<char> I1;
+  using I1 = cuda::std::istreambuf_iterator<char>;
   static_assert((cuda::std::is_same<I1::iterator_category, cuda::std::input_iterator_tag>::value), "");
   static_assert((cuda::std::is_same<I1::value_type, char>::value), "");
   static_assert((cuda::std::is_same<I1::difference_type, cuda::std::char_traits<char>::off_type>::value), "");
@@ -50,7 +50,7 @@ int main(int, char**)
   static_assert((cuda::std::is_trivially_copy_constructible<I1>::value), "");
   static_assert((cuda::std::is_trivially_destructible<I1>::value), "");
 
-  typedef cuda::std::istreambuf_iterator<wchar_t> I2;
+  using I2 = cuda::std::istreambuf_iterator<wchar_t>;
   static_assert((cuda::std::is_same<I2::iterator_category, cuda::std::input_iterator_tag>::value), "");
   static_assert((cuda::std::is_same<I2::value_type, wchar_t>::value), "");
   static_assert((cuda::std::is_same<I2::difference_type, cuda::std::char_traits<wchar_t>::off_type>::value), "");

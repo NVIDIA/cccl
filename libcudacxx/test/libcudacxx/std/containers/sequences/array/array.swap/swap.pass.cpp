@@ -29,10 +29,10 @@ private:
 __host__ __device__ constexpr bool tests()
 {
   {
-    typedef double T;
-    typedef cuda::std::array<T, 3> C;
-    C c1 = {1, 2, 3.5};
-    C c2 = {4, 5, 6.5};
+    using T = double;
+    using C = cuda::std::array<T, 3>;
+    C c1    = {1, 2, 3.5};
+    C c2    = {4, 5, 6.5};
     c1.swap(c2);
     assert(c1.size() == 3);
     assert(c1[0] == 4);
@@ -44,10 +44,10 @@ __host__ __device__ constexpr bool tests()
     assert(c2[2] == 3.5);
   }
   {
-    typedef double T;
-    typedef cuda::std::array<T, 3> C;
-    C c1 = {1, 2, 3.5};
-    C c2 = {4, 5, 6.5};
+    using T = double;
+    using C = cuda::std::array<T, 3>;
+    C c1    = {1, 2, 3.5};
+    C c2    = {4, 5, 6.5};
     cuda::std::swap(c1, c2);
     assert(c1.size() == 3);
     assert(c1[0] == 4);
@@ -60,28 +60,28 @@ __host__ __device__ constexpr bool tests()
   }
 
   {
-    typedef double T;
-    typedef cuda::std::array<T, 0> C;
-    C c1 = {};
-    C c2 = {};
+    using T = double;
+    using C = cuda::std::array<T, 0>;
+    C c1    = {};
+    C c2    = {};
     c1.swap(c2);
     assert(c1.size() == 0);
     assert(c2.size() == 0);
   }
   {
-    typedef double T;
-    typedef cuda::std::array<T, 0> C;
-    C c1 = {};
-    C c2 = {};
+    using T = double;
+    using C = cuda::std::array<T, 0>;
+    C c1    = {};
+    C c2    = {};
     cuda::std::swap(c1, c2);
     assert(c1.size() == 0);
     assert(c2.size() == 0);
   }
   {
-    typedef NonSwappable T;
-    typedef cuda::std::array<T, 0> C0;
-    C0 l = {};
-    C0 r = {};
+    using T  = NonSwappable;
+    using C0 = cuda::std::array<T, 0>;
+    C0 l     = {};
+    C0 r     = {};
     l.swap(r);
     static_assert(noexcept(l.swap(r)), "");
   }

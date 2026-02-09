@@ -256,6 +256,11 @@ public:
   //! @{
 
   //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockScan()
       : temp_storage(PrivateStorage())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
@@ -263,6 +268,11 @@ public:
 
   /**
    * @brief Collective constructor using the specified memory allocation as temporary storage.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
@@ -280,6 +290,9 @@ public:
   //! Computes an exclusive block-wide prefix scan using addition (+) as the scan operator.
   //! Each thread contributes one input element. The value of 0 is applied as the initial value, and is assigned
   //! to ``output`` in *thread*\ :sub:`0`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @identityzero
   //! - @rowmajor
@@ -319,6 +332,9 @@ public:
   //! Each thread contributes one input element.
   //! The value of 0 is applied as the initial value, and is assigned to ``output`` in *thread*\ :sub:`0`.
   //! Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @identityzero
   //! - @rowmajor
@@ -363,6 +379,9 @@ public:
   //! ``block_prefix_callback_op`` is invoked by the first warp in the block, and the value returned by
   //! *lane*\ :sub:`0` in that warp is used as the "seed" value that logically prefixes the thread block's
   //! scan inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @identityzero
   //! - The ``block_prefix_callback_op`` functor must implement a member function
@@ -426,6 +445,9 @@ public:
   //! Each thread contributes an array of consecutive input elements.
   //! The value of 0 is applied as the initial value, and is assigned to ``output[0]`` in *thread*\ :sub:`0`.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - @identityzero
   //! - @blocked
   //! - @granularity
@@ -472,6 +494,9 @@ public:
   //! Each thread contributes an array of consecutive input elements.
   //! The value of 0 is applied as the initial value, and is assigned to ``output[0]`` in *thread*\ :sub:`0`.
   //! Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @identityzero
   //! - @blocked
@@ -526,6 +551,9 @@ public:
   //! Instead of using 0 as the block-wide prefix, the call-back functor ``block_prefix_callback_op`` is invoked by
   //! the first warp in the block, and the value returned by *lane*\ :sub:`0` in that warp is used as the "seed"
   //! value that logically prefixes the thread block's scan inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @identityzero
   //! - The ``block_prefix_callback_op`` functor must implement a member function ``T operator()(T block_aggregate)``.
@@ -596,6 +624,9 @@ public:
   //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes one input element.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Supports non-commutative scan operators.
   //! - @rowmajor
   //! - @smemreuse
@@ -643,6 +674,9 @@ public:
   //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes one input element.
   //! Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - @rowmajor
@@ -703,6 +737,9 @@ public:
   //! Each thread contributes one input element. The call-back functor ``block_prefix_callback_op`` is invoked by
   //! the first warp in the block, and the value returned by *lane*\ :sub:`0` in that warp is used as
   //! the "seed" value that logically prefixes the thread block's scan inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The ``block_prefix_callback_op`` functor must implement a member function ``T operator()(T block_aggregate)``.
   //!   The functor will be invoked by the first warp of threads in the block, however only the return value from
@@ -811,6 +848,9 @@ public:
   //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes an array of consecutive input elements.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Supports non-commutative scan operators.
   //! - @blocked
   //! - @granularity
@@ -874,6 +914,9 @@ public:
   //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes an array of consecutive input elements.
   //! Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - @blocked
@@ -963,6 +1006,9 @@ public:
   //! The call-back functor ``block_prefix_callback_op`` is invoked by the first warp in the block, and the value
   //! returned by *lane*\ :sub:`0` in that warp is used as the "seed" value that logically prefixes the thread
   //! block's scan inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The ``block_prefix_callback_op`` functor must implement a member function
   //!   ``T operator()(T block_aggregate)``. The functor will be invoked by the
@@ -1205,6 +1251,9 @@ public:
   //! Computes an inclusive block-wide prefix scan using addition (+)
   //! as the scan operator. Each thread contributes one input element.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - @rowmajor
   //! - @smemreuse
   //!
@@ -1239,6 +1288,9 @@ public:
   //! Computes an inclusive block-wide prefix scan using addition (+) as the scan operator.
   //! Each thread contributes one input element.
   //! Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @rowmajor
   //! - @smemreuse
@@ -1280,6 +1332,9 @@ public:
   //! ``block_prefix_callback_op`` is invoked by the first warp in the block, and the value returned by
   //! *lane*\ :sub:`0` in that warp is used as the "seed" value that logically prefixes the thread block's
   //! scan inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The ``block_prefix_callback_op`` functor must implement a member function
   //!   ``T operator()(T block_aggregate)``. The functor will be invoked by the first warp of threads in the block,
@@ -1379,6 +1434,9 @@ public:
   //! Computes an inclusive block-wide prefix scan using addition (+) as the scan operator.
   //! Each thread contributes an array of consecutive input elements.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - @blocked
   //! - @granularity
   //! - @smemreuse
@@ -1435,6 +1493,9 @@ public:
   //! Computes an inclusive block-wide prefix scan using addition (+) as the scan operator.
   //! Each thread contributes an array of consecutive input elements.
   //! Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @blocked
   //! - @granularity
@@ -1500,6 +1561,9 @@ public:
   //! Instead of using 0 as the block-wide prefix, the call-back functor ``block_prefix_callback_op`` is invoked by
   //! the first warp in the block, and the value returned by *lane*\ :sub:`0` in that warp is used as the "seed"
   //! value that logically prefixes the thread block's scan inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The ``block_prefix_callback_op`` functor must implement a member function
   //!   ``T operator()(T block_aggregate)``. The functor will be invoked by the first warp of threads in the block,
@@ -1583,6 +1647,9 @@ public:
   //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes one input element.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Supports non-commutative scan operators.
   //! - @rowmajor
   //! - @smemreuse
@@ -1626,6 +1693,9 @@ public:
   //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes one input element. Also provides every thread with the block-wide
   //! ``block_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - @rowmajor
@@ -1689,6 +1759,9 @@ public:
   //! Each thread contributes one input element. The call-back functor ``block_prefix_callback_op``
   //! is invoked by the first warp in the block, and the value returned by *lane*\ :sub:`0` in that warp is used as
   //! the "seed" value that logically prefixes the thread block's scan inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The ``block_prefix_callback_op`` functor must implement a member function
   //!   ``T operator()(T block_aggregate)``. The functor's input parameter
@@ -1761,6 +1834,9 @@ public:
   //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes an array of consecutive input elements.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Supports non-commutative scan operators.
   //! - @blocked
   //! - @granularity
@@ -1825,6 +1901,9 @@ public:
   //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes an array of consecutive input elements.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Supports non-commutative scan operators.
   //! - @blocked
   //! - @granularity
@@ -1842,7 +1921,6 @@ public:
   //!     :dedent:
   //!     :start-after: example-begin inclusive-scan-array-init-value
   //!     :end-before: example-end inclusive-scan-array-init-value
-  //!
   //!
   //! @endrst
   //!
@@ -1881,6 +1959,9 @@ public:
   //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes an array of consecutive input elements. Also provides every thread
   //! with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - @blocked
@@ -1965,6 +2046,9 @@ public:
   //! Each thread contributes an array of consecutive input elements. Also provides every thread
   //! with the block-wide ``block_aggregate`` of all inputs.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Supports non-commutative scan operators.
   //! - @blocked
   //! - @granularity
@@ -2032,6 +2116,9 @@ public:
   //! The call-back functor ``block_prefix_callback_op`` is invoked by the first warp in the block,
   //! and the value returned by *lane*\ :sub:`0` in that warp is used as the "seed" value that logically prefixes the
   //! thread block's scan inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The ``block_prefix_callback_op`` functor must implement a member function ``T operator()(T block_aggregate)``.
   //!   The functor will be invoked by the first warp of threads in the block, however only the return value

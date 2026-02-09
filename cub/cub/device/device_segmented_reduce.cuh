@@ -31,6 +31,7 @@
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
+#include <cuda/__execution/tune.h>
 #include <cuda/__functional/call_or.h>
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
@@ -51,29 +52,11 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace segmented_reduce
+namespace detail::segmented_reduce
 {
 struct get_tuning_query_t
 {};
-
-template <class Derived>
-struct tuning
-{
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const get_tuning_query_t&) const noexcept -> Derived
-  {
-    return static_cast<const Derived&>(*this);
-  }
-};
-
-struct default_tuning : tuning<default_tuning>
-{
-  template <class AccumT, class Offset, class OpT>
-  using fn = detail::reduce::policy_hub<AccumT, Offset, OpT>;
-};
-} // namespace segmented_reduce
-} // namespace detail
+} // namespace detail::segmented_reduce
 
 //! @rst
 //! DeviceSegmentedReduce provides device-wide, parallel operations for
@@ -98,6 +81,9 @@ struct DeviceSegmentedReduce
   //! @rst
   //! Computes a device-wide segmented reduction using the specified
   //! binary ``reduction_op`` functor.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Does not support binary reduction operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
@@ -212,23 +198,17 @@ struct DeviceSegmentedReduce
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
     {
-      return DispatchSegmentedReduce<
-        InputIteratorT,
-        OutputIteratorT,
-        BeginOffsetIteratorT,
-        EndOffsetIteratorT,
-        OffsetT,
-        ReductionOpT,
-        T>::Dispatch(d_temp_storage,
-                     temp_storage_bytes,
-                     d_in,
-                     d_out,
-                     num_segments,
-                     d_begin_offsets,
-                     d_end_offsets,
-                     reduction_op,
-                     initial_value, // zero-initialize
-                     stream);
+      return detail::segmented_reduce::dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        num_segments,
+        d_begin_offsets,
+        d_end_offsets,
+        reduction_op,
+        initial_value, // zero-initialize
+        stream);
     }
     _CCCL_UNREACHABLE();
   }
@@ -236,6 +216,9 @@ struct DeviceSegmentedReduce
   //! @rst
   //! Computes a device-wide segmented reduction using the specified
   //! binary ``reduction_op`` functor and a fixed segment size.
+  //!
+  //! .. versionadded:: 3.2.0
+  //!    First appears in CUDA Toolkit 13.2.
   //!
   //! - Does not support binary reduction operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
@@ -324,6 +307,9 @@ struct DeviceSegmentedReduce
 
   //! @rst
   //! Computes a device-wide segmented sum using the addition (``+``) operator.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``0`` as the initial value of the reduction for each segment.
   //! - When input a contiguous sequence of segments, a single sequence
@@ -422,29 +408,26 @@ struct DeviceSegmentedReduce
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
     {
-      return DispatchSegmentedReduce<
-        InputIteratorT,
-        OutputIteratorT,
-        BeginOffsetIteratorT,
-        EndOffsetIteratorT,
-        OffsetT,
-        ::cuda::std::plus<>,
-        init_t>::Dispatch(d_temp_storage,
-                          temp_storage_bytes,
-                          d_in,
-                          d_out,
-                          num_segments,
-                          d_begin_offsets,
-                          d_end_offsets,
-                          ::cuda::std::plus<>{},
-                          init_t{}, // zero-initialize
-                          stream);
+      return detail::segmented_reduce::dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        num_segments,
+        d_begin_offsets,
+        d_end_offsets,
+        ::cuda::std::plus<>{},
+        init_t{}, // zero-initialize
+        stream);
     }
     _CCCL_UNREACHABLE();
   }
 
   //! @rst
   //! Computes a device-wide segmented sum using the addition (``+``) operator.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``0`` as the initial value of the reduction for each segment.
   //! - When input a contiguous sequence of segments, a single sequence
@@ -536,12 +519,8 @@ struct DeviceSegmentedReduce
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
     using OutputT = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
     using init_t  = OutputT;
-    using AccumT  = ::cuda::std::__accumulator_t<::cuda::std::plus<>, cub::detail::it_value_t<InputIteratorT>, init_t>;
-
-    using segmented_reduce_tuning_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, detail::segmented_reduce::get_tuning_query_t, detail::segmented_reduce::default_tuning>;
-
-    using policy_t = typename segmented_reduce_tuning_t::template fn<AccumT, OffsetT, ::cuda::std::plus<>>;
+    using op_t    = ::cuda::std::plus<>;
+    using AccumT  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_t>;
 
     using requirements_t = ::cuda::std::execution::
       __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
@@ -551,16 +530,12 @@ struct DeviceSegmentedReduce
                                                   ::cuda::execution::determinism::__get_determinism_t,
                                                   ::cuda::execution::determinism::run_to_run_t>;
 
-    using dispatch_t = DispatchSegmentedReduce<
-      InputIteratorT,
-      OutputIteratorT,
-      BeginOffsetIteratorT,
-      EndOffsetIteratorT,
-      OffsetT,
-      ::cuda::std::plus<>,
-      init_t,
-      AccumT,
-      policy_t>;
+    using tuning_env_t =
+      ::cuda::__call_result_or_t<::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>, EnvT>;
+    using segmented_reduce_tuning_t =
+      ::cuda::__call_result_or_t<detail::segmented_reduce::get_tuning_query_t,
+                                 detail::segmented_reduce::policy_selector_from_types<AccumT, OffsetT, op_t>,
+                                 tuning_env_t>;
 
     // Static assert to reject gpu_to_gpu determinism since it's not properly implemented atm
     static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
@@ -576,7 +551,7 @@ struct DeviceSegmentedReduce
       size_t temp_storage_bytes = 0;
 
       // Query the required temporary storage size
-      cudaError_t error = dispatch_t::Dispatch(
+      cudaError_t error = detail::segmented_reduce::dispatch(
         d_temp_storage,
         temp_storage_bytes,
         d_in,
@@ -584,9 +559,10 @@ struct DeviceSegmentedReduce
         num_segments,
         d_begin_offsets,
         d_end_offsets,
-        ::cuda::std::plus<>{},
+        op_t{},
         init_t{}, // zero-initialize
-        stream.get());
+        stream.get(),
+        segmented_reduce_tuning_t{});
       if (error != cudaSuccess)
       {
         return error;
@@ -600,7 +576,7 @@ struct DeviceSegmentedReduce
       }
 
       // Run the algorithm
-      error = dispatch_t::Dispatch(
+      error = detail::segmented_reduce::dispatch(
         d_temp_storage,
         temp_storage_bytes,
         d_in,
@@ -608,9 +584,10 @@ struct DeviceSegmentedReduce
         num_segments,
         d_begin_offsets,
         d_end_offsets,
-        ::cuda::std::plus<>{},
+        op_t{},
         init_t{}, // zero-initialize
-        stream.get());
+        stream.get(),
+        segmented_reduce_tuning_t{});
 
       // Try to deallocate regardless of the error to avoid memory leaks
       cudaError_t deallocate_error =
@@ -628,6 +605,9 @@ struct DeviceSegmentedReduce
 
   //! @rst
   //! Computes a device-wide segmented sum using the addition (``+``) operator.
+  //!
+  //! .. versionadded:: 3.2.0
+  //!    First appears in CUDA Toolkit 13.2.
   //!
   //! - Uses ``0`` as the initial value of the reduction for each segment.
   //! - @devicestorage
@@ -706,6 +686,9 @@ struct DeviceSegmentedReduce
 
   //! @rst
   //! Computes a device-wide segmented minimum using the less-than (``<``) operator.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``::cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction for each segment.
   //! - When input a contiguous sequence of segments, a single sequence
@@ -810,29 +793,26 @@ struct DeviceSegmentedReduce
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
     {
-      return DispatchSegmentedReduce<
-        InputIteratorT,
-        OutputIteratorT,
-        BeginOffsetIteratorT,
-        EndOffsetIteratorT,
-        OffsetT,
-        ::cuda::minimum<>,
-        init_t>::Dispatch(d_temp_storage,
-                          temp_storage_bytes,
-                          d_in,
-                          d_out,
-                          num_segments,
-                          d_begin_offsets,
-                          d_end_offsets,
-                          ::cuda::minimum<>{},
-                          ::cuda::std::numeric_limits<init_t>::max(),
-                          stream);
+      return detail::segmented_reduce::dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        num_segments,
+        d_begin_offsets,
+        d_end_offsets,
+        ::cuda::minimum<>{},
+        ::cuda::std::numeric_limits<init_t>::max(),
+        stream);
     }
     _CCCL_UNREACHABLE();
   }
 
   //! @rst
   //! Computes a device-wide segmented minimum using the less-than (``<``) operator.
+  //!
+  //! .. versionadded:: 3.2.0
+  //!    First appears in CUDA Toolkit 13.2.
   //!
   //! - Uses ``::cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction for each segment.
   //!
@@ -917,6 +897,9 @@ struct DeviceSegmentedReduce
   //! @rst
   //! Finds the first device-wide minimum in each segment using the
   //! less-than (``<``) operator, also returning the in-segment index of that item.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The output value type of ``d_out`` is ``cub::KeyValuePair<int, T>``
   //!   (assuming the value type of ``d_in`` is ``T``)
@@ -1020,44 +1003,37 @@ struct DeviceSegmentedReduce
 
     // Using common iterator value type is a breaking change, see:
     // https://github.com/NVIDIA/cccl/pull/414#discussion_r1330632615
-    using OffsetT = int; // detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using OverrideOffsetT = int; // detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
-    using InputValueT  = detail::it_value_t<InputIteratorT>;
-    using OutputTupleT = detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
-    using OutputKeyT   = typename OutputTupleT::Key;
-    using OutputValueT = typename OutputTupleT::Value;
-    using AccumT       = OutputTupleT;
-    using InitT        = detail::reduce::empty_problem_init_t<AccumT>;
+    using InputValueT    = detail::it_value_t<InputIteratorT>;
+    using OutputTupleT   = detail::non_void_value_t<OutputIteratorT, KeyValuePair<OverrideOffsetT, InputValueT>>;
+    using OutputKeyT     = typename OutputTupleT::Key;
+    using OutputValueT   = typename OutputTupleT::Value;
+    using OverrideAccumT = OutputTupleT;
+    using InitT          = detail::reduce::empty_problem_init_t<OverrideAccumT>;
 
     static_assert(::cuda::std::is_same_v<int, OutputKeyT>, "Output key type must be int.");
 
-    // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
-    using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputValueT>;
+    // Wrapped input iterator to produce index-value <OverrideOffsetT, InputT> tuples
+    using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OverrideOffsetT, OutputValueT>;
     ArgIndexInputIteratorT d_indexed_in(d_in);
 
-    InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
+    InitT initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
 
-    static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
-    if constexpr (::cuda::std::is_integral_v<OffsetT>)
+    static_assert(::cuda::std::is_integral_v<OverrideOffsetT>, "Offset iterator value type should be integral.");
+    if constexpr (::cuda::std::is_integral_v<OverrideOffsetT>)
     {
-      return DispatchSegmentedReduce<
-        ArgIndexInputIteratorT,
-        OutputIteratorT,
-        BeginOffsetIteratorT,
-        EndOffsetIteratorT,
-        OffsetT,
-        cub::ArgMin,
-        InitT,
-        AccumT>::Dispatch(d_temp_storage,
-                          temp_storage_bytes,
-                          d_indexed_in,
-                          d_out,
-                          num_segments,
-                          d_begin_offsets,
-                          d_end_offsets,
-                          cub::ArgMin{},
-                          initial_value,
-                          stream);
+      return detail::segmented_reduce::dispatch<OverrideAccumT, OverrideOffsetT>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_indexed_in,
+        d_out,
+        num_segments,
+        d_begin_offsets,
+        d_end_offsets,
+        cub::ArgMin{},
+        initial_value,
+        stream);
     }
     _CCCL_UNREACHABLE();
   }
@@ -1065,6 +1041,9 @@ struct DeviceSegmentedReduce
   //! @rst
   //! Finds the first device-wide minimum in each segment using the
   //! less-than (``<``) operator, also returning the in-segment index of that item.
+  //!
+  //! .. versionadded:: 3.2.0
+  //!    First appears in CUDA Toolkit 13.2.
   //!
   //! - The output value type of ``d_out`` is ``::cuda::std::pair<int, T>``
   //!   (assuming the value type of ``d_in`` is ``T``)
@@ -1177,6 +1156,9 @@ struct DeviceSegmentedReduce
   //! @rst
   //! Computes a device-wide segmented maximum using the greater-than (``>``) operator.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Uses ``::cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
   //! - When input a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
@@ -1275,29 +1257,26 @@ struct DeviceSegmentedReduce
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
     {
-      return DispatchSegmentedReduce<
-        InputIteratorT,
-        OutputIteratorT,
-        BeginOffsetIteratorT,
-        EndOffsetIteratorT,
-        OffsetT,
-        ::cuda::maximum<>,
-        init_t>::Dispatch(d_temp_storage,
-                          temp_storage_bytes,
-                          d_in,
-                          d_out,
-                          num_segments,
-                          d_begin_offsets,
-                          d_end_offsets,
-                          ::cuda::maximum<>{},
-                          ::cuda::std::numeric_limits<init_t>::lowest(),
-                          stream);
+      return detail::segmented_reduce::dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        num_segments,
+        d_begin_offsets,
+        d_end_offsets,
+        ::cuda::maximum<>{},
+        ::cuda::std::numeric_limits<init_t>::lowest(),
+        stream);
     }
     _CCCL_UNREACHABLE();
   }
 
   //! @rst
   //! Computes a device-wide segmented maximum using the greater-than (``>``) operator.
+  //!
+  //! .. versionadded:: 3.2.0
+  //!    First appears in CUDA Toolkit 13.2.
   //!
   //! - Uses ``::cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
   //!
@@ -1376,6 +1355,9 @@ struct DeviceSegmentedReduce
   //! @rst
   //! Finds the first device-wide maximum in each segment using the
   //! greater-than (``>``) operator, also returning the in-segment index of that item
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The output value type of ``d_out`` is ``cub::KeyValuePair<int, T>``
   //!   (assuming the value type of ``d_in`` is ``T``)
@@ -1482,44 +1464,37 @@ struct DeviceSegmentedReduce
 
     // Using common iterator value type is a breaking change, see:
     // https://github.com/NVIDIA/cccl/pull/414#discussion_r1330632615
-    using OffsetT = int; // detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using OverrideOffsetT = int; // detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
-    using InputValueT  = cub::detail::it_value_t<InputIteratorT>;
-    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
-    using AccumT       = OutputTupleT;
-    using InitT        = detail::reduce::empty_problem_init_t<AccumT>;
-    using OutputKeyT   = typename OutputTupleT::Key;
-    using OutputValueT = typename OutputTupleT::Value;
+    using InputValueT    = cub::detail::it_value_t<InputIteratorT>;
+    using OutputTupleT   = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OverrideOffsetT, InputValueT>>;
+    using OverrideAccumT = OutputTupleT;
+    using InitT          = detail::reduce::empty_problem_init_t<OverrideAccumT>;
+    using OutputKeyT     = typename OutputTupleT::Key;
+    using OutputValueT   = typename OutputTupleT::Value;
 
     static_assert(::cuda::std::is_same_v<int, OutputKeyT>, "Output key type must be int.");
 
-    // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
-    using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputValueT>;
+    // Wrapped input iterator to produce index-value <OverrideOffsetT, InputT> tuples
+    using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OverrideOffsetT, OutputValueT>;
     ArgIndexInputIteratorT d_indexed_in(d_in);
 
-    InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
+    InitT initial_value{OverrideAccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
 
-    static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
-    if constexpr (::cuda::std::is_integral_v<OffsetT>)
+    static_assert(::cuda::std::is_integral_v<OverrideOffsetT>, "Offset iterator value type should be integral.");
+    if constexpr (::cuda::std::is_integral_v<OverrideOffsetT>)
     {
-      return DispatchSegmentedReduce<
-        ArgIndexInputIteratorT,
-        OutputIteratorT,
-        BeginOffsetIteratorT,
-        EndOffsetIteratorT,
-        OffsetT,
-        cub::ArgMax,
-        InitT,
-        AccumT>::Dispatch(d_temp_storage,
-                          temp_storage_bytes,
-                          d_indexed_in,
-                          d_out,
-                          num_segments,
-                          d_begin_offsets,
-                          d_end_offsets,
-                          cub::ArgMax{},
-                          initial_value,
-                          stream);
+      return detail::segmented_reduce::dispatch<OverrideAccumT, OverrideOffsetT>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_indexed_in,
+        d_out,
+        num_segments,
+        d_begin_offsets,
+        d_end_offsets,
+        cub::ArgMax{},
+        initial_value,
+        stream);
     }
     _CCCL_UNREACHABLE();
   }
@@ -1527,6 +1502,9 @@ struct DeviceSegmentedReduce
   //! @rst
   //! Finds the first device-wide maximum in each segment using the
   //! greater-than (``>``) operator, also returning the in-segment index of that item
+  //!
+  //! .. versionadded:: 3.2.0
+  //!    First appears in CUDA Toolkit 13.2.
   //!
   //! - The output value type of ``d_out`` is ``::cuda::std::pair<int, T>``
   //!   (assuming the value type of ``d_in`` is ``T``)

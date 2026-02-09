@@ -205,6 +205,11 @@ public:
    * [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    * [LessThan Comparable]: https://en.cppreference.com/w/cpp/named_req/LessThanComparable
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    */
   template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
@@ -330,6 +335,11 @@ public:
    * [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    * [LessThan Comparable]: https://en.cppreference.com/w/cpp/named_req/LessThanComparable
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    */
   template <typename KeyInputIteratorT,
             typename ValueInputIteratorT,
@@ -477,6 +487,11 @@ public:
    * [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    * [LessThan Comparable]: https://en.cppreference.com/w/cpp/named_req/LessThanComparable
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    */
   template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
@@ -616,6 +631,11 @@ public:
    * [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    * [LessThan Comparable]: https://en.cppreference.com/w/cpp/named_req/LessThanComparable
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    */
   template <typename KeyInputIteratorT, typename KeyIteratorT, typename OffsetT, typename CompareOpT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysCopy(
@@ -723,6 +743,11 @@ public:
    * [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    * [LessThan Comparable]: https://en.cppreference.com/w/cpp/named_req/LessThanComparable
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    */
   template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairs(
@@ -823,6 +848,11 @@ public:
    * [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    * [LessThan Comparable]: https://en.cppreference.com/w/cpp/named_req/LessThanComparable
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    */
   template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
@@ -935,6 +965,11 @@ public:
    * [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    * [LessThan Comparable]: https://en.cppreference.com/w/cpp/named_req/LessThanComparable
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    */
   template <typename KeyInputIteratorT, typename KeyIteratorT, typename OffsetT, typename CompareOpT>
   CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeysCopy(

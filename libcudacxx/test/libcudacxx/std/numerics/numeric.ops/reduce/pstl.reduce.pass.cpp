@@ -19,7 +19,7 @@
 //            ForwardIterator first, ForwardIterator last, T init,
 //            BinaryOperation binary_op);
 
-#include <cuda/std/__pstl/reduce.h>
+#include <cuda/std/__pstl_algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 #include <cuda/std/numeric>

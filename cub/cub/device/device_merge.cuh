@@ -35,6 +35,9 @@ struct DeviceMerge
   //! which means any two equivalent values (neither value is ordered before the other) may be written to the output
   //! sequence in any order.
   //!
+  //! .. versionadded:: 2.7.0
+  //!    First appears in CUDA Toolkit 12.8.
+  //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //! The code snippet below illustrates the merging of two device vectors of `int` keys.
@@ -110,6 +113,9 @@ struct DeviceMerge
   //! Merges two sorted sequences of key-value pairs into a sorted output sequence. Merging is unstable,
   //! which means any two equivalent values (neither value is ordered before the other) may be written to the output
   //! sequence in any order.
+  //!
+  //! .. versionadded:: 2.7.0
+  //!    First appears in CUDA Toolkit 12.8.
   //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++

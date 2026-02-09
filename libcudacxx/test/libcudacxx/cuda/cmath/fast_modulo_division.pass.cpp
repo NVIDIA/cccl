@@ -8,10 +8,10 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/cmath>
-#include <cuda/std/__random_>
 #include <cuda/std/chrono>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
+#include <cuda/std/random>
 
 // test all power of 2 and maximum values
 template <typename value_t, typename divisor_t>

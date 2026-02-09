@@ -8,7 +8,7 @@
 
 // <cuda/std/chrono>
 
-// typedef duration<signed integral type of at least 23 bits, ratio<3600>> hours;
+// using hours = duration<signed integral type of at least 23 bits, ratio<3600>>;
 
 #include <cuda/std/chrono>
 #include <cuda/std/limits>
@@ -16,9 +16,9 @@
 
 int main(int, char**)
 {
-  typedef cuda::std::chrono::hours D;
-  typedef D::rep Rep;
-  typedef D::period Period;
+  using D      = cuda::std::chrono::hours;
+  using Rep    = D::rep;
+  using Period = D::period;
   static_assert(cuda::std::is_signed<Rep>::value, "");
   static_assert(cuda::std::is_integral<Rep>::value, "");
   static_assert(cuda::std::numeric_limits<Rep>::digits >= 22, "");

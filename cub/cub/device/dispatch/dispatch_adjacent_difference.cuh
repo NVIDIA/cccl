@@ -185,23 +185,21 @@ struct DispatchAdjacentDifference
                 reinterpret_cast<long long>(stream));
 #endif // CUB_DEBUG_LOG
 
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_block_size, 0, stream)
-          .doit(detail::adjacent_difference::
-                  DeviceAdjacentDifferenceInitKernel<AgentDifferenceInitT, InputIteratorT, InputT, OffsetT>,
-                d_input,
-                first_tile_previous,
-                num_tiles,
-                tile_size);
-
-        error = CubDebug(detail::DebugSyncStream(stream));
-
+        error = CubDebug(
+          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_block_size, 0, stream)
+            .doit(detail::adjacent_difference::
+                    DeviceAdjacentDifferenceInitKernel<AgentDifferenceInitT, InputIteratorT, InputT, OffsetT>,
+                  d_input,
+                  first_tile_previous,
+                  num_tiles,
+                  tile_size));
         if (cudaSuccess != error)
         {
           break;
         }
 
-        // Check for failure to launch
-        error = CubDebug(cudaPeekAtLastError());
+        error = CubDebug(detail::DebugSyncStream(stream));
+
         if (cudaSuccess != error)
         {
           break;
@@ -216,21 +214,26 @@ struct DispatchAdjacentDifference
               reinterpret_cast<long long>(stream));
 #endif // CUB_DEBUG_LOG
 
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-        num_tiles, AdjacentDifferencePolicyT::BLOCK_THREADS, 0, stream)
-        .doit(detail::adjacent_difference::DeviceAdjacentDifferenceDifferenceKernel < typename PolicyHub::MaxPolicy,
-              InputIteratorT,
-              OutputIteratorT,
-              DifferenceOpT,
-              OffsetT,
-              InputT,
-              AliasOpt == MayAlias::Yes,
-              ReadOpt == ReadOption::Left >,
-              d_input,
-              first_tile_previous,
-              d_output,
-              difference_op,
-              num_items);
+      error = CubDebug(
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+          num_tiles, AdjacentDifferencePolicyT::BLOCK_THREADS, 0, stream)
+          .doit(detail::adjacent_difference::DeviceAdjacentDifferenceDifferenceKernel < typename PolicyHub::MaxPolicy,
+                InputIteratorT,
+                OutputIteratorT,
+                DifferenceOpT,
+                OffsetT,
+                InputT,
+                AliasOpt == MayAlias::Yes,
+                ReadOpt == ReadOption::Left >,
+                d_input,
+                first_tile_previous,
+                d_output,
+                difference_op,
+                num_items));
+      if (cudaSuccess != error)
+      {
+        break;
+      }
 
       error = CubDebug(detail::DebugSyncStream(stream));
 
@@ -239,12 +242,6 @@ struct DispatchAdjacentDifference
         break;
       }
 
-      // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
-      {
-        break;
-      }
     } while (0);
 
     return error;
