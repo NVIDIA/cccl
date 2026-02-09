@@ -1,20 +1,18 @@
-# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 from typing import Callable
 
-import numba
 import numpy as np
 
-from .. import _bindings
+from .. import _bindings, types
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._utils import protocols
-from ..iterators._iterators import IteratorBase
 from ..op import OpAdapter, OpKind, make_op_adapter
-from ..typing import DeviceArrayLike
+from ..typing import DeviceArrayLike, IteratorBase
 
 
 def _normalize_comp(comp: Callable | OpKind | None) -> OpAdapter:
@@ -49,9 +47,9 @@ class _BinarySearch:
         comp: OpAdapter,
         mode: _bindings.BinarySearchMode,
     ):
-        if isinstance(d_data, IteratorBase):
+        if not protocols.is_device_array(d_data):
             raise ValueError("d_data must be a device array for index outputs.")
-        if isinstance(d_out, IteratorBase):
+        if not protocols.is_device_array(d_out):
             raise ValueError("d_out must be a device array for index outputs.")
 
         out_dtype = protocols.get_dtype(d_out)
@@ -70,9 +68,7 @@ class _BinarySearch:
         data_value_type = cccl.get_value_type(d_data)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
 
-        self.op_cccl = comp.compile(
-            (data_value_type, data_value_type), numba.types.uint8
-        )
+        self.op_cccl = comp.compile((data_value_type, data_value_type), types.uint8)
 
         self.build_result = call_build(
             _bindings.DeviceBinarySearchBuildResult,
