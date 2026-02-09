@@ -268,9 +268,8 @@ public:
 #if !_CCCL_COMPILER(NVRTC)
   _CCCL_SUPPRESS_DEPRECATED_PUSH
   /// ostream operator
-  friend ::std::ostream& operator<<(::std::ostream& os, const self_type& itr)
+  friend ::std::ostream& operator<<(::std::ostream& os, const self_type& itr) _CCCL_SUPPRESS_DEPRECATED_POP
   {
-    _CCCL_SUPPRESS_DEPRECATED_POP
     os << "cub::TexObjInputIterator( ptr=" << itr.ptr << ", offset=" << itr.tex_offset << ", tex_obj=" << itr.tex_obj
        << " )";
     return os;
