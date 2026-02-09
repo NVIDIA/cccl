@@ -902,18 +902,27 @@ cache_with_registered_key_functions.register(_StatefulOp, lambda op: op.get_cach
 # -----------------------------------------------------------------------------
 
 
-def _compile_op(op, input_types, output_type=None):
-    """Compile a user-provided stateless operator for use with CCCL algorithms."""
-    from . import types as cccl_types
+@functools.lru_cache(maxsize=256)
+def _compile_op_impl(cachable_op, input_types_tuple: tuple, output_type):
+    """Cached implementation of op compilation.
+
+    Args:
+        cachable_op: CachableFunction wrapper around the operator
+        input_types_tuple: Tuple of input TypeDescriptors
+        output_type: Output TypeDescriptor
+    """
     from ._bindings import Op, OpKind
     from ._odr_helpers import create_op_void_ptr_wrapper
+
+    # Extract the actual function from CachableFunction
+    op = cachable_op._func
 
     # Ensure any gpu_struct classes referenced in the op are registered
     _ensure_function_structs_registered(op)
 
     numba_input_types = tuple(
         type_descriptor_to_numba(t) if isinstance(t, cccl_types.TypeDescriptor) else t
-        for t in input_types
+        for t in input_types_tuple
     )
 
     if isinstance(output_type, cccl_types.TypeDescriptor):
@@ -924,6 +933,7 @@ def _compile_op(op, input_types, output_type=None):
     sig = numba_output_type(*numba_input_types)
     wrapped_op, wrapper_sig = create_op_void_ptr_wrapper(op, sig)
     ltoir, _ = numba.cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
+
     return Op(
         operator_type=OpKind.STATELESS,
         name=wrapped_op.__name__,
@@ -933,22 +943,46 @@ def _compile_op(op, input_types, output_type=None):
     )
 
 
+def compile_op(op, input_types, output_type=None):
+    """Compile a user-provided binary operator for use with CCCL algorithms.
+
+    This function is cached to ensure that identical operators with identical
+    types produce the same compiled result (same symbol names and LTOIR),
+    which allows proper deduplication during linking.
+    """
+    from ._caching import CachableFunction
+
+    cachable_op = CachableFunction(op)
+    return _compile_op_impl(cachable_op, tuple(input_types), output_type)
+
+
 class _StatelessOp(OpAdapter):
     """Adapter for stateless callables."""
 
-    __slots__ = ["_func", "_cachable"]
+    __slots__ = ()
 
-    def __init__(self, func: Callable):
+    def __init__(self, func):
         self._func = func
         self._cachable = CachableFunction(func)
 
     def compile(self, input_types, output_type=None) -> Op:
-        return _compile_op(self._func, input_types, output_type)
+        return compile_op(self._func, input_types, output_type)
 
     @property
     def func(self) -> Callable:
         """Access the wrapped callable."""
         return self._func
+
+    def __eq__(self, other):
+        return self._cachable == other._cachable
+
+    def __hash__(self):
+        return hash(
+            self._cachable,
+        )
+
+    def get_return_type(self, input_types):
+        return _infer_return_type(self._func, input_types)
 
 
 # -----------------------------------------------------------------------------
@@ -986,13 +1020,13 @@ class _StatelessOp(OpAdapter):
 
 def _detect_device_array_globals(func: Callable) -> List[Tuple[str, object]]:
     """
-        Detect device arrays referenced as globals in a function.
-    }
-        Args:
-            func: The function to inspect
+    Detect device arrays referenced as globals in a function.
 
-        Returns:
-            List of (name, array) tuples for detected device arrays
+    Args:
+        func: The function to inspect
+
+    Returns:
+        List of (name, array) tuples for detected device arrays
     """
     state_arrays = []
     code = func.__code__
@@ -1257,11 +1291,11 @@ class _JitOpState:
 
 
 class _StatefulOp(OpAdapter):
-    __slots__ = ["_func", "_cachable", "_state"]
+    __slots__ = "_state"
 
     def __init__(self, func, state):
         self._func = func
-        self._cachable = CachableFunction(self._func)
+        self._cachable = CachableFunction(func)
         self._state = state
 
     @property
@@ -1295,6 +1329,12 @@ class _StatefulOp(OpAdapter):
     def func(self) -> Callable:
         """Access the wrapped callable."""
         return self._func
+
+    def __hash__(self) -> int:
+        return hash(self.get_cache_key())
+
+    def __eq__(self, other):
+        return (self._cachable == other._cachable) and (self._state == other._state)
 
 
 def to_jit_op_adapter(op: Callable) -> OpAdapter:
