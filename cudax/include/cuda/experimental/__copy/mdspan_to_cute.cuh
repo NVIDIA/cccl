@@ -52,7 +52,7 @@ template <typename _Extents, ::cuda::std::size_t _I>
 }
 
 template <typename _Extents, ::cuda::std::size_t _I>
-[[nodiscard]] _CCCL_API constexpr auto __layout_right_stride()
+[[nodiscard]] _CCCL_API constexpr auto __get_layout_right_stride()
 {
   if constexpr (_I + 1 >= _Extents::rank())
   {
@@ -60,12 +60,12 @@ template <typename _Extents, ::cuda::std::size_t _I>
   }
   else
   {
-    return _Extents::static_extent(_I + 1) * ::cuda::experimental::__layout_right_stride<_Extents, _I + 1>();
+    return _Extents::static_extent(_I + 1) * ::cuda::experimental::__get_layout_right_stride<_Extents, _I + 1>();
   }
 }
 
 template <typename _Extents, ::cuda::std::size_t _I>
-[[nodiscard]] _CCCL_API constexpr auto __layout_left_stride()
+[[nodiscard]] _CCCL_API constexpr auto __get_layout_left_stride()
 {
   if constexpr (_I == 0)
   {
@@ -73,7 +73,7 @@ template <typename _Extents, ::cuda::std::size_t _I>
   }
   else
   {
-    return _Extents::static_extent(_I - 1) * ::cuda::experimental::__layout_left_stride<_Extents, _I - 1>();
+    return _Extents::static_extent(_I - 1) * ::cuda::experimental::__get_layout_left_stride<_Extents, _I - 1>();
   }
 }
 
@@ -85,13 +85,17 @@ __to_cute_stride(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, ::cuda:
   {
     if constexpr (::cuda::std::is_same_v<_LayoutPolicy, ::cuda::std::layout_right>)
     {
-      constexpr auto __s = ::cuda::experimental::__layout_right_stride<_Extents, _I>();
+      constexpr auto __s = ::cuda::experimental::__get_layout_right_stride<_Extents, _I>();
       return ::cute::C<__s>{};
     }
     else if constexpr (::cuda::std::is_same_v<_LayoutPolicy, ::cuda::std::layout_left>)
     {
-      constexpr auto __s = ::cuda::experimental::__layout_left_stride<_Extents, _I>();
+      constexpr auto __s = ::cuda::experimental::__get_layout_left_stride<_Extents, _I>();
       return ::cute::C<__s>{};
+    }
+    else
+    {
+      return __src.stride(_I);
     }
   }
   else

@@ -27,13 +27,12 @@
 #  include <cuda/__mdspan/host_device_mdspan.h>
 #  include <cuda/__mdspan/traits.h>
 #  include <cuda/__stream/stream_ref.h>
-#  include <cuda/std/__algorithm/fill.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__type_traits/is_convertible.h>
 #  include <cuda/std/__type_traits/is_same.h>
-#  include <cuda/std/mdspan>
 
+#  include <cuda/experimental/__copy/cute/logical_divide.cuh>
+#  include <cuda/experimental/__copy/cute/max_common_layout.cuh>
 #  include <cuda/experimental/__copy/mdspan_to_cute.cuh>
 
 #  include <stdexcept>
@@ -47,28 +46,79 @@
 namespace cuda::experimental
 {
 /**
- * @brief Computes the maximal common contiguous layout between two layouts.
+ * @brief Runtime equivalent of CuTe's `right_inverse` for layouts with dynamic strides.
  *
- * Given two layouts @p __layoutA and @p __layoutB, this function finds the largest contiguous region (stride-1 prefix)
- * that both layouts share.
-
+ * CuTe's `right_inverse` requires fully-static strides. This function implements the same algorithm at runtime.
+ *
  * @par Algorithm
- * 1. Compute the right inverse of layout B: `B^-1 = right_inverse(B)`
- * 2. Compose A with `B^-1` to find how A maps through B's inverse: `common = A . B^-1`
- * 3. Coalesce to merge consecutive stride-compatible modes
- * 4. Extract the first mode (contiguous portion) and compose back through `B^-1`
+ * 1. Coalesce the layout to merge consecutive stride-compatible modes.
+ * 2. Compute the exclusive prefix product of shapes.
+ * 3. Sort dimensions by stride (ascending) to determine contiguity order.
+ * 4. Iterate over dimensions in stride-sorted order and keep only the contiguous dimensions,
+ *    i.e. when a stride matches the expected next contiguous one.
  *
- * @return A layout representing the maximal contiguous region common to both layouts, expressed in the coordinate space
- *         of layout B.
+ * @par Postcondition
+ * The returned layout `R` satisfies `layout(R(i)) == i` for all `i < size(R)`, i.e., it maps the contiguous
+ * codomain indices back to the domain of `__layout`.
  */
-template <class _ShapeA, class _StrideA, class _ShapeB, class _StrideB>
-[[nodiscard]] _CCCL_HOST_API constexpr auto __max_common_layout(
-  const ::cute::Layout<_ShapeA, _StrideA>& __layoutA, const ::cute::Layout<_ShapeB, _StrideB>& __layoutB) noexcept
+/*
+template <class _Shape, class _Stride>
+_CCCL_HOST_API auto __right_inverse_dynamic(const ::cute::Layout<_Shape, _Stride>& __layout) noexcept
 {
-  ::cute::Layout __inv_layoutB = ::cute::right_inverse(__layoutB);
-  ::cute::Layout __common      = ::cute::coalesce(::cute::composition(__layoutA, __inv_layoutB));
-  return ::cute::composition(__inv_layoutB, ::cute::layout<0>(__common));
+  const auto __clayout                 = ::cuda::experimental::__coalesce_dynamic(__layout);
+  const auto __lshape                  = __clayout.shape();
+  const auto __lstride                 = __clayout.stride();
+  constexpr ::cuda::std::size_t __rank = decltype(::cute::rank(__lshape))::value;
+  if constexpr (__rank == 0)
+  {
+    return __clayout;
+  }
+  else
+  {
+    using ::cuda::std::int64_t;
+    constexpr ::cuda::std::make_index_sequence<__rank> __rank_seq{};
+    ::cuda::std::array<int64_t, __rank> __shapes;
+    ::cuda::std::array<int64_t, __rank> __strides;
+    ::cuda::std::array<int64_t, __rank> __orders;
+    ::cuda::experimental::__init_and_sort_layout(__lshape, __lstride, __shapes, __strides, __orders, __rank_seq);
+
+    ::cuda::std::array<int64_t, __rank> __preprods{}; // Prefix product of the shape shape[0] * ... * shape[i-1]
+    ::cuda::std::array<int64_t, __rank> __result_shapes{};
+    ::cuda::std::array<int64_t, __rank> __result_strides{};
+    // compute the exclusive prefix product of the shapes
+    __preprods[0] = 1;
+    for (::cuda::std::size_t __i = 1; __i < __rank; ++__i)
+    {
+      __preprods[__i] = __preprods[__i - 1] * __shapes[__i - 1];
+    }
+    int64_t __curr_stride = 1;
+    for (::cuda::std::size_t __pos = 0; __pos < __rank; ++__pos)
+    {
+      const auto __idx = __orders[__pos];
+      if (__strides[__idx] == __curr_stride)
+      {
+        __result_shapes[__pos]  = __shapes[__idx];
+        __result_strides[__pos] = __preprods[__idx];
+        __curr_stride *= __shapes[__idx];
+      }
+      else
+      {
+        __result_shapes[__pos]  = 1;
+        __result_strides[__pos] = 0;
+      }
+    }
+    const auto __shapes_tuple  = ::cuda::experimental::__to_cute_tuple(__result_shapes, __rank_seq);
+    const auto __strides_tuple = ::cuda::experimental::__to_cute_tuple(__result_strides, __rank_seq);
+    return ::cuda::experimental::__coalesce_dynamic(::cute::make_layout(__shapes_tuple, __strides_tuple));
+  }
 }
+*/
+
+enum class __copy_direction
+{
+  host_to_device,
+  device_to_host,
+};
 
 template <typename _TpIn,
           typename _ExtentsIn,
@@ -78,9 +128,11 @@ template <typename _TpIn,
           typename _ExtentsOut,
           typename _LayoutPolicyOut,
           typename _AccessorPolicyOut>
-_CCCL_HOST_API void __copy_impl(::cuda::std::mdspan<_TpIn, _ExtentsIn, _LayoutPolicyIn, _AccessorPolicyIn> __src,
-                                ::cuda::std::mdspan<_TpOut, _ExtentsOut, _LayoutPolicyOut, _AccessorPolicyOut> __dst,
-                                ::cuda::stream_ref __stream)
+_CCCL_HOST_API void __copy_impl(
+  ::cuda::std::mdspan<_TpIn, _ExtentsIn, _LayoutPolicyIn, _AccessorPolicyIn> __src,
+  ::cuda::std::mdspan<_TpOut, _ExtentsOut, _LayoutPolicyOut, _AccessorPolicyOut> __dst,
+  __copy_direction __direction,
+  ::cuda::stream_ref __stream)
 {
   static_assert(::cuda::std::is_trivially_copyable_v<_TpIn>, "TpIn must be trivially copyable");
   static_assert(::cuda::std::is_trivially_copyable_v<_TpOut>, "TpOut must be trivially copyable");
@@ -115,52 +167,71 @@ _CCCL_HOST_API void __copy_impl(::cuda::std::mdspan<_TpIn, _ExtentsIn, _LayoutPo
   }
   else
   {
-    // find the maximal common layout between the two layouts and divide the tensors into tiles
-    const auto __src1              = ::cuda::experimental::to_cute(__src);
-    const auto __dst1              = ::cuda::experimental::to_cute(__dst);
+    using ::cuda::std::size_t;
+    // Find the maximal common layout between the two layouts and divide the tensors into tiles.
+    const auto __src1 = ::cuda::experimental::to_cute(__src);
+    cute::print(__src1.layout());
+    printf("\n");
+    const auto __dst1 = ::cuda::experimental::to_cute(__dst);
+    printf("\n");
+    cute::print(__dst1.layout());
     const auto __max_common_layout = ::cuda::experimental::__max_common_layout(__src1.layout(), __dst1.layout());
-    const auto __src_tiles         = ::cute::logical_divide(__src1, __max_common_layout);
-    const auto __dst_tiles         = ::cute::logical_divide(__dst1, __max_common_layout);
-    _CCCL_ASSERT(::cute::size<1>(__src_tiles) == ::cute::size<1>(__dst_tiles),
-                 "tensors must have the same number of tiles");
-    // copy the tiles host <-> device
-    const auto __copy_bytes = ::cute::size<0>(__src_tiles) * sizeof(_TpIn);
-#  if _CCCL_CTK_AT_LEAST(12, 9)
-    // use the memcpy batch API to copy the tiles
-    const auto __num_copies = ::cute::size<1>(__src_tiles);
-    ::std::vector<const void*> __src_ptr_vector(__num_copies);
-    ::std::vector<void*> __dst_ptr_vector(__num_copies);
-    for (int __tile_idx = 0; __tile_idx < ::cute::size<1>(__src_tiles); ++__tile_idx)
+    printf("\n------------------------\n");
+    cute::print(__max_common_layout);
+
+    const auto __src_tiles = ::cuda::experimental::__logical_divide_dynamic(__src1, __max_common_layout);
+    printf("\n");
+    cute::print(__src_tiles);
+    const auto __dst_tiles = ::cuda::experimental::__logical_divide_dynamic(__dst1, __max_common_layout);
+    printf("\n");
+    cute::print(__dst_tiles);
+    printf("\n------------------------\n");
+    // After logical_divide, size<0>: tile size, size<1>: number of tiles.
+    const auto __tile_size  = static_cast<size_t>(::cute::size(__max_common_layout));
+    const auto __copy_bytes = __tile_size * sizeof(_TpIn);
+    const auto __num_tiles  = static_cast<size_t>(::cute::size<1>(__src_tiles));
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+    // Use the memcpy batch API to copy all tiles in one call
+    ::std::vector<const void*> __src_ptr_vector(__num_tiles);
+    ::std::vector<void*> __dst_ptr_vector(__num_tiles);
+    for (size_t __tile_idx = 0; __tile_idx < __num_tiles; ++__tile_idx)
     {
-      auto __src_tile = __src_tiles(::cute::_, __tile_idx);
-      auto __dst_tile = __dst_tiles(::cute::_, __tile_idx);
-      auto __src_ptr  = ::cuda::std::addressof(__src_tile[0]);
-      auto __dst_ptr  = ::cuda::std::addressof(__dst_tile[0]);
-      __src_ptr_vector.push_back(static_cast<const void*>(__src_ptr));
-      __dst_ptr_vector.push_back(static_cast<void*>(__dst_ptr));
+      __src_ptr_vector[__tile_idx] = static_cast<const void*>(__src_tiles(::cute::_, __tile_idx).data());
+      __dst_ptr_vector[__tile_idx] = static_cast<void*>(__dst_tiles(::cute::_, __tile_idx).data());
     }
-    ::std::vector<::cuda::std::size_t> __sizes(__num_copies);
-    ::cuda::std::fill(__sizes.begin(), __sizes.end(), __copy_bytes);
+    ::std::vector<size_t> __sizes(__num_tiles, __copy_bytes);
+
+    constexpr auto __h2d_attributes = ::CUmemcpyAttributes{
+      ::CU_MEMCPY_SRC_ACCESS_ORDER_ANY,
+      ::CUmemLocation{CU_MEM_LOCATION_TYPE_HOST, 0},
+      ::CUmemLocation{CU_MEM_LOCATION_TYPE_DEVICE, 0},
+      0};
+    constexpr auto __d2h_attributes = ::CUmemcpyAttributes{
+      ::CU_MEMCPY_SRC_ACCESS_ORDER_ANY,
+      ::CUmemLocation{CU_MEM_LOCATION_TYPE_DEVICE, 0},
+      ::CUmemLocation{CU_MEM_LOCATION_TYPE_HOST, 0},
+      0};
+    auto __attributes = (__direction == __copy_direction::host_to_device) ? __h2d_attributes : __d2h_attributes;
+
+    size_t __zero = 0;
     ::cuda::__driver::__memcpyBatchAsync(
       __dst_ptr_vector.data(),
       __src_ptr_vector.data(),
       __sizes.data(),
-      __num_copies,
-      nullptr,
-      nullptr,
-      0,
+      __num_tiles,
+      &__attributes,
+      &__zero,
+      1,
       __stream.get());
 #  else
-    // use the memcpy API to copy the tiles
-    for (int __tile_idx = 0; __tile_idx < ::cute::size<1>(__src_tiles); ++__tile_idx)
+    // Use individual memcpy calls for each tile
+    for (size_t __tile_idx = 0; __tile_idx < __num_tiles; ++__tile_idx)
     {
-      auto __src_tile = __src_tiles(::cute::_, __tile_idx);
-      auto __dst_tile = __dst_tiles(::cute::_, __tile_idx);
-      auto __src_ptr  = static_cast<const void*>(::cuda::std::addressof(__src_tile[0]));
-      auto __dst_ptr  = static_cast<void*>(::cuda::std::addressof(__dst_tile[0]));
+      auto __src_ptr = static_cast<const void*>(__src_tiles(::cute::_, __tile_idx).data());
+      auto __dst_ptr = static_cast<void*>(__dst_tiles(::cute::_, __tile_idx).data());
       ::cuda::__driver::__memcpyAsync(__dst_ptr, __src_ptr, __copy_bytes, __stream.get());
     }
-#  endif // _CCCL_CTK_AT_LEAST(12, 9)
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
   }
 }
 
@@ -182,7 +253,26 @@ _CCCL_HOST_API void copy(::cuda::host_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyIn,
 {
   using __src_type = ::cuda::std::mdspan<_TpIn, _ExtentsIn, _LayoutPolicyIn, _AccessorPolicyIn>;
   using __dst_type = ::cuda::std::mdspan<_TpOut, _ExtentsOut, _LayoutPolicyOut, _AccessorPolicyOut>;
-  ::cuda::experimental::__copy_impl(static_cast<__src_type>(__src), static_cast<__dst_type>(__dst), __stream);
+  ::cuda::experimental::__copy_impl(
+    static_cast<__src_type>(__src), static_cast<__dst_type>(__dst), __copy_direction::host_to_device, __stream);
+}
+
+template <typename _TpIn,
+          typename _ExtentsIn,
+          typename _LayoutPolicyIn,
+          typename _AccessorPolicyIn,
+          typename _TpOut,
+          typename _ExtentsOut,
+          typename _LayoutPolicyOut,
+          typename _AccessorPolicyOut>
+_CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyIn, _AccessorPolicyIn> __src,
+                         ::cuda::host_mdspan<_TpOut, _ExtentsOut, _LayoutPolicyOut, _AccessorPolicyOut> __dst,
+                         ::cuda::stream_ref __stream)
+{
+  using __src_type = ::cuda::std::mdspan<_TpIn, _ExtentsIn, _LayoutPolicyIn, _AccessorPolicyIn>;
+  using __dst_type = ::cuda::std::mdspan<_TpOut, _ExtentsOut, _LayoutPolicyOut, _AccessorPolicyOut>;
+  ::cuda::experimental::__copy_impl(
+    static_cast<__src_type>(__src), static_cast<__dst_type>(__dst), __copy_direction::device_to_host, __stream);
 }
 } // namespace cuda::experimental
 

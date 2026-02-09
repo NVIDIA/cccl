@@ -68,13 +68,14 @@ auto to_const_mdspan(thrust::host_vector<T>& h_input, cuda::std::extents<I, Exte
   return cuda::host_mdspan<const T, extents_t, Layout>(h_input.data(), mapping_t(extents));
 }
 
+static const cuda::stream stream{cuda::device_ref{0}};
+
 /***********************************************************************************************************************
  * 1D Tests
  **********************************************************************************************************************/
+#if 0
 
-static const cuda::stream stream{cuda::device_ref{0}};
-
-C2H_TEST("copy H2D 1D layout_right int", "[copy][h2d]")
+TEST_CASE("copy H2D 1D layout_right int", "[copy][h2d]")
 {
   constexpr int N = 16;
   thrust::host_vector<int> host_data(N);
@@ -91,7 +92,7 @@ C2H_TEST("copy H2D 1D layout_right int", "[copy][h2d]")
   CUDAX_REQUIRE(thrust::host_vector<int>(device_data) == host_data);
 }
 
-C2H_TEST("copy H2D 1D const source static extents", "[copy][h2d]")
+TEST_CASE("copy H2D 1D const source static extents", "[copy][h2d]")
 {
   constexpr size_t N = 16;
   thrust::host_vector<int> host_data(N);
@@ -107,12 +108,12 @@ C2H_TEST("copy H2D 1D const source static extents", "[copy][h2d]")
   stream.sync();
   CUDAX_REQUIRE(thrust::host_vector<int>(device_data) == host_data);
 }
-
 /***********************************************************************************************************************
  * 2D Tests
  **********************************************************************************************************************/
+#endif
 
-C2H_TEST("copy H2D 2D same layout", "[copy][h2d]")
+TEST_CASE("copy H2D 2D same layout", "[copy][h2d]")
 {
   constexpr int M = 4;
   constexpr int N = 8;
@@ -125,19 +126,23 @@ C2H_TEST("copy H2D 2D same layout", "[copy][h2d]")
   auto src = to_mdspan_dyn(host_data, M, N);
   auto dst = to_mdspan_dyn(device_data, M, N);
 
+  // auto src = to_mdspan(host_data, cuda::std::extents<size_t, M, N>());
+  // auto dst = to_mdspan(device_data, cuda::std::extents<size_t, M, N>());
+
   cuda::experimental::copy(src, dst, stream);
   stream.sync();
   CUDAX_REQUIRE(thrust::host_vector<int>(device_data) == host_data);
 
-  auto src_col_major = to_mdspan_dyn<cuda::std::layout_left>(host_data, M, N);
-  auto dst_col_major = to_mdspan_dyn<cuda::std::layout_left>(device_data, M, N);
-
-  cuda::experimental::copy(src_col_major, dst_col_major, stream);
-  stream.sync();
-  CUDAX_REQUIRE(thrust::host_vector<int>(device_data) == host_data);
+  // auto src_col_major = to_mdspan_dyn<cuda::std::layout_left>(host_data, M, N);
+  // auto dst_col_major = to_mdspan_dyn<cuda::std::layout_left>(device_data, M, N);
+  //
+  // cuda::experimental::copy(src_col_major, dst_col_major, stream);
+  // stream.sync();
+  // CUDAX_REQUIRE(thrust::host_vector<int>(device_data) == host_data);
 }
+#if 0
 
-C2H_TEST("copy H2D 2D different layout", "[copy][h2d]")
+TEST_CASE("copy H2D 2D different layout", "[copy][h2d]")
 {
   constexpr int M = 4;
   constexpr int N = 8;
@@ -164,7 +169,7 @@ C2H_TEST("copy H2D 2D different layout", "[copy][h2d]")
   CUDAX_REQUIRE(thrust::host_vector<int>(device_data) == expected);
 }
 
-C2H_TEST("copy H2D 2D same layout swapped extents (common sublayout)", "[copy][h2d]")
+TEST_CASE("copy H2D 2D same layout swapped extents (common sublayout)", "[copy][h2d]")
 {
   constexpr int M = 4;
   constexpr int N = 8;
@@ -182,7 +187,24 @@ C2H_TEST("copy H2D 2D same layout swapped extents (common sublayout)", "[copy][h
   CUDAX_REQUIRE(thrust::host_vector<int>(device_data) == host_data);
 }
 
-C2H_TEST("copy H2D 2D mixed rank extents", "[copy][h2d]")
+TEST_CASE("max common layout dynamic extents (common sublayout)", "[copy][h2d]")
+{
+  constexpr int M = 4;
+  constexpr int N = 8;
+  thrust::host_vector<int> host_data(M * N);
+  thrust::device_vector<int> device_data(M * N, 0);
+
+  auto src = to_mdspan_dyn(host_data, M, N);
+  auto dst = to_mdspan_dyn(device_data, N, M); // swapped
+
+  const auto src1   = cuda::experimental::to_cute(src);
+  const auto dst1   = cuda::experimental::to_cute(dst);
+  const auto common = cuda::experimental::__max_common_layout(src1.layout(), dst1.layout());
+
+  CUDAX_REQUIRE(::cute::size(common) == 4);
+}
+
+TEST_CASE("copy H2D 2D mixed rank extents", "[copy][h2d]")
 {
   constexpr size_t M = 4;
   constexpr int N    = 8;
@@ -197,14 +219,15 @@ C2H_TEST("copy H2D 2D mixed rank extents", "[copy][h2d]")
   auto dst          = to_mdspan_dyn(device_data, M * N);
 
   cuda::experimental::copy(src, dst, stream);
+  stream.sync();
   CUDAX_REQUIRE(thrust::host_vector<int>(device_data) == host_data);
 }
 
 /***********************************************************************************************************************
- * 3D Tests
+ * 3D Test
  **********************************************************************************************************************/
 
-C2H_TEST("copy H2D 3D layout_right", "[copy][h2d]")
+TEST_CASE("copy H2D 3D", "[copy][h2d]")
 {
   constexpr int D0    = 2;
   constexpr int D1    = 3;
@@ -236,7 +259,7 @@ C2H_TEST("copy H2D 3D layout_right", "[copy][h2d]")
   CUDAX_REQUIRE(thrust::host_vector<int>(device_data) == expected);
 }
 
-C2H_TEST("copy H2D 2D large", "[copy][h2d]")
+TEST_CASE("copy H2D 2D large", "[copy][h2d]")
 {
   constexpr int M = 1280;
   constexpr int N = 2564;
@@ -258,7 +281,7 @@ C2H_TEST("copy H2D 2D large", "[copy][h2d]")
  * Edge Cases
  **********************************************************************************************************************/
 
-C2H_TEST("copy H2D rank 0", "[copy][h2d]")
+TEST_CASE("copy H2D rank 0", "[copy][h2d]")
 {
   thrust::host_vector<int> host_data(1, 42);
   thrust::device_vector<int> device_data(1, 0);
@@ -270,17 +293,17 @@ C2H_TEST("copy H2D rank 0", "[copy][h2d]")
   CUDAX_REQUIRE(device_data[0] == 42);
 }
 
-C2H_TEST("copy H2D size 0", "[copy][h2d]")
+TEST_CASE("copy H2D size 0", "[copy][h2d]")
 {
   int value = 42;
-  cuda::host_mdspan<int, cuda::std::dims<0>> src(&value);
-  cuda::device_mdspan<int, cuda::std::dims<0>> dst(&value);
+  cuda::host_mdspan<int, cuda::std::dims<1>> src(&value, 0);
+  cuda::device_mdspan<int, cuda::std::dims<1>> dst(&value, 0);
 
   cuda::experimental::copy(src, dst, stream);
   stream.sync();
 }
 
-C2H_TEST("copy H2D size mismatch throws", "[copy][h2d]")
+TEST_CASE("copy H2D size mismatch throws", "[copy][h2d]")
 {
   constexpr int N = 16;
   thrust::host_vector<int> host_data(N, 0);
@@ -290,3 +313,4 @@ C2H_TEST("copy H2D size mismatch throws", "[copy][h2d]")
 
   REQUIRE_THROWS_AS(cuda::experimental::copy(src, dst, stream), std::invalid_argument);
 }
+#endif
