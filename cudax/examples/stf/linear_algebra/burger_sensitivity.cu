@@ -346,7 +346,7 @@ void run_single_nu_simulation(
 
   // Extract results to host variables
   ctx.host_launch(current_time.read(), max_grad_global.read(), shock_detected.read()).set_symbol("extract_results")
-      ->*[&shock_time, &max_gradient, &final_time, shock_threshold](auto htime, auto hmax_grad, auto hshock) {
+      ->*[&shock_time, &max_gradient, &final_time](auto htime, auto hmax_grad, auto hshock) {
             final_time   = *htime;
             max_gradient = *hmax_grad;
             shock_time   = (*hshock == 1) ? *htime : -1.0; // -1 indicates no shock
