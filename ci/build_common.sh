@@ -12,7 +12,8 @@ cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 
 # Script defaults
 VERBOSE=${VERBOSE:-}
-HOST_COMPILER=${CXX:-g++} # $CXX if set, otherwise `g++`
+# Prefer CUDAHOSTCXX when set (e.g. cross-compilation) so -cmake-options and env agree
+HOST_COMPILER=${CUDAHOSTCXX:-${CXX:-g++}}
 CXX_STANDARD=17
 CUDA_COMPILER=${CUDACXX:-nvcc} # $CUDACXX if set, otherwise `nvcc`
 CUDA_ARCHS= # Empty, use presets by default.
