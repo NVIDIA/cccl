@@ -11,9 +11,8 @@ from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._utils import protocols
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._iterators import IteratorBase
 from ..op import OpAdapter, make_op_adapter
-from ..typing import DeviceArrayLike
+from ..typing import DeviceArrayLike, IteratorBase
 
 
 class _ThreeWayPartition:

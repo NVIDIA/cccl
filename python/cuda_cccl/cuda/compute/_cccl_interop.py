@@ -46,7 +46,7 @@ from ._bindings import (
     make_pointer_object,
 )
 from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
-from .iterators._iterators import IteratorBase
+from .iterators._base import IteratorBase
 from .typing import DeviceArrayLike, GpuStruct
 
 # Mapping from numpy dtype to TypeEnum for creating TypeInfo
@@ -124,13 +124,10 @@ class _IteratorIO(enum.Enum):
 def _to_cccl_iter(
     it: IteratorBase | DeviceArrayLike | None, io_kind: _IteratorIO
 ) -> Iterator:
-    from ._jit import compile_iterator
-
     if it is None:
         return _none_to_cccl_iter()
     if isinstance(it, IteratorBase):
-        io_kind_str = "input" if io_kind == _IteratorIO.INPUT else "output"
-        return compile_iterator(it, io_kind_str)
+        return it.to_cccl_iter(io_kind == _IteratorIO.OUTPUT)
     return _device_array_to_cccl_iter(it)
 
 
