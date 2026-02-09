@@ -84,11 +84,10 @@ class _ThreeWayPartition:
         set_cccl_iterator_state(self.d_unselected_out_cccl, d_unselected_out)
         set_cccl_iterator_state(self.d_num_selected_out_cccl, d_num_selected_out)
 
-        # Update op state for stateful ops
         first_op_adapter = make_op_adapter(select_first_part_op)
         second_op_adapter = make_op_adapter(select_second_part_op)
-        first_op_adapter.update_op_state(self.select_first_part_op_cccl)
-        second_op_adapter.update_op_state(self.select_second_part_op_cccl)
+        self.select_first_part_op_cccl.state = first_op_adapter.get_state()
+        self.select_second_part_op_cccl.state = second_op_adapter.get_state()
 
         stream_handle = protocols.validate_and_get_stream(stream)
 

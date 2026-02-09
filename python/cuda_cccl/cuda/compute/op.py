@@ -40,16 +40,11 @@ class _OpAdapter:
         """Return True if this op has runtime state."""
         return False
 
-    def update_op_state(self, cccl_op: Op) -> None:
+    def get_state(self) -> bytes:
         """
-        Update the Op's state bytes.
-
-        Args:
-            cccl_op: The compiled CCCL Op to update
-
-        Default implementation is a no-op (for stateless ops).
+        Return the op's state bytes.
         """
-        pass
+        return b""
 
     def get_return_type(self, input_types):
         """Get the return type for this op given input types."""
