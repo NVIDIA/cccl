@@ -46,6 +46,9 @@ namespace detail
 
 struct log_space_step 
 {
+  explicit constexpr log_space_step(
+		 size_t const total_count) : total_count_(total_count) {
+  } 
   static inline double sigmoid(double z) {
     return 1.0 / (1.0 + std::exp(-z));
   }
@@ -72,17 +75,13 @@ struct log_space_step
   template <typename Executor>
   friend std::size_t tag_override_invoke(
     ::hpx::execution::experimental::processing_units_count_t,
-    log_space_step&, Executor&& exec,
+    log_space_step& this_, Executor&&,
     ::hpx::chrono::steady_duration const&, std::size_t count
   ) noexcept {
-    std::size_t const cores_baseline = hpx::get_os_thread_count();
-
-     // ::hpx::execution::experimental::processing_units_count(
-      //  exec, this_.time_per_iteration_, count
-      //);
+    std::size_t const cores_baseline = ::hpx::get_os_thread_count();
     
     // Log-space smooth step scaling
-    double const pred_c = pred_core(count);
+    double const pred_c = pred_core(this_.total_count_);
 
     std::size_t num_cores = static_cast<std::size_t>(
       (std::max)(1LL, std::llround(pred_c))
@@ -130,7 +129,9 @@ struct log_space_step
 
     return chunk_size;
   }
+  size_t total_count_;
 };
+
 
 
 template <typename ExecutionPolicy,
@@ -155,7 +156,10 @@ merge(execution_policy<ExecutionPolicy>& exec,
                 && ::hpx::traits::is_forward_iterator_v<OutputIterator>)
   {
 
-      log_space_step lss;
+      log_space_step lss(static_cast<std::size_t>(std::distance(first1, last1)) + static_cast<std::size_t>(std::distance(first2, last2)));
+      ::hpx::execution::experimental::chunking_parameters params = {};
+      ::hpx::execution::experimental::collect_chunking_parameters
+                collect_params(params);
       if (params.num_cores == 1) {
         auto res = ::hpx::merge(
           ::hpx::execution::seq,
