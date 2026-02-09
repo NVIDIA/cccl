@@ -5,9 +5,9 @@ import numpy as np
 import pytest
 
 torch = pytest.importorskip("torch")
-import torch.cuda as tc
+import torch.cuda as tc  # noqa: E402
 
-from cuda.stf._stf_bindings import (
+from cuda.stf._stf_bindings import (  # noqa: E402
     context,
 )
 
