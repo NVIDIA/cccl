@@ -1,4 +1,5 @@
 .. _libcudacxx-extended-api-memory-resources:
+.. _libcudacxx-memory-resource-async:
 
 Memory Resources
 ================
@@ -9,7 +10,8 @@ Memory Resources
 
    memory_resource/properties
    Resources <memory_resource/resource>
-   Resource wrapper <memory_resource/resource_ref>
+   Type-erased wrappers <memory_resource/wrappers>
+   Resource utilities <memory_resource/resource_utilities>
 
 The ``<cuda/memory_resource>`` header provides a standard C++ interface for *heterogeneous*, *stream-ordered* memory
 allocation tailored to the needs of CUDA C++ developers. This design builds off of the success of the `RAPIDS Memory Manager (RMM) <https://github.com/rapidsai/rmm>`__
@@ -34,6 +36,16 @@ At a high level, the header provides:
      - stable CCCL 3.1.0 / CUDA 13.1, experimental CCCL 2.2.0 / CUDA 12.3
    * - :ref:`cuda::mr::{synchronous_}resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>`
      - A non-owning type-erased memory resource wrapper that enables consumers to specify properties of resources that they expect.
+     - stable CCCL 3.2.0 / CUDA 13.2, experimental CCCL 2.2.0 / CUDA 12.3
+   * - :ref:`cuda::mr::any_resource <libcudacxx-extended-api-memory-resources-any-resource>` and
+       :ref:`cuda::mr::any_synchronous_resource <libcudacxx-extended-api-memory-resources-any-synchronous-resource>`
+     - Owning type-erased wrappers for stream-ordered and synchronous resources.
+     - stable CCCL 3.2.0 / CUDA 13.2, experimental CCCL 2.2.0 / CUDA 12.3
+   * - :ref:`cuda::mr::shared_resource <libcudacxx-extended-api-memory-resources-shared-resource>`
+     - Reference-counted wrapper to share a resource instance across objects.
+     - stable CCCL 3.2.0 / CUDA 13.2, experimental CCCL 2.2.0 / CUDA 12.3
+   * - :ref:`cuda::mr::synchronous_resource_adapter <libcudacxx-extended-api-memory-resources-synchronous-adapter>`
+     - Adapter that enables synchronous resources to work with streams.
      - stable CCCL 3.2.0 / CUDA 13.2, experimental CCCL 2.2.0 / CUDA 12.3
 
 These features are an evolution of `std::pmr::memory_resource <https://en.cppreference.com/w/cpp/header/memory_resource>`__

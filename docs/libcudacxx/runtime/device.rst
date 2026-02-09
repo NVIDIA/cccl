@@ -7,7 +7,7 @@ Devices
 ---------------------
 .. _cccl-runtime-device-device-ref:
 
-``cuda::device_ref`` is a lightweight, non-owning handle to a CUDA device ordinal.
+``cuda::device_ref`` is a lightweight, non-owning handle to a CUDA device ordinal. It allows to query information about a device and serves as an argument to other runtime APIs which are tied to a specific device.
 It offers:
 
 - ``get()``: native device ordinal
@@ -23,7 +23,8 @@ Availability: CCCL 3.1.0 / CUDA 13.1
 ------------------
 .. _cccl-runtime-device-devices:
 
-``cuda::devices`` is a random-access view of all available CUDA devices in form of ``cuda::device_ref`` objects`. It provides indexing, size, and iteration for use
+``cuda::devices`` is a random-access view of all available CUDA devices in the form of ``cuda::device_ref`` objects. It
+provides indexing, size, and iteration for use
 in range-based loops.
 
 Availability: CCCL 3.1.0 / CUDA 13.1
@@ -36,9 +37,9 @@ Example:
    #include <iostream>
 
    void print_devices() {
-    for (auto& dev : cuda::devices) {
-      std::cout << "Device " << dev.get() << ": " << dev.name() << std::endl;
-    }
+     for (auto& dev : cuda::devices) {
+       std::cout << "Device " << dev.get() << ": " << dev.name() << std::endl;
+     }
    }
 
 Device attributes
@@ -89,16 +90,14 @@ Example:
 
    template <cuda::arch_id Arch>
    __device__ void fn() {
-    auto traits = cuda::arch_traits<Arch>();
+     auto traits = cuda::arch_traits<Arch>();
      if constexpr (traits.cluster_supported) {
        // cluster specific code
-     }
-     else {
+     } else {
        // non-cluster code
      }
-
    }
 
-    __global__ void kernel() {
-      fn<cuda::arch_id::sm_90>();
-    }
+   __global__ void kernel() {
+     fn<cuda::arch_id::sm_90>();
+   }

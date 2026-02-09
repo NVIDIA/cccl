@@ -40,6 +40,9 @@
 
 #include <nv/target>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::select
@@ -825,3 +828,5 @@ struct DispatchSelectIf
 };
 
 CUB_NAMESPACE_END
+
+_CCCL_DIAG_POP

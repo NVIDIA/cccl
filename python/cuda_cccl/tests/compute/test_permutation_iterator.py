@@ -1,4 +1,4 @@
-# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 import cupy as cp
@@ -8,7 +8,6 @@ import cuda.compute
 from cuda.compute.iterators import (
     CountingIterator,
     PermutationIterator,
-    TransformIterator,
     ZipIterator,
 )
 
@@ -137,67 +136,89 @@ def test_unary_transform_of_permutation_iterator():
 
 
 def test_caching_permutation_iterator():
-    # same value type, same index type:
-    it1 = PermutationIterator(
-        cp.arange(10, dtype=np.int32), cp.arange(10, dtype=np.int32)
-    )
-    it2 = PermutationIterator(
-        cp.arange(10, dtype=np.int32), cp.arange(10, dtype=np.int32)
-    )
-    assert it1.advance is it2.advance
-    assert it1.input_dereference is it2.input_dereference
-    assert it1.output_dereference is it2.output_dereference
+    """Test that iterator compilation is cached across instances with the same structure."""
+    from cuda.compute._cpp_compile import compile_cpp_to_ltoir
 
-    # same value type, different index types:
+    # Test 1: Same structure → same kind
     it1 = PermutationIterator(
         cp.arange(10, dtype=np.int32), cp.arange(10, dtype=np.int32)
     )
     it2 = PermutationIterator(
+        cp.arange(20, dtype=np.int32), cp.arange(5, dtype=np.int32)
+    )
+    assert it1.kind == it2.kind, "Same structure should have same kind"
+
+    # Test 2: Different index type → different kind
+    it3 = PermutationIterator(
         cp.arange(10, dtype=np.int32), cp.arange(10, dtype=np.int64)
     )
-    assert it1.advance is not it2.advance
-    assert it1.input_dereference is not it2.input_dereference
-    assert it1.output_dereference is not it2.output_dereference
+    assert it1.kind != it3.kind, "Different index type should have different kind"
 
-    # different value types, same index type:
-    it1 = PermutationIterator(
-        cp.arange(10, dtype=np.int32), cp.arange(10, dtype=np.int32)
-    )
-    it2 = PermutationIterator(
+    # Test 3: Different value type → different kind
+    it4 = PermutationIterator(
         cp.arange(10, dtype=np.int64), cp.arange(10, dtype=np.int32)
     )
-    assert it1.advance is not it2.advance
-    assert it1.input_dereference is not it2.input_dereference
-    assert it1.output_dereference is not it2.output_dereference
+    assert it1.kind != it4.kind, "Different value type should have different kind"
 
-    # permutation iterator with transform iterator value type (same op):
-    def op(x):
-        return x + 1
+    # Test 4: Verify compilation caching with cache statistics
+    compile_cpp_to_ltoir.cache_clear()
 
-    it1 = PermutationIterator(
-        TransformIterator(cp.arange(10, dtype=np.int32), op),
-        cp.arange(10, dtype=np.int32),
-    )
-    it2 = PermutationIterator(
-        TransformIterator(cp.arange(10, dtype=np.int32), op),
-        cp.arange(10, dtype=np.int32),
-    )
-    assert it1.advance is it2.advance
-    assert it1.input_dereference is it2.input_dereference
-    assert it1.output_dereference is it2.output_dereference
+    # Create multiple instances with same structure
+    iterators = []
+    for i in range(3):
+        it = PermutationIterator(
+            cp.arange(i * 10, (i + 1) * 10, dtype=np.float32),
+            cp.arange(5, dtype=np.int32),
+        )
+        # Trigger compilation by accessing Op objects
+        it.get_advance_op()
+        it.get_input_deref_op()
+        iterators.append(it)
 
-    # permutation iterator with transform iterator value type (different op):
-    def op2(x):
-        return x + 2
+    cache_info = compile_cpp_to_ltoir.cache_info()
+    assert cache_info.hits >= 2, (
+        f"Expected cache hits for same structure, got {cache_info.hits} hits, "
+        f"{cache_info.misses} misses"
+    )
 
-    it1 = PermutationIterator(
-        TransformIterator(cp.arange(10, dtype=np.int32), op),
-        cp.arange(10, dtype=np.int32),
+
+def test_permutation_iterator_advance():
+    """Test PermutationIterator.__add__ only advances indices, not values."""
+    # Create values array [10, 20, 30, 40, 50, 60, 70]
+    values = cp.asarray([10, 20, 30, 40, 50, 60, 70], dtype="int32")
+
+    # Create indices array [2, 0, 4, 1, 3, 5]
+    # indices[0] = 2 -> values[2] = 30
+    # indices[1] = 0 -> values[0] = 10
+    # indices[2] = 4 -> values[4] = 50
+    # indices[3] = 1 -> values[1] = 20
+    # indices[4] = 3 -> values[3] = 40
+    # indices[5] = 5 -> values[5] = 60
+    indices = cp.asarray([2, 0, 4, 1, 3, 5], dtype="int32")
+
+    perm_it = PermutationIterator(values, indices)
+
+    # Advance by 2 positions (should skip first 2 indices)
+    offset = 2
+    advanced_perm_it = perm_it + offset
+
+    # Reduce from the advanced position
+    # Should process indices[2:] = [4, 1, 3, 5]
+    # Which accesses values[4, 1, 3, 5] = [50, 20, 40, 60]
+    h_init = np.array([0], dtype="int32")
+    d_output = cp.empty(1, dtype="int32")
+
+    remaining_items = len(indices) - offset
+    cuda.compute.reduce_into(
+        advanced_perm_it,
+        d_output,
+        cuda.compute.OpKind.PLUS,
+        remaining_items,
+        h_init,
     )
-    it2 = PermutationIterator(
-        TransformIterator(cp.arange(10, dtype=np.int32), op2),
-        cp.arange(10, dtype=np.int32),
+
+    # Expected: values[indices[2:]] = values[[4, 1, 3, 5]] = [50, 20, 40, 60]
+    expected = values[indices[offset:]].sum().get()
+    assert d_output[0].get() == expected, (
+        f"Expected {expected}, got {d_output[0].get()}"
     )
-    assert it1.advance is not it2.advance
-    assert it1.input_dereference is not it2.input_dereference
-    assert it1.output_dereference is not it2.output_dereference
