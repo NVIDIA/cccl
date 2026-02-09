@@ -77,9 +77,8 @@ template <typename _Extents, ::cuda::std::size_t _I>
   }
 }
 
-template <typename _Extents, typename _LayoutPolicy, ::cuda::std::size_t _I, typename _Tp>
-[[nodiscard]] _CCCL_API auto
-__to_cute_stride(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, ::cuda::std::default_accessor<_Tp>>& __src)
+template <typename _Extents, typename _LayoutPolicy, typename _Accessor, ::cuda::std::size_t _I, typename _Tp>
+[[nodiscard]] _CCCL_API auto __to_cute_stride(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _Accessor>& __src)
 {
   if constexpr (_Extents::rank_dynamic() == 0)
   {
@@ -104,14 +103,13 @@ __to_cute_stride(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, ::cuda:
   }
 }
 
-template <typename _Tp, typename _Extents, typename _LayoutPolicy, ::cuda::std::size_t... _Is>
-[[nodiscard]] _CCCL_API auto
-__to_cute_impl(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, ::cuda::std::default_accessor<_Tp>>& __src,
-               ::cuda::std::index_sequence<_Is...>)
+template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _Accessor, ::cuda::std::size_t... _Is>
+[[nodiscard]] _CCCL_API auto __to_cute_impl(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _Accessor>& __src,
+                                            ::cuda::std::index_sequence<_Is...>)
 {
   const auto __shape = ::cute::make_shape(::cuda::experimental::__to_cute_extent<_Extents, _Is>(__src.extents())...);
   const auto __stride =
-    ::cute::make_stride(::cuda::experimental::__to_cute_stride<_Extents, _LayoutPolicy, _Is>(__src)...);
+    ::cute::make_stride(::cuda::experimental::__to_cute_stride<_Extents, _LayoutPolicy, _Accessor, _Is>(__src)...);
   return ::cute::make_tensor(__src.data_handle(), ::cute::make_layout(__shape, __stride));
 }
 
@@ -123,10 +121,11 @@ __to_cute_impl(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, ::cuda::s
 ///
 /// @return A CuTe tensor with dynamic layout that views the same data as the mdspan
 ///
-template <typename _Tp, typename _Extents, typename _LayoutPolicy>
-[[nodiscard]] _CCCL_API auto
-to_cute(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, ::cuda::std::default_accessor<_Tp>>& __src)
+template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _Accessor>
+[[nodiscard]] _CCCL_API auto to_cute(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _Accessor>& __src)
 {
+  static_assert(::cuda::std::is_convertible_v<_Accessor, ::cuda::std::default_accessor<_Tp>>,
+                "Accessor must be convertible to cuda::std::default_accessor");
   return ::cuda::experimental::__to_cute_impl(__src, ::cuda::std::make_index_sequence<_Extents::rank()>{});
 }
 } // namespace cuda::experimental

@@ -52,10 +52,10 @@ namespace cuda::experimental
  */
 template <class _Shape, class _Stride>
 _CCCL_HOST_API auto
-__complement_dynamic(const ::cute::Layout<_Shape, _Stride>& __layout, ::cuda::std::int64_t __codomain_size) noexcept
+__complement(const ::cute::Layout<_Shape, _Stride>& __layout, ::cuda::std::int64_t __codomain_size) noexcept
 {
   using ::cuda::std::int64_t;
-  const auto __flat         = ::cuda::experimental::__filter_dynamic(__layout);
+  const auto __flat         = ::cuda::experimental::__filter(__layout);
   const auto __flat_shape   = __flat.shape();
   const auto __flat_stride  = __flat.stride();
   constexpr auto __rank     = __rank_v<_Shape>;
@@ -89,7 +89,7 @@ __complement_dynamic(const ::cute::Layout<_Shape, _Stride>& __layout, ::cuda::st
   constexpr ::cuda::std::make_index_sequence<__out_rank> __out_seq{};
   const auto __s = ::cuda::experimental::__to_cute_tuple(__result_shapes, __out_seq);
   const auto __d = ::cuda::experimental::__to_cute_tuple(__result_strides, __out_seq);
-  return ::cuda::experimental::__coalesce_dynamic(::cute::make_layout(__s, __d));
+  return ::cuda::experimental::__coalesce(::cute::make_layout(__s, __d));
 }
 } // namespace cuda::experimental
 

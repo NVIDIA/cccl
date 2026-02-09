@@ -65,7 +65,7 @@ namespace cuda::experimental
 template <class _Shape, class _Stride>
 _CCCL_HOST_API auto __right_inverse_dynamic(const ::cute::Layout<_Shape, _Stride>& __layout) noexcept
 {
-  const auto __clayout                 = ::cuda::experimental::__coalesce_dynamic(__layout);
+  const auto __clayout                 = ::cuda::experimental::__coalesce(__layout);
   const auto __lshape                  = __clayout.shape();
   const auto __lstride                 = __clayout.stride();
   constexpr ::cuda::std::size_t __rank = decltype(::cute::rank(__lshape))::value;
@@ -109,7 +109,7 @@ _CCCL_HOST_API auto __right_inverse_dynamic(const ::cute::Layout<_Shape, _Stride
     }
     const auto __shapes_tuple  = ::cuda::experimental::__to_cute_tuple(__result_shapes, __rank_seq);
     const auto __strides_tuple = ::cuda::experimental::__to_cute_tuple(__result_strides, __rank_seq);
-    return ::cuda::experimental::__coalesce_dynamic(::cute::make_layout(__shapes_tuple, __strides_tuple));
+    return ::cuda::experimental::__coalesce(::cute::make_layout(__shapes_tuple, __strides_tuple));
   }
 }
 */
@@ -168,21 +168,34 @@ _CCCL_HOST_API void __copy_impl(
   else
   {
     using ::cuda::std::size_t;
-    // Find the maximal common layout between the two layouts and divide the tensors into tiles.
     const auto __src1 = ::cuda::experimental::to_cute(__src);
     cute::print(__src1.layout());
     printf("\n");
+    cute::print(::cute::coalesce(cute::composition(__src1.layout(), ::cute::right_inverse(__src1.layout()))));
+    printf("\n");
     const auto __dst1 = ::cuda::experimental::to_cute(__dst);
     printf("\n");
-    cute::print(__dst1.layout());
-    const auto __max_common_layout = ::cuda::experimental::__max_common_layout(__src1.layout(), __dst1.layout());
+    cute::print(::cute::right_inverse(__dst1.layout()));
+
+    constexpr auto __rank_in  = _ExtentsIn::rank();
+    constexpr auto __rank_out = _ExtentsOut::rank();
+    constexpr auto __rank_max = ::cuda::std::max(__rank_in, __rank_out);
+    auto __src2               = ::cute::make_tensor(__src1.data(), ::cute::append<__rank_max>(__src1.layout()));
+    auto __dst2               = ::cute::make_tensor(__dst1.data(), ::cute::append<__rank_max>(__dst1.layout()));
+    printf("\n------------------------\n");
+    cute::print(__src2.layout());
+    printf("\n");
+    cute::print(__dst2.layout());
+    // Find the maximal common layout between the two layouts and divide the tensors into tiles.
+
+    const auto __max_common_layout = ::cuda::experimental::__max_common_layout(__src2.layout(), __dst2.layout());
     printf("\n------------------------\n");
     cute::print(__max_common_layout);
 
-    const auto __src_tiles = ::cuda::experimental::__logical_divide_dynamic(__src1, __max_common_layout);
+    const auto __src_tiles = ::cuda::experimental::__logical_divide(__src2, __max_common_layout);
     printf("\n");
     cute::print(__src_tiles);
-    const auto __dst_tiles = ::cuda::experimental::__logical_divide_dynamic(__dst1, __max_common_layout);
+    const auto __dst_tiles = ::cuda::experimental::__logical_divide(__dst2, __max_common_layout);
     printf("\n");
     cute::print(__dst_tiles);
     printf("\n------------------------\n");
