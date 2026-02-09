@@ -15,8 +15,8 @@
 #include <cuda/iterator>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
-#include <cuda/std/random>
 #include <cuda/std/numbers>
+#include <cuda/std/random>
 
 #include <nv/target>
 
