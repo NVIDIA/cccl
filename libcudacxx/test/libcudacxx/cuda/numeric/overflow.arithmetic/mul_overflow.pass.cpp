@@ -14,8 +14,6 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#include "literal.h"
-
 template <class Res, class L, class R, class InL, class InR, class Ref>
 __host__ __device__ constexpr void test_mul_overflow(InL lhs_in, InR rhs_in, Ref expected, bool overflow)
 {
@@ -48,8 +46,6 @@ __host__ __device__ constexpr void test_mul_overflow(InL lhs_in, InR rhs_in, Ref
 template <class Res, class L, class R>
 __host__ __device__ constexpr bool test_type()
 {
-  using namespace test_integer_literals;
-
   static_assert(
     cuda::std::is_same_v<decltype(cuda::mul_overflow(L{}, R{})), cuda::overflow_result<cuda::std::common_type_t<L, R>>>);
   static_assert(cuda::std::is_same_v<decltype(cuda::mul_overflow<Res>(L{}, R{})), cuda::overflow_result<Res>>);
@@ -82,11 +78,14 @@ __host__ __device__ constexpr bool test_type()
   test_mul_overflow<Res, L, R>(-254, 127, -32258);
   test_mul_overflow<Res, L, R>(1657, -13748, -22780436);
   test_mul_overflow<Res, L, R>(-2147483647, 4294967295, -9223372030412324865);
-  test_mul_overflow<Res, L, R>(
-    cuda::std::numeric_limits<L>::max(),
-    4,
-    (static_cast<Res>(cuda::std::numeric_limits<L>::max()) << 2),
-    sizeof(L) >= sizeof(Res));
+  if constexpr (cuda::std::is_unsigned_v<L> && cuda::std::is_unsigned_v<Res>)
+  {
+    test_mul_overflow<Res, L, R>(
+      cuda::std::numeric_limits<L>::max(),
+      4,
+      static_cast<Res>(cuda::std::numeric_limits<L>::max() << 2),
+      sizeof(L) >= sizeof(Res));
+  }
 
   return true;
 }
