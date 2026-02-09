@@ -338,53 +338,7 @@
         "THRUST_ENABLE_TESTING": false,
         "THRUST_ENABLE_HEADER_TESTING": false
       }
-    },
-    {
-      "name": "bharath-bench-release",
-      "displayName": "Bharath Bench Release",
-      "inherits": "base",
-      "binaryDir": "/home/bharath/cccl/benchmarks/build",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-
-        "CCCL_ENABLE_BENCHMARKS": true,
-        "CCCL_ENABLE_LIBCUDACXX": true,
-        "CCCL_ENABLE_CUB": true,
-        "CCCL_ENABLE_THRUST": true,
-        "CCCL_ENABLE_CUDAX": false,
-        "CCCL_ENABLE_TESTING": true,
-        "CCCL_ENABLE_EXAMPLES": true,
-        "CCCL_ENABLE_C": true,
-        "CCCL_IGNORE_DEPRECATED_CPP_DIALECT": true,
-
-        "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": false,
-
-        "CUB_ENABLE_DIALECT_CPP17": true,
-        "CUB_ENABLE_DIALECT_CPP20": true,
-
-        "THRUST_ENABLE_MULTICONFIG": true,
-        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP17": true,
-        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP20": true,
-        "THRUST_MULTICONFIG_ENABLE_SYSTEM_CPP": true,
-        "THRUST_MULTICONFIG_ENABLE_SYSTEM_CUDA": true,
-        "THRUST_MULTICONFIG_ENABLE_SYSTEM_HPX": true,
-        "THRUST_MULTICONFIG_ENABLE_SYSTEM_OMP": true,
-        "THRUST_MULTICONFIG_ENABLE_SYSTEM_TBB": true,
-
-        "CMAKE_CUDA_ARCHITECTURES": "61;70;80",
-        "CCCL_ENABLE_UNSTABLE": true,
-
-        "TBB_DIR": "/usr/lib64/cmake/TBB",
-        "CMAKE_INSTALL_PREFIX": "/home/bharath/opt",
-        "CMAKE_PREFIX_PATH": "/usr/local",
-
-        "CMAKE_CUDA_COMPILER": "/usr/local/cuda/bin/nvcc",
-        "CMAKE_CUDA_HOST_COMPILER": "/usr/bin/g++-14",
-        "CMAKE_CXX_COMPILER": "/usr/bin/g++-14",
-
-        "CCCL_ENABLE_WERROR": "OFF"
-      }
-}
+    }
   ],
   "buildPresets": [
     {
@@ -504,10 +458,6 @@
     {
       "name": "nvbench-helper",
       "configurePreset": "nvbench-helper"
-    },
-    {
-      "name": "bharath-bench-release",
-      "configurePreset": "bharath-bench-release"
     }
 
   ],
