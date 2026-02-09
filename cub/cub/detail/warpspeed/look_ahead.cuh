@@ -20,6 +20,7 @@
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__bit/popcount.h>
@@ -222,7 +223,7 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
                             || is_cuda_std_bitwise_v<ScanOpT, AccumT>) )
           {
             const bool use_value = lanemaskEq & warp_right_aggregates_mask;
-            const AccumT value   = use_value ? regTmpStates[idx].value : identity_v<ScanOpT, AccumT>;
+            const AccumT value   = use_value ? regTmpStates[idx].value : cuda::identity_element<ScanOpT, AccumT>();
             local_sum            = reduce_op_sync(value, ~0, scan_op);
           }
           else
