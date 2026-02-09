@@ -20,7 +20,7 @@ set(_cccl_root ../..)
 
 # Build and install C++ library first
 set(CCCL_TOPLEVEL_PROJECT ON) # Enable the developer builds
-set(CCCL_ENABLE_C_PARALLEL ON)
+set(CCCL_ENABLE_C_PARALLEL ON) # Build the cccl.c.parallel library
 set(CCCL_ENABLE_C_EXPERIMENTAL_STF ON) # Enable C experimental STF library (triggers c/ directory)
 set(CCCL_ENABLE_UNSTABLE ON) # Enable unstable features
 
