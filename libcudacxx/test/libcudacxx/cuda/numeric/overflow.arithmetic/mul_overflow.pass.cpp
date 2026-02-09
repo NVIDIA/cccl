@@ -83,24 +83,30 @@ __host__ __device__ constexpr bool test_type()
     test_mul_overflow<Res, L, R>(
       cuda::std::numeric_limits<L>::max(),
       4,
-      static_cast<Res>(cuda::std::numeric_limits<L>::max() << 2),
+      static_cast<Res>(cuda::std::numeric_limits<L>::max()) << 2,
       sizeof(L) >= sizeof(Res));
   }
 
   return true;
 }
 
-using TypeList =
-  cuda::std::tuple<signed char,
-                   short,
-                   int,
-                   long,
-                   long long
+using TypeList = cuda::std::tuple<
+  signed char,
+  unsigned char,
+  short,
+  unsigned short,
+  int,
+  unsigned long,
+  long,
+  unsigned long,
+  long long,
+  unsigned long long
 #if _CCCL_HAS_INT128()
-                   ,
-                   __int128_t
+  ,
+  __int128_t,
+  __uint128_t
 #endif // _CCCL_HAS_INT128()
-                   >;
+  >;
 
 using TypeListIndexSeq = cuda::std::make_index_sequence<cuda::std::tuple_size_v<TypeList>>;
 
