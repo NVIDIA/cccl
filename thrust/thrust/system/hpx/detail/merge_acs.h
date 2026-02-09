@@ -44,60 +44,49 @@ namespace hpx
 namespace detail
 {
 
-struct log_space_step 
+using picoseconds = std::chrono::duration<long long, std::pico>;
+
+struct adaptive_chunk_size 
 {
-  explicit constexpr log_space_step(
-		 size_t const total_count) : total_count_(total_count) {
-  } 
-  static inline double sigmoid(double z) {
-    return 1.0 / (1.0 + std::exp(-z));
-  }
+  template <typename Rep1, typename Period1, typename Rep2, typename Period2>
+  explicit constexpr adaptive_chunk_size(
+    std::chrono::duration<Rep1, Period1> const time_per_iteration,
+    std::chrono::duration<Rep2, Period2> const overhead_time = std::chrono::microseconds(1)
+  ) : time_per_iteration_(std::chrono::duration_cast<picoseconds>(time_per_iteration)),
+      overhead_time_(std::chrono::duration_cast<picoseconds>(overhead_time)) {
 
-  // Logrithmic Smooth Space Step Model
-  static inline double pred_core(std::size_t count) {
-    if (count == 0) return 1.0;
-    double x = std::log2((double)count);
-    constexpr double s = 0.35; // transition sharpness
-
-    double r = 1.0;
-    r +=  3.0 * sigmoid((x - 13.0) / s);
-    r +=  2.0 * sigmoid((x - 15.0) / s);
-    r +=  6.0 * sigmoid((x - 17.0) / s);
-    r += 12.0 * sigmoid((x - 19.0) / s);
-    r += 40.0 * sigmoid((x - 23.0) / s);
-    r += 46.0 * sigmoid((x - 25.0) / s);
-    r += 18.0 * sigmoid((x - 27.0) / s);
-
-    return r; 
-  }
-
+      }
+    
   // calculate no of cores
   template <typename Executor>
   friend std::size_t tag_override_invoke(
     ::hpx::execution::experimental::processing_units_count_t,
-    log_space_step& this_, Executor&&,
+    adaptive_chunk_size& this_, Executor&& exec,
     ::hpx::chrono::steady_duration const&, std::size_t count
   ) noexcept {
-    std::size_t const cores_baseline = ::hpx::get_os_thread_count();
-    
-    // Log-space smooth step scaling
-    double const pred_c = pred_core(this_.total_count_);
-
-    std::size_t num_cores = static_cast<std::size_t>(
-      (std::max)(1LL, std::llround(pred_c))
+    std::size_t const cores_baseline = 
+      ::hpx::execution::experimental::processing_units_count(
+        exec, this_.time_per_iteration_, count
+      );
+    auto const overall_time = static_cast<double>(
+      (count + 1) * this_.time_per_iteration_.count()
     );
-
-    num_cores = (std::min)(num_cores, cores_baseline);
-    num_cores = (std::max)(num_cores, std::size_t{1});
-    
-    
+    constexpr double efficiency_factor = 0.052;
+    if(this_.overhead_time_.count()==0) {
+      this_.overhead_time_ = std::chrono::duration_cast<picoseconds>(std::chrono::microseconds(1));
+    }
+    auto const optimal_num_cores = 
+      static_cast<std::size_t>(efficiency_factor * overall_time /
+      static_cast<double>(this_.overhead_time_.count()));
+    std::size_t num_cores = (std::min) (cores_baseline, optimal_num_cores);
+    num_cores = (std::max) (num_cores, static_cast<std::size_t>(1));
     return num_cores;
   }
 
   //calculate chunk size
   template <typename Executor>
   friend std::size_t tag_override_invoke(
-    ::hpx::execution::experimental::get_chunk_size_t, log_space_step&,
+    ::hpx::execution::experimental::get_chunk_size_t, adaptive_chunk_size&,
     Executor&, ::hpx::chrono::steady_duration const&, std::size_t const cores,
     std::size_t num_iterations
   ) {
@@ -129,10 +118,27 @@ struct log_space_step
 
     return chunk_size;
   }
-  size_t total_count_;
+
+  picoseconds time_per_iteration_;
+  picoseconds overhead_time_;
 };
 
+template <typename ExPolicy, typename FwdIter1, typename FwdIter2, typename FwdIter3>
+double run_merge_benchmark_hpx(int const test_count, ExPolicy policy, FwdIter1 first1, FwdIter2 last1, FwdIter1 first2, FwdIter2 last2, FwdIter3 dest) {
+  // warmup
+  // ::hpx::merge(policy, first1, last1, first2, last2, dest);
 
+  // actual measurement
+  std::uint64_t time = ::hpx::chrono::high_resolution_clock::now();
+  
+  for(int i=0; i < test_count; ++i) {
+     ::hpx::merge(policy, first1, last1, first2, last2, dest);
+  }
+
+  time = ::hpx::chrono::high_resolution_clock::now() - time;
+
+  return (static_cast<double>(time) * 1e-9) / test_count;
+}
 
 template <typename ExecutionPolicy,
           typename InputIterator1,
@@ -155,8 +161,28 @@ merge(execution_policy<ExecutionPolicy>& exec,
                 && ::hpx::traits::is_forward_iterator_v<InputIterator2>
                 && ::hpx::traits::is_forward_iterator_v<OutputIterator>)
   {
+      //const double seq_time = run_merge_benchmark_hpx(1, ::hpx::execution::seq, first1, last1, first2, last2, result);
+      double overhead_time = 0.0;
+      double const time_per_iteration = 0.000000001;
+      //double const time_per_iteration = seq_time / 
+      //  static_cast<double>((std::max)(std::distance(first1, last1), std::distance(first2, last2)));
+      
+      //::hpx::execution::experimental::num_cores nc(1);
+      //::hpx::execution::experimental::max_num_chunks mnc(1);
+      std::size_t const all_cores = ::hpx::get_num_worker_threads();
+      
+      //auto temp = run_merge_benchmark_hpx(1, ::hpx::execution::par.with(nc, mnc), first1, last1, first2, last2, result);
+      const double temp = 0.000000105;
+      overhead_time = (temp) / static_cast<double>(all_cores);
+      
+      picoseconds time_per_iteration_ps(
+        static_cast<int64_t>(time_per_iteration * 1e12)
+      );
+      picoseconds overhead_time_ps(
+        static_cast<int64_t>(overhead_time * 1e12)
+      );
 
-      log_space_step lss(static_cast<std::size_t>(std::distance(first1, last1)) + static_cast<std::size_t>(std::distance(first2, last2)));
+      adaptive_chunk_size acs(time_per_iteration_ps, overhead_time_ps);
       ::hpx::execution::experimental::chunking_parameters params = {};
       ::hpx::execution::experimental::collect_chunking_parameters
                 collect_params(params);
@@ -173,7 +199,7 @@ merge(execution_policy<ExecutionPolicy>& exec,
       }
       else {
         auto res = ::hpx::merge(
-          hpx::detail::to_hpx_execution_policy(exec).with(lss),
+          hpx::detail::to_hpx_execution_policy(exec).with(acs),
           detail::try_unwrap_contiguous_iterator(first1),
           detail::try_unwrap_contiguous_iterator(last1),
           detail::try_unwrap_contiguous_iterator(first2),
@@ -196,7 +222,7 @@ merge(execution_policy<ExecutionPolicy>& exec,
 THRUST_NAMESPACE_END
 
 template <>
-struct hpx::execution::experimental::is_executor_parameters< thrust::system::hpx::detail::log_space_step> : std::true_type {
+struct hpx::execution::experimental::is_executor_parameters< thrust::system::hpx::detail::adaptive_chunk_size> : std::true_type {
 };
 
 // this system inherits merge_by_key

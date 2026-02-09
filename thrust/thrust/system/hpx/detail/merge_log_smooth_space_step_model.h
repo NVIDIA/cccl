@@ -156,7 +156,7 @@ merge(execution_policy<ExecutionPolicy>& exec,
                 && ::hpx::traits::is_forward_iterator_v<OutputIterator>)
   {
 
-      log_space_step lss(static_cast<std::size_t>(std::distance(first1, last1)) + static_cast<std::size_t>(std::distance(first2, last2)));
+      log_space_step lss(static_cast<std::size_t>(std::distance(first1, last1) + static_cast<std::size_t>(std::distance(first2, last2));
       ::hpx::execution::experimental::chunking_parameters params = {};
       ::hpx::execution::experimental::collect_chunking_parameters
                 collect_params(params);
