@@ -52,6 +52,11 @@ CUB_NAMESPACE_BEGIN
  * Iterative work management can be implemented simply with a pair of flip-flopping
  * work buffers, each with an associated set of fill and drain GridQueue descriptors.
  *
+ * @rst
+ * .. versionadded:: 2.2.0
+ *    First appears in CUDA Toolkit 12.3.
+ * @endrst
+ *
  * @tparam OffsetT Signed integer type for global offsets
  */
 template <typename OffsetT>
