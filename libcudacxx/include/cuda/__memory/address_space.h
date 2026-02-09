@@ -169,7 +169,7 @@ enum class address_space
                       "  selp.u32 %0, 1, 0, p;\n\t"
                       "}\n\t" : "=r"(__ret) : "l"(__ptr));
          return static_cast<bool>(__ret);),
-        (/* Fall through to `case shared:` */;))
+        ([[fallthrough]]; /* to `case shared:` */))
 #  else // ^^^ _CCCL_CUDA_COMPILER(NVCC, <, 12, 3) || _CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^ /
         // vvv !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) vvv
       NV_IF_ELSE_TARGET(
