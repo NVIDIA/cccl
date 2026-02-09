@@ -24,6 +24,10 @@
 #if !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/std/__algorithm/stable_sort.h>
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__utility/integer_sequence.h>
+#  include <cuda/std/array>
+#  include <cuda/std/cstdint>
 
 #  include <cute/layout.hpp>
 //
@@ -33,8 +37,6 @@ namespace cuda::experimental
 {
 /**
  * @brief Converts a value from CuTe shape or stride type to its runtime equivalent.
- *
- * If @p __value is a compile-time static type (e.g., @c cute::C<N>), returns the underlying integral constant.
  */
 template <class _Tp>
 [[nodiscard]] _CCCL_HOST_API constexpr auto __to_runtime_value(_Tp __value) noexcept
@@ -50,7 +52,7 @@ template <class _Tp>
 }
 
 /**
- * @brief Converts a @c cuda::std::array to a @c cute::tuple
+ * @brief Converts a `cuda::std::array` to a `cute::tuple`
  */
 template <class _Tp, ::cuda::std::size_t _N, ::cuda::std::size_t... _Is>
 [[nodiscard]] _CCCL_HOST_API constexpr auto
@@ -59,6 +61,9 @@ __to_cute_tuple(const ::cuda::std::array<_Tp, _N>& __values, ::cuda::std::index_
   return ::cute::make_tuple(__values[_Is]...);
 }
 
+/**
+ * @brief Initializes dynamic shapes and strides from a CuTe layout.
+ */
 template <class _Shape, class _Stride, ::cuda::std::size_t _Rank, ::cuda::std::size_t... _Is>
 _CCCL_HOST_API constexpr void __init_layout(
   const _Shape& __shapes_tuple,
@@ -83,7 +88,7 @@ _CCCL_HOST_API constexpr void __init_and_sort_layout(
   ::cuda::std::array<::cuda::std::int64_t, _Rank>& __orders,
   ::cuda::std::index_sequence<_Is...> __rank_seq) noexcept
 {
-  __init_layout(__shapes_tuple, __strides_tuple, __shapes, __strides, __rank_seq);
+  ::cuda::experimental::__init_layout(__shapes_tuple, __strides_tuple, __shapes, __strides, __rank_seq);
   ((__orders[_Is] = _Is), ...);
   // Sort by strides
   ::cuda::std::stable_sort(__orders.begin(), __orders.end(), [&](auto __a, auto __b) {
@@ -94,7 +99,7 @@ _CCCL_HOST_API constexpr void __init_and_sort_layout(
 template <class _Shape>
 _CCCL_API constexpr auto __rank_error()
 {
-  static_assert(::cuda::std::__always_false_v<_Shape>, "rank assertion failed");
+  static_assert(::cuda::std::__always_false_v<_Shape>, "rank must be applied to a static shape");
   return 0;
 }
 

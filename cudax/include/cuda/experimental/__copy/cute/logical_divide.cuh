@@ -38,7 +38,7 @@ namespace cuda::experimental
  * @brief Run-time version of CuTe `logical_divide` for layouts that may have dynamic strides in the tiler.
  */
 template <class _LShape, class _LStride, class _Shape, class _Stride>
-[[nodiscard]] _CCCL_HOST_API auto __logical_divide_dynamic(
+[[nodiscard]] _CCCL_HOST_API auto __logical_divide(
   const ::cute::Layout<_LShape, _LStride>& __layout, const ::cute::Layout<_Shape, _Stride>& __tiler) noexcept
 {
   if constexpr (::cute::is_static<_Stride>::value)
@@ -48,20 +48,20 @@ template <class _LShape, class _LStride, class _Shape, class _Stride>
   else
   {
     const auto __codomain_size = static_cast<::cuda::std::int64_t>(::cute::size(__layout));
-    const auto __complement    = ::cuda::experimental::__complement_dynamic(__tiler, __codomain_size);
+    const auto __complement    = ::cuda::experimental::__complement(__tiler, __codomain_size);
     return ::cute::composition(__layout, ::cute::make_layout(__tiler, __complement));
   }
 }
 
 /**
- * @brief Overload of `__logical_divide_dynamic` for CuTe tensors.
+ * @brief Overload of `__logical_divide` for CuTe tensors.
  */
 template <class _Engine, class _Layout, class _Shape, class _Stride>
-[[nodiscard]] _CCCL_HOST_API auto __logical_divide_dynamic(
+[[nodiscard]] _CCCL_HOST_API auto __logical_divide(
   const ::cute::Tensor<_Engine, _Layout>& __tensor, const ::cute::Layout<_Shape, _Stride>& __tiler) noexcept
 {
   return ::cute::make_tensor(
-    __tensor.data(), ::cuda::experimental::__logical_divide_dynamic(__tensor.layout(), __tiler));
+    __tensor.data(), ::cuda::experimental::__logical_divide(__tensor.layout(), __tiler));
 }
 } // namespace cuda::experimental
 

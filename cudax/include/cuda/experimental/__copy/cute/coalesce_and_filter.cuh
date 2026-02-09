@@ -38,7 +38,7 @@ namespace cuda::experimental
 {
 template <class _Shape, class _Stride>
 [[nodiscard]] _CCCL_HOST_API auto
-__simplify_dynamic(const ::cute::Layout<_Shape, _Stride>& __layout, bool __filter_zeros) noexcept
+__simplify(const ::cute::Layout<_Shape, _Stride>& __layout, bool __filter_zeros) noexcept
 {
   constexpr auto __rank = __rank_v<_Shape>;
   if constexpr (__rank <= 1)
@@ -82,29 +82,29 @@ __simplify_dynamic(const ::cute::Layout<_Shape, _Stride>& __layout, bool __filte
 /**
  * @brief Runtime version of CuTe's `coalesce` for layouts with dynamic shapes/strides.
  *
- * Produces a layout with the same number of modes as the input layout, but with contiguous modes merged.
+ * Produces a layout with the same number of modes as the input layout, but with forward-contiguous modes merged.
  *
  * @par Algorithm
  * 1. Iterate over modes, skipping size-1 modes.
- * 2. Merge forward-contiguous modes where `stride[i] * shape[i] == stride[i+1]`.
+ * 2. Merge contiguous modes where `stride[i] * shape[i] == stride[i+1]`.
  * 3. Pad remaining output modes with `(1, 0)` (identity).
  */
 template <class _Shape, class _Stride>
-[[nodiscard]] _CCCL_HOST_API auto __coalesce_dynamic(const ::cute::Layout<_Shape, _Stride>& __layout) noexcept
+[[nodiscard]] _CCCL_HOST_API auto __coalesce(const ::cute::Layout<_Shape, _Stride>& __layout) noexcept
 {
-  return ::cuda::experimental::__simplify_dynamic(__layout, false);
+  return ::cuda::experimental::__simplify(__layout, false);
 }
 
 /**
  * @brief Runtime version of CuTe's `filter` for layouts with dynamic shapes/strides.
  *
- * Produces a layout with the same number of modes as the input layout, but with contiguous modes merged and no size-0
- * modes. The algorithm is similar to `coalesce`.
+ * Produces a layout with the same number of modes as the input layout, but with forward-contiguous modes merged and no
+ * size-0 modes. The algorithm is similar to `coalesce`.
  */
 template <class _Shape, class _Stride>
-[[nodiscard]] _CCCL_HOST_API auto __filter_dynamic(const ::cute::Layout<_Shape, _Stride>& __layout) noexcept
+[[nodiscard]] _CCCL_HOST_API auto __filter(const ::cute::Layout<_Shape, _Stride>& __layout) noexcept
 {
-  return ::cuda::experimental::__simplify_dynamic(__layout, true);
+  return ::cuda::experimental::__simplify(__layout, true);
 }
 } // namespace cuda::experimental
 
