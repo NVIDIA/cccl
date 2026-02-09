@@ -136,8 +136,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScan accepts stream environment", "[scan][en
   auto input  = thrust::device_vector<float>{1.0f, 2.0f, 3.0f, 4.0f};
   auto output = thrust::device_vector<float>(4);
 
-  cudaStream_t legacy_stream = 0;
-  cuda::stream_ref stream_ref{legacy_stream};
+  cuda::stream_ref stream_ref{cuda::devices[0]};
   auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceScan::InclusiveScan(input.begin(), output.begin(), op, input.size(), env);
