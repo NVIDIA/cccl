@@ -180,7 +180,7 @@ enum class address_space
            _CCCL_ASSUME(__p); //
          } //
          return __p;),
-        (/* Fall through to `case shared:` */;))
+        ([[fallthrough]]; /* to `case shared:` */))
 #  endif // ^^^ !_CCCL_CUDA_COMPILER(NVCC, <, 12, 3) && !_CCCL_CUDA_COMPILER(NVRTC, <, 12, 3) ^^^
     }
     case address_space::shared: {
