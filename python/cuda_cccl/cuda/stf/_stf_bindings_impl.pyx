@@ -629,7 +629,7 @@ cdef class context:
         self._ctx = ctx_handle
 
     def __repr__(self):
-        return f"context(handle={<int>self._ctx}, borrowed={self._borrowed})"
+        return f"context(handle={<uintptr_t>self._ctx}, borrowed={self._borrowed})"
 
     def __dealloc__(self):
         if not self._borrowed:
