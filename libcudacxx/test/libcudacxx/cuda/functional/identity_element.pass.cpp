@@ -122,6 +122,7 @@ __host__ __device__ constexpr void test_identity_integral()
 {
   test_identity<cuda::std::logical_and, bool>(true, true);
   test_identity<cuda::std::logical_or, bool>(true, false);
+  test_identity_integral<char>();
   test_identity_integral<signed char>();
   test_identity_integral<unsigned char>();
   test_identity_integral<short>();
