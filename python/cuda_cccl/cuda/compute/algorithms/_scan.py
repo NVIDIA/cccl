@@ -24,8 +24,8 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..op import OpAdapter, OpKind, make_op_adapter
-from ..typing import DeviceArrayLike, GpuStruct, IteratorBase
+from ..op import OpAdapter, make_op_adapter
+from ..typing import DeviceArrayLike, GpuStruct, IteratorT, Operator
 
 
 def get_init_kind(
@@ -54,8 +54,8 @@ class _Scan:
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
     def __init__(
         self,
-        d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
+        d_in: DeviceArrayLike | IteratorT,
+        d_out: DeviceArrayLike | IteratorT,
         op: OpAdapter,
         init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
         force_inclusive: bool,
@@ -173,9 +173,9 @@ class _Scan:
 # TODO Accept stream
 @cache_with_registered_key_functions
 def make_exclusive_scan(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    op: Callable | OpKind,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
+    op: Operator,
     init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
 ):
     """Computes a device-wide scan using the specified binary ``op`` and initial value ``init``.
@@ -191,7 +191,9 @@ def make_exclusive_scan(
     Args:
         d_in: Device array or iterator containing the input sequence of data items
         d_out: Device array that will store the result of the scan
-        op: Callable or OpKind representing the binary operator to apply
+        op: Binary scan operator.
+            The signature is ``(T, T) -> T``, where ``T`` is the data type of
+            the initial value ``init_value``.
         init_value: Numpy array, device array, or GPU struct storing initial value of the scan, or None for no initial value
 
     Returns:
@@ -202,9 +204,9 @@ def make_exclusive_scan(
 
 
 def exclusive_scan(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    op: Callable | OpKind,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
+    op: Operator,
     init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
     num_items: int,
     stream=None,
@@ -225,7 +227,9 @@ def exclusive_scan(
     Args:
         d_in: Device array or iterator containing the input sequence of data items
         d_out: Device array or iterator to store the result of the scan
-        op: Binary scan operator
+        op: Binary scan operator.
+            The signature is ``(T, T) -> T``, where ``T`` is the data type of
+            the initial value ``init_value``.
         init_value: Initial value for the scan
         num_items: Number of items to scan
         stream: CUDA stream for the operation (optional)
@@ -240,9 +244,9 @@ def exclusive_scan(
 # TODO Accept stream
 @cache_with_registered_key_functions
 def make_inclusive_scan(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    op: Callable | OpKind,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
+    op: Operator,
     init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
 ):
     """Computes a device-wide scan using the specified binary ``op`` and initial value ``init``.
@@ -258,7 +262,9 @@ def make_inclusive_scan(
     Args:
         d_in: Device array or iterator containing the input sequence of data items
         d_out: Device array that will store the result of the scan
-        op: Callable or OpKind representing the binary operator to apply
+        op: Binary scan operator.
+            The signature is ``(T, T) -> T``, where ``T`` is the data type of
+            the initial value ``init_value``.
         init_value: Numpy array, device array, or GPU struct storing initial value of the scan, or None for no initial value
 
     Returns:
@@ -269,9 +275,9 @@ def make_inclusive_scan(
 
 
 def inclusive_scan(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    op: Callable | OpKind,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
+    op: Operator,
     init_value: np.ndarray | DeviceArrayLike | GpuStruct | None,
     num_items: int,
     stream=None,
@@ -292,7 +298,9 @@ def inclusive_scan(
     Args:
         d_in: Device array or iterator containing the input sequence of data items
         d_out: Device array or iterator to store the result of the scan
-        op: Binary scan operator
+        op: Binary scan operator.
+            The signature is ``(T, T) -> T``, where ``T`` is the data type of
+            the initial value ``init_value``.
         init_value: Initial value for the scan
         num_items: Number of items to scan
         stream: CUDA stream for the operation (optional)

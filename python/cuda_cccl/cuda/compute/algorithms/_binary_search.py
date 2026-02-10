@@ -13,10 +13,10 @@ from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._utils import protocols
 from ..op import OpAdapter, OpKind, make_op_adapter
-from ..typing import DeviceArrayLike, IteratorBase
+from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
-def _normalize_comp(comp: Callable | OpKind | None) -> OpAdapter:
+def _normalize_comp(comp: Operator | None) -> OpAdapter:
     # Use a lambda for the default comparator rather than OpKind.LESS
     # because well-known ops don't carry type information needed by
     # the binary search JIT compilation.
@@ -43,7 +43,7 @@ class _BinarySearch:
     def __init__(
         self,
         d_data: DeviceArrayLike,
-        d_values: DeviceArrayLike | IteratorBase,
+        d_values: DeviceArrayLike | IteratorT,
         d_out: DeviceArrayLike,
         comp: OpAdapter,
         mode: _bindings.BinarySearchMode,
@@ -85,7 +85,7 @@ class _BinarySearch:
         d_data,
         d_values,
         d_out,
-        comp: Callable | OpKind | None,
+        comp: Operator | None,
         num_items: int,
         num_values: int,
         stream=None,
@@ -115,7 +115,7 @@ class _BinarySearch:
 @cache_with_registered_key_functions
 def _make_binary_search(
     d_data: DeviceArrayLike,
-    d_values: DeviceArrayLike | IteratorBase,
+    d_values: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike,
     comp: OpAdapter,
     mode: _bindings.BinarySearchMode,
@@ -128,9 +128,9 @@ def _make_binary_search(
 
 def make_lower_bound(
     d_data: DeviceArrayLike,
-    d_values: DeviceArrayLike | IteratorBase,
+    d_values: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike,
-    comp: Callable | OpKind | None = None,
+    comp: Operator | None = None,
 ):
     """
     Create a lower_bound object that can be called to find insertion positions.
@@ -166,9 +166,9 @@ def make_lower_bound(
 
 def make_upper_bound(
     d_data: DeviceArrayLike,
-    d_values: DeviceArrayLike | IteratorBase,
+    d_values: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike,
-    comp: Callable | OpKind | None = None,
+    comp: Operator | None = None,
 ):
     """
     Create an upper_bound object that can be called to find insertion positions.
@@ -204,11 +204,11 @@ def make_upper_bound(
 
 def lower_bound(
     d_data: DeviceArrayLike,
-    d_values: DeviceArrayLike | IteratorBase,
+    d_values: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike,
     num_items: int,
     num_values: int,
-    comp: Callable | OpKind | None = None,
+    comp: Operator | None = None,
     stream=None,
 ):
     """
@@ -235,11 +235,11 @@ def lower_bound(
 
 def upper_bound(
     d_data: DeviceArrayLike,
-    d_values: DeviceArrayLike | IteratorBase,
+    d_values: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike,
     num_items: int,
     num_values: int,
-    comp: Callable | OpKind | None = None,
+    comp: Operator | None = None,
     stream=None,
 ):
     """

@@ -3,7 +3,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Callable
+
+from __future__ import annotations
 
 from ... import _bindings, types
 from ... import _cccl_interop as cccl
@@ -14,8 +15,8 @@ from ..._utils.protocols import (
     validate_and_get_stream,
 )
 from ..._utils.temp_storage_buffer import TempStorageBuffer
-from ...op import OpAdapter, OpKind, make_op_adapter
-from ...typing import DeviceArrayLike, IteratorBase
+from ...op import OpAdapter, make_op_adapter
+from ...typing import DeviceArrayLike, IteratorT, Operator
 
 
 class _MergeSort:
@@ -31,8 +32,8 @@ class _MergeSort:
 
     def __init__(
         self,
-        d_in_keys: DeviceArrayLike | IteratorBase,
-        d_in_items: DeviceArrayLike | IteratorBase | None,
+        d_in_keys: DeviceArrayLike | IteratorT,
+        d_in_items: DeviceArrayLike | IteratorT | None,
         d_out_keys: DeviceArrayLike,
         d_out_items: DeviceArrayLike | None,
         op: OpAdapter,
@@ -63,11 +64,11 @@ class _MergeSort:
     def __call__(
         self,
         temp_storage,
-        d_in_keys: DeviceArrayLike | IteratorBase,
-        d_in_items: DeviceArrayLike | IteratorBase | None,
+        d_in_keys: DeviceArrayLike | IteratorT,
+        d_in_items: DeviceArrayLike | IteratorT | None,
         d_out_keys: DeviceArrayLike,
         d_out_items: DeviceArrayLike | None,
-        op: Callable | OpKind | OpAdapter,
+        op: Operator,
         num_items: int,
         stream=None,
     ):
@@ -113,11 +114,11 @@ class _MergeSort:
 
 @cache_with_registered_key_functions
 def make_merge_sort(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase | None,
+    d_in_keys: DeviceArrayLike | IteratorT,
+    d_in_items: DeviceArrayLike | IteratorT | None,
     d_out_keys: DeviceArrayLike,
     d_out_items: DeviceArrayLike | None,
-    op: Callable | OpKind,
+    op: Operator,
 ):
     """Implements a device-wide merge sort using ``d_in_keys`` and the comparison operator ``op``.
 
@@ -144,11 +145,11 @@ def make_merge_sort(
 
 
 def merge_sort(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase | None,
+    d_in_keys: DeviceArrayLike | IteratorT,
+    d_in_items: DeviceArrayLike | IteratorT | None,
     d_out_keys: DeviceArrayLike,
     d_out_items: DeviceArrayLike | None,
-    op: Callable | OpKind,
+    op: Operator,
     num_items: int,
     stream=None,
 ):

@@ -15,8 +15,8 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..op import OpAdapter, OpKind, make_op_adapter
-from ..typing import DeviceArrayLike, IteratorBase
+from ..op import OpAdapter, make_op_adapter
+from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
 class _UniqueByKey:
@@ -32,10 +32,10 @@ class _UniqueByKey:
 
     def __init__(
         self,
-        d_in_keys: DeviceArrayLike | IteratorBase,
-        d_in_items: DeviceArrayLike | IteratorBase,
-        d_out_keys: DeviceArrayLike | IteratorBase,
-        d_out_items: DeviceArrayLike | IteratorBase,
+        d_in_keys: DeviceArrayLike | IteratorT,
+        d_in_items: DeviceArrayLike | IteratorT,
+        d_out_keys: DeviceArrayLike | IteratorT,
+        d_out_items: DeviceArrayLike | IteratorT,
         d_out_num_selected: DeviceArrayLike,
         op: OpAdapter,
     ):
@@ -62,12 +62,12 @@ class _UniqueByKey:
     def __call__(
         self,
         temp_storage,
-        d_in_keys: DeviceArrayLike | IteratorBase,
-        d_in_items: DeviceArrayLike | IteratorBase,
-        d_out_keys: DeviceArrayLike | IteratorBase,
-        d_out_items: DeviceArrayLike | IteratorBase,
+        d_in_keys: DeviceArrayLike | IteratorT,
+        d_in_items: DeviceArrayLike | IteratorT,
+        d_out_keys: DeviceArrayLike | IteratorT,
+        d_out_items: DeviceArrayLike | IteratorT,
         d_out_num_selected: DeviceArrayLike,
-        op: Callable | OpKind | OpAdapter,
+        op: Operator,
         num_items: int,
         stream=None,
     ):
@@ -108,12 +108,12 @@ class _UniqueByKey:
 
 @cache_with_registered_key_functions
 def make_unique_by_key(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase,
-    d_out_keys: DeviceArrayLike | IteratorBase,
-    d_out_items: DeviceArrayLike | IteratorBase,
+    d_in_keys: DeviceArrayLike | IteratorT,
+    d_in_items: DeviceArrayLike | IteratorT,
+    d_out_keys: DeviceArrayLike | IteratorT,
+    d_out_items: DeviceArrayLike | IteratorT,
     d_out_num_selected: DeviceArrayLike,
-    op: Callable | OpKind,
+    op: Operator,
 ):
     """Implements a device-wide unique by key operation using ``d_in_keys`` and the comparison operator ``op``. Only the first key and its value from each run is selected and the total number of items selected is also reported.
 
@@ -143,12 +143,12 @@ def make_unique_by_key(
 
 
 def unique_by_key(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase,
-    d_out_keys: DeviceArrayLike | IteratorBase,
-    d_out_items: DeviceArrayLike | IteratorBase,
+    d_in_keys: DeviceArrayLike | IteratorT,
+    d_in_items: DeviceArrayLike | IteratorT,
+    d_out_keys: DeviceArrayLike | IteratorT,
+    d_out_items: DeviceArrayLike | IteratorT,
     d_out_num_selected: DeviceArrayLike,
-    op: Callable | OpKind,
+    op: Operator,
     num_items: int,
     stream=None,
 ):
