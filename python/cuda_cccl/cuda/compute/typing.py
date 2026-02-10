@@ -52,12 +52,11 @@ Operator = Callable | OpKind | OpAdapter
 
 Algorithms accept the following objects as operators:
 
-**Python Callable:**
-    A Python function or lambda that will be JIT compiled by `numba.cuda`.
+* Python functions or lambdas implementing the operator. This function will be JIT
+  compiled into device code using ``numba.cuda``.
 
-**OpKind Enum:**
-    Pre-defined operator constants for common operations. See
-    :class:`OpKind <cuda.compute.op.OpKind>` for all available operators.
+* :class:`OpKind <cuda.compute.op.OpKind>` enumerators which are pre-defined constants
+  for common operations.
 """
 
 __all__ = ["DeviceArrayLike", "GpuStruct", "IteratorT", "Operator"]
