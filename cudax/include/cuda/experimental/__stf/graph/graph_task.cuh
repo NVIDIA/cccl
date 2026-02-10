@@ -83,15 +83,15 @@ public:
   {
     ::std::lock_guard<::std::mutex> lock(graph_mutex);
 
-    event_list prereqs = acquire(ctx);
+    event_list ready_prereqs = acquire(ctx);
 
     // The CUDA graph API does not like duplicate dependencies
-    prereqs.optimize(ctx);
+    ready_prereqs.optimize(ctx);
 
     // Reserve for better performance
-    ready_dependencies.reserve(prereqs.size());
+    ready_dependencies.reserve(ready_prereqs.size());
 
-    for (auto& e : prereqs)
+    for (auto& e : ready_prereqs)
     {
       auto ge = reserved::graph_event(e, reserved::use_dynamic_cast);
       if (ge->stage == stage)
@@ -114,6 +114,8 @@ public:
     {
       dot.template add_vertex<task, logical_data_untyped>(*this);
     }
+
+    set_ready_prereqs(mv(ready_prereqs));
 
     return *this;
   }
