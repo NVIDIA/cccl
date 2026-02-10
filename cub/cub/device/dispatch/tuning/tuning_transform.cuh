@@ -118,18 +118,11 @@ struct vectorized_policy
   int block_threads;
   int items_per_thread;
   int vec_size;
-  // if we have to fall back to prefetching, use these values:
-  int prefetch_items_per_thread_no_input = 2;
-  int prefetch_min_items_per_thread      = 1;
-  int prefetch_max_items_per_thread      = 32;
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator==(const vectorized_policy& lhs, const vectorized_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.vec_size == rhs.vec_size
-        && lhs.prefetch_items_per_thread_no_input == rhs.prefetch_items_per_thread_no_input
-        && lhs.prefetch_min_items_per_thread == rhs.prefetch_min_items_per_thread
-        && lhs.prefetch_max_items_per_thread == rhs.prefetch_max_items_per_thread;
+        && lhs.vec_size == rhs.vec_size;
   }
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const vectorized_policy& lhs, const vectorized_policy& rhs)
@@ -140,12 +133,8 @@ struct vectorized_policy
 #if !_CCCL_COMPILER(NVRTC)
   friend ::std::ostream& operator<<(::std::ostream& os, const vectorized_policy& policy)
   {
-    return os
-        << "vectorized_policy { .block_threads = " << policy.block_threads
-        << ", .items_per_thread = " << policy.items_per_thread << ", .vec_size = " << policy.vec_size
-        << ", .prefetch_items_per_thread_no_input = " << policy.prefetch_items_per_thread_no_input
-        << ", .prefetch_min_items_per_thread = " << policy.prefetch_min_items_per_thread
-        << ", .prefetch_max_items_per_thread = " << policy.prefetch_max_items_per_thread << " }";
+    return os << "vectorized_policy { .block_threads = " << policy.block_threads
+              << ", .items_per_thread = " << policy.items_per_thread << ", .vec_size = " << policy.vec_size << " }";
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
