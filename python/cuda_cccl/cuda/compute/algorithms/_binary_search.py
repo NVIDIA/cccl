@@ -2,7 +2,8 @@
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-from typing import Callable
+
+from __future__ import annotations
 
 import numpy as np
 

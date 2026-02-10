@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Callable
+from __future__ import annotations
 
 from .._caching import cache_with_registered_key_functions
 from .._utils.temp_storage_buffer import TempStorageBuffer
