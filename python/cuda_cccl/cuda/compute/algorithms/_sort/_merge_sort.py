@@ -135,7 +135,7 @@ def make_merge_sort(
         d_in_items: Optional device array or iterator that contains each key's corresponding item
         d_out_keys: Device array to store the sorted keys
         d_out_items: Device array to store the sorted items
-        op: Callable or OpKind representing the comparison operator
+        op: The comparison operator for sorting. The signature is  ``(T, T) -> int8``, where ``T`` is the input data type.
 
     Returns:
         A callable object that can be used to perform the merge sort
@@ -171,7 +171,7 @@ def merge_sort(
         d_in_items: Device array or iterator containing the input sequence of items (optional)
         d_out_keys: Device array to store the sorted keys
         d_out_items: Device array to store the sorted items (optional)
-        op: Comparison operator for sorting
+        op: The comparison operator for sorting. The signature is  ``(T, T) -> int8``, where ``T`` is the input data type.
         num_items: Number of items to sort
         stream: CUDA stream for the operation (optional)
     """
