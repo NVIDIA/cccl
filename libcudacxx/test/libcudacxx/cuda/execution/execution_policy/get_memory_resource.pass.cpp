@@ -18,6 +18,8 @@
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
+
 struct test_resource
 {
   __host__ __device__ void* allocate_sync(std::size_t, std::size_t)
