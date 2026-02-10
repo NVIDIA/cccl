@@ -8,6 +8,9 @@
 // for TUNE_ALGORITHM == 1 (vectorized), this is the number of vectors per thread, which is similar in spirit
 // %RANGE% TUNE_UNROLL_FACTOR unrl 1:4:1
 
+// those parameters only apply if TUNE_ALGORITHM == 0 (prefetch)
+// %RANGE% TUNE_PREFETCH_MULT pref 1:3:1
+
 // those parameters only apply if TUNE_ALGORITHM == 1 (vectorized)
 // %RANGE% TUNE_VEC_SIZE_POW2 vsp2 1:6:1
 
