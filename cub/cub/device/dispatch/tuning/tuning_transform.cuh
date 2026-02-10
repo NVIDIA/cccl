@@ -98,7 +98,7 @@ struct prefetch_policy
   {
     return lhs.block_threads == rhs.block_threads && lhs.items_per_thread_no_input == rhs.items_per_thread_no_input
         && lhs.min_items_per_thread == rhs.min_items_per_thread && lhs.max_items_per_thread == rhs.max_items_per_thread
-        && lhs.unroll_factor == rhs.unroll_factor;
+        && lhs.prefetch_byte_stride == rhs.prefetch_byte_stride && lhs.unroll_factor == rhs.unroll_factor;
   }
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const prefetch_policy& lhs, const prefetch_policy& rhs)
@@ -112,8 +112,8 @@ struct prefetch_policy
     return os
         << "prefetch_policy { .block_threads = " << policy.block_threads << ", .items_per_thread_no_input = "
         << policy.items_per_thread_no_input << ", .min_items_per_thread = " << policy.min_items_per_thread
-        << ", .max_items_per_thread = " << policy.max_items_per_thread << ", .unroll_factor = " << policy.unroll_factor
-        << " }";
+        << ", .max_items_per_thread = " << policy.max_items_per_thread << ", .prefetch_byte_stride = "
+        << policy.prefetch_byte_stride << ", .unroll_factor = " << policy.unroll_factor << " }";
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
