@@ -138,7 +138,7 @@
 #    define _CCCL_BEGIN_NAMESPACE_STD              \
       _CCCL_PROLOGUE_INCLUDE_CHECK() namespace std \
       {                                            \
-        inline _GLIBCXX_BEGIN_NAMESPACE_VERSION
+        _GLIBCXX_BEGIN_NAMESPACE_VERSION
 #    define _CCCL_END_NAMESPACE_STD  \
       _GLIBCXX_END_NAMESPACE_VERSION \
       }                              \
