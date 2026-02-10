@@ -19,12 +19,12 @@
 template <typename ValueTp>
 struct cccl_iterator_t_mapping
 {
-  bool is_pointer                            = false;
-  int size                                   = 1;
-  int alignment                              = 1;
-  void (*advance)(void*, const void*)        = nullptr;
-  void (*dereference)(const void*, ValueTp*) = nullptr;
-  void (*assign)(const void*, const void*);
+  bool is_pointer                         = false;
+  int size                                = 1;
+  int alignment                           = 1;
+  void (*advance)(void*, const void*)     = nullptr;
+  void (*dereference)(const void*, void*) = nullptr;
+  void (*assign)(void*, const void*)      = nullptr;
 
   using ValueT = ValueTp;
 };
@@ -78,7 +78,7 @@ struct parameter_mapping<cccl_iterator_t>
       return std::format(
         R"output(
 extern "C" __device__ void {0}(void *, const void*);
-extern "C" __device__ void {1}(const void *, const void*);
+extern "C" __device__ void {1}(void *, const void*);
 )output",
         value.advance.name,
         value.dereference.name);
@@ -87,11 +87,10 @@ extern "C" __device__ void {1}(const void *, const void*);
     return std::format(
       R"input(
 extern "C" __device__ void {0}(void *, const void*);
-extern "C" __device__ void {1}(const void *, {2}*);
+extern "C" __device__ void {1}(const void *, void*);
 )input",
       value.advance.name,
-      value.dereference.name,
-      cccl_type_enum_to_name<storage_type>(value.value_type.type));
+      value.dereference.name);
   }
 };
 #endif

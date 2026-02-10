@@ -21,9 +21,8 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._iterators import IteratorBase
 from ..op import OpAdapter, OpKind, make_op_adapter
-from ..typing import DeviceArrayLike, GpuStruct
+from ..typing import DeviceArrayLike, GpuStruct, IteratorBase
 
 
 class _SegmentedReduce:
@@ -34,7 +33,6 @@ class _SegmentedReduce:
         "start_offsets_in_cccl",
         "end_offsets_in_cccl",
         "h_init_cccl",
-        "op",
         "op_cccl",
     ]
 
@@ -55,6 +53,7 @@ class _SegmentedReduce:
 
         # Compile the op with value types
         value_type = get_value_type(h_init)
+
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
         self.build_result = call_build(
@@ -72,6 +71,7 @@ class _SegmentedReduce:
         temp_storage,
         d_in,
         d_out,
+        op: Callable | OpAdapter,
         num_segments: int,
         start_offsets_in,
         end_offsets_in,
@@ -86,6 +86,11 @@ class _SegmentedReduce:
         set_cccl_iterator_state(self.d_out_cccl, d_out)
         set_cccl_iterator_state(self.start_offsets_in_cccl, start_offsets_in)
         set_cccl_iterator_state(self.end_offsets_in_cccl, end_offsets_in)
+
+        # Update op state for stateful ops
+        op_adapter = make_op_adapter(op)
+        op_adapter.update_op_state(self.op_cccl)
+
         self.h_init_cccl.state = to_cccl_value_state(h_init)
 
         stream_handle = validate_and_get_stream(stream)
@@ -188,6 +193,7 @@ def segmented_reduce(
         None,
         d_in,
         d_out,
+        op,
         num_segments,
         start_offsets_in,
         end_offsets_in,
@@ -199,6 +205,7 @@ def segmented_reduce(
         tmp_storage,
         d_in,
         d_out,
+        op,
         num_segments,
         start_offsets_in,
         end_offsets_in,
