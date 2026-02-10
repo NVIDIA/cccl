@@ -736,20 +736,6 @@ public:
     };
   }
 
-  //! Release context resources using the provided stream.
-  //!
-  //! Normally this is called automatically during finalize(), but when using
-  //! finalize_as_graph() to create a CUDA graph that can be launched multiple
-  //! times, resources must be released manually once the graph will no longer
-  //! be used, since the same resources may be accessed repeatedly during graph replay.
-  void release_resources(cudaStream_t stream)
-  {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    payload->*[stream](auto& self) {
-      self.release_resources(stream);
-    };
-  }
-
   //! Add a resource to be managed by this context
   void add_resource(::std::shared_ptr<ctx_resource> resource)
   {
@@ -759,8 +745,26 @@ public:
     };
   }
 
-  //! Export all resources by moving them to a new ctx_resource_set
-  //! The current context will have no resources after this operation
+  //! Release context resources using the provided stream.
+  //! Normally called automatically during finalize(); when using finalize_as_graph()
+  //! for replayable graphs, call once the graph will no longer be used.
+  void release_resources(cudaStream_t stream)
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    payload->*[stream](auto& self) {
+      self.release_resources(stream);
+    };
+  }
+
+  //! Take all resources from \p other (e.g. a nested context) and merge them into this context.
+  //! \p other will have no resources after this call.
+  void import_resources_from(context& other)
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    import_resources(other.export_resources());
+  }
+
+private:
   ctx_resource_set export_resources()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
@@ -769,8 +773,6 @@ public:
     };
   }
 
-  //! Import all resources from another ctx_resource_set
-  //! The other set will be left empty after this operation
   void import_resources(ctx_resource_set&& other)
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
@@ -779,6 +781,7 @@ public:
     };
   }
 
+public:
   void submit()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");

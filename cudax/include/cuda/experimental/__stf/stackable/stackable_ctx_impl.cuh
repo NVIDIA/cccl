@@ -565,8 +565,7 @@ public:
 
           // Transfer resources from nested context to parent context
           // This works because the completion of the parent context depends on the completion of the nested context
-          auto exported_resources = ctx.export_resources();
-          parent_ctx.import_resources(mv(exported_resources));
+          parent_ctx.import_resources_from(ctx);
 
           // Add dependencies from the get operations to the graph node that
           // corresponds to the child graph or conditional node
