@@ -96,12 +96,12 @@ jobs:
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
             --env "SCCACHE_DIST_AUTH_TOKEN=$(
-                   curl -fsSL -H "Authorization: Bearer $(
-                     curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-                       "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=token.rapids.nvidia.com" \
-                   | jq -r '.value'
-                   )" https://token.rapids.nvidia.com/gh/token/exchange \
-                 | jq -r '.token')" \
+              curl -fsSL -H "Authorization: Bearer $(
+                curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+                  "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=token.rapids.nvidia.com" \
+              | jq -r '.value'
+              )" https://token.rapids.nvidia.com/gh/token/exchange \
+            | jq -r '.token')" \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
             -- /ci.sh
 

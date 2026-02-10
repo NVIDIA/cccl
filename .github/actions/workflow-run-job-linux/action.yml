@@ -43,16 +43,6 @@ runs:
         echo "JOB_IMAGE=${{inputs.image}}"         | tee -a $GITHUB_ENV
         echo "JOB_CUDA=${{inputs.cuda}}"           | tee -a $GITHUB_ENV
         echo "JOB_HOST=${{inputs.host}}"           | tee -a $GITHUB_ENV
-        # Build cluster auth
-        cat <<EOF >> "$GITHUB_ENV"
-        SCCACHE_DIST_AUTH_TOKEN=$(
-          curl -fsSL -H "Authorization: Bearer $(
-            curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-              "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=token.rapids.nvidia.com" \
-          | jq -r '.value'
-          )" https://token.rapids.nvidia.com/gh/token/exchange \
-        | jq -r '.token')
-        EOF
 
         echo "::endgroup::"
 
@@ -235,6 +225,13 @@ runs:
           --env "JOB_ID=$JOB_ID" \
           --env "NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-}" \
           --env "RUNNER_TEMP=$RUNNER_TEMP" \
+          --env "SCCACHE_DIST_AUTH_TOKEN=$(
+            curl -fsSL -H "Authorization: Bearer $(
+              curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+                "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=token.rapids.nvidia.com" \
+            | jq -r '.value'
+            )" https://token.rapids.nvidia.com/gh/token/exchange \
+          | jq -r '.token')" \
           --volume "${ARTIFACT_ARCHIVES}:${ARTIFACT_ARCHIVES}" \
           --volume "${ARTIFACT_UPLOAD_STAGE}:${ARTIFACT_UPLOAD_STAGE}" \
           --volume "${WORKFLOW_DIR}:${WORKFLOW_DIR}" \
