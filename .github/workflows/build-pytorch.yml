@@ -51,9 +51,6 @@ jobs:
         env:
           CCCL_TAG: ${{ inputs.override_cccl_tag }}
           CCCL_VERSION: ${{ inputs.override_cccl_version }}
-          # Build cluster auth
-          SCCACHE_DIST_TOKEN: "${{ secrets.SCCACHE_DIST_TOKEN }}"
-          SCCACHE_DIST_AUTH_TOKEN_VAR: "SCCACHE_DIST_TOKEN"
           # Retry intermittent failures
           SCCACHE_DIST_MAX_RETRIES: "inf"
           # Never fallback to building locally, fail instead
@@ -98,6 +95,13 @@ jobs:
             --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
+            --env "SCCACHE_DIST_AUTH_TOKEN=$(
+                   curl -fsSL -H "Authorization: Bearer $(
+                     curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+                       "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=token.rapids.nvidia.com" \
+                   | jq -r '.value'
+                   )" https://token.rapids.nvidia.com/gh/token/exchange \
+                 | jq -r '.token')" \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
             -- /ci.sh
 
