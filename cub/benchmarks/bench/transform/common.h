@@ -37,6 +37,9 @@ struct policy_selector
     auto policy              = cub::detail::transform::prefetch_policy{};
     policy.block_threads     = TUNE_THREADS;
     policy.unroll_factor     = TUNE_UNROLL_FACTOR;
+#    ifdef TUNE_PREFETCH_MULT
+    policy.prefetch_byte_stride = 32 * TUNE_PREFETCH_MULT;
+#    endif //  TUNE_PREFETCH_MULT
 #    ifdef TUNE_ITEMS_PER_THREAD_NO_INPUT
     policy.items_per_thread_no_input = TUNE_ITEMS_PER_THREAD_NO_INPUT;
 #    endif // TUNE_ITEMS_PER_THREAD_NO_INPUT
