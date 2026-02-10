@@ -22,11 +22,11 @@ def __getattr__(name: str):
     if name == "jit":
         try:
             from .decorator import jit as _jit
+
             return _jit
         except ImportError as e:
             raise AttributeError(
-                "cuda.stf.jit requires numba-cuda. "
-                "Install with: pip install numba-cuda"
+                "cuda.stf.jit requires numba-cuda. Install with: pip install numba-cuda"
             ) from e
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
@@ -47,6 +47,7 @@ def has_numba_cuda() -> bool:
     """True if numba-cuda is available (required for the jit decorator)."""
     try:
         from numba import cuda  # noqa: F401
+
         return True
     except ImportError:
         return False
