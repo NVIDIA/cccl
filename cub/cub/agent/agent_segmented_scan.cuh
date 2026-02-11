@@ -456,6 +456,8 @@ struct agent_segmented_scan
           }
         }
       }
+      // Avoiding synchronization at the end of last chunk
+      // could save up to 10% of performance for very short segments
       if (++chunk_id < n_chunks)
       {
         __syncthreads();

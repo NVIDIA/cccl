@@ -25,6 +25,7 @@
 #include <cub/warp/warp_scan.cuh>
 #include <cub/warp/warp_store.cuh>
 
+#include <cuda/ptx>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -140,8 +141,8 @@ struct agent_warp_segmented_scan
       , d_out(d_out)
       , scan_op(scan_op)
       , initial_value(initial_value)
-      , warp_id(threadIdx.x >> cub::detail::log2_warp_threads)
-      , lane_id(threadIdx.x % cub::detail::warp_threads)
+      , warp_id(::cuda::ptx::get_sreg_warpid())
+      , lane_id(::cuda::ptx::get_sreg_laneid())
   {}
 
   template <int NumSegments = max_segments_per_warp, class = ::cuda::std::enable_if_t<(NumSegments == 1)>>
@@ -196,6 +197,8 @@ struct agent_warp_segmented_scan
       {
         storer.Store(d_out + out_offset, thread_values, chunk_size);
       }
+      // Avoiding synchronization at the end of last chunk
+      // could save up to 10% of performance for very short segments
       if (++chunk_id < n_chunks)
       {
         __syncwarp();
