@@ -16,6 +16,7 @@
 #include <cub/agent/agent_for.cuh>
 #include <cub/detail/mdspan_utils.cuh> // is_sub_size_static
 #include <cub/detail/type_traits.cuh> // implicit_prom_t
+#include <cub/device/dispatch/tuning/tuning_for.cuh>
 
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -85,14 +86,18 @@ using can_regain_copy_freedom =
 // clang-format on
 
 // This kernel is used when the block size is not known at compile time
-template <class ChainedPolicyT, class OffsetT, class OpT>
+template <class PolicySelector, class OffsetT, class OpT>
+#if _CCCL_HAS_CONCEPTS()
+  requires for_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
 CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(_CCCL_GRID_CONSTANT const OffsetT num_items, OpT op)
 {
-  using active_policy_t = typename ChainedPolicyT::ActivePolicy::for_policy_t;
-  using agent_t         = agent_block_striped_t<active_policy_t, OffsetT, OpT>;
+  static constexpr for_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  using agent_policy_t               = policy_t<policy.block_threads, policy.items_per_thread>;
+  using agent_t                      = agent_block_striped_t<agent_policy_t, OffsetT, OpT>;
 
   const auto block_threads  = static_cast<OffsetT>(blockDim.x);
-  const auto items_per_tile = active_policy_t::items_per_thread * block_threads;
+  const auto items_per_tile = policy.items_per_thread * block_threads;
   const auto tile_base      = static_cast<OffsetT>(blockIdx.x) * items_per_tile;
   const auto num_remaining  = num_items - tile_base;
   const auto items_in_tile  = static_cast<OffsetT>(num_remaining < items_per_tile ? num_remaining : items_per_tile);
@@ -108,16 +113,19 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(_CCCL_GRID_CONSTANT const Offse
 }
 
 // This kernel is used when the block size is known at compile time
-template <class ChainedPolicyT, class OffsetT, class OpT>
+template <class PolicySelector, class OffsetT, class OpT>
+#if _CCCL_HAS_CONCEPTS()
+  requires for_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
 CUB_DETAIL_KERNEL_ATTRIBUTES //
-__launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
+__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads)) //
   void static_kernel(_CCCL_GRID_CONSTANT const OffsetT num_items, OpT op)
 {
-  using active_policy_t = typename ChainedPolicyT::ActivePolicy::for_policy_t;
-  using agent_t         = agent_block_striped_t<active_policy_t, OffsetT, OpT>;
+  static constexpr for_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  using agent_policy_t               = policy_t<policy.block_threads, policy.items_per_thread>;
+  using agent_t                      = agent_block_striped_t<agent_policy_t, OffsetT, OpT>;
 
-  constexpr auto block_threads  = active_policy_t::block_threads;
-  constexpr auto items_per_tile = active_policy_t::items_per_thread * block_threads;
+  constexpr auto items_per_tile = policy.items_per_thread * policy.block_threads;
 
   const auto tile_base     = static_cast<OffsetT>(blockIdx.x) * items_per_tile;
   const auto num_remaining = num_items - tile_base;
@@ -125,11 +133,11 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
 
   if (items_in_tile == items_per_tile)
   {
-    agent_t{tile_base, op}.template consume_tile<true>(items_per_tile, block_threads);
+    agent_t{tile_base, op}.template consume_tile<true>(items_per_tile, policy.block_threads);
   }
   else
   {
-    agent_t{tile_base, op}.template consume_tile<false>(items_in_tile, block_threads);
+    agent_t{tile_base, op}.template consume_tile<false>(items_in_tile, policy.block_threads);
   }
 }
 

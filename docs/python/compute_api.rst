@@ -40,8 +40,6 @@ Operators
    This enum defines the types of operations that can be performed
    in parallel algorithms, including arithmetic, logical, and bitwise operations.
 
-   .. py:attribute:: STATELESS
-   .. py:attribute:: STATEFUL
    .. py:attribute:: PLUS
    .. py:attribute:: MINUS
    .. py:attribute:: MULTIPLIES
@@ -65,8 +63,15 @@ Operators
    .. py:attribute:: MINIMUM
    .. py:attribute:: MAXIMUM
 
+
 Utilities
 ---------
 
 .. automodule:: cuda.compute.struct
+   :members:
+
+Typing
+------
+
+.. automodule:: cuda.compute.typing
    :members:
