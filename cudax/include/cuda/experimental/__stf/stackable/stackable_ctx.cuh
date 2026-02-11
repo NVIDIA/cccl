@@ -689,7 +689,6 @@ public:
   /* Create a logical data in the stackable ctx : in order to make it possible
    * to export all the way down to the root context, we create the logical data
    * in the root, and import them. */
-  template <typename... Args>
   stackable_logical_data(stackable_ctx sctx, int ctx_offset, bool ld_from_shape, logical_data<T> ld, bool can_export)
       : pimpl(::std::make_shared<impl>(sctx, ctx_offset, ld_from_shape, mv(ld), can_export))
   {
