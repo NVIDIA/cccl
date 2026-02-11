@@ -128,4 +128,5 @@ known-first-party = [
 markers = [
   "no_verify_sass: skip SASS verification check",
   "large: tests requiring large device memory allocations",
+  "no_numba: tests that should not import numba or numba.cuda",
 ]
