@@ -35,6 +35,8 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
 /**
  * @brief A random-access input wrapper for dereferencing array values through texture cache.
  *        Uses newer Kepler-style texture objects.
@@ -90,7 +92,7 @@ CUB_NAMESPACE_BEGIN
  * @endrst
  */
 template <typename T, typename OffsetT = ptrdiff_t>
-class CCCL_DEPRECATED TexObjInputIterator
+class TexObjInputIterator
 {
 public:
   // Required iterator traits
@@ -266,9 +268,8 @@ public:
   }
 
 #if !_CCCL_COMPILER(NVRTC)
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
   /// ostream operator
-  friend ::std::ostream& operator<<(::std::ostream& os, const self_type& itr) _CCCL_SUPPRESS_DEPRECATED_POP
+  friend ::std::ostream& operator<<(::std::ostream& os, const self_type& itr)
   {
     os << "cub::TexObjInputIterator( ptr=" << itr.ptr << ", offset=" << itr.tex_offset << ", tex_obj=" << itr.tex_obj
        << " )";
@@ -297,5 +298,9 @@ private:
     return *reinterpret_cast<T*>(words);
   }
 };
+} // namespace detail
+
+template <typename T, typename OffsetT = ptrdiff_t>
+using TexObjInputIterator CCCL_DEPRECATED = detail::TexObjInputIterator<T, OffsetT>;
 
 CUB_NAMESPACE_END
