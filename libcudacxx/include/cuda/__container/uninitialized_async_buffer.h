@@ -111,7 +111,7 @@ private:
   [[nodiscard]] _CCCL_HIDE_FROM_ABI _Tp* __get_data() const noexcept
   {
     size_t __space = __get_allocation_size(__count_);
-    void* __ptr                  = __buf_;
+    void* __ptr    = __buf_;
     return ::cuda::std::launder(
       static_cast<_Tp*>(::cuda::std::align(__alignment_, __count_ * sizeof(_Tp), __ptr, __space)));
   }
@@ -200,9 +200,11 @@ public:
   //! @note Depending on the alignment requirements of `T` the size of the
   //! underlying allocation might be larger than `count * sizeof(T)`. Only
   //! allocates memory when \p __count > 0
-  _CCCL_HIDE_FROM_ABI
-  __uninitialized_async_buffer(
-    __async_resource __mr, const ::cuda::stream_ref __stream, const size_t __count, const size_t __alignment = alignof(_Tp))
+  _CCCL_HIDE_FROM_ABI __uninitialized_async_buffer(
+    __async_resource __mr,
+    const ::cuda::stream_ref __stream,
+    const size_t __count,
+    const size_t __alignment = alignof(_Tp))
       : __mr_(::cuda::std::move(__mr))
       , __stream_(__stream)
       , __count_(__count)
@@ -210,15 +212,14 @@ public:
       , __buf_(__count_ == 0 ? nullptr : __mr_.allocate(__stream_, __get_allocation_size(__count_), __alignment_))
   {}
 
- private:
+private:
   static size_t __validate_alignment_param(size_t __a)
   {
     ::cuda::__validate_allocation_alignment(__a, alignof(_Tp));
     return __a;
   }
 
- public:
-
+public:
   _CCCL_HIDE_FROM_ABI __uninitialized_async_buffer(const __uninitialized_async_buffer&)            = delete;
   _CCCL_HIDE_FROM_ABI __uninitialized_async_buffer& operator=(const __uninitialized_async_buffer&) = delete;
 
@@ -262,11 +263,11 @@ public:
     {
       __mr_.deallocate(__stream_, __buf_, __get_allocation_size(__count_), __alignment_);
     }
-    __mr_     = ::cuda::std::move(__other.__mr_);
-    __stream_ = ::cuda::std::exchange(__other.__stream_, ::cuda::stream_ref{::cudaStream_t{}});
-    __count_  = ::cuda::std::exchange(__other.__count_, 0);
+    __mr_        = ::cuda::std::move(__other.__mr_);
+    __stream_    = ::cuda::std::exchange(__other.__stream_, ::cuda::stream_ref{::cudaStream_t{}});
+    __count_     = ::cuda::std::exchange(__other.__count_, 0);
     __alignment_ = ::cuda::std::exchange(__other.__alignment_, alignof(_Tp));
-    __buf_    = ::cuda::std::exchange(__other.__buf_, nullptr);
+    __buf_       = ::cuda::std::exchange(__other.__buf_, nullptr);
     return *this;
   }
 
