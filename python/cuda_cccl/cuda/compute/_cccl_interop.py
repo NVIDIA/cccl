@@ -122,7 +122,7 @@ class _IteratorIO(enum.Enum):
 
 
 def _to_cccl_iter(
-    it: IteratorBase | DeviceArrayLike | None, io_kind: _IteratorIO
+    it: DeviceArrayLike | IteratorBase | None, io_kind: _IteratorIO
 ) -> Iterator:
     if it is None:
         return _none_to_cccl_iter()
@@ -169,7 +169,9 @@ def set_cccl_value_state(cccl_value: Value, array_or_struct: np.ndarray | GpuStr
     cccl_value.state = to_cccl_value_state(array_or_struct)
 
 
-def get_value_type(d_in: IteratorBase | DeviceArrayLike | GpuStruct | np.ndarray):
+def get_value_type(
+    d_in: DeviceArrayLike | IteratorBase | GpuStruct | np.ndarray,
+):
     from .struct import _Struct
 
     if isinstance(d_in, IteratorBase):
