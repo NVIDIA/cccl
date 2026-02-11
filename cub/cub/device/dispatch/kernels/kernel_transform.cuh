@@ -213,6 +213,7 @@ template < // const transform_policy& Policy,
   int items_per_thread,
   int vec_size,
   int PrefetchByteStride,
+  int PrefetchUnrollFactor,
   typename Offset,
   typename F,
   typename RandomAccessIteratorOut,
@@ -236,7 +237,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   // if we cannot vectorize or don't have a full tile, fall back to prefetch kernel
   if (!can_vectorize || valid_items != tile_size)
   {
-    transform_kernel_prefetch<block_threads, PrefetchByteStride, items_per_thread / vec_size>(
+    transform_kernel_prefetch<block_threads, PrefetchByteStride, PrefetchUnrollFactor>(
       num_items,
       num_elem_per_thread_prefetch,
       always_true_predicate{},
@@ -1048,7 +1049,8 @@ __launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTE
     transform_kernel_vectorized</*policy*/ policy.vectorized.block_threads,
                                 policy.vectorized.items_per_thread,
                                 policy.vectorized.vec_size,
-                                policy.prefetch.prefetch_byte_stride>(
+                                policy.prefetch.prefetch_byte_stride,
+                                policy.prefetch.unroll_factor>(
       num_items,
       num_elem_per_thread,
       can_vectorize,
