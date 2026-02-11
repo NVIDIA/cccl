@@ -69,17 +69,16 @@ __complement(const ::cute::Layout<_Shape, _Stride>& __layout, ::cuda::std::int64
   if constexpr (__rank > 0)
   {
     constexpr ::cuda::std::make_index_sequence<__rank> __rank_seq{};
-    ::cuda::std::array<int64_t, __rank> __shapes{};
-    ::cuda::std::array<int64_t, __rank> __strides{};
-    ::cuda::std::array<int64_t, __rank> __orders{};
-    ::cuda::experimental::__init_and_sort_layout(__flat_shape, __flat_stride, __shapes, __strides, __orders, __rank_seq);
+    ::cuda::std::array<int64_t, __rank> __shapes;
+    ::cuda::std::array<int64_t, __rank> __strides;
+    ::cuda::experimental::__init_layout(__flat_shape, __flat_stride, __shapes, __strides, __rank_seq);
+    ::cuda::experimental::__sort_by_stride_layout(__shapes, __strides);
     int64_t __accumulated = 1;
     for (::cuda::std::size_t __i = 0; __i < __rank; ++__i)
     {
-      const auto __idx      = __orders[__i];
-      __result_shapes[__i]  = __strides[__idx] / __accumulated;
+      __result_shapes[__i]  = __strides[__i] / __accumulated;
       __result_strides[__i] = __accumulated;
-      __accumulated         = __strides[__idx] * __shapes[__idx];
+      __accumulated         = __strides[__i] * __shapes[__i];
     }
     __result_shapes[__rank]  = __codomain_size / __accumulated;
     __result_strides[__rank] = __accumulated;
