@@ -1020,7 +1020,6 @@ public:
 
 private:
   stackable_logical_data<T> d;
-  data_place dplace;
   mutable task_dep<T, reduce_op, initialize> dep;
 };
 
