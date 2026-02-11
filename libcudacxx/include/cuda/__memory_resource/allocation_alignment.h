@@ -53,8 +53,8 @@ struct allocation_alignment_t
     return __env.query(*this);
   }
 
-  [[nodiscard]] _CCCL_NODEBUG_API static constexpr auto query(::cuda::std::execution::forwarding_query_t) noexcept
-    -> bool
+  [[nodiscard]]
+  _CCCL_NODEBUG_API static constexpr auto query(::cuda::std::execution::forwarding_query_t) noexcept -> bool
   {
     return true;
   }
@@ -65,22 +65,22 @@ struct allocation_alignment_t
 _CCCL_GLOBAL_CONSTANT auto allocation_alignment = allocation_alignment_t{};
 
 //! @brief Returns true if \p __alignment is a power of two and not less than \p __min_alignment.
-_CCCL_HOST_DEVICE inline constexpr bool __is_valid_allocation_alignment(
-  ::cuda::std::size_t __alignment, ::cuda::std::size_t __min_alignment) noexcept
+_CCCL_HOST_DEVICE inline constexpr bool
+__is_valid_allocation_alignment(::cuda::std::size_t __alignment, ::cuda::std::size_t __min_alignment) noexcept
 {
-  return __alignment >= __min_alignment && __alignment != 0
-      && (__alignment & (__alignment - 1)) == 0;
+  return __alignment >= __min_alignment && __alignment != 0 && (__alignment & (__alignment - 1)) == 0;
 }
 
 //! @brief Throws std::invalid_argument if \p __alignment is not a valid allocation alignment
 //! (power of two and at least \p __min_alignment).
-_CCCL_HOST inline void __validate_allocation_alignment(
-  ::cuda::std::size_t __alignment, ::cuda::std::size_t __min_alignment)
+_CCCL_HOST inline void
+__validate_allocation_alignment(::cuda::std::size_t __alignment, ::cuda::std::size_t __min_alignment)
 {
   if (!__is_valid_allocation_alignment(__alignment, __min_alignment))
   {
     ::cuda::std::__throw_invalid_argument(
-      "Invalid allocation alignment: must be a power of two and at least the type's alignment.");
+      "Invalid allocation alignment: must be a power of two and at least the "
+      "type's alignment.");
   }
 }
 

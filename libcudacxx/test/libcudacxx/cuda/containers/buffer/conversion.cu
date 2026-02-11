@@ -17,8 +17,8 @@
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
-#include "helper.h"
 #include "../test_resources.h"
+#include "helper.h"
 #include "types.h"
 
 C2H_CCCLRT_TEST("cuda::buffer conversion", "[container][buffer]", test_types)
