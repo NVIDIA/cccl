@@ -63,12 +63,17 @@ __to_cute_tuple(const ::cuda::std::array<_Tp, _N>& __values, ::cuda::std::index_
 
 /**
  * @brief Initializes dynamic shapes and strides from a CuTe layout.
+ *
+ * @param[in] __shapes_tuple The tuple of shapes.
+ * @param[in] __strides_tuple The tuple of strides.
+ * @param[out] __shapes The array of shapes to initialize.
+ * @param[out] __strides The array of strides to initialize.
  */
 template <class _Shape, class _Stride, ::cuda::std::size_t _Rank, ::cuda::std::size_t... _Is>
 _CCCL_HOST_API constexpr void __init_layout(
   const _Shape& __shapes_tuple,
   const _Stride& __strides_tuple,
-  ::cuda::std::array<::cuda::std::int64_t, _Rank>& __shapes,
+  ::cuda::std::array<::cuda::std::size_t, _Rank>& __shapes,
   ::cuda::std::array<::cuda::std::int64_t, _Rank>& __strides,
   ::cuda::std::index_sequence<_Is...>) noexcept
 {
@@ -78,13 +83,17 @@ _CCCL_HOST_API constexpr void __init_layout(
 
 /**
  * @brief Extracts shape, stride, and order information from CuTe tuples into plain arrays.
+ *
+ * @param[in,out] __shapes The array of shapes to sort.
+ * @param[in,out] __strides The array of strides to sort.
+ * @return The array of orders.
  */
 template <::cuda::std::size_t _Rank>
-_CCCL_HOST_API constexpr ::cuda::std::array<::cuda::std::int64_t, _Rank>
-__sort_by_stride_layout(::cuda::std::array<::cuda::std::int64_t, _Rank>& __shapes,
+_CCCL_HOST_API constexpr ::cuda::std::array<::cuda::std::size_t, _Rank>
+__sort_by_stride_layout(::cuda::std::array<::cuda::std::size_t, _Rank>& __shapes,
                         ::cuda::std::array<::cuda::std::int64_t, _Rank>& __strides) noexcept
 {
-  ::cuda::std::array<::cuda::std::int64_t, _Rank> __orders;
+  ::cuda::std::array<::cuda::std::size_t, _Rank> __orders;
   for (::cuda::std::size_t __i = 0; __i < _Rank; ++__i)
   {
     __orders[__i] = __i;
@@ -104,17 +113,17 @@ __sort_by_stride_layout(::cuda::std::array<::cuda::std::int64_t, _Rank>& __shape
 }
 
 template <class _Shape>
-_CCCL_API constexpr auto __rank_error()
+_CCCL_API constexpr ::cuda::std::size_t __rank_error()
 {
   static_assert(::cuda::std::__always_false_v<_Shape>, "rank must be applied to a static shape");
   return 0;
 }
 
 template <class _Shape>
-constexpr auto __rank_v = __rank_error<_Shape>();
+constexpr ::cuda::std::size_t __rank_v = __rank_error<_Shape>();
 
 template <class... _Values>
-constexpr auto __rank_v<::cute::tuple<_Values...>> = sizeof...(_Values);
+constexpr ::cuda::std::size_t __rank_v<::cute::tuple<_Values...>> = sizeof...(_Values);
 } // namespace cuda::experimental
 
 #  include <cuda/std/__cccl/epilogue.h>
