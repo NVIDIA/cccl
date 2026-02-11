@@ -895,3 +895,83 @@ void TestVectorNoInitResize()
   // thrust::device_vector<IntWithInit>(5).resize(10, thrust::no_init);
 }
 DECLARE_UNITTEST(TestVectorNoInitResize);
+
+void TestVectorEmplaceBack()
+{
+  // host_vector emplace_back
+  {
+    thrust::host_vector<int> hv;
+    hv.emplace_back(1);
+    hv.emplace_back(2);
+    hv.emplace_back(3);
+
+    ASSERT_EQUAL(3lu, hv.size());
+    ASSERT_EQUAL(1, hv[0]);
+    ASSERT_EQUAL(2, hv[1]);
+    ASSERT_EQUAL(3, hv[2]);
+  }
+
+  // device_vector emplace_back
+  {
+    thrust::device_vector<int> dv;
+    dv.emplace_back(1);
+    dv.emplace_back(2);
+    dv.emplace_back(3);
+
+    ASSERT_EQUAL(3lu, dv.size());
+    ASSERT_EQUAL(1, (int) dv[0]);
+    ASSERT_EQUAL(2, (int) dv[1]);
+    ASSERT_EQUAL(3, (int) dv[2]);
+  }
+}
+DECLARE_UNITTEST(TestVectorEmplaceBack);
+
+void TestVectorEmplaceBackReturnsReference()
+{
+  // host_vector emplace_back returns a reference to the inserted element
+  {
+    thrust::host_vector<int> hv;
+    auto& ref = hv.emplace_back(42);
+
+    ASSERT_EQUAL(1lu, hv.size());
+    ASSERT_EQUAL(42, ref);
+    ASSERT_EQUAL(42, hv[0]);
+  }
+
+  // device_vector emplace_back returns a reference to the inserted element
+  {
+    thrust::device_vector<int> dv;
+    auto ref = dv.emplace_back(42);
+
+    ASSERT_EQUAL(1lu, dv.size());
+    ASSERT_EQUAL(42, (int) ref);
+    ASSERT_EQUAL(42, (int) dv[0]);
+  }
+}
+DECLARE_UNITTEST(TestVectorEmplaceBackReturnsReference);
+
+void TestVectorEmplaceBackWithConstructorArgs()
+{
+  // This is the motivating use case from the issue:
+  // thrust::host_vector<thrust::device_vector<int>> out_buffers;
+  // out_buffers.emplace_back(42);
+  // should construct a device_vector<int> with 42 elements.
+  {
+    thrust::host_vector<thrust::device_vector<int>> out_buffers;
+    auto& ref = out_buffers.emplace_back(42);
+
+    ASSERT_EQUAL(1lu, out_buffers.size());
+    ASSERT_EQUAL(42lu, ref.size());
+    ASSERT_EQUAL(42lu, out_buffers[0].size());
+  }
+
+  // emplace_back with no arguments should default-construct the element
+  {
+    thrust::host_vector<thrust::host_vector<int>> hv;
+    auto& ref = hv.emplace_back();
+
+    ASSERT_EQUAL(1lu, hv.size());
+    ASSERT_EQUAL(0lu, ref.size());
+  }
+}
+DECLARE_UNITTEST(TestVectorEmplaceBackWithConstructorArgs);
