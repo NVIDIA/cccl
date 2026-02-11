@@ -122,6 +122,7 @@ int main()
       EXPECT(created != nullptr);
       EXPECT(get_device_from_stream(created) == current_device);
       verify_stream_green_context(created, view0.g_ctx);
+      cuda_safe_call(cudaStreamDestroy(created));
     }
   }
 

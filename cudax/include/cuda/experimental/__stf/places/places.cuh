@@ -734,12 +734,11 @@ public:
      * @brief Create a stream valid for execution on this place.
      *
      * Expected to be called with this exec place already activated (e.g. from
-     * stream_pool::next(place) which uses exec_place_guard). The default
-     * implementation creates a new stream in the current context via cudaStreamCreate.
+     * stream_pool::next(place) which uses exec_place_guard). Creates a new stream
+     * in the current context via cudaStreamCreateWithFlags(..., cudaStreamNonBlocking).
      * The caller (e.g. stream_pool::next) builds a decorated_stream from the result.
-     * Override for custom place types (e.g. uGPU) if needed.
      */
-    virtual cudaStream_t create_stream() const
+    cudaStream_t create_stream() const
     {
       cudaStream_t stream = nullptr;
       cuda_safe_call(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
@@ -900,8 +899,7 @@ public:
    * @brief Create a stream valid for execution on this place.
    *
    * Call only when the place is already activated (e.g. inside exec_place_guard).
-   * Dispatches to the place's virtual create_stream(). For getting a stream from
-   * the pool, use getStream() / pick_stream() instead.
+   * For getting a stream from the pool, use getStream() / pick_stream() instead.
    *
    * @return A CUDA stream valid for this execution place
    */
