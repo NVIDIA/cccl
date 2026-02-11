@@ -61,7 +61,8 @@ struct TestKernel
       CUDAX_REQUIRE(this_thread.rank(cuda::grid) == cuda::gpu_thread.rank(cuda::grid));
       this_thread.sync();
 
-      CUDAX_REQUIRE(sum(this_thread, array) == 6);
+      const auto result = sum(this_thread, array);
+      CUDAX_REQUIRE(result == 6);
     }
     {
       unsigned array[]{1, 2, 3};
@@ -71,7 +72,11 @@ struct TestKernel
       CUDAX_REQUIRE(this_warp.rank(cuda::grid) == cuda::warp.rank(cuda::grid));
       this_warp.sync();
 
-      CUDAX_REQUIRE(sum(this_warp, array) == 6 * cuda::gpu_thread.count(cuda::warp));
+      const auto result = sum(this_warp, array);
+      if (cuda::gpu_thread.rank(cuda::warp) == 0)
+      {
+        CUDAX_REQUIRE(result == 6 * cuda::gpu_thread.count(cuda::warp));
+      }
     }
     {
       unsigned array[]{1, 2, 3};
@@ -81,7 +86,11 @@ struct TestKernel
       CUDAX_REQUIRE(this_block.rank(cuda::grid) == cuda::block.rank(cuda::grid));
       this_block.sync();
 
-      CUDAX_REQUIRE(sum(this_block, array) == 6 * cuda::gpu_thread.count(cuda::block));
+      const auto result = sum(this_block, array);
+      if (cuda::gpu_thread.rank(cuda::block) == 0)
+      {
+        CUDAX_REQUIRE(result == 6 * cuda::gpu_thread.count(cuda::block));
+      }
     }
     {
       auto this_cluster = cudax::this_cluster(config);

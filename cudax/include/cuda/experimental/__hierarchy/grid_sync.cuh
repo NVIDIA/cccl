@@ -79,15 +79,6 @@ _CCCL_DEVICE_API inline void __grid_sync()
                      : "=r"(__old_barrier_value)
                      : "l"(__bar_ptr), "r"(__nblocks)
                      : "memory");
-      }),
-      ({
-        ::__threadfence();
-        __old_barrier_value = ::atomicAdd(__bar_ptr, __nblocks);
-      }))
-
-    NV_IF_ELSE_TARGET(
-      NV_PROVIDES_SM_70,
-      ({
         unsigned __curr_barrier_value;
         do
         {
@@ -96,8 +87,11 @@ _CCCL_DEVICE_API inline void __grid_sync()
           !::cuda::experimental::__cg_imported::__grid_barrier_has_flipped(__old_barrier_value, __curr_barrier_value));
       }),
       ({
+        ::__threadfence();
+        __old_barrier_value = ::atomicAdd(__bar_ptr, __nblocks);
         while (!::cuda::experimental::__cg_imported::__grid_barrier_has_flipped(__old_barrier_value, *__bar_ptr))
-          ;
+        {
+        }
         ::__threadfence();
       }))
   }
