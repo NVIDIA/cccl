@@ -556,7 +556,7 @@ template <class _Tp>
   if constexpr (is_same_v<_Tp, float>)
   {
     __realx_close_bound = _Tp{0.99f};
-    __imagx_small_bound = _Tp{1.0e-5f};
+    __imagx_small_bound = _Tp{1.0e-6f};
   }
 
   // Calculate the same thing, but in a more stable way on this interval.
@@ -671,7 +671,7 @@ template <class _Tp>
 
   if constexpr (is_same_v<_Tp, float>)
   {
-    __imagx_small_bound_override = _Tp{6.0e-08f};
+    __imagx_small_bound_override = _Tp{1.0e-06f};
   }
   if (__imagx < __imagx_small_bound_override && __realx < _Tp{1})
   {
