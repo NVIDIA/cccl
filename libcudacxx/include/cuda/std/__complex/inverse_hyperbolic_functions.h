@@ -520,7 +520,7 @@ template <class _Tp>
   // as evaluation the sqrt itself in extended precision.
 
   // Get re^2 + im^2 + 1 in extended precision.
-  // The low part of re^2 doesn't seem to matter.
+  // The low part of im^2 doesn't seem to matter.
   const _Tp __realx_sq_hi = __realx * __realx;
   const _Tp __realx_sq_lo = ::cuda::std::fma(__realx, __realx, -__realx_sq_hi);
 
