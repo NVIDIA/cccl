@@ -192,6 +192,28 @@ class RawOp(_OpAdapter):
 OpAdapter = _OpAdapter
 
 
+def _jit_op_adapter_factory():
+    # helper that tries to import `_jit.py`. If it fails,
+    # returns a function that raises an appropriate error when called.
+    try:
+        from ._jit import to_jit_op_adapter
+
+        return to_jit_op_adapter
+    except ModuleNotFoundError as e:
+        if "numba" in str(e):
+
+            def _missing_jit_adapter(op):
+                raise ImportError(
+                    "numba-cuda is required to JIT compile Python callables"
+                )
+
+            return _missing_jit_adapter
+        raise
+
+
+to_jit_op_adapter = _jit_op_adapter_factory()
+
+
 def make_op_adapter(op) -> OpAdapter:
     """
     Create an Op from a callable or well-known OpKind.
@@ -202,8 +224,6 @@ def make_op_adapter(op) -> OpAdapter:
     Returns:
         A value with appropriate subtype of _BaseOp
     """
-    from ._jit import to_jit_op_adapter
-
     # Already an _OpAdapter instance:
     if isinstance(op, _OpAdapter):
         return op

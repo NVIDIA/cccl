@@ -13,7 +13,7 @@ import struct
 import textwrap
 import uuid
 from types import new_class
-from typing import Callable, Hashable, List, Tuple
+from typing import TYPE_CHECKING, Callable, Hashable, List, Tuple
 
 import numba
 import numba.cuda
@@ -48,7 +48,9 @@ from ._utils.protocols import (
     is_device_array,
 )
 from .op import OpAdapter
-from .typing import DeviceArrayLike
+
+if TYPE_CHECKING:
+    from .typing import DeviceArrayLike
 
 # -----------------------------------------------------------------------------
 # Struct registration and casting
