@@ -23,39 +23,28 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
-#  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/array>
-#  include <cuda/std/cstdint>
+#  include <cuda/std/__algorithm/min.h>
+#  include <cuda/std/__numeric/gcd_lcm.h>
 
 #  include <cuda/experimental/__copy/cute/utils.cuh>
 
 #  include <cute/layout.hpp>
-#  include <cute/tensor_impl.hpp>
+
+#  if !_CCCL_COMPILER(NVRTC)
+#    include <stdexcept>
+#  endif // !_CCCL_COMPILER(NVRTC)
 //
 #  include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
-/**
- * @brief Runtime version of the CuTe expression
- *        `common_layout =coalesce(composition(layoutA, right_inverse(layoutB)))`.
- *        `return size(layout<0>(common_layout))`.
- *
- * @par Algorithm
- * 1. Sort both layouts by stride.
- * 2. Iterate over both layouts in lockstep.
- * 3. Accumulate the product of shapes when the contiguous dimensions match, exit otherwise.
- *
- * @return The number of contiguous elements of the maximal common layout.
- */
 template <class _ShapeA, class _StrideA, class _ShapeB, class _StrideB>
-[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::int64_t __max_common_contiguos_size(
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::int64_t __max_common_contiguous_size(
   const ::cute::Layout<_ShapeA, _StrideA>& __layout_a, const ::cute::Layout<_ShapeB, _StrideB>& __layout_b) noexcept
 {
   using ::cuda::std::int64_t;
-  using ::cuda::std::size_t;
-  constexpr size_t __rank = __rank_v<_ShapeA>;
-  static_assert(__rank == __rank_v<_ShapeB>);
+  constexpr auto __rank = __rank_v<_ShapeA>;
+  static_assert(__rank == __rank_v<_ShapeB>, "The ranks of the layouts must be the same");
   if constexpr (__rank == 0)
   {
     return int64_t{1};
@@ -65,68 +54,81 @@ template <class _ShapeA, class _StrideA, class _ShapeB, class _StrideB>
     constexpr ::cuda::std::make_index_sequence<__rank> __rank_seq{};
     ::cuda::std::array<int64_t, __rank> __shapes_a;
     ::cuda::std::array<int64_t, __rank> __strides_a;
-    ::cuda::std::array<int64_t, __rank> __order_a;
     ::cuda::std::array<int64_t, __rank> __shapes_b;
     ::cuda::std::array<int64_t, __rank> __strides_b;
-    ::cuda::std::array<int64_t, __rank> __order_b;
-    ::cuda::experimental::__init_and_sort_layout(
-      __layout_a.shape(), __layout_a.stride(), __shapes_a, __strides_a, __order_a, __rank_seq);
-    ::cuda::experimental::__init_and_sort_layout(
-      __layout_b.shape(), __layout_b.stride(), __shapes_b, __strides_b, __order_b, __rank_seq);
-    int64_t __curr_a = 1;
-    int64_t __curr_b = 1;
-    int64_t __common = 1;
-    size_t __i       = 0;
-    size_t __j       = 0;
+    ::cuda::experimental::__init_layout(__layout_a.shape(), __layout_a.stride(), __shapes_a, __strides_a, __rank_seq);
+    ::cuda::experimental::__init_layout(__layout_b.shape(), __layout_b.stride(), __shapes_b, __strides_b, __rank_seq);
+    const auto __order_a     = ::cuda::experimental::__sort_by_stride_layout<__rank>(__shapes_a, __strides_a);
+    const auto __order_b     = ::cuda::experimental::__sort_by_stride_layout<__rank>(__shapes_b, __strides_b);
+    int64_t __curr_a         = 1;
+    int64_t __curr_b         = 1;
+    ::cuda::std::int64_t __i = 0;
+    ::cuda::std::int64_t __j = 0;
     while (__i < __rank && __j < __rank)
     {
-      while (__i < __rank && __shapes_a[__order_a[__i]] == 1) // skip size-1 modes in A
-      {
-        ++__i;
-      }
-      while (__j < __rank && __shapes_b[__order_b[__j]] == 1) // skip size-1 modes in B
-      {
-        ++__j;
-      }
-      if (__i >= __rank || __j >= __rank)
-      {
-        break;
-      }
+      // printf("A: %ld, sp:%ld, str:%ld, o:%ld\n", __i, __shapes_a[__i], __strides_a[__i], __order_a[__i]);
+      // printf("B: %ld, sp:%ld, str:%ld, o:%ld\n", __j, __shapes_b[__j], __strides_b[__j], __order_b[__j]);
+      // while (__i < __rank && __shapes_a[__i] == 1) // skip size-1 modes in A
+      //{
+      //   ++__i;
+      // }
+      // while (__j < __rank && __shapes_b[__j] == 1) // skip size-1 modes in B
+      //{
+      //   ++__j;
+      // }
+      // if (__i >= __rank || __j >= __rank)
+      //{
+      //   break;
+      // }
       const auto __dim_a = __order_a[__i];
       const auto __dim_b = __order_b[__j];
-      // Both must refer to the same original dimension and be contiguous
-      if (__dim_a != __dim_b || __strides_a[__dim_a] != __curr_a || __strides_b[__dim_b] != __curr_b)
+      printf("@@ A: %ld, sp:%ld, str:%ld, o:%ld, curr: %ld\n",
+             __i,
+             __shapes_a[__i],
+             __strides_a[__i],
+             __order_a[__i],
+             __curr_a);
+      printf("@@ B: %ld, sp:%ld, str:%ld, o:%ld, curr: %ld\n",
+             __j,
+             __shapes_b[__j],
+             __strides_b[__j],
+             __order_b[__j],
+             __curr_b);
+      //  Both must refer to the same original dimension and be contiguous
+      if (__dim_a != __dim_b //
+          || (__strides_a[__i] != __curr_a && __strides_a[__i] != 0 && __shapes_a[__i] != 1)
+          || (__strides_b[__j] != __curr_b && __strides_b[__j] != 0 && __shapes_b[__j] != 1))
       {
         break;
       }
-      __common *= __shapes_a[__dim_a];
-      __curr_a *= __shapes_a[__dim_a];
-      __curr_b *= __shapes_b[__dim_b];
+      __curr_a *= __shapes_a[__i];
+      __curr_b *= __shapes_b[__j];
       ++__i;
       ++__j;
     }
-    return __common;
+    return ::cuda::std::gcd(__curr_a, __curr_b);
   }
 }
 
 /**
- * @brief Runtime version of the CuTe `max_common_layout`
+ * @brief  Computes the maximal common layout between two layouts. The layouts may have different ranks.
  *
- * Computes the maximal common layout between two layouts.
+ * Runtime version of the CuTe `max_common_layout`
  *
+ * @return A stride-1 layout whose size is the minimum of the contiguous sizes of both layouts.
  */
 template <class _ShapeA, class _StrideA, class _ShapeB, class _StrideB>
 [[nodiscard]] _CCCL_HOST_API constexpr auto __max_common_layout(
-  const ::cute::Layout<_ShapeA, _StrideA>& __layout_a, const ::cute::Layout<_ShapeB, _StrideB>& __layout_b) noexcept
+  const ::cute::Layout<_ShapeA, _StrideA>& __layout_a, const ::cute::Layout<_ShapeB, _StrideB>& __layout_b)
 {
-  if constexpr (::cute::is_static<_StrideA>::value && ::cute::is_static<_StrideB>::value)
-  {
-    return ::cute::max_common_layout(__layout_a, __layout_b);
-  }
-  else
-  {
-    return ::cute::make_layout(::cuda::experimental::__max_common_contiguos_size(__layout_a, __layout_b));
-  }
+  //  if constexpr (::cute::is_static<_StrideA>::value && ::cute::is_static<_StrideB>::value)
+  //  {
+  //    return ::cute::max_common_layout(__layout_a, __layout_b);
+  //  }
+  //  else
+  //  {
+  return ::cute::make_layout(::cuda::experimental::__max_common_contiguous_size(__layout_a, __layout_b));
+  //  }
 }
 } // namespace cuda::experimental
 

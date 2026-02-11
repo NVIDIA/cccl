@@ -79,21 +79,28 @@ _CCCL_HOST_API constexpr void __init_layout(
 /**
  * @brief Extracts shape, stride, and order information from CuTe tuples into plain arrays.
  */
-template <class _Shape, class _Stride, ::cuda::std::size_t _Rank, ::cuda::std::size_t... _Is>
-_CCCL_HOST_API constexpr void __init_and_sort_layout(
-  const _Shape& __shapes_tuple,
-  const _Stride& __strides_tuple,
-  ::cuda::std::array<::cuda::std::int64_t, _Rank>& __shapes,
-  ::cuda::std::array<::cuda::std::int64_t, _Rank>& __strides,
-  ::cuda::std::array<::cuda::std::int64_t, _Rank>& __orders,
-  ::cuda::std::index_sequence<_Is...> __rank_seq) noexcept
+template <::cuda::std::size_t _Rank>
+_CCCL_HOST_API constexpr ::cuda::std::array<::cuda::std::int64_t, _Rank>
+__sort_by_stride_layout(::cuda::std::array<::cuda::std::int64_t, _Rank>& __shapes,
+                        ::cuda::std::array<::cuda::std::int64_t, _Rank>& __strides) noexcept
 {
-  ::cuda::experimental::__init_layout(__shapes_tuple, __strides_tuple, __shapes, __strides, __rank_seq);
-  ((__orders[_Is] = _Is), ...);
+  ::cuda::std::array<::cuda::std::int64_t, _Rank> __orders;
+  for (::cuda::std::size_t __i = 0; __i < _Rank; ++__i)
+  {
+    __orders[__i] = __i;
+  }
   // Sort by strides
   ::cuda::std::stable_sort(__orders.begin(), __orders.end(), [&](auto __a, auto __b) {
     return __strides[__a] < __strides[__b];
   });
+  const auto __shapes1  = __shapes;
+  const auto __strides1 = __strides;
+  for (::cuda::std::size_t __i = 0; __i < _Rank; ++__i)
+  {
+    __shapes[__i]  = __shapes1[__orders[__i]];
+    __strides[__i] = __strides1[__orders[__i]];
+  }
+  return __orders;
 }
 
 template <class _Shape>
