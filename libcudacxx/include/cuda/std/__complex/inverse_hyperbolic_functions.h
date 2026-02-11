@@ -629,7 +629,7 @@ template <class _Tp>
 
   // Here, in a happy coincidence(?), we happen to intermediately calculate an accurate
   // return value for the real part of the answer in the case that __imagx is small,
-  // as you would obtain from the Taylor expansion of asinh. (~ real/sqrt(1 - imag^2)).
+  // as you would obtain from the Taylor expansion of acosh.
   // The following parts of the calculation result in bad catastrophic cancellation for
   // this case, so we save this intermediate value:
   const _Tp __small_x_imag_return_val = __imagx * __recip_sqrt;
