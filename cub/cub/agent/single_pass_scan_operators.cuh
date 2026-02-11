@@ -547,9 +547,9 @@ using default_no_delay_t             = default_no_delay_constructor_t::delay_t;
 template <class T>
 using default_delay_constructor_t =
   // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
-  ::cuda::std::_If<is_primitive<T>::value || ::cuda::std::is_trivially_copyable_v<T>,
-                   fixed_delay_constructor_t<350, 450>,
-                   default_no_delay_constructor_t>;
+  ::cuda::std::conditional_t<is_primitive<T>::value || ::cuda::std::is_trivially_copyable_v<T>,
+                             fixed_delay_constructor_t<350, 450>,
+                             default_no_delay_constructor_t>;
 
 template <class T>
 using default_delay_t = typename default_delay_constructor_t<T>::delay_t;
@@ -557,10 +557,10 @@ using default_delay_t = typename default_delay_constructor_t<T>::delay_t;
 template <class KeyT, class ValueT>
 using default_reduce_by_key_delay_constructor_t =
   // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
-  ::cuda::std::_If<(is_primitive<ValueT>::value || ::cuda::std::is_trivially_copyable_v<ValueT>)
-                     && (sizeof(ValueT) + sizeof(KeyT) < largest_atomic_word_size),
-                   reduce_by_key_delay_constructor_t<350, 450>,
-                   default_delay_constructor_t<KeyValuePair<KeyT, ValueT>>>;
+  ::cuda::std::conditional_t<(is_primitive<ValueT>::value || ::cuda::std::is_trivially_copyable_v<ValueT>)
+                               && (sizeof(ValueT) + sizeof(KeyT) < largest_atomic_word_size),
+                             reduce_by_key_delay_constructor_t<350, 450>,
+                             default_delay_constructor_t<KeyValuePair<KeyT, ValueT>>>;
 
 /**
  * @brief Alias template for a ScanTileState specialized for a given value type, `T`, and memory order `Order`.
@@ -655,7 +655,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_init(
  */
 template <typename T,
           // TODO(bgruber): remove the check for is_primitive<T> in CCCL 4.0
-          bool SINGLE_WORD = detail::is_primitive<T>::value
+          bool single_word = detail::is_primitive<T>::value
                           || (::cuda::std::is_trivially_copyable_v<T>
                               && sizeof(T) < detail::largest_atomic_word_size
                               // TODO(bgruber): a power of two size is not strictly necessary, but the implementation
@@ -1034,7 +1034,7 @@ struct ScanTileState<T, false>
 template <typename ValueT,
           typename KeyT,
           // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
-          bool SINGLE_WORD = (detail::is_primitive<ValueT>::value || ::cuda::std::is_trivially_copyable_v<ValueT>)
+          bool single_word = (detail::is_primitive<ValueT>::value || ::cuda::std::is_trivially_copyable_v<ValueT>)
                           && (sizeof(ValueT) + sizeof(KeyT) < detail::largest_atomic_word_size)>
 struct ReduceByKeyScanTileState;
 
