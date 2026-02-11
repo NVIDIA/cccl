@@ -21,8 +21,8 @@
 
 #include <stdexcept>
 
-#include "helper.h"
 #include "../test_resources.h"
+#include "helper.h"
 #include "types.h"
 
 // Checks if the offsetting resource wrapper correctly got passed the alignment by the buffer constructor.
@@ -108,7 +108,7 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
 
     { // from size with no_init and allocation_alignment env (offset_by_alignment_resource verifies alignment)
       const ::cuda::std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment / 2;
-      const auto env = ::cuda::std::execution::prop{::cuda::allocation_alignment, alignment};
+      const auto env                      = ::cuda::std::execution::prop{::cuda::allocation_alignment, alignment};
       const Buffer buf{stream, resource, 5, cuda::no_init, env};
       CCCLRT_CHECK(check_offseted_pointer_with_alignment(buf.data(), alignment));
       CCCLRT_CHECK(buf.size() == 5);
@@ -223,7 +223,7 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
 
     { // copy construction preserves custom allocation_alignment
       const ::cuda::std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment / 2;
-      const auto env = ::cuda::std::execution::prop{::cuda::allocation_alignment, alignment};
+      const auto env                      = ::cuda::std::execution::prop{::cuda::allocation_alignment, alignment};
       const Buffer input{stream, resource, 5, cuda::no_init, env};
       Buffer buf(input);
       CCCLRT_CHECK(buf.alignment() == alignment);
@@ -264,7 +264,7 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
 
     { // move construction preserves custom allocation_alignment
       const ::cuda::std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment / 2;
-      const auto env = ::cuda::std::execution::prop{::cuda::allocation_alignment, alignment};
+      const auto env                      = ::cuda::std::execution::prop{::cuda::allocation_alignment, alignment};
       Buffer input{stream, resource, 5, cuda::no_init, env};
       const auto* allocation = input.data();
       Buffer buf(cuda::std::move(input));
@@ -323,7 +323,7 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
 
     { // move assignment preserves custom allocation_alignment
       const ::cuda::std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment / 2;
-      const auto env = ::cuda::std::execution::prop{::cuda::allocation_alignment, alignment};
+      const auto env                      = ::cuda::std::execution::prop{::cuda::allocation_alignment, alignment};
       Buffer input{stream, resource, 5, cuda::no_init, env};
       Buffer buf{stream, resource, 3, cuda::no_init};
       const auto* allocation = input.data();

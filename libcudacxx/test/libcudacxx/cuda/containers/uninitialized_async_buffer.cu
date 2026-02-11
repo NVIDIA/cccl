@@ -16,8 +16,8 @@
 #include <cuda/memory_pool>
 #include <cuda/memory_resource>
 #include <cuda/std/cassert>
-#include <cuda/std/cstdint>
 #include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
