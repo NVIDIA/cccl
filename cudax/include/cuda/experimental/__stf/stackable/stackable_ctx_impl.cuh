@@ -598,20 +598,13 @@ public:
           ::std::cout << "Debug: Stackable graph DOT output written to " << filename << ::std::endl;
         }
 
-#if 0
-        cuda_safe_call(cudaGraphInstantiate(&graph_exec, graph, nullptr, nullptr, 0));
-#else
-        ::cuda::std::pair<::std::shared_ptr<cudaGraphExec_t>, bool> query_result =
-          ctx.async_resources().cached_graphs_query(graph);
-        fprintf(stderr, "Instantiate cache hit ? %d\n", query_result.second);
-        graph_exec = *query_result.first;
-#endif
+        auto [exec_graph, _] = ctx.async_resources().cached_graphs_query(graph);
 
         // Make sure we launch after the "get" operations are done
         ctx_prereqs.sync_with_stream(ctx.get_backend(), support_stream);
 
         // Launch the graph
-        cuda_safe_call(cudaGraphLaunch(graph_exec, support_stream));
+        cuda_safe_call(cudaGraphLaunch(*exec_graph, support_stream));
 
         // Release context resources after graph execution
         ctx.release_resources(support_stream);
@@ -627,7 +620,6 @@ public:
       }
 
     private:
-      cudaGraphExec_t graph_exec = nullptr;
       cudaGraph_t graph = nullptr; // Graph containing conditional node (if conditional) or the entire graph otherwise
       bool nested_graph = false;
       // If we have a nested graph input and output node correspond to the nodes on which to enforce input or output
