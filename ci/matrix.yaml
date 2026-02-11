@@ -526,6 +526,8 @@ projects:
     job_map:
       build: ['build_py_wheel']
       test:  ['test_py_headers', 'test_py_coop', 'test_py_par', 'test_py_examples', 'test_py_stf']
+    # STF C API and Python bindings are not built for MSVC
+    skip_jobs_on_windows: ['test_py_stf']
   cccl_c_parallel:
     name: 'CCCL C Parallel'
     stds: [20]
