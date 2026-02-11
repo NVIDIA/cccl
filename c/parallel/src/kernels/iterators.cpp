@@ -44,7 +44,7 @@ std::string make_kernel_input_iterator(
   std::string_view advance)
 {
   const std::string iter_def = std::format(R"XXX(
-extern "C" __device__ void DEREF(const void *self_ptr, VALUE_T* result);
+extern "C" __device__ void DEREF(const void *self_ptr, void* result);
 extern "C" __device__ void ADVANCE(void *self_ptr, const void* offset);
 struct __align__(OP_ALIGNMENT) {0} {{
   using iterator_category = cuda::std::random_access_iterator_tag;
@@ -99,7 +99,7 @@ std::string make_kernel_output_iterator(
   std::string_view advance)
 {
   const std::string iter_def = std::format(R"XXX(
-extern "C" __device__ void DEREF(const void *self_ptr, const void* x);
+extern "C" __device__ void DEREF(void *self_ptr, const void* x);
 extern "C" __device__ void ADVANCE(void *self_ptr, const void* offset);
 struct __align__(OP_ALIGNMENT) {0}_state_t {{
   char data[OP_SIZE];
