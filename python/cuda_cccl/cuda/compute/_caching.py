@@ -59,9 +59,7 @@ def _key_for(value: Any) -> Hashable:
 
     # Check for instance match (handles inheritance)
     for registered_type, keyer in _KEY_FUNCTIONS.items():
-        if registered_type is not DeviceArrayLike and isinstance(
-            value, registered_type
-        ):
+        if isinstance(value, registered_type):
             return keyer(value)
 
     # Fallback: use value directly (assumes it's hashable)

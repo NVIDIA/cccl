@@ -9,11 +9,6 @@ from .iterators import IteratorBase
 from .op import OpAdapter, OpKind, RawOp
 from .struct import _Struct
 
-if TYPE_CHECKING:
-    from .iterators._base import IteratorBase
-else:
-    IteratorBase = Any
-
 
 class DeviceArrayLike(Protocol):
     """Protocol for array-like objects that expose device memory via CUDA Array Interface.
