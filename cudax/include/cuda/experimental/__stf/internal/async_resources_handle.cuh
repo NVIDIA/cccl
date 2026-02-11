@@ -84,13 +84,13 @@ struct stream_pool
   ~stream_pool() = default;
 
   /**
-   * @brief stream_pool constructor taking a number of slots and a device id (for slot dev_id hint).
+   * @brief stream_pool constructor taking a number of slots.
    *
    * Streams are created lazily only via next(place), which activates the place and calls place.create_stream().
+   * Slot dev_id is set from the created stream; the pool does not store a device id.
    */
-  stream_pool(size_t n, int dev_id)
-      : payload(n, decorated_stream(nullptr, -1, dev_id))
-      , dev_id(dev_id)
+  explicit stream_pool(size_t n)
+      : payload(n, decorated_stream(nullptr, -1, -1))
   {}
 
   stream_pool(stream_pool&& rhs)
@@ -98,8 +98,7 @@ struct stream_pool
     ::std::lock_guard<::std::mutex> locker(rhs.mtx);
     payload = mv(rhs.payload);
     rhs.payload.clear();
-    index  = mv(rhs.index);
-    dev_id = mv(rhs.dev_id);
+    index = mv(rhs.index);
   }
 
   /**
@@ -135,7 +134,6 @@ struct stream_pool
   mutable ::std::mutex mtx;
   ::std::vector<decorated_stream> payload;
   size_t index = 0;
-  int dev_id   = 1;
 };
 
 /**
@@ -298,7 +296,6 @@ private:
       }
 
       ::std::lock_guard<::std::mutex> locker(p.mtx);
-      p.dev_id  = dev_id;
       p.payload = std::move(new_payload);
     }
 

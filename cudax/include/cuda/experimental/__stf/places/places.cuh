@@ -1212,14 +1212,14 @@ inline decorated_stream stream_pool::next(const exec_place& place)
 
   auto& result = payload.at(index);
 
-  _CCCL_ASSERT(result.dev_id != -1, "stream_pool slot has invalid dev_id");
-
   if (!result.stream)
   {
     exec_place_guard guard(place);
     result.stream = place.create_stream();
     result.dev_id = get_device_from_stream(result.stream);
   }
+
+  _CCCL_ASSERT(result.stream != nullptr && result.dev_id != -1, "stream_pool slot invalid after creation");
 
   if (++index >= payload.size())
   {

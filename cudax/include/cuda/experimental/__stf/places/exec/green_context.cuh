@@ -284,7 +284,7 @@ public:
         cuda_safe_call(cuGreenCtxCreate(&ctxs[i], localdesc, device, CU_GREEN_CTX_DEFAULT_STREAM));
 
         // Store pool in the helper; streams are created via next(place) with place activation
-        pools.push_back(::std::make_shared<stream_pool>(async_resources_handle::pool_size, devid));
+        pools.push_back(::std::make_shared<stream_pool>(async_resources_handle::pool_size));
       }
     }
   }
