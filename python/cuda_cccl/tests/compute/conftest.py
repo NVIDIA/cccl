@@ -1,3 +1,5 @@
+import builtins
+
 import cupy as cp
 import numpy as np
 import pytest
@@ -98,3 +100,27 @@ def verify_sass(request, monkeypatch):
         "_check_sass",
         True,
     )
+
+
+@pytest.fixture
+def raise_on_numba_import(monkeypatch):
+    """This fixture will raise if a test attempts to import numba"""
+    real_import = builtins.__import__
+
+    def guarded_import(name, *args, **kwargs):
+        if name == "numba" or name.startswith("numba."):
+            raise ModuleNotFoundError(
+                "This test is marked 'no_numba' but attempted to import it"
+            )
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", guarded_import)
+
+
+def pytest_collection_modifyitems(config, items):
+    for item in items:
+        # Check if the 'no_numba' marker is present on the test item
+        if item.get_closest_marker("no_numba"):
+            # If the marker is present, add 'raise_on_numba_import' to the list of required fixtures
+            if "raise_on_numba_import" not in item.fixturenames:
+                item.fixturenames.append("raise_on_numba_import")
