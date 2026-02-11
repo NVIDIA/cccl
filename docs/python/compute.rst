@@ -324,6 +324,15 @@ to LTO-IR using `cuda.core <https://nvidia.github.io/cuda-python/cuda-core/lates
 
    Type mismatches can cause crashes, memory corruption, or silent incorrect results.
 
+If you wish to use ``cuda.compute`` solely with externally compiled operators
+(i.e., without native JIT support), you can install a
+minimal version of the `cuda-cccl` package that ships without Numba/Numba CUDA dependencies:
+
+.. code-block:: bash
+
+   pip install cuda-cccl[minimal-cu13]  # or minimal-cu12
+
+
 Examples
 --------
 
