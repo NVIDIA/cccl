@@ -7,8 +7,7 @@
 Create a custom C++ operator from LTOIR bytecode using RawOp.
 
 This example demonstrates how to compile C++ device code to LTOIR and use it
-with CUDA CCCL algorithms via the RawOp class. RawOp is language-agnostic and
-accepts pre-compiled LTOIR from any source (C++, Rust, Julia, custom DSLs, etc.).
+as a custom operator.
 """
 
 import cupy as cp
