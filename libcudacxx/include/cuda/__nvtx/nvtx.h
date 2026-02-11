@@ -93,12 +93,10 @@ struct __nvtx_cccl_optional_range_host_only
 
   __nvtx_cccl_optional_range_host_only() = default;
 
-  _CCCL_API void __start(const ::nvtx3::v1::event_attributes& __attributes)
+  _CCCL_HOST_API void __start(const ::nvtx3::v1::event_attributes& __attributes)
   {
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   ::new (__storage) __nvtx_cccl_range(__attributes);
-                   __engaged = true;
-                 }));
+    ::new (__storage) __nvtx_cccl_range(__attributes);
+    __engaged = true;
   }
 
   _CCCL_API ~__nvtx_cccl_optional_range_host_only()
