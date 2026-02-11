@@ -215,7 +215,7 @@ struct AgentReduceImpl
     (VECTOR_LOAD_LENGTH > 1) && (ITEMS_PER_THREAD % VECTOR_LOAD_LENGTH == 0)
     && (::cuda::std::is_pointer_v<InputIteratorT>)
     // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
-    &&(is_primitive<InputT>::value || thrust::is_trivially_relocatable_v<InputT>);
+    &&(is_primitive<InputT>::value || THRUST_NS_QUALIFIER::is_trivially_relocatable_v<InputT>);
 
   static constexpr CacheLoadModifier LOAD_MODIFIER = AgentReducePolicy::LOAD_MODIFIER;
 
