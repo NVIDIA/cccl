@@ -182,16 +182,7 @@ struct ReduceByKeyAgent
 
   // Whether or not the scan operation has a zero-valued identity value (true
   // if we're performing addition on a primitive type)
-  static constexpr int HAS_IDENTITY_ZERO = [] {
-    if constexpr (::cuda::has_identity_element_v<ReductionOp, value_type>)
-    {
-      return ::cuda::identity_element<ReductionOp, value_type>() == value_type{};
-    }
-    else
-    {
-      return false;
-    }
-  }();
+  static constexpr int HAS_IDENTITY_ZERO = ::cuda::identity_element<ReductionOp, value_type>() == 0;
 
   struct impl
   {
