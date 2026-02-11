@@ -99,7 +99,7 @@ template <class _Shape, class _Stride>
  * @brief Runtime version of CuTe's `filter` for layouts with dynamic shapes/strides.
  *
  * Produces a layout with the same number of modes as the input layout, but with forward-contiguous modes merged and no
- * size-0 modes. The algorithm is similar to `coalesce`.
+ * stride-0 modes. The algorithm is similar to `coalesce`.
  */
 template <class _Shape, class _Stride>
 [[nodiscard]] _CCCL_HOST_API auto __filter(const ::cute::Layout<_Shape, _Stride>& __layout) noexcept

@@ -574,6 +574,18 @@ __pointerGetAttributeNoThrow(__pointer_attribute_value_type_t<_Attr>& __result, 
   return __status;
 }
 
+template <::CUpointer_attribute _Attr>
+[[nodiscard]] _CCCL_HOST_API __pointer_attribute_value_type_t<_Attr> __pointerGetAttribute(const void* __ptr)
+{
+  __pointer_attribute_value_type_t<_Attr> __result;
+  const auto __status = ::cuda::__driver::__pointerGetAttributeNoThrow<_Attr>(__result, __ptr);
+  if (__status != ::cudaSuccess)
+  {
+    ::cuda::__throw_cuda_error(__status, "Failed to get attribute of a pointer");
+  }
+  return __result;
+}
+
 template <::cuda::std::size_t _Np>
 [[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
 __pointerGetAttributesNoThrow(::CUpointer_attribute (&__attrs)[_Np], void* (&__results)[_Np], const void* __ptr)
