@@ -114,6 +114,15 @@ int main()
     decorated_stream dstream = gc_place0.getStream(resources, true);
     EXPECT(dstream.stream != nullptr);
     EXPECT(dstream.dev_id == current_device);
+
+    // create_stream() returns cudaStream_t; call with place activated so the stream is in the green context
+    {
+      exec_place_guard guard(gc_place0);
+      cudaStream_t created = gc_place0.create_stream();
+      EXPECT(created != nullptr);
+      EXPECT(get_device_from_stream(created) == current_device);
+      verify_stream_green_context(created, view0.g_ctx);
+    }
   }
 
   // ==========================================================================

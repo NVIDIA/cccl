@@ -43,6 +43,7 @@
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
 #include <cuda/experimental/__stf/utility/scope_guard.cuh>
+#include <cuda/experimental/__stf/utility/stream_to_dev.cuh>
 
 // Sync only will not move data....
 // Data place none?
@@ -715,7 +716,8 @@ public:
      * If the stream is expected to perform computation, the
      * for_computation should be true. If we plan to use this stream for data
      * transfers, or other means (graph capture) we set the value to false. (This
-     * flag is intended for performance matters, not correctness */
+     * flag is intended for performance matters, not correctness)
+     */
     virtual stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const
     {
       if (!affine.is_device())
@@ -728,9 +730,20 @@ public:
       return async_resources.get_device_stream_pool(dev_id, for_computation);
     }
 
-    decorated_stream getStream(async_resources_handle& async_resources, bool for_computation) const
+    /**
+     * @brief Create a stream valid for execution on this place.
+     *
+     * Expected to be called with this exec place already activated (e.g. from
+     * stream_pool::next(place) which uses exec_place_guard). The default
+     * implementation creates a new stream in the current context via cudaStreamCreate.
+     * The caller (e.g. stream_pool::next) builds a decorated_stream from the result.
+     * Override for custom place types (e.g. uGPU) if needed.
+     */
+    virtual cudaStream_t create_stream() const
     {
-      return get_stream_pool(async_resources, for_computation).next();
+      cudaStream_t stream = nullptr;
+      cuda_safe_call(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+      return stream;
     }
 
   protected:
@@ -881,9 +894,20 @@ public:
    *        This is a performance hint and does not affect correctness.
    * @return A decorated_stream containing the CUDA stream and metadata (device ID, pool index)
    */
-  decorated_stream getStream(async_resources_handle& async_resources, bool for_computation) const
+  decorated_stream getStream(async_resources_handle& async_resources, bool for_computation) const;
+
+  /**
+   * @brief Create a stream valid for execution on this place.
+   *
+   * Call only when the place is already activated (e.g. inside exec_place_guard).
+   * Dispatches to the place's virtual create_stream(). For getting a stream from
+   * the pool, use getStream() / pick_stream() instead.
+   *
+   * @return A CUDA stream valid for this execution place
+   */
+  cudaStream_t create_stream() const
   {
-    return pimpl->getStream(async_resources, for_computation);
+    return pimpl->create_stream();
   }
 
   /**
@@ -957,7 +981,7 @@ public:
     result.reserve(pool.size());
     for (size_t i = 0; i < pool.size(); ++i)
     {
-      result.push_back(pool.next().stream);
+      result.push_back(pool.next(*this).stream);
     }
     return result;
   }
@@ -1116,6 +1140,30 @@ private:
   ::std::shared_ptr<impl> pimpl;
 };
 
+inline decorated_stream stream_pool::next(const exec_place& place)
+{
+  ::std::lock_guard<::std::mutex> locker(mtx);
+  _CCCL_ASSERT(index < payload.size(), "stream_pool::next index out of range");
+
+  auto& result = payload.at(index);
+
+  _CCCL_ASSERT(result.dev_id != -1, "stream_pool slot has invalid dev_id");
+
+  if (!result.stream)
+  {
+    exec_place_guard guard(place);
+    result.stream = place.create_stream();
+    result.dev_id = get_device_from_stream(result.stream);
+  }
+
+  if (++index >= payload.size())
+  {
+    index = 0;
+  }
+
+  return result;
+}
+
 /**
  * @brief RAII guard that activates an execution place and restores the previous one on destruction.
  *
@@ -1182,6 +1230,11 @@ private:
   exec_place place_;
   exec_place prev_;
 };
+
+inline decorated_stream exec_place::getStream(async_resources_handle& async_resources, bool for_computation) const
+{
+  return get_stream_pool(async_resources, for_computation).next(*this);
+}
 
 /**
  * @brief Designates execution that is to run on the host.

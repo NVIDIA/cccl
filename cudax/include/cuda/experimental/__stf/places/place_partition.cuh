@@ -163,7 +163,7 @@ private:
       for (size_t i = 0; i < pool.size(); i++)
       {
         // As a side effect, this will populate the pool
-        decorated_stream dstream = pool.next();
+        decorated_stream dstream = pool.next(place);
         sub_places.push_back(exec_place::cuda_stream(dstream));
       }
       return;
