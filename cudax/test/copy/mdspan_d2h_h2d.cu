@@ -36,38 +36,7 @@ auto to_mdspan_dyn(thrust::host_vector<T>& h_input, IndexType... indices)
   return cuda::host_mdspan<T, extents, Layout>(h_input.data(), extents(indices...));
 }
 
-template <typename Layout = cuda::std::layout_right, typename T, typename... IndexType>
-auto to_const_mdspan(thrust::host_vector<T>& h_input, IndexType... indices)
-{
-  using extents = cuda::std::dims<sizeof...(IndexType)>;
-  return cuda::host_mdspan<const T, extents, Layout>(h_input.data(), extents(indices...));
-}
-
 //----------------------------------------------------------------------------------------------------------------------
-
-template <typename Layout = cuda::std::layout_right, typename T, typename I, size_t... Extents>
-auto to_mdspan(thrust::host_vector<T>& h_input, cuda::std::extents<I, Extents...> extents)
-{
-  using extents_t = cuda::std::extents<I, Extents...>;
-  using mapping_t = typename Layout::template mapping<extents_t>;
-  return cuda::host_mdspan<T, extents_t, Layout>(h_input.data(), mapping_t(extents));
-}
-
-template <typename Layout = cuda::std::layout_right, typename T, typename I, size_t... Extents>
-auto to_mdspan(thrust::device_vector<T>& d_input, cuda::std::extents<I, Extents...> extents)
-{
-  using extents_t = cuda::std::extents<I, Extents...>;
-  using mapping_t = typename Layout::template mapping<extents_t>;
-  return cuda::device_mdspan<T, extents_t, Layout>(thrust::raw_pointer_cast(d_input.data()), mapping_t(extents));
-}
-
-template <typename Layout = cuda::std::layout_right, typename I, typename T, auto... Extents>
-auto to_const_mdspan(thrust::host_vector<T>& h_input, cuda::std::extents<I, Extents...> extents)
-{
-  using extents_t = cuda::std::extents<I, Extents...>;
-  using mapping_t = typename Layout::template mapping<extents_t>;
-  return cuda::host_mdspan<const T, extents_t, Layout>(h_input.data(), mapping_t(extents));
-}
 
 static const cuda::stream stream{cuda::device_ref{0}};
 
@@ -127,6 +96,45 @@ void test_impl(const thrust::host_vector<T>& host_data,
     host_data, expected_data, cuda::std::dims<SrcRank>(src_extents), cuda::std::dims<DstRank>(dst_extents));
 }
 
+template <typename T, typename I, size_t... SrcExtents, size_t... DstExtents>
+void test_impl_stride(
+  const thrust::host_vector<T>& input,
+  const thrust::host_vector<T>& expected_data,
+  cuda::std::extents<I, SrcExtents...> src_extents,
+  cuda::std::extents<I, DstExtents...> dst_extents,
+  const cuda::std::array<I, sizeof...(SrcExtents)>& src_strides,
+  const cuda::std::array<I, sizeof...(DstExtents)>& dst_strides)
+{
+  using src_extents_t = cuda::std::extents<I, SrcExtents...>;
+  using dst_extents_t = cuda::std::extents<I, DstExtents...>;
+  using src_mapping_t = cuda::std::layout_stride::mapping<src_extents_t>;
+  using dst_mapping_t = cuda::std::layout_stride::mapping<dst_extents_t>;
+  thrust::device_vector<T> device_data(input.size(), 0);
+  {
+    using host_mdspan_t   = cuda::host_mdspan<const T, src_extents_t, cuda::std::layout_stride>;
+    using device_mdspan_t = cuda::device_mdspan<T, dst_extents_t, cuda::std::layout_stride>;
+    host_mdspan_t host_md(input.data(), src_mapping_t(src_extents, src_strides));
+    device_mdspan_t device_md(thrust::raw_pointer_cast(device_data.data()), dst_mapping_t(dst_extents, dst_strides));
+
+    printf("host_md: %d, %d\n", dst_strides[0], dst_strides[1]);
+    printf("device_md: %d, %d\n", dst_strides[0], dst_strides[1]);
+    cuda::experimental::copy_bytes(host_md, device_md, stream);
+    stream.sync();
+    CUDAX_REQUIRE(thrust::host_vector<T>(device_data) == expected_data);
+  }
+  // {
+  //   using device_mdspan_t = cuda::device_mdspan<const T, src_extents_t, cuda::std::layout_stride>;
+  //   using host_mdspan_t   = cuda::host_mdspan<T, dst_extents_t, cuda::std::layout_stride>;
+  //   thrust::host_vector<T> host_data(input.size(), 0);
+  //   device_data = input;
+  //   device_mdspan_t device_md(thrust::raw_pointer_cast(device_data.data()), src_mapping_t(src_extents, src_strides));
+  //   host_mdspan_t host_md(host_data.data(), dst_mapping_t(dst_extents, dst_strides));
+  //   cuda::experimental::copy_bytes(device_md, host_md, stream);
+  //   stream.sync();
+  //   CUDAX_REQUIRE(host_data == expected_data);
+  // }
+}
+
 /***********************************************************************************************************************
  * 1D Tests
  **********************************************************************************************************************/
@@ -139,10 +147,9 @@ TEST_CASE("copy_bytes 1D", "[copy_bytes][1d]")
   {
     host_data[i] = i;
   }
-  using src_extents = cuda::std::extents<int, N>;
-  using dst_extents = cuda::std::extents<int, N>;
-  test_impl(host_data, host_data, src_extents(), dst_extents());
-  test_impl<cuda::std::layout_left, cuda::std::layout_left>(host_data, host_data, src_extents(), dst_extents());
+  using extents = cuda::std::extents<int, N>;
+  test_impl(host_data, host_data, extents(), extents());
+  test_impl<cuda::std::layout_left, cuda::std::layout_left>(host_data, host_data, extents(), extents());
 }
 
 /***********************************************************************************************************************
@@ -158,12 +165,11 @@ TEST_CASE("copy_bytes 2D", "[copy_bytes][2d]")
   {
     host_data[i] = i;
   }
-  using src_extents = cuda::std::extents<int, M, N>;
-  using dst_extents = cuda::std::extents<int, M, N>;
+  using extents = cuda::std::extents<int, M, N>;
   // row major to row major
-  test_impl(host_data, host_data, src_extents(), dst_extents());
+  test_impl(host_data, host_data, extents(), extents());
   // column major to column major
-  test_impl<cuda::std::layout_left, cuda::std::layout_left>(host_data, host_data, src_extents(), dst_extents());
+  test_impl<cuda::std::layout_left, cuda::std::layout_left>(host_data, host_data, extents(), extents());
   // row major to column major
   thrust::host_vector<int> expected(M * N);
   for (int i = 0; i < M; ++i)
@@ -173,7 +179,7 @@ TEST_CASE("copy_bytes 2D", "[copy_bytes][2d]")
       expected[j * M + i] = i * N + j;
     }
   }
-  test_impl<cuda::std::layout_right, cuda::std::layout_left>(host_data, expected, src_extents(), dst_extents());
+  test_impl<cuda::std::layout_right, cuda::std::layout_left>(host_data, expected, extents(), extents());
   // column major to row major
   for (int i = 0; i < M; ++i)
   {
@@ -182,7 +188,7 @@ TEST_CASE("copy_bytes 2D", "[copy_bytes][2d]")
       expected[i * N + j] = i + j * M;
     }
   }
-  test_impl<cuda::std::layout_left, cuda::std::layout_right>(host_data, expected, src_extents(), dst_extents());
+  test_impl<cuda::std::layout_left, cuda::std::layout_right>(host_data, expected, extents(), extents());
 }
 
 TEST_CASE("copy_bytes 2D swapped extents", "[copy_bytes][2d][swapped]")
@@ -194,12 +200,11 @@ TEST_CASE("copy_bytes 2D swapped extents", "[copy_bytes][2d][swapped]")
   {
     host_data[i] = i;
   }
-  using src_extents = cuda::std::extents<int, M, N>;
-  using dst_extents = cuda::std::extents<int, N, M>;
+  using extents = cuda::std::extents<int, M, N>;
   // row major to row major
-  test_impl(host_data, host_data, src_extents(), dst_extents());
+  test_impl(host_data, host_data, extents(), extents());
   // column major to column major
-  test_impl<cuda::std::layout_left, cuda::std::layout_left>(host_data, host_data, src_extents(), dst_extents());
+  test_impl<cuda::std::layout_left, cuda::std::layout_left>(host_data, host_data, extents(), extents());
 }
 
 TEST_CASE("copy_bytes 2D mixed ranks", "[copy_bytes][2d][ranks]")
@@ -229,10 +234,9 @@ TEST_CASE("copy_bytes 2D large", "[copy_bytes][2d][large]")
   {
     host_data[i] = i;
   }
-  using src_extents = cuda::std::extents<int, M, N>;
-  using dst_extents = cuda::std::extents<int, M, N>;
+  using extents = cuda::std::extents<int, M, N>;
   // row major to row major
-  test_impl(host_data, host_data, src_extents(), dst_extents());
+  test_impl(host_data, host_data, extents(), extents());
 }
 
 /***********************************************************************************************************************
@@ -250,10 +254,9 @@ TEST_CASE("copy_bytes 3D", "[copy_bytes][3d]")
   {
     host_data[i] = i;
   }
-  using src_extents = cuda::std::extents<int, D0, D1, D2>;
-  using dst_extents = cuda::std::extents<int, D0, D1, D2>;
+  using extents = cuda::std::extents<int, D0, D1, D2>;
   // row major to row major
-  test_impl(host_data, host_data, src_extents(), dst_extents());
+  test_impl(host_data, host_data, extents(), extents());
   // row major to column major
   thrust::host_vector<int> expected(total);
   for (int i = 0, p = 0; i < D0; ++i)
@@ -266,7 +269,7 @@ TEST_CASE("copy_bytes 3D", "[copy_bytes][3d]")
       }
     }
   }
-  test_impl<cuda::std::layout_right, cuda::std::layout_left>(host_data, expected, src_extents(), dst_extents());
+  test_impl<cuda::std::layout_right, cuda::std::layout_left>(host_data, expected, extents(), extents());
 }
 
 /***********************************************************************************************************************
@@ -276,9 +279,8 @@ TEST_CASE("copy_bytes 3D", "[copy_bytes][3d]")
 TEST_CASE("copy_bytes rank 0", "[copy_bytes][0d]")
 {
   thrust::host_vector<int> host_data(1, 42);
-  using src_extents = cuda::std::extents<int>;
-  using dst_extents = cuda::std::extents<int>;
-  test_impl(host_data, host_data, src_extents(), dst_extents());
+  using extents = cuda::std::extents<int>;
+  test_impl(host_data, host_data, extents(), extents());
 }
 
 TEST_CASE("copy_bytes size 0", "[copy_bytes][zero_size]")
@@ -299,4 +301,26 @@ TEST_CASE("copy_bytes size mismatch throws", "[copy_bytes][throw]")
   auto src       = to_mdspan_dyn(host_data, N);
   auto device_md = to_mdspan_dyn(device_data, N / 2);
   REQUIRE_THROWS_AS(cuda::experimental::copy_bytes(src, device_md, stream), std::invalid_argument);
+}
+
+/***********************************************************************************************************************
+ * Strided Layout Tests
+ **********************************************************************************************************************/
+
+TEST_CASE("copy_bytes 2D strided", "[copy_bytes][2d][stride]")
+{
+  constexpr int M = 4;
+  constexpr int N = 8;
+  thrust::host_vector<int> host_data((M * 2) * N, 0);
+  for (int i = 0; i < M; ++i)
+  {
+    for (int j = 0; j < N; ++j)
+    {
+      host_data[i * N * 2 + j] = i * N + j;
+    }
+  }
+  using src_extents                = cuda::std::extents<int, M, N>;
+  using dst_extents                = cuda::std::extents<int, M, N>;
+  cuda::std::array<int, 2> strides = {N * 2, 1};
+  test_impl_stride(host_data, host_data, src_extents(), dst_extents(), strides, strides);
 }

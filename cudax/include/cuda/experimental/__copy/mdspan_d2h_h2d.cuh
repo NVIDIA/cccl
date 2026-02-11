@@ -141,20 +141,22 @@ _CCCL_HOST_API void __copy_bytes_impl(
     const auto __tile_size  = static_cast<size_t>(::cute::size(__max_common_layout));
     const auto __copy_bytes = __tile_size * sizeof(_TpIn);
     const auto __num_tiles  = static_cast<size_t>(::cute::size<1>(__src_tiles));
+printf("__num_tiles: %zu\n", __num_tiles);
+printf("__tile_size: %zu\n", __tile_size);
 #  if _CCCL_CTK_AT_LEAST(13, 0)
     // Use the memcpy batch API to copy all tiles in one call
     ::std::vector<const void*> __src_ptr_vector(__num_tiles);
     ::std::vector<void*> __dst_ptr_vector(__num_tiles);
     for (size_t __tile_idx = 0; __tile_idx < __num_tiles; ++__tile_idx)
     {
-      __src_ptr_vector[__tile_idx] = static_cast<const void*>(__src_tiles(::cute::_, __tile_idx).data());
-      __dst_ptr_vector[__tile_idx] = static_cast<void*>(__dst_tiles(::cute::_, __tile_idx).data());
+      __src_ptr_vector[__tile_idx] = static_cast<const void*>(&__src_tiles(0, __tile_idx));
+      __dst_ptr_vector[__tile_idx] = static_cast<void*>(&__dst_tiles(0, __tile_idx));
+printf("__src_ptr: %zu\n", (size_t) (__src_ptr_vector[__tile_idx]) - (size_t) __src1.data());
+printf("__dst_ptr: %zu\n", (size_t) (__dst_ptr_vector[__tile_idx]) - (size_t) __dst1.data());
     }
     ::std::vector<size_t> __sizes(__num_tiles, __copy_bytes);
-
     auto __attributes = (__direction == __copy_direction::host_to_device) ? __h2d_attributes : __d2h_attributes;
-
-    size_t __zero = 0;
+    size_t __zero     = 0;
     ::cuda::__driver::__memcpyBatchAsync(
       __dst_ptr_vector.data(),
       __src_ptr_vector.data(),
