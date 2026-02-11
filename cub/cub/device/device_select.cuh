@@ -87,8 +87,7 @@ private:
             typename SelectOpT,
             typename EqualityOpT,
             typename OffsetT,
-            SelectImpl SelectionMode,
-            ::cuda::execution::determinism::__determinism_t Determinism>
+            SelectImpl SelectionMode>
   CUB_RUNTIME_FUNCTION static cudaError_t select_impl(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -99,10 +98,8 @@ private:
     OffsetT num_items,
     SelectOpT select_op,
     EqualityOpT equality_op,
-    ::cuda::execution::determinism::__determinism_holder_t<Determinism> determinism_holder_arg,
     cudaStream_t stream)
   {
-    (void) determinism_holder_arg; // determisnim is of no use in DeviceSelect at the moment
     using select_tuning_t = ::cuda::std::execution::
       __query_result_or_t<TuningEnvT, detail::select::get_tuning_query_t, detail::select::default_tuning>;
 
@@ -266,6 +263,9 @@ public:
   //! Uses the ``d_flags`` sequence to selectively copy the corresponding items from ``d_in`` into ``d_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! This is an environment-based API that allows customization of:
   //!
   //! - Stream: Query via ``cuda::get_stream``
@@ -276,28 +276,18 @@ public:
   //! - | The range ``[d_out, d_out + *d_num_selected_out)`` shall not overlap ``[d_in, d_in + num_items)``,
   //!   | ``[d_flags, d_flags + num_items)`` nor ``d_num_selected_out`` in any way.
   //!
-  //! Determinism
-  //! +++++++++++++++++++++++++++++++++++++++++++++
-  //!
-  //! The API guarantees ``gpu_to_gpu`` determinism. The deterministic guarantees hold provided that
-  //! ``select_op`` is a **pure function**.
-  //!
-  //! The deterministic guarantees break if ``select_op`` exhibits any of the following behaviors:
-  //!
-  //! - Reading thread-varying state (e.g., ``threadIdx``, ``clock()``, uninitialized memory)
-  //! - Reading or writing shared mutable state (e.g., global variables, atomics)
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the compaction of flagged items from an ``int`` device vector
-  //! using determinism requirements:
+  //! using environment-based API:
   //!
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after: example-begin select-flagged-env-determinism
-  //!     :end-before: example-end select-flagged-env-determinism
+  //!     :start-after: example-begin select-flagged-env
+  //!     :end-before: example-end select-flagged-env
   //!
   //! @endrst
   //!
@@ -357,20 +347,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Flagged");
 
-    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
-                  "Determinism should be used inside requires to have an effect.");
-
     using offset_t = detail::choose_offset_t<NumItemsT>;
-
-    // Extract determinism from environment, defaulting to run_to_run
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using requested_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t, //
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::gpu_to_gpu_t>;
-
-    using determinism_t = ::cuda::execution::determinism::gpu_to_gpu_t;
 
     // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
@@ -383,8 +360,7 @@ public:
                          NullType,
                          NullType,
                          offset_t,
-                         SelectImpl::Select,
-                         determinism_t::value>(
+                         SelectImpl::Select>(
         storage,
         bytes,
         d_in,
@@ -394,7 +370,6 @@ public:
         static_cast<offset_t>(num_items),
         NullType{},
         NullType{},
-        determinism_t{},
         stream);
     });
   }
@@ -402,6 +377,9 @@ public:
   //! @rst
   //! Uses the ``select_op`` functor to selectively copy items from ``d_in`` into ``d_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -413,29 +391,18 @@ public:
   //! - | The range ``[d_out, d_out + *d_num_selected_out)`` shall not overlap
   //!   | ``[d_in, d_in + num_items)`` nor ``d_num_selected_out`` in any way.
   //!
-  //! Determinism
-  //! +++++++++++++++++++++++++++++++++++++++++++++
-  //!
-  //! The API guarantees ``gpu_to_gpu`` determinism. The deterministic guarantees hold provided that
-  //! ``select_op`` is a **pure function**.
-  //!
-  //! The deterministic guarantees break if ``select_op`` exhibits any of the following behaviors:
-  //!
-  //! - Reading thread-varying state (e.g., ``threadIdx``, ``clock()``, uninitialized memory)
-  //! - Reading or writing shared mutable state (e.g., global variables, atomics)
-
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector
-  //! using determinism requirements:
+  //! using environment-based API:
   //!
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_select_env_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after: example-begin select-if-env-determinism
-  //!     :end-before: example-end select-if-env-determinism
+  //!     :start-after: example-begin select-if-env
+  //!     :end-before: example-end select-if-env
   //!
   //! @endrst
   //!
@@ -494,21 +461,7 @@ public:
      EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::If");
-
-    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
-                  "Determinism should be used inside requires to have an effect.");
-
     using offset_t = detail::choose_offset_t<NumItemsT>;
-
-    // Extract determinism from environment, defaulting to run_to_run
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using requested_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t, //
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::gpu_to_gpu_t>;
-
-    using determinism_t = ::cuda::execution::determinism::gpu_to_gpu_t;
 
     // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
@@ -521,8 +474,7 @@ public:
                          SelectOp,
                          NullType,
                          offset_t,
-                         SelectImpl::Select,
-                         determinism_t::value>(
+                         SelectImpl::Select>(
         storage,
         bytes,
         d_in,
@@ -532,7 +484,6 @@ public:
         static_cast<offset_t>(num_items),
         select_op,
         NullType{},
-        determinism_t{},
         stream);
     });
   }

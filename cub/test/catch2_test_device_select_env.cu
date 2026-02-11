@@ -21,7 +21,6 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::Flagged, device_select_flagged);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-#include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 
 #include <c2h/catch2_test_helper.h>
@@ -99,8 +98,7 @@ C2H_TEST("Device select uses environment", "[select][device]")
     == cub::DeviceSelect::If(
       nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op));
 
-  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::run_to_run), // determinism
-                          expected_allocation_size(expected_bytes_allocated)}; // temp storage size
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)}; // temp storage size
 
   device_select_if(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, select_op, env);
 
@@ -135,8 +133,7 @@ C2H_TEST("Device select flagged uses environment", "[select][device]")
       d_num_selected.begin(),
       num_items));
 
-  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::run_to_run), // determinism
-                          expected_allocation_size(expected_bytes_allocated)}; // temp storage size
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)}; // temp storage size
 
   device_select_flagged(d_in.begin(), d_flags.begin(), d_out.begin(), d_num_selected.begin(), num_items, env);
 
