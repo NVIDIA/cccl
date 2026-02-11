@@ -93,7 +93,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_to_arch_list(
   _CCCL_ASSERT(((device_arch == ::cuda::arch_id{(CudaArches * ArchMult) / 10}) || ...),
                "device_arch must appear in the list of architectures compiled for");
 
-  using policy_t = decltype(policy_selector(::cuda::arch_id{}));
+  [[maybe_unused]] using policy_t = decltype(policy_selector(::cuda::arch_id{}));
 
   cudaError_t e = cudaErrorInvalidDeviceFunction;
 #  if _CCCL_STD_VER >= 2020
