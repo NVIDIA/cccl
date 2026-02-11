@@ -14,6 +14,10 @@
 // those parameters only apply if TUNE_ALGORITHM == 1 (vectorized)
 // %RANGE% TUNE_VEC_SIZE_POW2 vsp2 1:6:1
 
+#if !TUNE_BASE && TUNE_ALGORITHM != 0 && (TUNE_PREFETCH_MULT != 1)
+#  error "Non-prefetch algorithms require prefetch multiple to be 1 since they ignore the parameters"
+#endif // !TUNE_BASE && TUNE_ALGORITHM != 0 && (TUNE_PREFETCH_MULT != 1)
+
 #if !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1)
 #  error "Non-vectorized algorithms require vector size to be 1 since they ignore the parameters"
 #endif // !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1)
