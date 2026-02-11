@@ -243,11 +243,11 @@ private:
       bool __ready = 0;
       ::cuda::std::chrono::high_resolution_clock::time_point const __start =
         ::cuda::std::chrono::high_resolution_clock::now();
-      ::cuda::std::chrono::nanoseconds __elapsed;
+      ::cuda::std::chrono::nanoseconds __elapsed(0);
       do
       {
         const ::cuda::std::uint32_t __wait_nsec = static_cast<::cuda::std::uint32_t>((__nanosec - __elapsed).count());
-        ::cuda::ptx::mbarrier_try_wait(__native_handle(), __token, __wait_nsec);
+        __ready   = ::cuda::ptx::mbarrier_try_wait(__native_handle(), __token, __wait_nsec);
         __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
       } while (!__ready && (__nanosec > __elapsed));
       return __ready;
@@ -343,11 +343,11 @@ private:
       int32_t __ready = 0;
       ::cuda::std::chrono::high_resolution_clock::time_point const __start =
         ::cuda::std::chrono::high_resolution_clock::now();
-      ::cuda::std::chrono::nanoseconds __elapsed;
+      ::cuda::std::chrono::nanoseconds __elapsed(0);
       do
       {
         const ::cuda::std::uint32_t __wait_nsec = static_cast<::cuda::std::uint32_t>((__nanosec - __elapsed).count());
-        ::cuda::ptx::mbarrier_try_wait_parity(__native_handle(), __phase_parity, __wait_nsec);
+        __ready   = ::cuda::ptx::mbarrier_try_wait_parity(__native_handle(), __phase_parity, __wait_nsec);
         __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
       } while (!__ready && (__nanosec > __elapsed));
 
