@@ -32,28 +32,28 @@ struct policy_selector
   {
     const int min_bytes_in_flight =
       cub::detail::transform::arch_to_min_bytes_in_flight(::cuda::arch_id{__CUDA_ARCH_LIST__ / 10}) + TUNE_BIF_BIAS;
-#  if TUNE_ALGORITHM == 0
-    constexpr auto algorithm = cub::detail::transform::Algorithm::prefetch;
-    auto policy              = cub::detail::transform::prefetch_policy{};
-    policy.block_threads     = TUNE_THREADS;
-    policy.unroll_factor     = TUNE_UNROLL_FACTOR;
+#  if TUNE_ALGORITHM == 0 || TUNE_ALGORITHM == 1
+    // setup prefetch, since it's either used directly or the fallback to vectorized
+    auto algorithm            = cub::detail::transform::Algorithm::prefetch;
+    auto pref_policy          = cub::detail::transform::prefetch_policy{};
+    pref_policy.block_threads = TUNE_THREADS;
+    pref_policy.unroll_factor = TUNE_UNROLL_FACTOR;
 #    ifdef TUNE_PREFETCH_MULT
-    policy.prefetch_byte_stride = 32 * TUNE_PREFETCH_MULT;
+    pref_policy.prefetch_byte_stride = 32 * TUNE_PREFETCH_MULT;
 #    endif //  TUNE_PREFETCH_MULT
 #    ifdef TUNE_ITEMS_PER_THREAD_NO_INPUT
-    policy.items_per_thread_no_input = TUNE_ITEMS_PER_THREAD_NO_INPUT;
+    pref_policy.items_per_thread_no_input = TUNE_ITEMS_PER_THREAD_NO_INPUT;
 #    endif // TUNE_ITEMS_PER_THREAD_NO_INPUT
-    return {min_bytes_in_flight, algorithm, policy, {}, {}};
-#  elif TUNE_ALGORITHM == 1
-    constexpr auto algorithm = cub::detail::transform::Algorithm::vectorized;
-    auto policy              = cub::detail::transform::vectorized_policy{};
-    policy.block_threads     = TUNE_THREADS;
-    policy.vec_size          = (1 << TUNE_VEC_SIZE_POW2);
-    policy.items_per_thread  = policy.vec_size * TUNE_UNROLL_FACTOR;
-#    ifdef TUNE_ITEMS_PER_THREAD_NO_INPUT
-    policy.prefetch_items_per_thread_no_input = TUNE_ITEMS_PER_THREAD_NO_INPUT;
-#    endif // TUNE_ITEMS_PER_THREAD_NO_INPUT
-    return {min_bytes_in_flight, algorithm, {}, policy, {}};
+
+    // setup vectorized if requested
+    auto vec_policy = cub::detail::transform::vectorized_policy{};
+#    if TUNE_ALGORITHM == 1
+    algorithm                   = cub::detail::transform::Algorithm::vectorized;
+    vec_policy.block_threads    = TUNE_THREADS;
+    vec_policy.vec_size         = (1 << TUNE_VEC_SIZE_POW2);
+    vec_policy.items_per_thread = policy.vec_size * TUNE_UNROLL_FACTOR;
+#    endif
+    return {min_bytes_in_flight, algorithm, pref_policy, vec_policy, {}};
 #  elif TUNE_ALGORITHM == 2
     constexpr auto algorithm   = cub::detail::transform::Algorithm::memcpy_async;
     auto policy                = cub::detail::transform::async_copy_policy{};
