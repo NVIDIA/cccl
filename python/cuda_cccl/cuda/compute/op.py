@@ -108,7 +108,6 @@ class RawOp(_OpAdapter):
     Args:
         name: The ABI name of the operator
         ltoir: bytes object containing the LTO-IR of the compiled operator
-        extra_ltoirs: Optional list of additional LTOIR modules that the main LTOIR depends on
         state: Optional bytes representing the operator's state
         state_alignment: Alignment requirement for the state bytes (default: 1)
         extra_ltoirs: Optional list of additional LTO-IRs to include during linking
@@ -137,15 +136,6 @@ class RawOp(_OpAdapter):
         state_alignment: int = 1,
         extra_ltoirs: list[bytes] | None = None,
     ):
-        """
-        Create an operator from LTO-IR.
-
-        Args:
-            ltoir: Compiled LTOIR bytecode from any language/compiler
-            name: Function name in the LTOIR
-            state: State bytes for stateful operators (default: b"")
-            state_alignment: Memory alignment for state (default: 1)
-        """
         self._ltoir = ltoir
         self._name = name
         self._state = state

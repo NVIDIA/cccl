@@ -55,7 +55,7 @@ multiply_op = RawOp(ltoir=ltoir_bytes, name="multiply_op")
 # Prepare test data
 h_input = np.array([1, 2, 3, 4, 5], dtype=np.int32)
 d_input = cp.array(h_input)
-d_output = cp.zeros(1, dtype=np.int32)
+d_output = cp.empty(1, dtype=np.int32)
 h_init = np.array(1, dtype=np.int32)
 
 # Use the custom operator with reduce_into

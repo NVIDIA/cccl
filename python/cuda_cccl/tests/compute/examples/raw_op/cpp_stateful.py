@@ -90,7 +90,7 @@ d_input = cp.array(h_input)
 
 # Allocate output arrays
 d_output = cp.empty(num_items, dtype=np.int32)
-d_num_selected = cp.zeros(1, dtype=np.int32)
+d_num_selected = cp.empty(1, dtype=np.int32)
 
 # Run select with the stateful operator
 cuda.compute.select(d_input, d_output, d_num_selected, select_op, num_items)

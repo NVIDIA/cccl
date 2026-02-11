@@ -10,7 +10,9 @@ import cupy as cp
 import numpy as np
 import pytest
 
+import cuda.compute
 from cuda.compute import types
+from cuda.compute._cpp_compile import _get_include_paths
 from cuda.compute.op import RawOp
 from cuda.core import Device, Program, ProgramOptions
 
@@ -26,12 +28,15 @@ def get_arch():
     return f"sm_{cc_major}{cc_minor}"
 
 
-def compile_to_ltoir(source: str, arch: str) -> bytes:
+def compile_to_ltoir(
+    source: str, arch: str, include_paths: list | None = None
+) -> bytes:
     """Compile C++ source to LTOIR using cuda.core."""
     opts = ProgramOptions(
         arch=arch,
         relocatable_device_code=True,
         link_time_optimization=True,
+        include_path=include_paths,
     )
     prog = Program(source, "c++", options=opts)
     return prog.compile("ltoir").code
@@ -45,7 +50,7 @@ def extract_function_name(source: str) -> str:
     raise ValueError("Could not extract function name from C++ source.")
 
 
-def make_cpp_op(source: str, name: str = None) -> RawOp:
+def make_cpp_op(source: str, name: str = None, include_paths=None) -> RawOp:
     """
     Compile C++ source to LTOIR and create a stateless RawOp.
 
@@ -60,7 +65,7 @@ def make_cpp_op(source: str, name: str = None) -> RawOp:
         name = extract_function_name(source)
 
     arch = get_arch()
-    ltoir = compile_to_ltoir(source, arch)
+    ltoir = compile_to_ltoir(source, arch, include_paths=include_paths)
 
     return RawOp(ltoir=ltoir, name=name)
 
@@ -108,11 +113,9 @@ def test_cpp_op_basic_add():
     num_items = 100
     h_input = np.arange(num_items, dtype=np.int32)
     d_input = cp.array(h_input)
-    d_output = cp.zeros(1, dtype=np.int32)
+    d_output = cp.empty(1, dtype=np.int32)
 
     # Use the custom op with reduce_into
-    import cuda.compute
-
     h_init = np.array(0, dtype=np.int32)
     cuda.compute.reduce_into(d_input, d_output, op, num_items, h_init)
 
@@ -125,24 +128,25 @@ def test_cpp_op_basic_add():
 def test_cpp_op_max():
     """Test a C++ max operator with reduce_into."""
     cpp_source = """
+    #include <cuda/std/algorithm>
+
     extern "C" __device__ void max_op(void* a, void* b, void* result) {
         float va = *static_cast<float*>(a);
         float vb = *static_cast<float*>(b);
-        *static_cast<float*>(result) = va > vb ? va : vb;
+        *static_cast<float*>(result) = cuda::std::max(va, vb);
     }
     """
-
-    op = make_cpp_op(cpp_source)
+    # _get_include_paths() returns list of CCCL include paths;
+    # needed for libcudacxx headers like cuda/std/algorithm
+    op = make_cpp_op(cpp_source, include_paths=_get_include_paths())
 
     # Create test data
     num_items = 100
     h_input = np.random.randn(num_items).astype(np.float32)
     d_input = cp.array(h_input)
-    d_output = cp.zeros(1, dtype=np.float32)
+    d_output = cp.empty(1, dtype=np.float32)
 
     # Use the custom op with reduce_into
-    import cuda.compute
-
     h_init = np.array(-np.inf, dtype=np.float32)
     cuda.compute.reduce_into(d_input, d_output, op, num_items, h_init)
 
@@ -166,11 +170,9 @@ def test_cpp_op_multiply():
     num_items = 5
     h_input = np.array([1, 2, 3, 4, 5], dtype=np.int32)
     d_input = cp.array(h_input)
-    d_output = cp.zeros(1, dtype=np.int32)
+    d_output = cp.empty(1, dtype=np.int32)
 
     # Use the custom op with reduce_into
-    import cuda.compute
-
     h_init = np.array(1, dtype=np.int32)
     cuda.compute.reduce_into(d_input, d_output, op, num_items, h_init)
 
@@ -197,11 +199,9 @@ def test_cpp_op_complex_logic():
     num_items = 5
     h_input = np.array([1, 2, 4, 8, 16], dtype=np.int32)  # Powers of 2
     d_input = cp.array(h_input)
-    d_output = cp.zeros(1, dtype=np.int32)
+    d_output = cp.empty(1, dtype=np.int32)
 
     # Use the custom op with reduce_into
-    import cuda.compute
-
     h_init = np.array(0, dtype=np.int32)
     cuda.compute.reduce_into(d_input, d_output, op, num_items, h_init)
 
@@ -225,11 +225,9 @@ def test_cpp_op_different_types():
     num_items = 50
     h_input = np.random.randn(num_items).astype(np.float64)
     d_input = cp.array(h_input)
-    d_output = cp.zeros(1, dtype=np.float64)
+    d_output = cp.empty(1, dtype=np.float64)
 
     # Use the custom op with reduce_into
-    import cuda.compute
-
     h_init = np.array(0.0, dtype=np.float64)
     cuda.compute.reduce_into(d_input, d_output, op, num_items, h_init)
 
@@ -254,11 +252,9 @@ def test_cpp_op_name_extraction():
     num_items = 10
     h_input = np.arange(num_items, dtype=np.int32)
     d_input = cp.array(h_input)
-    d_output = cp.zeros(1, dtype=np.int32)
+    d_output = cp.empty(1, dtype=np.int32)
 
     # Use the custom op with reduce_into
-    import cuda.compute
-
     h_init = np.array(0, dtype=np.int32)
     cuda.compute.reduce_into(d_input, d_output, op, num_items, h_init)
 
@@ -284,11 +280,9 @@ def test_cpp_op_min():
     num_items = 100
     h_input = np.random.randint(-1000, 1000, num_items, dtype=np.int32)
     d_input = cp.array(h_input)
-    d_output = cp.zeros(1, dtype=np.int32)
+    d_output = cp.empty(1, dtype=np.int32)
 
     # Use the custom op with reduce_into
-    import cuda.compute
-
     h_init = np.array(np.iinfo(np.int32).max, dtype=np.int32)
     cuda.compute.reduce_into(d_input, d_output, op, num_items, h_init)
 
@@ -343,8 +337,6 @@ def test_cpp_op_with_struct():
     h_init = Point(0, 0)
 
     # Use the custom op with reduce_into
-    import cuda.compute
-
     cuda.compute.reduce_into(d_input, d_output, op, num_items, h_init)
 
     # Verify result
@@ -378,9 +370,7 @@ def test_cpp_op_with_transform_iterator():
     transform_iter = TransformIterator(d_input, op, value_type=types.int32)
 
     # Use the transform iterator with reduce
-    import cuda.compute
-
-    d_output = cp.zeros(1, dtype=np.int32)
+    d_output = cp.empty(1, dtype=np.int32)
     h_init = np.array(0, dtype=np.int32)
 
     # Sum the doubled values using built-in PLUS operator
@@ -421,11 +411,9 @@ def test_cpp_stateful_op_reduce_with_constant():
     num_items = 5
     h_input = np.array([1, 2, 3, 4, 5], dtype=np.int32)
     d_input = cp.array(h_input)
-    d_output = cp.zeros(1, dtype=np.int32)
+    d_output = cp.empty(1, dtype=np.int32)
 
     # Use the stateful op with reduce_into
-    import cuda.compute
-
     h_init = np.array(0, dtype=np.int32)
     cuda.compute.reduce_into(d_input, d_output, op, num_items, h_init)
 
@@ -486,11 +474,9 @@ def test_cpp_stateful_op_select_with_counter():
 
     # Allocate output arrays
     d_output = cp.empty(num_items, dtype=np.int32)
-    d_num_selected = cp.zeros(1, dtype=np.int32)
+    d_num_selected = cp.empty(1, dtype=np.int32)
 
     # Run select
-    import cuda.compute
-
     cuda.compute.select(d_input, d_output, d_num_selected, op, num_items)
 
     # Get results
