@@ -86,6 +86,11 @@ public:
   //! @{
 
   //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockShuffle()
       : temp_storage(PrivateStorage())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
@@ -94,6 +99,11 @@ public:
   /**
    * @brief Collective constructor using the specified memory allocation
    *        as temporary storage.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
@@ -108,12 +118,13 @@ public:
   //! @{
 
   //! @rst
-  //!
   //! Each *thread*\ :sub:`i` obtains the ``input`` provided by *thread*\ :sub:`i + distance`.
   //! The offset ``distance`` may be negative.
   //!
-  //! - @smemreuse
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
+  //! - @smemreuse
   //! @endrst
   //!
   //! @param[in] input
@@ -147,8 +158,10 @@ public:
   //! @rst
   //! Each *thread*\ :sub:`i` obtains the ``input`` provided by *thread*\ :sub:`i + distance`.
   //!
-  //! - @smemreuse
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
+  //! - @smemreuse
   //! @endrst
   //!
   //! @param[in] input
@@ -182,10 +195,12 @@ public:
   //! The thread block rotates its :ref:`blocked arrangement <flexible-data-arrangement>` of
   //! ``input`` items, shifting it up by one item.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - @blocked
   //! - @granularity
   //! - @smemreuse
-  //!
   //! @endrst
   //!
   //! @param[in] input
@@ -220,10 +235,12 @@ public:
   //! of ``input`` items, shifting it up by one item. All threads receive the ``input`` provided by
   //! *thread*\ :sub:`BLOCK_THREADS - 1`.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - @blocked
   //! - @granularity
   //! - @smemreuse
-  //!
   //! @endrst
   //!
   //! @param[in] input
@@ -250,10 +267,12 @@ public:
   //! The thread block rotates its :ref:`blocked arrangement <flexible-data-arrangement>`
   //! of ``input`` items, shifting it down by one item.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - @blocked
   //! - @granularity
   //! - @smemreuse
-  //!
   //! @endrst
   //!
   //! @param[in] input
@@ -287,10 +306,12 @@ public:
   //! The thread block rotates its :ref:`blocked arrangement <flexible-data-arrangement>` of input items,
   //! shifting it down by one item. All threads receive ``input[0]`` provided by *thread*\ :sub:`0`.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - @blocked
   //! - @granularity
   //! - @smemreuse
-  //!
   //! @endrst
   //!
   //! @param[in] input
