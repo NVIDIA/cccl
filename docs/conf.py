@@ -183,8 +183,10 @@ autodoc_default_options = {
 }
 
 # Enable type hints to be shown in the documentation
-autodoc_typehints = "description"
-autodoc_type_aliases = {}
+autodoc_type_hints = "description"
+autodoc_type_aliases = {
+    "Operator": "Operator",
+}
 
 # Set Python domain primary for intersphinx
 primary_domain = "py"

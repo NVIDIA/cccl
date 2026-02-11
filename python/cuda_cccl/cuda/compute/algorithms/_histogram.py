@@ -3,6 +3,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from __future__ import annotations
+
 from typing import Union
 
 import numpy as np
@@ -13,7 +15,7 @@ from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..typing import DeviceArrayLike, IteratorBase
+from ..typing import DeviceArrayLike, IteratorT
 
 
 class _Histogram:
@@ -29,7 +31,7 @@ class _Histogram:
 
     def __init__(
         self,
-        d_samples: DeviceArrayLike | IteratorBase,
+        d_samples: DeviceArrayLike | IteratorT,
         d_histogram: DeviceArrayLike,
         h_num_output_levels: np.ndarray,
         h_lower_level: np.ndarray,
@@ -65,7 +67,7 @@ class _Histogram:
     def __call__(
         self,
         temp_storage,
-        d_samples: DeviceArrayLike | IteratorBase,
+        d_samples: DeviceArrayLike | IteratorT,
         d_histogram: DeviceArrayLike,
         h_num_output_levels: np.ndarray,
         h_lower_level: np.ndarray,
@@ -108,7 +110,7 @@ class _Histogram:
 
 @cache_with_registered_key_functions
 def make_histogram_even(
-    d_samples: DeviceArrayLike | IteratorBase,
+    d_samples: DeviceArrayLike | IteratorT,
     d_histogram: DeviceArrayLike,
     h_num_output_levels: np.ndarray,
     h_lower_level: np.ndarray,
@@ -146,7 +148,7 @@ def make_histogram_even(
 
 
 def histogram_even(
-    d_samples: DeviceArrayLike | IteratorBase,
+    d_samples: DeviceArrayLike | IteratorT,
     d_histogram: DeviceArrayLike,
     num_output_levels: int,
     lower_level: Union[np.floating, np.integer],

@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
+from __future__ import annotations
+
 from ._bindings import Op, OpKind
 from ._caching import CachableFunction, cache_with_registered_key_functions
 
