@@ -24,6 +24,7 @@
 #endif // no system header
 
 #include <algorithm>
+#include <atomic>
 #include <iostream>
 #include <shared_mutex>
 #include <stack>
@@ -590,11 +591,12 @@ public:
         }
 
         // Debug: Print DOT output of the finalized graph
-        if (getenv("CUDASTF_DEBUG_STACKABLE_DOT"))
+        static const bool debug_stackable_dot = (getenv("CUDASTF_DEBUG_STACKABLE_DOT") != nullptr);
+        if (debug_stackable_dot)
         {
-          static int debug_graph_cnt = 0; // Warning: not thread-safe
-          ::std::string filename     = "stackable_graph_" + ::std::to_string(debug_graph_cnt++) + ".dot";
-          cudaGraphDebugDotPrint(graph, filename.c_str(), cudaGraphDebugDotFlags(0));
+          static ::std::atomic<int> debug_graph_cnt{0};
+          ::std::string filename = "stackable_graph_" + ::std::to_string(debug_graph_cnt++) + ".dot";
+          cuda_safe_call(cudaGraphDebugDotPrint(graph, filename.c_str(), cudaGraphDebugDotFlags(0)));
           ::std::cout << "Debug: Stackable graph DOT output written to " << filename << ::std::endl;
         }
 
