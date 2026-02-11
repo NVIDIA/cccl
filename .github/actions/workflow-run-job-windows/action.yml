@@ -8,6 +8,9 @@ inputs:
   command:
     description: "The command to run."
     required: true
+  environment:
+    description: "Additional environmental parameters for the command."
+    required: false
   image:
     description: "The Docker image to use."
     required: true
@@ -143,6 +146,19 @@ runs:
         echo "HOST_REPO=${{ github.workspace }}\${{ github.event.repository.name }}".Replace('\', '/') | Out-File -FilePath $env:GITHUB_OUTPUT -Append
         echo "MOUNT_REPO=C:/${{ github.event.repository.name }}" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
+    - name: Process environment variables
+      id: process_env
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        if [[ -z "${{inputs.environment}}" || "${{inputs.environment}}" == "null" ]]; then
+          echo "ENVARGS=" >> "$GITHUB_ENV"
+        else
+          # Convert JSON array to --env arguments
+          # Extra space is necessary to prevent jq from merging arguments
+          ENVARGS=$(echo ${{inputs.environment}} | jq -rj '.[] | "--env \(.) "')
+          echo "ENVARGS=$ENVARGS" >> "$GITHUB_ENV"
+        fi
+
     - name: Fetch ${{ inputs.image }}
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
@@ -230,6 +246,7 @@ runs:
           --env "SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE=${{env.SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE}}" \
           --env "WORKFLOW_ARTIFACT=${{env.WORKFLOW_ARTIFACT}}" \
           --env "WORKFLOW_DIR=${{env.WORKFLOW_DIR}}" \
+          ${ENVARGS:-} \
           ${{ inputs.image }} \
           powershell "${{steps.paths.outputs.MOUNT_REPO}}/ci.ps1"
 
