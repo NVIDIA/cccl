@@ -3,6 +3,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from __future__ import annotations
+
 from typing import Callable
 
 from .. import _bindings
@@ -10,8 +12,8 @@ from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import set_cccl_iterator_state
 from .._utils import protocols
-from ..op import OpAdapter, OpKind, make_op_adapter
-from ..typing import DeviceArrayLike, IteratorBase
+from ..op import OpAdapter, make_op_adapter
+from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
 class _UnaryTransform:
@@ -19,8 +21,8 @@ class _UnaryTransform:
 
     def __init__(
         self,
-        d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
+        d_in: DeviceArrayLike | IteratorT,
+        d_out: DeviceArrayLike | IteratorT,
         op: OpAdapter,
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
@@ -50,7 +52,7 @@ class _UnaryTransform:
 
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
-        op_adapter.update_op_state(self.op_cccl)
+        self.op_cccl.state = op_adapter.get_state()
 
         stream_handle = protocols.validate_and_get_stream(stream)
         self.build_result.compute(
@@ -74,9 +76,9 @@ class _BinaryTransform:
 
     def __init__(
         self,
-        d_in1: DeviceArrayLike | IteratorBase,
-        d_in2: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
+        d_in1: DeviceArrayLike | IteratorT,
+        d_in2: DeviceArrayLike | IteratorT,
+        d_out: DeviceArrayLike | IteratorT,
         op: OpAdapter,
     ):
         self.d_in1_cccl = cccl.to_cccl_input_iter(d_in1)
@@ -111,7 +113,7 @@ class _BinaryTransform:
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
         op_adapter = make_op_adapter(op)
-        op_adapter.update_op_state(self.op_cccl)
+        self.op_cccl.state = op_adapter.get_state()
 
         stream_handle = protocols.validate_and_get_stream(stream)
         self.build_result.compute(
@@ -127,9 +129,9 @@ class _BinaryTransform:
 
 @cache_with_registered_key_functions
 def make_unary_transform(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    op: Callable | OpKind,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
+    op: Operator,
 ):
     """
     Create a unary transform object that can be called to apply a transformation
@@ -147,7 +149,9 @@ def make_unary_transform(
     Args:
         d_in: Device array or iterator containing the input sequence of data items.
         d_out: Device array or iterator to store the result of the transformation.
-        op: Callable or OpKind representing the unary operation to apply to each element of the input.
+        op: Unary operation to apply to each element.
+            The signature is ``(T) -> U``, where ``T`` is
+            the input data type and ``U`` is the output data type.
 
     Returns:
         A callable object that performs the transformation.
@@ -158,10 +162,10 @@ def make_unary_transform(
 
 @cache_with_registered_key_functions
 def make_binary_transform(
-    d_in1: DeviceArrayLike | IteratorBase,
-    d_in2: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    op: Callable | OpKind,
+    d_in1: DeviceArrayLike | IteratorT,
+    d_in2: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
+    op: Operator,
 ):
     """
     Create a binary transform object that can be called to apply a transformation
@@ -180,7 +184,9 @@ def make_binary_transform(
         d_in1: Device array or iterator containing the first input sequence of data items.
         d_in2: Device array or iterator containing the second input sequence of data items.
         d_out: Device array or iterator to store the result of the transformation.
-        op: Callable or OpKind representing the binary operation to apply to each pair of items from the input sequences.
+        op: Binary operation.
+            The signature is ``(T1, T2) -> U``, where ``T1`` and ``T2`` are the input data types and
+            ``U`` is the output data type.
 
     Returns:
         A callable object that performs the transformation.
@@ -190,9 +196,9 @@ def make_binary_transform(
 
 
 def unary_transform(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    op: Callable | OpKind,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
+    op: Operator,
     num_items: int,
     stream=None,
 ):
@@ -222,7 +228,9 @@ def unary_transform(
     Args:
         d_in: Device array or iterator containing the input sequence of data items.
         d_out: Device array or iterator to store the result of the transformation.
-        op: Callable or OpKind representing the unary operation to apply to each element of the input.
+        op: Unary operation to apply to each element.
+            The signature is ``(T) -> U``, where ``T`` is
+            the input data type and ``U`` is the output data type.
             Can reference device arrays as globals/closures - they will be automatically captured.
         num_items: Number of items to transform.
         stream: CUDA stream to use for the operation.
@@ -233,10 +241,10 @@ def unary_transform(
 
 
 def binary_transform(
-    d_in1: DeviceArrayLike | IteratorBase,
-    d_in2: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    op: Callable | OpKind,
+    d_in1: DeviceArrayLike | IteratorT,
+    d_in2: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
+    op: Operator,
     num_items: int,
     stream=None,
 ):
@@ -264,7 +272,9 @@ def binary_transform(
         d_in1: Device array or iterator containing the first input sequence of data items.
         d_in2: Device array or iterator containing the second input sequence of data items.
         d_out: Device array or iterator to store the result of the transformation.
-        op: Callable or OpKind representing the binary operation to apply to each pair of items from the input sequences.
+        op: Binary operation.
+            The signature is ``(T1, T2) -> U``, where ``T1`` and ``T2`` are the input data types and
+            ``U`` is the output data type.
             Can reference device arrays as globals/closures - they will be automatically captured.
         num_items: Number of items to transform.
         stream: CUDA stream to use for the operation.

@@ -3,6 +3,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from __future__ import annotations
+
 import ast
 import functools
 import inspect
@@ -11,7 +13,7 @@ import struct
 import textwrap
 import uuid
 from types import new_class
-from typing import Callable, Hashable, List, Tuple
+from typing import TYPE_CHECKING, Callable, Hashable, List, Tuple
 
 import numba
 import numba.cuda
@@ -46,7 +48,9 @@ from ._utils.protocols import (
     is_device_array,
 )
 from .op import OpAdapter
-from .typing import DeviceArrayLike
+
+if TYPE_CHECKING:
+    from .typing import DeviceArrayLike
 
 # -----------------------------------------------------------------------------
 # Struct registration and casting
@@ -864,9 +868,8 @@ class _StatefulOp(OpAdapter):
         self._cachable = CachableFunction(func)
         self._state = state
 
-    @property
-    def state(self):
-        return self._state
+    def get_state(self):
+        return self._state.to_bytes()
 
     def compile(self, input_types, output_type=None) -> Op:
         transformed_func = _transform_function_ast(self._func, self._state.names)
@@ -880,16 +883,6 @@ class _StatefulOp(OpAdapter):
     @property
     def is_stateful(self) -> bool:
         return True
-
-    def update_op_state(self, cccl_op) -> None:
-        """
-        Update state by detecting device arrays from the Python callable.
-
-        Args:
-            cccl_op: The compiled CCCL Op to update
-            op: The original Python callable (needed to detect current arrays)
-        """
-        cccl_op.state = self._state.to_bytes()
 
     @property
     def func(self) -> Callable:
