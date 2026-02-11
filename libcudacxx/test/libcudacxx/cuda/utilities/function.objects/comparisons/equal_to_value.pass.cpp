@@ -46,6 +46,13 @@ __host__ __device__ constexpr bool test_numeric_types()
     static_assert(eq(2.71) == false, "");
   }
 
+  // default value
+  {
+    constexpr cuda::__equal_to_value<int> eq;
+    static_assert(eq(0) == true, "");
+    static_assert(eq(1) == false, "");
+  }
+
   return true;
 }
 

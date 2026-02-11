@@ -23,6 +23,7 @@
 
 #include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -37,6 +38,10 @@ struct __equal_to_value
 {
   _Tp __value_;
 
+  explicit constexpr __equal_to_value() noexcept(::cuda::std::is_nothrow_default_constructible_v<_Tp>)
+      : __value_(_Tp{})
+  {}
+
   explicit constexpr __equal_to_value(const _Tp& __value) noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Tp>)
       : __value_(__value)
   {}
@@ -49,10 +54,6 @@ struct __equal_to_value
     return static_cast<bool>(__lhs == __value_);
   }
 };
-
-/// @brief Deduction guide for `__equal_to_value<_Tp>`.
-template <typename _Tp>
-__equal_to_value(_Tp) -> __equal_to_value<_Tp>;
 
 _CCCL_END_NAMESPACE_CUDA
 
