@@ -214,8 +214,6 @@ def make_op_adapter(op) -> OpAdapter:
     Returns:
         A value with appropriate subtype of _BaseOp
     """
-    from ._jit import to_jit_op_adapter
-
     # Already an _OpAdapter instance:
     if isinstance(op, _OpAdapter):
         return op
