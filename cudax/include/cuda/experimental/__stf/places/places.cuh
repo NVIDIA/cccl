@@ -1138,30 +1138,6 @@ private:
   ::std::shared_ptr<impl> pimpl;
 };
 
-inline decorated_stream stream_pool::next(const exec_place& place)
-{
-  ::std::lock_guard<::std::mutex> locker(mtx);
-  _CCCL_ASSERT(index < payload.size(), "stream_pool::next index out of range");
-
-  auto& result = payload.at(index);
-
-  _CCCL_ASSERT(result.dev_id != -1, "stream_pool slot has invalid dev_id");
-
-  if (!result.stream)
-  {
-    exec_place_guard guard(place);
-    result.stream = place.create_stream();
-    result.dev_id = get_device_from_stream(result.stream);
-  }
-
-  if (++index >= payload.size())
-  {
-    index = 0;
-  }
-
-  return result;
-}
-
 /**
  * @brief RAII guard that activates an execution place and restores the previous one on destruction.
  *
@@ -1228,6 +1204,30 @@ private:
   exec_place place_;
   exec_place prev_;
 };
+
+inline decorated_stream stream_pool::next(const exec_place& place)
+{
+  ::std::lock_guard<::std::mutex> locker(mtx);
+  _CCCL_ASSERT(index < payload.size(), "stream_pool::next index out of range");
+
+  auto& result = payload.at(index);
+
+  _CCCL_ASSERT(result.dev_id != -1, "stream_pool slot has invalid dev_id");
+
+  if (!result.stream)
+  {
+    exec_place_guard guard(place);
+    result.stream = place.create_stream();
+    result.dev_id = get_device_from_stream(result.stream);
+  }
+
+  if (++index >= payload.size())
+  {
+    index = 0;
+  }
+
+  return result;
+}
 
 inline decorated_stream exec_place::getStream(async_resources_handle& async_resources, bool for_computation) const
 {
