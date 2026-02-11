@@ -86,7 +86,7 @@ adjacent_difference(execution_policy<ExecutionPolicy>& exec,
       BinaryFunction binary_op)
 {
 
-  auto wrapped_op = wrapped_function<Op>{binary_op};
+  auto wrapped_op = wrapped_function<BinaryFunction>{binary_op};
   
   if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>
                 && ::hpx::traits::is_forward_iterator_v<OutputIterator>)
