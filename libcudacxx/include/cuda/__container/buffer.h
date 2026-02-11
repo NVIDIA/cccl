@@ -32,6 +32,7 @@
 #  include <cuda/__launch/host_launch.h>
 #  include <cuda/__memory_resource/any_resource.h>
 #  include <cuda/__memory_resource/get_memory_resource.h>
+#  include <cuda/__memory_resource/allocation_alignment.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/synchronous_resource_adapter.h>
 #  include <cuda/__runtime/ensure_current_context.h>
@@ -56,10 +57,10 @@
 //! @file The \c buffer class provides a container of contiguous memory
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-// Once we add support from options taken from the env we can list them here in
-// addition to using is_same_v
 template <class _Env>
-inline constexpr bool __buffer_compatible_env = ::cuda::std::is_same_v<_Env, ::cuda::std::execution::env<>>;
+inline constexpr bool __buffer_compatible_env =
+  ::cuda::std::is_same_v<::cuda::std::decay_t<_Env>, ::cuda::std::execution::env<>>
+  || ::cuda::std::execution::__queryable_with<const _Env&, allocation_alignment_t>;
 
 //! @rst
 //! .. _libcudacxx-containers-async-vector:
@@ -135,6 +136,22 @@ private:
     return const_cast<__resource_t&>(__buf_.memory_resource());
   }
 
+  template <class _Env>
+  static size_t __alignment_from_env(const _Env& __env)
+  {
+    ::cuda::std::size_t __a;
+    if constexpr (::cuda::std::execution::__queryable_with<const _Env&, allocation_alignment_t>)
+    {
+      __a = ::cuda::allocation_alignment(__env);
+    }
+    else
+    {
+      __a = alignof(_Tp);
+    }
+    ::cuda::__validate_allocation_alignment(__a, alignof(_Tp));
+    return __a;
+  }
+
   //! @brief Copies \p __count elements from `[__first, __last)` to \p __dest,
   //! where \p __first and \p __dest reside in the different memory spaces
   //! @param __first Pointer to the start of the input segment.
@@ -166,7 +183,7 @@ public:
   //! @brief Copy-constructs from a buffer
   //! @param __other The other buffer.
   _CCCL_HIDE_FROM_ABI explicit buffer(const buffer& __other)
-      : __buf_(__other.memory_resource(), __other.stream(), __other.size())
+      : __buf_(__other.memory_resource(), __other.stream(), __other.size(), __other.__buf_.alignment())
   {
     this->__copy_cross<const_pointer>(
       __other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin(), __other.size());
@@ -184,7 +201,7 @@ public:
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
   _CCCL_HIDE_FROM_ABI explicit buffer(const buffer<_Tp, _OtherProperties...>& __other)
-      : __buf_(__other.memory_resource(), __other.stream(), __other.size())
+      : __buf_(__other.memory_resource(), __other.stream(), __other.size(), __other.__buf_.alignment())
   {
     this->__copy_cross<const_pointer>(
       __other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin(), __other.size());
@@ -207,7 +224,10 @@ public:
     ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND __buffer_compatible_env<_Env>)
   _CCCL_HIDE_FROM_ABI
   buffer(::cuda::stream_ref __stream, _Resource&& __resource, [[maybe_unused]] const _Env& __env = {})
-      : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, 0)
+      : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
+               __stream,
+               0,
+               __alignment_from_env(__env))
   {
     static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
                   "Buffer owns a copy of the memory resource, which means it must be copy constructible. "
@@ -232,7 +252,10 @@ public:
     const size_type __size,
     ::cuda::no_init_t,
     [[maybe_unused]] const _Env& __env = {})
-      : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, __size)
+      : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
+               __stream,
+               __size,
+               __alignment_from_env(__env))
   {
     static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
                   "Buffer owns a copy of the memory resource, which means it must be copy constructible. "
@@ -257,7 +280,8 @@ public:
          [[maybe_unused]] const _Env& __env = {})
       : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
                __stream,
-               static_cast<size_type>(::cuda::std::distance(__first, __last)))
+               static_cast<size_type>(::cuda::std::distance(__first, __last)),
+               __alignment_from_env(__env))
   {
     static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
                   "Buffer owns a copy of the memory resource, which means it must be copy constructible. "
@@ -278,7 +302,10 @@ public:
          _Resource&& __resource,
          ::cuda::std::initializer_list<_Tp> __ilist,
          [[maybe_unused]] const _Env& __env = {})
-      : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)), __stream, __ilist.size())
+      : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
+               __stream,
+               __ilist.size(),
+               __alignment_from_env(__env))
   {
     static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
                   "Buffer owns a copy of the memory resource, which means it must be copy constructible. "
@@ -298,7 +325,8 @@ public:
   buffer(::cuda::stream_ref __stream, _Resource&& __resource, _Range&& __range, [[maybe_unused]] const _Env& __env = {})
       : __buf_(::cuda::mr::__adapt_if_synchronous(::cuda::std::forward<_Resource>(__resource)),
                __stream,
-               static_cast<size_type>(::cuda::std::ranges::size(__range)))
+               static_cast<size_type>(::cuda::std::ranges::size(__range)),
+               __alignment_from_env(__env))
   {
     static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
                   "Buffer owns a copy of the memory resource, which means it must be copy constructible. "
@@ -322,7 +350,7 @@ public:
                __stream,
                static_cast<size_type>(
                  ::cuda::std::ranges::distance(::cuda::std::ranges::begin(__range), ::cuda::std::ranges::end(__range))),
-               __env)
+               __alignment_from_env(__env))
   {
     static_assert(::cuda::std::is_copy_constructible_v<::cuda::std::decay_t<_Resource>>,
                   "Buffer owns a copy of the memory resource, which means it must be copy constructible. "
@@ -516,6 +544,12 @@ public:
   [[nodiscard]] _CCCL_HIDE_FROM_ABI bool empty() const noexcept
   {
     return __buf_.size() == 0;
+  }
+
+  //! @brief Returns the alignment used for the allocation.
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr size_type alignment() const noexcept
+  {
+    return __buf_.alignment();
   }
   //! @}
 
