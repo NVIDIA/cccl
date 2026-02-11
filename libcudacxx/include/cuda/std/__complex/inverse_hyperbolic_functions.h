@@ -451,7 +451,7 @@ template <class _Tp>
     // If z is (NaN,+inf), the result is (+inf,NaN).
     if (::cuda::std::isnan(__realx) && ::cuda::std::isinf(__imagx))
     {
-      return complex<_Tp>(numeric_limits<_Tp>::infinity(), NAN);
+      return complex<_Tp>(numeric_limits<_Tp>::infinity(), numeric_limits<_Tp>::quiet_NaN());
     }
 
     // If z is (+-inf,NaN), the result is (+inf,NaN).
@@ -596,8 +596,7 @@ template <class _Tp>
 
   // 0.0, and some very particular values, do not survive this unsafe sqrt function.
   // This case occurs when (1 + x^2) is zero or denormal. (and rsqrt(x)*rsqrt(x) become inf).
-  constexpr __uint_t __min_normal_bits = __uint_t{0x1} << __mant_nbits;
-  const _Tp __min_normal               = ::cuda::std::__fp_from_storage<_Tp>(__min_normal_bits);
+  const _Tp __min_normal = ::cuda::std::__fp_min<_Tp>();
 
   if (__inner_most_term_hi <= _Tp{2} * __min_normal)
   {
