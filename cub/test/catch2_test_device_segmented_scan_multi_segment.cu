@@ -13,7 +13,7 @@
 #include <thrust/tabulate.h>
 
 #include <cstdint>
-#include <type_traits>
+#include <type_traits> // std::integral_constant
 
 #include "catch2_test_device_scan.cuh"
 #include <c2h/catch2_test_helper.h>
@@ -66,6 +66,13 @@ struct populate_bicyclic_monoid_input
 
 namespace
 {
+template <typename T>
+constexpr unsigned int get_max_elems()
+{
+  constexpr unsigned int max_input_bytes = (static_cast<unsigned int>(1) << 19);
+  return cuda::ceil_div(max_input_bytes, sizeof(T));
+}
+
 using integral_types = c2h::type_list<std::int32_t, std::int64_t, std::uint32_t, std::uint64_t>;
 
 using itp_list =
@@ -73,6 +80,12 @@ using itp_list =
                  std::integral_constant<int, 2>,
                  std::integral_constant<int, 3>,
                  std::integral_constant<int, 8>>;
+
+using num_segments_ct =
+  c2h::type_list<std::integral_constant<unsigned int, 7>,
+                 std::integral_constant<unsigned int, 11>,
+                 std::integral_constant<unsigned int, 13>,
+                 std::integral_constant<unsigned int, 129>>;
 
 template <int BlockThreads, int ItemsPerThread, int MaxSegmentsPerBlock, int MaxSegmentsPerWarp, typename AccumT>
 struct policy_hub_t
@@ -217,9 +230,9 @@ struct constant_value_op
 C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative op",
          "[multi_segment][segmented][scan]")
 {
-  using op_t     = impl::bicyclic_monoid_op<unsigned>;
+  using op_t     = impl::bicyclic_monoid_op<unsigned int>;
   using pair_t   = typename op_t::pair_t;
-  using offset_t = unsigned;
+  using offset_t = unsigned int;
 
   constexpr int block_size             = 128;
   constexpr int items_per_thread       = 4;
@@ -228,11 +241,11 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
   using policy_t = policy_hub_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp, pair_t>;
 
   unsigned num_items = block_size * items_per_thread * 101 + 1;
-  c2h::device_vector<unsigned> offsets{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};
+  c2h::device_vector<offset_t> offsets{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};
   size_t num_segments = offsets.size() - 1;
 
   c2h::device_vector<pair_t> input(num_items);
-  thrust::tabulate(input.begin(), input.end(), impl::populate_bicyclic_monoid_input<unsigned>{});
+  thrust::tabulate(input.begin(), input.end(), impl::populate_bicyclic_monoid_input<unsigned int>{});
   c2h::device_vector<pair_t> output(input.size());
 
   using inclusive_scan_dispatch_t = cub::detail::segmented_scan::dispatch_segmented_scan<
@@ -332,23 +345,30 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
   }
 }
 
-C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][segmented][scan]", integral_types)
+C2H_TEST("segmented exclusive scan works for integer types",
+         "[multi_segment][segmented][scan]",
+         integral_types,
+         num_segments_ct)
 {
   using value_t  = c2h::get<0, TestType>;
   using op_t     = numeric_op<value_t>;
   using offset_t = unsigned int;
 
-  constexpr unsigned num_segments      = 7;
-  constexpr unsigned items_per_segment = 128 * 4 * 33;
-  constexpr unsigned num_items         = num_segments * items_per_segment;
+  constexpr auto max_nelems = get_max_elems<value_t>();
 
-  c2h::host_vector<unsigned> h_offsets(num_segments + 1);
+  constexpr unsigned int num_segments      = c2h::get<1, TestType>{};
+  constexpr unsigned int items_per_segment = cuda::ceil_div(max_nelems, num_segments);
+  constexpr unsigned int num_items         = num_segments * items_per_segment;
+
+  CAPTURE(num_segments, num_items, items_per_segment, cuda::std::is_signed_v<value_t>);
+
+  c2h::host_vector<offset_t> h_offsets(num_segments + 1);
   for (unsigned i = 0; i <= num_segments; ++i)
   {
     h_offsets[i] = i * items_per_segment;
   }
 
-  c2h::device_vector<unsigned> offsets = h_offsets;
+  c2h::device_vector<offset_t> offsets = h_offsets;
   c2h::device_vector<value_t> input(num_items);
   thrust::tabulate(input.begin(), input.end(), init_op<value_t>{});
   c2h::device_vector<value_t> output(input.size());
@@ -436,7 +456,7 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
   using policy_t = policy_hub_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp, value_t>;
 
   unsigned num_items = block_size * items_per_thread * 132;
-  c2h::device_vector<unsigned> offsets{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};
+  c2h::device_vector<offset_t> offsets{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};
   size_t num_segments = offsets.size() - 1;
 
   c2h::device_vector<value_t> input(num_items);
@@ -458,7 +478,7 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
 
   c2h::host_vector<value_t> h_input(input);
   c2h::host_vector<value_t> h_expected(input.size());
-  c2h::host_vector<unsigned> h_offsets(offsets);
+  c2h::host_vector<offset_t> h_offsets(offsets);
 
   op_t op{};
   value_t h_init{0};
@@ -507,23 +527,28 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
 
 C2H_TEST("Segmented inclusive scan with init works for integer types",
          "[multi_segment][segmented][scan]",
-         integral_types)
+         integral_types,
+         num_segments_ct)
 {
   using value_t  = c2h::get<0, TestType>;
   using op_t     = numeric_op<value_t>;
-  using offset_t = unsigned;
+  using offset_t = unsigned int;
 
-  constexpr unsigned num_segments      = 11;
-  constexpr unsigned items_per_segment = 128 * 4 * 33;
-  constexpr unsigned num_items         = num_segments * items_per_segment;
+  constexpr auto max_nelems = get_max_elems<value_t>();
 
-  c2h::host_vector<unsigned> h_offsets(num_segments + 1);
+  constexpr unsigned int num_segments      = c2h::get<1, TestType>{};
+  constexpr unsigned int items_per_segment = cuda::ceil_div(max_nelems, num_segments);
+  constexpr unsigned int num_items         = num_segments * items_per_segment;
+
+  c2h::host_vector<offset_t> h_offsets(num_segments + 1);
   for (unsigned i = 0; i <= num_segments; ++i)
   {
     h_offsets[i] = i * items_per_segment;
   }
 
-  c2h::device_vector<unsigned> offsets = h_offsets;
+  CAPTURE(num_segments, num_items, items_per_segment, cuda::std::is_signed_v<value_t>);
+
+  c2h::device_vector<offset_t> offsets = h_offsets;
   c2h::device_vector<value_t> input(num_items);
   thrust::tabulate(input.begin(), input.end(), init_op<value_t>{});
   c2h::device_vector<value_t> output(input.size());
