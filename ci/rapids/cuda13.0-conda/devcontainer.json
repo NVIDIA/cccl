@@ -42,7 +42,7 @@
     "SCCACHE_IDLE_TIMEOUT": "${localEnv:SCCACHE_IDLE_TIMEOUT:0}",
     "SCCACHE_REGION": "us-east-2",
     "SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE": "true",
-    "SCCACHE_SERVER_LOG": "${localEnv:SCCACHE_SERVER_LOG:sccache=debug}"
+    "SCCACHE_SERVER_LOG": "${localEnv:SCCACHE_SERVER_LOG:sccache=trace}"
   },
   "initializeCommand": [
     "/bin/bash",
