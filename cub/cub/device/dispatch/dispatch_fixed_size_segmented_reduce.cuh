@@ -135,9 +135,6 @@ struct DispatchFixedSizeSegmentedReduce
 
   KernelLauncherFactory launcher_factory;
 
-  // Segment chunk size for two-phase reduction for large segments
-  static constexpr int seg_chunk_size = 1u << 12;
-
   //---------------------------------------------------------------------------
   // Constructor
   //---------------------------------------------------------------------------
@@ -273,11 +270,26 @@ struct DispatchFixedSizeSegmentedReduce
 
     static_assert((small_items_per_tile < medium_items_per_tile),
                   "small items per tile must be less than medium items per tile");
-    int blocks_per_segment = ::cuda::ceil_div(segment_size, seg_chunk_size);
+
+    constexpr auto tile_size =
+      ActivePolicyT::ReducePolicy::BLOCK_THREADS * ActivePolicyT::ReducePolicy::ITEMS_PER_THREAD;
+
+    const auto tiles_per_segment = static_cast<int>(::cuda::ceil_div(segment_size, tile_size));
+
+    // max number of tiles or blocks
+    const auto max_tiles_per_invocation =
+      static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
+
+    const auto max_segments_per_invocation = max_tiles_per_invocation / tiles_per_segment;
+
+    const auto num_invocations = ::cuda::ceil_div(num_segments, max_segments_per_invocation);
+
+    const auto num_segments_per_invocation = ::cuda::std::min(max_segments_per_invocation, num_segments);
+    const auto tiles_per_invocation        = num_segments_per_invocation * tiles_per_segment;
 
     // Temporary storage allocation requirements
     void* allocations[1]       = {};
-    size_t allocation_sizes[1] = {blocks_per_segment * num_segments * sizeof(AccumT)};
+    size_t allocation_sizes[1] = {static_cast<size_t>(tiles_per_invocation) * sizeof(AccumT)};
 
     // Alias the temporary allocations from the single storage blob (or
     // compute the necessary size of the blob)
@@ -299,67 +311,80 @@ struct DispatchFixedSizeSegmentedReduce
 
     cudaError error = cudaSuccess;
 
-    const auto num_current_blocks = static_cast<::cuda::std::int32_t>(blocks_per_segment * num_segments);
-
-    constexpr int local_seg_chunk_size = seg_chunk_size;
-    launcher_factory(num_current_blocks, ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
-      .doit(fixed_size_segmented_reduce_kernel_partial,
-            d_in,
-            d_block_reductions,
-            segment_size,
-            local_seg_chunk_size,
-            blocks_per_segment,
-            num_current_blocks,
-            reduction_op,
-            init);
-
-    error = CubDebug(cudaPeekAtLastError());
-    if (cudaSuccess != error)
+    for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
     {
-      return error;
-    }
+      const auto current_seg_offset = invocation_index * num_segments_per_invocation;
 
-    // Sync the stream if specified to flush runtime errors
-    error = CubDebug(detail::DebugSyncStream(stream));
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
+      const auto num_current_segments =
+        ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
+      const auto num_current_blocks = static_cast<::cuda::std::int32_t>(num_current_segments * tiles_per_segment);
 
-    int final_segment_size       = blocks_per_segment;
-    int final_segments_per_block = 1;
+      constexpr int seg_chunk_size = tile_size;
 
-    if (final_segment_size <= small_items_per_tile) // small segment size problem
-    {
-      final_segments_per_block = ActivePolicyT::SmallReducePolicy::SEGMENTS_PER_BLOCK;
-    }
-    else if (final_segment_size <= medium_items_per_tile) // medium segment size problem
-    {
-      final_segments_per_block = ActivePolicyT::MediumReducePolicy::SEGMENTS_PER_BLOCK;
-    }
+      launcher_factory(num_current_blocks, ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
+        .doit(fixed_size_segmented_reduce_kernel_partial,
+              d_in,
+              d_block_reductions,
+              segment_size,
+              seg_chunk_size,
+              tiles_per_segment,
+              num_current_blocks,
+              reduction_op,
+              init);
 
-    const auto final_num_current_blocks = ::cuda::ceil_div(num_segments, final_segments_per_block);
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
+      {
+        return error;
+      }
 
-    launcher_factory(
-      static_cast<::cuda::std::int32_t>(final_num_current_blocks), ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
-      .doit(fixed_size_segmented_reduce_kernel_final,
-            d_block_reductions,
-            d_out,
-            final_segment_size,
-            static_cast<::cuda::std::int32_t>(num_segments),
-            reduction_op,
-            init);
+      // Sync the stream if specified to flush runtime errors
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
+      {
+        return error;
+      }
 
-    error = CubDebug(cudaPeekAtLastError());
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
-    // Sync the stream if specified to flush runtime errors
-    error = CubDebug(detail::DebugSyncStream(stream));
-    if (cudaSuccess != error)
-    {
-      return error;
+      const int final_segment_size = tiles_per_segment;
+      int final_segments_per_block = 1;
+
+      if (final_segment_size <= small_items_per_tile) // small segment size problem
+      {
+        final_segments_per_block = ActivePolicyT::SmallReducePolicy::SEGMENTS_PER_BLOCK;
+      }
+      else if (final_segment_size <= medium_items_per_tile) // medium segment size problem
+      {
+        final_segments_per_block = ActivePolicyT::MediumReducePolicy::SEGMENTS_PER_BLOCK;
+      }
+
+      const auto final_num_current_blocks = ::cuda::ceil_div(num_current_segments, final_segments_per_block);
+
+      launcher_factory(static_cast<::cuda::std::int32_t>(final_num_current_blocks),
+                       ActivePolicyT::ReducePolicy::BLOCK_THREADS,
+                       0,
+                       stream)
+        .doit(fixed_size_segmented_reduce_kernel_final,
+              d_block_reductions,
+              d_out,
+              final_segment_size,
+              static_cast<::cuda::std::int32_t>(num_current_segments),
+              reduction_op,
+              init);
+
+      d_in += num_segments_per_invocation * segment_size;
+      d_out += num_segments_per_invocation;
+
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
+      {
+        return error;
+      }
+      // Sync the stream if specified to flush runtime errors
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
+      {
+        return error;
+      }
     }
 
     return error;
@@ -368,11 +393,11 @@ struct DispatchFixedSizeSegmentedReduce
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    const auto two_phase_segments_per_block = ::cuda::ceil_div(segment_size, seg_chunk_size);
-    const auto two_phase_num_blocks         = two_phase_segments_per_block * num_segments;
+    constexpr auto tile_size =
+      ActivePolicyT::ReducePolicy::BLOCK_THREADS * ActivePolicyT::ReducePolicy::ITEMS_PER_THREAD;
 
-    // if single chunk or if two phase cannot be completed with single invocation, use single-phase reduction
-    if (segment_size < seg_chunk_size || two_phase_num_blocks >= ::cuda::std::numeric_limits<uint32_t>::max())
+    // if segment_size is less than tile size, then use single phase
+    if (segment_size < tile_size)
     {
       return InvokePasses<ActivePolicyT>(kernel_source.FixedSizeSegmentedReduceKernel());
     }
