@@ -66,11 +66,13 @@ struct DeviceFixedSizeSegmentedReduceKernelSource
 
   CUB_DEFINE_KERNEL_GETTER(
     FixedSizeSegmentedReduceKernelPartial,
-    DeviceFixedSizeSegmentedReducePartialKernel<MaxPolicyT, InputIteratorT, AccumT*, OffsetT, ReductionOpT, InitT, AccumT>)
+    segmented_reduce::
+      DeviceFixedSizeSegmentedReducePartialKernel<MaxPolicyT, InputIteratorT, AccumT*, OffsetT, ReductionOpT, InitT, AccumT>)
 
   CUB_DEFINE_KERNEL_GETTER(
     FixedSizeSegmentedReduceKernelFinal,
-    DeviceFixedSizeSegmentedReduceKernel<MaxPolicyT, AccumT*, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT>)
+    segmented_reduce::
+      DeviceFixedSizeSegmentedReduceKernel<MaxPolicyT, AccumT*, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT>)
 
   CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t AccumSize()
   {
@@ -219,7 +221,6 @@ struct DispatchFixedSizeSegmentedReduce
 
     const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
 
-    cudaError error = cudaSuccess;
     for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
     {
       const auto current_seg_offset = invocation_index * num_segments_per_invocation;
@@ -242,20 +243,18 @@ struct DispatchFixedSizeSegmentedReduce
       d_in += num_segments_per_invocation * segment_size;
       d_out += num_segments_per_invocation;
 
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
       {
-        break;
+        return error;
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
       {
-        break;
+        return error;
       }
     }
-    return error;
+    return cudaSuccess;
   }
 
   template <typename ActivePolicyT,
@@ -309,8 +308,6 @@ struct DispatchFixedSizeSegmentedReduce
     // Alias the allocation for the privatized per-block reductions
     AccumT* d_block_reductions = static_cast<AccumT*>(allocations[0]);
 
-    cudaError error = cudaSuccess;
-
     for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
     {
       const auto current_seg_offset = invocation_index * num_segments_per_invocation;
@@ -332,15 +329,13 @@ struct DispatchFixedSizeSegmentedReduce
               reduction_op,
               init);
 
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
       {
         return error;
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
       {
         return error;
       }
@@ -374,21 +369,20 @@ struct DispatchFixedSizeSegmentedReduce
       d_in += num_segments_per_invocation * segment_size;
       d_out += num_segments_per_invocation;
 
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
       {
         return error;
       }
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
       {
         return error;
       }
     }
 
-    return error;
+    return cudaSuccess;
   }
+
   /// Invocation
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
