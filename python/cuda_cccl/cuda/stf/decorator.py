@@ -1,3 +1,7 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 from numba import cuda
 
 from cuda.stf import context, dep, exec_place
