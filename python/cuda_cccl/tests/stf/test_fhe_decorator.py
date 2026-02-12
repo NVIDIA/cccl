@@ -32,7 +32,7 @@ class Plaintext:
         return Ciphertext(self.ctx, values=encrypted, key=self.key)
 
     def print_values(self):
-        with ctx.task(
+        with self.ctx.task(
             cudastf.exec_place.host(), self.l.read(cudastf.data_place.managed())
         ) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
@@ -109,7 +109,6 @@ def circuit(a, b):
 
 def test_fhe_decorator():
     """Test FHE using @cudastf.jit decorators with addition encryption."""
-    global ctx
     ctx = cudastf.context(use_graph=False)
 
     vA = [3, 3, 2, 2, 17]

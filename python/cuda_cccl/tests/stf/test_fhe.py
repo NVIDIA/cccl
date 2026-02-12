@@ -32,7 +32,7 @@ class Plaintext:
         return Ciphertext(self.ctx, values=encrypted, key=self.key)
 
     def print_values(self):
-        with ctx.task(
+        with self.ctx.task(
             stf.exec_place.host(), self.l.read(stf.data_place.managed())
         ) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
@@ -77,7 +77,7 @@ class Ciphertext:
         if not isinstance(other, Ciphertext):
             return NotImplemented
         result = self.empty_like()
-        with ctx.task(self.l.read(), other.l.read(), result.l.write()) as t:
+        with self.ctx.task(self.l.read(), other.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
             da, db, dresult = t.numba_arguments()
             add_kernel[32, 16, nb_stream](da, db, dresult)
@@ -87,7 +87,7 @@ class Ciphertext:
         if not isinstance(other, Ciphertext):
             return NotImplemented
         result = self.empty_like()
-        with ctx.task(self.l.read(), other.l.read(), result.l.write()) as t:
+        with self.ctx.task(self.l.read(), other.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
             da, db, dresult = t.numba_arguments()
             sub_kernel[32, 16, nb_stream](da, db, dresult)
@@ -101,7 +101,7 @@ class Ciphertext:
         """Decrypt by subtracting num_operands * key"""
         result = self.empty_like()
         total_key = (num_operands * self.key) & 0xFF
-        with ctx.task(self.l.read(), result.l.write()) as t:
+        with self.ctx.task(self.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
             da, dresult = t.numba_arguments()
             sub_scalar_kernel[32, 16, nb_stream](da, dresult, total_key)
@@ -118,7 +118,6 @@ def circuit(a, b):
 
 def test_fhe():
     """Test FHE using manual task creation with addition encryption."""
-    global ctx
     ctx = stf.context(use_graph=False)
 
     vA = [3, 3, 2, 2, 17]
