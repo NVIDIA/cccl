@@ -19,9 +19,9 @@ while providing users with safer interfaces, high productivity and SOL performan
 If direct use of TMA is required to author new kernels, CCCL offers the following tools to help users get started,
 from high-level to low-level:
 
- - ``cub::BlockLoadToShared``: coming soon :)
+ - ``cub::BlockLoadToShared`` coming soon :)
  - :ref:`cuda::memcpy_async <libcudacxx-extended-api-asynchronous-operations-memcpy-async>`
- - :ref:`cuda::device::memcpy_async_tx <libcudacxx-extended-api-asynchronous-operations-memcpy-async-tx:>`
+ - :ref:`cuda::device::memcpy_async_tx <libcudacxx-extended-api-asynchronous-operations-memcpy-async-tx>`
  - :ref:`cuda::ptx::cp_async_bulk* variants <libcudacxx-ptx-instructions>`
 
 ``cub::BlockLoadToShared`` and ``cuda::memcpy_async`` have fallback implementations for pre-Hopper GPUs,
