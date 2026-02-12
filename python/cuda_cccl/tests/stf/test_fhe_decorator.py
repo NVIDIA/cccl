@@ -7,7 +7,7 @@
 import numba
 from numba import cuda
 
-import cuda.stf as cudastf
+import cuda.stf as stf
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
@@ -28,7 +28,7 @@ class Plaintext:
 
     def print_values(self):
         with self.ctx.task(
-            cudastf.exec_place.host(), self.l.read(cudastf.data_place.managed())
+            stf.exec_place.host(), self.l.read(stf.data_place.managed())
         ) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
             nb_stream.synchronize()
@@ -36,21 +36,21 @@ class Plaintext:
             print([v for v in hvalues])
 
 
-@cudastf.jit
+@stf.jit
 def add_kernel(a, b, out):
     i = cuda.grid(1)
     if i < out.size:
         out[i] = (a[i] + b[i]) & 0xFF
 
 
-@cudastf.jit
+@stf.jit
 def sub_kernel(a, b, out):
     i = cuda.grid(1)
     if i < out.size:
         out[i] = (a[i] - b[i]) & 0xFF
 
 
-@cudastf.jit
+@stf.jit
 def sub_scalar_kernel(a, out, v):
     i = cuda.grid(1)
     if i < out.size:
@@ -98,8 +98,8 @@ def circuit(a, b):
 
 
 def test_fhe_decorator():
-    """Test FHE using @cudastf.jit decorators with addition encryption."""
-    ctx = cudastf.context(use_graph=False)
+    """Test FHE using @stf.jit decorators with addition encryption."""
+    ctx = stf.context(use_graph=False)
 
     vA = [3, 3, 2, 2, 17]
     pA = Plaintext(ctx, vA, name="A")
@@ -115,7 +115,7 @@ def test_fhe_decorator():
     decrypted_out = encrypted_out.decrypt(num_operands=2)
 
     with ctx.task(
-        cudastf.exec_place.host(), decrypted_out.l.read(cudastf.data_place.managed())
+        stf.exec_place.host(), decrypted_out.l.read(stf.data_place.managed())
     ) as t:
         nb_stream = cuda.external_stream(t.stream_ptr())
         nb_stream.synchronize()

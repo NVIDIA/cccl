@@ -6,12 +6,12 @@ import numba
 import numpy as np
 from numba import cuda
 
-import cuda.stf as cudastf
+import cuda.stf as stf
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 
-@cudastf.jit
+@stf.jit
 def laplacian_5pt_kernel(u_in, u_out, dx, dy):
     """
     Compute a 5?~@~Qpoint Laplacian on u_in and write the result to u_out.
@@ -49,7 +49,7 @@ def test_numba2d():
     u = np.sin(x)[:, None] * np.cos(y)[None, :]  # shape = (nx, ny)
     u_out = np.zeros_like(u)
 
-    ctx = cudastf.context()
+    ctx = stf.context()
     lu = ctx.logical_data(u)
     lu_out = ctx.logical_data(u_out)
 

@@ -26,7 +26,7 @@ import math
 import warp as wp
 import warp.render
 
-import cuda.stf as cudastf
+import cuda.stf as stf
 
 
 # Add a stf-specific decorator to the wp. namespace
@@ -228,7 +228,7 @@ class Example:
         self.sim_dt = self.frame_dt / self.sim_substeps
         self.sim_time = 0.0
 
-        self._stf_ctx = cudastf.context()
+        self._stf_ctx = stf.context()
 
         shape = (grid_width, grid_height)
 
@@ -246,7 +246,7 @@ class Example:
         # Warp arrays are on GPU device memory, so specify data_place.device()
 
         # For regular float arrays, specify device data place
-        device_place = cudastf.data_place.device(0)
+        device_place = stf.data_place.device(0)
 
         self.rho0._stf_ld = self._stf_ctx.logical_data(
             self.rho0, device_place, name="density_current"
