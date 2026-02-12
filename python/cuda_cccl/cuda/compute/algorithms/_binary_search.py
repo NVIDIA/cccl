@@ -98,7 +98,7 @@ class _BinarySearch:
         comp_adapter = (
             _normalize_comp(comp) if comp is not None else _normalize_comp(None)
         )
-        comp_adapter.update_op_state(self.op_cccl)
+        self.op_cccl.state = comp_adapter.get_state()
 
         stream_handle = protocols.validate_and_get_stream(stream)
         self.build_result.compute(

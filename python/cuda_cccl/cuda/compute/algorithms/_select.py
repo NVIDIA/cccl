@@ -5,12 +5,26 @@
 
 from __future__ import annotations
 
+from functools import cache
+
 from .._caching import cache_with_registered_key_functions
+from .._cpp_compile import compile_cpp_to_ltoir
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators import DiscardIterator
-from ..op import OpAdapter, make_op_adapter
+from ..op import OpAdapter, RawOp, make_op_adapter
 from ..typing import DeviceArrayLike, IteratorT, Operator
 from ._three_way_partition import make_three_way_partition
+
+
+@cache
+def _always_false_op():
+    source = """
+extern "C" __device__ void always_false(void*, void* result) {{
+    *static_cast<bool*>(result) = false;
+}}
+"""
+    ltoir = compile_cpp_to_ltoir(source)
+    return RawOp(ltoir=ltoir, name="always_false")
 
 
 class _Select:
@@ -29,7 +43,7 @@ class _Select:
         self.discard_unselected = DiscardIterator(d_out)
 
         # Create adapter for the always-false second predicate
-        self.false_op = make_op_adapter(lambda x: False)
+        self.false_op = _always_false_op()
 
         # Use three_way_partition internally
         self.partitioner = make_three_way_partition(
