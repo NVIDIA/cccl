@@ -11,7 +11,7 @@ if not _BINDINGS_AVAILABLE:
 
     def __getattr__(name: str):
         raise AttributeError(
-            f"Cannot access 'cuda.stf.{name}' because CUDA STF bindings are not available. "
+            f"Cannot access 'cuda.stf.{name}' because CUDASTF bindings are not available. "
             "This typically means you're running on a CPU-only machine without CUDA drivers installed, "
             "or that cuda-cccl was not built with STF support."
         )
