@@ -102,7 +102,14 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::block_segmented_scan_policy_
     auto worker_end_off_d_in  = end_offset_d_in + start_offset;
     auto worker_beg_off_d_out = begin_offset_d_out + start_offset;
 
-    agent.consume_ranges(worker_beg_off_d_in, worker_end_off_d_in, worker_beg_off_d_out, size);
+    if (size == 1)
+    {
+      agent.consume_range(worker_beg_off_d_in[0], worker_end_off_d_in[0], worker_beg_off_d_out[0]);
+    }
+    else
+    {
+      agent.consume_ranges(worker_beg_off_d_in, worker_end_off_d_in, worker_beg_off_d_out, size);
+    }
   }
 }
 
@@ -184,15 +191,28 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t
     const auto segment_count = static_cast<IdT>(n_segments);
 
     const int n_segments_per_warp =
-      (work_id + num_segments_per_worker * warps_in_block < segment_count)
+      (work_id + (num_segments_per_worker - 1) * warps_in_block < segment_count)
         ? num_segments_per_worker
         : ::cuda::ceil_div(segment_count - work_id, warps_in_block);
 
-    const ::cuda::strided_iterator raked_begin_inp{begin_offset_d_in + work_id, warps_in_block};
-    const ::cuda::strided_iterator raked_end_inp{end_offset_d_in + work_id, warps_in_block};
-    const ::cuda::strided_iterator raked_begin_out{begin_offset_d_out + work_id, warps_in_block};
+    if (num_segments_per_worker == 1)
+    {
+      // The branch should be taken by all warps. Otherwise, since consume_range and consume_ranges methods
+      // re-use shared memory using different logic, race condition arises for temporary storage in shared memory.
 
-    agent.consume_ranges(raked_begin_inp, raked_end_inp, raked_begin_out, n_segments_per_warp);
+      if (n_segments_per_warp == 1)
+      {
+        // only those warps that do not read past end of segment iterators do the work
+        agent.consume_range(begin_offset_d_in[work_id], end_offset_d_in[work_id], begin_offset_d_out[work_id]);
+      }
+    }
+    else
+    {
+      const ::cuda::strided_iterator raked_begin_inp{begin_offset_d_in + work_id, warps_in_block};
+      const ::cuda::strided_iterator raked_end_inp{end_offset_d_in + work_id, warps_in_block};
+      const ::cuda::strided_iterator raked_begin_out{begin_offset_d_out + work_id, warps_in_block};
+      agent.consume_ranges(raked_begin_inp, raked_end_inp, raked_begin_out, n_segments_per_warp);
+    }
   }
 }
 
