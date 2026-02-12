@@ -1095,11 +1095,7 @@ def set_derived_tags(matrix_job):
 
     # Apply project-specific job exclusions (e.g. skip_jobs_on_windows when cxx is MSVC)
     skip_on_windows = project.get("skip_jobs_on_windows")
-    if (
-        skip_on_windows
-        and "cxx" in matrix_job
-        and is_windows(matrix_job)
-    ):
+    if skip_on_windows and "cxx" in matrix_job and is_windows(matrix_job):
         for job in skip_on_windows:
             if job in matrix_job["jobs"]:
                 matrix_job["jobs"].remove(job)
