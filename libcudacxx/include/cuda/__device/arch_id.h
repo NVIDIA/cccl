@@ -61,6 +61,29 @@ enum class arch_id : int
   sm_121a = 121 * __arch_specific_id_multiplier,
 };
 
+// todo: = delete these in 4.0.
+#define _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(_OP)                                                                     \
+  CCCL_DEPRECATED_BECAUSE("Comparing cuda::arch_id using operator" _CCCL_TO_STRING(                                   \
+    _OP) " is deprecated and will be deleted in next major release. Compare cuda::compute_capabilities of the given " \
+         "cuda::arch_id instead.")
+[[nodiscard]] _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(<) _CCCL_API bool operator<(arch_id __lhs, arch_id __rhs) noexcept
+{
+  return ::cuda::std::to_underlying(__lhs) < ::cuda::std::to_underlying(__rhs);
+}
+[[nodiscard]] _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(<=) _CCCL_API bool operator<=(arch_id __lhs, arch_id __rhs) noexcept
+{
+  return ::cuda::std::to_underlying(__lhs) <= ::cuda::std::to_underlying(__rhs);
+}
+[[nodiscard]] _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(>) _CCCL_API bool operator>(arch_id __lhs, arch_id __rhs) noexcept
+{
+  return ::cuda::std::to_underlying(__lhs) > ::cuda::std::to_underlying(__rhs);
+}
+[[nodiscard]] _CCCL_DEPRECATED_ARCH_ID_COMPARISONS(>=) _CCCL_API bool operator>=(arch_id __lhs, arch_id __rhs) noexcept
+{
+  return ::cuda::std::to_underlying(__lhs) >= ::cuda::std::to_underlying(__rhs);
+}
+#undef _CCCL_DEPRECATED_ARCH_ID_COMPARISONS
+
 [[nodiscard]] _CCCL_API constexpr auto __all_arch_ids() noexcept
 {
   return ::cuda::std::array{
