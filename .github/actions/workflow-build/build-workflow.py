@@ -1093,13 +1093,6 @@ def set_derived_tags(matrix_job):
             matrix_job["jobs"].remove(original_job)
             matrix_job["jobs"] += expanded_jobs
 
-    # Apply project-specific job exclusions (e.g. skip_jobs_on_windows when cxx is MSVC)
-    skip_on_windows = project.get("skip_jobs_on_windows")
-    if skip_on_windows and "cxx" in matrix_job and is_windows(matrix_job):
-        for job in skip_on_windows:
-            if job in matrix_job["jobs"]:
-                matrix_job["jobs"].remove(job)
-
 
 def next_explode_tag(matrix_job):
     non_exploded_tags = ["jobs"]
