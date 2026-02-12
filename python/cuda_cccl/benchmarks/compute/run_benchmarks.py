@@ -23,6 +23,7 @@ Options:
 Benchmark names follow CUB structure:
   transform/fill, transform/babelstream, transform/heavy, transform/fib
   transform/grayscale, transform/complex_cmp
+  transform_reduce/sum
   reduce/sum, reduce/min, reduce/custom
   reduce/deterministic, reduce/nondeterministic
   scan/exclusive/sum, scan/exclusive/custom
@@ -68,6 +69,7 @@ SUPPORTED_BENCHMARKS = [
     "transform/fib",
     "transform/grayscale",
     "transform/complex_cmp",
+    "transform_reduce/sum",
     "reduce/sum",
     "reduce/min",
     "reduce/custom",

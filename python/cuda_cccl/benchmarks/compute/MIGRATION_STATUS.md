@@ -6,8 +6,8 @@ Python implementations live under `python/cuda_cccl/benchmarks/compute/`.
 ## Summary
 
 - Total C++ benchmarks: 58
-- Implemented in Python: 25
-- Not implemented in Python: 33
+- Implemented in Python: 26
+- Not implemented in Python: 32
 
 ## Mapping
 
@@ -74,4 +74,4 @@ Status key:
 | `transform/grayscale.cu` | `transform/grayscale.py` | Implemented | |
 | `transform/heavy.cu` | `transform/heavy.py` | Implemented | |
 | `transform/pytorch.cu` | - | Not implemented | No Python API equivalent |
-| `transform_reduce/sum.cu` | - | Not implemented | Possible via `TransformIterator` + `reduce_into` |
+| `transform_reduce/sum.cu` | `transform_reduce/sum.py` | Implemented | Uses `TransformIterator` + `reduce_into` |

@@ -34,6 +34,10 @@ transform/grayscale:
 transform/complex_cmp:
   "Elements{io}": 16
 
+transform_reduce/sum:
+  "T{ct}": "I32"
+  "Elements{io}": 16
+
 reduce/sum:
   "T{ct}": "I32"
   "Elements{io}": 16

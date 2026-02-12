@@ -38,6 +38,7 @@ SUPPORTED_BENCHMARKS = [
     "transform/fib",
     "transform/grayscale",
     "transform/complex_cmp",
+    "transform_reduce/sum",
     "reduce/sum",
     "reduce/min",
     "reduce/custom",
