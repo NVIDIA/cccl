@@ -168,7 +168,10 @@ cdef class logical_data:
     cdef str    _symbol  # Store symbol for display purposes
     cdef readonly bint _is_token  # readonly makes it accessible from Python
 
-    def __cinit__(self, context ctx=None, object buf=None, data_place dplace=None, shape=None, dtype=None):
+    def __cinit__(self, context ctx=None, object buf=None, data_place dplace=None, shape=None, dtype=None, str name=None):
+        cdef Py_buffer view
+        cdef int flags
+
         if ctx is None or buf is None:
             # allow creation via __new__ (eg. in empty_like)
             self._ld = NULL
@@ -221,25 +224,28 @@ cdef class logical_data:
 
             # Create STF logical data using the new C API with data place specification
             stf_logical_data_with_place(ctx._ctx, &self._ld, <void*><uintptr_t>data_ptr, self._len, dplace._c_place)
-            return
 
-        # Fallback to Python buffer protocol
-        cdef Py_buffer view
-        cdef int flags = PyBUF_FORMAT | PyBUF_ND          # request dtype + shape
+        else:
+            # Fallback to Python buffer protocol
+            flags = PyBUF_FORMAT | PyBUF_ND          # request dtype + shape
 
-        if PyObject_GetBuffer(buf, &view, flags) != 0:
-            raise ValueError("object doesn't support the full buffer protocol or __cuda_array_interface__")
+            if PyObject_GetBuffer(buf, &view, flags) != 0:
+                raise ValueError("object doesn't support the full buffer protocol or __cuda_array_interface__")
 
-        try:
-            self._ndim  = view.ndim
-            self._len = view.len
-            self._shape = tuple(<Py_ssize_t>view.shape[i] for i in range(view.ndim))
-            self._dtype = np.dtype(view.format)
-            # For buffer protocol objects, use the specified data place (defaults to host)
-            stf_logical_data_with_place(ctx._ctx, &self._ld, view.buf, view.len, dplace._c_place)
+            try:
+                self._ndim  = view.ndim
+                self._len = view.len
+                self._shape = tuple(<Py_ssize_t>view.shape[i] for i in range(view.ndim))
+                self._dtype = np.dtype(view.format)
+                # For buffer protocol objects, use the specified data place (defaults to host)
+                stf_logical_data_with_place(ctx._ctx, &self._ld, view.buf, view.len, dplace._c_place)
 
-        finally:
-            PyBuffer_Release(&view)
+            finally:
+                PyBuffer_Release(&view)
+
+        # Apply symbol name if provided
+        if name is not None:
+            self.set_symbol(name)
 
 
     def set_symbol(self, str name):
@@ -316,9 +322,9 @@ cdef class logical_data:
         return out
 
     @staticmethod
-    def init_by_shape(context ctx, shape, dtype):
+    def init_by_shape(context ctx, shape, dtype, str name=None):
         """
-        Create a new logical_data from a  shape and a dtype
+        Create a new logical_data from a shape and a dtype.
         """
         cdef logical_data out = logical_data.__new__(logical_data)
         out._ctx   = ctx._ctx
@@ -329,9 +335,12 @@ cdef class logical_data:
         for dim in shape:
             total_items *= dim
         out._len   = total_items * out._dtype.itemsize
-        out._symbol = None  # New object has no symbol initially
+        out._symbol = None
         out._is_token = False
         stf_logical_data_empty(ctx._ctx, out._len, &out._ld)
+
+        if name is not None:
+            out.set_symbol(name)
 
         return out
 
@@ -647,7 +656,7 @@ cdef class context:
                 stf_ctx_finalize(self._ctx)
         self._ctx = NULL
 
-    def logical_data(self, object buf, data_place dplace=None):
+    def logical_data(self, object buf, data_place dplace=None, str name=None):
         """
         Create and return a `logical_data` object bound to this context [PRIMARY API].
 
@@ -663,6 +672,8 @@ cdef class context:
               Specifies where the buffer is located (host, device, managed, affine).
               Defaults to data_place.host() for backward compatibility.
               Essential for GPU arrays - use data_place.device() for optimal performance.
+        name : str, optional
+              Symbol name for debugging and DOT graph output.
 
         Examples
         --------
@@ -674,9 +685,8 @@ cdef class context:
         >>> device_place = data_place.device(0)
         >>> ld = ctx.logical_data(warp_array, device_place)
         >>>
-        >>> # Managed/unified memory
-        >>> managed_place = data_place.managed()
-        >>> ld = ctx.logical_data(unified_array, managed_place)
+        >>> # With a symbol name for debugging
+        >>> ld = ctx.logical_data(numpy_array, name="X")
         >>>
         >>> # Backward compatibility (defaults to host)
         >>> ld = ctx.logical_data(numpy_array)  # Same as specifying host
@@ -686,10 +696,10 @@ cdef class context:
         For GPU arrays (Warp, CuPy, etc.), always specify data_place.device()
         for zero-copy performance and correct memory management.
         """
-        return logical_data(self, buf, dplace)
+        return logical_data(self, buf, dplace, name=name)
 
 
-    def logical_data_empty(self, shape, dtype=None):
+    def logical_data_empty(self, shape, dtype=None, str name=None):
         """
         Create logical data with uninitialized values.
 
@@ -701,6 +711,8 @@ cdef class context:
             Shape of the array
         dtype : numpy.dtype, optional
             Data type. Defaults to np.float64.
+        name : str, optional
+            Symbol name for debugging and DOT graph output.
 
         Returns
         -------
@@ -713,13 +725,13 @@ cdef class context:
         >>> ld = ctx.logical_data_empty((100, 100), dtype=np.float32)
 
         >>> # Fast allocation without initialization
-        >>> ld = ctx.logical_data_empty((50, 50, 50))
+        >>> ld = ctx.logical_data_empty((50, 50, 50), name="tmp")
         """
         if dtype is None:
             dtype = np.float64
-        return logical_data.init_by_shape(self, shape, dtype)
+        return logical_data.init_by_shape(self, shape, dtype, name)
 
-    def logical_data_full(self, shape, fill_value, dtype=None, where=None, exec_place=None):
+    def logical_data_full(self, shape, fill_value, dtype=None, where=None, exec_place=None, str name=None):
         """
         Create logical data initialized with a constant value.
 
@@ -739,6 +751,8 @@ cdef class context:
         exec_place : exec_place, optional
             Execution place for the fill operation. Defaults to current device.
             Note: exec_place.host() is not yet supported.
+        name : str, optional
+            Symbol name for debugging and DOT graph output.
 
         Returns
         -------
@@ -753,9 +767,8 @@ cdef class context:
         >>> # Create array on host memory
         >>> ld = ctx.logical_data_full((50, 50), 1.0, where=data_place.host())
 
-        >>> # Create array on specific device, execute on device 1
-        >>> ld = ctx.logical_data_full((200, 200), 0.0, where=data_place.device(0),
-        ...                          exec_place=exec_place.device(1))
+        >>> # With a symbol name
+        >>> ld = ctx.logical_data_full((200, 200), 0.0, name="epsilon")
         """
         # Infer dtype from fill_value if not provided
         if dtype is None:
@@ -772,7 +785,7 @@ cdef class context:
                 )
 
         # Create empty logical data
-        ld = self.logical_data_empty(shape, dtype)
+        ld = self.logical_data_empty(shape, dtype, name)
 
         # Initialize with the specified value using NUMBA
         # The numba code already handles None properly by calling ld.write() without data place
@@ -784,7 +797,7 @@ cdef class context:
 
         return ld
 
-    def logical_data_zeros(self, shape, dtype=None, where=None, exec_place=None):
+    def logical_data_zeros(self, shape, dtype=None, where=None, exec_place=None, str name=None):
         """
         Create logical data filled with zeros.
 
@@ -800,6 +813,8 @@ cdef class context:
             Data placement. Defaults to current device.
         exec_place : exec_place, optional
             Execution place for the fill operation. Defaults to current device.
+        name : str, optional
+            Symbol name for debugging and DOT graph output.
 
         Returns
         -------
@@ -811,14 +826,14 @@ cdef class context:
         >>> # Create zero-filled array
         >>> ld = ctx.logical_data_zeros((100, 100), dtype=np.float32)
 
-        >>> # Create on host memory
-        >>> ld = ctx.logical_data_zeros((50, 50), where=data_place.host())
+        >>> # Create on host memory with a name
+        >>> ld = ctx.logical_data_zeros((50, 50), where=data_place.host(), name="Z")
         """
         if dtype is None:
             dtype = np.float64
-        return self.logical_data_full(shape, 0.0, dtype, where, exec_place)
+        return self.logical_data_full(shape, 0.0, dtype, where, exec_place, name)
 
-    def logical_data_ones(self, shape, dtype=None, where=None, exec_place=None):
+    def logical_data_ones(self, shape, dtype=None, where=None, exec_place=None, str name=None):
         """
         Create logical data filled with ones.
 
@@ -834,6 +849,8 @@ cdef class context:
             Data placement. Defaults to current device.
         exec_place : exec_place, optional
             Execution place for the fill operation. Defaults to current device.
+        name : str, optional
+            Symbol name for debugging and DOT graph output.
 
         Returns
         -------
@@ -845,12 +862,12 @@ cdef class context:
         >>> # Create ones-filled array
         >>> ld = ctx.logical_data_ones((100, 100), dtype=np.float32)
 
-        >>> # Create on specific device
-        >>> ld = ctx.logical_data_ones((50, 50), exec_place=exec_place.device(1))
+        >>> # Create on specific device with a name
+        >>> ld = ctx.logical_data_ones((50, 50), name="ones")
         """
         if dtype is None:
             dtype = np.float64
-        return self.logical_data_full(shape, 1.0, dtype, where, exec_place)
+        return self.logical_data_full(shape, 1.0, dtype, where, exec_place, name)
 
     def token(self):
         return logical_data.token(self)

@@ -234,9 +234,9 @@ class TiledMatrix:
                         col = lcol + colb * self.nb
                         h_block[lrow, lcol] = func(row, col)
 
-                handle = self.ctx.logical_data(h_block)
-                handle.set_symbol(f"{self.symbol}_{rowb}_{colb}")
-
+                handle = self.ctx.logical_data(
+                    h_block, name=f"{self.symbol}_{rowb}_{colb}"
+                )
                 self.handles[(rowb, colb)] = handle
 
 

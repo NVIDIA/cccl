@@ -13,19 +13,14 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 
 class Plaintext:
-    def __init__(self, ctx, values=None, ld=None, key=0x42):
+    def __init__(self, ctx, values=None, ld=None, key=0x42, name=None):
         self.ctx = ctx
         self.key = key
         if ld is not None:
             self.l = ld
         if values is not None:
             self.values = bytearray(values)
-            self.l = ctx.logical_data(self.values)
-        self.symbol = None
-
-    def set_symbol(self, symbol: str):
-        self.l.set_symbol(symbol)
-        self.symbol = symbol
+            self.l = ctx.logical_data(self.values, name=name)
 
     def encrypt(self) -> "Ciphertext":
         encrypted = bytearray([(c + self.key) & 0xFF for c in self.values])
@@ -63,15 +58,14 @@ def sub_scalar_kernel(a, out, v):
 
 
 class Ciphertext:
-    def __init__(self, ctx, values=None, ld=None, key=0x42):
+    def __init__(self, ctx, values=None, ld=None, key=0x42, name=None):
         self.ctx = ctx
         self.key = key
         if ld is not None:
             self.l = ld
         if values is not None:
             self.values = bytearray(values)
-            self.l = ctx.logical_data(self.values)
-        self.symbol = None
+            self.l = ctx.logical_data(self.values, name=name)
 
     def __add__(self, other):
         if not isinstance(other, Ciphertext):
@@ -86,10 +80,6 @@ class Ciphertext:
         result = self.empty_like()
         sub_kernel[32, 16](self.l.read(), other.l.read(), result.l.write())
         return result
-
-    def set_symbol(self, symbol: str):
-        self.l.set_symbol(symbol)
-        self.symbol = symbol
 
     def decrypt(self, num_operands=2):
         """Decrypt by subtracting num_operands * key"""
@@ -112,12 +102,10 @@ def test_fhe_decorator():
     ctx = cudastf.context(use_graph=False)
 
     vA = [3, 3, 2, 2, 17]
-    pA = Plaintext(ctx, vA)
-    pA.set_symbol("A")
+    pA = Plaintext(ctx, vA, name="A")
 
     vB = [1, 7, 7, 7, 49]
-    pB = Plaintext(ctx, vB)
-    pB.set_symbol("B")
+    pB = Plaintext(ctx, vB, name="B")
 
     expected = [circuit(a, b) & 0xFF for a, b in zip(vA, vB)]
 

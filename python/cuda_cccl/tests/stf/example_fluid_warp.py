@@ -248,24 +248,30 @@ class Example:
         # For regular float arrays, specify device data place
         device_place = cudastf.data_place.device(0)
 
-        self.rho0._stf_ld = self._stf_ctx.logical_data(self.rho0, device_place)
-        self.rho1._stf_ld = self._stf_ctx.logical_data(self.rho1, device_place)
-        self.p0._stf_ld = self._stf_ctx.logical_data(self.p0, device_place)
-        self.p1._stf_ld = self._stf_ctx.logical_data(self.p1, device_place)
-        self.div._stf_ld = self._stf_ctx.logical_data(self.div, device_place)
+        self.rho0._stf_ld = self._stf_ctx.logical_data(
+            self.rho0, device_place, name="density_current"
+        )
+        self.rho1._stf_ld = self._stf_ctx.logical_data(
+            self.rho1, device_place, name="density_next"
+        )
+        self.p0._stf_ld = self._stf_ctx.logical_data(
+            self.p0, device_place, name="pressure_current"
+        )
+        self.p1._stf_ld = self._stf_ctx.logical_data(
+            self.p1, device_place, name="pressure_next"
+        )
+        self.div._stf_ld = self._stf_ctx.logical_data(
+            self.div, device_place, name="velocity_divergence"
+        )
 
         # vec2 arrays - STF now automatically handles vector type flattening
         # Store STF logical data consistently with other arrays
-        self.u0._stf_ld = self._stf_ctx.logical_data(self.u0, device_place)
-        self.u1._stf_ld = self._stf_ctx.logical_data(self.u1, device_place)
-
-        self.rho0._stf_ld.set_symbol("density_current")
-        self.rho1._stf_ld.set_symbol("density_next")
-        self.p0._stf_ld.set_symbol("pressure_current")
-        self.p1._stf_ld.set_symbol("pressure_next")
-        self.div._stf_ld.set_symbol("velocity_divergence")
-        self.u0._stf_ld.set_symbol("velocity_current")
-        self.u1._stf_ld.set_symbol("velocity_next")
+        self.u0._stf_ld = self._stf_ctx.logical_data(
+            self.u0, device_place, name="velocity_current"
+        )
+        self.u1._stf_ld = self._stf_ctx.logical_data(
+            self.u1, device_place, name="velocity_next"
+        )
 
         # Set Warp array names (for Warp tracing)
         self.u0._name = "u0"
