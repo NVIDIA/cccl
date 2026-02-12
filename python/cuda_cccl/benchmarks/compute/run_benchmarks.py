@@ -21,14 +21,17 @@ Options:
   -h, --help            Show this help message
 
 Benchmark names follow CUB structure:
-  transform/fill, transform/babelstream, transform/heavy
-  reduce/sum, reduce/min
-  scan/exclusive/sum
+  transform/fill, transform/babelstream, transform/heavy, transform/fib
+  transform/grayscale, transform/complex_cmp
+  reduce/sum, reduce/min, reduce/custom
+  reduce/deterministic, reduce/nondeterministic
+  scan/exclusive/sum, scan/exclusive/custom
   histogram/even
-  select/if, select/unique_by_key
+  select/if, select/flagged, select/unique_by_key
   radix_sort/keys, radix_sort/pairs
-  merge_sort/keys
-  segmented_reduce/sum
+  merge_sort/keys, merge_sort/pairs
+  segmented_sort/keys
+  segmented_reduce/sum, segmented_reduce/custom
   partition/three_way
 
 Examples:
@@ -62,22 +65,34 @@ SUPPORTED_BENCHMARKS = [
     "transform/fill",
     "transform/babelstream",
     "transform/heavy",
+    "transform/fib",
+    "transform/grayscale",
+    "transform/complex_cmp",
     "reduce/sum",
     "reduce/min",
+    "reduce/custom",
+    "reduce/deterministic",
+    "reduce/nondeterministic",
     "scan/exclusive/sum",
+    "scan/exclusive/custom",
     "histogram/even",
     "select/if",
+    "select/flagged",
     "select/unique_by_key",
     "radix_sort/keys",
     "radix_sort/pairs",
     "merge_sort/keys",
+    "merge_sort/pairs",
+    "segmented_sort/keys",
     "segmented_reduce/sum",
+    "segmented_reduce/custom",
     "partition/three_way",
 ]
 
 # Axes that use power-of-two values (need [pow2] suffix for nvbench)
 # These are the base names (without {ct}/{io} suffixes)
-POW2_AXES = {"Elements", "MaxSegSize", "SegmentSize"}
+POW2_AXES_CPP = {"Elements", "MaxSegSize", "MaxSegmentSize", "SegmentSize", "Segments"}
+POW2_AXES_PY = {"Elements", "MaxSegSize", "MaxSegmentSize", "Segments"}
 
 # Axis name mappings from C++ to Python
 # C++ uses suffixes like {ct} (compile-time) and {io} (input/output)
@@ -146,34 +161,42 @@ def load_quick_configs() -> dict:
         return yaml.safe_load(f)
 
 
-def build_axis_args(benchmark: str, quick_configs: dict, for_python: bool) -> list:
-    """Build --axis arguments for nvbench CLI.
+def build_axis_args_from_config(axis_config: dict, for_python: bool) -> list:
+    """Build --axis arguments for nvbench CLI from an axis config dict.
 
     Args:
-        benchmark: Benchmark name
-        quick_configs: Quick mode configurations
+        axis_config: Dict of axis_name -> value
         for_python: If True, strip C++ suffixes for Python benchmarks
     """
-    if benchmark not in quick_configs:
-        raise ValueError(
-            f"Benchmark '{benchmark}' not found in quick_configs.yaml.\n"
-            f"Cannot run in --quick mode. Add configuration for this benchmark."
-        )
-
-    config = quick_configs[benchmark]
     args = []
-    for axis_name, value in config.items():
+    for axis_name, value in axis_config.items():
         # For Python, strip C++ suffixes from axis names
         if for_python:
             axis_name = strip_axis_suffix(axis_name)
 
         # Check if this is a power-of-two axis (using base name)
         base_name = get_base_axis_name(axis_name)
-        if base_name in POW2_AXES:
+        if for_python and base_name == "SegmentSize":
+            actual_value = 2 ** int(value)
+            args.extend(["--axis", f"{axis_name}={actual_value}"])
+            continue
+
+        pow2_axes = POW2_AXES_PY if for_python else POW2_AXES_CPP
+        if base_name in pow2_axes:
             args.extend(["--axis", f"{axis_name}[pow2]={value}"])
         else:
             args.extend(["--axis", f"{axis_name}={value}"])
     return args
+
+
+def get_quick_config_entry(benchmark: str, quick_configs: dict) -> dict:
+    """Get quick config entry for a benchmark, raising if missing."""
+    if benchmark not in quick_configs:
+        raise ValueError(
+            f"Benchmark '{benchmark}' not found in quick_configs.yaml.\n"
+            f"Cannot run in --quick mode. Add configuration for this benchmark."
+        )
+    return quick_configs[benchmark]
 
 
 def get_cpp_binary(benchmark: str) -> str:
@@ -230,8 +253,20 @@ def run_benchmark(
     cpp_axis_args = []
     py_axis_args = []
     if quick_mode:
-        cpp_axis_args = build_axis_args(benchmark, quick_configs, for_python=False)
-        py_axis_args = build_axis_args(benchmark, quick_configs, for_python=True)
+        config_entry = get_quick_config_entry(benchmark, quick_configs)
+        if "benchmarks" in config_entry:
+            for bench_name, axis_config in config_entry["benchmarks"].items():
+                cpp_axis_args.extend(["--benchmark", bench_name])
+                cpp_axis_args.extend(
+                    build_axis_args_from_config(axis_config, for_python=False)
+                )
+                py_axis_args.extend(["--benchmark", bench_name])
+                py_axis_args.extend(
+                    build_axis_args_from_config(axis_config, for_python=True)
+                )
+        else:
+            cpp_axis_args = build_axis_args_from_config(config_entry, for_python=False)
+            py_axis_args = build_axis_args_from_config(config_entry, for_python=True)
 
     results = {}
 

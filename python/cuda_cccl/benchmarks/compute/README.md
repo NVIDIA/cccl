@@ -30,22 +30,22 @@ Binaries are built to: `build/cub/bin/`
 
 ```bash
 # Run both C++ and Python (default)
-./run_benchmarks.sh -b fill -d 0
+python run_benchmarks.py -b transform/fill -d 0
 
 # Run only C++
-./run_benchmarks.sh -b fill --cpp
+python run_benchmarks.py -b transform/fill --cpp
 
 # Run only Python
-./run_benchmarks.sh -b fill --py
+python run_benchmarks.py -b transform/fill --py
 
 # Show help
-./run_benchmarks.sh --help
+python run_benchmarks.py --help
 ```
 
 ## Compare Results
 
 ```bash
-python analysis/python_vs_cpp_summary.py -b fill
+python analysis/python_vs_cpp_summary.py -b transform/fill
 ```
 
 ## Manual Usage
@@ -54,7 +54,7 @@ python analysis/python_vs_cpp_summary.py -b fill
 
 ```bash
 # Python
-python nvbench_fill.py --list
+python transform/fill.py --list
 
 # C++
 /path/to/cccl/build/cub/bin/cub.bench.transform.fill.base --list
@@ -64,11 +64,11 @@ python nvbench_fill.py --list
 
 ```bash
 # Python - specific type and size
-python nvbench_fill.py --axis "T=I32" --axis "Elements=20" --devices 0
+python transform/fill.py --axis "T=I32" --axis "Elements[pow2]=20" --devices 0
 
 # C++ - save JSON
 /path/to/cccl/build/cub/bin/cub.bench.transform.fill.base \
-  --json results/fill_cpp.json \
+  --json results/transform/fill_cpp.json \
   --devices 0
 ```
 
@@ -76,7 +76,7 @@ python nvbench_fill.py --axis "T=I32" --axis "Elements=20" --devices 0
 
 ```bash
 python analysis/python_vs_cpp_summary.py \
-  results/fill_py.json \
-  results/fill_cpp.json \
+  results/transform/fill_py.json \
+  results/transform/fill_cpp.json \
   --device 0
 ```

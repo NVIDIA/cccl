@@ -29,22 +29,34 @@ except ImportError:
 
 import utils
 
-# Supported benchmarks (must match run_benchmarks.sh)
+# Supported benchmarks (must match run_benchmarks.py)
 # Format: "category/name" or "category/subcategory/name"
 SUPPORTED_BENCHMARKS = [
     "transform/fill",
     "transform/babelstream",
     "transform/heavy",
+    "transform/fib",
+    "transform/grayscale",
+    "transform/complex_cmp",
     "reduce/sum",
     "reduce/min",
+    "reduce/custom",
+    "reduce/deterministic",
+    "reduce/nondeterministic",
     "scan/exclusive/sum",
+    "scan/exclusive/custom",
     "histogram/even",
     "select/if",
+    "select/flagged",
+    "select/unique_by_key",
     "radix_sort/keys",
     "radix_sort/pairs",
+    "merge_sort/keys",
+    "merge_sort/pairs",
+    "segmented_sort/keys",
     "segmented_reduce/sum",
-    # Add more as implemented:
-    # "unique/by_key",
+    "segmented_reduce/custom",
+    "partition/three_way",
 ]
 
 # Standard axes that are handled specially (not used for grouping)
@@ -643,7 +655,7 @@ Supported benchmarks:
 
             if not py_path.exists() or not cpp_path.exists():
                 print(f"Skipping {bench}: results not found")
-                print(f"  Run: ./run_benchmarks.sh -b {bench}")
+                print(f"  Run: ./run_benchmarks.py -b {bench}")
                 print()
                 continue
 
@@ -658,7 +670,7 @@ Supported benchmarks:
 
         if not any_success:
             print("No benchmark results found. Run benchmarks first:")
-            print("  ./run_benchmarks.sh -b transform/fill")
+            print("  ./run_benchmarks.py -b transform/fill")
             sys.exit(1)
 
 

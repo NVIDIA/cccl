@@ -5,8 +5,9 @@
 # Use C++ axis names (with {ct}/{io} suffixes where applicable).
 # The script strips these suffixes for Python benchmarks.
 #
-# For power-of-two axes (Elements{io}, MaxSegSize, SegmentSize),
-# values are exponents (e.g., 16 means 2^16 = 65536).
+# For power-of-two axes (Elements{io}, MaxSegSize, MaxSegmentSize, SegmentSize, Segments{io}),
+# values are exponents (e.g., 16 means 2^16 = 65536). SegmentSize is converted to
+# actual values for Python benchmarks.
 #
 # NOTE: Only specify axes that exist in BOTH C++ and Python benchmarks.
 # Some C++ benchmarks have extra axes (like OffsetT{ct}) not in Python.
@@ -23,6 +24,16 @@ transform/heavy:
   "Heaviness{ct}": "64"
   "Elements{io}": 16
 
+transform/fib:
+  "Elements{io}": 16
+
+transform/grayscale:
+  "T{ct}": "F32"
+  "Elements{io}": 16
+
+transform/complex_cmp:
+  "Elements{io}": 16
+
 reduce/sum:
   "T{ct}": "I32"
   "Elements{io}": 16
@@ -31,7 +42,23 @@ reduce/min:
   "T{ct}": "I32"
   "Elements{io}": 16
 
+reduce/custom:
+  "T{ct}": "I32"
+  "Elements{io}": 16
+
+reduce/deterministic:
+  "T{ct}": "F32"
+  "Elements{io}": 16
+
+reduce/nondeterministic:
+  "T{ct}": "I32"
+  "Elements{io}": 16
+
 scan/exclusive/sum:
+  "T{ct}": "I32"
+  "Elements{io}": 16
+
+scan/exclusive/custom:
   "T{ct}": "I32"
   "Elements{io}": 16
 
@@ -42,6 +69,11 @@ histogram/even:
   "Entropy": "1.000"
 
 select/if:
+  "T{ct}": "I32"
+  "Elements{io}": 16
+  "Entropy": "1.000"
+
+select/flagged:
   "T{ct}": "I32"
   "Elements{io}": 16
   "Entropy": "1.000"
@@ -68,10 +100,57 @@ merge_sort/keys:
   "Elements{io}": 16
   "Entropy": "1.000"
 
-segmented_reduce/sum:
-  "T{ct}": "I32"
+merge_sort/pairs:
+  "KeyT{ct}": "I32"
+  "ValueT{ct}": "I32"
   "Elements{io}": 16
-  "SegmentSize": 10
+  "Entropy": "1.000"
+
+segmented_reduce/sum:
+  benchmarks:
+    small:
+      "T{ct}": "I32"
+      "Elements{io}": 16
+      "SegmentSize": 3
+    medium:
+      "T{ct}": "I32"
+      "Elements{io}": 16
+      "SegmentSize": 6
+    large:
+      "T{ct}": "I32"
+      "Elements{io}": 16
+      "SegmentSize": 10
+
+segmented_reduce/custom:
+  benchmarks:
+    small:
+      "T{ct}": "I32"
+      "Elements{io}": 16
+      "SegmentSize": 3
+    medium:
+      "T{ct}": "I32"
+      "Elements{io}": 16
+      "SegmentSize": 6
+    large:
+      "T{ct}": "I32"
+      "Elements{io}": 16
+      "SegmentSize": 10
+
+segmented_sort/keys:
+  benchmarks:
+    power:
+      "T{ct}": "I32"
+      "Elements{io}": 22
+      "Segments{io}": 12
+      "Entropy": "1.000"
+    small:
+      "T{ct}": "I32"
+      "Elements{io}": 22
+      "MaxSegmentSize": 1
+    large:
+      "T{ct}": "I32"
+      "Elements{io}": 22
+      "MaxSegmentSize": 10
 
 partition/three_way:
   "T{ct}": "I32"

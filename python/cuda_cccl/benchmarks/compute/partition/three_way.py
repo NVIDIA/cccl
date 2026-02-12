@@ -23,7 +23,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
-import numba.cuda as cuda
 import numpy as np
 from utils import as_cupy_stream
 
@@ -109,20 +108,6 @@ def generate_data_with_entropy(
     return data
 
 
-def make_less_than_predicate(threshold):
-    """
-    Create a less-than predicate function for three-way partition.
-
-    This returns a numba device function that checks if x < threshold.
-    """
-
-    @cuda.jit(device=True)
-    def less_than(x):
-        return x < threshold
-
-    return less_than
-
-
 def bench_three_way_partition(state: bench.State):
     """
     Benchmark three_way_partition operation.
@@ -181,17 +166,16 @@ def bench_three_way_partition(state: bench.State):
     #   select_op_1: x < left_border (selects first partition)
     #   select_op_2: x < right_border (combined with !select_op_1, selects second partition)
 
-    # Convert borders to the correct type for numba
-    left_border_typed = dtype(left_border)
-    right_border_typed = dtype(right_border)
+    # Convert borders to the correct type for closure capture
+    left_thresh = dtype(left_border)
+    right_thresh = dtype(right_border)
 
-    @cuda.jit(device=True)
+    # Use regular Python functions - cuda.compute JIT-compiles them internally
     def select_first_part(x):
-        return x < left_border_typed
+        return x < left_thresh
 
-    @cuda.jit(device=True)
     def select_second_part(x):
-        return x < right_border_typed
+        return x < right_thresh
 
     # Build three_way_partition operation
     partitioner = make_three_way_partition(
