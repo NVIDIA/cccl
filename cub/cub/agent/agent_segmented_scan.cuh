@@ -39,7 +39,7 @@ namespace detail::segmented_scan
  ******************************************************************************/
 
 template <typename ComputeT, int NumSegmentsPerBlock>
-using agent_segmented_scan_compute_t =
+using agent_block_segmented_scan_compute_t =
   multi_segment_helpers::agent_segmented_scan_compute_t<ComputeT, NumSegmentsPerBlock>;
 
 //! @brief Parameterizable tuning policy type for agent_segmented_scan
@@ -68,17 +68,18 @@ using agent_segmented_scan_compute_t =
 //! @tparam SegmentsPerBlock
 //!   The number of segments processed per block
 //!
-template <int Nominal4ByteBlockThreads,
-          int Nominal4BytesItemsPerThread,
-          typename ComputeT,
-          BlockLoadAlgorithm LoadAlgorithm,
-          CacheLoadModifier LoadModifier,
-          BlockStoreAlgorithm StoreAlgorithm,
-          BlockScanAlgorithm ScanAlgorithm,
-          int MaxSegmentsPerBlock = 1,
-          typename ScalingType    = detail::MemBoundScaling<Nominal4ByteBlockThreads,
-                                                            Nominal4BytesItemsPerThread,
-                                                            agent_segmented_scan_compute_t<ComputeT, MaxSegmentsPerBlock>>>
+template <
+  int Nominal4ByteBlockThreads,
+  int Nominal4BytesItemsPerThread,
+  typename ComputeT,
+  BlockLoadAlgorithm LoadAlgorithm,
+  CacheLoadModifier LoadModifier,
+  BlockStoreAlgorithm StoreAlgorithm,
+  BlockScanAlgorithm ScanAlgorithm,
+  int MaxSegmentsPerBlock = 1,
+  typename ScalingType    = detail::MemBoundScaling<Nominal4ByteBlockThreads,
+                                                    Nominal4BytesItemsPerThread,
+                                                    agent_block_segmented_scan_compute_t<ComputeT, MaxSegmentsPerBlock>>>
 struct agent_segmented_scan_policy_t : ScalingType
 {
   static_assert(MaxSegmentsPerBlock > 0, "MaxSegmentsPerBlock template value parameter must be positive");
@@ -146,7 +147,7 @@ struct agent_segmented_scan
 
   // Use cub::NullType means no initial value is provided
   static constexpr bool has_init = !::cuda::std::is_same_v<InitValueT, NullType>;
-  // We are relying on either initial value not being `NullType`
+  // We are relying on either initial value being `NullType`
   // or the ForceInclusive tag to be true for inclusive scan
   // to get picked up.
   static constexpr bool is_inclusive          = ForceInclusive || !has_init;
@@ -155,27 +156,57 @@ struct agent_segmented_scan
   static constexpr int tile_items             = block_threads * items_per_thread;
   static constexpr int max_segments_per_block = AgentSegmentedScanPolicyT::max_segments_per_block;
 
-  using augmented_accum_t = agent_segmented_scan_compute_t<AccumT, max_segments_per_block>;
+private:
+  static constexpr bool multi_segment_enabled = (max_segments_per_block > 1);
 
-  using block_load_t =
-    BlockLoad<augmented_accum_t, block_threads, items_per_thread, AgentSegmentedScanPolicyT::load_algorithm>;
-  using block_store_t =
-    BlockStore<augmented_accum_t, block_threads, items_per_thread, AgentSegmentedScanPolicyT::store_algorithm>;
-  using block_scan_t        = BlockScan<augmented_accum_t, block_threads, AgentSegmentedScanPolicyT::scan_algorithm>;
-  using block_offset_scan_t = BlockScan<OffsetT, block_threads, AgentSegmentedScanPolicyT::scan_algorithm>;
+  static constexpr auto load_algorithm  = AgentSegmentedScanPolicyT::load_algorithm;
+  static constexpr auto store_algorithm = AgentSegmentedScanPolicyT::store_algorithm;
+  static constexpr auto scan_algorithm  = AgentSegmentedScanPolicyT::scan_algorithm;
 
-  struct _TempStorage
+  using block_load_t  = BlockLoad<AccumT, block_threads, items_per_thread, load_algorithm>;
+  using block_store_t = BlockStore<AccumT, block_threads, items_per_thread, store_algorithm>;
+  using block_scan_t  = BlockScan<AccumT, block_threads, scan_algorithm>;
+
+  using _single_segment_algorithms_storage_t = union
   {
-    OffsetT logical_segment_offsets[max_segments_per_block];
-    union AlgorithmsStorage
-    {
-      typename block_load_t::TempStorage load;
-      typename block_store_t::TempStorage store;
-      typename block_scan_t::TempStorage scan;
-      typename block_offset_scan_t::TempStorage offset_scan;
-    } reused;
+    typename block_load_t::TempStorage load;
+    typename block_store_t::TempStorage store;
+    typename block_scan_t::TempStorage scan;
   };
 
+  struct _single_segment_temp_storage_t
+  {
+    _single_segment_algorithms_storage_t reused;
+  };
+
+  using augmented_accum_t = agent_block_segmented_scan_compute_t<AccumT, max_segments_per_block>;
+
+  using block_load_aug_t    = BlockLoad<augmented_accum_t, block_threads, items_per_thread, load_algorithm>;
+  using block_store_aug_t   = BlockStore<augmented_accum_t, block_threads, items_per_thread, store_algorithm>;
+  using block_scan_aug_t    = BlockScan<augmented_accum_t, block_threads, scan_algorithm>;
+  using block_offset_scan_t = BlockScan<OffsetT, block_threads, scan_algorithm>;
+
+  using _multiple_segment_algorithms_storage_t = union
+  {
+    typename block_load_t::TempStorage load;
+    typename block_store_t::TempStorage store;
+    typename block_scan_t::TempStorage scan;
+    typename block_load_aug_t::TempStorage load_aug;
+    typename block_store_aug_t::TempStorage store_aug;
+    typename block_scan_aug_t::TempStorage scan_aug;
+    typename block_offset_scan_t::TempStorage offset_scan;
+  };
+
+  struct _multi_segment_temp_storage_t
+  {
+    OffsetT logical_segment_offsets[max_segments_per_block];
+    _multiple_segment_algorithms_storage_t reused;
+  };
+
+  using _TempStorage =
+    ::cuda::std::conditional_t<multi_segment_enabled, _multi_segment_temp_storage_t, _single_segment_temp_storage_t>;
+
+public:
   // Alias wrapper allowing storage to be unioned
   using TempStorage = Uninitialized<_TempStorage>;
 
@@ -224,7 +255,6 @@ struct agent_segmented_scan
   //! @param out_idx_begin
   //!  Index of start of the segment's prefix scan result in the output array
   //!
-  template <int NumSegments = max_segments_per_block, class = ::cuda::std::enable_if_t<(NumSegments == 1)>>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_range(OffsetT inp_idx_begin, OffsetT inp_idx_end, OffsetT out_idx_begin)
   {
     const OffsetT segment_items = ::cuda::std::max(inp_idx_end, inp_idx_begin) - inp_idx_begin;
@@ -255,14 +285,17 @@ struct agent_segmented_scan
       }
       __syncthreads();
 
-      if (chunk_id == 0)
       {
-        // Initialize exclusive_prefix, referenced from prefix_op
-        scan_first_tile(thread_values, initial_value, scan_op, exclusive_prefix);
-      }
-      else
-      {
-        scan_later_tile(thread_values, scan_op, prefix_op);
+        block_scan_t scanner(temp_storage.reused.scan);
+        if (chunk_id == 0)
+        {
+          // Initialize exclusive_prefix, referenced from prefix_op
+          scan_first_tile(scanner, thread_values, initial_value, scan_op, exclusive_prefix);
+        }
+        else
+        {
+          scan_later_tile(scanner, thread_values, scan_op, prefix_op);
+        }
       }
       __syncthreads();
 
@@ -378,7 +411,7 @@ struct agent_segmented_scan
         constexpr auto oob_default = multi_segment_helpers::make_value_flag(AccumT{}, false);
         constexpr projector<AccumT, bool> projection_op{};
 
-        block_load_t loader(temp_storage.reused.load);
+        block_load_aug_t loader(temp_storage.reused.load_aug);
         if constexpr (has_init)
         {
           const packer_iv<AccumT, bool, ScanOpT> packer_op{static_cast<AccumT>(initial_value), scan_op};
@@ -410,15 +443,18 @@ struct agent_segmented_scan
       }
       __syncthreads();
 
-      if (chunk_id == 0)
       {
-        // Initialize exclusive_prefix, referenced from prefix_op
-        augmented_init_value_t augmented_init_value = multi_segment_helpers::make_value_flag(initial_value, false);
-        scan_first_tile(thread_flag_values, augmented_init_value, augmented_scan_op, exclusive_prefix);
-      }
-      else
-      {
-        scan_later_tile(thread_flag_values, augmented_scan_op, prefix_op);
+        block_scan_aug_t scanner(temp_storage.reused.scan_aug);
+        if (chunk_id == 0)
+        {
+          // Initialize exclusive_prefix, referenced from prefix_op
+          augmented_init_value_t augmented_init_value = multi_segment_helpers::make_value_flag(initial_value, false);
+          scan_first_tile(scanner, thread_flag_values, augmented_init_value, augmented_scan_op, exclusive_prefix);
+        }
+        else
+        {
+          scan_later_tile(scanner, thread_flag_values, augmented_scan_op, prefix_op);
+        }
       }
       __syncthreads();
 
@@ -427,7 +463,7 @@ struct agent_segmented_scan
         constexpr packer<AccumT, bool> packer_op{};
         const OffsetT out_offset = chunk_id * tile_items;
 
-        block_store_t storer(temp_storage.reused.store);
+        block_store_aug_t storer(temp_storage.reused.store_aug);
         if constexpr (is_inclusive)
         {
           constexpr projector<AccumT, bool> projector_op{};
@@ -466,15 +502,19 @@ struct agent_segmented_scan
   }
 
 private:
-  template <typename ItemTy,
+  template <typename ScannerT,
+            typename ItemTy,
             typename InitValueTy,
             typename ScanOpTy,
             bool IsInclusive = is_inclusive,
             bool HasInit     = has_init>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  scan_first_tile(ItemTy (&items)[items_per_thread], InitValueTy init_value, ScanOpTy scan_op, ItemTy& block_aggregate)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void scan_first_tile(
+    ScannerT& scanner,
+    ItemTy (&items)[items_per_thread],
+    InitValueTy init_value,
+    ScanOpTy scan_op,
+    ItemTy& block_aggregate)
   {
-    block_scan_t scanner(temp_storage.reused.scan);
     if constexpr (HasInit)
     {
       if constexpr (IsInclusive)
@@ -494,11 +534,10 @@ private:
     }
   }
 
-  template <typename ItemTy, typename ScanOpTy, typename PrefixCallback, bool IsInclusive = is_inclusive>
+  template <typename ScannerT, typename ItemTy, typename ScanOpTy, typename PrefixCallback, bool IsInclusive = is_inclusive>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  scan_later_tile(ItemTy (&items)[items_per_thread], ScanOpTy scan_op, PrefixCallback& prefix_op)
+  scan_later_tile(ScannerT& scanner, ItemTy (&items)[items_per_thread], ScanOpTy scan_op, PrefixCallback& prefix_op)
   {
-    block_scan_t scanner(temp_storage.reused.scan);
     if constexpr (IsInclusive)
     {
       scanner.InclusiveScan(items, items, scan_op, prefix_op);
