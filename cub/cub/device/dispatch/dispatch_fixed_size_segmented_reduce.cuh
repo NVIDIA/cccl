@@ -318,16 +318,20 @@ struct DispatchFixedSizeSegmentedReduce
 
       constexpr int seg_chunk_size = tile_size;
 
-      launcher_factory(num_current_blocks, ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
-        .doit(fixed_size_segmented_reduce_kernel_partial,
-              d_in,
-              d_block_reductions,
-              segment_size,
-              seg_chunk_size,
-              tiles_per_segment,
-              num_current_blocks,
-              reduction_op,
-              init);
+      if (const auto error = CubDebug(
+            launcher_factory(num_current_blocks, ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
+              .doit(fixed_size_segmented_reduce_kernel_partial,
+                    d_in,
+                    d_block_reductions,
+                    segment_size,
+                    seg_chunk_size,
+                    tiles_per_segment,
+                    num_current_blocks,
+                    reduction_op,
+                    init)))
+      {
+        return error;
+      }
 
       if (const auto error = CubDebug(cudaPeekAtLastError()))
       {
@@ -354,17 +358,21 @@ struct DispatchFixedSizeSegmentedReduce
 
       const auto final_num_current_blocks = ::cuda::ceil_div(num_current_segments, final_segments_per_block);
 
-      launcher_factory(static_cast<::cuda::std::int32_t>(final_num_current_blocks),
-                       ActivePolicyT::ReducePolicy::BLOCK_THREADS,
-                       0,
-                       stream)
-        .doit(fixed_size_segmented_reduce_kernel_final,
-              d_block_reductions,
-              d_out,
-              final_segment_size,
-              static_cast<::cuda::std::int32_t>(num_current_segments),
-              reduction_op,
-              init);
+      if (const auto error = CubDebug(
+            launcher_factory(static_cast<::cuda::std::int32_t>(final_num_current_blocks),
+                             ActivePolicyT::ReducePolicy::BLOCK_THREADS,
+                             0,
+                             stream)
+              .doit(fixed_size_segmented_reduce_kernel_final,
+                    d_block_reductions,
+                    d_out,
+                    final_segment_size,
+                    static_cast<::cuda::std::int32_t>(num_current_segments),
+                    reduction_op,
+                    init)))
+      {
+        return error;
+      }
 
       d_in += num_segments_per_invocation * segment_size;
       d_out += num_segments_per_invocation;
