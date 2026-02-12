@@ -136,8 +136,8 @@ def bench_select_if(state: bench.State):
             # Scale to approximately [-max, max] range
             d_in = d_in * 2 * info.max - info.max
 
-        # Output array (worst case: all elements selected)
-        d_out = cp.empty(num_elements, dtype=dtype)
+        selected_elements = int(cp.count_nonzero(d_in < threshold).get())
+        d_out = cp.empty(selected_elements, dtype=dtype)
 
         # Number of selected elements output
         d_num_selected = cp.zeros(1, dtype=np.uint64)

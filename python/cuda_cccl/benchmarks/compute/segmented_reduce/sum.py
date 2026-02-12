@@ -90,11 +90,6 @@ def bench_segmented_reduce_sum(state: bench.State):
     num_elements = int(state.get_int64("Elements"))
     segment_size = int(state.get_int64("SegmentSize"))
 
-    # Skip if segment size is larger than total elements
-    if segment_size > num_elements:
-        state.skip("Segment size exceeds total elements")
-        return
-
     # Allocate arrays
     alloc_stream = as_cupy_stream(state.get_stream())
 

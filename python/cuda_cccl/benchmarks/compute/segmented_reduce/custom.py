@@ -67,10 +67,6 @@ def bench_segmented_reduce_custom(state: bench.State):
     num_elements = int(state.get_int64("Elements"))
     segment_size = int(state.get_int64("SegmentSize"))
 
-    if segment_size > num_elements:
-        state.skip("Segment size exceeds total elements")
-        return
-
     alloc_stream = as_cupy_stream(state.get_stream())
 
     start_offsets, end_offsets, num_segments, actual_elements = (
