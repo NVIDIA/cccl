@@ -11,7 +11,6 @@ import inspect
 import operator
 import struct
 import textwrap
-import uuid
 from types import new_class
 from typing import TYPE_CHECKING, Callable, Hashable, List, Tuple
 
@@ -434,6 +433,7 @@ def _numba_type_to_type_descriptor(numba_type):
     return cccl_types.from_numpy_dtype(dtype)
 
 
+@cache_with_registered_key_functions
 def _infer_return_type(py_func, input_types):
     # Ensure any gpu_struct classes referenced in the function are registered
     _ensure_function_structs_registered(py_func)
@@ -449,22 +449,6 @@ def _infer_return_type(py_func, input_types):
         py_func, input_numba_types, abi_info={"abi_name": abi_name}
     )
     return _numba_type_to_type_descriptor(return_type)
-
-
-# -----------------------------------------------------------------------------
-# Iterator compilation
-# -----------------------------------------------------------------------------
-
-
-@functools.lru_cache(maxsize=256)
-def _cached_compile(func, sig, abi_name=None, **kwargs):
-    """Cached wrapper around numba.cuda.compile."""
-    return numba.cuda.compile(func, sig, abi_info={"abi_name": abi_name}, **kwargs)
-
-
-def _get_abi_suffix():
-    """Generate a unique ABI suffix."""
-    return uuid.uuid4().hex
 
 
 # -----------------------------------------------------------------------------
