@@ -113,6 +113,10 @@ _CCCL_DEVICE void transform_kernel_prefetch(
   RandomAccessIteratorOut out,
   RandomAccessIteratorIn... ins)
 {
+  _CCCL_BEGIN_NV_DIAG_SUPPRESS(20168) // suppress warning on non-positive unroll factors, nvcc<13 with MSVC does not
+                                      // let us put this into the _CCCL_PRAGMA_UNROLL macro, or inside a lambda, or
+                                      // anywhere close to it
+
   constexpr int block_threads = BlockThreads;
   const int tile_size         = block_threads * num_elem_per_thread;
   const Offset offset         = static_cast<Offset>(blockIdx.x) * tile_size;
@@ -127,8 +131,6 @@ _CCCL_DEVICE void transform_kernel_prefetch(
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   (..., prefetch_tile<block_threads, PrefetchByteStride>(ins, valid_items));
 
-  _CCCL_BEGIN_NV_DIAG_SUPPRESS(20168) // suppress warning on non-positive unroll factors, nvcc<13 with MSVC does not
-                                      // let us put this into the _CCCL_PRAGMA_UNROLL macro or inside a lambda
   auto process_tile = [&](auto full_tile, auto... ins2 /* nvcc fails to compile when just using the captured ins */) {
 #if !_CCCL_CUDA_COMPILER(CLANG) // clang in CUDA mode does not allow non-positive unroll factors to disable the pragma
     _CCCL_PRAGMA_UNROLL(UnrollFactor)
@@ -154,10 +156,11 @@ _CCCL_DEVICE void transform_kernel_prefetch(
   {
     process_tile(::cuda::std::false_type{}, ins...);
   }
-  _CCCL_END_NV_DIAG_SUPPRESS()
 
   // benchmarking showed that triggering at the end is 1% better than right after prefetching
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+
+  _CCCL_END_NV_DIAG_SUPPRESS()
 }
 
 #if _CCCL_CTK_BELOW(13, 0)
