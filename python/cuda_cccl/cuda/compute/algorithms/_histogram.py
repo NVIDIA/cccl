@@ -173,12 +173,12 @@ def make_histogram_even(
     upper_level_val = h_upper_level[0].item()
     level_dtype = h_lower_level.dtype
 
-    # bins <= 256 uses privatized smem strategy.
-    # We should include this information when caching
-    # compile time artifacts
+    # bins <= 256 uses privatized smem strategy. a different compile
+    # path than bins > 256. We should include this information when
+    # caching histogram build objects.
+    # See detail::histogram::max_privatized_smem_bins (dispatch_histogram.cuh)
     num_bins = num_output_levels_val - 1
     uses_privatized_smem = num_bins <= 256
-
     return _make_histogram_even_impl(
         d_samples,
         d_histogram,
