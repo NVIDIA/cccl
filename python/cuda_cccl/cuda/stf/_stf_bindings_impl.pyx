@@ -170,7 +170,7 @@ cdef class logical_data:
 
     def __cinit__(self, context ctx=None, object buf=None, data_place dplace=None, shape=None, dtype=None):
         if ctx is None or buf is None:
-            # allow creation via __new__ (eg. in like_empty)
+            # allow creation via __new__ (eg. in empty_like)
             self._ld = NULL
             self._ctx = NULL
             self._len = 0
@@ -281,7 +281,7 @@ cdef class logical_data:
     def rw(self, dplace=None):
         return dep(self, AccessMode.RW.value, dplace)
 
-    def like_empty(self):
+    def empty_like(self):
         """
         Create a new logical_data with the same shape (and dtype metadata)
         as this object.

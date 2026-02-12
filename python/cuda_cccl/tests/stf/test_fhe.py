@@ -76,7 +76,7 @@ class Ciphertext:
     def __add__(self, other):
         if not isinstance(other, Ciphertext):
             return NotImplemented
-        result = self.like_empty()
+        result = self.empty_like()
         with ctx.task(self.l.read(), other.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
             da, db, dresult = t.numba_arguments()
@@ -86,7 +86,7 @@ class Ciphertext:
     def __sub__(self, other):
         if not isinstance(other, Ciphertext):
             return NotImplemented
-        result = self.like_empty()
+        result = self.empty_like()
         with ctx.task(self.l.read(), other.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
             da, db, dresult = t.numba_arguments()
@@ -99,7 +99,7 @@ class Ciphertext:
 
     def decrypt(self, num_operands=2):
         """Decrypt by subtracting num_operands * key"""
-        result = self.like_empty()
+        result = self.empty_like()
         total_key = (num_operands * self.key) & 0xFF
         with ctx.task(self.l.read(), result.l.write()) as t:
             nb_stream = cuda.external_stream(t.stream_ptr())
@@ -107,8 +107,8 @@ class Ciphertext:
             sub_scalar_kernel[32, 16, nb_stream](da, dresult, total_key)
         return Plaintext(self.ctx, ld=result.l, key=self.key)
 
-    def like_empty(self):
-        return Ciphertext(self.ctx, ld=self.l.like_empty())
+    def empty_like(self):
+        return Ciphertext(self.ctx, ld=self.l.empty_like())
 
 
 def circuit(a, b):
