@@ -23,7 +23,12 @@ import numpy as np
 from utils import as_cupy_stream
 
 import cuda.bench as bench
-from cuda.compute import clear_all_caches, make_select
+from cuda.compute import (
+    TransformOutputIterator,
+    ZipIterator,
+    clear_all_caches,
+    make_select,
+)
 
 # Type mapping: match C++ fundamental_types (excluding int128 and complex)
 TYPE_MAP = {
@@ -68,32 +73,46 @@ def bench_select_flagged(state: bench.State):
         if np.issubdtype(dtype, np.integer):
             info = np.iinfo(dtype)
             d_in = cp.random.randint(
-                int(info.min), int(info.max) + 1, size=num_elements, dtype=np.int64
+                int(info.min), int(info.max) + 1, size=num_elements
             ).astype(dtype)
         else:
             d_in = cp.random.uniform(-1, 1, size=num_elements).astype(dtype)
 
         # Flags: select with probability p
-        flags = cp.random.random(num_elements) < probability
+        flags = (cp.random.random(num_elements) < probability).astype(np.uint8)
 
-        # Count selected elements to size output
+        zip_it = ZipIterator(d_in, flags)
         selected_elements = int(cp.count_nonzero(flags).get())
         d_out = cp.empty(selected_elements, dtype=dtype)
         d_num_selected = cp.empty(1, dtype=np.uint64)
 
+    def take_value(pair):
+        return pair[0]
+
+    def flag_predicate(pair):
+        return np.uint8(pair[1] != 0)
+
+    take_value.__annotations__ = {"pair": zip_it.value_type}
+    flag_predicate.__annotations__ = {
+        "pair": zip_it.value_type,
+        "return": np.uint8,
+    }
+
+    d_out_it = TransformOutputIterator(d_out, take_value)
+
     selector = make_select(
-        d_in=d_in,
-        d_out=d_out,
+        d_in=zip_it,
+        d_out=d_out_it,
         d_num_selected_out=d_num_selected,
-        cond=flags,
+        cond=flag_predicate,
     )
 
     temp_storage_bytes = selector(
         temp_storage=None,
-        d_in=d_in,
-        d_out=d_out,
+        d_in=zip_it,
+        d_out=d_out_it,
         d_num_selected_out=d_num_selected,
-        cond=flags,
+        cond=flag_predicate,
         num_items=num_elements,
     )
     with alloc_stream:
@@ -103,10 +122,10 @@ def bench_select_flagged(state: bench.State):
     try:
         selector(
             temp_storage=temp_storage,
-            d_in=d_in,
-            d_out=d_out,
+            d_in=zip_it,
+            d_out=d_out_it,
             d_num_selected_out=d_num_selected,
-            cond=flags,
+            cond=flag_predicate,
             num_items=num_elements,
         )
         cp.cuda.Device().synchronize()
@@ -123,10 +142,10 @@ def bench_select_flagged(state: bench.State):
     def launcher(launch: bench.Launch):
         selector(
             temp_storage=temp_storage,
-            d_in=d_in,
-            d_out=d_out,
+            d_in=zip_it,
+            d_out=d_out_it,
             d_num_selected_out=d_num_selected,
-            cond=flags,
+            cond=flag_predicate,
             num_items=num_elements,
             stream=launch.get_stream(),
         )

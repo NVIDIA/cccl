@@ -80,14 +80,22 @@ def generate_data_with_entropy(num_elements, dtype, entropy_str, stream):
 def generate_power_law_offsets(num_elements, num_segments):
     sizes = np.random.zipf(1.5, size=num_segments).astype(np.int64)
     sizes = np.maximum(sizes, 1)
-    scaled = sizes / sizes.sum() * num_elements
-    sizes = np.maximum(1, scaled.astype(np.int64))
 
-    diff = int(num_elements - sizes.sum())
-    if diff != 0:
-        sizes[-1] += diff
-        if sizes[-1] < 1:
-            sizes[-1] = 1
+    if num_segments <= 0:
+        return np.array([0, num_elements], dtype=np.int64)
+
+    min_total = num_segments
+    remaining = num_elements - min_total
+    if remaining < 0:
+        remaining = 0
+
+    scaled = sizes / sizes.sum() * remaining
+    sizes = np.floor(scaled).astype(np.int64)
+    remainder = int(remaining - sizes.sum())
+    if remainder > 0:
+        sizes[:remainder] += 1
+
+    sizes += 1
 
     offsets = np.empty(num_segments + 1, dtype=np.int64)
     offsets[0] = 0
@@ -125,6 +133,8 @@ def run_segmented_sort(
     num_items,
     num_segments,
 ):
+    state.set_disable_blocking_kernel(True)
+    state.set_run_once(True)
     sorter = make_segmented_sort(
         d_in_keys=d_in_keys,
         d_out_keys=d_out_keys,
@@ -147,6 +157,25 @@ def run_segmented_sort(
         end_offsets_in=end_offsets,
     )
     temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+
+    try:
+        sorter(
+            temp_storage=temp_storage,
+            d_in_keys=d_in_keys,
+            d_out_keys=d_out_keys,
+            d_in_values=None,
+            d_out_values=None,
+            num_items=num_items,
+            num_segments=num_segments,
+            start_offsets_in=start_offsets,
+            end_offsets_in=end_offsets,
+        )
+        cp.cuda.Device().synchronize()
+    except Exception as e:
+        state.skip(f"CUDA error during warmup: {e}")
+        return
+
+    clear_all_caches()
 
     def launcher(launch: bench.Launch):
         sorter(
