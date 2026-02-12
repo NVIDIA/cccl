@@ -31,3 +31,5 @@ Furthermore, they gracefully handle unaligned data and copying regions of arbitr
 The various ``cuda::ptx::cp_async_bulk*`` versions and ``cuda::device::memcpy_async_tx``
 are thin wrappers of the corresponding PTX instructions
 and provide no fallback path on older GPUs and also require the copied data to be aligned and sized appropriately.
+
+Some further TMA-related utilities are provided by the :ref:`libcu++ extended API <libcudacxx-extended-api-tma>`.
