@@ -92,7 +92,9 @@ struct prefetch_policy
   int min_items_per_thread      = 1;
   int max_items_per_thread      = 32;
   int prefetch_byte_stride      = 128; // somewhat of a cache line size
-  int unroll_factor             = -1; // -1 means we leave it to the compiler
+  // ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost, so disable unrolling
+  // bgruber: but A6000 and H100 show small gains without an pragma pragma, so disable
+  int unroll_factor = -1; // -1 means we leave it to the compiler
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator==(const prefetch_policy& lhs, const prefetch_policy& rhs)
   {
