@@ -3,18 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
-import numba
 import numpy as np
 import pytest
 
 torch = pytest.importorskip("torch")
 
-numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
-
-from cuda.stf._stf_bindings import (  # noqa: E402
-    context,
-    rw,
-)
+import cuda.stf as stf  # noqa: E402
 
 
 def test_pytorch():
@@ -23,12 +17,12 @@ def test_pytorch():
     Y = np.ones(n, dtype=np.float32)
     Z = np.ones(n, dtype=np.float32)
 
-    ctx = context()
+    ctx = stf.context()
     lX = ctx.logical_data(X)
     lY = ctx.logical_data(Y)
     lZ = ctx.logical_data(Z)
 
-    with ctx.task(rw(lX)) as t:
+    with ctx.task(lX.rw()) as t:
         torch_stream = torch.cuda.ExternalStream(t.stream_ptr())
         with torch.cuda.stream(torch_stream):
             tX = t.tensor_arguments()
@@ -74,7 +68,7 @@ def test_pytorch_task():
     Y = np.ones(n, dtype=np.float32)
     Z = np.ones(n, dtype=np.float32)
 
-    ctx = context()
+    ctx = stf.context()
 
     # Note: We could use ctx.logical_data_full instead of creating NumPy arrays first
     # For example: lX = ctx.logical_data_full((n,), 1.0, dtype=np.float32)
@@ -87,7 +81,7 @@ def test_pytorch_task():
     # Equivalent operations to test_pytorch() but using pytorch_task syntax
 
     # In-place multiplication using pytorch_task (single tensor)
-    with ctx.pytorch_task(rw(lX)) as (tX,):
+    with ctx.pytorch_task(lX.rw()) as (tX,):
         tX[:] = tX * 2
 
     # Copy and multiply using pytorch_task (multiple tensors)
