@@ -49,12 +49,15 @@ struct __tile_pointer_iterator
 {
   ::cuda::std::array<::cuda::std::size_t, _Rank> __shapes;
   ::cuda::std::array<::cuda::std::int64_t, _Rank> __strides;
-  ::cuda::std::size_t __contigous_size;
+  ::cuda::std::size_t __contiguous_size;
+  bool __use_stride_order;
   _Tp* __data;
 
   template <typename _Tensor>
-  _CCCL_HOST_API __tile_pointer_iterator(_Tensor __tensor, ::cuda::std::size_t __contigous_size) noexcept
-      : __contigous_size{__contigous_size}
+  _CCCL_HOST_API __tile_pointer_iterator(
+    _Tensor __tensor, ::cuda::std::size_t __contiguous_size, bool __use_stride_order) noexcept
+      : __contiguous_size{__contiguous_size}
+      , __use_stride_order{__use_stride_order}
       , __data{__tensor.data()}
   {
     ::cuda::experimental::__init_layout(
@@ -63,16 +66,31 @@ struct __tile_pointer_iterator
       __shapes,
       __strides,
       ::cuda::std::make_index_sequence<_Rank>{});
+    if (__use_stride_order)
+    {
+      ::cuda::experimental::__sort_by_stride_layout<_Rank>(__shapes, __strides);
+    }
   }
 
   [[nodiscard]] _CCCL_HOST_API _Tp* operator()(::cuda::std::size_t __tile_idx) const noexcept
   {
-    auto __pos                   = __tile_idx * __contigous_size;
+    auto __pos                   = __tile_idx * __contiguous_size;
     ::cuda::std::size_t __offset = 0;
-    for (int __i = _Rank - 1; __i >= 0; --__i)
+    if (__use_stride_order)
     {
-      __offset += (__pos % __shapes[__i]) * __strides[__i];
-      __pos /= __shapes[__i];
+      for (int __i = 0; __i < _Rank; ++__i)
+      {
+        __offset += (__pos % __shapes[__i]) * __strides[__i];
+        __pos /= __shapes[__i];
+      }
+    }
+    else
+    {
+      for (int __i = _Rank - 1; __i >= 0; --__i)
+      {
+        __offset += (__pos % __shapes[__i]) * __strides[__i];
+        __pos /= __shapes[__i];
+      }
     }
     return __data + __offset;
   }
@@ -178,6 +196,7 @@ _CCCL_HOST_API void __copy_bytes_impl(
   }
   else
   {
+    using ::cuda::std::size_t;
     const auto __src1 = ::cuda::experimental::to_cute(__src);
     const auto __dst1 = ::cuda::experimental::to_cute(__dst);
     if (::cuda::experimental::__is_not_unique(__dst1.layout()))
@@ -192,18 +211,23 @@ _CCCL_HOST_API void __copy_bytes_impl(
     printf("\n");
     cute::print(__dst2.layout());
     printf("\n------------------------\n");
-    const auto __tile_size  = ::cuda::experimental::__max_common_contiguous_size(__src2.layout(), __dst2.layout());
+    const auto __use_stride_order = ::cuda::experimental::__has_same_stride_order(__src2.layout(), __dst2.layout());
+    const auto __tile_order_mode =
+      __use_stride_order ? __tile_order::__stride : __tile_order::__logical;
+    const auto __tile_size =
+      ::cuda::experimental::__max_common_contiguous_size(__src2.layout(), __dst2.layout(), __tile_order_mode);
     const auto __copy_bytes = __tile_size * sizeof(_TpIn);
-    const auto __num_tiles  = static_cast<::cuda::std::size_t>(::cute::size(__src2) / __tile_size);
+    const auto __num_tiles  = static_cast<size_t>(::cute::size(__src2) / __tile_size);
+    printf("__tile_order: %s\n", __use_stride_order ? "stride" : "logical");
     printf("__tile_size: %zu\n", __tile_size);
     printf("__num_tiles: %zu\n", __num_tiles);
+    __tile_pointer_iterator<_TpIn, __rank_max> __src_tiles_iterator(__src2, __tile_size, __use_stride_order);
+    __tile_pointer_iterator<_TpOut, __rank_max> __dst_tiles_iterator(__dst2, __tile_size, __use_stride_order);
 
 #  if _CCCL_CTK_AT_LEAST(13, 0)
     // Use the memcpy batch API to copy all tiles in one call
     ::std::vector<const void*> __src_ptr_vector(__num_tiles);
     ::std::vector<void*> __dst_ptr_vector(__num_tiles);
-    __tile_pointer_iterator<_TpIn, __rank_max> __src_tiles_iterator(__src2, __tile_size);
-    __tile_pointer_iterator<_TpOut, __rank_max> __dst_tiles_iterator(__dst2, __tile_size);
     for (size_t __tile_idx = 0; __tile_idx < __num_tiles; ++__tile_idx)
     {
       __src_ptr_vector[__tile_idx] = __src_tiles_iterator(__tile_idx);

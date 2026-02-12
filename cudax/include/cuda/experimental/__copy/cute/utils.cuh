@@ -100,7 +100,7 @@ __sort_by_stride_layout(::cuda::std::array<::cuda::std::size_t, _Rank>& __shapes
   }
   // Sort by strides
   ::cuda::std::stable_sort(__orders.begin(), __orders.end(), [&](auto __a, auto __b) {
-    return __strides[__a] < __strides[__b];
+    return ::cuda::std::abs(__strides[__a]) < ::cuda::std::abs(__strides[__b]);
   });
   const auto __shapes1  = __shapes;
   const auto __strides1 = __strides;
