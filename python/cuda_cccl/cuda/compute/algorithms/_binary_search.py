@@ -1,23 +1,22 @@
-# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-from typing import Callable
 
-import numba
+from __future__ import annotations
+
 import numpy as np
 
-from .. import _bindings
+from .. import _bindings, types
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._utils import protocols
-from ..iterators._iterators import IteratorBase
 from ..op import OpAdapter, OpKind, make_op_adapter
-from ..typing import DeviceArrayLike
+from ..typing import DeviceArrayLike, IteratorT, Operator
 
 
-def _normalize_comp(comp: Callable | OpKind | None) -> OpAdapter:
+def _normalize_comp(comp: Operator | None) -> OpAdapter:
     # Use a lambda for the default comparator rather than OpKind.LESS
     # because well-known ops don't carry type information needed by
     # the binary search JIT compilation.
@@ -44,14 +43,14 @@ class _BinarySearch:
     def __init__(
         self,
         d_data: DeviceArrayLike,
-        d_values: DeviceArrayLike | IteratorBase,
+        d_values: DeviceArrayLike | IteratorT,
         d_out: DeviceArrayLike,
         comp: OpAdapter,
         mode: _bindings.BinarySearchMode,
     ):
-        if isinstance(d_data, IteratorBase):
+        if not protocols.is_device_array(d_data):
             raise ValueError("d_data must be a device array for index outputs.")
-        if isinstance(d_out, IteratorBase):
+        if not protocols.is_device_array(d_out):
             raise ValueError("d_out must be a device array for index outputs.")
 
         out_dtype = protocols.get_dtype(d_out)
@@ -70,9 +69,7 @@ class _BinarySearch:
         data_value_type = cccl.get_value_type(d_data)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
 
-        self.op_cccl = comp.compile(
-            (data_value_type, data_value_type), numba.types.uint8
-        )
+        self.op_cccl = comp.compile((data_value_type, data_value_type), types.uint8)
 
         self.build_result = call_build(
             _bindings.DeviceBinarySearchBuildResult,
@@ -88,7 +85,7 @@ class _BinarySearch:
         d_data,
         d_values,
         d_out,
-        comp: Callable | OpKind | None,
+        comp: Operator | None,
         num_items: int,
         num_values: int,
         stream=None,
@@ -101,7 +98,7 @@ class _BinarySearch:
         comp_adapter = (
             _normalize_comp(comp) if comp is not None else _normalize_comp(None)
         )
-        comp_adapter.update_op_state(self.op_cccl)
+        self.op_cccl.state = comp_adapter.get_state()
 
         stream_handle = protocols.validate_and_get_stream(stream)
         self.build_result.compute(
@@ -118,7 +115,7 @@ class _BinarySearch:
 @cache_with_registered_key_functions
 def _make_binary_search(
     d_data: DeviceArrayLike,
-    d_values: DeviceArrayLike | IteratorBase,
+    d_values: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike,
     comp: OpAdapter,
     mode: _bindings.BinarySearchMode,
@@ -131,9 +128,9 @@ def _make_binary_search(
 
 def make_lower_bound(
     d_data: DeviceArrayLike,
-    d_values: DeviceArrayLike | IteratorBase,
+    d_values: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike,
-    comp: Callable | OpKind | None = None,
+    comp: Operator | None = None,
 ):
     """
     Create a lower_bound object that can be called to find insertion positions.
@@ -169,9 +166,9 @@ def make_lower_bound(
 
 def make_upper_bound(
     d_data: DeviceArrayLike,
-    d_values: DeviceArrayLike | IteratorBase,
+    d_values: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike,
-    comp: Callable | OpKind | None = None,
+    comp: Operator | None = None,
 ):
     """
     Create an upper_bound object that can be called to find insertion positions.
@@ -207,11 +204,11 @@ def make_upper_bound(
 
 def lower_bound(
     d_data: DeviceArrayLike,
-    d_values: DeviceArrayLike | IteratorBase,
+    d_values: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike,
     num_items: int,
     num_values: int,
-    comp: Callable | OpKind | None = None,
+    comp: Operator | None = None,
     stream=None,
 ):
     """
@@ -238,11 +235,11 @@ def lower_bound(
 
 def upper_bound(
     d_data: DeviceArrayLike,
-    d_values: DeviceArrayLike | IteratorBase,
+    d_values: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike,
     num_items: int,
     num_values: int,
-    comp: Callable | OpKind | None = None,
+    comp: Operator | None = None,
     stream=None,
 ):
     """
