@@ -460,50 +460,16 @@ template <>
 {
   switch (__id)
   {
-    case arch_id::sm_60:
-      return ::cuda::arch_traits<arch_id::sm_60>();
-    case arch_id::sm_61:
-      return ::cuda::arch_traits<arch_id::sm_61>();
-    case arch_id::sm_62:
-      return ::cuda::arch_traits<arch_id::sm_62>();
-    case arch_id::sm_70:
-      return ::cuda::arch_traits<arch_id::sm_70>();
-    case arch_id::sm_75:
-      return ::cuda::arch_traits<arch_id::sm_75>();
-    case arch_id::sm_80:
-      return ::cuda::arch_traits<arch_id::sm_80>();
-    case arch_id::sm_86:
-      return ::cuda::arch_traits<arch_id::sm_86>();
-    case arch_id::sm_87:
-      return ::cuda::arch_traits<arch_id::sm_87>();
-    case arch_id::sm_88:
-      return ::cuda::arch_traits<arch_id::sm_88>();
-    case arch_id::sm_89:
-      return ::cuda::arch_traits<arch_id::sm_89>();
-    case arch_id::sm_90:
-      return ::cuda::arch_traits<arch_id::sm_90>();
-    case arch_id::sm_90a:
-      return ::cuda::arch_traits<arch_id::sm_90a>();
-    case arch_id::sm_100:
-      return ::cuda::arch_traits<arch_id::sm_100>();
-    case arch_id::sm_100a:
-      return ::cuda::arch_traits<arch_id::sm_100a>();
-    case arch_id::sm_103:
-      return ::cuda::arch_traits<arch_id::sm_103>();
-    case arch_id::sm_103a:
-      return ::cuda::arch_traits<arch_id::sm_103a>();
-    case arch_id::sm_110:
-      return ::cuda::arch_traits<arch_id::sm_110>();
-    case arch_id::sm_110a:
-      return ::cuda::arch_traits<arch_id::sm_110a>();
-    case arch_id::sm_120:
-      return ::cuda::arch_traits<arch_id::sm_120>();
-    case arch_id::sm_120a:
-      return ::cuda::arch_traits<arch_id::sm_120a>();
-    case arch_id::sm_121:
-      return ::cuda::arch_traits<arch_id::sm_121>();
-    case arch_id::sm_121a:
-      return ::cuda::arch_traits<arch_id::sm_121a>();
+#define _CCCL_ARCH_TRAITS_FOR_CASE(_CC) \
+  case arch_id::sm_##_CC:               \
+    return ::cuda::arch_traits<arch_id::sm_##_CC>();
+#define _CCCL_ARCH_TRAITS_FOR_SPECIFIC_CASE(_CC) \
+  case arch_id::sm_##_CC##a:                     \
+    return ::cuda::arch_traits<arch_id::sm_##_CC##a>();
+    _CCCL_PP_FOR_EACH(_CCCL_ARCH_TRAITS_FOR_CASE, _CCCL_KNOWN_PTX_ARCH_LIST)
+    _CCCL_PP_FOR_EACH(_CCCL_ARCH_TRAITS_FOR_SPECIFIC_CASE, _CCCL_KNOWN_PTX_ARCH_SPECIFIC_LIST)
+#undef _CCCL_ARCH_TRAITS_FOR_CASE
+#undef _CCCL_ARCH_TRAITS_FOR_SPECIFIC_CASE
     default:
 #if _CCCL_HAS_CTK()
       ::cuda::__throw_cuda_error(::cudaErrorInvalidValue, "Traits requested for an unknown architecture");

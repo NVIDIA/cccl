@@ -71,4 +71,10 @@
 #  define _CCCL_TARGET_CONSTEXPR constexpr
 #endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
 
+//! @brief List of all known PTX architectures supported by this CCCL version.
+#define _CCCL_KNOWN_PTX_ARCH_LIST 60, 61, 62, 70, 75, 80, 86, 87, 88, 89, 90, 100, 103, 110, 120, 121
+
+//! @brief List of all known architecture specific architectures supported by this CCCL version.
+#define _CCCL_KNOWN_PTX_ARCH_SPECIFIC_LIST 90, 100, 103, 110, 120, 121
+
 #endif // __CCCL_EXECUTION_SPACE_H
