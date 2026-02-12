@@ -382,8 +382,16 @@ struct agent_thread_segmented_scan
         {
           const OffsetT inp_offset = it.get_input_offset();
           flags[k]                 = it.get_head_flag();
-          items[k]                 = make_value_flag(d_in[inp_offset], flags[k]);
-          out_offsets[k]           = it.get_output_offset();
+          const auto v             = d_in[inp_offset];
+          if constexpr (has_init)
+          {
+            items[k] = make_value_flag((flags[k]) ? scan_op(initial_value, v) : v, flags[k]);
+          }
+          else
+          {
+            items[k] = make_value_flag(v, flags[k]);
+          }
+          out_offsets[k] = it.get_output_offset();
           ++chunk_size;
           ++it;
         }
