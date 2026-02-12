@@ -89,10 +89,13 @@ __host__ __device__ void test_edges()
     else if (cuda::std::isfinite(testcases[i].real()) && cuda::std::isnan(testcases[i].imag()))
     {
       // Per C11 DR471, this holds for non-zero x only. If z is (0,NaN), the result should be (NaN,pi/2).
-      if(testcases[i].real() == T(0)){
+      if (testcases[i].real() == T(0))
+      {
         assert(cuda::std::isnan(r.real()));
         is_about(r.imag(), T(0.5) * pi);
-      }else{
+      }
+      else
+      {
         assert(cuda::std::isnan(r.real()));
         assert(cuda::std::isnan(r.imag()));
       }
