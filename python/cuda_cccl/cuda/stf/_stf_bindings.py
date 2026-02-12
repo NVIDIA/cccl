@@ -60,6 +60,8 @@ if cuda_version not in [12, 13]:
         f"Unsupported CUDA version: {cuda_version}. Only CUDA 12 and 13 are supported."
     )
 
+_BINDINGS_AVAILABLE = False
+
 try:
     extra_name = get_recommended_extra(cuda_version)
     bindings_module = importlib.import_module(
@@ -67,8 +69,11 @@ try:
     )
     # Import all symbols from the module
     globals().update(bindings_module.__dict__)
+    _BINDINGS_AVAILABLE = True
 except ImportError as e:
-    raise ImportError(
-        f"Failed to import CUDA STF bindings for CUDA {cuda_version}. "
-        f"Ensure cuda-cccl is properly installed with: pip install cuda-cccl[cu{cuda_version}]"
-    ) from e
+    import warnings
+
+    warnings.warn(
+        f"CUDASTF bindings for CUDA {cuda_version} not available: {e}",
+        RuntimeWarning,
+    )
