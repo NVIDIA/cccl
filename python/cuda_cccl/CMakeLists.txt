@@ -191,7 +191,7 @@ if (CCCL_ENABLE_C_EXPERIMENTAL_STF)
       ${_stf_generated_extension_src}
     DEPENDS "${stf_pyx_source_file}"
     DEPFILE "${_stf_depfile}"
-    COMMENT "Cythonizing ${pyx_source_file} for CUDA ${CUDA_VERSION_MAJOR}"
+    COMMENT "Cythonizing ${stf_pyx_source_file} for CUDA ${CUDA_VERSION_MAJOR}"
   )
   set_source_files_properties(
     "${_stf_generated_extension_src}"
