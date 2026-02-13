@@ -545,7 +545,7 @@ template <class _Tp>
   // real = (1.0 - eps) and imag ~ 0.0 but it's nowhere near as bad as in asinh.
   // We need a much smaller interval check than asinh in this case.
   // Bounds found experimentally.
-  constexpr _Tp __realx_close_bound = (is_same_v<_Tp, float>) ? _Tp{0.99f}; : _Tp{0.99999};
+  constexpr _Tp __realx_close_bound = (is_same_v<_Tp, float>) ? _Tp{0.99f} : _Tp{0.99999};
   constexpr _Tp __imagx_small_bound = (is_same_v<_Tp, float>) ? _Tp{1.0e-6f} : _Tp{1.0e-8};
 
   // Calculate the same thing, but in a more stable way on this interval.
