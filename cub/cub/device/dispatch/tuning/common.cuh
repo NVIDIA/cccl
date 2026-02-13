@@ -146,19 +146,19 @@ enum class length_size
 };
 
 template <class T>
-constexpr primitive_key is_primitive_key()
+_CCCL_API constexpr primitive_key is_primitive_key()
 {
   return is_primitive<T>::value ? primitive_key::yes : primitive_key::no;
 }
 
 template <class T>
-constexpr primitive_length is_primitive_length()
+_CCCL_API constexpr primitive_length is_primitive_length()
 {
   return is_primitive<T>::value ? primitive_length::yes : primitive_length::no;
 }
 
 template <class KeyT>
-constexpr key_size classify_key_size()
+_CCCL_API constexpr key_size classify_key_size()
 {
   return sizeof(KeyT) == 1 ? key_size::_1
        : sizeof(KeyT) == 2 ? key_size::_2
@@ -170,7 +170,7 @@ constexpr key_size classify_key_size()
 }
 
 template <class LengthT>
-constexpr length_size classify_length_size()
+_CCCL_API constexpr length_size classify_length_size()
 {
   return sizeof(LengthT) == 4 ? length_size::_4 : length_size::unknown;
 }
