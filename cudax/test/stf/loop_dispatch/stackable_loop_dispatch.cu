@@ -16,6 +16,7 @@ using namespace cuda::experimental::stf;
 int main()
 {
   stackable_ctx ctx;
+  _CCCL_ASSERT(ctx.has_head_set(), "ctx construction must set head for current thread");
 
   // Loop count
   int n = 1024;

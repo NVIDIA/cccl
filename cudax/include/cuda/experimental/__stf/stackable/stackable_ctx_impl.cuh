@@ -1064,6 +1064,12 @@ public:
       return (it != head_map.end()) ? it->second : -1;
     }
 
+    /** True if the current thread has a head offset set (has entered the context). */
+    bool has_head_set() const
+    {
+      return head_map.find(::std::this_thread::get_id()) != head_map.end();
+    }
+
     // Record the offset of the current context in the calling thread
     void set_head_offset(int offset)
     {
@@ -1271,6 +1277,12 @@ public:
   int get_head_offset() const
   {
     return pimpl->get_head_offset();
+  }
+
+  /** True if the current thread has a head offset set (has entered the context). */
+  bool has_head_set() const
+  {
+    return pimpl->has_head_set();
   }
 
   void set_head_offset(int offset)

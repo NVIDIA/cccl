@@ -82,6 +82,11 @@ inline void loop_dispatch(
 
   if constexpr (::std::is_same_v<::std::remove_reference_t<context_t>, stackable_ctx>)
   {
+    // Ensure the calling thread has a context head so workers can use the same level (root if never set).
+    if (!ctx.has_head_set())
+    {
+      ctx.set_head_offset(ctx.get_root_offset());
+    }
     head = ctx.get_head_offset();
     // fprintf(stderr, "LOOP DISPATCH on stackable ctx ... head %d\n", head);
   }
