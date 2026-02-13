@@ -184,11 +184,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __launch_transform_t
 
 _CCCL_GLOBAL_CONSTANT auto launch_transform = __tfx::__launch_transform_t{};
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Doxygen chokes here
+#  ifndef _CCCL_DOXYGEN_INVOKED // Doxygen chokes here
 template <typename _Arg>
 using transformed_device_argument_t _CCCL_NODEBUG_ALIAS =
   __remove_rvalue_reference_t<::cuda::std::__call_result_t<__tfx::__launch_transform_t, ::cuda::stream_ref, _Arg>>;
-#endif // ^^^ _CCCL_DOXYGEN_INVOKED ^^^
+#  endif // ^^^ _CCCL_DOXYGEN_INVOKED ^^^
 _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
