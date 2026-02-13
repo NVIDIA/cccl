@@ -111,6 +111,15 @@ struct only_set_when_both_expected
   }
 };
 
+#if _CCCL_HAS_INT128()
+// gcc does not implement streaming operator for __int128, but we never use it anyhow
+inline std::ostream& operator<<(std::ostream& out, __int128_t x)
+{
+  out << static_cast<ptrdiff_t>(x);
+  return out;
+}
+#endif // _CCCL_HAS_INT128()
+
 void TestInnerProductWithBigIndexesHelper(int magnitude)
 {
   cuda::counting_iterator<long long> begin(1);
