@@ -297,8 +297,7 @@ template <class _Tp>
 
   // 0.0, and some very particular values, do not survive this unsafe sqrt function.
   // This case occurs when (1 + x^2) is zero or denormal. (and rsqrt(x)*rsqrt(x) become inf).
-  constexpr __uint_t __min_normal_bits = __uint_t{0x1} << __mant_nbits;
-  const _Tp __min_normal               = ::cuda::std::__fp_from_storage<_Tp>(__min_normal_bits);
+  const _Tp __min_normal = ::cuda::std::__fp_min<_Tp>();
 
   if (__inner_most_term_hi <= _Tp{2} * __min_normal)
   {
@@ -322,13 +321,9 @@ template <class _Tp>
 
   // This reuses the sqrt calculated on CPU already in __recip_sqrt,
   // And gets sqrt quickly on device using the rsqrt already calculated.
-#if _CCCL_CUDA_COMPILATION()
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                     (__pos_evaluation_real = (__recip_sqrt * __inside_sqrt_term);),
                     (__pos_evaluation_real = ::cuda::std::sqrt(__inside_sqrt_term);))
-#else
-  __pos_evaluation_real = ::cuda::std::sqrt(__inside_sqrt_term);
-#endif // _CCCL_CUDA_COMPILATION()
 
   // Here, in a happy coincidence(?), we happen to intermediately calculate an accurate
   // return value for the real part of the answer in the case that __realx is small,
