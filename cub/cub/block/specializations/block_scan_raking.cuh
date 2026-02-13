@@ -252,7 +252,7 @@ struct BlockScanRaking
     T* const smem_raking_ptr = BlockRakingLayout::RakingPtr(temp_storage.raking_grid, linear_tid);
 
     // Read data back into registers
-    if constexpr (!MEMOIZE)
+    if constexpr (!Memoize)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int iteration = 0; iteration < SEGMENT_LENGTH; ++iteration)
@@ -280,7 +280,7 @@ struct BlockScanRaking
     T* const smem_raking_ptr = BlockRakingLayout::RakingPtr(temp_storage.raking_grid, linear_tid);
 
     // Read data back into registers
-    if constexpr (!MEMOIZE)
+    if constexpr (!Memoize)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int iteration = 0; iteration < SEGMENT_LENGTH; ++iteration)
