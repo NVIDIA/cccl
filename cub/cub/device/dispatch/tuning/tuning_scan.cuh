@@ -652,12 +652,14 @@ struct policy_selector
   int offset_size;
   type_t accum_type;
   op_kind_t operation_t;
-  primitive_accum primitive_accum_t;
-  primitive_op primitive_op_t;
+  // TODO(griwes): remove this field before policy_selector is publicly exposed
   bool benchmark_match;
 
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_policy
   {
+    primitive_accum primitive_accum_t = accum_type != type_t::other && accum_type != type_t::int128;
+    primitive_op primitive_op_t       = operation_t != op_kind_t::other;
+
     const bool large_values = accum_size > 128;
     const BlockLoadAlgorithm scan_transposed_load =
       large_values ? BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : BLOCK_LOAD_WARP_TRANSPOSE;
@@ -1037,8 +1039,6 @@ struct policy_selector_from_types
       int{sizeof(OffsetT)},
       classify_type<AccumT>,
       classify_op<ScanOpT>,
-      is_primitive_accum<AccumT>(),
-      is_primitive_op<ScanOpT>(),
       benchmark_match};
     return policies(arch);
   }

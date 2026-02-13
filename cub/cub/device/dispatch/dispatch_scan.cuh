@@ -319,8 +319,11 @@ struct DispatchScan
 #endif // CUB_DEBUG_LOG
 
     // Invoke init_kernel to initialize tile descriptors
-    launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream, /* use_pdl */ true)
-      .doit(init_kernel, tile_state, num_tiles);
+    if (const auto error = CubDebug(launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream, /* use_pdl */ true)
+                                      .doit(init_kernel, tile_state, num_tiles)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -366,8 +369,12 @@ struct DispatchScan
 #endif // CUB_DEBUG_LOG
 
       // Invoke scan_kernel
-      launcher_factory(scan_grid_size, policy.Scan().BlockThreads(), 0, stream, /* use_pdl */ true)
-        .doit(scan_kernel, d_in, d_out, tile_state, start_tile, scan_op, init_value, num_items);
+      if (const auto error = CubDebug(
+            launcher_factory(scan_grid_size, policy.Scan().BlockThreads(), 0, stream, /* use_pdl */ true)
+              .doit(scan_kernel, d_in, d_out, tile_state, start_tile, scan_op, init_value, num_items)))
+      {
+        return error;
+      }
 
       // Check for failure to launch
       if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -521,6 +528,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   const scan_policy active_policy = policy_selector(arch_id);
+#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(NV_IS_HOST,
+               (std::stringstream ss; ss << active_policy;
+                _CubLog("Dispatching DeviceScan to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
+#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
   // Number of input tiles
   const int tile_size = active_policy.block_threads * active_policy.items_per_thread;
@@ -565,8 +577,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 #endif // CUB_DEBUG_LOG
 
   // Invoke init_kernel to initialize tile descriptors
-  launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
-    .doit(kernel_source.InitKernel(), tile_state, num_tiles);
+  if (const auto error = CubDebug(launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
+                                    .doit(kernel_source.InitKernel(), tile_state, num_tiles)))
+  {
+    return error;
+  }
 
   // Check for failure to launch
   if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -612,8 +627,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 #endif // CUB_DEBUG_LOG
 
     // Invoke scan_kernel
-    launcher_factory(scan_grid_size, active_policy.block_threads, 0, stream, /* use_pdl */ true)
-      .doit(kernel_source.ScanKernel(), d_in, d_out, tile_state, start_tile, scan_op, init_value, num_items);
+    if (const auto error = CubDebug(
+          launcher_factory(scan_grid_size, active_policy.block_threads, 0, stream, /* use_pdl */ true)
+            .doit(kernel_source.ScanKernel(), d_in, d_out, tile_state, start_tile, scan_op, init_value, num_items)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))

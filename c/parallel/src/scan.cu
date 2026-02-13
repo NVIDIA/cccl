@@ -389,39 +389,19 @@ CUresult cccl_device_scan(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    if constexpr (std::is_same_v<InitValueT, cub::NullType>)
-    {
-      auto exec_status = cub::detail::scan::dispatch_with_accum<void>(
-        d_temp_storage,
-        *temp_storage_bytes,
-        indirect_arg_t{d_in},
-        indirect_arg_t{d_out},
-        indirect_arg_t{op},
-        init,
-        static_cast<OffsetT>(num_items),
-        stream,
-        *static_cast<cub::detail::scan::policy_selector*>(build.runtime_policy),
-        scan::scan_kernel_source{build},
-        cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
-      error = static_cast<CUresult>(exec_status);
-    }
-    else
-    {
-      indirect_arg_t init_arg{init};
-      auto exec_status = cub::detail::scan::dispatch_with_accum<void>(
-        d_temp_storage,
-        *temp_storage_bytes,
-        indirect_arg_t{d_in},
-        indirect_arg_t{d_out},
-        indirect_arg_t{op},
-        init_arg,
-        static_cast<OffsetT>(num_items),
-        stream,
-        *static_cast<cub::detail::scan::policy_selector*>(build.runtime_policy),
-        scan::scan_kernel_source{build},
-        cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
-      error = static_cast<CUresult>(exec_status);
-    }
+    auto exec_status = cub::detail::scan::dispatch_with_accum<void>(
+      d_temp_storage,
+      *temp_storage_bytes,
+      indirect_arg_t{d_in},
+      indirect_arg_t{d_out},
+      indirect_arg_t{op},
+      std::conditional_t<std::is_same_v<InitValueT, cub::NullType>, cub::NullType, indirect_arg_t>{init},
+      static_cast<OffsetT>(num_items),
+      stream,
+      *static_cast<cub::detail::scan::policy_selector*>(build.runtime_policy),
+      scan::scan_kernel_source{build},
+      cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
+    error = static_cast<CUresult>(exec_status);
   }
   catch (const std::exception& exc)
   {
