@@ -371,7 +371,7 @@ public:
     // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
-      return partition_impl<tuning_t, InputIteratorT, FlagIterator, OutputIteratorT, NumSelectedIteratorT, NullType, offset_t>(
+      return partition_impl<tuning_t>(
         storage, bytes, d_in, d_flags, d_out, d_num_selected_out, static_cast<offset_t>(num_items), NullType{}, stream);
     });
   }
@@ -627,8 +627,16 @@ public:
     // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
-      return partition_impl<tuning_t, InputIteratorT, NullType*, OutputIteratorT, NumSelectedIteratorT, SelectOp, offset_t>(
-        storage, bytes, d_in, nullptr, d_out, d_num_selected_out, static_cast<offset_t>(num_items), select_op, stream);
+      return partition_impl<tuning_t>(
+        storage,
+        bytes,
+        d_in,
+        static_cast<NullType*>(nullptr),
+        d_out,
+        d_num_selected_out,
+        static_cast<offset_t>(num_items),
+        select_op,
+        stream);
     });
   }
 
