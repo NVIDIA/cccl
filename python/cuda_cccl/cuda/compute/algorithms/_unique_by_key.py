@@ -79,7 +79,7 @@ class _UniqueByKey:
 
         # Update op state for stateful ops
         op_adapter = make_op_adapter(op)
-        op_adapter.update_op_state(self.op_cccl)
+        self.op_cccl.state = op_adapter.get_state()
 
         stream_handle = validate_and_get_stream(stream)
         if temp_storage is None:
