@@ -62,7 +62,7 @@ template <class _Env>
 inline constexpr bool __buffer_compatible_env = ::cuda::std::is_same_v<_Env, ::cuda::std::execution::env<>>;
 
 //! @rst
-//! .. _libcudacxx-containers-async-vector:
+//! .. _libcudacxx-containers-buffer:
 //!
 //! buffer
 //! -------------
