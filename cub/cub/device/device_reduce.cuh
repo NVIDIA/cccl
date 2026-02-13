@@ -2310,35 +2310,21 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ReduceByKey");
 
-    // Signed integer type for global offsets
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
-    // FlagT iterator type (not used)
-
-    // Selection op (not used)
-
-    // Default == operator
+    using OffsetT    = detail::choose_offset_t<NumItemsT>;
     using EqualityOp = ::cuda::std::equal_to<>;
 
-    return DispatchReduceByKey<
-      KeysInputIteratorT,
-      UniqueOutputIteratorT,
-      ValuesInputIteratorT,
-      AggregatesOutputIteratorT,
-      NumRunsOutputIteratorT,
-      EqualityOp,
-      ReductionOpT,
-      OffsetT>::Dispatch(d_temp_storage,
-                         temp_storage_bytes,
-                         d_keys_in,
-                         d_unique_out,
-                         d_values_in,
-                         d_aggregates_out,
-                         d_num_runs_out,
-                         EqualityOp(),
-                         reduction_op,
-                         static_cast<OffsetT>(num_items),
-                         stream);
+    return detail::reduce_by_key::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_unique_out,
+      d_values_in,
+      d_aggregates_out,
+      d_num_runs_out,
+      EqualityOp{},
+      reduction_op,
+      static_cast<OffsetT>(num_items),
+      stream);
   }
 };
 CUB_NAMESPACE_END
