@@ -2,6 +2,11 @@
 # depends on c2h:
 cccl_get_c2h()
 
+if (NOT CUB_ENABLE_LAUNCH_NO_LAUNCHER)
+  # Examples do not define lid variants; treat them as core-only artifacts.
+  return()
+endif()
+
 ## cub_add_example
 #
 # Add an example executable and register it with ctest.
