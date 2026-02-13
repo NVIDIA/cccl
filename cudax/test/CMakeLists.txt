@@ -82,7 +82,6 @@ cudax_add_catch2_test(test_target containers
 )
 
 cudax_add_catch2_test(test_target copy
-    copy/mdspan_to_cute.cu
     copy/mdspan_d2h_h2d.cu
 )
 

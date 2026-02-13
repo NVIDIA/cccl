@@ -46,25 +46,6 @@ macro(cccl_get_cub)
   )
 endmacro()
 
-macro(cccl_get_cutlass)
-  include("${_cccl_cpm_file}")
-  CPMAddPackage(
-    NAME CUTLASS
-    GITHUB_REPOSITORY NVIDIA/cutlass
-    GIT_TAG "v4.3.5"
-    DOWNLOAD_ONLY ON
-    SYSTEM ON
-    EXCLUDE_FROM_ALL TRUE
-  )
-  if (NOT TARGET CUTLASS::CUTLASS)
-    add_library(CUTLASS::CUTLASS INTERFACE IMPORTED)
-    target_include_directories(
-      CUTLASS::CUTLASS SYSTEM INTERFACE
-      "${CUTLASS_SOURCE_DIR}/include"
-    )
-  endif()
-endmacro()
-
 macro(cccl_get_cudatoolkit)
   find_package(CUDAToolkit REQUIRED)
 endmacro()
