@@ -43,12 +43,8 @@ struct __raw_tensor
 };
 
 template <typename _Tp, ::cuda::std::size_t _MaxRank>
-struct __raw_tensor_ordered
+struct __raw_tensor_ordered : __raw_tensor<_Tp, _MaxRank>
 {
-  _Tp* __data;
-  ::cuda::std::size_t __rank;
-  ::cuda::std::array<::cuda::std::size_t, _MaxRank> __shapes;
-  ::cuda::std::array<::cuda::std::int64_t, _MaxRank> __strides;
   ::cuda::std::array<::cuda::std::size_t, _MaxRank> __orders;
 };
 
@@ -111,11 +107,41 @@ __append(const __raw_tensor_ordered<_Tp, _MaxRankIn>& __tensor_in, ::cuda::std::
   return __result;
 }
 
-template <typename _TpIn, typename _TpOut, ::cuda::std::size_t _Rank>
-[[nodiscard]] _CCCL_HOST_API constexpr bool __same_stride_order(
-  const __raw_tensor_ordered<_TpIn, _Rank>& __tensor_a, const __raw_tensor_ordered<_TpOut, _Rank>& __tensor_b) noexcept
+template <typename _Tp, ::cuda::std::size_t _MaxRank>
+[[nodiscard]] _CCCL_HOST_API constexpr bool __is_not_unique(const __raw_tensor_ordered<_Tp, _MaxRank>& __tensor) noexcept
 {
-  return __tensor_a.__rank == __tensor_b.__rank && __tensor_a.__orders == __tensor_b.__orders;
+  // TODO: if all strides are positive, we can make the function more accurate
+  auto& __shapes    = __tensor.__shapes;
+  auto& __strides   = __tensor.__strides;
+  const auto __rank = static_cast<int>(__tensor.__rank);
+  for (int __i = 0; __i < __rank - 1; ++__i)
+  {
+    if (::cuda::std::abs(__strides[__i]) < __shapes[__i + 1] * ::cuda::std::abs(__strides[__i + 1]))
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename _TpIn, typename _TpOut, ::cuda::std::size_t _MaxRankA, ::cuda::std::size_t _MaxRankB>
+[[nodiscard]] _CCCL_HOST_API constexpr bool
+__same_stride_order(const __raw_tensor_ordered<_TpIn, _MaxRankA>& __tensor_a,
+                    const __raw_tensor_ordered<_TpOut, _MaxRankB>& __tensor_b) noexcept
+{
+  const auto __rank_a       = __tensor_a.__rank;
+  const auto __rank_b       = __tensor_b.__rank;
+  const auto __rank_uniform = ::cuda::std::max(__rank_a, __rank_b);
+  for (::cuda::std::size_t __i = 0; __i < __rank_uniform; ++__i)
+  {
+    const auto __order_a = __i < __rank_a ? __tensor_a.__orders[__i] : __i;
+    const auto __order_b = __i < __rank_b ? __tensor_b.__orders[__i] : __i;
+    if (__order_a != __order_b)
+    {
+      return false;
+    }
+  }
+  return true;
 }
 
 template <typename _Tp, ::cuda::std::size_t _Rank>

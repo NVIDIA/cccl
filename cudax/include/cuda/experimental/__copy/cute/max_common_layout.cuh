@@ -62,6 +62,20 @@ template <typename _TpA, typename _TpB, ::cuda::std::size_t _MaxRank>
   }
   return ::cuda::std::gcd(__curr_a, __curr_b);
 }
+
+template <typename _TpA, typename _TpB, ::cuda::std::size_t _MaxRankA, ::cuda::std::size_t _MaxRankB>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::size_t __max_common_contiguous_size(
+  const __raw_tensor_ordered<_TpA, _MaxRankA>& __tensor_a,
+  const __raw_tensor_ordered<_TpB, _MaxRankB>& __tensor_b) noexcept
+{
+  constexpr auto __rank_max = ::cuda::std::max(_MaxRankA, _MaxRankB);
+  const auto __rank_uniform = ::cuda::std::max(__tensor_a.__rank, __tensor_b.__rank);
+  const auto __tensor_a1    = ::cuda::experimental::__append<__rank_max>(__tensor_a, __rank_uniform);
+  const auto __tensor_b1    = ::cuda::experimental::__append<__rank_max>(__tensor_b, __rank_uniform);
+  __println(__tensor_a1);
+  __println(__tensor_b1);
+  return ::cuda::experimental::__max_common_contiguous_size(__tensor_a1, __tensor_b1);
+}
 } // namespace cuda::experimental
 
 #  include <cuda/std/__cccl/epilogue.h>
