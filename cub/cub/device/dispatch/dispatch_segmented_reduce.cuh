@@ -74,13 +74,10 @@ struct policy_selector_from_hub
   _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> segmented_reduce_policy
   {
     using p = typename PolicyHub::MaxPolicy::ActivePolicy::SegmentedReducePolicy;
-    return segmented_reduce_policy{{
-      p::BLOCK_THREADS,
-      p::ITEMS_PER_THREAD,
-      p::VECTOR_LOAD_LENGTH,
-      p::BLOCK_ALGORITHM,
-      p::LOAD_MODIFIER,
-    }};
+    return segmented_reduce_policy{
+      {p::BLOCK_THREADS, p::ITEMS_PER_THREAD, p::VECTOR_LOAD_LENGTH, p::BLOCK_ALGORITHM, p::LOAD_MODIFIER},
+      {p::BLOCK_THREADS, 1, 16, p::VECTOR_LOAD_LENGTH, p::LOAD_MODIFIER},
+      {p::BLOCK_THREADS, 32, 16, p::VECTOR_LOAD_LENGTH, p::LOAD_MODIFIER}};
   }
 };
 } // namespace detail::segmented_reduce
@@ -181,6 +178,9 @@ struct DispatchSegmentedReduce
 
   int ptx_version;
 
+  // Optional max guaranteed segment size
+  size_t max_segment_size;
+
   // Source getter
   KernelSource kernel_source;
 
@@ -203,6 +203,7 @@ struct DispatchSegmentedReduce
     InitT init,
     cudaStream_t stream,
     int ptx_version,
+    size_t max_segment_size                = 0,
     KernelSource kernel_source             = {},
     KernelLauncherFactory launcher_factory = {})
       : d_temp_storage(d_temp_storage)
@@ -216,6 +217,7 @@ struct DispatchSegmentedReduce
       , init(init)
       , stream(stream)
       , ptx_version(ptx_version)
+      , max_segment_size(max_segment_size)
       , kernel_source(kernel_source)
       , launcher_factory(launcher_factory)
   {}
@@ -287,7 +289,15 @@ struct DispatchSegmentedReduce
         // Invoke DeviceSegmentedReduceKernel
         launcher_factory(
           static_cast<::cuda::std::uint32_t>(num_current_segments), policy.SegmentedReduce().BlockThreads(), 0, stream)
-          .doit(segmented_reduce_kernel, d_in, d_out, d_begin_offsets, d_end_offsets, reduction_op, init);
+          .doit(segmented_reduce_kernel,
+                d_in,
+                d_out,
+                d_begin_offsets,
+                d_end_offsets,
+                static_cast<int>(num_current_segments),
+                reduction_op,
+                init,
+                max_segment_size);
 
         // Check for failure to launch
         error = CubDebug(cudaPeekAtLastError());
@@ -383,6 +393,7 @@ struct DispatchSegmentedReduce
     ReductionOpT reduction_op,
     InitT init,
     cudaStream_t stream,
+    size_t max_segment_size                = 0,
     KernelSource kernel_source             = {},
     KernelLauncherFactory launcher_factory = {},
     MaxPolicyT max_policy                  = {})
@@ -417,6 +428,7 @@ struct DispatchSegmentedReduce
         init,
         stream,
         ptx_version,
+        max_segment_size,
         kernel_source,
         launcher_factory);
 
@@ -488,6 +500,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   ReductionOpT reduction_op,
   InitT init,
   cudaStream_t stream,
+  size_t max_segment_size                = 0,
   PolicySelector policy_selector         = {},
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
@@ -511,6 +524,18 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     (::std::stringstream ss; ss << active_policy;
      _CubLog("Dispatching DeviceSegmentedReduce to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+
+  // Compute segments_per_block based on max_segment_size hint
+  int segments_per_block = 1;
+  if (max_segment_size != 0 && max_segment_size <= static_cast<size_t>(active_policy.small_reduce.items_per_tile()))
+  {
+    segments_per_block = active_policy.small_reduce.segments_per_block();
+  }
+  else if (max_segment_size != 0
+           && max_segment_size <= static_cast<size_t>(active_policy.medium_reduce.items_per_tile()))
+  {
+    segments_per_block = active_policy.medium_reduce.segments_per_block();
+  }
 
   if (d_temp_storage == nullptr)
   {
@@ -547,13 +572,20 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 #endif // CUB_DEBUG_LOG
 
     // Invoke DeviceSegmentedReduceKernel
+    const auto num_blocks =
+      ::cuda::ceil_div(num_current_segments, static_cast<::cuda::std::int64_t>(segments_per_block));
     if (const auto error = CubDebug(
-          launcher_factory(static_cast<::cuda::std::uint32_t>(num_current_segments),
-                           active_policy.segmented_reduce.block_threads,
-                           0,
-                           stream)
-            .doit(
-              kernel_source.SegmentedReduceKernel(), d_in, d_out, d_begin_offsets, d_end_offsets, reduction_op, init)))
+          launcher_factory(
+            static_cast<::cuda::std::uint32_t>(num_blocks), active_policy.segmented_reduce.block_threads, 0, stream)
+            .doit(kernel_source.SegmentedReduceKernel(),
+                  d_in,
+                  d_out,
+                  d_begin_offsets,
+                  d_end_offsets,
+                  static_cast<int>(num_current_segments),
+                  reduction_op,
+                  init,
+                  max_segment_size)))
     {
       return error;
     }
