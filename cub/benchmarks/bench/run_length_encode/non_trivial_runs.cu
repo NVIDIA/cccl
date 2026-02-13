@@ -57,7 +57,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   thrust::device_vector<run_length_t> out_lengths(elements);
   thrust::device_vector<T> in_keys = generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
 
-  T* d_in_keys                = thrust::raw_pointer_cast(in_keys.data());
+  const T* d_in_keys          = thrust::raw_pointer_cast(in_keys.data());
   offset_t* d_out_offsets     = thrust::raw_pointer_cast(out_offsets.data());
   run_length_t* d_out_lengths = thrust::raw_pointer_cast(out_lengths.data());
   offset_t* d_num_runs_out    = thrust::raw_pointer_cast(num_runs_out.data());
