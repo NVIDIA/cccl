@@ -201,7 +201,7 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
 #endif // _CCCL_BUILTIN_MUL_OVERFLOW
 
   // Host fallback + device implementation.
-#if _CCCL_CUDA_COMPILATION() || !defined(_CCCL_BUILTIN_ADD_OVERFLOW)
+#if _CCCL_CUDA_COMPILATION() || !defined(_CCCL_BUILTIN_MUL_OVERFLOW)
   if constexpr (::cuda::std::is_same_v<_ActResult, _Lhs> && ::cuda::std::is_same_v<_Lhs, _Rhs>)
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
@@ -210,7 +210,7 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
     }
   }
   return ::cuda::__mul_overflow_generic<_ActResult>(__lhs, __rhs);
-#endif // _CCCL_CUDA_COMPILATION() || !_CCCL_BUILTIN_ADD_OVERFLOW
+#endif // _CCCL_CUDA_COMPILATION() || !_CCCL_BUILTIN_MUL_OVERFLOW
 }
 
 _CCCL_TEMPLATE(class _Result, class _Lhs, class _Rhs)
