@@ -167,9 +167,9 @@ TEST_CASE("copy_bytes 2D", "[copy_bytes][2d][basic]")
   }
   using extents = cuda::std::extents<int, M, N>;
   // row major to row major
-  // test_impl(host_data, host_data, extents(), extents());
+  test_impl(host_data, host_data, extents(), extents());
   // column major to column major
-  //  test_impl<cuda::std::layout_left, cuda::std::layout_left>(host_data, host_data, extents(), extents());
+  test_impl<cuda::std::layout_left, cuda::std::layout_left>(host_data, host_data, extents(), extents());
   // row major to column major
   thrust::host_vector<int> expected(M * N);
   for (int i = 0; i < M; ++i)
@@ -180,15 +180,15 @@ TEST_CASE("copy_bytes 2D", "[copy_bytes][2d][basic]")
     }
   }
   test_impl<cuda::std::layout_right, cuda::std::layout_left>(host_data, expected, extents(), extents());
-  //  // column major to row major
-  //  for (int i = 0; i < M; ++i)
-  //  {
-  //    for (int j = 0; j < N; ++j)
-  //    {
-  //      expected[i * N + j] = i + j * M;
-  //    }
-  //  }
-  //  test_impl<cuda::std::layout_left, cuda::std::layout_right>(host_data, expected, extents(), extents());
+  // column major to row major
+  for (int i = 0; i < M; ++i)
+  {
+    for (int j = 0; j < N; ++j)
+    {
+      expected[i * N + j] = i + j * M;
+    }
+  }
+  test_impl<cuda::std::layout_left, cuda::std::layout_right>(host_data, expected, extents(), extents());
 }
 
 TEST_CASE("copy_bytes 2D swapped extents", "[copy_bytes][2d][swapped]")
@@ -203,9 +203,9 @@ TEST_CASE("copy_bytes 2D swapped extents", "[copy_bytes][2d][swapped]")
   using src_extents = cuda::std::extents<int, M, N>;
   using dst_extents = cuda::std::extents<int, N, M>;
   // row major to row major
- // test_impl(host_data, host_data, src_extents(), dst_extents());
+  test_impl(host_data, host_data, src_extents(), dst_extents());
   // column major to column major
-//  test_impl<cuda::std::layout_left, cuda::std::layout_left>(host_data, host_data, src_extents(), dst_extents());
+  test_impl<cuda::std::layout_left, cuda::std::layout_left>(host_data, host_data, src_extents(), dst_extents());
   thrust::host_vector<int> expected(M * N);
   // row major to column major (swapped extents)
   for (int i = 0; i < N; ++i)
@@ -391,3 +391,37 @@ TEST_CASE("copy_bytes 2D strided, transposed grid", "[copy_bytes][2d][stride][tr
   test_impl_stride(host_data, expected, src_extents(), dst_extents(), src_strides, dst_strides);
 }
 */
+
+
+TEST_CASE("copy_bytes 3D strided, non-involutive permutation", "[copy_bytes][3d][stride][permutation]")
+{
+  constexpr int D0 = 2;
+  constexpr int D1 = 3;
+  constexpr int D2 = 4;
+  constexpr int N  = D0 * D1 * D2;
+
+  thrust::host_vector<int> input_data(N);
+  for (int i = 0; i < N; ++i)
+  {
+    input_data[i] = i;
+  }
+
+  thrust::host_vector<int> expected(N, -1);
+  for (int i = 0; i < D0; ++i)
+  {
+    for (int j = 0; j < D1; ++j)
+    {
+      for (int k = 0; k < D2; ++k)
+      {
+        const int src_offset = i * (D1 * D2) + j * D2 + k; // row-major source
+        const int dst_offset = i + j * (D2 * D0) + k * D0; // strides {1, 8, 2}
+        expected[dst_offset] = input_data[src_offset];
+      }
+    }
+  }
+
+  using extents = cuda::std::extents<int, D0, D1, D2>;
+  cuda::std::array<int, 3> src_strides = {D1 * D2, D2, 1}; // row-major
+  cuda::std::array<int, 3> dst_strides = {1, D2 * D0, D0}; // order [1, 2, 0]
+  test_impl_stride(input_data, expected, extents(), extents(), src_strides, dst_strides);
+}
