@@ -18,15 +18,28 @@
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
+#include <cub/detail/delay_constructor.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
 #include <cub/util_device.cuh>
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/arch_id.h>
 #include <cuda/std/__algorithm/clamp.h>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cuda/std/concepts>
+#endif // _CCCL_HAS_CONCEPTS()
+
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::rle::non_trivial_runs
 {
+// TODO(bgruber): remove in CCCL 4.0 when we drop all CUB dispatchers
 template <class LengthT,
           class KeyT,
           primitive_length PrimitiveLength = is_primitive_length<LengthT>(),
@@ -92,6 +105,7 @@ struct sm80_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::n
 {};
 #endif
 
+// TODO(bgruber): remove in CCCL 4.0 when we drop all CUB dispatchers
 template <class LengthT,
           class KeyT,
           primitive_length PrimitiveLength = is_primitive_length<LengthT>(),
@@ -157,6 +171,7 @@ struct sm90_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::n
 {};
 #endif
 
+// TODO(bgruber): remove in CCCL 4.0 when we drop all CUB dispatchers
 template <class LengthT,
           class KeyT,
           primitive_length PrimitiveLength = is_primitive_length<LengthT>(),
@@ -238,6 +253,7 @@ struct sm100_tuning<LengthT, double, primitive_length::yes, primitive_key::yes, 
 // {};
 #endif
 
+// TODO(bgruber): remove in CCCL 4.0 when we drop all CUB dispatchers
 template <class LengthT, class KeyT>
 struct policy_hub
 {
@@ -311,6 +327,262 @@ struct policy_hub
 
   using MaxPolicy = Policy1000;
 };
+
+struct rle_non_trivial_runs_policy
+{
+  int block_threads;
+  int items_per_thread;
+  BlockLoadAlgorithm load_algorithm;
+  CacheLoadModifier load_modifier;
+  bool store_with_time_slicing;
+  BlockScanAlgorithm scan_algorithm;
+  delay_constructor_policy delay_constructor;
+
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator==(const rle_non_trivial_runs_policy& lhs, const rle_non_trivial_runs_policy& rhs)
+  {
+    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
+        && lhs.store_with_time_slicing == rhs.store_with_time_slicing && lhs.scan_algorithm == rhs.scan_algorithm
+        && lhs.delay_constructor == rhs.delay_constructor;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator!=(const rle_non_trivial_runs_policy& lhs, const rle_non_trivial_runs_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const rle_non_trivial_runs_policy& p)
+  {
+    return os
+        << "rle_non_trivial_runs_policy { .block_threads = " << p.block_threads
+        << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
+        << ", .load_modifier = " << p.load_modifier << ", .store_with_time_slicing = " << p.store_with_time_slicing
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .delay_constructor = " << p.delay_constructor << " }";
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
+};
+
+#if _CCCL_HAS_CONCEPTS()
+template <typename T>
+concept rle_non_trivial_runs_policy_selector = detail::policy_selector<T, rle_non_trivial_runs_policy>;
+#endif // _CCCL_HAS_CONCEPTS()
+
+struct policy_selector
+{
+  length_size length_sz;
+  key_size key_sz;
+  primitive_length prim_len;
+  primitive_key prim_key;
+  int key_type_size;
+
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> rle_non_trivial_runs_policy
+  {
+    const bool tuned_prim = (prim_len == primitive_length::yes && prim_key == primitive_key::yes);
+    const bool length_4   = (length_sz == length_size::_4);
+
+    if (arch >= ::cuda::arch_id::sm_100 && tuned_prim && length_4)
+    {
+      if (key_sz == key_size::_1)
+      {
+        return rle_non_trivial_runs_policy{
+          224,
+          20,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_CA,
+          false,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::fixed_delay, 350, 450}};
+      }
+      if (key_sz == key_size::_2)
+      {
+        return rle_non_trivial_runs_policy{
+          224,
+          20,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          false,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::fixed_delay, 350, 450}};
+      }
+      if (key_sz == key_size::_4)
+      {
+        return rle_non_trivial_runs_policy{
+          224,
+          13,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          false,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::fixed_delay, 350, 450}};
+      }
+      if (key_sz == key_size::_8)
+      {
+        return rle_non_trivial_runs_policy{
+          256,
+          15,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          false,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::fixed_delay, 350, 450}};
+      }
+    }
+    if (arch >= ::cuda::arch_id::sm_90 && tuned_prim && length_4)
+    {
+      if (key_sz == key_size::_1)
+      {
+        return rle_non_trivial_runs_policy{
+          256,
+          18,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          false,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::fixed_delay, 350, 450}};
+      }
+      if (key_sz == key_size::_2)
+      {
+        return rle_non_trivial_runs_policy{
+          224,
+          20,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          false,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::fixed_delay, 350, 450}};
+      }
+      if (key_sz == key_size::_4)
+      {
+        return rle_non_trivial_runs_policy{
+          256,
+          18,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          false,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::fixed_delay, 350, 450}};
+      }
+      if (key_sz == key_size::_8)
+      {
+        return rle_non_trivial_runs_policy{
+          224,
+          14,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          false,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::fixed_delay, 350, 450}};
+      }
+#if _CCCL_HAS_INT128()
+      if (key_sz == key_size::_16)
+      {
+        return rle_non_trivial_runs_policy{
+          192,
+          12,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          false,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::fixed_delay, 350, 450}};
+      }
+#endif
+    }
+    if (arch >= ::cuda::arch_id::sm_80 && tuned_prim && length_4)
+    {
+      if (key_sz == key_size::_1)
+      {
+        return rle_non_trivial_runs_policy{
+          192,
+          20,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          false,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::fixed_delay, 350, 450}};
+      }
+      if (key_sz == key_size::_2)
+      {
+        return rle_non_trivial_runs_policy{
+          192,
+          20,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          false,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::fixed_delay, 350, 450}};
+      }
+      if (key_sz == key_size::_4)
+      {
+        return rle_non_trivial_runs_policy{
+          224,
+          15,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          false,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::fixed_delay, 350, 450}};
+      }
+      if (key_sz == key_size::_8)
+      {
+        return rle_non_trivial_runs_policy{
+          256,
+          13,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          false,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::fixed_delay, 350, 450}};
+      }
+#if _CCCL_HAS_INT128()
+      if (key_sz == key_size::_16)
+      {
+        return rle_non_trivial_runs_policy{
+          192,
+          13,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          false,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::fixed_delay, 350, 450}};
+      }
+#endif
+    }
+    constexpr int nominal_4B_items_per_thread = 15;
+    const int items_per_thread =
+      ::cuda::std::clamp(nominal_4B_items_per_thread * 4 / key_type_size, 1, nominal_4B_items_per_thread);
+    return rle_non_trivial_runs_policy{
+      96,
+      items_per_thread,
+      BLOCK_LOAD_DIRECT,
+      LOAD_LDG,
+      true,
+      BLOCK_SCAN_WARP_SCANS,
+      {delay_constructor_kind::fixed_delay, 350, 450},
+    };
+  }
+};
+
+template <class LengthT, class KeyT>
+struct policy_selector_from_types
+{
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> rle_non_trivial_runs_policy
+  {
+    constexpr policy_selector selector{
+      classify_length_size<LengthT>(),
+      classify_key_size<KeyT>(),
+      is_primitive_length<LengthT>(),
+      is_primitive_key<KeyT>(),
+      static_cast<int>(sizeof(KeyT))};
+    return selector(arch);
+  }
+};
+
+#if _CCCL_HAS_CONCEPTS()
+static_assert(rle_non_trivial_runs_policy_selector<policy_selector>);
+#endif // _CCCL_HAS_CONCEPTS()
 } // namespace detail::rle::non_trivial_runs
 
 CUB_NAMESPACE_END
