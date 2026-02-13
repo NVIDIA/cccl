@@ -125,6 +125,11 @@ template <unsigned int Delay, unsigned int L2WriteLatency>
 inline constexpr auto delay_constructor_policy_from_type<exponential_backon_constructor_t<Delay, L2WriteLatency>> =
   delay_constructor_policy{delay_constructor_kind::exponential_backon, Delay, L2WriteLatency};
 
+template <unsigned int Delay, unsigned int L2WriteLatency, unsigned int GridThreshold>
+inline constexpr auto
+  delay_constructor_policy_from_type<reduce_by_key_delay_constructor_t<Delay, L2WriteLatency, GridThreshold>> =
+    delay_constructor_policy{delay_constructor_kind::fixed_delay, Delay, L2WriteLatency};
+
 template <delay_constructor_kind Kind, unsigned int Delay, unsigned int L2WriteLatency>
 struct delay_constructor_for;
 

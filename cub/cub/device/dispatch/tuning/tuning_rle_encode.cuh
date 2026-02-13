@@ -18,17 +18,29 @@
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
+#include <cub/detail/delay_constructor.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
 #include <cub/util_device.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/arch_id.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cuda/std/concepts>
+#endif // _CCCL_HAS_CONCEPTS()
+
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::rle::encode
 {
+// TODO(bgruber): remove in CCCL 4.0 when we drop the reduce dispatchers
 template <class LengthT,
           class KeyT,
           primitive_length PrimitiveLength = is_primitive_length<LengthT>(),
@@ -89,6 +101,7 @@ struct sm80_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::n
 {};
 #endif
 
+// TODO(bgruber): remove in CCCL 4.0 when we drop the reduce dispatchers
 template <class LengthT,
           class KeyT,
           primitive_length PrimitiveLength = is_primitive_length<LengthT>(),
@@ -218,7 +231,8 @@ struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, le
 // {};
 #endif
 
-// this policy is passed to DispatchReduceByKey
+// TODO(bgruber): remove in CCCL 4.0 when we drop all CUB dispatchers
+// this policy is passed to DispatchStreamingReduceByKey and then to DeviceReduceByKeyKernel
 template <class LengthT, class KeyT>
 struct policy_hub
 {
@@ -294,6 +308,196 @@ struct policy_hub
 
   using MaxPolicy = Policy1000;
 };
+
+// DeviceRunLengthEncode::Encode delegates to reduce by key
+using rle_encode_policy = reduce_by_key::reduce_by_key_policy;
+
+#if _CCCL_HAS_CONCEPTS()
+template <typename T>
+concept rle_encode_policy_selector = reduce_by_key::reduce_by_key_policy_selector<T>;
+#endif // _CCCL_HAS_CONCEPTS()
+
+// TODO(bgruber): remove in CCCL 4.0 when we drop the RLE dispatchers
+using reduce_by_key::policy_selector_from_hub;
+
+struct policy_selector
+{
+  length_size length_sz;
+  key_size key_sz;
+  primitive_length prim_len;
+  primitive_key prim_key;
+  int max_input_bytes;
+  int combined_input_bytes;
+
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> rle_encode_policy
+  {
+    const bool tuned_prim = (prim_len == primitive_length::yes && prim_key == primitive_key::yes);
+    const bool length_4   = (length_sz == length_size::_4);
+
+    if (arch >= ::cuda::arch_id::sm_100 && tuned_prim && length_4)
+    {
+      if (key_sz == key_size::_1)
+      {
+        return rle_encode_policy{
+          256,
+          14,
+          BLOCK_LOAD_DIRECT,
+          LOAD_CA,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::exponential_backon, 468, 300}};
+      }
+      if (key_sz == key_size::_2)
+      {
+        return rle_encode_policy{
+          224,
+          14,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::exponential_backon, 376, 420}};
+      }
+      if (key_sz == key_size::_4)
+      {
+        return rle_encode_policy{
+          256,
+          14,
+          BLOCK_LOAD_DIRECT,
+          LOAD_CA,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::exponential_backon, 956, 70}};
+      }
+      if (key_sz == key_size::_8)
+      {
+        return rle_encode_policy{
+          224,
+          9,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::exponential_backoff, 188, 765}};
+      }
+    }
+    if (arch >= ::cuda::arch_id::sm_90 && tuned_prim && length_4)
+    {
+      if (key_sz == key_size::_1)
+      {
+        return rle_encode_policy{
+          256, 13, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 620}};
+      }
+      if (key_sz == key_size::_2)
+      {
+        return rle_encode_policy{
+          128, 22, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 775}};
+      }
+      if (key_sz == key_size::_4)
+      {
+        return rle_encode_policy{
+          192,
+          14,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::fixed_delay, 284, 480}};
+      }
+      if (key_sz == key_size::_8)
+      {
+        return rle_encode_policy{
+          128,
+          19,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::no_delay, 0, 515}};
+      }
+#if _CCCL_HAS_INT128()
+      if (key_sz == key_size::_16)
+      {
+        return rle_encode_policy{
+          128,
+          11,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::fixed_delay, 428, 930}};
+      }
+#endif
+    }
+    if (arch >= ::cuda::arch_id::sm_80 && tuned_prim && length_4)
+    {
+      if (key_sz == key_size::_1)
+      {
+        return rle_encode_policy{
+          256, 14, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 640}};
+      }
+      if (key_sz == key_size::_2)
+      {
+        return rle_encode_policy{
+          256, 13, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 900}};
+      }
+      if (key_sz == key_size::_4)
+      {
+        return rle_encode_policy{
+          256, 13, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 1080}};
+      }
+      if (key_sz == key_size::_8)
+      {
+        return rle_encode_policy{
+          224,
+          9,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::no_delay, 0, 1075}};
+      }
+#if _CCCL_HAS_INT128()
+      if (key_sz == key_size::_16)
+      {
+        return rle_encode_policy{
+          128,
+          7,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          {delay_constructor_kind::no_delay, 0, 630}};
+      }
+#endif
+    }
+    constexpr int nominal_4B_items_per_thread = 6;
+    const int items =
+      (max_input_bytes <= 8)
+        ? 6
+        : ::cuda::std::clamp(
+            ::cuda::ceil_div(nominal_4B_items_per_thread * 8, combined_input_bytes), 1, nominal_4B_items_per_thread);
+    return rle_encode_policy{
+      128,
+      items,
+      BLOCK_LOAD_DIRECT,
+      LOAD_LDG,
+      BLOCK_SCAN_WARP_SCANS,
+      {delay_constructor_kind::fixed_delay, 350, 450},
+    };
+  }
+};
+
+template <class LengthT, class KeyT>
+struct policy_selector_from_types
+{
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> rle_encode_policy
+  {
+    constexpr policy_selector selector{
+      classify_length_size<LengthT>(),
+      classify_key_size<KeyT>(),
+      is_primitive_length<LengthT>(),
+      is_primitive_key<KeyT>(),
+      static_cast<int>((::cuda::std::max) (sizeof(LengthT), sizeof(KeyT))),
+      static_cast<int>(sizeof(LengthT) + sizeof(KeyT))};
+    return selector(arch);
+  }
+};
+
+#if _CCCL_HAS_CONCEPTS()
+static_assert(rle_encode_policy_selector<policy_selector>);
+#endif // _CCCL_HAS_CONCEPTS()
 } // namespace detail::rle::encode
 
 CUB_NAMESPACE_END

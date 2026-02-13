@@ -2,10 +2,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-/**
- * @file cub::AgentReduceByKey implements a stateful abstraction of CUDA thread
- *       blocks for participating in device-wide reduce-value-by-key.
- */
+//! @file
+//! cub::detail::reduce_by_key::AgentReduceByKey implements a stateful abstraction of CUDA thread blocks for
+//! participating in device-wide reduce-value-by-key.
 
 #pragma once
 
@@ -92,7 +91,7 @@ struct AgentReduceByKeyPolicy
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail::reduce
+namespace detail::reduce_by_key
 {
 /**
  * @brief AgentReduceByKey implements a stateful abstraction of CUDA thread
@@ -771,6 +770,6 @@ struct AgentReduceByKey
     }
   }
 };
-} // namespace detail::reduce
+} // namespace detail::reduce_by_key
 
 CUB_NAMESPACE_END
