@@ -30,8 +30,6 @@
 
 #  include <cuda/experimental/__copy/cute/utils.cuh>
 
-#  include <cute/layout.hpp>
-//
 #  include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
