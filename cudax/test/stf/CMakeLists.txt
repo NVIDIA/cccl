@@ -120,6 +120,7 @@ set(
   green_context/axpy_gc.cu
   green_context/cuda_graph.cu
   green_context/gc_grid.cu
+  green_context/gc_grid_vmm.cu
   hash/ctx_hash.cu
   hash/logical_data.cu
   hashtable/fusion.cu
