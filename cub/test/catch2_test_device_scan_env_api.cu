@@ -10,6 +10,8 @@
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
+#include <cuda/devices>
+#include <cuda/stream>
 
 #include <iostream>
 
@@ -46,8 +48,8 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan accepts stream and not_guaranteed deter
   auto output = thrust::device_vector<float>(4);
   auto init   = 1.0f;
 
-  cudaStream_t legacy_stream = 0;
-  cuda::stream_ref stream_ref{legacy_stream};
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
   auto req_env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
   auto env     = cuda::std::execution::env{stream_ref, req_env};
 
@@ -91,8 +93,8 @@ C2H_TEST("cub::DeviceScan::ExclusiveSum accepts stream and not_guaranteed determ
   auto input  = thrust::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
   auto output = thrust::device_vector<float>(4);
 
-  cudaStream_t legacy_stream = 0;
-  cuda::stream_ref stream_ref{legacy_stream};
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
   auto req_env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
   auto env     = cuda::std::execution::env{stream_ref, req_env};
 
@@ -136,7 +138,8 @@ C2H_TEST("cub::DeviceScan::InclusiveScan accepts stream environment", "[scan][en
   auto input  = thrust::device_vector<float>{1.0f, 2.0f, 3.0f, 4.0f};
   auto output = thrust::device_vector<float>(4);
 
-  cuda::stream_ref stream_ref{cuda::devices[0]};
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
   auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceScan::InclusiveScan(input.begin(), output.begin(), op, input.size(), env);
@@ -181,8 +184,8 @@ C2H_TEST("cub::DeviceScan::InclusiveScanInit accepts stream environment", "[scan
   auto output = thrust::device_vector<float>(4);
   auto init   = 10.0f;
 
-  cudaStream_t legacy_stream = 0;
-  cuda::stream_ref stream_ref{legacy_stream};
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
   auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceScan::InclusiveScanInit(input.begin(), output.begin(), op, init, input.size(), env);
