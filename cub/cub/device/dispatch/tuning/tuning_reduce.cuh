@@ -124,6 +124,67 @@ _CCCL_HOST_DEVICE ReducePolicyWrapper<PolicyT> MakeReducePolicyWrapper(PolicyT p
   return ReducePolicyWrapper<PolicyT>{policy};
 }
 
+template <typename PolicyT, typename = void>
+struct FixedSizeSegmentedReducePolicyWrapper : PolicyT
+{
+  _CCCL_HOST_DEVICE FixedSizeSegmentedReducePolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct FixedSizeSegmentedReducePolicyWrapper<StaticPolicyT,
+                                             ::cuda::std::void_t<typename StaticPolicyT::ReducePolicy,
+                                                                 typename StaticPolicyT::SmallReducePolicy,
+                                                                 typename StaticPolicyT::MediumReducePolicy>>
+    : StaticPolicyT
+{
+  _CCCL_HOST_DEVICE FixedSizeSegmentedReducePolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  CUB_DEFINE_SUB_POLICY_GETTER(Reduce)
+  CUB_DEFINE_SUB_POLICY_GETTER(SmallReduce)
+  CUB_DEFINE_SUB_POLICY_GETTER(MediumReduce)
+
+  _CCCL_HOST_DEVICE static constexpr int SmallReduceItemsPerTile()
+  {
+    return StaticPolicyT::SmallReducePolicy::ITEMS_PER_TILE;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int MediumReduceItemsPerTile()
+  {
+    return StaticPolicyT::MediumReducePolicy::ITEMS_PER_TILE;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int SmallReduceSegmentsPerBlock()
+  {
+    return StaticPolicyT::SmallReducePolicy::SEGMENTS_PER_BLOCK;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int MediumReduceSegmentsPerBlock()
+  {
+    return StaticPolicyT::MediumReducePolicy::SEGMENTS_PER_BLOCK;
+  }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedPolicy()
+  {
+    using namespace ptx_json;
+    return object<key<"ReducePolicy">()       = Reduce().EncodedPolicy(),
+                  key<"SmallReducePolicy">()  = SmallReduce().EncodedPolicy(),
+                  key<"MediumReducePolicy">() = MediumReduce().EncodedPolicy()>();
+  }
+#endif
+};
+
+template <typename PolicyT>
+_CCCL_HOST_DEVICE FixedSizeSegmentedReducePolicyWrapper<PolicyT>
+MakeFixedSizeSegmentedReducePolicyWrapper(PolicyT policy)
+{
+  return FixedSizeSegmentedReducePolicyWrapper<PolicyT>{policy};
+}
+
 enum class offset_size
 {
   _4,

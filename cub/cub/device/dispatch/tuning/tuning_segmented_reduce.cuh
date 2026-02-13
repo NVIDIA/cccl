@@ -22,13 +22,57 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::segmented_reduce
 {
+// Runtime representation of a warp-level reduce agent policy (small/medium segments)
+struct agent_warp_reduce_policy
+{
+  int block_threads;
+  int warp_threads;
+  int items_per_thread;
+  int vector_load_length;
+  CacheLoadModifier load_modifier;
+
+  _CCCL_API constexpr int items_per_tile() const
+  {
+    return warp_threads * items_per_thread;
+  }
+
+  _CCCL_API constexpr int segments_per_block() const
+  {
+    return block_threads / warp_threads;
+  }
+
+  _CCCL_API constexpr friend bool operator==(const agent_warp_reduce_policy& lhs, const agent_warp_reduce_policy& rhs)
+  {
+    return lhs.block_threads == rhs.block_threads && lhs.warp_threads == rhs.warp_threads
+        && lhs.items_per_thread == rhs.items_per_thread && lhs.vector_load_length == rhs.vector_load_length
+        && lhs.load_modifier == rhs.load_modifier;
+  }
+
+  _CCCL_API constexpr friend bool operator!=(const agent_warp_reduce_policy& lhs, const agent_warp_reduce_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const agent_warp_reduce_policy& p)
+  {
+    return os << "agent_warp_reduce_policy { .block_threads = " << p.block_threads
+              << ", .warp_threads = " << p.warp_threads << ", .items_per_thread = " << p.items_per_thread
+              << ", .vector_load_length = " << p.vector_load_length << ", .load_modifier = " << p.load_modifier << " }";
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
+};
+
 struct segmented_reduce_policy
 {
   reduce::agent_reduce_policy segmented_reduce;
+  agent_warp_reduce_policy small_reduce;
+  agent_warp_reduce_policy medium_reduce;
 
   _CCCL_API constexpr friend bool operator==(const segmented_reduce_policy& lhs, const segmented_reduce_policy& rhs)
   {
-    return lhs.segmented_reduce == rhs.segmented_reduce;
+    return lhs.segmented_reduce == rhs.segmented_reduce && lhs.small_reduce == rhs.small_reduce
+        && lhs.medium_reduce == rhs.medium_reduce;
   }
 
   _CCCL_API constexpr friend bool operator!=(const segmented_reduce_policy& lhs, const segmented_reduce_policy& rhs)
@@ -39,7 +83,8 @@ struct segmented_reduce_policy
 #if !_CCCL_COMPILER(NVRTC)
   friend ::std::ostream& operator<<(::std::ostream& os, const segmented_reduce_policy& p)
   {
-    return os << "segmented_reduce_policy { .segmented_reduce = " << p.segmented_reduce << " }";
+    return os << "segmented_reduce_policy { .segmented_reduce = " << p.segmented_reduce
+              << ", .small_reduce = " << p.small_reduce << ", .medium_reduce = " << p.medium_reduce << " }";
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
@@ -59,7 +104,11 @@ struct policy_selector
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> segmented_reduce_policy
   {
     // for now the segmented reduction uses the same tuning values as the normal reduction
-    return segmented_reduce_policy{reduce::policy_selector{accum_t, operation_t, offset_size, accum_size}(arch).reduce};
+    const auto base = reduce::policy_selector{accum_t, operation_t, offset_size, accum_size}(arch).reduce;
+    return segmented_reduce_policy{
+      base,
+      agent_warp_reduce_policy{base.block_threads, 1, 16, base.vector_load_length, base.load_modifier},
+      agent_warp_reduce_policy{base.block_threads, 32, 16, base.vector_load_length, base.load_modifier}};
   }
 };
 
