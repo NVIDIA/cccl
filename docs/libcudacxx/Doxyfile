@@ -78,6 +78,7 @@ PREDEFINED = \
     "__cccl_lib_mdspan" \
     "_CCCL_AND=&&" \
     "_CCCL_API=inline" \
+    "_CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT="\
     "_CCCL_BEGIN_NAMESPACE_CUDA=namespace cuda {" \
     "_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE=namespace cuda::device {" \
     "_CCCL_BEGIN_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL=namespace cuda::device::experimental {" \
@@ -106,6 +107,7 @@ PREDEFINED = \
     "_CCCL_DIAG_SUPPRESS_GCC(x)=" \
     "_CCCL_DIAG_SUPPRESS_MSVC(x)=" \
     "_CCCL_DIAG_SUPPRESS_NVHPC(x)=" \
+    "_CCCL_END_NAMESPACE_ARCH_DEPENDENT="\
     "_CCCL_END_NAMESPACE_CUDA=}" \
     "_CCCL_END_NAMESPACE_CUDA_DEVICE=}" \
     "_CCCL_END_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL=}" \
