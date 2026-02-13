@@ -17,32 +17,20 @@
 // %RANGE% TUNE_L2_WRITE_LATENCY_NS l2w 0:1200:5
 
 #if !TUNE_BASE
-#  if TUNE_TRANSPOSE == 0
-#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
-#  else // TUNE_TRANSPOSE == 1
-#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
-#  endif // TUNE_TRANSPOSE
-
-#  if TUNE_LOAD == 0
-#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  else // TUNE_LOAD == 1
-#    define TUNE_LOAD_MODIFIER cub::LOAD_CA
-#  endif // TUNE_LOAD
-
-struct reduce_by_key_policy_hub
+struct bench_encode_policy_selector
 {
-  struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
+  [[nodiscard]] constexpr auto operator()(::cuda::arch_id /*arch*/) const
+    -> cub::detail::reduce_by_key::reduce_by_key_policy
   {
-    using ReduceByKeyPolicyT =
-      cub::AgentReduceByKeyPolicy<TUNE_THREADS,
-                                  TUNE_ITEMS,
-                                  TUNE_LOAD_ALGORITHM,
-                                  TUNE_LOAD_MODIFIER,
-                                  cub::BLOCK_SCAN_WARP_SCANS,
-                                  delay_constructor_t>;
-  };
-
-  using MaxPolicy = Policy500;
+    return {
+      TUNE_THREADS,
+      TUNE_ITEMS,
+      TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE,
+      TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA,
+      cub::BLOCK_SCAN_WARP_SCANS,
+      delay_constructor_policy,
+    };
+  }
 };
 #endif // !TUNE_BASE
 
@@ -65,33 +53,6 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   using reduction_op_t             = ::cuda::std::plus<>;
   using accum_t                    = run_length_t;
 
-#if !TUNE_BASE
-  using dispatch_t = cub::detail::reduce::DispatchStreamingReduceByKey<
-    keys_input_it_t,
-    unique_output_it_t,
-    run_length_input_it_t,
-    run_length_output_it_t,
-    num_runs_output_iterator_t,
-    equality_op_t,
-    reduction_op_t,
-    offset_t,
-    accum_t,
-    reduce_by_key_policy_hub>;
-#else
-  using policy_t   = cub::detail::rle::encode::policy_hub<accum_t, T>;
-  using dispatch_t = cub::detail::reduce::DispatchStreamingReduceByKey<
-    keys_input_it_t,
-    unique_output_it_t,
-    run_length_input_it_t,
-    run_length_output_it_t,
-    num_runs_output_iterator_t,
-    equality_op_t,
-    reduction_op_t,
-    offset_t,
-    accum_t,
-    policy_t>;
-#endif
-
   const auto elements                    = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   constexpr std::size_t min_segment_size = 1;
   const std::size_t max_segment_size     = static_cast<std::size_t>(state.get_int64("MaxSegSize"));
@@ -109,35 +70,34 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
 
   std::uint8_t* d_temp_storage{};
   std::size_t temp_storage_bytes{};
+  const offset_t num_items = static_cast<offset_t>(elements);
 
-  dispatch_t::Dispatch(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in_keys,
-    d_out_keys,
-    d_in_vals,
-    d_out_vals,
-    d_num_runs_out,
-    equality_op_t{},
-    reduction_op_t{},
-    elements,
-    0);
+  auto dispatch_on_stream = [&](cudaStream_t stream) {
+    return cub::detail::reduce_by_key::dispatch_streaming_reduce_by_key(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in_keys,
+      d_out_keys,
+      d_in_vals,
+      d_out_vals,
+      d_num_runs_out,
+      equality_op_t{},
+      reduction_op_t{},
+      num_items,
+      stream
+#if !TUNE_BASE
+      ,
+      bench_encode_policy_selector{}
+#endif
+    );
+  };
+
+  dispatch_on_stream(cudaStream_t{0});
 
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-  dispatch_t::Dispatch(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in_keys,
-    d_out_keys,
-    d_in_vals,
-    d_out_vals,
-    d_num_runs_out,
-    equality_op_t{},
-    reduction_op_t{},
-    elements,
-    0);
+  dispatch_on_stream(cudaStream_t{0});
   cudaDeviceSynchronize();
   const num_runs_t num_runs = num_runs_out[0];
 
@@ -148,18 +108,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   state.add_global_memory_writes<num_runs_t>(1);
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in_keys,
-      d_out_keys,
-      d_in_vals,
-      d_out_vals,
-      d_num_runs_out,
-      equality_op_t{},
-      reduction_op_t{},
-      elements,
-      launch.get_stream());
+    dispatch_on_stream(launch.get_stream());
   });
 }
 
