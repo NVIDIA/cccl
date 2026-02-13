@@ -25,105 +25,157 @@
 
 #  include <cuda/std/__algorithm/stable_sort.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__utility/integer_sequence.h>
+#  include <cuda/std/__mdspan/mdspan.h>
 #  include <cuda/std/array>
 #  include <cuda/std/cstdint>
 
-#  include <cute/layout.hpp>
-//
 #  include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
-/**
- * @brief Converts a value from CuTe shape or stride type to its runtime equivalent.
- */
-template <class _Tp>
-[[nodiscard]] _CCCL_HOST_API constexpr auto __to_runtime_value(_Tp __value) noexcept
+template <typename _Tp, ::cuda::std::size_t _MaxRank>
+struct __raw_tensor
 {
-  if constexpr (::cute::is_static<_Tp>::value)
+  _Tp* __data;
+  ::cuda::std::size_t __rank;
+  ::cuda::std::array<::cuda::std::size_t, _MaxRank> __shapes;
+  ::cuda::std::array<::cuda::std::int64_t, _MaxRank> __strides;
+};
+
+template <typename _Tp, ::cuda::std::size_t _MaxRank>
+struct __raw_tensor_ordered
+{
+  _Tp* __data;
+  ::cuda::std::size_t __rank;
+  ::cuda::std::array<::cuda::std::size_t, _MaxRank> __shapes;
+  ::cuda::std::array<::cuda::std::int64_t, _MaxRank> __strides;
+  ::cuda::std::array<::cuda::std::size_t, _MaxRank> __orders;
+};
+
+template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _AccessorPolicy>
+[[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor<_Tp, _Extents::rank()>
+__to_raw_tensor(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _AccessorPolicy>& __mdspan) noexcept
+{
+  __raw_tensor<_Tp, _Extents::rank()> __result{__mdspan.data_handle(), _Extents::rank()};
+  for (::cuda::std::size_t __i = 0; __i < _Extents::rank(); ++__i)
   {
-    return _Tp::value;
+    __result.__shapes[__i]  = static_cast<::cuda::std::size_t>(__mdspan.extent(__i));
+    __result.__strides[__i] = static_cast<::cuda::std::int64_t>(__mdspan.stride(__i));
   }
-  else
-  {
-    return __value;
-  }
+  return __result;
 }
 
-/**
- * @brief Converts a `cuda::std::array` to a `cute::tuple`
- */
-template <class _Tp, ::cuda::std::size_t _N, ::cuda::std::size_t... _Is>
-[[nodiscard]] _CCCL_HOST_API constexpr auto
-__to_cute_tuple(const ::cuda::std::array<_Tp, _N>& __values, ::cuda::std::index_sequence<_Is...>) noexcept
+template <typename _Tp, ::cuda::std::size_t _MaxRank>
+[[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor_ordered<_Tp, _MaxRank>
+__sort_by_stride_desc(const __raw_tensor<_Tp, _MaxRank>& __tensor) noexcept
 {
-  return ::cute::make_tuple(__values[_Is]...);
-}
-
-/**
- * @brief Initializes dynamic shapes and strides from a CuTe layout.
- *
- * @param[in] __shapes_tuple The tuple of shapes.
- * @param[in] __strides_tuple The tuple of strides.
- * @param[out] __shapes The array of shapes to initialize.
- * @param[out] __strides The array of strides to initialize.
- */
-template <class _Shape, class _Stride, ::cuda::std::size_t _Rank, ::cuda::std::size_t... _Is>
-_CCCL_HOST_API constexpr void __init_layout(
-  const _Shape& __shapes_tuple,
-  const _Stride& __strides_tuple,
-  ::cuda::std::array<::cuda::std::size_t, _Rank>& __shapes,
-  ::cuda::std::array<::cuda::std::int64_t, _Rank>& __strides,
-  ::cuda::std::index_sequence<_Is...>) noexcept
-{
-  ((__shapes[_Is] = ::cuda::experimental::__to_runtime_value(::cute::get<_Is>(__shapes_tuple))), ...);
-  ((__strides[_Is] = ::cuda::experimental::__to_runtime_value(::cute::get<_Is>(__strides_tuple))), ...);
-}
-
-/**
- * @brief Extracts shape, stride, and order information from CuTe tuples into plain arrays.
- *
- * @param[in,out] __shapes The array of shapes to sort.
- * @param[in,out] __strides The array of strides to sort.
- * @return The array of orders.
- */
-template <::cuda::std::size_t _Rank>
-_CCCL_HOST_API constexpr ::cuda::std::array<::cuda::std::size_t, _Rank>
-__sort_by_stride_layout(::cuda::std::array<::cuda::std::size_t, _Rank>& __shapes,
-                        ::cuda::std::array<::cuda::std::int64_t, _Rank>& __strides) noexcept
-{
-  ::cuda::std::array<::cuda::std::size_t, _Rank> __orders;
-  for (::cuda::std::size_t __i = 0; __i < _Rank; ++__i)
+  __raw_tensor_ordered<_Tp, _MaxRank> __result{__tensor.__data, __tensor.__rank};
+  auto& __input_strides = __tensor.__strides;
+  auto& __orders        = __result.__orders;
+  auto& __shapes        = __result.__shapes;
+  auto& __strides       = __result.__strides;
+  for (::cuda::std::size_t __i = 0; __i < __tensor.__rank; ++__i)
   {
     __orders[__i] = __i;
   }
   // Sort by strides
-  ::cuda::std::stable_sort(__orders.begin(), __orders.end(), [&](auto __a, auto __b) {
-    return ::cuda::std::abs(__strides[__a]) < ::cuda::std::abs(__strides[__b]);
+  ::cuda::std::stable_sort(__orders.begin(), __orders.begin() + __tensor.__rank, [&](auto __a, auto __b) {
+    return ::cuda::std::abs(__input_strides[__a]) > ::cuda::std::abs(__input_strides[__b]); // descending order
   });
-  const auto __shapes1  = __shapes;
-  const auto __strides1 = __strides;
-  for (::cuda::std::size_t __i = 0; __i < _Rank; ++__i)
+  for (::cuda::std::size_t __i = 0; __i < __tensor.__rank; ++__i)
   {
-    __shapes[__i]  = __shapes1[__orders[__i]];
-    __strides[__i] = __strides1[__orders[__i]];
+    __shapes[__i]  = __tensor.__shapes[__orders[__i]];
+    __strides[__i] = __tensor.__strides[__orders[__i]];
   }
-  return __orders;
+  return __result;
 }
 
-template <class _Shape>
-_CCCL_API constexpr ::cuda::std::size_t __rank_error()
+template <::cuda::std::size_t _MaxRankOut, typename _Tp, ::cuda::std::size_t _MaxRankIn>
+[[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor_ordered<_Tp, _MaxRankOut>
+__append(const __raw_tensor_ordered<_Tp, _MaxRankIn>& __tensor_in, ::cuda::std::size_t __rank_out) noexcept
 {
-  static_assert(::cuda::std::__always_false_v<_Shape>, "rank must be applied to a static shape");
-  return 0;
+  static_assert(_MaxRankIn <= _MaxRankOut);
+  __raw_tensor_ordered<_Tp, _MaxRankOut> __result{__tensor_in.__data, __rank_out};
+  for (::cuda::std::size_t __i = 0; __i < __tensor_in.__rank; ++__i)
+  {
+    __result.__shapes[__i]  = __tensor_in.__shapes[__i];
+    __result.__strides[__i] = __tensor_in.__strides[__i];
+    __result.__orders[__i]  = __tensor_in.__orders[__i];
+  }
+  for (::cuda::std::size_t __i = __tensor_in.__rank; __i < __rank_out; ++__i)
+  {
+    __result.__shapes[__i]  = 1;
+    __result.__strides[__i] = 1;
+    __result.__orders[__i]  = __i;
+  }
+  return __result;
 }
 
-template <class _Shape>
-constexpr ::cuda::std::size_t __rank_v = __rank_error<_Shape>();
+template <typename _TpIn, typename _TpOut, ::cuda::std::size_t _Rank>
+[[nodiscard]] _CCCL_HOST_API constexpr bool __same_stride_order(
+  const __raw_tensor_ordered<_TpIn, _Rank>& __tensor_a, const __raw_tensor_ordered<_TpOut, _Rank>& __tensor_b) noexcept
+{
+  return __tensor_a.__rank == __tensor_b.__rank && __tensor_a.__orders == __tensor_b.__orders;
+}
 
-template <class... _Values>
-constexpr ::cuda::std::size_t __rank_v<::cute::tuple<_Values...>> = sizeof...(_Values);
+template <typename _Tp, ::cuda::std::size_t _Rank>
+_CCCL_HOST_API constexpr void __println(const __raw_tensor<_Tp, _Rank>& __tensor)
+{
+  const auto __rank = static_cast<int>(__tensor.__rank);
+  printf("(");
+  for (int __i = 0; __i < __rank - 1; ++__i)
+  {
+    printf("%zu,", __tensor.__shapes[__i]);
+  }
+  if (__rank > 0)
+  {
+    printf("%zu", __tensor.__shapes[__rank - 1]);
+  }
+  printf("):(");
+  for (int __i = 0; __i < __rank - 1; ++__i)
+  {
+    printf("%zu,", __tensor.__strides[__i]);
+  }
+  if (__rank > 0)
+  {
+    printf("%zu", __tensor.__strides[__rank - 1]);
+  }
+  printf(")\n");
+}
+
+template <typename _Tp, ::cuda::std::size_t _Rank>
+_CCCL_HOST_API constexpr void __println(const __raw_tensor_ordered<_Tp, _Rank>& __tensor)
+{
+  const auto __rank = static_cast<int>(__tensor.__rank);
+  printf("(");
+  for (int __i = 0; __i < __rank - 1; ++__i)
+  {
+    printf("%zu,", __tensor.__shapes[__i]);
+  }
+  if (__rank > 0)
+  {
+    printf("%zu", __tensor.__shapes[__rank - 1]);
+  }
+  printf("):(");
+  for (int __i = 0; __i < __rank - 1; ++__i)
+  {
+    printf("%zu,", __tensor.__strides[__i]);
+  }
+  if (__rank > 0)
+  {
+    printf("%zu", __tensor.__strides[__rank - 1]);
+  }
+  printf(") perm:(");
+  for (int __i = 0; __i < __rank - 1; ++__i)
+  {
+    printf("%zu,", __tensor.__orders[__i]);
+  }
+  if (__rank > 0)
+  {
+    printf("%zu", __tensor.__orders[__rank - 1]);
+  }
+  printf(")\n");
+}
 } // namespace cuda::experimental
 
 #  include <cuda/std/__cccl/epilogue.h>

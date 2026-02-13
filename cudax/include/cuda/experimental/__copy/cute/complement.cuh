@@ -28,7 +28,7 @@
 #  include <cuda/std/array>
 #  include <cuda/std/cstdint>
 
-#  include <cuda/experimental/__copy/cute/coalesce_and_filter.cuh>
+#  include <cuda/experimental/__copy/cute/coalesce_right.cuh>
 #  include <cuda/experimental/__copy/cute/utils.cuh>
 
 #  include <cute/layout.hpp>

@@ -31,15 +31,12 @@
 #  include <cuda/std/__type_traits/is_convertible.h>
 #  include <cuda/std/__type_traits/is_same.h>
 
+#  include <cuda/experimental/__copy/cute/coalesce_right.cuh>
 #  include <cuda/experimental/__copy/cute/max_common_layout.cuh>
-#  include <cuda/experimental/__copy/mdspan_to_cute.cuh>
 
 #  include <stdexcept>
 #  include <vector>
 
-#  include <cute/layout.hpp>
-#  include <cute/tensor_impl.hpp>
-//
 #  include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
@@ -47,67 +44,47 @@ namespace cuda::experimental
 template <typename _Tp, int _Rank>
 struct __tile_pointer_iterator
 {
-  ::cuda::std::array<::cuda::std::size_t, _Rank> __shapes;
-  ::cuda::std::array<::cuda::std::int64_t, _Rank> __strides;
-  ::cuda::std::size_t __contiguous_size;
-  bool __use_stride_order;
-  _Tp* __data;
+  __raw_tensor_ordered<_Tp, _Rank> __tensor_;
+  ::cuda::std::size_t __contiguous_size_;
+  bool __use_stride_order_;
 
-  template <typename _Tensor>
-  _CCCL_HOST_API __tile_pointer_iterator(
-    _Tensor __tensor, ::cuda::std::size_t __contiguous_size, bool __use_stride_order) noexcept
-      : __contiguous_size{__contiguous_size}
-      , __use_stride_order{__use_stride_order}
-      , __data{__tensor.data()}
-  {
-    ::cuda::experimental::__init_layout(
-      __tensor.layout().shape(),
-      __tensor.layout().stride(),
-      __shapes,
-      __strides,
-      ::cuda::std::make_index_sequence<_Rank>{});
-    if (__use_stride_order)
-    {
-      ::cuda::experimental::__sort_by_stride_layout<_Rank>(__shapes, __strides);
-    }
-  }
+  _CCCL_HOST_API explicit __tile_pointer_iterator(
+    const __raw_tensor_ordered<_Tp, _Rank>& __tensor,
+    ::cuda::std::size_t __contiguous_size,
+    bool __use_stride_order) noexcept
+      : __tensor_{__tensor}
+      , __contiguous_size_{__contiguous_size}
+      , __use_stride_order_{__use_stride_order}
+  {}
 
   [[nodiscard]] _CCCL_HOST_API _Tp* operator()(::cuda::std::size_t __tile_idx) const noexcept
   {
-    auto __pos                   = __tile_idx * __contiguous_size;
+    const auto& __shapes         = __tensor_.__shapes;
+    const auto& __strides        = __tensor_.__strides;
+    const auto& __orders         = __tensor_.__orders;
+    const auto __rank            = static_cast<int>(__tensor_.__rank);
+    auto __pos                   = __tile_idx * __contiguous_size_;
     ::cuda::std::size_t __offset = 0;
-    if (__use_stride_order)
+    for (int __i = __rank - 1; __i >= 0; --__i)
     {
-      for (int __i = 0; __i < _Rank; ++__i)
-      {
-        __offset += (__pos % __shapes[__i]) * __strides[__i];
-        __pos /= __shapes[__i];
-      }
+      const auto __idx = __use_stride_order_ ? __i : __orders[__i];
+      __offset += (__pos % __shapes[__idx]) * __strides[__idx];
+      __pos /= __shapes[__idx];
     }
-    else
-    {
-      for (int __i = _Rank - 1; __i >= 0; --__i)
-      {
-        __offset += (__pos % __shapes[__i]) * __strides[__i];
-        __pos /= __shapes[__i];
-      }
-    }
-    return __data + __offset;
+    return __tensor_.__data + __offset;
   }
 };
 
-template <class _Shape, class _Stride>
-[[nodiscard]] _CCCL_HOST_API bool __is_not_unique(const ::cute::Layout<_Shape, _Stride>& __layout) noexcept
+template <typename _Tp, ::cuda::std::size_t _MaxRank>
+[[nodiscard]] _CCCL_HOST_API constexpr bool __is_not_unique(const __raw_tensor_ordered<_Tp, _MaxRank>& __tensor) noexcept
 {
-  constexpr auto __rank = __rank_v<_Shape>;
-  constexpr ::cuda::std::make_index_sequence<__rank> __rank_seq{};
-  ::cuda::std::array<::cuda::std::size_t, __rank> __shapes;
-  ::cuda::std::array<::cuda::std::int64_t, __rank> __strides;
-  ::cuda::experimental::__init_layout(__layout.shape(), __layout.stride(), __shapes, __strides, __rank_seq);
-  ::cuda::experimental::__sort_by_stride_layout<__rank>(__shapes, __strides);
-  for (int __i = 1; __i < __rank; ++__i)
+  // TODO: if all strides are positive, we can make the function more accurate
+  auto& __shapes    = __tensor.__shapes;
+  auto& __strides   = __tensor.__strides;
+  const auto __rank = static_cast<int>(__tensor.__rank);
+  for (int __i = 0; __i < __rank - 1; ++__i)
   {
-    if (::cuda::std::abs(__strides[__i]) < __shapes[__i - 1] * ::cuda::std::abs(__strides[__i - 1]))
+    if (::cuda::std::abs(__strides[__i]) < __shapes[__i + 1] * ::cuda::std::abs(__strides[__i + 1]))
     {
       return true;
     }
@@ -160,7 +137,7 @@ template <typename _TpIn,
 _CCCL_HOST_API void __copy_bytes_impl(
   ::cuda::std::mdspan<_TpIn, _ExtentsIn, _LayoutPolicyIn, _AccessorPolicyIn> __src,
   ::cuda::std::mdspan<_TpOut, _ExtentsOut, _LayoutPolicyOut, _AccessorPolicyOut> __dst,
-  __copy_direction __direction,
+  [[maybe_unused]] __copy_direction __direction,
   ::cuda::stream_ref __stream)
 {
   static_assert(::cuda::std::is_trivially_copyable_v<_TpIn>, "TpIn must be trivially copyable");
@@ -190,42 +167,45 @@ _CCCL_HOST_API void __copy_bytes_impl(
   {
     _CCCL_THROW(std::invalid_argument, "mdspan data handle must not be nullptr");
   }
-  if constexpr (_ExtentsIn::rank() == 0)
+  if constexpr (_ExtentsIn::rank() == 0) // scalar case
   {
     ::cuda::__driver::__memcpyAsync(__dst.data_handle(), __src.data_handle(), sizeof(_TpIn), __stream.get());
   }
   else
   {
+    printf("----------------------------------------------\n");
     using ::cuda::std::size_t;
-    const auto __src1 = ::cuda::experimental::to_cute(__src);
-    const auto __dst1 = ::cuda::experimental::to_cute(__dst);
-    if (::cuda::experimental::__is_not_unique(__dst1.layout()))
+    const auto __src1 = ::cuda::experimental::__to_raw_tensor(__src);
+    const auto __dst1 = ::cuda::experimental::__to_raw_tensor(__dst);
+    __println(__src1);
+    __println(__dst1);
+   // const auto __src2 = ::cuda::experimental::__coalesce_right(__src1);
+   // const auto __dst2 = ::cuda::experimental::__coalesce_right(__dst1);
+    const auto __src3 = ::cuda::experimental::__sort_by_stride_desc(__src1);
+    const auto __dst3 = ::cuda::experimental::__sort_by_stride_desc(__dst1);
+    if (::cuda::experimental::__is_not_unique(__dst3))
     {
       _CCCL_THROW(std::invalid_argument, "destination mdspan must have unique layout");
     }
-    // TODO: potential optimizations: merge contiguous modes, remove 1-size modes, use fast_div_mod in tile iterator
+    // TODO: potential optimizations: use fast_div_mod in tile iterator
     constexpr auto __rank_max = ::cuda::std::max(_ExtentsIn::rank(), _ExtentsOut::rank());
-    auto __src2               = ::cute::make_tensor(__src1.data(), ::cute::append<__rank_max>(__src1.layout()));
-    auto __dst2               = ::cute::make_tensor(__dst1.data(), ::cute::append<__rank_max>(__dst1.layout()));
-    cute::print(__src2.layout());
-    printf("\n");
-    cute::print(__dst2.layout());
-    printf("\n------------------------\n");
-    const auto __use_stride_order = ::cuda::experimental::__has_same_stride_order(__src2.layout(), __dst2.layout());
-    const auto __tile_order_mode =
-      __use_stride_order ? __tile_order::__stride : __tile_order::__logical;
-    const auto __tile_size =
-      ::cuda::experimental::__max_common_contiguous_size(__src2.layout(), __dst2.layout(), __tile_order_mode);
-    const auto __copy_bytes = __tile_size * sizeof(_TpIn);
-    const auto __num_tiles  = static_cast<size_t>(::cute::size(__src2) / __tile_size);
-    printf("__tile_order: %s\n", __use_stride_order ? "stride" : "logical");
+    const auto __rank_uniform = ::cuda::std::max(__src3.__rank, __dst3.__rank);
+    const auto __src4         = ::cuda::experimental::__append<__rank_max>(__src3, __rank_uniform);
+    const auto __dst4         = ::cuda::experimental::__append<__rank_max>(__dst3, __rank_uniform);
+    __println(__src4);
+    __println(__dst4);
+    const auto __tile_size        = ::cuda::experimental::__max_common_contiguous_size(__src4, __dst4);
+    const auto __num_tiles        = static_cast<size_t>(__src.size() / __tile_size);
+    const auto __copy_bytes       = __tile_size * sizeof(_TpIn);
+    const auto __use_stride_order = ::cuda::experimental::__same_stride_order(__src4, __dst4);
+    __tile_pointer_iterator<_TpIn, __rank_max> __src_tiles_iterator(__src4, __tile_size, __use_stride_order);
+    __tile_pointer_iterator<_TpOut, __rank_max> __dst_tiles_iterator(__dst4, __tile_size, __use_stride_order);
+    printf("__use_stride_order: %d\n", (int) __use_stride_order);
     printf("__tile_size: %zu\n", __tile_size);
     printf("__num_tiles: %zu\n", __num_tiles);
-    __tile_pointer_iterator<_TpIn, __rank_max> __src_tiles_iterator(__src2, __tile_size, __use_stride_order);
-    __tile_pointer_iterator<_TpOut, __rank_max> __dst_tiles_iterator(__dst2, __tile_size, __use_stride_order);
-
 #  if _CCCL_CTK_AT_LEAST(13, 0)
     // Use the memcpy batch API to copy all tiles in one call
+    // TODO: optimize when __num_tiles is small
     ::std::vector<const void*> __src_ptr_vector(__num_tiles);
     ::std::vector<void*> __dst_ptr_vector(__num_tiles);
     for (size_t __tile_idx = 0; __tile_idx < __num_tiles; ++__tile_idx)
