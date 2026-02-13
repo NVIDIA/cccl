@@ -261,6 +261,7 @@ struct device_rle_policy_hub
   using MaxPolicy = Policy500;
 };
 
+// TODO(bgruber): rewrite this test to use the new tuning API once it's available
 struct CustomDeviceRunLengthEncode
 {
   template <bool TimeSlicing,
