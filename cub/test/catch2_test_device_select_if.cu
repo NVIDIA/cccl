@@ -13,8 +13,8 @@
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
+#include <cuda/__functional/always_pred.h>
 #include <cuda/iterator>
-#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/limits>
 
 #include <algorithm>
@@ -79,7 +79,7 @@ C2H_TEST("DeviceSelect::If can run with empty input", "[device][select_if]", typ
   c2h::device_vector<int> num_selected_out(1, 42);
   int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_if(in.begin(), out.begin(), d_num_selected_out, num_items, ::cuda::std::always_true{});
+  select_if(in.begin(), out.begin(), d_num_selected_out, num_items, ::cuda::always_true{});
 
   REQUIRE(num_selected_out[0] == 0);
 }
@@ -97,7 +97,7 @@ C2H_TEST("DeviceSelect::If handles all matched", "[device][select_if]", types)
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_if(in.begin(), out.begin(), d_first_num_selected_out, num_items, ::cuda::std::always_true{});
+  select_if(in.begin(), out.begin(), d_first_num_selected_out, num_items, ::cuda::always_true{});
 
   REQUIRE(num_selected_out[0] == num_items);
   REQUIRE(out == in);
@@ -116,7 +116,7 @@ C2H_TEST("DeviceSelect::If handles no matched", "[device][select_if]", types)
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_if(in.begin(), out.begin(), d_first_num_selected_out, num_items, ::cuda::std::always_false{});
+  select_if(in.begin(), out.begin(), d_first_num_selected_out, num_items, ::cuda::always_false{});
 
   REQUIRE(num_selected_out[0] == 0);
 }
@@ -373,7 +373,7 @@ try
   offset_t* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // Run test
-  select_if(in, out.begin(), d_first_num_selected_out, num_items, ::cuda::std::always_true{});
+  select_if(in, out.begin(), d_first_num_selected_out, num_items, ::cuda::always_true{});
 
   // Ensure that we created the correct output
   REQUIRE(num_selected_out[0] == num_items);

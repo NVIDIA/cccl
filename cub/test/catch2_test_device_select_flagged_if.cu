@@ -9,7 +9,7 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/logical.h>
 
-#include <cuda/std/__type_traits/always_false.h>
+#include <cuda/__functional/always_pred.h>
 
 #include <algorithm>
 
@@ -125,7 +125,7 @@ C2H_TEST("DeviceSelect::FlaggedIf can run with empty input", "[device][select_fl
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_flagged_if(in.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items, ::cuda::std::always_true{});
+  select_flagged_if(in.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items, ::cuda::always_true{});
 
   REQUIRE(num_selected_out[0] == 0);
 }
@@ -144,8 +144,7 @@ C2H_TEST("DeviceSelect::FlaggedIf handles all matched", "[device][select_flagged
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_flagged_if(
-    in.begin(), flags.begin(), out.begin(), d_first_num_selected_out, num_items, ::cuda::std::always_true{});
+  select_flagged_if(in.begin(), flags.begin(), out.begin(), d_first_num_selected_out, num_items, ::cuda::always_true{});
 
   REQUIRE(num_selected_out[0] == num_items);
   REQUIRE(out == in);
@@ -166,8 +165,7 @@ C2H_TEST("DeviceSelect::FlaggedIf handles no matched", "[device][select_flagged_
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_flagged_if(
-    in.begin(), flags.begin(), out.begin(), d_first_num_selected_out, num_items, ::cuda::std::always_false{});
+  select_flagged_if(in.begin(), flags.begin(), out.begin(), d_first_num_selected_out, num_items, ::cuda::always_false{});
 
   REQUIRE(num_selected_out[0] == 0);
 }

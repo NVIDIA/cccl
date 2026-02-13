@@ -9,9 +9,9 @@
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
+#include <cuda/__functional/always_pred.h>
 #include <cuda/cmath>
 #include <cuda/iterator>
-#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/iterator>
 
 #include <algorithm>
@@ -71,7 +71,7 @@ C2H_TEST("DevicePartition::If can run with empty input", "[device][partition_if]
   c2h::device_vector<int> num_selected_out(1, 42);
   int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  partition_if(in.begin(), out.begin(), d_num_selected_out, num_items, ::cuda::std::always_true{});
+  partition_if(in.begin(), out.begin(), d_num_selected_out, num_items, ::cuda::always_true{});
 
   REQUIRE(num_selected_out[0] == 0);
 }
@@ -89,7 +89,7 @@ C2H_TEST("DevicePartition::If handles all matched", "[device][partition_if]", ty
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  partition_if(in.begin(), out.begin(), d_first_num_selected_out, num_items, ::cuda::std::always_true{});
+  partition_if(in.begin(), out.begin(), d_first_num_selected_out, num_items, ::cuda::always_true{});
 
   REQUIRE(num_selected_out[0] == num_items);
   REQUIRE(out == in);
@@ -108,7 +108,7 @@ C2H_TEST("DevicePartition::If handles no matched", "[device][partition_if]", typ
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  partition_if(in.begin(), out.begin(), d_first_num_selected_out, num_items, ::cuda::std::always_false{});
+  partition_if(in.begin(), out.begin(), d_first_num_selected_out, num_items, ::cuda::always_false{});
 
   // The false partition is in reverse order
   thrust::reverse(c2h::device_policy, out.begin(), out.end());
