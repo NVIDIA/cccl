@@ -8,6 +8,9 @@
 
 #include <thrust/device_vector.h>
 
+#include <cuda/devices>
+#include <cuda/stream>
+
 #include <iostream>
 
 #include "catch2_test_device_select_common.cuh"
@@ -21,8 +24,8 @@ C2H_TEST("cub::DeviceSelect::If accepts env with stream", "[select][env]")
   auto num_selected = thrust::device_vector<int>(1);
   less_than_t<int> le{5};
 
-  cudaStream_t legacy_stream = 0;
-  cuda::stream_ref stream_ref{legacy_stream};
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
   auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSelect::If(input.begin(), output.begin(), num_selected.begin(), input.size(), le, env);
@@ -48,8 +51,8 @@ C2H_TEST("cub::DeviceSelect::Flagged accepts env with stream", "[select][env]")
   auto output       = thrust::device_vector<int>(4);
   auto num_selected = thrust::device_vector<int>(1);
 
-  cudaStream_t legacy_stream = 0;
-  cuda::stream_ref stream_ref{legacy_stream};
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
   auto env = cuda::std::execution::env{stream_ref};
 
   auto error =

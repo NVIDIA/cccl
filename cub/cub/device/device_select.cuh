@@ -80,14 +80,14 @@ struct DeviceSelect
 {
 private:
   template <typename TuningEnvT,
+            SelectImpl SelectionMode,
             typename InputIteratorT,
             typename FlagIteratorT,
             typename OutputIteratorT,
             typename NumSelectedIteratorT,
             typename SelectOpT,
             typename EqualityOpT,
-            typename OffsetT,
-            SelectImpl SelectionMode>
+            typename OffsetT>
   CUB_RUNTIME_FUNCTION static cudaError_t select_impl(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -334,8 +334,7 @@ public:
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>,
             typename ::cuda::std::enable_if_t<
-              ::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>
-                && !::cuda::std::is_same_v<FlagIterator, size_t&>,
+              !::cuda::std::is_same_v<InputIteratorT, void*> && !::cuda::std::is_same_v<FlagIterator, size_t&>,
               int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
     InputIteratorT d_in,
@@ -352,15 +351,7 @@ public:
     // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
-      return select_impl<tuning_t,
-                         InputIteratorT,
-                         FlagIterator,
-                         OutputIteratorT,
-                         NumSelectedIteratorT,
-                         NullType,
-                         NullType,
-                         offset_t,
-                         SelectImpl::Select>(
+      return select_impl<tuning_t, SelectImpl::Select>(
         storage,
         bytes,
         d_in,
@@ -467,14 +458,14 @@ public:
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
       return select_impl<tuning_t,
+                         SelectImpl::Select,
                          InputIteratorT,
                          NullType*,
                          OutputIteratorT,
                          NumSelectedIteratorT,
                          SelectOp,
                          NullType,
-                         offset_t,
-                         SelectImpl::Select>(
+                         offset_t>(
         storage,
         bytes,
         d_in,
