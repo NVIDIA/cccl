@@ -33,6 +33,7 @@
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/make_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/__utility/cmp.h>
 
 #include <nv/target>
 
@@ -79,11 +80,11 @@ template <typename _Tp>
   const auto __sub = ::cuda::__sub_as_unsigned<_Tp>(__lhs, __rhs);
   if constexpr (::cuda::std::is_signed_v<_Tp>)
   {
-    return overflow_result<_Tp>{__sub, (__sub > __lhs) == (__rhs >= _Tp{0})};
+    return {__sub, (__sub > __lhs) == (__rhs >= _Tp{0})};
   }
   else
   {
-    return overflow_result<_Tp>{__sub, __sub > __lhs};
+    return {__sub, __sub > __lhs};
   }
 }
 
@@ -92,30 +93,82 @@ template <typename _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API overflow_result<_Tp> __sub_overflow_device(_Tp __lhs, _Tp __rhs) noexcept
 {
-  // signed version of sub.cc behave the same way of unsigned integers
-  if constexpr ((sizeof(_Tp) == 4 || sizeof(_Tp) == 8) && ::cuda::std::is_unsigned_v<_Tp>)
+  if constexpr (::cuda::std::is_unsigned_v<_Tp>)
   {
-    _Tp __result;
-    int __overflow;
-    if constexpr (sizeof(_Tp) == 4)
+    using ::cuda::std::uint32_t;
+    using ::cuda::std::uint64_t;
+
+    if constexpr (sizeof(_Tp) < sizeof(uint32_t))
     {
+      const auto __result = uint32_t{__lhs} - uint32_t{__rhs};
+      return {static_cast<_Tp>(__result), !::cuda::std::in_range<_Tp>(__result)};
+    }
+    else if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+    {
+      uint32_t __result;
+      int __overflow;
       asm("sub.cc.u32 %0, %2, %3;"
           "subc.u32 %1, 0, 0;"
           : "=r"(__result), "=r"(__overflow)
           : "r"(__lhs), "r"(__rhs));
+      return {__result, static_cast<bool>(__overflow)};
     }
-    else if constexpr (sizeof(_Tp) == 8)
+    else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
     {
+      uint64_t __result;
+      int __overflow;
       asm("sub.cc.u64 %0, %2, %3;"
           "subc.u32 %1, 0, 0;"
           : "=l"(__result), "=r"(__overflow)
           : "l"(__lhs), "l"(__rhs));
+      return {__result, static_cast<bool>(__overflow)};
     }
-    return overflow_result<_Tp>{__result, static_cast<bool>(__overflow)};
+#  if _CCCL_HAS_INT128()
+    else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
+    {
+      uint64_t __result_lo;
+      uint64_t __result_hi;
+      int __overflow;
+      asm("sub.cc.u64 %1, %4, %6;"
+          "subc.cc.u64 %0, %3, %5;"
+          "subc.u32 %2, 0, 0;"
+          : "=l"(__result_hi), "=l"(__result_lo), "=r"(__overflow)
+          : "l"(static_cast<uint64_t>(__lhs >> 64)),
+            "l"(static_cast<uint64_t>(__lhs)),
+            "l"(static_cast<uint64_t>(__rhs >> 64)),
+            "l"(static_cast<uint64_t>(__rhs)));
+      return {(static_cast<__uint128_t>(__result_hi) << 64) | __result_lo, static_cast<bool>(__overflow)};
+    }
+#  endif // _CCCL_HAS_INT128()
+    else
+    {
+      return ::cuda::__sub_overflow_generic_impl(__lhs, __rhs);
+    }
   }
   else
   {
-    return ::cuda::__sub_overflow_generic_impl(__lhs, __rhs); // do not use builtin functions
+    using ::cuda::std::int32_t;
+
+    if constexpr (sizeof(_Tp) < sizeof(int32_t))
+    {
+      const auto __result = int32_t{__lhs} - int32_t{__rhs};
+      return {static_cast<_Tp>(__result), !::cuda::std::in_range<_Tp>(__result)};
+    }
+#  if _CCCL_HAS_INT128()
+    else if constexpr (sizeof(_Tp) == sizeof(__int128_t))
+    {
+      using _Up                = ::cuda::std::make_unsigned_t<_Tp>;
+      const auto __uadd_result = ::cuda::__sub_overflow_device(static_cast<_Up>(__lhs), static_cast<_Up>(__rhs));
+      const auto __result      = static_cast<_Tp>(__uadd_result.value);
+      const auto __overflow    = ((__lhs >= 0) != (__rhs >= 0)) && (__uadd_result.overflow != (__result >= 0));
+      return {__result, __overflow};
+    }
+#  endif // _CCCL_HAS_INT128()
+    else
+    {
+      // For 32 and 64 bit types, this seems to be the more efficient path.
+      return ::cuda::__sub_overflow_generic_impl(__lhs, __rhs);
+    }
   }
 }
 

@@ -316,6 +316,11 @@ public:
 
   //! @brief Collective constructor using a private static allocation of shared memory as temporary
   //! storage.
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduce()
       : temp_storage(PrivateStorage())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
@@ -323,6 +328,11 @@ public:
 
   /**
    * @brief Collective constructor using the specified memory allocation as temporary storage.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
@@ -339,6 +349,9 @@ public:
   //! @rst
   //! Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction functor.
   //! Each thread contributes one input element.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The return value is undefined in threads other than thread\ :sub:`0`.
   //! - @rowmajor
@@ -389,6 +402,9 @@ public:
   //! @rst
   //! Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction
   //! functor. Each thread contributes an array of consecutive input elements.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The return value is undefined in threads other than thread\ :sub:`0`.
   //! - @granularity
@@ -445,6 +461,9 @@ public:
   //! @rst
   //! Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction
   //! functor. The first ``num_valid`` threads each contribute one input element.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The return value is undefined in threads other than thread<sub>0</sub>.
   //! - @rowmajor
@@ -511,6 +530,9 @@ public:
   //! Computes a block-wide reduction for thread\ :sub:`0` using addition (+) as the reduction operator.
   //! Each thread contributes one input element.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The return value is undefined in threads other than thread\ :sub:`0`.
   //! - @rowmajor
   //! - @smemreuse
@@ -553,6 +575,9 @@ public:
   //! @rst
   //! Computes a block-wide reduction for thread<sub>0</sub> using addition (+) as the reduction
   //! operator. Each thread contributes an array of consecutive input elements.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The return value is undefined in threads other than thread\ :sub:`0`.
   //! - @granularity
@@ -603,6 +628,9 @@ public:
   //! @rst
   //! Computes a block-wide reduction for thread\ :sub:`0` using addition (+) as the reduction
   //! operator. The first ``num_valid`` threads each contribute one input element.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The return value is undefined in threads other than thread\ :sub:`0`.
   //! - @rowmajor

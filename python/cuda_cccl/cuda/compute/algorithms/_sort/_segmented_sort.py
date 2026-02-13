@@ -3,6 +3,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from __future__ import annotations
+
+import numpy as np
 
 from ... import _bindings
 from ... import _cccl_interop as cccl
@@ -49,9 +52,6 @@ class _SegmentedSort:
         self.start_offsets_in_cccl = cccl.to_cccl_input_iter(start_offsets_in)
         self.end_offsets_in_cccl = cccl.to_cccl_input_iter(end_offsets_in)
 
-        cccl.set_host_advance(self.start_offsets_in_cccl, start_offsets_in)
-        cccl.set_host_advance(self.end_offsets_in_cccl, end_offsets_in)
-
         self.build_result = call_build(
             _bindings.DeviceSegmentedSortBuildResult,
             _bindings.SortOrder.ASCENDING
@@ -76,6 +76,10 @@ class _SegmentedSort:
         end_offsets_in,
         stream=None,
     ):
+        if num_segments > np.iinfo(np.int32).max:
+            raise RuntimeError(
+                "Segmented sort does not currently support more than 2^31-1 segments."
+            )
         d_in_keys_array, d_out_keys_array, d_in_values_array, d_out_values_array = (
             _get_arrays(d_in_keys, d_out_keys, d_in_values, d_out_values)
         )

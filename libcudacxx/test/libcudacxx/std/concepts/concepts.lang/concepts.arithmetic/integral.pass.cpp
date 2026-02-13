@@ -70,9 +70,9 @@ static_assert(CheckIntegralQualifiers<__uint128_t>(), "");
 static_assert(CheckIntegralQualifiers<wchar_t>(), "");
 static_assert(CheckIntegralQualifiers<bool>(), "");
 static_assert(CheckIntegralQualifiers<char>(), "");
-#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
 static_assert(CheckIntegralQualifiers<char8_t>(), "");
-#endif // TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#endif // _CCCL_HAS_CHAR8_T()
 static_assert(CheckIntegralQualifiers<char16_t>(), "");
 static_assert(CheckIntegralQualifiers<char32_t>(), "");
 

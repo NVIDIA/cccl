@@ -37,13 +37,13 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(elements);
 
   square_t<T> op{};
-  cuda::stream stream{cuda::device_ref{0}};
-  cuda::device_memory_pool_ref alloc = cuda::device_default_memory_pool(stream.device());
 
-  auto policy = cuda::execution::__cub_par_unseq.with_stream(stream).with_memory_resource(alloc);
+  caching_allocator_t alloc{};
+  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
+
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               cuda::std::for_each_n(policy, in.begin(), elements, op);
+               cuda::std::for_each_n(policy.with_stream(launch.get_stream().get_stream()), in.begin(), elements, op);
              });
 }
 

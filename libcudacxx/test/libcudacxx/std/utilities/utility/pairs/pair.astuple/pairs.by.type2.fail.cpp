@@ -12,8 +12,8 @@
 
 int main(int, char**)
 {
-  typedef cuda::std::complex<float> cf;
-  auto t1 = cuda::std::make_pair<int, int>(42, 43);
+  using cf = cuda::std::complex<float>;
+  auto t1  = cuda::std::make_pair<int, int>(42, 43);
   assert(cuda::std::get<int>(t1) == 42); // two ints
 
   return 0;

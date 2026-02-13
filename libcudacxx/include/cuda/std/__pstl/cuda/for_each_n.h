@@ -23,7 +23,13 @@
 
 #if _CCCL_HAS_BACKEND_CUDA()
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
+
 #  include <cub/device/device_for.cuh>
+
+_CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
@@ -69,7 +75,6 @@ struct __pstl_dispatch<__pstl_algorithm::__for_each_n, __execution_backend::__cu
       __stream.get());
 
     __stream.sync();
-
     return __first + __count;
   }
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
@@ -27,7 +27,6 @@ classifiers = [
 requires-python = ">=3.10"
 
 dependencies = [
-  "numba>=0.60.0",
   "numpy",
   "cuda-pathfinder>=1.2.3",
   "cuda-core",
@@ -38,15 +37,23 @@ dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }
 
 [project.optional-dependencies]
-cu12 = [
+minimal-cu12 = [
   "cuda-bindings>=12.9.1,<13.0.0",
   "cuda-toolkit[nvrtc,nvjitlink,cudart,nvcc]==12.*",
-  "numba-cuda[cu12]>=0.23.0",
 ]
-cu13 = [
+minimal-cu13 = [
   "cuda-bindings>=13.0.0,<14.0.0",
   "cuda-toolkit[nvrtc,nvjitlink,cudart,nvcc,nvvm]==13.*",
-  "numba-cuda[cu13]>=0.23.0",
+]
+cu12 = [
+  "cuda-cccl[minimal-cu12]",
+  "numba>=0.60.0",
+  "numba-cuda[cu12]>=0.23.0,<0.27.0",
+]
+cu13 = [
+  "cuda-cccl[minimal-cu13]",
+  "numba>=0.60.0",
+  "numba-cuda[cu13]>=0.23.0,<0.27.0",
 ]
 test-cu12 = [
   # an undocumented way to inherit the dependencies of the cu12 extra.
@@ -64,6 +71,8 @@ test-cu13 = [
   "cupy-cuda13x",
   "pytest-benchmark",
 ]
+bench-cu12 = ["cuda-cccl[cu12]", "cuda-bench[cu12]"]
+bench-cu13 = ["cuda-cccl[cu13]", "cuda-bench[cu13]"]
 
 [project.urls]
 Homepage = "https://github.com/NVIDIA/cccl"
@@ -102,9 +111,8 @@ python_version = "3.10"
 [[tool.mypy.overrides]]
 module = [
   "numba.*",
-  "llvmlite",
-  "cuda.cccl.headers.*",
-  "cuda.cccl._cuda_version_utils.*",
+  "llvmlite.*",
+  "cuda.cccl.*",
   "cuda.bindings.*",
   "cuda.core.*",
   "cuda.pathfinder.*",
@@ -127,4 +135,5 @@ known-first-party = [
 markers = [
   "no_verify_sass: skip SASS verification check",
   "large: tests requiring large device memory allocations",
+  "no_numba: tests that should not import numba or numba.cuda",
 ]

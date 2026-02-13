@@ -431,6 +431,9 @@ public:
   //! @rst
   //! Load a linear segment of items from memory.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -479,6 +482,9 @@ public:
 
   //! @rst
   //! Load a linear segment of items from memory, guarded by range.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! @smemwarpreuse
   //!
@@ -531,6 +537,9 @@ public:
 
   //! @rst
   //! Load a linear segment of items from memory, guarded by range.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! @smemwarpreuse
   //!

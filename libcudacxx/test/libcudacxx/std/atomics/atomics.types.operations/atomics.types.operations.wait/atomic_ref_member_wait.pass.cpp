@@ -25,7 +25,7 @@ struct TestFn
 {
   __host__ __device__ void operator()() const
   {
-    typedef cuda::std::atomic_ref<T> A;
+    using A = cuda::std::atomic_ref<T>;
 
     SHARED T* t;
     execute_on_main_thread([&] {
