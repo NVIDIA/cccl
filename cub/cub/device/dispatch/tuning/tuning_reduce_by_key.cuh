@@ -1588,7 +1588,7 @@ struct policy_selector
 
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
-concept reduce_by_key_policy_selector = policy_selector<T, reduce_by_key_policy>;
+concept reduce_by_key_policy_selector = detail::policy_selector<T, reduce_by_key_policy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers

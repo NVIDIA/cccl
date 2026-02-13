@@ -370,7 +370,7 @@ struct rle_non_trivial_runs_policy
 
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
-concept rle_non_trivial_runs_policy_selector = policy_selector<T, rle_non_trivial_runs_policy>;
+concept rle_non_trivial_runs_policy_selector = detail::policy_selector<T, rle_non_trivial_runs_policy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the RLE dispatchers
@@ -601,9 +601,9 @@ struct policy_selector_from_types
     return selector(arch);
   }
 };
-s
+
 #if _CCCL_HAS_CONCEPTS()
-  static_assert(rle_non_trivial_runs_policy_selector<policy_selector>);
+static_assert(rle_non_trivial_runs_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 } // namespace detail::rle::non_trivial_runs
 

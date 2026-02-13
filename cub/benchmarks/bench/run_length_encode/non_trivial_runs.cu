@@ -66,7 +66,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   std::size_t temp_storage_bytes{};
   const offset_t num_items = static_cast<offset_t>(elements);
 
-  auto dispatch_on_stream = [&](auto stream) {
+  auto dispatch_on_stream = [&](cudaStream_t stream) {
     cub::detail::rle::dispatch(
       d_temp_storage,
       temp_storage_bytes,
@@ -76,7 +76,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
       d_num_runs_out,
       equality_op_t{},
       num_items,
-      cudaStream_t{0}
+      stream
 #if !TUNE_BASE
       ,
       bench_rle_policy_selector{}
@@ -100,7 +100,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   state.add_global_memory_writes<OffsetT>(1);
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_on_stream(launch.get_stream());
+    dispatch_on_stream(launch.get_stream().get_stream());
   });
 }
 

@@ -674,9 +674,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   cudaStream_t stream,
   PolicySelector policy_selector = {})
 {
-  using streaming_context_t                = NullType; // streaming context not used for ReduceByKey yet
-  using ScanTileStateT                     = ReduceByKeyScanTileState<AccumT, OffsetT>;
-  static constexpr int INIT_KERNEL_THREADS = 128;
+  using streaming_context_t = NullType; // streaming context not used for ReduceByKey yet
+  using ScanTileStateT      = ReduceByKeyScanTileState<AccumT, OffsetT>;
+  [[maybe_unused]] static constexpr int INIT_KERNEL_THREADS = 128;
 
   ::cuda::arch_id arch_id{};
   if (const auto error = CubDebug(ptx_arch_id(arch_id)))
