@@ -119,7 +119,12 @@ template <size_t _Index, class... _Slices>
 {
   // Pull in `::std::get` via ADL for host library types
   using ::cuda::std::get;
+#if _CCCL_COMPILER(MSVC)
+  tuple<_Slices...> __tuple{::cuda::std::forward<_Slices>(__slices)...};
+  return get<_Index>(::cuda::std::move(__tuple));
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
   return get<_Index>(::cuda::std::forward_as_tuple(::cuda::std::forward<_Slices>(__slices)...));
+#endif // !_CCCL_COMPILER(MSVC)
 }
 
 template <size_t _Index, class... _Slices>
