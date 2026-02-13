@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_COPY_CUTE_UTILS_H
-#define __CUDAX_COPY_CUTE_UTILS_H
+#ifndef __CUDAX_COPY_UTILS_H
+#define __CUDAX_COPY_UTILS_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,31 +23,26 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/stable_sort.h>
+#  include <cuda/std/__cstdlib/abs.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__mdspan/mdspan.h>
-#  include <cuda/std/array>
 #  include <cuda/std/cstdint>
+
+#  include <cuda/experimental/__copy/types.cuh>
+
+#  include <cstdio>
 
 #  include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
-template <typename _Tp, ::cuda::std::size_t _MaxRank>
-struct __raw_tensor
-{
-  _Tp* __data;
-  ::cuda::std::size_t __rank;
-  ::cuda::std::array<::cuda::std::size_t, _MaxRank> __shapes;
-  ::cuda::std::array<::cuda::std::int64_t, _MaxRank> __strides;
-};
-
-template <typename _Tp, ::cuda::std::size_t _MaxRank>
-struct __raw_tensor_ordered : __raw_tensor<_Tp, _MaxRank>
-{
-  ::cuda::std::array<::cuda::std::size_t, _MaxRank> __orders;
-};
-
+/**
+ * @brief Converts an mdspan view to a raw tensor descriptor.
+ *
+ * The descriptor stores data pointer, rank, extents, and strides in arrays to use them at runtime.
+ */
 template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _AccessorPolicy>
 [[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor<_Tp, _Extents::rank()>
 __to_raw_tensor(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _AccessorPolicy>& __mdspan) noexcept
@@ -61,6 +56,12 @@ __to_raw_tensor(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _Accesso
   return __result;
 }
 
+/**
+ * @brief Reorders tensor modes by descending absolute stride.
+ *
+ * The returned tensor keeps a permutation (`__orders`) and the permuted shape/stride arrays, which allows comparing
+ * layout compatibility between tensors with different original mode orderings.
+ */
 template <typename _Tp, ::cuda::std::size_t _MaxRank>
 [[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor_ordered<_Tp, _MaxRank>
 __sort_by_stride_desc(const __raw_tensor<_Tp, _MaxRank>& __tensor) noexcept
@@ -86,19 +87,24 @@ __sort_by_stride_desc(const __raw_tensor<_Tp, _MaxRank>& __tensor) noexcept
   return __result;
 }
 
+/**
+ * @brief Appends identity modes up to a target rank.
+ *
+ * Extra modes are represented as shape=1, stride=1, order=i.
+ */
 template <::cuda::std::size_t _MaxRankOut, typename _Tp, ::cuda::std::size_t _MaxRankIn>
 [[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor_ordered<_Tp, _MaxRankOut>
-__append(const __raw_tensor_ordered<_Tp, _MaxRankIn>& __tensor_in, ::cuda::std::size_t __rank_out) noexcept
+__append(const __raw_tensor_ordered<_Tp, _MaxRankIn>& __tensor_in, ::cuda::std::size_t __target_rank) noexcept
 {
   static_assert(_MaxRankIn <= _MaxRankOut);
-  __raw_tensor_ordered<_Tp, _MaxRankOut> __result{__tensor_in.__data, __rank_out};
+  __raw_tensor_ordered<_Tp, _MaxRankOut> __result{__tensor_in.__data, __target_rank};
   for (::cuda::std::size_t __i = 0; __i < __tensor_in.__rank; ++__i)
   {
     __result.__shapes[__i]  = __tensor_in.__shapes[__i];
     __result.__strides[__i] = __tensor_in.__strides[__i];
     __result.__orders[__i]  = __tensor_in.__orders[__i];
   }
-  for (::cuda::std::size_t __i = __tensor_in.__rank; __i < __rank_out; ++__i)
+  for (::cuda::std::size_t __i = __tensor_in.__rank; __i < __target_rank; ++__i)
   {
     __result.__shapes[__i]  = 1;
     __result.__strides[__i] = 1;
@@ -107,6 +113,12 @@ __append(const __raw_tensor_ordered<_Tp, _MaxRankIn>& __tensor_in, ::cuda::std::
   return __result;
 }
 
+/**
+ * @brief Conservative uniqueness check for ordered tensor layouts.
+ *
+ * Returns true when strides indicate potential overlap between neighboring modes, which means multiple logical indices
+ * may map to the same address.
+ */
 template <typename _Tp, ::cuda::std::size_t _MaxRank>
 [[nodiscard]] _CCCL_HOST_API constexpr bool __is_not_unique(const __raw_tensor_ordered<_Tp, _MaxRank>& __tensor) noexcept
 {
@@ -124,6 +136,7 @@ template <typename _Tp, ::cuda::std::size_t _MaxRank>
   return false;
 }
 
+/// @brief Checks whether two tensors have the same stride-based mode order.
 template <typename _TpIn, typename _TpOut, ::cuda::std::size_t _MaxRankA, ::cuda::std::size_t _MaxRankB>
 [[nodiscard]] _CCCL_HOST_API constexpr bool
 __same_stride_order(const __raw_tensor_ordered<_TpIn, _MaxRankA>& __tensor_a,
@@ -145,66 +158,66 @@ __same_stride_order(const __raw_tensor_ordered<_TpIn, _MaxRankA>& __tensor_a,
 }
 
 template <typename _Tp, ::cuda::std::size_t _Rank>
-_CCCL_HOST_API constexpr void __println(const __raw_tensor<_Tp, _Rank>& __tensor)
+_CCCL_HOST_API void __println(const __raw_tensor<_Tp, _Rank>& __tensor)
 {
   const auto __rank = static_cast<int>(__tensor.__rank);
-  printf("(");
+  ::printf("(");
   for (int __i = 0; __i < __rank - 1; ++__i)
   {
-    printf("%zu,", __tensor.__shapes[__i]);
+    ::printf("%zu,", __tensor.__shapes[__i]);
   }
   if (__rank > 0)
   {
-    printf("%zu", __tensor.__shapes[__rank - 1]);
+    ::printf("%zu", __tensor.__shapes[__rank - 1]);
   }
-  printf("):(");
+  ::printf("):(");
   for (int __i = 0; __i < __rank - 1; ++__i)
   {
-    printf("%zu,", __tensor.__strides[__i]);
+    ::printf("%lld,", static_cast<long long>(__tensor.__strides[__i]));
   }
   if (__rank > 0)
   {
-    printf("%zu", __tensor.__strides[__rank - 1]);
+    ::printf("%lld", static_cast<long long>(__tensor.__strides[__rank - 1]));
   }
-  printf(")\n");
+  ::printf(")\n");
 }
 
 template <typename _Tp, ::cuda::std::size_t _Rank>
-_CCCL_HOST_API constexpr void __println(const __raw_tensor_ordered<_Tp, _Rank>& __tensor)
+_CCCL_HOST_API void __println(const __raw_tensor_ordered<_Tp, _Rank>& __tensor)
 {
   const auto __rank = static_cast<int>(__tensor.__rank);
-  printf("(");
+  ::printf("(");
   for (int __i = 0; __i < __rank - 1; ++__i)
   {
-    printf("%zu,", __tensor.__shapes[__i]);
+    ::printf("%zu,", __tensor.__shapes[__i]);
   }
   if (__rank > 0)
   {
-    printf("%zu", __tensor.__shapes[__rank - 1]);
+    ::printf("%zu", __tensor.__shapes[__rank - 1]);
   }
-  printf("):(");
+  ::printf("):(");
   for (int __i = 0; __i < __rank - 1; ++__i)
   {
-    printf("%zu,", __tensor.__strides[__i]);
+    ::printf("%lld,", static_cast<long long>(__tensor.__strides[__i]));
   }
   if (__rank > 0)
   {
-    printf("%zu", __tensor.__strides[__rank - 1]);
+    ::printf("%lld", static_cast<long long>(__tensor.__strides[__rank - 1]));
   }
-  printf(") perm:(");
+  ::printf(") perm:(");
   for (int __i = 0; __i < __rank - 1; ++__i)
   {
-    printf("%zu,", __tensor.__orders[__i]);
+    ::printf("%zu,", __tensor.__orders[__i]);
   }
   if (__rank > 0)
   {
-    printf("%zu", __tensor.__orders[__rank - 1]);
+    ::printf("%zu", __tensor.__orders[__rank - 1]);
   }
-  printf(")\n");
+  ::printf(")\n");
 }
 } // namespace cuda::experimental
 
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // !_CCCL_COMPILER(NVRTC)
-#endif // __CUDAX_COPY_CUTE_UTILS_H
+#endif // __CUDAX_COPY_UTILS_H

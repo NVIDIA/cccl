@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_COPY_CUTE_FILTER_H
-#define __CUDAX_COPY_CUTE_FILTER_H
+#ifndef __CUDAX_COPY_COALESCE_RIGHT_H
+#define __CUDAX_COPY_COALESCE_RIGHT_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,25 +24,26 @@
 #if !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/std/__algorithm/fill.h>
+#  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/array>
 #  include <cuda/std/cstdint>
 
-#  include <cuda/experimental/__copy/cute/utils.cuh>
+#  include <cuda/experimental/__copy/types.cuh>
 
 #  include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
 /**
- * @brief Runtime version of CuTe's `coalesce` for layouts with dynamic shapes/strides.
+ * @brief Runtime coalesce-right for dynamic shape/stride layouts.
  *
- * Produces a layout with the same number of modes as the input layout, but with forward-contiguous modes merged.
+ * Merges right-adjacent contiguous modes and returns a compacted layout descriptor.
  *
  * @par Algorithm
- * 1. Iterate over modes, skipping size-1 modes.
- * 2. Merge contiguous modes where `stride[i] * shape[i] == stride[i+1]`.
- * 3. Pad remaining output modes with `(1, 0)` (identity).
+ * 1. Traverse modes right-to-left, skipping size-1 modes.
+ * 2. Merge into the previous output mode when `stride[i] == curr_stride`,
+ *    where `curr_stride = out_stride * out_shape` of the most recent mode.
+ * 3. Compact valid modes to the beginning of the arrays.
  */
 template <typename _Tp, ::cuda::std::size_t _MaxRank>
 [[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor<_Tp, _MaxRank>
@@ -92,4 +93,4 @@ __coalesce_right(const __raw_tensor<_Tp, _MaxRank>& __tensor_input) noexcept
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // !_CCCL_COMPILER(NVRTC)
-#endif // __CUDAX_COPY_CUTE_FILTER_H
+#endif // __CUDAX_COPY_COALESCE_RIGHT_H

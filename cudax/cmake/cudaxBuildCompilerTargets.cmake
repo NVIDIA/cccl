@@ -8,10 +8,6 @@ cccl_get_cudax()
 cccl_get_libcudacxx()
 cccl_get_thrust()
 
-if (cudax_ENABLE_CUTLASS)
-  cccl_get_cutlass()
-endif()
-
 set(cuda_compile_options)
 set(cxx_compile_options)
 set(cxx_compile_definitions)
@@ -59,5 +55,4 @@ target_link_libraries(
     CUB::CUB
     Thrust::Thrust
     cudax::cudax
-    $<$<TARGET_EXISTS:CUTLASS::CUTLASS>:CUTLASS::CUTLASS>
 )
