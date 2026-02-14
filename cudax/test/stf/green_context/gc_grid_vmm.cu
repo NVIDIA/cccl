@@ -50,16 +50,8 @@ void run_gc_grid_vmm_test()
     return;
   }
 
-  // Build a grid of green context exec places with *explicit* affine data place
-  // (use_green_ctx_data_place = true), so each place's affine data place is
-  // the green context extension rather than the default device data place.
-  ::std::vector<exec_place> places;
-  for (size_t i = 0; i < gc_helper->get_count(); i++)
-  {
-    places.push_back(exec_place::green_ctx(gc_helper->get_view(i), true));
-  }
-
-  auto where = make_grid(places);
+  // Grid of green context places with explicit affine data places (VMM path).
+  auto where = gc_helper->get_grid(true);
 
   // Composite data place with blocked partitioner: allocation on this place
   // uses the VMM path (localized_array).
@@ -68,17 +60,16 @@ void run_gc_grid_vmm_test()
   EXPECT(cdp.is_composite());
   EXPECT(!cdp.allocation_is_stream_ordered());
 
-  const size_t n          = 1024 * 1024; // 1M elements
+  // 8MB allocation to have enough blocks to test the VMM path.
+  const size_t n          = 1024 * 1024;
   const size_t size_bytes = n * sizeof(double);
 
   // Modular API: allocate directly on the composite place (VMM path)
-  void* ptr = cdp.allocate(static_cast<::std::ptrdiff_t>(size_bytes));
+  void* ptr = cdp.allocate(size_bytes);
   EXPECT(ptr != nullptr);
 
   // Use the buffer: launch a kernel on the first grid place's stream
-  exec_place first_place   = where.get_place(pos4(0));
-  decorated_stream dstream = first_place.getStream(handle, false);
-  cudaStream_t stream      = dstream.stream;
+  cudaStream_t stream = where.get_place(pos4(0)).pick_stream(handle);
 
   double* d_ptr = static_cast<double*>(ptr);
   int block     = 256;
