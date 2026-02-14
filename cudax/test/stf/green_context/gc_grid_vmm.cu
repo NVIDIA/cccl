@@ -25,6 +25,8 @@
 #include <cuda/experimental/__stf/places/exec/green_context.cuh>
 #include <cuda/experimental/stf.cuh>
 
+#include <vector>
+
 using namespace cuda::experimental::stf;
 
 #if _CCCL_CTK_AT_LEAST(12, 4)
@@ -68,15 +70,20 @@ void run_gc_grid_vmm_test()
   void* ptr = cdp.allocate(size_bytes);
   EXPECT(ptr != nullptr);
 
-  // Use the buffer: launch a kernel on the first grid place's stream
-  cudaStream_t stream = where.get_place(pos4(0)).pick_stream(handle);
-
   double* d_ptr = static_cast<double*>(ptr);
-  int block     = 256;
-  int grid      = static_cast<int>((n + block - 1) / block);
-  init_kernel<<<grid, block, 0, stream>>>(d_ptr, n);
+  // Launch on default stream
+  int block = 256;
+  int grid  = static_cast<int>((n + block - 1) / block);
+  init_kernel<<<grid, block>>>(d_ptr, n);
+  cuda_safe_call(cudaDeviceSynchronize());
 
-  cuda_safe_call(cudaStreamSynchronize(stream));
+  // Check initialized values: load entire buffer and verify every entry
+  ::std::vector<double> h_buf(n);
+  cuda_safe_call(cudaMemcpy(h_buf.data(), d_ptr, size_bytes, cudaMemcpyDeviceToHost));
+  for (size_t i = 0; i < n; i++)
+  {
+    EXPECT(h_buf[i] == static_cast<double>(i));
+  }
 
   // Modular API: deallocate
   cdp.deallocate(ptr, size_bytes);
