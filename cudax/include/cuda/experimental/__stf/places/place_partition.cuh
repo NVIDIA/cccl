@@ -126,6 +126,26 @@ public:
     }
   }
 
+  /** @brief Partition a grid of execution places into a single vector of subplaces (with async handle).
+   * @param handle Handle for stream or green-context resources when scope is cuda_stream or green_context
+   * @param grid Input execution place grid to partition
+   * @param scope Partitioning granularity
+   */
+  place_partition(async_resources_handle& handle, const exec_place_grid& grid, place_partition_scope scope)
+  {
+    ::std::vector<::std::shared_ptr<exec_place>> places;
+    const auto& grid_places = grid.get_places();
+    places.reserve(grid_places.size());
+    for (const auto& ep : grid_places)
+    {
+      places.push_back(::std::make_shared<exec_place>(ep));
+    }
+    for (const auto& place : places)
+    {
+      compute_subplaces(handle, *place, scope);
+    }
+  }
+
   /** @brief Partition a vector of execution places into a single vector of subplaces (no async handle).
    * Only cuda_device scope is supported.
    * @param places Input execution places to partition
