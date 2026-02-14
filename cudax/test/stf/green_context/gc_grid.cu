@@ -96,5 +96,5 @@ int main()
   ctx.finalize();
 
   tr.dump();
-#endif // CUDA_VERSION < 12040
+#endif // _CCCL_CTK_BELOW(12, 4)
 }

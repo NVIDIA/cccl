@@ -89,9 +89,9 @@ public:
   /** @brief Partition an execution place into a vector of subplaces */
   place_partition(exec_place place, place_partition_scope scope)
   {
-#if CUDA_VERSION < 12040
+#if _CCCL_CTK_BELOW(12, 4)
     _CCCL_ASSERT(scope != place_partition_scope::green_context, "Green contexts need an async resource handle.");
-#endif
+#endif // _CCCL_CTK_BELOW(12, 4)
     compute_subplaces_no_handle(place, scope);
   }
 
@@ -219,9 +219,9 @@ private:
   /** @brief Compute the subplaces of a place at the specified granularity (scope) into the sub_places vector */
   void compute_subplaces_no_handle(const exec_place& place, place_partition_scope scope)
   {
-#if CUDA_VERSION < 12040
+#if _CCCL_CTK_BELOW(12, 4)
     _CCCL_ASSERT(scope != place_partition_scope::green_context, "Green contexts scope need an async resource handle.");
-#endif
+#endif // _CCCL_CTK_BELOW(12, 4)
     _CCCL_ASSERT(scope != place_partition_scope::cuda_stream, "CUDA stream scope needs an async resource handle.");
 
     if (place.is_grid() && scope == place_partition_scope::cuda_device)
