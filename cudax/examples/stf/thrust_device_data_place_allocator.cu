@@ -17,17 +17,17 @@
  *        this example only.
  */
 
-#include <cuda/experimental/__stf/places/blocked_partition.cuh>
-#include <cuda/experimental/__stf/places/exec/green_context.cuh>
-#include <cuda/experimental/stf.cuh>
-
 #include <thrust/copy.h>
 #include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
 #include <thrust/device_vector.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/host_vector.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/transform.h>
+
+#include <cuda/experimental/__stf/places/blocked_partition.cuh>
+#include <cuda/experimental/__stf/places/exec/green_context.cuh>
+#include <cuda/experimental/stf.cuh>
 
 #include <iostream>
 #include <limits>
@@ -75,7 +75,7 @@ public:
       ::cuda::std::__throw_bad_alloc();
     }
     const size_type size_bytes = cnt * sizeof(T);
-    void* raw                   = place_.allocate(static_cast<::std::ptrdiff_t>(size_bytes));
+    void* raw                  = place_.allocate(static_cast<::std::ptrdiff_t>(size_bytes));
     return pointer(static_cast<T*>(raw));
   }
 
@@ -124,7 +124,9 @@ bool run_with_place(const data_place& place, const char* label)
     thrust::counting_iterator<size_t>(0),
     thrust::counting_iterator<size_t>(n),
     d_vec.begin(),
-    [] _CCCL_DEVICE(size_t i) { return 2.0 * static_cast<double>(i); });
+    [] _CCCL_DEVICE(size_t i) {
+      return 2.0 * static_cast<double>(i);
+    });
 
   thrust::host_vector<double> h_sample(4);
   thrust::copy(d_vec.begin(), d_vec.begin() + 4, h_sample.begin());
@@ -145,9 +147,8 @@ int main()
   all_ok &= run_with_place(data_place::device(0), "device(0)");
 
   // All devices (composite, VMM path when multiple devices)
-  all_ok &= run_with_place(
-    data_place::composite(blocked_partition(), exec_place::all_devices()),
-    "composite(blocked_partition, all_devices)");
+  all_ok &= run_with_place(data_place::composite(blocked_partition(), exec_place::all_devices()),
+                           "composite(blocked_partition, all_devices)");
 
 #if _CCCL_CTK_AT_LEAST(12, 4)
   // Green context grid (composite, VMM path)
@@ -158,13 +159,13 @@ int main()
     auto gc_helper    = handle.get_gc_helper(dev_id, num_sms);
     if (gc_helper->get_count() >= 1)
     {
-      auto where = gc_helper->get_grid(true);
+      auto where     = gc_helper->get_grid(true);
       data_place cdp = data_place::composite(blocked_partition(), where);
       all_ok &= run_with_place(cdp, "composite(blocked_partition, green_context_grid)");
     }
-    }
   }
+}
 #endif
 
-  return all_ok ? 0 : 1;
+return all_ok ? 0 : 1;
 }
