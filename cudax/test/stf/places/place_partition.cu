@@ -18,7 +18,7 @@ void print_partition(async_resources_handle& handle, exec_place place, place_par
   fprintf(stderr, "-----------\n");
   fprintf(
     stderr, "PARTITION %s (scope: %s):\n", place.to_string().c_str(), place_partition_scope_to_string(scope).c_str());
-  for (auto sub_place : place_partition(handle, place, scope))
+  for (auto sub_place : place_partition(place, handle, scope))
   {
     fprintf(stderr, "[%s] subplace: %s\n", place.to_string().c_str(), sub_place.to_string().c_str());
   }
