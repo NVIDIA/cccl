@@ -24,7 +24,7 @@
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/dispatch_rle.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce_by_key.cuh>
-#include <cub/device/dispatch/tuning/tuning_run_length_encode.cuh>
+#include <cub/device/dispatch/tuning/tuning_rle_encode.cuh>
 
 #include <thrust/iterator/constant_iterator.h>
 
@@ -186,9 +186,9 @@ struct DeviceRunLengthEncode
 
     using key_t = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
 
-    using policy_t = detail::rle::encode::policy_hub<accum_t, key_t>;
+    using policy_selector_t = detail::rle::encode::policy_selector_from_types<accum_t, key_t>;
 
-    return detail::reduce::DispatchStreamingReduceByKey<
+    return detail::reduce_by_key::dispatch_streaming_reduce_by_key<
       InputIteratorT,
       UniqueOutputIteratorT,
       lengths_input_iterator_t,
@@ -198,17 +198,18 @@ struct DeviceRunLengthEncode
       reduction_op,
       offset_t,
       accum_t,
-      policy_t>::Dispatch(d_temp_storage,
-                          temp_storage_bytes,
-                          d_in,
-                          d_unique_out,
-                          lengths_input_iterator_t((length_t) 1),
-                          d_counts_out,
-                          d_num_runs_out,
-                          equality_op(),
-                          reduction_op(),
-                          num_items,
-                          stream);
+      policy_selector_t>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_unique_out,
+      lengths_input_iterator_t((length_t) 1),
+      d_counts_out,
+      d_num_runs_out,
+      equality_op(),
+      reduction_op(),
+      num_items,
+      stream);
   }
 
   //! @rst
@@ -327,25 +328,18 @@ struct DeviceRunLengthEncode
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::NonTrivialRuns");
 
-    // Offset type used for global offsets
     using offset_t    = detail::choose_signed_offset_t<NumItemsT>;
     using equality_op = ::cuda::std::equal_to<>;
-
-    return DeviceRleDispatch<
-      InputIteratorT,
-      OffsetsOutputIteratorT,
-      LengthsOutputIteratorT,
-      NumRunsOutputIteratorT,
-      equality_op,
-      offset_t>::Dispatch(d_temp_storage,
-                          temp_storage_bytes,
-                          d_in,
-                          d_offsets_out,
-                          d_lengths_out,
-                          d_num_runs_out,
-                          equality_op{},
-                          num_items,
-                          stream);
+    return detail::rle::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_offsets_out,
+      d_lengths_out,
+      d_num_runs_out,
+      equality_op{},
+      static_cast<offset_t>(num_items),
+      stream);
   }
 };
 

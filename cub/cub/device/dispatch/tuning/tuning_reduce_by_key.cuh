@@ -18,11 +18,21 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/delay_constructor.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__device/arch_id.h>
 #include <cuda/cmath>
 #include <cuda/std/__algorithm/clamp.h>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cuda/std/concepts>
+#endif // _CCCL_HAS_CONCEPTS()
+
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif
 
 CUB_NAMESPACE_BEGIN
 
@@ -63,25 +73,25 @@ enum class accum_size
 };
 
 template <class T>
-constexpr primitive_key is_primitive_key()
+_CCCL_API constexpr primitive_key is_primitive_key()
 {
   return detail::is_primitive<T>::value ? primitive_key::yes : primitive_key::no;
 }
 
 template <class T>
-constexpr primitive_accum is_primitive_accum()
+_CCCL_API constexpr primitive_accum is_primitive_accum()
 {
   return detail::is_primitive<T>::value ? primitive_accum::yes : primitive_accum::no;
 }
 
 template <class ReductionOpT>
-constexpr primitive_op is_primitive_op()
+_CCCL_API constexpr primitive_op is_primitive_op()
 {
   return basic_binary_op_t<ReductionOpT>::value ? primitive_op::yes : primitive_op::no;
 }
 
 template <class KeyT>
-constexpr key_size classify_key_size()
+_CCCL_API constexpr key_size classify_key_size()
 {
   return sizeof(KeyT) == 1 ? key_size::_1
        : sizeof(KeyT) == 2 ? key_size::_2
@@ -93,7 +103,7 @@ constexpr key_size classify_key_size()
 }
 
 template <class AccumT>
-constexpr accum_size classify_accum_size()
+_CCCL_API constexpr accum_size classify_accum_size()
 {
   return sizeof(AccumT) == 1 ? accum_size::_1
        : sizeof(AccumT) == 2 ? accum_size::_2
@@ -102,6 +112,28 @@ constexpr accum_size classify_accum_size()
        : sizeof(AccumT) == 16
          ? accum_size::_16
          : accum_size::unknown;
+}
+
+_CCCL_API constexpr int size_of(key_size sz)
+{
+  return sz == key_size::_1 ? 1
+       : sz == key_size::_2 ? 2
+       : sz == key_size::_4 ? 4
+       : sz == key_size::_8 ? 8
+       : sz == key_size::_16
+         ? 16
+         : 4;
+}
+
+_CCCL_API constexpr int size_of(accum_size sz)
+{
+  return sz == accum_size::_1 ? 1
+       : sz == accum_size::_2 ? 2
+       : sz == accum_size::_4 ? 4
+       : sz == accum_size::_8 ? 8
+       : sz == accum_size::_16
+         ? 16
+         : 4;
 }
 
 template <class KeyT,
@@ -912,6 +944,683 @@ struct policy_hub
       decltype(select_agent_policy<sm100_tuning<KeyT, AccumT, is_primitive_op<ReductionOpT>()>>(0));
   };
   using MaxPolicy = Policy1000;
+};
+
+struct reduce_by_key_policy
+{
+  int block_threads;
+  int items_per_thread;
+  BlockLoadAlgorithm load_algorithm;
+  CacheLoadModifier load_modifier;
+  BlockScanAlgorithm scan_algorithm;
+  delay_constructor_policy delay_constructor;
+
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator==(const reduce_by_key_policy& lhs, const reduce_by_key_policy& rhs)
+  {
+    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
+        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.delay_constructor == rhs.delay_constructor;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator!=(const reduce_by_key_policy& lhs, const reduce_by_key_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const reduce_by_key_policy& p)
+  {
+    return os
+        << "reduce_by_key_policy { .block_threads = " << p.block_threads << ", .items_per_thread = "
+        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .delay_constructor = " << p.delay_constructor << " }";
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
+};
+
+_CCCL_HOST_DEVICE constexpr reduce_by_key_policy
+make_default_reduce_by_key_policy(int combined_input_bytes, int max_input_bytes, CacheLoadModifier load_mod)
+{
+  constexpr int nominal_4B_items_per_thread = 6;
+  const int items_per_thread =
+    (max_input_bytes <= 8)
+      ? 6
+      : ::cuda::std::clamp(static_cast<int>(::cuda::ceil_div(nominal_4B_items_per_thread * 8, combined_input_bytes)),
+                           1,
+                           nominal_4B_items_per_thread);
+  return reduce_by_key_policy{
+    128,
+    items_per_thread,
+    BLOCK_LOAD_DIRECT,
+    load_mod,
+    BLOCK_SCAN_WARP_SCANS,
+    {delay_constructor_kind::fixed_delay, 350, 450}};
+}
+
+struct policy_selector
+{
+  int key_size;
+  int accum_size;
+  bool is_primitive_key_t;
+  bool is_primitive_accum_t;
+  bool is_primitive_op;
+
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> reduce_by_key_policy
+  {
+    const int combined_input_bytes = key_size + accum_size;
+    const int max_input_bytes      = (::cuda::std::max) (key_size, accum_size);
+    const auto default_ldg         = [&] {
+      return make_default_reduce_by_key_policy(combined_input_bytes, max_input_bytes, LOAD_LDG);
+    };
+    const auto default_load_default = [&] {
+      return make_default_reduce_by_key_policy(combined_input_bytes, max_input_bytes, LOAD_DEFAULT);
+    };
+
+    const bool tuned_prim = (is_primitive_key_t && is_primitive_accum_t);
+
+    if (!is_primitive_op)
+    {
+      return default_ldg();
+    }
+
+    if (arch >= ::cuda::arch_id::sm_100 && tuned_prim)
+    {
+      if (key_size == 1 && accum_size == 1)
+      {
+        return {576,
+                13,
+                BLOCK_LOAD_DIRECT,
+                LOAD_CA,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::exponential_backon_jitter_window, 2044, 240}};
+      }
+      if (key_size == 1 && accum_size == 2)
+      {
+        return {224,
+                10,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::exponential_backoff_jitter_window, 224, 390}};
+      }
+      if (key_size == 1 && accum_size == 4)
+      {
+        return {128,
+                14,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::exponential_backoff, 248, 285}};
+      }
+      if (key_size == 1 && accum_size == 8)
+      {
+        return {128,
+                19,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::fixed_delay, 132, 540}};
+      }
+      if (key_size == 2 && accum_size == 1)
+      {
+        return {128,
+                14,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::exponential_backoff, 164, 290}};
+      }
+      if (key_size == 2 && accum_size == 2)
+      {
+        return {256,
+                14,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::exponential_backoff, 180, 975}};
+      }
+      if (key_size == 2 && accum_size == 4)
+      {
+        return {256,
+                11,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::exponential_backoff, 224, 550}};
+      }
+      if (key_size == 2 && accum_size == 8)
+      {
+        return {160,
+                10,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::fixed_delay, 156, 725}};
+      }
+      if (key_size == 4 && accum_size == 1)
+      {
+        return {224,
+                10,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::exponential_backoff, 324, 285}};
+      }
+      if (key_size == 4 && accum_size == 2)
+      {
+        return {256,
+                11,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::exponential_backon_jitter_window, 1984, 115}};
+      }
+      if (key_size == 4 && accum_size == 4)
+      {
+        return {224,
+                14,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::exponential_backon_jitter_window, 476, 1005}};
+      }
+      if (key_size == 4 && accum_size == 8)
+      {
+        return {256,
+                10,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::exponential_backon, 1868, 145}};
+      }
+      if (key_size == 8 && accum_size == 1)
+      {
+        return {224,
+                9,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::exponential_backon_jitter_window, 1940, 460}};
+      }
+      if (key_size == 8 && accum_size == 2)
+      {
+        return {224,
+                11,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_CA,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::exponential_backoff, 392, 550}};
+      }
+      if (key_size == 8 && accum_size == 4)
+      {
+        return {224,
+                9,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::exponential_backoff, 244, 475}};
+      }
+      if (key_size == 8 && accum_size == 8)
+      {
+        return {224,
+                9,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::exponential_backoff, 196, 340}};
+      }
+    }
+
+    if (arch >= ::cuda::arch_id::sm_90 && tuned_prim)
+    {
+      if (key_size == 1 && accum_size == 1)
+      {
+        return {
+          256, 13, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 720}};
+      }
+      if (key_size == 1 && accum_size == 2)
+      {
+        return {
+          320, 23, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 865}};
+      }
+      if (key_size == 1 && accum_size == 4)
+      {
+        return {192,
+                14,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 735}};
+      }
+      if (key_size == 1 && accum_size == 8)
+      {
+        return {128,
+                13,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 580}};
+      }
+      if (key_size == 1 && accum_size == 16)
+      {
+        return {128,
+                11,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 1100}};
+      }
+      if (key_size == 2 && accum_size == 1)
+      {
+        return {
+          128, 23, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 985}};
+      }
+      if (key_size == 2 && accum_size == 2)
+      {
+        return {256,
+                11,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::fixed_delay, 276, 650}};
+      }
+      if (key_size == 2 && accum_size == 4)
+      {
+        return {256,
+                14,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::fixed_delay, 240, 765}};
+      }
+      if (key_size == 2 && accum_size == 8)
+      {
+        return {128,
+                19,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 1190}};
+      }
+      if (key_size == 2 && accum_size == 16)
+      {
+        return {128,
+                11,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 1175}};
+      }
+      if (key_size == 4 && accum_size == 1)
+      {
+        return {256,
+                13,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::fixed_delay, 404, 645}};
+      }
+      if (key_size == 4 && accum_size == 2)
+      {
+        return {256,
+                18,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 1160}};
+      }
+      if (key_size == 4 && accum_size == 4)
+      {
+        return {256,
+                18,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 1170}};
+      }
+      if (key_size == 4 && accum_size == 8)
+      {
+        return {128,
+                13,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 1055}};
+      }
+      if (key_size == 4 && accum_size == 16)
+      {
+        return {128,
+                11,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 1195}};
+      }
+      if (key_size == 8 && accum_size == 1)
+      {
+        return {
+          256, 10, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 1170}};
+      }
+      if (key_size == 8 && accum_size == 2)
+      {
+        return {256,
+                9,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::fixed_delay, 236, 1030}};
+      }
+      if (key_size == 8 && accum_size == 4)
+      {
+        return {128,
+                13,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::fixed_delay, 152, 560}};
+      }
+      if (key_size == 8 && accum_size == 8)
+      {
+        return {128,
+                23,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 1030}};
+      }
+      if (key_size == 8 && accum_size == 16)
+      {
+        return {128,
+                11,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 1125}};
+      }
+      if (key_size == 16 && !is_primitive_key_t && accum_size == 1)
+      {
+        return {128,
+                11,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 1080}};
+      }
+      if (key_size == 16 && !is_primitive_key_t && accum_size == 2)
+      {
+        return {128,
+                11,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::fixed_delay, 320, 1005}};
+      }
+      if (key_size == 16 && !is_primitive_key_t && accum_size == 4)
+      {
+        return {128,
+                11,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::fixed_delay, 232, 1100}};
+      }
+      if (key_size == 16 && !is_primitive_key_t && accum_size == 8)
+      {
+        return {128,
+                11,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 1195}};
+      }
+      if (key_size == 16 && !is_primitive_key_t && accum_size == 16)
+      {
+        return {128,
+                11,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 1150}};
+      }
+      return default_load_default();
+    }
+
+    if (arch >= ::cuda::arch_id::sm_86)
+    {
+      return default_ldg();
+    }
+
+    if (arch >= ::cuda::arch_id::sm_80 && tuned_prim)
+    {
+      if (key_size == 1 && accum_size == 1)
+      {
+        return {
+          256, 13, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 975}};
+      }
+      if (key_size == 1 && accum_size == 2)
+      {
+        return {
+          224, 12, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 840}};
+      }
+      if (key_size == 1 && accum_size == 4)
+      {
+        return {256,
+                15,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 760}};
+      }
+      if (key_size == 1 && accum_size == 8)
+      {
+        return {
+          224, 7, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 1070}};
+      }
+      if (key_size == 1 && accum_size == 16)
+      {
+        return {128,
+                9,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 1175}};
+      }
+      if (key_size == 2 && accum_size == 1)
+      {
+        return {
+          256, 11, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 620}};
+      }
+      if (key_size == 2 && accum_size == 2)
+      {
+        return {224,
+                14,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 640}};
+      }
+      if (key_size == 2 && accum_size == 4)
+      {
+        return {256,
+                14,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 905}};
+      }
+      if (key_size == 2 && accum_size == 8)
+      {
+        return {224,
+                9,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 810}};
+      }
+      if (key_size == 2 && accum_size == 16)
+      {
+        return {160,
+                9,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 1115}};
+      }
+      if (key_size == 4 && accum_size == 1)
+      {
+        return {
+          288, 11, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 1110}};
+      }
+      if (key_size == 4 && accum_size == 2)
+      {
+        return {192,
+                15,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 1200}};
+      }
+      if (key_size == 4 && accum_size == 4)
+      {
+        return {
+          256, 15, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 1110}};
+      }
+      if (key_size == 4 && accum_size == 8)
+      {
+        return {224,
+                9,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 1165}};
+      }
+      if (key_size == 4 && accum_size == 16)
+      {
+        return {160,
+                9,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 1100}};
+      }
+      if (key_size == 8 && accum_size == 1)
+      {
+        return {192,
+                10,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 1175}};
+      }
+      if (key_size == 8 && accum_size == 2)
+      {
+        return {
+          224, 7, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 1075}};
+      }
+      if (key_size == 8 && accum_size == 4)
+      {
+        return {
+          384, 7, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 1040}};
+      }
+      if (key_size == 8 && accum_size == 8)
+      {
+        return {128,
+                14,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 1080}};
+      }
+      if (key_size == 8 && accum_size == 16)
+      {
+        return {128,
+                11,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 430}};
+      }
+      if (key_size == 16 && !is_primitive_key_t && accum_size == 1)
+      {
+        return {
+          192, 7, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 1105}};
+      }
+      if (key_size == 16 && !is_primitive_key_t && accum_size == 2)
+      {
+        return {192,
+                7,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 755}};
+      }
+      if (key_size == 16 && !is_primitive_key_t && accum_size == 4)
+      {
+        return {192,
+                7,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 535}};
+      }
+      if (key_size == 16 && !is_primitive_key_t && accum_size == 8)
+      {
+        return {
+          192, 7, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, BLOCK_SCAN_WARP_SCANS, {delay_constructor_kind::no_delay, 0, 1035}};
+      }
+      if (key_size == 16 && !is_primitive_key_t && accum_size == 16)
+      {
+        return {128,
+                11,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                {delay_constructor_kind::no_delay, 0, 1090}};
+      }
+      return default_load_default();
+    }
+
+    return default_ldg();
+  }
+};
+
+#if _CCCL_HAS_CONCEPTS()
+template <typename T>
+concept reduce_by_key_policy_selector = detail::policy_selector<T, reduce_by_key_policy>;
+#endif // _CCCL_HAS_CONCEPTS()
+
+// TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
+template <typename PolicyHub>
+struct policy_selector_from_hub
+{
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> reduce_by_key_policy
+  {
+    using ReduceByKeyPolicyT = typename PolicyHub::MaxPolicy::ReduceByKeyPolicyT;
+    return reduce_by_key_policy{
+      ReduceByKeyPolicyT::BLOCK_THREADS,
+      ReduceByKeyPolicyT::ITEMS_PER_THREAD,
+      ReduceByKeyPolicyT::LOAD_ALGORITHM,
+      ReduceByKeyPolicyT::LOAD_MODIFIER,
+      ReduceByKeyPolicyT::SCAN_ALGORITHM,
+      delay_constructor_policy_from_type<typename ReduceByKeyPolicyT::detail::delay_constructor_t>,
+    };
+  }
+};
+
+template <class ReductionOpT, class AccumT, class KeyT>
+struct policy_selector_from_types
+{
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> reduce_by_key_policy
+  {
+    return policy_selector{
+      int{sizeof(KeyT)},
+      int{sizeof(AccumT)},
+      (is_primitive_key<KeyT>() == primitive_key::yes),
+      (is_primitive_accum<AccumT>() == primitive_accum::yes),
+      (is_primitive_op<ReductionOpT>() == primitive_op::yes)}(arch);
+  }
 };
 } // namespace detail::reduce_by_key
 
