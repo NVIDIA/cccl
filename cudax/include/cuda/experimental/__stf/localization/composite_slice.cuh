@@ -477,6 +477,8 @@ private:
 };
 
 // Registry for composite data_place::allocate/deallocate (ownership of localized_array by base pointer)
+// This is how we can retrieve the localized_array descriptor when calling
+// deallocate with the device address returned by allocate.
 inline ::std::unordered_map<void*, ::std::unique_ptr<localized_array>>& get_composite_alloc_registry()
 {
   static ::std::unordered_map<void*, ::std::unique_ptr<localized_array>> reg;
