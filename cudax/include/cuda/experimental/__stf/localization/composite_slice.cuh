@@ -75,13 +75,13 @@ public:
   // ::std::function<pos4(size_t)> delinearize : translate the index in a buffer into a position in the data
   // TODO pass mv(place)
   template <typename F>
-  localized_array(exec_place_grid _grid,
+  localized_array(exec_place_grid grid,
                   get_executor_func_t mapper,
                   F&& delinearize,
                   size_t total_size,
                   size_t elemsize,
                   dim4 data_dims)
-      : grid(mv(_grid))
+      : grid(mv(grid))
       , mapper(mv(mapper))
       , total_size_bytes(total_size * elemsize)
       , data_dims(data_dims)
@@ -147,7 +147,6 @@ public:
     ::std::unordered_map<::std::string, size_t> bytes_per_place;
 
     // Try to merge blocks with the same position
-    fprintf(stderr, "BEGIN BLOCK MAPPING:\n");
     for (size_t i = 0; i < nblocks;)
     {
       pos4 p   = owner[i];
@@ -166,7 +165,6 @@ public:
 
       i += j;
     }
-    fprintf(stderr, "END BLOCK MAPPING:\n");
 
     // Print statistics if enabled
     if (localized_alloc_stats_enabled())
