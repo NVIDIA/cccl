@@ -34,7 +34,7 @@
 
 using namespace cuda::experimental::stf;
 
-// Thrust device allocator that delegates to a data_place (example-only, not part of STF API).
+// Thrust device allocator that delegates to a data_place.
 template <typename T>
 class data_place_allocator
 {
