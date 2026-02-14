@@ -11,7 +11,7 @@
 /**
  * @file
  *
- * @brief Jacobi method with parallel_for
+ * @brief Jacobi method with a while scope guard and explicit management of the conditional handle
  *
  */
 
@@ -19,16 +19,21 @@
 
 #include <iostream>
 
+#include "cuda/experimental/__stf/stackable/stackable_ctx.cuh"
+
 using namespace cuda::experimental::stf;
 
-int main(int argc, char** argv)
+int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 {
-  context ctx;
+#if _CCCL_CTK_BELOW(12, 4)
+  fprintf(stderr, "Waiving test: conditional nodes are only available since CUDA 12.4.\n");
+  return 0;
+#else
+  stackable_ctx ctx;
 
-  size_t n        = 4096;
-  size_t m        = 4096;
-  double tol      = 0.5;
-  size_t iter_max = 1000;
+  size_t n   = 4096;
+  size_t m   = 4096;
+  double tol = 0.1;
 
   if (argc > 2)
   {
@@ -41,18 +46,12 @@ int main(int argc, char** argv)
     tol = atof(argv[3]);
   }
 
-  if (argc > 4)
-  {
-    iter_max = atoi(argv[4]);
-  }
-
   auto lA    = ctx.logical_data(shape_of<slice<double, 2>>(m, n));
   auto lAnew = ctx.logical_data(lA.shape());
 
   ctx.parallel_for(lA.shape(), lA.write(), lAnew.write()).set_symbol("init")->*
     [=] __device__(size_t i, size_t j, auto A, auto Anew) {
-      A(i, j)    = (i == j) ? 10.0 : -1.0;
-      Anew(i, j) = A(i, j);
+      A(i, j) = (i == j) ? 1.0 : -1.0;
     };
 
   cudaEvent_t start, stop;
@@ -62,34 +61,44 @@ int main(int argc, char** argv)
 
   cuda_safe_call(cudaEventRecord(start, ctx.fence()));
 
+  size_t iter = 0;
+
   auto lresidual = ctx.logical_data(shape_of<scalar_view<double>>());
 
-  size_t iter = 0;
-  do
   {
-    ctx.parallel_for(inner<1>(lA.shape()), lA.read(), lAnew.rw(), lresidual.reduce(reducer::maxval<double>{}))
+    auto while_guard = ctx.while_graph_scope();
+
+    ctx.parallel_for(inner<1>(lA.shape()), lA.read(), lAnew.write(), lresidual.reduce(reducer::maxval<double>{}))
         ->*[] __device__(size_t i, size_t j, auto A, auto Anew, auto& residual) {
-              Anew(i, j) = 0.25 * (A(i - 1, j) + A(i + 1, j) + A(i, j - 1) + A(i, j + 1));
-              residual   = ::std::max(residual, fabs(A(i, j) - Anew(i, j)));
+              Anew(i, j)   = 0.25 * (A(i - 1, j) + A(i + 1, j) + A(i, j - 1) + A(i, j + 1));
+              double error = fabs(A(i, j) - Anew(i, j));
+              residual     = error;
             };
 
     ctx.parallel_for(inner<1>(lA.shape()), lA.rw(), lAnew.read())->*[] __device__(size_t i, size_t j, auto A, auto Anew) {
       A(i, j) = Anew(i, j);
     };
 
-    iter++;
+    auto handle = while_guard.cond_handle();
+    ctx.parallel_for(box(1), lresidual.read())->*[handle, tol] __device__(size_t, auto residual) {
+      bool converged = (*residual < tol);
+      cudaGraphSetConditional(handle, !converged);
+    };
+  }
 
-  } while (ctx.wait(lresidual) > tol && iter < iter_max);
+  // Store final residual for verification
+  double final_residual = ctx.wait(lresidual);
+
+  fprintf(stderr, "ITER %zu: converged residual %e\n", iter++, final_residual);
 
   cuda_safe_call(cudaEventRecord(stop, ctx.fence()));
 
-  double final_residual = ctx.wait(lresidual);
-
-  printf("Converged after %ld iterations, residual = %lf\n", iter, final_residual);
-
   ctx.finalize();
+
+  EXPECT(final_residual <= tol); // Algorithm should have converged within tolerance
 
   float elapsedTime;
   cudaEventElapsedTime(&elapsedTime, start, stop);
   printf("Elapsed time: %f ms\n", elapsedTime);
+#endif
 }

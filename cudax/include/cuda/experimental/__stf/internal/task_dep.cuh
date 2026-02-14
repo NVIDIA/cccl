@@ -73,6 +73,12 @@ public:
 
   logical_data_untyped get_data() const;
 
+  // We may modify the logical data of the task dependency
+  void update_data(const logical_data_untyped& d) const
+  {
+    data = pack_state(d);
+  }
+
   instance_id_t get_instance_id() const
   {
     return instance_id;
@@ -160,7 +166,7 @@ public:
   }
 
 private:
-  ::std::shared_ptr<void> data;
+  mutable ::std::shared_ptr<void> data;
   access_mode m             = access_mode::none;
   instance_id_t instance_id = instance_id_t::invalid;
 
