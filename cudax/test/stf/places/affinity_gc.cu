@@ -25,8 +25,6 @@ void test_green_ctx_affinity(bool use_green_ctx_data_place)
   async_resources_handle handle;
   for (auto p : place_partition(exec_place::current_device(), handle, place_partition_scope::green_context))
   {
-    auto p = exec_place::green_ctx(gc_helper->get_view(i), use_green_ctx_data_place);
-
     if (use_green_ctx_data_place)
     {
       _CCCL_ASSERT(p.affine_data_place().is_extension(), "expected a green context data place (extension)");
