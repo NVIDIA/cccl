@@ -88,6 +88,10 @@ public:
       , data_dims(data_dims)
       , elemsize(elemsize)
   {
+    // Ensure a current CUDA context exists so cuCtxGetDevice() and other driver
+    // APIs succeed (e.g. when no stream_ctx was used or after primary ctx release).
+    cuda_safe_call(cudaFree(nullptr));
+
     // Regardless of the grid, we allow all devices to access that localized array
     const int ndevs = cuda_try<cudaGetDeviceCount>();
     CUdevice dev    = cuda_try<cuCtxGetDevice>();
@@ -496,6 +500,7 @@ inline void* allocate_composite_data_place(const data_place& p, ::std::ptrdiff_t
 
 inline void deallocate_composite_data_place(void* ptr)
 {
+  // Cleanup of the actual array resources (VMM resources) is handled in the destructor of localized_array.
   get_composite_alloc_registry().erase(ptr);
 }
 } // end namespace cuda::experimental::stf::reserved
