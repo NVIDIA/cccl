@@ -13,6 +13,7 @@
 // template <class Alloc, class U1, class U2>
 //   tuple(allocator_arg_t, const Alloc& a, pair<U1, U2>&&);
 
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 
@@ -41,19 +42,16 @@ struct D : B
 
 int main(int, char**)
 {
-  // cuda::std::unique_ptr not supported
-  /*
   {
-      typedef cuda::std::pair<int, cuda::std::unique_ptr<D>> T0;
-      typedef cuda::std::tuple<alloc_first, cuda::std::unique_ptr<B>> T1;
-      T0 t0(2, cuda::std::unique_ptr<D>(new D(3)));
-      alloc_first::allocator_constructed() = false;
-      T1 t1(cuda::std::allocator_arg, A1<int>(5), cuda::std::move(t0));
-      assert(alloc_first::allocator_constructed());
-      assert(cuda::std::get<0>(t1) == 2);
-      assert(cuda::std::get<1>(t1)->id_ == 3);
+    using T0 = cuda::std::pair<int, cuda::std::unique_ptr<D>>;
+    using T1 = cuda::std::tuple<alloc_first, cuda::std::unique_ptr<B>>;
+    T0 t0(2, cuda::std::unique_ptr<D>(new D(3)));
+    alloc_first::allocator_constructed() = false;
+    T1 t1(cuda::std::allocator_arg, A1<int>(5), cuda::std::move(t0));
+    assert(alloc_first::allocator_constructed());
+    assert(cuda::std::get<0>(t1) == 2);
+    assert(cuda::std::get<1>(t1)->id_ == 3);
   }
-  */
 
   return 0;
 }

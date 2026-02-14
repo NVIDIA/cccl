@@ -1,31 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_reduce.cuh>
 
@@ -46,8 +21,6 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Max, device_max);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
-// Suppress deprecation warning for the deprecated ArgMin and ArgMax interfaces
-_CCCL_NV_DIAG_SUPPRESS(1444)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min_old);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max_old);
@@ -68,7 +41,15 @@ using full_type_list = c2h::type_list<type_pair<std::uint8_t>, type_pair<std::in
 #elif TEST_TYPES == 1
 using full_type_list = c2h::type_list<type_pair<std::int32_t>, type_pair<std::int64_t>>;
 #elif TEST_TYPES == 2
-using full_type_list = c2h::type_list<type_pair<uchar3>, type_pair<ulonglong4>>;
+using full_type_list =
+  c2h::type_list<type_pair<uchar3>,
+                 type_pair<
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4_16a
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+                   >>;
 #elif TEST_TYPES == 3
 // clang-format off
 using full_type_list = c2h::type_list<
@@ -136,13 +117,13 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
 #if TEST_TYPES != 4
   SECTION("reduce")
   {
-    using op_t = ::cuda::std::plus<>;
+    using op_t = cuda::std::plus<>;
 
     // Binary reduction operator
     auto reduction_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
 
     // Prepare verification data
-    using accum_t = ::cuda::std::__accumulator_t<op_t, item_t, output_t>;
+    using accum_t = cuda::std::__accumulator_t<op_t, item_t, output_t>;
     output_t expected_result =
       static_cast<output_t>(compute_single_problem_reference(in_items, reduction_op, accum_t{}));
 
@@ -162,8 +143,8 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
 #if TEST_TYPES != 3
   SECTION("sum")
   {
-    using op_t    = ::cuda::std::plus<>;
-    using accum_t = ::cuda::std::__accumulator_t<op_t, item_t, output_t>;
+    using op_t    = cuda::std::plus<>;
+    using accum_t = cuda::std::__accumulator_t<op_t, item_t, output_t>;
 
     // Prepare verification data
     output_t expected_result = static_cast<output_t>(compute_single_problem_reference(in_items, op_t{}, accum_t{}));

@@ -11,14 +11,14 @@
 
 // not1
 
-// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 
 int main(int, char**)
 {
-  typedef cuda::std::logical_not<int> F;
+  using F = cuda::std::logical_not<int>;
   assert(cuda::std::not1(F())(36));
   assert(!cuda::std::not1(F())(0));
 

@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * \file
@@ -50,11 +26,14 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
-#include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
-#include <cuda/ptx>
-#include <cuda/std/type_traits>
+#include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -65,61 +44,58 @@ CUB_NAMESPACE_BEGIN
 /**
  * Parameterizable tuning policy type for AgentRle
  *
- * @tparam _BLOCK_THREADS
+ * @tparam BlockThreads
  *   Threads per thread block
  *
- * @tparam _ITEMS_PER_THREAD
+ * @tparam ItemsPerThread
  *   Items per thread (per tile of input)
  *
- * @tparam _LOAD_ALGORITHM
+ * @tparam LoadAlgorithm
  *   The BlockLoad algorithm to use
  *
- * @tparam _LOAD_MODIFIER
+ * @tparam LoadModifier
  *   Cache load modifier for reading input elements
  *
- * @tparam _STORE_WARP_TIME_SLICING
+ * @tparam StoreWarpTimeSlicing
  *   Whether or not only one warp's worth of shared memory should be allocated and time-sliced among
  *   block-warps during any store-related data transpositions
  *   (versus each warp having its own storage)
  *
- * @tparam _SCAN_ALGORITHM
+ * @tparam ScanAlgorithm
  *   The BlockScan algorithm to use
  *
  * @tparam DelayConstructorT
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-template <int _BLOCK_THREADS,
-          int _ITEMS_PER_THREAD,
-          BlockLoadAlgorithm _LOAD_ALGORITHM,
-          CacheLoadModifier _LOAD_MODIFIER,
-          bool _STORE_WARP_TIME_SLICING,
-          BlockScanAlgorithm _SCAN_ALGORITHM,
+template <int BlockThreads,
+          int ItemsPerThread,
+          BlockLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          bool StoreWarpTimeSlicing,
+          BlockScanAlgorithm ScanAlgorithm,
           typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
 struct AgentRlePolicy
 {
-  enum
-  {
-    /// Threads per thread block
-    BLOCK_THREADS = _BLOCK_THREADS,
+  /// Threads per thread block
+  static constexpr int BLOCK_THREADS = BlockThreads;
 
-    /// Items per thread (per tile of input)
-    ITEMS_PER_THREAD = _ITEMS_PER_THREAD,
+  /// Items per thread (per tile of input)
+  static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
 
-    /// Whether or not only one warp's worth of shared memory should be allocated and time-sliced
-    /// among block-warps during any store-related data transpositions (versus each warp having its
-    /// own storage)
-    STORE_WARP_TIME_SLICING = _STORE_WARP_TIME_SLICING,
-  };
+  /// Whether or not only one warp's worth of shared memory should be allocated and time-sliced
+  /// among block-warps during any store-related data transpositions (versus each warp having its
+  /// own storage)
+  static constexpr bool STORE_WARP_TIME_SLICING = StoreWarpTimeSlicing;
 
   /// The BlockLoad algorithm to use
-  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
+  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
 
   /// Cache load modifier for reading input elements
-  static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
+  static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 
   /// The BlockScan algorithm to use
-  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
 
   struct detail
   {
@@ -131,11 +107,8 @@ struct AgentRlePolicy
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
+namespace detail::rle
 {
-namespace rle
-{
-
 /**
  * @brief AgentRle implements a stateful abstraction of CUDA thread blocks for participating in device-wide
  * run-length-encode
@@ -157,15 +130,23 @@ namespace rle
  *
  * @tparam OffsetT
  *   Signed integer type for global offsets
+ *
+ * @tparam StreamingContextT
+ *   Type providing information about the partition for streaming invocations. NullType if not a streaming invocation.
  */
 template <typename AgentRlePolicyT,
           typename InputIteratorT,
           typename OffsetsOutputIteratorT,
           typename LengthsOutputIteratorT,
           typename EqualityOpT,
-          typename OffsetT>
+          typename OffsetT,
+          typename GlobalOffsetT,
+          typename StreamingContextT>
 struct AgentRle
 {
+  // Whether or not this is a streaming invocation (i.e., multiple kernel invocations over partitions of the input)
+  static constexpr bool is_streaming_invocation = !::cuda::std::is_same_v<StreamingContextT, NullType>;
+
   //---------------------------------------------------------------------
   // Types and constants
   //---------------------------------------------------------------------
@@ -174,7 +155,7 @@ struct AgentRle
   using T = cub::detail::it_value_t<InputIteratorT>;
 
   /// The lengths output value type
-  using LengthT = cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>;
+  using LengthT = cub::detail::non_void_value_t<LengthsOutputIteratorT, GlobalOffsetT>;
 
   /// Tuple type for scanning (pairs run-length and run-index)
   using LengthOffsetPair = KeyValuePair<OffsetT, LengthT>;
@@ -183,24 +164,21 @@ struct AgentRle
   using ScanTileStateT = ReduceByKeyScanTileState<LengthT, OffsetT>;
 
   // Constants
-  enum
-  {
-    WARP_THREADS     = warp_threads,
-    BLOCK_THREADS    = AgentRlePolicyT::BLOCK_THREADS,
-    ITEMS_PER_THREAD = AgentRlePolicyT::ITEMS_PER_THREAD,
-    WARP_ITEMS       = WARP_THREADS * ITEMS_PER_THREAD,
-    TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD,
-    WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
+  static constexpr int WARP_THREADS     = warp_threads;
+  static constexpr int BLOCK_THREADS    = AgentRlePolicyT::BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD = AgentRlePolicyT::ITEMS_PER_THREAD;
+  static constexpr int WARP_ITEMS       = WARP_THREADS * ITEMS_PER_THREAD;
+  static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS;
 
-    /// Whether or not to sync after loading data
-    SYNC_AFTER_LOAD = (AgentRlePolicyT::LOAD_ALGORITHM != BLOCK_LOAD_DIRECT),
+  /// Whether or not to sync after loading data
+  static constexpr bool SYNC_AFTER_LOAD = (AgentRlePolicyT::LOAD_ALGORITHM != BLOCK_LOAD_DIRECT);
 
-    /// Whether or not only one warp's worth of shared memory should be allocated and time-sliced
-    /// among block-warps during any store-related data transpositions (versus each warp having
-    /// its own storage)
-    STORE_WARP_TIME_SLICING = AgentRlePolicyT::STORE_WARP_TIME_SLICING,
-    ACTIVE_EXCHANGE_WARPS   = (STORE_WARP_TIME_SLICING) ? 1 : WARPS,
-  };
+  /// Whether or not only one warp's worth of shared memory should be allocated and time-sliced
+  /// among block-warps during any store-related data transpositions (versus each warp having
+  /// its own storage)
+  static constexpr bool STORE_WARP_TIME_SLICING = AgentRlePolicyT::STORE_WARP_TIME_SLICING;
+  static constexpr int ACTIVE_EXCHANGE_WARPS    = (STORE_WARP_TIME_SLICING) ? 1 : WARPS;
 
   /**
    * Special operator that signals all out-of-bounds items are not equal to everything else,
@@ -326,6 +304,7 @@ struct AgentRle
   EqualityOpT equality_op; ///< T equality operator
   ReduceBySegmentOpT scan_op; ///< Reduce-length-by-flag scan operator
   OffsetT num_items; ///< Total number of input items
+  StreamingContextT streaming_context; ///< Context providing information about this partition for streaming invocations
 
   //---------------------------------------------------------------------
   // Constructor
@@ -349,14 +328,19 @@ struct AgentRle
    *
    * @param[in] num_items
    *   Total number of input items
+   *
+   * @param streaming_context
+   *   Streaming context providing context about this partition for streaming invocations
    */
+  template <typename StreamingContext>
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentRle(
     TempStorage& temp_storage,
     InputIteratorT d_in,
     OffsetsOutputIteratorT d_offsets_out,
     LengthsOutputIteratorT d_lengths_out,
     EqualityOpT equality_op,
-    OffsetT num_items)
+    OffsetT num_items,
+    StreamingContext streaming_context)
       : temp_storage(temp_storage.Alias())
       , d_in(d_in)
       , d_offsets_out(d_offsets_out)
@@ -364,6 +348,7 @@ struct AgentRle
       , equality_op(equality_op)
       , scan_op(::cuda::std::plus<>{})
       , num_items(num_items)
+      , streaming_context(streaming_context)
   {}
 
   //---------------------------------------------------------------------
@@ -544,7 +529,6 @@ struct AgentRle
   /**
    * Two-phase scatter, specialized for warp time-slicing
    */
-  template <bool FIRST_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterTwoPhase(
     OffsetT tile_num_runs_exclusive_in_global,
     OffsetT warp_num_runs_aggregate,
@@ -587,12 +571,26 @@ struct AgentRle
           tile_num_runs_exclusive_in_global + warp_num_runs_exclusive_in_tile + (ITEM * WARP_THREADS) + lane_id;
 
         // Scatter offset
-        d_offsets_out[item_offset] = lengths_and_offsets[ITEM].key;
-
-        // Scatter length if not the first (global) length
-        if ((ITEM != 0) || (item_offset > 0))
+        if constexpr (is_streaming_invocation)
         {
-          d_lengths_out[item_offset - 1] = lengths_and_offsets[ITEM].value;
+          d_offsets_out[streaming_context.num_uniques() + item_offset] =
+            (streaming_context.base_offset() + lengths_and_offsets[ITEM].key);
+
+          // Scatter length if not the first (global) length
+          if (streaming_context.num_uniques() + item_offset > 0)
+          {
+            d_lengths_out[streaming_context.num_uniques() + item_offset - 1] = lengths_and_offsets[ITEM].value;
+          }
+        }
+        else
+        {
+          d_offsets_out[item_offset] = lengths_and_offsets[ITEM].key;
+
+          // Scatter length if not the first (global) length
+          if ((ITEM != 0) || (item_offset > 0))
+          {
+            d_lengths_out[item_offset - 1] = lengths_and_offsets[ITEM].value;
+          }
         }
       }
     }
@@ -601,7 +599,6 @@ struct AgentRle
   /**
    * Two-phase scatter
    */
-  template <bool FIRST_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterTwoPhase(
     OffsetT tile_num_runs_exclusive_in_global,
     OffsetT warp_num_runs_aggregate,
@@ -642,12 +639,24 @@ struct AgentRle
           tile_num_runs_exclusive_in_global + warp_num_runs_exclusive_in_tile + (ITEM * WARP_THREADS) + lane_id;
 
         // Scatter offset
-        d_offsets_out[item_offset] = run_offsets[ITEM];
-
-        // Scatter length if not the first (global) length
-        if ((ITEM != 0) || (item_offset > 0))
+        if constexpr (is_streaming_invocation)
         {
-          d_lengths_out[item_offset - 1] = run_lengths[ITEM];
+          d_offsets_out[streaming_context.num_uniques() + item_offset] =
+            (streaming_context.base_offset() + run_offsets[ITEM]);
+          // Scatter length if not the first (global) length
+          if ((ITEM != 0) || (streaming_context.num_uniques() + item_offset > 0))
+          {
+            d_lengths_out[streaming_context.num_uniques() + item_offset - 1] = run_lengths[ITEM];
+          }
+        }
+        else
+        {
+          d_offsets_out[item_offset] = run_offsets[ITEM];
+          // Scatter length if not the first (global) length
+          if ((ITEM != 0) || (item_offset > 0))
+          {
+            d_lengths_out[item_offset - 1] = run_lengths[ITEM];
+          }
         }
       }
     }
@@ -656,7 +665,6 @@ struct AgentRle
   /**
    * Direct scatter
    */
-  template <bool FIRST_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterDirect(
     OffsetT tile_num_runs_exclusive_in_global,
     OffsetT warp_num_runs_aggregate,
@@ -673,12 +681,27 @@ struct AgentRle
           tile_num_runs_exclusive_in_global + warp_num_runs_exclusive_in_tile + thread_num_runs_exclusive_in_warp[ITEM];
 
         // Scatter offset
-        d_offsets_out[item_offset] = lengths_and_offsets[ITEM].key;
-
-        // Scatter length if not the first (global) length
-        if (item_offset > 0)
+        if constexpr (is_streaming_invocation)
         {
-          d_lengths_out[item_offset - 1] = lengths_and_offsets[ITEM].value;
+          // For streaming invocations, we need to add the base offset of the partition
+          d_offsets_out[streaming_context.num_uniques() + item_offset] =
+            (streaming_context.base_offset() + lengths_and_offsets[ITEM].key);
+
+          // Scatter length if not the first (global) length
+          if (streaming_context.num_uniques() + item_offset > 0)
+          {
+            d_lengths_out[streaming_context.num_uniques() + item_offset - 1] = lengths_and_offsets[ITEM].value;
+          }
+        }
+        else
+        {
+          d_offsets_out[item_offset] = lengths_and_offsets[ITEM].key;
+
+          // Scatter length if not the first (global) length
+          if (item_offset > 0)
+          {
+            d_lengths_out[item_offset - 1] = lengths_and_offsets[ITEM].value;
+          }
         }
       }
     }
@@ -687,7 +710,6 @@ struct AgentRle
   /**
    * Scatter
    */
-  template <bool FIRST_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(
     OffsetT tile_num_runs_aggregate,
     OffsetT tile_num_runs_exclusive_in_global,
@@ -701,18 +723,17 @@ struct AgentRle
       // Direct scatter if the warp has any items
       if (warp_num_runs_aggregate)
       {
-        ScatterDirect<FIRST_TILE>(
-          tile_num_runs_exclusive_in_global,
-          warp_num_runs_aggregate,
-          warp_num_runs_exclusive_in_tile,
-          thread_num_runs_exclusive_in_warp,
-          lengths_and_offsets);
+        ScatterDirect(tile_num_runs_exclusive_in_global,
+                      warp_num_runs_aggregate,
+                      warp_num_runs_exclusive_in_tile,
+                      thread_num_runs_exclusive_in_warp,
+                      lengths_and_offsets);
       }
     }
     else
     {
       // Scatter two phase
-      ScatterTwoPhase<FIRST_TILE>(
+      ScatterTwoPhase(
         tile_num_runs_exclusive_in_global,
         warp_num_runs_aggregate,
         warp_num_runs_exclusive_in_tile,
@@ -771,13 +792,50 @@ struct AgentRle
       // Set flags
       LengthOffsetPair lengths_and_num_runs[ITEMS_PER_THREAD];
 
-      InitializeSelections<true, LAST_TILE>(tile_offset, num_remaining, items, lengths_and_num_runs);
+      if constexpr (is_streaming_invocation)
+      {
+        if (streaming_context.first_partition)
+        {
+          if (streaming_context.last_partition)
+          {
+            InitializeSelections<true, LAST_TILE>(tile_offset, num_remaining, items, lengths_and_num_runs);
+          }
+          else
+          {
+            InitializeSelections<true, false>(tile_offset, num_remaining, items, lengths_and_num_runs);
+          }
+        }
+        else
+        {
+          if (streaming_context.last_partition)
+          {
+            InitializeSelections<false, LAST_TILE>(tile_offset, num_remaining, items, lengths_and_num_runs);
+          }
+          else
+          {
+            InitializeSelections<false, false>(tile_offset, num_remaining, items, lengths_and_num_runs);
+          }
+        }
+      }
+      else
+      {
+        InitializeSelections<true, LAST_TILE>(tile_offset, num_remaining, items, lengths_and_num_runs);
+      }
 
       // Exclusive scan of lengths and runs
       LengthOffsetPair tile_aggregate;
       LengthOffsetPair warp_aggregate;
       LengthOffsetPair warp_exclusive_in_tile;
       LengthOffsetPair thread_exclusive_in_warp;
+
+      if constexpr (is_streaming_invocation)
+      {
+        // If this is a streaming invocation, we need to incorporate the run-length of the previous partition's last run
+        if (!streaming_context.first_partition && threadIdx.x == 0)
+        {
+          lengths_and_num_runs[0].value += streaming_context.prefix();
+        }
+      }
 
       WarpScanAllocations(
         tile_aggregate, warp_aggregate, warp_exclusive_in_tile, thread_exclusive_in_warp, lengths_and_num_runs);
@@ -822,13 +880,12 @@ struct AgentRle
       OffsetT warp_num_runs_exclusive_in_tile   = warp_exclusive_in_tile.key;
 
       // Scatter
-      Scatter<true>(
-        tile_num_runs_aggregate,
-        tile_num_runs_exclusive_in_global,
-        warp_num_runs_aggregate,
-        warp_num_runs_exclusive_in_tile,
-        thread_num_runs_exclusive_in_warp,
-        lengths_and_offsets);
+      Scatter(tile_num_runs_aggregate,
+              tile_num_runs_exclusive_in_global,
+              warp_num_runs_aggregate,
+              warp_num_runs_exclusive_in_tile,
+              thread_num_runs_exclusive_in_warp,
+              lengths_and_offsets);
 
       // Return running total (inclusive of this tile)
       return tile_aggregate;
@@ -856,7 +913,21 @@ struct AgentRle
       // Set flags
       LengthOffsetPair lengths_and_num_runs[ITEMS_PER_THREAD];
 
-      InitializeSelections<false, LAST_TILE>(tile_offset, num_remaining, items, lengths_and_num_runs);
+      if constexpr (is_streaming_invocation)
+      {
+        if (streaming_context.last_partition)
+        {
+          InitializeSelections<false, LAST_TILE>(tile_offset, num_remaining, items, lengths_and_num_runs);
+        }
+        else
+        {
+          InitializeSelections<false, false>(tile_offset, num_remaining, items, lengths_and_num_runs);
+        }
+      }
+      else
+      {
+        InitializeSelections<false, LAST_TILE>(tile_offset, num_remaining, items, lengths_and_num_runs);
+      }
 
       // Exclusive scan of lengths and runs
       LengthOffsetPair tile_aggregate;
@@ -929,13 +1000,12 @@ struct AgentRle
       OffsetT warp_num_runs_exclusive_in_tile   = warp_exclusive_in_tile.key;
 
       // Scatter
-      Scatter<false>(
-        tile_num_runs_aggregate,
-        tile_num_runs_exclusive_in_global,
-        warp_num_runs_aggregate,
-        warp_num_runs_exclusive_in_tile,
-        thread_num_runs_exclusive_in_warp,
-        lengths_and_offsets);
+      Scatter(tile_num_runs_aggregate,
+              tile_num_runs_exclusive_in_global,
+              warp_num_runs_aggregate,
+              warp_num_runs_exclusive_in_tile,
+              thread_num_runs_exclusive_in_warp,
+              lengths_and_offsets);
 
       // Return running total (inclusive of this tile)
       return prefix_op.inclusive_prefix;
@@ -963,7 +1033,7 @@ struct AgentRle
   {
     // Blocks are launched in increasing order, so just assign one tile per block
     int tile_idx          = (blockIdx.x * gridDim.y) + blockIdx.y; // Current tile index
-    OffsetT tile_offset   = tile_idx * TILE_ITEMS; // Global offset for the current tile
+    OffsetT tile_offset   = static_cast<OffsetT>(tile_idx) * static_cast<OffsetT>(TILE_ITEMS);
     OffsetT num_remaining = num_items - tile_offset; // Remaining items (including this tile)
 
     if (tile_idx < num_tiles - 1)
@@ -978,20 +1048,45 @@ struct AgentRle
 
       if (threadIdx.x == 0)
       {
-        // Output the total number of items selected
-        *d_num_runs_out = running_total.key;
-
-        // The inclusive prefix contains accumulated length reduction for the last run
-        if (running_total.key > 0)
+        if constexpr (is_streaming_invocation)
         {
-          d_lengths_out[running_total.key - 1] = running_total.value;
+          // Add the number of unique items in this partition to the global aggregate
+          auto total_uniques = streaming_context.add_num_uniques(running_total.key);
+
+          // If this is the last partition, write out the number of unique items
+          if (streaming_context.last_partition)
+          {
+            // Output the total number of items selected
+            *d_num_runs_out = total_uniques;
+
+            // The inclusive prefix contains accumulated length reduction for the last run
+            if (running_total.key + streaming_context.num_uniques() > 0)
+            {
+              d_lengths_out[streaming_context.num_uniques() + running_total.key - 1] = running_total.value;
+            }
+          }
+
+          if (!streaming_context.last_partition)
+          {
+            // Write the run-length of this partition as context for the subsequent partition
+            streaming_context.write_prefix(running_total.value);
+          }
+        }
+        else
+        {
+          // Output the total number of items selected
+          *d_num_runs_out = running_total.key;
+
+          // The inclusive prefix contains accumulated length reduction for the last run
+          if (running_total.key > 0)
+          {
+            d_lengths_out[running_total.key - 1] = running_total.value;
+          }
         }
       }
     }
   }
 };
-
-} // namespace rle
-} // namespace detail
+} // namespace detail::rle
 
 CUB_NAMESPACE_END

@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
+
 // test numeric_limits
 
 // tinyness_before
@@ -30,9 +33,9 @@ int main(int, char**)
   test<signed char, false>();
   test<unsigned char, false>();
   test<wchar_t, false>();
-#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
   test<char8_t, false>();
-#endif
+#endif // _CCCL_HAS_CHAR8_T()
   test<char16_t, false>();
   test<char32_t, false>();
   test<short, false>();

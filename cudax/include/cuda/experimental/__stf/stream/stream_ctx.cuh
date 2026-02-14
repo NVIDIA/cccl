@@ -42,7 +42,6 @@
 
 namespace cuda::experimental::stf
 {
-
 template <typename T>
 struct streamed_interface_of;
 
@@ -62,98 +61,45 @@ public:
   void*
   allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
-    void* result = nullptr;
+    auto dstream = memory_node.getDataStream(ctx.async_resources());
 
-    // That is a miss, we need to do an allocation
-    if (memory_node.is_host())
+    if (!memory_node.allocation_is_stream_ordered())
     {
-      cuda_safe_call(cudaMallocHost(&result, s));
+      // Blocking allocation (e.g., cudaMallocHost, cudaMallocManaged) - no stream synchronization needed
+      return memory_node.allocate(s, dstream.stream);
     }
-    else if (memory_node.is_managed())
+
+    // Stream-ordered allocation - synchronize prereqs with the stream
+    auto op = stream_async_op(ctx, dstream, prereqs);
+    if (ctx.generate_event_symbols())
     {
-      cuda_safe_call(cudaMallocManaged(&result, s));
+      op.set_symbol("allocate");
     }
-    else
-    {
-      if (memory_node.is_green_ctx())
-      {
-        fprintf(stderr,
-                "Pretend we use cudaMallocAsync on green context (using device %d in reality)\n",
-                device_ordinal(memory_node));
-      }
-
-      const int prev_dev_id = cuda_try<cudaGetDevice>();
-      // Optimization: track the current device ID
-      int current_dev_id = prev_dev_id;
-      SCOPE(exit)
-      {
-        if (current_dev_id != prev_dev_id)
-        {
-          cuda_safe_call(cudaSetDevice(prev_dev_id));
-        }
-      };
-
-      EXPECT(!memory_node.is_composite());
-
-      // (Note device_ordinal works with green contexts as well)
-      cuda_safe_call(cudaSetDevice(device_ordinal(memory_node)));
-      current_dev_id = device_ordinal(memory_node);
-
-      // Last possibility : this is a device
-      auto dstream = memory_node.getDataStream(ctx.async_resources());
-      auto op      = stream_async_op(ctx, dstream, prereqs);
-      if (ctx.generate_event_symbols())
-      {
-        op.set_symbol("cudaMallocAsync");
-      }
-      cuda_safe_call(cudaMallocAsync(&result, s, dstream.stream));
-      prereqs = op.end(ctx);
-    }
+    void* result = memory_node.allocate(s, dstream.stream);
+    prereqs      = op.end(ctx);
     return result;
   }
 
   void deallocate(
-    backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t /* sz */) override
+    backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
     auto dstream = memory_node.getDataStream(ctx.async_resources());
-    auto op      = stream_async_op(ctx, dstream, prereqs);
+
+    if (!memory_node.allocation_is_stream_ordered())
+    {
+      // Blocking deallocation - synchronize stream first, then free
+      cuda_safe_call(cudaStreamSynchronize(dstream.stream));
+      memory_node.deallocate(ptr, sz, dstream.stream);
+      return;
+    }
+
+    // Stream-ordered deallocation - synchronize prereqs with the stream
+    auto op = stream_async_op(ctx, dstream, prereqs);
     if (ctx.generate_event_symbols())
     {
-      op.set_symbol("cudaFreeAsync");
+      op.set_symbol("deallocate");
     }
-
-    if (memory_node.is_host())
-    {
-      // XXX TODO defer to deinit (or implement a blocking policy)?
-      cuda_safe_call(cudaStreamSynchronize(dstream.stream));
-      cuda_safe_call(cudaFreeHost(ptr));
-    }
-    else if (memory_node.is_managed())
-    {
-      cuda_safe_call(cudaStreamSynchronize(dstream.stream));
-      cuda_safe_call(cudaFree(ptr));
-    }
-    else
-    {
-      const int prev_dev_id = cuda_try<cudaGetDevice>();
-      // Optimization: track the current device ID
-      int current_dev_id = prev_dev_id;
-      SCOPE(exit)
-      {
-        if (current_dev_id != prev_dev_id)
-        {
-          cuda_safe_call(cudaSetDevice(prev_dev_id));
-        }
-      };
-
-      // (Note device_ordinal works with green contexts as well)
-      cuda_safe_call(cudaSetDevice(device_ordinal(memory_node)));
-      current_dev_id = device_ordinal(memory_node);
-
-      // Assuming device memory
-      cuda_safe_call(cudaFreeAsync(ptr, dstream.stream));
-    }
-
+    memory_node.deallocate(ptr, sz, dstream.stream);
     prereqs = op.end(ctx);
   }
 
@@ -233,12 +179,7 @@ public:
   stream_task<Deps...> task(exec_place e_place, task_dep<Deps>... deps)
   {
     EXPECT(state().deferred_tasks.empty(), "Mixing deferred and immediate tasks is not supported yet.");
-
-    auto dump_hooks = reserved::get_dump_hooks(this, deps...);
-
-    auto result = stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
-    result.add_post_submission_hook(dump_hooks);
-    return result;
+    return stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
   }
 
   template <typename... Deps>
@@ -271,7 +212,7 @@ public:
     return result;
   }
 
-  cudaStream_t task_fence()
+  cudaStream_t fence()
   {
     const auto& user_dstream = state().user_dstream;
     // We either use the user-provided stream, or we get one stream from the pool
@@ -280,12 +221,12 @@ public:
         ? user_dstream.value()
         : exec_place::current_device().getStream(async_resources(), true /* stream for computation */);
 
-    auto prereqs = get_state().insert_task_fence(*get_dot());
+    auto prereqs = get_state().insert_fence(*get_dot());
 
     prereqs.optimize(*this);
 
     // The output event is used for the tools in practice so we can ignore it
-    /* auto before_e = */ reserved::join_with_stream(*this, dstream, prereqs, "task_fence", false);
+    /* auto before_e = */ reserved::join_with_stream(*this, dstream, prereqs, "fence", false);
 
     return dstream.stream;
   }
@@ -513,6 +454,10 @@ public:
       submit();
       assert(state.submitted_stream);
     }
+
+    // Make sure we release resources attached to this context
+    state.release_ctx_resources(state.submitted_stream);
+
     if (state.blocking_finalize)
     {
       cuda_safe_call(cudaStreamSynchronize(state.submitted_stream));
@@ -556,10 +501,10 @@ public:
       }
 
       cuda_safe_call(cudaSetDevice(0));
-      cuda_safe_call(cudaStreamSynchronize(task_fence()));
+      cuda_safe_call(cudaStreamSynchronize(fence()));
       cuda_safe_call(cudaEventCreate(&startEvent));
       cuda_safe_call(cudaEventCreate(&stopEvent));
-      cuda_safe_call(cudaEventRecord(startEvent, task_fence()));
+      cuda_safe_call(cudaEventRecord(startEvent, fence()));
     }
 
     for (int id : state.deferred_tasks)
@@ -571,7 +516,7 @@ public:
     if (reordering_tasks())
     {
       cuda_safe_call(cudaSetDevice(0));
-      cuda_safe_call(cudaEventRecord(stopEvent, task_fence()));
+      cuda_safe_call(cudaEventRecord(stopEvent, fence()));
       cuda_safe_call(cudaEventSynchronize(stopEvent));
       cuda_safe_call(cudaEventElapsedTime(&state.submission_time, startEvent, stopEvent));
     }
@@ -580,21 +525,14 @@ public:
     state.erase_all_logical_data();
     state.detach_allocators(*this);
 
-    state.submitted_stream = task_fence();
+    state.submitted_stream = fence();
     assert(state.submitted_stream != nullptr);
 
     set_phase(backend_ctx_untyped::phase::submitted);
   }
 
   // no-op : so that we can use the same code with stream_ctx and graph_ctx
-  void change_epoch()
-  {
-    auto& dot = *get_dot();
-    if (dot.is_tracing())
-    {
-      dot.change_epoch();
-    }
-  }
+  void change_stage() {}
 
   template <typename S, typename... Deps>
   auto deferred_parallel_for(exec_place e_place, S shape, task_dep<Deps>... deps)
@@ -653,10 +591,9 @@ private:
       reserved::backend_ctx_update_uncached_allocator(*this, mv(custom));
     }
 
-    event_list stream_to_event_list(cudaStream_t stream, ::std::string) const override
+    event_list stream_to_event_list(cudaStream_t stream, ::std::string symbol) const override
     {
-      auto e = reserved::record_event_in_stream(decorated_stream(stream));
-      /// e->set_symbol(mv(event_symbol));
+      auto e = reserved::record_event_in_stream(decorated_stream(stream), *get_dot(), mv(symbol));
       return event_list(mv(e));
     }
 
@@ -678,7 +615,7 @@ private:
     float submission_time         = 0.0;
 
     // If the context is attached to a user stream, we should use it for
-    // finalize() or task_fence()
+    // finalize() or fence()
     ::std::optional<decorated_stream> user_dstream;
 
     /* By default, the finalize operation is blocking, unless user provided
@@ -848,9 +785,7 @@ UNITTEST("logical_data_untyped moveable")
 #  if _CCCL_CUDA_COMPILATION()
 namespace reserved
 {
-
 static __global__ void dummy() {}
-
 } // namespace reserved
 
 UNITTEST("copyable stream_ctx")
@@ -1143,6 +1078,29 @@ UNITTEST("basic parallel_for test")
   unit_test_pfor();
 };
 
+inline void unit_test_pfor_integral_shape()
+{
+  stream_ctx ctx;
+  auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
+
+  // Directly use 64 as a shape here
+  ctx.parallel_for(64, lA.write())->*[] _CCCL_DEVICE(size_t i, slice<size_t> A) {
+    A(i) = 2 * i;
+  };
+  ctx.host_launch(lA.read())->*[](auto A) {
+    for (size_t i = 0; i < 64; i++)
+    {
+      EXPECT(A(i) == 2 * i);
+    }
+  };
+  ctx.finalize();
+}
+
+UNITTEST("parallel_for with integral shape")
+{
+  unit_test_pfor_integral_shape();
+};
+
 inline void unit_test_host_pfor()
 {
   stream_ctx ctx;
@@ -1300,10 +1258,8 @@ UNITTEST("basic launch test")
 {
   unit_test_launch();
 };
-
 } // end namespace reserved
 #  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 
 #endif // UNITTESTED_FILE
-
 } // namespace cuda::experimental::stf

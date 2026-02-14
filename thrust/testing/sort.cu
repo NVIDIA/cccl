@@ -115,3 +115,14 @@ void TestSortBoolDescending()
   ASSERT_EQUAL(h_data, d_data);
 }
 DECLARE_UNITTEST(TestSortBoolDescending);
+
+// See also: https://github.com/NVIDIA/cccl/issues/4919
+void TestSortTrivial()
+{
+  thrust::host_vector<int> h_data = {1, 0, -1, -2, -3};
+  thrust::host_vector<int> ref    = {-3, -2, -1, 0, 1};
+
+  thrust::sort(h_data.begin(), h_data.end());
+  ASSERT_EQUAL(h_data, ref);
+}
+DECLARE_UNITTEST(TestSortTrivial);

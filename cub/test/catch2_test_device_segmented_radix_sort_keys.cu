@@ -1,41 +1,16 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_segmented_radix_sort.cuh>
 #include <cub/util_type.cuh>
 
 #include <thrust/functional.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/memory.h>
 #include <thrust/scatter.h>
 #include <thrust/transform.h>
 
+#include <cuda/iterator>
 #include <cuda/std/type_traits>
 
 #include <algorithm>
@@ -426,7 +401,7 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
     std::size_t num_empty_segments = num_segments / 16;
     c2h::device_vector<std::size_t> indices(num_empty_segments);
     c2h::gen(C2H_SEED(1), indices, std::size_t{0}, num_segments - 1);
-    auto begin = thrust::make_constant_iterator(key_t{0});
+    auto begin = cuda::constant_iterator(key_t{0});
     auto end   = begin + num_empty_segments;
     thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), begin_offsets.begin());
     thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), end_offsets.begin());
@@ -478,11 +453,11 @@ try
   using offset_t                     = c2h::get<0, TestType>;
   using segment_iterator_t           = segment_index_to_offset_op<offset_t, segment_offset_t>;
   constexpr std::size_t segment_size = 1000000;
-  constexpr std::size_t uint32_max   = ::cuda::std::numeric_limits<std::uint32_t>::max();
+  constexpr std::size_t uint32_max   = cuda::std::numeric_limits<std::uint32_t>::max();
   constexpr std::size_t num_items =
-    (sizeof(offset_t) == 8) ? uint32_max + (1 << 22) : ::cuda::std::numeric_limits<offset_t>::max();
+    (sizeof(offset_t) == 8) ? uint32_max + (1 << 22) : cuda::std::numeric_limits<offset_t>::max();
   constexpr segment_offset_t num_empty_segments = uint32_max - 5U;
-  const segment_offset_t num_segments           = num_empty_segments + ::cuda::ceil_div(num_items, segment_size);
+  const segment_offset_t num_segments           = num_empty_segments + cuda::ceil_div(num_items, segment_size);
   CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
 
   c2h::device_vector<key_t> in_keys(num_items);
@@ -493,8 +468,8 @@ try
   segmented_verification_helper<key_t> verification_helper{max_histo_size};
   verification_helper.prepare_input_data(in_keys);
 
-  auto offsets = thrust::make_transform_iterator(
-    thrust::make_counting_iterator(std::size_t{0}),
+  auto offsets = cuda::transform_iterator(
+    cuda::counting_iterator(std::size_t{0}),
     segment_iterator_t{num_empty_segments, num_segments, segment_size, num_items});
 
   sort_keys(
@@ -525,10 +500,10 @@ try
   using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
   using segment_offset_t           = std::int32_t;
   using offset_t                   = c2h::get<0, TestType>;
-  constexpr std::size_t uint32_max = ::cuda::std::numeric_limits<std::uint32_t>::max();
+  constexpr std::size_t uint32_max = cuda::std::numeric_limits<std::uint32_t>::max();
   constexpr int num_key_seeds      = 1;
   constexpr std::size_t num_items =
-    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
+    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : cuda::std::numeric_limits<offset_t>::max();
   const segment_offset_t num_segments = 2;
   CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
 

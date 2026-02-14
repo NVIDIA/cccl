@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -27,9 +14,21 @@
 #endif // no system header
 #include <thrust/inner_product.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/adl/inner_product.h>
-#include <thrust/system/detail/generic/inner_product.h>
 #include <thrust/system/detail/generic/select_system.h>
+
+// Include all active backend system implementations (generic, sequential, host and device)
+#include <thrust/system/detail/generic/inner_product.h>
+#include <thrust/system/detail/sequential/inner_product.h>
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(inner_product.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(inner_product.h)
+
+// Some build systems need a hint to know which files we could include
+#if 0
+#  include <thrust/system/cpp/detail/inner_product.h>
+#  include <thrust/system/cuda/detail/inner_product.h>
+#  include <thrust/system/omp/detail/inner_product.h>
+#  include <thrust/system/tbb/detail/inner_product.h>
+#endif
 
 THRUST_NAMESPACE_BEGIN
 

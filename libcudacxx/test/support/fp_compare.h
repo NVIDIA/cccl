@@ -8,7 +8,7 @@
 #ifndef SUPPORT_FP_COMPARE_H
 #define SUPPORT_FP_COMPARE_H
 
-#include <cuda/std/__algorithm_> // for cuda::std::max
+#include <cuda/std/algorithm> // for cuda::std::max
 #include <cuda/std/cassert>
 #include <cuda/std/cmath> // for cuda::std::abs
 

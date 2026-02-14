@@ -61,7 +61,7 @@
 // Debuggers do not step into functions marked with __attribute__((__artificial__)). This
 // is useful for small wrapper functions that just dispatch to other functions and that
 // are inlined into the caller.
-#if _CCCL_HAS_ATTRIBUTE(__artificial__) && !_CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_HAS_ATTRIBUTE(__artificial__) && !_CCCL_CUDA_COMPILER(NVCC)
 #  define _CCCL_ARTIFICIAL __attribute__((__artificial__))
 #else // ^^^ _CCCL_HAS_ATTRIBUTE(__artificial__) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(__artificial__) vvv
 #  define _CCCL_ARTIFICIAL
@@ -75,12 +75,11 @@
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
 
 // _CCCL_ASSUME
-
-#if _CCCL_HAS_CPP_ATTRIBUTE(assume)
+// NVCC does not properly respect [[assume()]], so use __builtin_assume, see nvbug5458663
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  define _CCCL_ASSUME(...) __builtin_assume(__VA_ARGS__)
+#elif _CCCL_HAS_CPP_ATTRIBUTE(assume)
 #  define _CCCL_ASSUME(...) [[assume(__VA_ARGS__)]]
-#elif _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(NVHPC)
-#  define _CCCL_ASSUME(...) \
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);), (_CCCL_BUILTIN_ASSUME(__VA_ARGS__);))
 #else
 #  define _CCCL_ASSUME(...) _CCCL_BUILTIN_ASSUME(__VA_ARGS__)
 #endif
@@ -141,8 +140,8 @@
 
 // _CCCL_NO_SPECIALIZATIONS
 
-#if _CCCL_HAS_CPP_ATTRIBUTE(_Clang::__no_specializations__)
-#  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)   [[_Clang::__no_specializations__(_MSG)]]
+#if _CCCL_HAS_CPP_ATTRIBUTE(clang::__no_specializations__)
+#  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)   [[clang::__no_specializations__(_MSG)]]
 #  define _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS() 1
 #elif _CCCL_HAS_CPP_ATTRIBUTE(msvc::no_specializations)
 #  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)   [[msvc::no_specializations(_MSG)]]
@@ -154,6 +153,16 @@
 
 #define _CCCL_NO_SPECIALIZATIONS \
   _CCCL_NO_SPECIALIZATIONS_BECAUSE("Users are not allowed to specialize this cccl entity")
+
+// _CCCL_LIFETIMEBOUND
+
+#if _CCCL_HAS_CPP_ATTRIBUTE(clang::lifetimebound) || _CCCL_COMPILER(CLANG)
+#  define _CCCL_LIFETIMEBOUND [[clang::lifetimebound]]
+#elif _CCCL_HAS_CPP_ATTRIBUTE(msvc::lifetimebound) || _CCCL_COMPILER(MSVC, >=, 19, 37)
+#  define _CCCL_LIFETIMEBOUND [[msvc::lifetimebound]]
+#else
+#  define _CCCL_LIFETIMEBOUND
+#endif
 
 // _CCCL_NO_UNIQUE_ADDRESS
 

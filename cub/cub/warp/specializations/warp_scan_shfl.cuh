@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * @file
@@ -48,8 +24,15 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/ptx>
-#include <cuda/std/__algorithm_>
+#include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/__bit/has_single_bit.h>
+#include <cuda/std/__bit/integral.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/warp>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -71,28 +54,22 @@ struct WarpScanShfl
   // Constants and type definitions
   //---------------------------------------------------------------------
 
-  enum
-  {
-    /// Whether the logical warp size and the PTX warp size coincide
-    IS_ARCH_WARP = (LOGICAL_WARP_THREADS == warp_threads),
+  /// Whether the logical warp size and the PTX warp size coincide
+  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == warp_threads);
 
-    /// The number of warp scan steps
-    STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE,
+  /// The number of warp scan steps
+  static constexpr int STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE;
 
-    /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
-    SHFL_C = (warp_threads - LOGICAL_WARP_THREADS) << 8
-  };
+  /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
+  static constexpr int SHFL_C = (warp_threads - LOGICAL_WARP_THREADS) << 8;
 
   template <typename S>
   struct IntegerTraits
   {
-    enum
-    {
-      /// Whether the data type is a small (32b or less) integer for which we can use a single SFHL instruction per
-      /// exchange
-      IS_SMALL_UNSIGNED =
-        ::cuda::std::is_integral_v<S> && ::cuda::std::is_unsigned_v<S> && (sizeof(S) <= sizeof(unsigned int)),
-    };
+    /// Whether the data type is a small (32b or less) integer for which we can use a single SFHL instruction per
+    /// exchange
+    static constexpr bool IS_SMALL_UNSIGNED =
+      ::cuda::std::is_integral_v<S> && ::cuda::std::is_unsigned_v<S> && (sizeof(S) <= sizeof(unsigned int));
   };
 
   /// Shared memory storage layout type
@@ -401,18 +378,56 @@ struct WarpScanShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  template <typename _T, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T InclusiveScanStep(_T input, ScanOpT scan_op, int first_lane, int offset)
+  template <typename _Tp, typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp InclusiveScanStep(_Tp input, ScanOpT scan_op, int first_lane, int offset)
   {
-    _T temp = ShuffleUp<LOGICAL_WARP_THREADS>(input, offset, first_lane, member_mask);
+    _Tp temp = ShuffleUp<LOGICAL_WARP_THREADS>(input, offset, first_lane, member_mask);
 
     // Perform scan op if from a valid peer
-    _T output = scan_op(temp, input);
+    _Tp output = scan_op(temp, input);
     if (static_cast<int>(lane_id) < first_lane + offset)
     {
       output = input;
     }
 
+    return output;
+  }
+
+  /**
+   * @brief Partial inclusive prefix scan step (generic)
+   *
+   * @param[in] input
+   *   Calling thread's input item.
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items in warp
+   *
+   * @param[in] first_lane
+   *   Index of first lane in segment
+   *
+   * @param[in] offset
+   *   Up-offset to pull from
+   */
+  template <typename _Tp, typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp
+  InclusiveScanStepPartial(_Tp input, ScanOpT scan_op, int valid_items, int first_lane, int offset)
+  {
+    _CCCL_ASSERT((first_lane >= 0) && (first_lane <= static_cast<int>(lane_id)),
+                 "first_lane must be in range [0, lane_id]");
+    _CCCL_ASSERT((offset > 0) && (offset < LOGICAL_WARP_THREADS),
+                 "offset must be in the range [1, LOGICAL_WARP_THREADS)");
+    _CCCL_ASSERT(::cuda::std::has_single_bit(static_cast<unsigned>(offset)), "offset must be a power of two");
+    _Tp temp = ::cuda::device::warp_shuffle_up<LOGICAL_WARP_THREADS>(input, offset, member_mask);
+
+    // Perform scan op if from a valid peer
+    _Tp output = input;
+    if (static_cast<int>(lane_id) >= first_lane + offset && static_cast<int>(lane_id) < valid_items)
+    {
+      output = scan_op(temp, input);
+    }
     return output;
   }
 
@@ -434,9 +449,9 @@ struct WarpScanShfl
    * @param[in] is_small_unsigned
    *   Marker type indicating whether T is a small integer
    */
-  template <typename _T, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T
-  InclusiveScanStep(_T input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::true_type /*is_small_unsigned*/)
+  template <typename _Tp, typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp InclusiveScanStep(
+    _Tp input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::true_type /*is_small_unsigned*/)
   {
     return InclusiveScanStep(input, scan_op, first_lane, offset);
   }
@@ -460,9 +475,9 @@ struct WarpScanShfl
    * @param[in] is_small_unsigned
    *   Marker type indicating whether T is a small integer
    */
-  template <typename _T, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE _T InclusiveScanStep(
-    _T input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
+  template <typename _Tp, typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE _Tp InclusiveScanStep(
+    _Tp input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
   {
     return InclusiveScanStep(input, scan_op, first_lane, offset);
   }
@@ -505,8 +520,8 @@ struct WarpScanShfl
    * @param[in] scan_op
    *   Binary scan operator
    */
-  template <typename _T, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(_T input, _T& inclusive_output, ScanOpT scan_op)
+  template <typename _Tp, typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(_Tp input, _Tp& inclusive_output, ScanOpT scan_op)
   {
     inclusive_output = input;
 
@@ -523,6 +538,39 @@ struct WarpScanShfl
         segment_first_lane,
         (1 << STEP),
         bool_constant_v<IntegerTraits<T>::IS_SMALL_UNSIGNED>);
+    }
+  }
+
+  /**
+   * @brief Inclusive scan (partial)
+   *
+   * @param[in] input
+   *   Calling thread's input item
+   *
+   * @param[out] inclusive_output
+   *   Calling thread's output item. May be aliased with @p input
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items in warp
+   */
+  template <typename _Tp, typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  InclusiveScanPartial(_Tp input, _Tp& inclusive_output, ScanOpT scan_op, int valid_items)
+  {
+    if (static_cast<int>(lane_id) < valid_items)
+    {
+      inclusive_output = input;
+    }
+    // Iterate scan steps
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int step = 0; step < STEPS; step++)
+    {
+      constexpr int segment_first_lane = 0;
+      inclusive_output =
+        InclusiveScanStepPartial(inclusive_output, scan_op, valid_items, segment_first_lane, (1 << step));
     }
   }
 
@@ -552,7 +600,7 @@ struct WarpScanShfl
     ballot = ballot & ::cuda::ptx::get_sreg_lanemask_le();
 
     // Find index of first set bit
-    int segment_first_lane = _CUDA_VSTD::max(0, 31 - __clz(ballot));
+    int segment_first_lane = ::cuda::std::__bit_log2(ballot);
 
     // Iterate scan steps
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -589,6 +637,36 @@ struct WarpScanShfl
 
     // Grab aggregate from last warp lane
     warp_aggregate = ShuffleIndex<LOGICAL_WARP_THREADS>(inclusive_output, LOGICAL_WARP_THREADS - 1, member_mask);
+  }
+
+  /**
+   * @brief Partial inclusive scan with aggregate
+   *
+   * @param[in] input
+   *   Calling thread's input item
+   *
+   * @param[out] inclusive_output
+   *   Calling thread's output item. May be aliased with @p input
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items in warp
+   *
+   * @param[out] warp_aggregate
+   *   Warp-wide aggregate reduction of input items
+   */
+  template <typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  InclusiveScanPartial(T input, T& inclusive_output, ScanOpT scan_op, int valid_items, T& warp_aggregate)
+  {
+    InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
+
+    // Grab aggregate from last valid warp lane
+    const int last_valid_lane = ::cuda::std::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1);
+    warp_aggregate =
+      ::cuda::device::warp_shuffle_idx<LOGICAL_WARP_THREADS>(inclusive_output, last_valid_lane, member_mask);
   }
 
   //---------------------------------------------------------------------
@@ -681,6 +759,162 @@ struct WarpScanShfl
   {
     warp_aggregate = ShuffleIndex<LOGICAL_WARP_THREADS>(inclusive, LOGICAL_WARP_THREADS - 1, member_mask);
     Update(input, inclusive, exclusive, scan_op, initial_value, is_integer);
+  }
+
+  /**
+   * @brief Compute valid elements of the exclusive scan using input and/or inclusive.
+   *
+   * @param[in] input
+   *   Calling thread's input item
+   *
+   * @param[in] inclusive
+   *   Calling thread's item of the previously computed inclusive scan
+   *
+   * @param[out] exclusive
+   *   Calling thread's item of the exclusive scan (undefined for lane 0)
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items in warp
+   */
+  template <typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  UpdatePartial([[maybe_unused]] T input, T& inclusive, T& exclusive, [[maybe_unused]] ScanOpT scan_op, int valid_items)
+  {
+    if constexpr (::cuda::std::is_integral_v<T> && cub::detail::is_cuda_std_plus_v<ScanOpT, T>)
+    {
+      // initial value presumed 0
+      if (static_cast<int>(lane_id) < valid_items)
+      {
+        exclusive = inclusive - input;
+      }
+    }
+    else
+    {
+      // initial value unknown
+      T temp = ::cuda::device::warp_shuffle_up<LOGICAL_WARP_THREADS>(inclusive, 1, member_mask);
+      if (static_cast<int>(lane_id) < valid_items)
+      {
+        exclusive = temp;
+      }
+    }
+  }
+
+  /**
+   * @brief Update valid elements of the inclusive scan with the initial value and compute valid
+   *        elements of the exclusive scan using input and/or the updated inclusive scan.
+   *
+   * @param[in] input
+   *   Calling thread's input item
+   *
+   * @param[in, out] inclusive
+   *   Calling thread's item of the previously computed inclusive scan to be updated with initial
+   *   value
+   *
+   * @param[out] exclusive
+   *   Calling thread's item of the exclusive scan (undefined for lane 0)
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items in warp
+   *
+   * @param[in] initial_value
+   *   Initial value to seed the scan (uniform across warp)
+   */
+  template <typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  UpdatePartial(T input, T& inclusive, T& exclusive, ScanOpT scan_op, int valid_items, T initial_value)
+  {
+    // Update inclusive
+    if (static_cast<int>(lane_id) < valid_items)
+    {
+      inclusive = scan_op(initial_value, inclusive);
+    }
+    // Get exclusive
+    UpdatePartial(input, inclusive, exclusive, scan_op, valid_items);
+
+    if constexpr (!(::cuda::std::is_integral_v<T> && cub::detail::is_cuda_std_plus_v<ScanOpT, T>) )
+    {
+      // Correct first element of exclusive
+      if ((lane_id == 0u) && (valid_items > 0))
+      {
+        exclusive = initial_value;
+      }
+    }
+  }
+
+  /**
+   * @brief Compute valid elements of the exclusive scan and the warp aggregate using input and/or
+   *        the inclusive scan.
+   *
+   * @param[in] input
+   *   Calling thread's input item
+   *
+   * @param[in] inclusive
+   *   Calling thread's item of the previously computed inclusive scan
+   *
+   * @param[out] exclusive
+   *   Calling thread's item of the exclusive scan (undefined for lane 0)
+   *
+   * @param[out] warp_aggregate
+   *   Warp-wide aggregate reduction of valid input items.
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items in warp
+   */
+  template <typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  UpdatePartial(T input, T& inclusive, T& exclusive, T& warp_aggregate, ScanOpT scan_op, int valid_items)
+  {
+    // Get aggregate
+    const int last_valid_lane = ::cuda::std::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1);
+    warp_aggregate = ::cuda::device::warp_shuffle_idx<LOGICAL_WARP_THREADS>(inclusive, last_valid_lane, member_mask);
+    // Compute exclusive
+    UpdatePartial(input, inclusive, exclusive, scan_op, valid_items);
+  }
+
+  /**
+   * @brief Update valid elements of the inclusive scan with the initial value and compute valid
+   *        elements of the exclusive scan and the aggregate using input and/or the updated
+   *        inclusive scan.
+   *
+   * @param[in] input
+   *   Calling thread's input item
+   *
+   * @param[in, out] inclusive
+   *   Calling thread's item of the previously computed inclusive scan
+   *
+   * @param[out] exclusive
+   *   Calling thread's item of the exclusive scan (undefined for lane 0)
+   *
+   * @param[out] warp_aggregate
+   *   Warp-wide aggregate reduction of valid input items.
+   *
+   * @param[in] scan_op
+   *   Binary scan operator
+   *
+   * @param[in] valid_items
+   *   Number of valid items in warp
+   *
+   * @param[in] initial_value
+   *   Initial value to seed the scan (uniform across warp)
+   */
+  template <typename ScanOpT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void UpdatePartial(
+    T input, T& inclusive, T& exclusive, T& warp_aggregate, ScanOpT scan_op, int valid_items, T initial_value)
+  {
+    // Get aggregate (excluding initial_value)
+    const int last_valid_lane = ::cuda::std::clamp(valid_items - 1, 0, LOGICAL_WARP_THREADS - 1);
+    warp_aggregate = ::cuda::device::warp_shuffle_idx<LOGICAL_WARP_THREADS>(inclusive, last_valid_lane, member_mask);
+    // Update inclusive with initial value and compute exclusive
+    UpdatePartial(input, inclusive, exclusive, scan_op, valid_items, initial_value);
   }
 };
 } // namespace detail

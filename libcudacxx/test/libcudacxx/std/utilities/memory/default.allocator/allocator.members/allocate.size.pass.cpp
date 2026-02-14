@@ -14,7 +14,7 @@
 // allocator:
 // constexpr T* allocate(size_t n);
 
-// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/std/__memory_>
 #include <cuda/std/cassert>
@@ -39,8 +39,8 @@ template <typename T>
 void test()
 {
   // Bug 26812 -- allocating too large
-  typedef cuda::std::allocator<T> A;
-  typedef cuda::std::allocator_traits<A> AT;
+  using A  = cuda::std::allocator<T>;
+  using AT = cuda::std::allocator_traits<A>;
   A a;
   test_max<T>(AT::max_size(a) + 1); // just barely too large
   test_max<T>(AT::max_size(a) * 2); // significantly too large

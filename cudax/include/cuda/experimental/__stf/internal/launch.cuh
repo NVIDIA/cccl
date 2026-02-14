@@ -21,7 +21,6 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/internal/execution_policy.cuh> // launch_impl() uses execution_policy
-#include <cuda/experimental/__stf/internal/hooks.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
@@ -29,7 +28,6 @@
 
 namespace cuda::experimental::stf
 {
-
 // This feature requires a CUDA compiler
 #if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 
@@ -39,7 +37,6 @@ class stream_task;
 
 namespace reserved
 {
-
 template <typename Fun, typename Arg>
 __global__ void launch_kernel(Fun f, Arg arg)
 {
@@ -277,8 +274,7 @@ public:
    * @param deps Dependencies for the task to be launched.
    */
   launch_scope(Ctx& ctx, thread_hierarchy_spec_t spec, exec_place e_place, task_dep<Deps>... deps)
-      : dump_hooks(reserved::get_dump_hooks(&ctx, deps...))
-      , deps(mv(deps)...)
+      : deps(mv(deps)...)
       , ctx(ctx)
       , e_place(mv(e_place))
       , spec(mv(spec))
@@ -344,8 +340,6 @@ public:
       t.set_affine_data_place(data_place::composite(blocked_partition(), e_place.as_grid()));
     }
 
-    t.add_post_submission_hook(dump_hooks);
-
     t.add_deps(deps);
     if (!symbol.empty())
     {
@@ -363,11 +357,6 @@ public:
 
     nvtx_range nr(t.get_symbol().c_str());
     t.start();
-
-    if (dot.is_tracing())
-    {
-      dot.template add_vertex<typename Ctx::task_type, logical_data_untyped>(t);
-    }
 
     int device;
     cudaEvent_t start_event, end_event;
@@ -489,14 +478,12 @@ private:
     }
   }
 
-  ::std::vector<::std::function<void()>> dump_hooks;
   task_dep_vector<Deps...> deps;
   Ctx& ctx;
   exec_place e_place;
   ::std::string symbol;
   thread_hierarchy_spec_t spec;
 };
-
 } // namespace reserved
 
 #endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()

@@ -45,7 +45,6 @@
 
 namespace cuda::experimental::stf::reserved
 {
-
 /**
  * @brief The scheduler class defines the interface that all schedulers must follow to assign tasks to devices
  */
@@ -463,5 +462,4 @@ inline ::std::unique_ptr<scheduler> scheduler::make(const char* schedule_type)
   ::std::cerr << "Invalid CUDASTF_SCHEDULE value '" << schedule_type << "'\n";
   exit(EXIT_FAILURE);
 }
-
 } // namespace cuda::experimental::stf::reserved

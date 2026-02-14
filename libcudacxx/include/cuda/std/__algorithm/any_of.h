@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_ANY_OF_H
-#define _LIBCUDACXX___ALGORITHM_ANY_OF_H
+#ifndef _CUDA_STD___ALGORITHM_ANY_OF_H
+#define _CUDA_STD___ALGORITHM_ANY_OF_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,12 +22,11 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _Predicate>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-any_of(_InputIterator __first, _InputIterator __last, _Predicate __pred)
+[[nodiscard]] _CCCL_API constexpr bool any_of(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 {
   for (; __first != __last; ++__first)
   {
@@ -39,8 +38,8 @@ any_of(_InputIterator __first, _InputIterator __last, _Predicate __pred)
   return false;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_ANY_OF_H
+#endif // _CUDA_STD___ALGORITHM_ANY_OF_H

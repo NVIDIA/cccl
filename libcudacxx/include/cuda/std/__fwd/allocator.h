@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FWD_ALLOCATOR_H
-#define _LIBCUDACXX___FWD_ALLOCATOR_H
+#ifndef _CUDA_STD___FWD_ALLOCATOR_H
+#define _CUDA_STD___FWD_ALLOCATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,13 +23,31 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+// std:: forward declarations
+
+#if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <class _Tp>
+class allocator;
+
+_CCCL_END_NAMESPACE_STD
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
+// cuda::std:: forward declarations
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 class _CCCL_TYPE_VISIBILITY_DEFAULT allocator;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+template <class _Tp>
+inline constexpr bool __is_cuda_std_allocator_v = false;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_allocator_v<allocator<_Tp>> = true;
+
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FWD_ALLOCATOR_H
+#endif // _CUDA_STD___FWD_ALLOCATOR_H

@@ -12,6 +12,7 @@ Numerics Library
    numerics_library/linalg
    numerics_library/numbers
    numerics_library/numeric
+   numerics_library/random
 
 Any Standard C++ header not listed below is omitted.
 
@@ -26,7 +27,7 @@ Any Standard C++ header not listed below is omitted.
      - **C++ Reference**
 
    * - ``<cuda/std/ratio>``
-     - Compile-time rational arthimetic
+     - Compile-time rational arithmetic
      - CCCL 2.0.0
      - CUDA 11.0
      - `\<ratio\> <https://en.cppreference.com/w/cpp/header/ratio>`_
@@ -60,3 +61,9 @@ Any Standard C++ header not listed below is omitted.
      - CCCL 2.5.0
      - CUDA 12.6
      - `\<numeric\> <https://en.cppreference.com/w/cpp/header/numeric>`_
+
+   * - :ref:`\<cuda/std/random\> <libcudacxx-standard-api-numerics-random>`
+     - Random number generation
+     - CCCL 3.3.0
+     - CUDA 13.3
+     - `\<random\> <https://en.cppreference.com/w/cpp/header/random>`_

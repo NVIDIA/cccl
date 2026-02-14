@@ -22,13 +22,15 @@
 
 #include <cuda/std/__cccl/execution_space.h>
 
+#include <cuda/experimental/__stf/graph/internal/event_types.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh> // for null_partition
+#include <cuda/experimental/__stf/internal/ctx_resource.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
+#include <cuda/experimental/__stf/stream/internal/event_types.cuh>
 
 namespace cuda::experimental::stf
 {
-
 #if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 
 class stream_ctx;
@@ -39,7 +41,6 @@ struct owning_container_of;
 
 namespace reserved
 {
-
 /*
  * @brief A CUDA kernel for executing a function `f` in parallel over `n` threads.
  *
@@ -60,13 +61,13 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
   const size_t step = blockDim.x * gridDim.x;
 
   // This will explode the targs tuple into a pack of data
-
   // Help the compiler which may not detect that a device lambda is calling a device lambda
   CUDASTF_NO_DEVICE_STACK
-  auto explode_args = [&](auto&&... data) {
+  auto const explode_args = [&](auto&... data) {
     CUDASTF_NO_DEVICE_STACK
     auto const explode_coords = [&](auto&&... coords) {
-      f(coords..., data...);
+      // No move/forward for `data` because it's used multiple times.
+      f(::std::forward<decltype(coords)>(coords)..., data...);
     };
     // For every linearized index in the shape
     for (; i < n; i += step)
@@ -74,30 +75,9 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
       ::std::apply(explode_coords, shape.index_to_coords(i));
     }
   };
-  ::std::apply(explode_args, mv(targs));
+  // Moving from `targs` here is not useful because `explode_args` uses it multiple times.
+  ::std::apply(explode_args, targs);
 }
-
-/**
- * @brief Create a trait to select useful types during the reduction phase
- * using Partial Specialization
- *
- * Oi are the operator type (no op (= monostate), or reducer::sum for example)
- * Ai are the argument type (slice<T>, or scalar_view<T> for example)
- * If Oi is not monostate, it will correspond to the container of Ai, otherwise
- * we don't need to manipulate that argument during a reduction phase, so this
- * is a monostate
- */
-template <typename Oi, typename Ai>
-struct get_owning_container_of
-{
-  using type = typename owning_container_of<Ai>::type; // Default case
-};
-
-template <typename Ai>
-struct get_owning_container_of<::std::monostate, Ai>
-{
-  using type = ::std::monostate;
-};
 
 /**
  * @brief This wraps tuple of arguments and operators into a class that stores
@@ -109,6 +89,28 @@ struct get_owning_container_of<::std::monostate, Ai>
 template <typename tuple_args, typename tuple_ops>
 class redux_vars
 {
+  /**
+   * @brief Create a trait to select useful types during the reduction phase
+   * using Partial Specialization
+   *
+   * Oi are the operator type (no op (= monostate), or reducer::sum for example)
+   * Ai are the argument type (slice<T>, or scalar_view<T> for example)
+   * If Oi is not monostate, it will correspond to the container of Ai, otherwise
+   * we don't need to manipulate that argument during a reduction phase, so this
+   * is a monostate
+   */
+  template <typename Oi, typename Ai>
+  struct get_owning_container_of
+  {
+    using type = typename owning_container_of<Ai>::type; // Default case
+  };
+
+  template <typename Ai>
+  struct get_owning_container_of<::std::monostate, Ai>
+  {
+    using type = ::std::monostate;
+  };
+
   /**
    * @brief Tuple of arguments needed to store temporary variables used in reduction operations.
    *
@@ -138,7 +140,7 @@ public:
   // This will return a tuple which matches the argument passed to the lambda, either an instance or an owning type for
   // reduction variables
   template <::std::size_t... Is>
-  __device__ auto make_targs(tuple_args& targs, ::std::index_sequence<Is...> = ::std::index_sequence<>())
+  __device__ auto make_targs(tuple_args& targs, ::std::index_sequence<Is...> = {})
   {
     if constexpr (sizeof...(Is) != size)
     {
@@ -306,7 +308,8 @@ __global__ void loop_redux(
   const auto explode_args = [&](auto&&... data) {
     CUDASTF_NO_DEVICE_STACK
     const auto explode_coords = [&](auto&&... coords) {
-      f(coords..., data...);
+      // No move/forward for `data` because it's used multiple times.
+      f(::std::forward<decltype(coords)>(coords)..., data...);
     };
     // For every linearized index in the shape
     for (; i < n; i += step)
@@ -323,10 +326,10 @@ __global__ void loop_redux(
   const unsigned int tid = threadIdx.x;
   for (unsigned int stride = 1; stride < blockDim.x; stride *= 2)
   {
-    const unsigned int index = 2 * stride * tid; // Target index for this thread
-    if (index + stride < blockDim.x)
+    const unsigned int index = 2 * stride * tid + stride; // Target index for this thread
+    if (index < blockDim.x)
     {
-      per_block_redux_buffer[index].apply_op(per_block_redux_buffer[index + stride]);
+      per_block_redux_buffer[index - stride].apply_op(per_block_redux_buffer[index]);
     }
     __syncthreads();
   }
@@ -397,6 +400,34 @@ loop_redux_finalize(tuple_args targs, redux_vars<tuple_args, tuple_ops>* redux_b
 }
 
 /**
+ * @brief Resource wrapper for managing parallel_for host callback arguments
+ *
+ * This manages the memory allocated for parallel_for host callback arguments using the
+ * ctx_resource system instead of manual delete in each callback.
+ */
+template <typename ArgsType>
+class parallel_for_args_resource : public ctx_resource
+{
+public:
+  explicit parallel_for_args_resource(ArgsType* args)
+      : args_(args)
+  {}
+
+  bool can_release_in_callback() const override
+  {
+    return true;
+  }
+
+  void release_in_callback() override
+  {
+    delete args_;
+  }
+
+private:
+  ArgsType* args_;
+};
+
+/**
  * @brief Supporting class for the parallel_for construct
  *
  * This is used to implement operators such as ->* on the object produced by `ctx.parallel_for`
@@ -406,9 +437,37 @@ loop_redux_finalize(tuple_args targs, redux_vars<tuple_args, tuple_ops>* redux_b
 template <typename context, typename exec_place_t, typename shape_t, typename partitioner_t, typename... deps_ops_t>
 class parallel_for_scope
 {
-  //  using deps_t = typename reserved::extract_all_first_types<deps_ops_t...>::type;
-  // tuple<slice<double>, slice<int>> ...
-  using deps_tup_t = ::std::tuple<typename deps_ops_t::dep_type...>;
+  // using deps_tup_t = ::std::tuple<typename deps_ops_t::dep_type...>;
+  using deps_tup_t = reserved::remove_void_interface_from_pack_t<typename deps_ops_t::dep_type...>;
+
+  /**
+   * @brief Retrieves instances from a tuple of dependency operations, filtering out `void_interface`.
+   *
+   * Iterates over each element in the `deps` tuple, calling `instance(t)` on each.
+   * If the result is of type `void_interface&`, that element is not part
+   * of the resulting tuple. Otherwise, the returned instance is included.
+   *
+   * @tparam deps_ops_t Variadic template parameter representing the types of the dependency operations.
+   * @param deps Tuple containing dependency operation objects.
+   * @param t Reference to the task for which instances are requested.
+   * @return A tuple containing the result of `dep.instance(t)` for each dependency,
+   *         with `std::ignore` in positions where the result type is `void_interface&`.
+   */
+  static deps_tup_t get_arg_instances(::std::tuple<deps_ops_t...>& deps, typename context::task_type& t)
+  {
+    return make_tuple_indexwise<sizeof...(deps_ops_t)>([&](auto i) {
+      auto& dep = ::std::get<i>(deps);
+      if constexpr (::std::is_same_v<decltype(dep.instance(t)), void_interface&>)
+      {
+        return ::std::ignore;
+      }
+      else
+      {
+        return dep.instance(t);
+      }
+    });
+  }
+
   //  // tuple<task_dep<slice<double>>, task_dep<slice<int>>> ...
   //  using task_deps_t = ::std::tuple<typename deps_ops_t::task_dep_type...>;
   // tuple<none, none, sum, none> ...
@@ -422,8 +481,7 @@ public:
   /// @param shape Shape to iterate
   /// @param ...deps Dependencies
   parallel_for_scope(context& ctx, exec_place_t e_place, shape_t shape, deps_ops_t... deps)
-      : dump_hooks(reserved::get_dump_hooks(&ctx, deps...))
-      , deps(mv(deps)...)
+      : deps(mv(deps)...)
       , ctx(ctx)
       , e_place(mv(e_place))
       , shape(mv(shape))
@@ -500,15 +558,11 @@ public:
       }
     }
 
-    t.add_post_submission_hook(dump_hooks);
-
     t.add_deps(deps);
     if (!symbol.empty())
     {
       t.set_symbol(symbol);
     }
-
-    cudaEvent_t start_event, end_event;
 
     const bool record_time = t.schedule_task() || statistics.is_calibrating_to_file();
 
@@ -516,6 +570,7 @@ public:
     t.start();
 
     int device = -1;
+    cudaEvent_t start_event, end_event;
 
     SCOPE(exit)
     {
@@ -555,11 +610,6 @@ public:
         cuda_safe_call(cudaEventCreate(&end_event));
         cuda_safe_call(cudaEventRecord(start_event, t.get_stream()));
       }
-    }
-
-    if (dot.is_tracing())
-    {
-      dot.template add_vertex<typename context::task_type, logical_data_untyped>(t);
     }
 
     static constexpr bool need_reduction = (deps_ops_t::does_work || ...);
@@ -669,11 +719,7 @@ public:
     using Fun_no_ref = ::std::remove_reference_t<Fun>;
 
     // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
-    deps_tup_t arg_instances = ::std::apply(
-      [&](const auto&... d) {
-        return ::std::make_tuple(d.instance(t)...);
-      },
-      deps);
+    auto arg_instances = get_arg_instances(deps, t);
 
     size_t n = sub_shape.size();
 
@@ -700,7 +746,7 @@ public:
 
         // This new node will depend on the previous in the chain (allocation)
         auto lock = t.lock_ctx_graph();
-        cudaGraphAddKernelNode(&t.get_node(), t.get_ctx_graph(), NULL, 0, &kernel_params);
+        cuda_safe_call(cudaGraphAddKernelNode(&t.get_node(), t.get_ctx_graph(), NULL, 0, &kernel_params));
       }
 
       return;
@@ -717,16 +763,14 @@ public:
       return ::std::pair(size_t(minGridSize), size_t(blockSize));
     }();
 
-    const auto block_size = conf.first;
-    const auto min_blocks = conf.second;
+    const auto block_size = conf.second;
+    const auto min_blocks = conf.first;
 
     // max_blocks is computed so we have one thread per element processed
     const auto max_blocks = (n + block_size - 1) / block_size;
 
     // TODO: improve this
     size_t blocks = ::std::min(min_blocks * 3 / 2, max_blocks);
-
-    ////static_assert(::std::is_same_v<context, stream_ctx>);
 
     static const auto conf_finalize = [] {
       int minGridSize = 0, blockSize = 0;
@@ -741,14 +785,37 @@ public:
     const size_t dynamic_shared_mem_finalize = finalize_block_size * sizeof(redux_vars<deps_tup_t, ops_and_inits>);
 
     _CCCL_ASSERT(n > 0, "Invalid empty shape here");
+
+    // XXX maybe this should only be !host, because that could be a green context for example
+    _CCCL_ASSERT(sub_exec_place.is_device(), "Invalid execution place");
+
+    // Use uncached allocator
+    auto dplace = sub_exec_place.affine_data_place();
+
+    // Get backend context and stream once
+    [[maybe_unused]] cudaStream_t stream;
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
-      cudaStream_t stream = t.get_stream();
+      stream = t.get_stream();
+    }
 
-      // One tuple per CUDA block
-      // TODO use CUDASTF facilities to replace this manual allocation
-      redux_vars<deps_tup_t, ops_and_inits>* d_redux_buffer;
-      cuda_safe_call(cudaMallocAsync(&d_redux_buffer, blocks * sizeof(*d_redux_buffer), stream));
+    // Allocation using uncached allocator directly
+    auto& allocator              = ctx.get_uncached_allocator();
+    ::std::ptrdiff_t buffer_size = blocks * sizeof(redux_vars<deps_tup_t, ops_and_inits>);
+    // Allocation depends on task dependencies
+    event_list& alloc_events = t.get_ready_prereqs();
+    void* raw_buffer         = allocator.allocate(ctx, dplace, buffer_size, alloc_events);
+    auto* d_redux_buffer     = static_cast<redux_vars<deps_tup_t, ops_and_inits>*>(raw_buffer);
+
+    // Variable to hold the last kernel node for graph context
+    cudaGraphNode_t last_kernel_node = nullptr;
+
+    // Context-specific kernel execution and completion event preparation
+    event_list completion_event;
+    if constexpr (::std::is_same_v<context, stream_ctx>)
+    {
+      // Synchronize stream with allocation events
+      reserved::join_with_stream(ctx, decorated_stream(stream), alloc_events, "alloc_sync", false);
 
       // TODO optimize the case where there was a single block to write to result ??
       reserved::loop_redux<Fun_no_ref, sub_shape_t, deps_tup_t, ops_and_inits>
@@ -758,28 +825,17 @@ public:
       reserved::loop_redux_finalize<deps_tup_t, ops_and_inits>
         <<<1, finalize_block_size, dynamic_shared_mem_finalize, stream>>>(arg_instances, d_redux_buffer, blocks);
 
-      cuda_safe_call(cudaFreeAsync(d_redux_buffer, stream));
+      // Stream context: create event from stream to represent kernel completion
+      completion_event = event_list(reserved::record_event_in_stream(decorated_stream(stream)));
     }
     else
     {
-      _CCCL_ASSERT(sub_exec_place.is_device(), "Invalid execution place");
-      const int dev_id = device_ordinal(sub_exec_place.affine_data_place());
+      auto lock = t.lock_ctx_graph();
+      auto g    = t.get_ctx_graph();
 
-      cudaMemAllocNodeParams allocParams{};
-      allocParams.poolProps.allocType   = cudaMemAllocationTypePinned;
-      allocParams.poolProps.handleTypes = cudaMemHandleTypeNone;
-      allocParams.poolProps.location    = {.type = cudaMemLocationTypeDevice, .id = dev_id};
-      allocParams.bytesize              = blocks * sizeof(redux_vars<deps_tup_t, ops_and_inits>);
-
-      auto lock               = t.lock_ctx_graph();
-      auto g                  = t.get_ctx_graph();
-      const auto& input_nodes = t.get_ready_dependencies();
-
-      /* This first node depends on task's dependencies themselves */
-      cudaGraphNode_t allocNode;
-      cuda_safe_call(cudaGraphAddMemAllocNode(&allocNode, g, input_nodes.data(), input_nodes.size(), &allocParams));
-
-      auto* d_redux_buffer = static_cast<redux_vars<deps_tup_t, ops_and_inits>*>(allocParams.dptr);
+      auto stage = ctx.stage();
+      // Note that allocation did depend on the task dependencies, so these node depend on them
+      ::std::vector<cudaGraphNode_t> alloc_nodes = reserved::join_with_graph_nodes(ctx, alloc_events, stage);
 
       // Launch the main kernel
       // It is ok to use reference to local variables because the arguments
@@ -794,9 +850,9 @@ public:
       kernel_params.extra          = nullptr;
       kernel_params.sharedMemBytes = dyn_shmem_size;
 
-      // This new node will depend on the previous in the chain (allocation)
+      // This new node depends on allocation (which already incorporated task dependencies)
       cudaGraphNode_t kernel_1;
-      cuda_safe_call(cudaGraphAddKernelNode(&kernel_1, g, &allocNode, 1, &kernel_params));
+      cuda_safe_call(cudaGraphAddKernelNode(&kernel_1, g, alloc_nodes.data(), alloc_nodes.size(), &kernel_params));
 
       // Launch the second kernel to reduce remaining values among original blocks
       // It is ok to use reference to local variables because the arguments
@@ -811,15 +867,29 @@ public:
       kernel2_params.kernelParams   = kernel2Args;
       kernel2_params.extra          = nullptr;
       kernel2_params.sharedMemBytes = dynamic_shared_mem_finalize;
-      cudaGraphNode_t kernel_2;
-      cuda_safe_call(cudaGraphAddKernelNode(&kernel_2, g, &kernel_1, 1, &kernel2_params));
 
-      // We can now free memory
-      cudaGraphNode_t free_node;
-      cuda_safe_call(cudaGraphAddMemFreeNode(&free_node, g, &kernel_2, 1, allocParams.dptr));
+      cuda_safe_call(cudaGraphAddKernelNode(&last_kernel_node, g, &kernel_1, 1, &kernel2_params));
 
-      // Make this the node which defines the end of the task
-      t.add_done_node(free_node);
+      // Graph context: create event from kernel completion graph node
+      completion_event = event_list(reserved::graph_event(last_kernel_node, stage, g));
+    }
+
+    // Common: Deallocation using uncached allocator directly, completion_event list is used for input and output
+    // dependencies
+    allocator.deallocate(ctx, dplace, completion_event, d_redux_buffer, buffer_size);
+
+    if constexpr (::std::is_same_v<context, stream_ctx>)
+    {
+      reserved::join_with_stream(ctx, decorated_stream(stream), completion_event, "dealloc_sync", false);
+    }
+    else
+    {
+      auto stage                                   = ctx.stage();
+      ::std::vector<cudaGraphNode_t> dealloc_nodes = reserved::join_with_graph_nodes(ctx, completion_event, stage);
+      for (auto& n : dealloc_nodes)
+      {
+        t.add_done_node(n);
+      }
     }
   }
 
@@ -840,15 +910,12 @@ public:
     using Fun_no_ref = ::std::remove_reference_t<Fun>;
 
     static const auto conf = [] {
-      // We are using int instead of size_t because CUDA API uses int for occupancy calculations
-      int min_grid_size = 0, max_block_size = 0, block_size_limit = 0;
       // compute_kernel_limits will return the min number of blocks/max
       // block size to optimize occupancy, as well as some block size
       // limit. We choose to dimension the kernel of the parallel loop to
       // optimize occupancy.
-      reserved::compute_kernel_limits(
-        &reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>, min_grid_size, max_block_size, 0, false, block_size_limit);
-      return ::std::pair(size_t(min_grid_size), size_t(max_block_size));
+      auto res = reserved::compute_kernel_limits(&reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>, 0, false);
+      return ::std::pair(size_t(res.max_block_size), size_t(res.min_grid_size));
     }();
 
     const auto [block_size, min_blocks] = conf;
@@ -868,11 +935,7 @@ public:
     size_t blocks = ::std::min(min_blocks * 3 / 2, max_blocks);
 
     // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
-    deps_tup_t arg_instances = ::std::apply(
-      [&](const auto&... d) {
-        return ::std::make_tuple(d.instance(t)...);
-      },
-      deps);
+    auto arg_instances = get_arg_instances(deps, t);
 
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
@@ -924,24 +987,24 @@ public:
     using args_t = ::std::tuple<deps_tup_t, size_t, Fun, sub_shape_t>;
 
     // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
-    deps_tup_t instances = ::std::apply(
-      [&](const auto&... d) {
-        return ::std::make_tuple(d.instance(t)...);
-      },
-      deps);
+    deps_tup_t instances = get_arg_instances(deps, t);
 
     // Wrap this for_each_n call in a host callback launched in CUDA stream associated with that task
     // To do so, we pack all argument in a dynamically allocated tuple
-    // that will be deleted by the callback
+    // that will be deleted by the resource system or immediately in callback
     auto args = new args_t(mv(instances), n, mv(f), shape);
+
+    // For graph contexts, use deferred cleanup via ctx_resource (needed for graph replay)
+    // For stream contexts, delete immediately in callback (better memory efficiency)
+    if constexpr (::std::is_same_v<context, graph_ctx>)
+    {
+      auto resource = ::std::make_shared<parallel_for_args_resource<args_t>>(args);
+      ctx.add_resource(mv(resource));
+    }
 
     // The function which the host callback will execute
     auto host_func = [](void* untyped_args) {
       auto p = static_cast<decltype(args)>(untyped_args);
-      SCOPE(exit)
-      {
-        delete p;
-      };
 
       auto& data               = ::std::get<0>(*p);
       const size_t n           = ::std::get<1>(*p);
@@ -950,9 +1013,9 @@ public:
 
       // deps_ops_t are pairs of data instance type, and a reduction operator,
       // this gets only the data instance types (eg. slice<double>)
-      auto explode_coords = [&](size_t i, typename deps_ops_t::dep_type... data) {
-        auto h = [&](auto... coords) {
-          f(coords..., data...);
+      auto explode_coords = [&](size_t i, auto&&... data) {
+        auto h = [&](auto&&... coords) {
+          f(::std::forward<decltype(coords)>(coords)..., ::std::forward<decltype(data)>(data)...);
         };
         ::std::apply(h, shape.index_to_coords(i));
       };
@@ -961,6 +1024,13 @@ public:
       for (size_t i = 0; i < n; ++i)
       {
         ::std::apply(explode_coords, ::std::tuple_cat(::std::make_tuple(i), data));
+      }
+
+      // For stream contexts, delete immediately (no replay risk)
+      // For graph contexts, resource system handles cleanup (avoid use-after-free on replay)
+      if constexpr (!::std::is_same_v<context, graph_ctx>)
+      {
+        delete p;
       }
     };
 
@@ -985,7 +1055,6 @@ public:
   }
 
 private:
-  ::std::vector<::std::function<void()>> dump_hooks;
   ::std::tuple<deps_ops_t...> deps;
   context& ctx;
   exec_place_t e_place;
@@ -995,5 +1064,4 @@ private:
 } // end namespace reserved
 
 #endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
-
 } // end namespace cuda::experimental::stf

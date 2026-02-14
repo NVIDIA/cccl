@@ -1,12 +1,12 @@
 #!/bin/bash
 
-source "$(dirname "$0")/build_common.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/build_common.sh"
 
 print_environment_details
 
 ./build_cudax.sh "$@"
 
-PRESET="cudax-cpp$CXX_STANDARD"
+PRESET="cudax"
 
 test_preset "CUDA Experimental" ${PRESET}
 

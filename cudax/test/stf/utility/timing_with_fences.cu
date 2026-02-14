@@ -52,7 +52,7 @@ void run(int NTASKS, int ms)
     cuda_sleep(ms, stream);
   };
 
-  cuda_safe_call(cudaEventRecord(start, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(start, ctx.fence()));
 
   for (int iter = 0; iter < NTASKS; iter++)
   {
@@ -61,7 +61,7 @@ void run(int NTASKS, int ms)
     };
   }
 
-  cuda_safe_call(cudaEventRecord(stop, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(stop, ctx.fence()));
 
   ctx.finalize();
 

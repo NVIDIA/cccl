@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -46,9 +22,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace histogram
+namespace detail::histogram
 {
 enum class primitive_sample
 {
@@ -168,6 +142,53 @@ struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::ye
   static constexpr int vec_size                                  = 1 << 2;
 };
 
+template <typename PolicyT, typename = void>
+struct HistogramPolicyWrapper : PolicyT
+{
+  _CCCL_HOST_DEVICE HistogramPolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct HistogramPolicyWrapper<StaticPolicyT,
+                              ::cuda::std::void_t<decltype(StaticPolicyT::AgentHistogramPolicyT::LOAD_MODIFIER)>>
+    : StaticPolicyT
+{
+  _CCCL_HOST_DEVICE HistogramPolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  _CCCL_HOST_DEVICE static constexpr auto Histogram()
+  {
+    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::AgentHistogramPolicyT());
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int BlockThreads()
+  {
+    return StaticPolicyT::AgentHistogramPolicyT::BLOCK_THREADS;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int PixelsPerThread()
+  {
+    return StaticPolicyT::AgentHistogramPolicyT::PIXELS_PER_THREAD;
+  }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedPolicy()
+  {
+    using namespace ptx_json;
+    return object<key<"HistogramPolicy">() = Histogram().EncodedPolicy()>();
+  }
+#endif
+};
+
+template <typename PolicyT>
+_CCCL_HOST_DEVICE HistogramPolicyWrapper<PolicyT> MakeHistogramPolicyWrapper(PolicyT policy)
+{
+  return HistogramPolicyWrapper<PolicyT>{policy};
+}
+
 // sample_size 2/4/8 showed no benefit over SM90 during verification benchmarks
 
 // multi.even and multi.range: none of the found tunings surpassed the SM90 tuning during verification benchmarks
@@ -180,7 +201,7 @@ struct policy_hub
 
   static constexpr int t_scale(int nominalItemsPerThread)
   {
-    return (::cuda::std::max)(nominalItemsPerThread / NumActiveChannels / v_scale, 1);
+    return (::cuda::std::max) (nominalItemsPerThread / NumActiveChannels / v_scale, 1);
   }
 
   // SM50
@@ -211,6 +232,8 @@ struct policy_hub
     using AgentHistogramPolicyT =
       decltype(select_agent_policy<
                sm90_tuning<SampleT, NumChannels, NumActiveChannels, histogram::classify_counter_size<CounterT>()>>(0));
+
+    static constexpr int pdl_trigger_next_launch_in_init_kernel_max_bin_count = 2048;
   };
 
   struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
@@ -234,11 +257,12 @@ struct policy_hub
       decltype(select_agent_policy<
                sm100_tuning<IsEven, SampleT, NumChannels, NumActiveChannels, histogram::classify_counter_size<CounterT>()>>(
         0));
+
+    static constexpr int pdl_trigger_next_launch_in_init_kernel_max_bin_count = 2048;
   };
 
   using MaxPolicy = Policy1000;
 };
-} // namespace histogram
-} // namespace detail
+} // namespace detail::histogram
 
 CUB_NAMESPACE_END

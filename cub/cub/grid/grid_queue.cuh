@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * @file
@@ -64,7 +40,7 @@ CUB_NAMESPACE_BEGIN
  * will be filling.
  *
  * @par
- * Similarly, a "draining" GridQueue works by works by atomically-incrementing a
+ * Similarly, a "draining" GridQueue works by atomically-incrementing a
  * zero-initialized counter, returning a unique offset for the calling thread to
  * read its items. Threads can safely drain until the array's logical fill-size is
  * exceeded.  The drain counter must be reset using GridQueue::ResetDrain or
@@ -76,6 +52,11 @@ CUB_NAMESPACE_BEGIN
  * Iterative work management can be implemented simply with a pair of flip-flopping
  * work buffers, each with an associated set of fill and drain GridQueue descriptors.
  *
+ * @rst
+ * .. versionadded:: 2.2.0
+ *    First appears in CUDA Toolkit 12.3.
+ * @endrst
+ *
  * @tparam OffsetT Signed integer type for global offsets
  */
 template <typename OffsetT>
@@ -83,11 +64,8 @@ class GridQueue
 {
 private:
   /// Counter indices
-  enum
-  {
-    FILL  = 0,
-    DRAIN = 1,
-  };
+  static constexpr int FILL  = 0;
+  static constexpr int DRAIN = 1;
 
   /// Pair of counters
   OffsetT* d_counters;
@@ -116,7 +94,7 @@ public:
   {}
 
   /// This operation sets the fill-size and resets the drain counter, preparing the GridQueue for
-  /// draining in the next kernel instance. To be called by the host or by a kernel prior to that
+  /// draining in the next kernel instance. To be called by the host or by a kernel prior to the one
   /// which will be draining.
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t
   FillAndResetDrain(OffsetT fill_size, [[maybe_unused]] cudaStream_t stream = 0)
@@ -133,7 +111,7 @@ public:
   }
 
   /// This operation resets the drain so that it may advance to meet the existing fill-size.
-  /// To be called by the host or by a kernel prior to that which will be draining.
+  /// To be called by the host or by a kernel prior to the one which will be draining.
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t ResetDrain([[maybe_unused]] cudaStream_t stream = 0)
   {
     cudaError_t result = cudaErrorUnknown;
@@ -146,7 +124,7 @@ public:
   }
 
   /// This operation resets the fill counter.
-  /// To be called by the host or by a kernel prior to that which will be filling.
+  /// To be called by the host or by a kernel prior to the one which will be filling.
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t ResetFill([[maybe_unused]] cudaStream_t stream = 0)
   {
     cudaError_t result = cudaErrorUnknown;

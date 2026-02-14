@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -29,27 +16,23 @@
 #include <thrust/detail/internal_functional.h>
 #include <thrust/detail/temporary_array.h>
 #include <thrust/detail/type_traits.h>
-#include <thrust/distance.h>
 #include <thrust/functional.h>
-#include <thrust/iterator/detail/minimum_system.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/scan.h>
 #include <thrust/scatter.h>
 #include <thrust/system/detail/generic/copy_if.h>
 #include <thrust/transform.h>
 
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
 namespace detail
 {
-namespace generic
-{
-namespace detail
-{
-
 template <typename IndexType,
           typename DerivedPolicy,
           typename InputIterator1,
@@ -69,7 +52,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
   // compute {0,1} predicates
   thrust::detail::temporary_array<IndexType, DerivedPolicy> predicates(exec, n);
   thrust::transform(
-    exec, stencil, stencil + n, predicates.begin(), thrust::detail::predicate_to_integral<Predicate, IndexType>(pred));
+    exec, stencil, stencil + n, predicates.begin(), thrust::detail::predicate_to_integral<Predicate, IndexType>{pred});
 
   // scan {0,1} predicates
   thrust::detail::temporary_array<IndexType, DerivedPolicy> scatter_indices(exec, n);
@@ -89,7 +72,6 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
 
   return result + output_size;
 }
-
 } // end namespace detail
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
@@ -146,8 +128,5 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
 
   return result;
 } // end copy_if()
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

@@ -28,7 +28,8 @@ __host__ __device__ void test(const cuda::std::complex<T>& c, cuda::std::complex
 template <class T>
 __host__ __device__ void test()
 {
-  test(cuda::std::complex<T>(INFINITY, 1), cuda::std::complex<T>(INFINITY, 0));
+  test(cuda::std::complex<T>(cuda::std::numeric_limits<T>::infinity(), 1),
+       cuda::std::complex<T>(cuda::std::numeric_limits<T>::infinity(), 0));
 }
 
 template <class T>
@@ -87,8 +88,17 @@ __host__ __device__ void test_edges()
     }
     else if (cuda::std::isfinite(testcases[i].real()) && cuda::std::isnan(testcases[i].imag()))
     {
-      assert(cuda::std::isnan(r.real()));
-      assert(cuda::std::isnan(r.imag()));
+      // Per C11 DR471: If z is (0,NaN), the result should be (NaN,pi/2), otherwise (NaN, NaN).
+      if (testcases[i].real() == T(0))
+      {
+        assert(cuda::std::isnan(r.real()));
+        is_about(r.imag(), T(0.5) * pi);
+      }
+      else
+      {
+        assert(cuda::std::isnan(r.real()));
+        assert(cuda::std::isnan(r.imag()));
+      }
     }
     else if (cuda::std::isinf(testcases[i].real()) && testcases[i].real() < T(0)
              && cuda::std::isfinite(testcases[i].imag()))

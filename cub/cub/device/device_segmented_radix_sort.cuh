@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 //! @file
 //! cub::DeviceSegmentedRadixSort provides device-wide, parallel operations for computing a batched radix sort across
@@ -93,6 +69,9 @@ public:
 
   //! @rst
   //! Sorts segments of key-value pairs into ascending order. (``~2N`` auxiliary storage required)
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The contents of the input data are not altered by the sorting operation
   //! - When input a contiguous sequence of segments, a single sequence
@@ -269,6 +248,9 @@ public:
 
   //! @rst
   //! Sorts segments of key-value pairs into ascending order. (``~N`` auxiliary storage required)
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers. Each pair is managed by a DoubleBuffer
@@ -451,6 +433,9 @@ public:
   //! @rst
   //! Sorts segments of key-value pairs into descending order. (``~2N`` auxiliary storage required).
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The contents of the input data are not altered by the sorting operation
   //! - When input a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased for both
@@ -631,6 +616,9 @@ public:
 
   //! @rst
   //! Sorts segments of key-value pairs into descending order. (``~N`` auxiliary storage required).
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers.  Each pair is managed by a DoubleBuffer
@@ -814,12 +802,15 @@ public:
                               stream);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Keys-only
   //! @{
 
   //! @rst
   //! Sorts segments of keys into ascending order. (``~2N`` auxiliary storage required)
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The contents of the input data are not altered by the sorting operation
   //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
@@ -984,6 +975,9 @@ public:
 
   //! @rst
   //! Sorts segments of keys into ascending order. (``~N`` auxiliary storage required).
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
@@ -1158,6 +1152,9 @@ public:
   //! @rst
   //! Sorts segments of keys into descending order. (``~2N`` auxiliary storage required).
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The contents of the input data are not altered by the sorting operation
   //! - When input a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased for both
@@ -1321,6 +1318,9 @@ public:
 
   //! @rst
   //! Sorts segments of keys into descending order. (``~N`` auxiliary storage required).
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
@@ -1490,7 +1490,7 @@ public:
                               stream);
   }
 
-  //! @}  end member group
+  //! @}
 };
 
 CUB_NAMESPACE_END

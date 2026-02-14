@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_REFERENCEABLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_REFERENCEABLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_REFERENCEABLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_REFERENCEABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,7 +25,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_REFERENCEABLE) && !defined(_LIBCUDACXX_USE_IS_REFERENCEABLE_FALLBACK)
 
@@ -48,8 +48,8 @@ struct __cccl_is_referenceable
 {};
 #endif // defined(_CCCL_BUILTIN_IS_REFERENCEABLE) && !defined(_LIBCUDACXX_USE_IS_REFERENCEABLE_FALLBACK)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_REFERENCEABLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_REFERENCEABLE_H

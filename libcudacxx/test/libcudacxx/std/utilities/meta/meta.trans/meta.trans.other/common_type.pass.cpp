@@ -40,25 +40,25 @@ struct bad_reference_wrapper
   __host__ __device__ operator T&() const;
 };
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <typename T>
 struct common_type<T, ::S<T>>
 {
-  typedef S<T> type;
+  using type = S<T>;
 };
 
 template <class T>
 struct common_type<::S<T>, T>
 {
-  typedef S<T> type;
+  using type = S<T>;
 };
 
 //  P0548
 template <class T>
 struct common_type<::S<T>, ::S<T>>
 {
-  typedef S<T> type;
+  using type = S<T>;
 };
 
 template <>
@@ -71,12 +71,12 @@ template <>
 struct common_type<::X<double>, ::X<double>>
 {};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 template <class>
 struct VoidT
 {
-  typedef void type;
+  using type = void;
 };
 
 template <class Tp>
@@ -108,7 +108,7 @@ struct TernaryOp
 {
   static_assert((cuda::std::is_same<typename cuda::std::decay<T1>::type, T1>::value), "must be same");
   static_assert((cuda::std::is_same<typename cuda::std::decay<T2>::type, T2>::value), "must be same");
-  typedef typename cuda::std::decay<decltype(false ? cuda::std::declval<T1>() : cuda::std::declval<T2>())>::type type;
+  using type = typename cuda::std::decay<decltype(false ? cuda::std::declval<T1>() : cuda::std::declval<T2>())>::type;
 };
 
 // (4.1)
@@ -136,8 +136,8 @@ __host__ __device__ void test_bullet_two()
 template <class T, class U, class Expect>
 __host__ __device__ void test_bullet_three_one_imp()
 {
-  typedef typename cuda::std::decay<T>::type DT;
-  typedef typename cuda::std::decay<U>::type DU;
+  using DT = typename cuda::std::decay<T>::type;
+  using DU = typename cuda::std::decay<U>::type;
   static_assert((!cuda::std::is_same<T, DT>::value || !cuda::std::is_same<U, DU>::value), "");
   static_assert((cuda::std::is_same<typename cuda::std::common_type<T, U>::type, Expect>::value), "");
   static_assert((cuda::std::is_same<typename cuda::std::common_type<U, T>::type, Expect>::value), "");
@@ -158,29 +158,29 @@ __host__ __device__ void test_bullet_three_one()
   // Test that the user provided specialization of common_type is used after
   // decaying T1.
   {
-    typedef const S<int> T1;
-    typedef int T2;
+    using T1 = const S<int>;
+    using T2 = int;
     test_bullet_three_one_imp<T1, T2, S<int>>();
   }
   // Test a user provided specialization that does not provide a typedef.
   {
-    typedef const ::S<long> T1;
-    typedef long T2;
+    using T1 = const ::S<long>;
+    using T2 = long;
     static_assert((no_common_type<T1, T2>::value), "");
     static_assert((no_common_type<T2, T1>::value), "");
   }
   // Test that the ternary operator is not applied when the types are the
   // same.
   {
-    typedef const void T1;
-    typedef void Expect;
+    using T1     = const void;
+    using Expect = void;
     static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, Expect>::value), "");
     static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, cuda::std::common_type<T1>::type>::value),
                   "");
   }
   {
-    typedef int const T1[];
-    typedef int const* Expect;
+    using T1     = int const[];
+    using Expect = int const*;
     static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, Expect>::value), "");
     static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, cuda::std::common_type<T1>::type>::value),
                   "");
@@ -202,9 +202,9 @@ __host__ __device__ void test_bullet_three_one()
 __host__ __device__ void test_bullet_three_three()
 {
   {
-    typedef int const* T1;
-    typedef int* T2;
-    typedef TernaryOp<T1, T2>::type Expect;
+    using T1     = int const*;
+    using T2     = int*;
+    using Expect = TernaryOp<T1, T2>::type;
     static_assert((cuda::std::is_same<cuda::std::common_type<T1, T2>::type, Expect>::value), "");
     static_assert((cuda::std::is_same<cuda::std::common_type<T2, T1>::type, Expect>::value), "");
   }
@@ -212,23 +212,23 @@ __host__ __device__ void test_bullet_three_three()
 #if !TEST_COMPILER(MSVC)
   // TODO: Investigate why this fails.
   {
-    typedef int T1;
-    typedef void T2;
+    using T1 = int;
+    using T2 = void;
     static_assert((no_common_type<T1, T2>::value), "");
     static_assert((no_common_type<T2, T1>::value), "");
   }
 #endif // !TEST_COMPILER(MSVC)
   {
-    typedef int T1;
-    typedef X<int> T2;
+    using T1 = int;
+    using T2 = X<int>;
     static_assert((no_common_type<T1, T2>::value), "");
     static_assert((no_common_type<T2, T1>::value), "");
   }
   // Test that the ternary operator is not applied when the types are the
   // same.
   {
-    typedef void T1;
-    typedef void Expect;
+    using T1     = void;
+    using Expect = void;
     static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, Expect>::value), "");
     static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, cuda::std::common_type<T1>::type>::value),
                   "");

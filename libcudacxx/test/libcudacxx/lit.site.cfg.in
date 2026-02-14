@@ -2,7 +2,7 @@
 config.cxx_under_test           = "@LIBCUDACXX_CUDA_COMPILER@"
 config.cxx_first_arg            = "@LIBCUDACXX_CUDA_COMPILER_ARG1@"
 config.project_obj_root         = "@CMAKE_BINARY_DIR@"
-config.libcudacxx_src_root      = "@LIBCUDACXX_SOURCE_DIR@"
+config.libcudacxx_src_root      = "@libcudacxx_SOURCE_DIR@"
 config.libcudacxx_obj_root      = "@LIBCUDACXX_BINARY_DIR@"
 config.cxx_library_root         = "@LIBCUDACXX_LIBRARY_DIR@"
 config.std                      = "@LIBCUDACXX_TEST_STANDARD_VER@"
@@ -23,7 +23,7 @@ config.target_info              = "@LIBCUDACXX_TARGET_INFO@"
 config.test_linker_flags        = "@LIBCUDACXX_TEST_LINKER_FLAGS@"
 config.test_compiler_flags      = "@LIBCUDACXX_TEST_COMPILER_FLAGS@"
 
-config.compute_archs            = "@LIBCUDACXX_COMPUTE_ARCHS_STRING@"
+config.compute_archs            = "@CMAKE_CUDA_ARCHITECTURES@"
 config.nvcc_host_compiler       = "@CMAKE_CUDA_HOST_COMPILER@"
 config.cuda_path                = "@CMAKE_CUDA_COMPILER_TOOLKIT_ROOT@"
 
@@ -38,4 +38,4 @@ config.maxIndividualTestTime    = @LIBCUDACXX_TEST_TIMEOUT@
 
 # Let the main config do the real work.
 config.loaded_site_config = True
-lit_config.load_config(config, "@LIBCUDACXX_SOURCE_DIR@/test/libcudacxx/lit.cfg")
+lit_config.load_config(config, "@libcudacxx_SOURCE_DIR@/test/libcudacxx/lit.cfg")

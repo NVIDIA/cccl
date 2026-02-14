@@ -13,14 +13,14 @@
 //          class Pointer = T*, class Reference = T&>
 // struct iterator
 // {
-//   typedef T         value_type;
-//   typedef Distance  difference_type;
-//   typedef Pointer   pointer;
-//   typedef Reference reference;
-//   typedef Category  iterator_category;
+//   using value_type        T;
+//   using difference_type   Distance;
+//   using pointer           Pointer;
+//   using reference         Reference;
+//   using iterator_category Category;
 // };
 
-// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
@@ -33,7 +33,7 @@ struct A
 template <class T>
 __host__ __device__ void test2()
 {
-  typedef cuda::std::iterator<cuda::std::forward_iterator_tag, T> It;
+  using It = cuda::std::iterator<cuda::std::forward_iterator_tag, T>;
   static_assert((cuda::std::is_same<typename It::value_type, T>::value), "");
   static_assert((cuda::std::is_same<typename It::difference_type, cuda::std::ptrdiff_t>::value), "");
   static_assert((cuda::std::is_same<typename It::pointer, T*>::value), "");
@@ -44,7 +44,7 @@ __host__ __device__ void test2()
 template <class T>
 __host__ __device__ void test3()
 {
-  typedef cuda::std::iterator<cuda::std::bidirectional_iterator_tag, T, short> It;
+  using It = cuda::std::iterator<cuda::std::bidirectional_iterator_tag, T, short>;
   static_assert((cuda::std::is_same<typename It::value_type, T>::value), "");
   static_assert((cuda::std::is_same<typename It::difference_type, short>::value), "");
   static_assert((cuda::std::is_same<typename It::pointer, T*>::value), "");
@@ -55,7 +55,7 @@ __host__ __device__ void test3()
 template <class T>
 __host__ __device__ void test4()
 {
-  typedef cuda::std::iterator<cuda::std::random_access_iterator_tag, T, int, const T*> It;
+  using It = cuda::std::iterator<cuda::std::random_access_iterator_tag, T, int, const T*>;
   static_assert((cuda::std::is_same<typename It::value_type, T>::value), "");
   static_assert((cuda::std::is_same<typename It::difference_type, int>::value), "");
   static_assert((cuda::std::is_same<typename It::pointer, const T*>::value), "");
@@ -66,7 +66,7 @@ __host__ __device__ void test4()
 template <class T>
 __host__ __device__ void test5()
 {
-  typedef cuda::std::iterator<cuda::std::input_iterator_tag, T, long, const T*, const T&> It;
+  using It = cuda::std::iterator<cuda::std::input_iterator_tag, T, long, const T*, const T&>;
   static_assert((cuda::std::is_same<typename It::value_type, T>::value), "");
   static_assert((cuda::std::is_same<typename It::difference_type, long>::value), "");
   static_assert((cuda::std::is_same<typename It::pointer, const T*>::value), "");

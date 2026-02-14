@@ -64,12 +64,12 @@ int main(int argc, char** argv)
   auto lhisto = ctx.logical_data(&histo[0], num_levels - 1);
   lhisto.set_symbol("histogram");
 
-  cuda_safe_call(cudaStreamSynchronize(ctx.task_fence()));
+  cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
 
   cudaEvent_t start, stop;
   cuda_safe_call(cudaEventCreate(&start));
   cuda_safe_call(cudaEventCreate(&stop));
-  cuda_safe_call(cudaEventRecord(start, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(start, ctx.fence()));
 
   constexpr size_t BLOCK_THREADS = 128;
 
@@ -132,7 +132,7 @@ int main(int argc, char** argv)
     }
   };
 
-  cuda_safe_call(cudaEventRecord(stop, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(stop, ctx.fence()));
 
   ctx.finalize();
 

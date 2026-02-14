@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_PERMUTABLE_H
-#define _LIBCUDACXX___ITERATOR_PERMUTABLE_H
+#ifndef _CUDA_STD___ITERATOR_PERMUTABLE_H
+#define _CUDA_STD___ITERATOR_PERMUTABLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,15 +26,15 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 template <class _Iterator>
 concept permutable = forward_iterator<_Iterator> && indirectly_movable_storable<_Iterator, _Iterator>
                   && indirectly_swappable<_Iterator, _Iterator>;
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Iterator>
 _CCCL_CONCEPT_FRAGMENT(__permutable_,
@@ -45,10 +45,10 @@ _CCCL_CONCEPT_FRAGMENT(__permutable_,
 template <class _Iterator>
 _CCCL_CONCEPT permutable = _CCCL_FRAGMENT(__permutable_, _Iterator);
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_PERMUTABLE_H
+#endif // _CUDA_STD___ITERATOR_PERMUTABLE_H

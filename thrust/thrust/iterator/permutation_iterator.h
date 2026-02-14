@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 //! \file thrust/iterator/permutation_iterator.h
 //! \brief An iterator which performs a gather or scatter operation when dereferenced
@@ -43,7 +30,6 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/minimum_system.h>
 #include <thrust/iterator/iterator_adaptor.h>
-#include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -56,14 +42,14 @@ namespace detail
 template <typename ElementIterator, typename IndexIterator>
 struct make_permutation_iterator_base
 {
-  using System1 = typename iterator_system<ElementIterator>::type;
-  using System2 = typename iterator_system<IndexIterator>::type;
+  using System1 = iterator_system_t<ElementIterator>;
+  using System2 = iterator_system_t<IndexIterator>;
 
   using type =
     iterator_adaptor<permutation_iterator<ElementIterator, IndexIterator>,
                      IndexIterator,
                      it_value_t<ElementIterator>,
-                     typename minimum_system<System1, System2>::type,
+                     minimum_system_t<System1, System2>,
                      use_default,
                      it_reference_t<ElementIterator>>;
 };
@@ -98,21 +84,8 @@ struct make_permutation_iterator_base
 //! #include <thrust/iterator/permutation_iterator.h>
 //! #include <thrust/device_vector.h>
 //! ...
-//! thrust::device_vector<float> values(8);
-//! values[0] = 10.0f;
-//! values[1] = 20.0f;
-//! values[2] = 30.0f;
-//! values[3] = 40.0f;
-//! values[4] = 50.0f;
-//! values[5] = 60.0f;
-//! values[6] = 70.0f;
-//! values[7] = 80.0f;
-//!
-//! thrust::device_vector<int> indices(4);
-//! indices[0] = 2;
-//! indices[1] = 6;
-//! indices[2] = 1;
-//! indices[3] = 3;
+//! thrust::device_vector<float> values{10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f};
+//! thrust::device_vector<int> indices{2, 6, 1, 3};
 //!
 //! using ElementIterator = thrust::device_vector<float>::iterator;
 //! using IndexIterator = thrust::device_vector<int>::iterator  ;
@@ -137,6 +110,10 @@ struct make_permutation_iterator_base
 //! \endcode
 //!
 //! \see make_permutation_iterator
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
+ */
 template <typename ElementIterator, typename IndexIterator>
 class _CCCL_DECLSPEC_EMPTY_BASES permutation_iterator
     : public detail::make_permutation_iterator_base<ElementIterator, IndexIterator>::type
@@ -162,8 +139,8 @@ public:
       , m_element_iterator(x)
   {}
 
-  //! Copy constructor accepts a related \p permutation_iterator. \param r A compatible \p permutation_iterator to copy
-  //! from.
+  //! Copy constructor accepts a related \p permutation_iterator. \param rhs A compatible \p permutation_iterator to
+  //! copy from.
   template <typename OtherElementIterator,
             typename OtherIndexIterator,
             detail::enable_if_convertible_t<OtherElementIterator, ElementIterator, int> = 0,

@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___NUMERIC_INCLUSIVE_SCAN_H
-#define _LIBCUDACXX___NUMERIC_INCLUSIVE_SCAN_H
+#ifndef _CUDA_STD___NUMERIC_INCLUSIVE_SCAN_H
+#define _CUDA_STD___NUMERIC_INCLUSIVE_SCAN_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,10 +28,10 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _InputIterator, class _OutputIterator, class _Tp, class _BinaryOp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
+_CCCL_API constexpr _OutputIterator
 inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryOp __b, _Tp __init)
 {
   for (; __first != __last; ++__first, (void) ++__result)
@@ -43,7 +43,7 @@ inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __
 }
 
 template <class _InputIterator, class _OutputIterator, class _BinaryOp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
+_CCCL_API constexpr _OutputIterator
 inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryOp __b)
 {
   if (__first != __last)
@@ -52,7 +52,7 @@ inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __
     *__result++                                                 = __init;
     if (++__first != __last)
     {
-      return _CUDA_VSTD::inclusive_scan(__first, __last, __result, __b, __init);
+      return ::cuda::std::inclusive_scan(__first, __last, __result, __b, __init);
     }
   }
 
@@ -60,14 +60,14 @@ inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __
 }
 
 template <class _InputIterator, class _OutputIterator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
+_CCCL_API constexpr _OutputIterator
 inclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
-  return _CUDA_VSTD::inclusive_scan(__first, __last, __result, _CUDA_VSTD::plus<>());
+  return ::cuda::std::inclusive_scan(__first, __last, __result, ::cuda::std::plus<>());
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___NUMERIC_INCLUSIVE_SCAN_H
+#endif // _CUDA_STD___NUMERIC_INCLUSIVE_SCAN_H

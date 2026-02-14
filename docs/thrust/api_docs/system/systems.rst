@@ -7,4 +7,4 @@ Systems
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*typedef_group__system__backends*
+   ../../api/group__system__backends*

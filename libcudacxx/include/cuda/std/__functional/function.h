@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_FUNCTION_H
-#define _LIBCUDACXX___FUNCTIONAL_FUNCTION_H
+#ifndef _CUDA_STD___FUNCTIONAL_FUNCTION_H
+#define _CUDA_STD___FUNCTIONAL_FUNCTION_H
 
 #include <cuda/std/detail/__config>
 
@@ -57,12 +57,12 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-[[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_function_call()
+[[noreturn]] _CCCL_API inline void __throw_bad_function_call()
 {
 #  if _CCCL_HAS_EXCEPTIONS()
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::bad_function_call();), (_CUDA_VSTD_NOVERSION::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::bad_function_call();), (::cuda::std::terminate();))
 #  else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
+  ::cuda::std::terminate();
 #  endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
@@ -71,7 +71,6 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT function; // undefined
 
 namespace __function
 {
-
 template <class _Rp>
 struct __maybe_derive_from_unary_function
 {};
@@ -89,42 +88,40 @@ struct __maybe_derive_from_binary_function<_Rp(_A1, _A2)> : public __binary_func
 {};
 
 template <class _Fp>
-_LIBCUDACXX_HIDE_FROM_ABI bool __not_null(_Fp const&)
+_CCCL_API inline bool __not_null(_Fp const&)
 {
   return true;
 }
 
 template <class _Fp>
-_LIBCUDACXX_HIDE_FROM_ABI bool __not_null(_Fp* __ptr)
+_CCCL_API inline bool __not_null(_Fp* __ptr)
 {
   return __ptr;
 }
 
 template <class _Ret, class _Class>
-_LIBCUDACXX_HIDE_FROM_ABI bool __not_null(_Ret _Class::* __ptr)
+_CCCL_API inline bool __not_null(_Ret _Class::* __ptr)
 {
   return __ptr;
 }
 
 template <class _Fp>
-_LIBCUDACXX_HIDE_FROM_ABI bool __not_null(function<_Fp> const& __f)
+_CCCL_API inline bool __not_null(function<_Fp> const& __f)
 {
   return !!__f;
 }
 
 #  ifdef _LIBCUDACXX_HAS_EXTENSION_BLOCKS
 template <class _Rp, class... _Args>
-_LIBCUDACXX_HIDE_FROM_ABI bool __not_null(_Rp (^__p)(_Args...))
+_CCCL_API inline bool __not_null(_Rp (^__p)(_Args...))
 {
   return __p;
 }
 #  endif
-
 } // namespace __function
 
 namespace __function
 {
-
 // __alloc_func holds a functor and an allocator.
 
 template <class _Fp, class _Ap, class _FB>
@@ -141,42 +138,43 @@ public:
   using _Target _CCCL_NODEBUG_ALIAS = _Fp;
   using _Alloc _CCCL_NODEBUG_ALIAS  = _Ap;
 
-  _LIBCUDACXX_HIDE_FROM_ABI const _Target& __target() const
+  _CCCL_API inline const _Target& __target() const
   {
     return __f_.first();
   }
 
   // WIN32 APIs may define __allocator, so use __get_allocator instead.
-  _LIBCUDACXX_HIDE_FROM_ABI const _Alloc& __get_allocator() const
+  _CCCL_API inline const _Alloc& __get_allocator() const
   {
     return __f_.second();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI explicit __alloc_func(_Target&& __f)
-      : __f_(piecewise_construct, _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::move(__f)), _CUDA_VSTD::forward_as_tuple())
+  _CCCL_API inline explicit __alloc_func(_Target&& __f)
+      : __f_(piecewise_construct, ::cuda::std::forward_as_tuple(::cuda::std::move(__f)), ::cuda::std::forward_as_tuple())
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI explicit __alloc_func(const _Target& __f, const _Alloc& __a)
-      : __f_(piecewise_construct, _CUDA_VSTD::forward_as_tuple(__f), _CUDA_VSTD::forward_as_tuple(__a))
+  _CCCL_API inline explicit __alloc_func(const _Target& __f, const _Alloc& __a)
+      : __f_(piecewise_construct, ::cuda::std::forward_as_tuple(__f), ::cuda::std::forward_as_tuple(__a))
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI explicit __alloc_func(const _Target& __f, _Alloc&& __a)
-      : __f_(piecewise_construct, _CUDA_VSTD::forward_as_tuple(__f), _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::move(__a)))
-  {}
-
-  _LIBCUDACXX_HIDE_FROM_ABI explicit __alloc_func(_Target&& __f, _Alloc&& __a)
+  _CCCL_API inline explicit __alloc_func(const _Target& __f, _Alloc&& __a)
       : __f_(piecewise_construct,
-             _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::move(__f)),
-             _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::move(__a)))
+             ::cuda::std::forward_as_tuple(__f),
+             ::cuda::std::forward_as_tuple(::cuda::std::move(__a)))
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI _Rp operator()(_ArgTypes&&... __arg)
+  _CCCL_API inline explicit __alloc_func(_Target&& __f, _Alloc&& __a)
+      : __f_(piecewise_construct,
+             ::cuda::std::forward_as_tuple(::cuda::std::move(__f)),
+             ::cuda::std::forward_as_tuple(::cuda::std::move(__a)))
+  {}
+
+  _CCCL_API inline _Rp operator()(_ArgTypes&&... __arg)
   {
-    using _Invoker = __invoke_void_return_wrapper<_Rp>;
-    return _Invoker::__call(__f_.first(), _CUDA_VSTD::forward<_ArgTypes>(__arg)...);
+    return ::cuda::std::invoke_r<_Rp>(__f_.first(), ::cuda::std::forward<_ArgTypes>(__arg)...);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI __alloc_func* __clone() const
+  _CCCL_API inline __alloc_func* __clone() const
   {
     using __alloc_traits = allocator_traits<_Alloc>;
     using _AA            = typename __rebind_alloc_helper<__alloc_traits, __alloc_func>::type;
@@ -187,7 +185,7 @@ public:
     return __hold.release();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI void destroy() noexcept
+  _CCCL_API inline void destroy() noexcept
   {
     __f_.~__compressed_pair<_Target, _Alloc>();
   }
@@ -210,26 +208,25 @@ class __default_alloc_func<_Fp, _Rp(_ArgTypes...)>
 public:
   using _Target _CCCL_NODEBUG_ALIAS = _Fp;
 
-  _LIBCUDACXX_HIDE_FROM_ABI const _Target& __target() const
+  _CCCL_API inline const _Target& __target() const
   {
     return __f_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI explicit __default_alloc_func(_Target&& __f)
-      : __f_(_CUDA_VSTD::move(__f))
+  _CCCL_API inline explicit __default_alloc_func(_Target&& __f)
+      : __f_(::cuda::std::move(__f))
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI explicit __default_alloc_func(const _Target& __f)
+  _CCCL_API inline explicit __default_alloc_func(const _Target& __f)
       : __f_(__f)
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI _Rp operator()(_ArgTypes&&... __arg)
+  _CCCL_API inline _Rp operator()(_ArgTypes&&... __arg)
   {
-    using _Invoker = __invoke_void_return_wrapper<_Rp>;
-    return _Invoker::__call(__f_, _CUDA_VSTD::forward<_ArgTypes>(__arg)...);
+    return ::cuda::std::invoke_r<_Rp>(__f_, ::cuda::std::forward<_ArgTypes>(__arg)...);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI __default_alloc_func* __clone() const
+  _CCCL_API inline __default_alloc_func* __clone() const
   {
     __builtin_new_allocator::__holder_t __hold = __builtin_new_allocator::__allocate_type<__default_alloc_func>(1);
     __default_alloc_func* __res                = ::new ((void*) __hold.get()) __default_alloc_func(__f_);
@@ -237,7 +234,7 @@ public:
     return __res;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI void destroy() noexcept
+  _CCCL_API inline void destroy() noexcept
   {
     __f_.~_Target();
   }
@@ -261,8 +258,8 @@ class __base<_Rp(_ArgTypes...)>
   __base& operator=(const __base&);
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI __base() {}
-  _LIBCUDACXX_HIDE_FROM_ABI virtual ~__base() {}
+  _CCCL_API inline __base() {}
+  _CCCL_API inline virtual ~__base() {}
   virtual __base* __clone() const            = 0;
   virtual void __clone(__base*) const        = 0;
   virtual void destroy() noexcept            = 0;
@@ -285,20 +282,20 @@ class __func<_Fp, _Alloc, _Rp(_ArgTypes...)> : public __base<_Rp(_ArgTypes...)>
   __alloc_func<_Fp, _Alloc, _Rp(_ArgTypes...)> __f_;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI explicit __func(_Fp&& __f)
-      : __f_(_CUDA_VSTD::move(__f))
+  _CCCL_API inline explicit __func(_Fp&& __f)
+      : __f_(::cuda::std::move(__f))
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI explicit __func(const _Fp& __f, const _Alloc& __a)
+  _CCCL_API inline explicit __func(const _Fp& __f, const _Alloc& __a)
       : __f_(__f, __a)
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI explicit __func(const _Fp& __f, _Alloc&& __a)
-      : __f_(__f, _CUDA_VSTD::move(__a))
+  _CCCL_API inline explicit __func(const _Fp& __f, _Alloc&& __a)
+      : __f_(__f, ::cuda::std::move(__a))
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI explicit __func(_Fp&& __f, _Alloc&& __a)
-      : __f_(_CUDA_VSTD::move(__f), _CUDA_VSTD::move(__a))
+  _CCCL_API inline explicit __func(_Fp&& __f, _Alloc&& __a)
+      : __f_(::cuda::std::move(__f), ::cuda::std::move(__a))
   {}
 
   virtual __base<_Rp(_ArgTypes...)>* __clone() const;
@@ -349,7 +346,7 @@ void __func<_Fp, _Alloc, _Rp(_ArgTypes...)>::destroy_deallocate() noexcept
 template <class _Fp, class _Alloc, class _Rp, class... _ArgTypes>
 _Rp __func<_Fp, _Alloc, _Rp(_ArgTypes...)>::operator()(_ArgTypes&&... __arg)
 {
-  return __f_(_CUDA_VSTD::forward<_ArgTypes>(__arg)...);
+  return __f_(::cuda::std::forward<_ArgTypes>(__arg)...);
 }
 
 #  ifndef _CCCL_NO_RTTI
@@ -359,7 +356,7 @@ const void* __func<_Fp, _Alloc, _Rp(_ArgTypes...)>::target(const type_info& __ti
 {
   if (__ti == typeid(_Fp))
   {
-    return _CUDA_VSTD::addressof(__f_.__target());
+    return ::cuda::std::addressof(__f_.__target());
   }
   return nullptr;
 }
@@ -391,12 +388,12 @@ class __value_func<_Rp(_ArgTypes...)>
   }
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI __value_func() noexcept
+  _CCCL_API inline __value_func() noexcept
       : __f_(nullptr)
   {}
 
   template <class _Fp, class _Alloc>
-  _LIBCUDACXX_HIDE_FROM_ABI __value_func(_Fp&& __f, const _Alloc& __a)
+  _CCCL_API inline __value_func(_Fp&& __f, const _Alloc& __a)
       : __f_(nullptr)
   {
     using __alloc_traits = allocator_traits<_Alloc>;
@@ -406,27 +403,27 @@ public:
     if (__function::__not_null(__f))
     {
       _FunAlloc __af(__a);
-      if (sizeof(_Fun) <= sizeof(__buf_) && is_nothrow_copy_constructible<_Fp>::value
-          && is_nothrow_copy_constructible<_FunAlloc>::value)
+      if constexpr (sizeof(_Fun) <= sizeof(__buf_)
+                    && is_nothrow_copy_constructible_v<_Fp> && is_nothrow_copy_constructible_v<_FunAlloc>)
       {
-        __f_ = ::new ((void*) &__buf_) _Fun(_CUDA_VSTD::move(__f), _Alloc(__af));
+        __f_ = ::new ((void*) &__buf_) _Fun(::cuda::std::move(__f), _Alloc(__af));
       }
       else
       {
         using _Dp = __allocator_destructor<_FunAlloc>;
         unique_ptr<__func, _Dp> __hold(__af.allocate(1), _Dp(__af, 1));
-        ::new ((void*) __hold.get()) _Fun(_CUDA_VSTD::move(__f), _Alloc(__a));
+        ::new ((void*) __hold.get()) _Fun(::cuda::std::move(__f), _Alloc(__a));
         __f_ = __hold.release();
       }
     }
   }
 
-  template <class _Fp, class = enable_if_t<!is_same<decay_t<_Fp>, __value_func>::value>>
-  _LIBCUDACXX_HIDE_FROM_ABI explicit __value_func(_Fp&& __f)
-      : __value_func(_CUDA_VSTD::forward<_Fp>(__f), allocator<_Fp>())
+  template <class _Fp, class = enable_if_t<!is_same_v<decay_t<_Fp>, __value_func>>>
+  _CCCL_API inline explicit __value_func(_Fp&& __f)
+      : __value_func(::cuda::std::forward<_Fp>(__f), allocator<_Fp>())
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI __value_func(const __value_func& __f)
+  _CCCL_API inline __value_func(const __value_func& __f)
   {
     if (__f.__f_ == nullptr)
     {
@@ -443,7 +440,7 @@ public:
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI __value_func(__value_func&& __f) noexcept
+  _CCCL_API inline __value_func(__value_func&& __f) noexcept
   {
     if (__f.__f_ == nullptr)
     {
@@ -461,7 +458,7 @@ public:
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI ~__value_func()
+  _CCCL_API inline ~__value_func()
   {
     if ((void*) __f_ == &__buf_)
     {
@@ -473,7 +470,7 @@ public:
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI __value_func& operator=(__value_func&& __f)
+  _CCCL_API inline __value_func& operator=(__value_func&& __f)
   {
     *this = nullptr;
     if (__f.__f_ == nullptr)
@@ -493,7 +490,7 @@ public:
     return *this;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI __value_func& operator=(nullptr_t)
+  _CCCL_API inline __value_func& operator=(nullptr_t)
   {
     __func* __f = __f_;
     __f_        = nullptr;
@@ -508,16 +505,16 @@ public:
     return *this;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _Rp operator()(_ArgTypes&&... __args) const
+  _CCCL_API inline _Rp operator()(_ArgTypes&&... __args) const
   {
     if (__f_ == nullptr)
     {
       __throw_bad_function_call();
     }
-    return (*__f_)(_CUDA_VSTD::forward<_ArgTypes>(__args)...);
+    return (*__f_)(::cuda::std::forward<_ArgTypes>(__args)...);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI void swap(__value_func& __f) noexcept
+  _CCCL_API inline void swap(__value_func& __f) noexcept
   {
     if (&__f == this)
     {
@@ -554,17 +551,17 @@ public:
     }
     else
     {
-      _CUDA_VSTD::swap(__f_, __f.__f_);
+      ::cuda::std::swap(__f_, __f.__f_);
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI explicit operator bool() const noexcept
+  _CCCL_API inline explicit operator bool() const noexcept
   {
     return __f_ != nullptr;
   }
 
 #  ifndef _CCCL_NO_RTTI
-  _LIBCUDACXX_HIDE_FROM_ABI const type_info& target_type() const noexcept
+  _CCCL_API inline const type_info& target_type() const noexcept
   {
     if (__f_ == nullptr)
     {
@@ -574,7 +571,7 @@ public:
   }
 
   template <typename _Tp>
-  _LIBCUDACXX_HIDE_FROM_ABI const _Tp* target() const noexcept
+  _CCCL_API inline const _Tp* target() const noexcept
   {
     if (__f_ == nullptr)
     {
@@ -596,10 +593,9 @@ union __policy_storage
 // True if _Fun can safely be held in __policy_storage.__small.
 template <typename _Fun>
 struct __use_small_storage
-    : public integral_constant<
-        bool,
-        sizeof(_Fun) <= sizeof(__policy_storage) && alignof(_Fun) <= alignof(__policy_storage)
-          && is_trivially_copy_constructible<_Fun>::value && is_trivially_destructible<_Fun>::value>
+    : public integral_constant<bool,
+                               sizeof(_Fun) <= sizeof(__policy_storage) && alignof(_Fun) <= alignof(__policy_storage)
+                                 && is_trivially_copy_constructible_v<_Fun> && is_trivially_destructible_v<_Fun>>
 {};
 
 // Policy contains information about how to copy, destroy, and move the
@@ -619,12 +615,12 @@ struct __policy
   // Returns a pointer to a static policy object suitable for the functor
   // type.
   template <typename _Fun>
-  _LIBCUDACXX_HIDE_FROM_ABI static const __policy* __create()
+  _CCCL_API inline static const __policy* __create()
   {
     return __choose_policy<_Fun>(__use_small_storage<_Fun>());
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static const __policy* __create_empty()
+  _CCCL_API inline static const __policy* __create_empty()
   {
     static const constexpr __policy __policy_ = {
       nullptr,
@@ -654,7 +650,7 @@ private:
   }
 
   template <typename _Fun>
-  _LIBCUDACXX_HIDE_FROM_ABI static const __policy* __choose_policy(/* is_small = */ false_type)
+  _CCCL_API inline static const __policy* __choose_policy(/* is_small = */ false_type)
   {
     static const constexpr __policy __policy_ = {
       &__large_clone<_Fun>,
@@ -670,7 +666,7 @@ private:
   }
 
   template <typename _Fun>
-  _LIBCUDACXX_HIDE_FROM_ABI static const __policy* __choose_policy(/* is_small = */ true_type)
+  _CCCL_API inline static const __policy* __choose_policy(/* is_small = */ true_type)
   {
     static const constexpr __policy __policy_ = {
       nullptr,
@@ -689,7 +685,7 @@ private:
 // Used to choose between perfect forwarding or pass-by-value. Pass-by-value is
 // faster for types that can be passed in registers.
 template <typename _Tp>
-using __fast_forward = conditional_t<is_scalar<_Tp>::value, _Tp, _Tp&&>;
+using __fast_forward = conditional_t<is_scalar_v<_Tp>, _Tp, _Tp&&>;
 
 // __policy_invoker calls an instance of __alloc_func held in __policy_storage.
 
@@ -704,19 +700,19 @@ struct __policy_invoker<_Rp(_ArgTypes...)>
   __Call __call_;
 
   // Creates an invoker that throws bad_function_call.
-  _LIBCUDACXX_HIDE_FROM_ABI __policy_invoker()
+  _CCCL_API inline __policy_invoker()
       : __call_(&__call_empty)
   {}
 
   // Creates an invoker that calls the given instance of __func.
   template <typename _Fun>
-  _LIBCUDACXX_HIDE_FROM_ABI static __policy_invoker __create()
+  _CCCL_API inline static __policy_invoker __create()
   {
     return __policy_invoker(&__call_impl<_Fun>);
   }
 
 private:
-  _LIBCUDACXX_HIDE_FROM_ABI explicit __policy_invoker(__Call __c)
+  _CCCL_API inline explicit __policy_invoker(__Call __c)
       : __call_(__c)
   {}
 
@@ -729,7 +725,7 @@ private:
   static _Rp __call_impl(const __policy_storage* __buf, __fast_forward<_ArgTypes>... __args)
   {
     _Fun* __f = reinterpret_cast<_Fun*>(__use_small_storage<_Fun>::value ? &__buf->__small : __buf->__large);
-    return (*__f)(_CUDA_VSTD::forward<_ArgTypes>(__args)...);
+    return (*__f)(::cuda::std::forward<_ArgTypes>(__args)...);
   }
 };
 
@@ -756,12 +752,12 @@ class __policy_func<_Rp(_ArgTypes...)>
   const __policy* __policy_;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI __policy_func()
+  _CCCL_API inline __policy_func()
       : __policy_(__policy::__create_empty())
   {}
 
   template <class _Fp, class _Alloc>
-  _LIBCUDACXX_HIDE_FROM_ABI __policy_func(_Fp&& __f, const _Alloc& __a)
+  _CCCL_API inline __policy_func(_Fp&& __f, const _Alloc& __a)
       : __policy_(__policy::__create_empty())
   {
     using _Fun           = __alloc_func<_Fp, _Alloc, _Rp(_ArgTypes...)>;
@@ -776,20 +772,20 @@ public:
       _FunAlloc __af(__a);
       if (__use_small_storage<_Fun>())
       {
-        ::new ((void*) &__buf_.__small) _Fun(_CUDA_VSTD::move(__f), _Alloc(__af));
+        ::new ((void*) &__buf_.__small) _Fun(::cuda::std::move(__f), _Alloc(__af));
       }
       else
       {
         using _Dp = __allocator_destructor<_FunAlloc>;
         unique_ptr<_Fun, _Dp> __hold(__af.allocate(1), _Dp(__af, 1));
-        ::new ((void*) __hold.get()) _Fun(_CUDA_VSTD::move(__f), _Alloc(__af));
+        ::new ((void*) __hold.get()) _Fun(::cuda::std::move(__f), _Alloc(__af));
         __buf_.__large = __hold.release();
       }
     }
   }
 
-  template <class _Fp, class = enable_if_t<!is_same<decay_t<_Fp>, __policy_func>::value>>
-  _LIBCUDACXX_HIDE_FROM_ABI explicit __policy_func(_Fp&& __f)
+  template <class _Fp, class = enable_if_t<!is_same_v<decay_t<_Fp>, __policy_func>>>
+  _CCCL_API inline explicit __policy_func(_Fp&& __f)
       : __policy_(__policy::__create_empty())
   {
     using _Fun = __default_alloc_func<_Fp, _Rp(_ArgTypes...)>;
@@ -800,18 +796,18 @@ public:
       __policy_  = __policy::__create<_Fun>();
       if (__use_small_storage<_Fun>())
       {
-        ::new ((void*) &__buf_.__small) _Fun(_CUDA_VSTD::move(__f));
+        ::new ((void*) &__buf_.__small) _Fun(::cuda::std::move(__f));
       }
       else
       {
         __builtin_new_allocator::__holder_t __hold = __builtin_new_allocator::__allocate_type<_Fun>(1);
-        __buf_.__large                             = ::new ((void*) __hold.get()) _Fun(_CUDA_VSTD::move(__f));
+        __buf_.__large                             = ::new ((void*) __hold.get()) _Fun(::cuda::std::move(__f));
         (void) __hold.release();
       }
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI __policy_func(const __policy_func& __f)
+  _CCCL_API inline __policy_func(const __policy_func& __f)
       : __buf_(__f.__buf_)
       , __invoker_(__f.__invoker_)
       , __policy_(__f.__policy_)
@@ -822,7 +818,7 @@ public:
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI __policy_func(__policy_func&& __f)
+  _CCCL_API inline __policy_func(__policy_func&& __f)
       : __buf_(__f.__buf_)
       , __invoker_(__f.__invoker_)
       , __policy_(__f.__policy_)
@@ -834,7 +830,7 @@ public:
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI ~__policy_func()
+  _CCCL_API inline ~__policy_func()
   {
     if (__policy_->__destroy)
     {
@@ -842,7 +838,7 @@ public:
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI __policy_func& operator=(__policy_func&& __f)
+  _CCCL_API inline __policy_func& operator=(__policy_func&& __f)
   {
     *this          = nullptr;
     __buf_         = __f.__buf_;
@@ -853,7 +849,7 @@ public:
     return *this;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI __policy_func& operator=(nullptr_t)
+  _CCCL_API inline __policy_func& operator=(nullptr_t)
   {
     const __policy* __p = __policy_;
     __policy_           = __policy::__create_empty();
@@ -865,31 +861,31 @@ public:
     return *this;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _Rp operator()(_ArgTypes&&... __args) const
+  _CCCL_API inline _Rp operator()(_ArgTypes&&... __args) const
   {
-    return __invoker_.__call_(_CUDA_VSTD::addressof(__buf_), _CUDA_VSTD::forward<_ArgTypes>(__args)...);
+    return __invoker_.__call_(::cuda::std::addressof(__buf_), ::cuda::std::forward<_ArgTypes>(__args)...);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI void swap(__policy_func& __f)
+  _CCCL_API inline void swap(__policy_func& __f)
   {
-    _CUDA_VSTD::swap(__invoker_, __f.__invoker_);
-    _CUDA_VSTD::swap(__policy_, __f.__policy_);
-    _CUDA_VSTD::swap(__buf_, __f.__buf_);
+    ::cuda::std::swap(__invoker_, __f.__invoker_);
+    ::cuda::std::swap(__policy_, __f.__policy_);
+    ::cuda::std::swap(__buf_, __f.__buf_);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI explicit operator bool() const noexcept
+  _CCCL_API inline explicit operator bool() const noexcept
   {
     return !__policy_->__is_null;
   }
 
 #  ifndef _CCCL_NO_RTTI
-  _LIBCUDACXX_HIDE_FROM_ABI const type_info& target_type() const noexcept
+  _CCCL_API inline const type_info& target_type() const noexcept
   {
     return *__policy_->__type_info;
   }
 
   template <typename _Tp>
-  _LIBCUDACXX_HIDE_FROM_ABI const _Tp* target() const noexcept
+  _CCCL_API inline const _Tp* target() const noexcept
   {
     if (__policy_->__is_null || typeid(_Tp) != *__policy_->__type_info)
     {
@@ -919,13 +915,13 @@ class __func<_Rp1 (^)(_ArgTypes1...), _Alloc, _Rp(_ArgTypes...)> : public __base
   __block_type __f_;
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI explicit __func(__block_type const& __f)
+  _CCCL_API inline explicit __func(__block_type const& __f)
       : __f_(reinterpret_cast<__block_type>(__f ? _Block_copy(__f) : nullptr))
   {}
 
   // [TODO] add && to save on a retain
 
-  _LIBCUDACXX_HIDE_FROM_ABI explicit __func(__block_type __f, const _Alloc& /* unused */)
+  _CCCL_API inline explicit __func(__block_type __f, const _Alloc& /* unused */)
       : __f_(reinterpret_cast<__block_type>(__f ? _Block_copy(__f) : nullptr))
   {}
 
@@ -962,7 +958,7 @@ public:
 
   virtual _Rp operator()(_ArgTypes&&... __arg)
   {
-    return _CUDA_VSTD::__invoke(__f_, _CUDA_VSTD::forward<_ArgTypes>(__arg)...);
+    return ::cuda::std::invoke(__f_, ::cuda::std::forward<_ArgTypes>(__arg)...);
   }
 
 #    ifndef _CCCL_NO_RTTI
@@ -983,7 +979,6 @@ public:
 };
 
 #  endif // _LIBCUDACXX_HAS_EXTENSION_BLOCKS
-
 } // namespace __function
 
 template <class _Rp, class... _ArgTypes>
@@ -995,13 +990,12 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT function<_Rp(_ArgTypes...)>
 
   __func __f_;
 
-  template <class _Fp, bool = _And<_IsNotSame<remove_cvref_t<_Fp>, function>, __invokable<_Fp, _ArgTypes...>>::value>
+  template <class _Fp, bool = !is_same_v<remove_cvref_t<_Fp>, function> && is_invocable_v<_Fp, _ArgTypes...>>
   struct __callable;
   template <class _Fp>
   struct __callable<_Fp, true>
   {
-    static const bool value =
-      is_void<_Rp>::value || __is_core_convertible<typename __invoke_of<_Fp, _ArgTypes...>::type, _Rp>::value;
+    static const bool value = is_void_v<_Rp> || __is_core_convertible<invoke_result_t<_Fp, _ArgTypes...>, _Rp>::value;
   };
   template <class _Fp>
   struct __callable<_Fp, false>
@@ -1016,8 +1010,8 @@ public:
   using result_type = _Rp;
 
   // construct/copy/destroy:
-  _LIBCUDACXX_HIDE_FROM_ABI function() noexcept {}
-  _LIBCUDACXX_HIDE_FROM_ABI function(nullptr_t) noexcept {}
+  _CCCL_API inline function() noexcept {}
+  _CCCL_API inline function(nullptr_t) noexcept {}
   function(const function&);
   function(function&&) noexcept;
   template <class _Fp, class = _EnableIfLValueCallable<_Fp>>
@@ -1035,7 +1029,7 @@ public:
   void swap(function&) noexcept;
 
   // function capacity:
-  _LIBCUDACXX_HIDE_FROM_ABI explicit operator bool() const noexcept
+  _CCCL_API inline explicit operator bool() const noexcept
   {
     return static_cast<bool>(__f_);
   }
@@ -1088,7 +1082,7 @@ struct __strip_signature<_Rp (_Gp::*)(_Ap...) const volatile>
 };
 
 template <class _Rp, class _Gp, class... _Ap>
-struct __strip_signature<_Rp (_Gp::*)(_Ap...)&>
+struct __strip_signature<_Rp (_Gp::*)(_Ap...) &>
 {
   using type = _Rp(_Ap...);
 };
@@ -1160,13 +1154,13 @@ function<_Rp(_ArgTypes...)>::function(const function& __f)
 
 template <class _Rp, class... _ArgTypes>
 function<_Rp(_ArgTypes...)>::function(function&& __f) noexcept
-    : __f_(_CUDA_VSTD::move(__f.__f_))
+    : __f_(::cuda::std::move(__f.__f_))
 {}
 
 template <class _Rp, class... _ArgTypes>
 template <class _Fp, class>
 function<_Rp(_ArgTypes...)>::function(_Fp __f)
-    : __f_(_CUDA_VSTD::move(__f))
+    : __f_(::cuda::std::move(__f))
 {}
 
 template <class _Rp, class... _ArgTypes>
@@ -1179,7 +1173,7 @@ function<_Rp(_ArgTypes...)>& function<_Rp(_ArgTypes...)>::operator=(const functi
 template <class _Rp, class... _ArgTypes>
 function<_Rp(_ArgTypes...)>& function<_Rp(_ArgTypes...)>::operator=(function&& __f) noexcept
 {
-  __f_ = _CUDA_VSTD::move(__f.__f_);
+  __f_ = ::cuda::std::move(__f.__f_);
   return *this;
 }
 
@@ -1194,7 +1188,7 @@ template <class _Rp, class... _ArgTypes>
 template <class _Fp, class>
 function<_Rp(_ArgTypes...)>& function<_Rp(_ArgTypes...)>::operator=(_Fp&& __f)
 {
-  function(_CUDA_VSTD::forward<_Fp>(__f)).swap(*this);
+  function(::cuda::std::forward<_Fp>(__f)).swap(*this);
   return *this;
 }
 
@@ -1211,7 +1205,7 @@ void function<_Rp(_ArgTypes...)>::swap(function& __f) noexcept
 template <class _Rp, class... _ArgTypes>
 _Rp function<_Rp(_ArgTypes...)>::operator()(_ArgTypes... __arg) const
 {
-  return __f_(_CUDA_VSTD::forward<_ArgTypes>(__arg)...);
+  return __f_(::cuda::std::forward<_ArgTypes>(__arg)...);
 }
 
 #  ifndef _CCCL_NO_RTTI
@@ -1239,39 +1233,39 @@ const _Tp* function<_Rp(_ArgTypes...)>::target() const noexcept
 #  endif // _CCCL_NO_RTTI
 
 template <class _Rp, class... _ArgTypes>
-_LIBCUDACXX_HIDE_FROM_ABI bool operator==(const function<_Rp(_ArgTypes...)>& __f, nullptr_t) noexcept
+_CCCL_API inline bool operator==(const function<_Rp(_ArgTypes...)>& __f, nullptr_t) noexcept
 {
   return !__f;
 }
 
 template <class _Rp, class... _ArgTypes>
-_LIBCUDACXX_HIDE_FROM_ABI bool operator==(nullptr_t, const function<_Rp(_ArgTypes...)>& __f) noexcept
+_CCCL_API inline bool operator==(nullptr_t, const function<_Rp(_ArgTypes...)>& __f) noexcept
 {
   return !__f;
 }
 
 template <class _Rp, class... _ArgTypes>
-_LIBCUDACXX_HIDE_FROM_ABI bool operator!=(const function<_Rp(_ArgTypes...)>& __f, nullptr_t) noexcept
+_CCCL_API inline bool operator!=(const function<_Rp(_ArgTypes...)>& __f, nullptr_t) noexcept
 {
   return (bool) __f;
 }
 
 template <class _Rp, class... _ArgTypes>
-_LIBCUDACXX_HIDE_FROM_ABI bool operator!=(nullptr_t, const function<_Rp(_ArgTypes...)>& __f) noexcept
+_CCCL_API inline bool operator!=(nullptr_t, const function<_Rp(_ArgTypes...)>& __f) noexcept
 {
   return (bool) __f;
 }
 
 template <class _Rp, class... _ArgTypes>
-_LIBCUDACXX_HIDE_FROM_ABI void swap(function<_Rp(_ArgTypes...)>& __x, function<_Rp(_ArgTypes...)>& __y) noexcept
+_CCCL_API inline void swap(function<_Rp(_ArgTypes...)>& __x, function<_Rp(_ArgTypes...)>& __y) noexcept
 {
   return __x.swap(__y);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // __cuda_std__
 
-#endif // _LIBCUDACXX___FUNCTIONAL_FUNCTION_H
+#endif // _CUDA_STD___FUNCTIONAL_FUNCTION_H

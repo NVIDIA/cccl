@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -33,13 +20,8 @@
 #include <thrust/system/detail/generic/merge.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
-
 template <typename DerivedPolicy,
           typename InputIterator1,
           typename InputIterator2,
@@ -79,7 +61,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Compare>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -91,9 +73,9 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
   OutputIterator2 values_result,
   Compare comp)
 {
-  using iterator_tuple1 = thrust::tuple<InputIterator1, InputIterator3>;
-  using iterator_tuple2 = thrust::tuple<InputIterator2, InputIterator4>;
-  using iterator_tuple3 = thrust::tuple<OutputIterator1, OutputIterator2>;
+  using iterator_tuple1 = ::cuda::std::tuple<InputIterator1, InputIterator3>;
+  using iterator_tuple2 = ::cuda::std::tuple<InputIterator2, InputIterator4>;
+  using iterator_tuple3 = ::cuda::std::tuple<OutputIterator1, OutputIterator2>;
 
   using zip_iterator1 = thrust::zip_iterator<iterator_tuple1>;
   using zip_iterator2 = thrust::zip_iterator<iterator_tuple2>;
@@ -107,13 +89,13 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
 
   zip_iterator3 zipped_result = thrust::make_zip_iterator(keys_result, values_result);
 
-  thrust::detail::compare_first<Compare> comp_first(comp);
+  thrust::detail::compare_first<Compare> comp_first{comp};
 
   iterator_tuple3 result =
     thrust::merge(exec, zipped_first1, zipped_last1, zipped_first2, zipped_last2, zipped_result, comp_first)
       .get_iterator_tuple();
 
-  return thrust::make_pair(thrust::get<0>(result), thrust::get<1>(result));
+  return ::cuda::std::make_pair(::cuda::std::get<0>(result), ::cuda::std::get<1>(result));
 } // end merge_by_key()
 
 template <typename DerivedPolicy,
@@ -123,7 +105,7 @@ template <typename DerivedPolicy,
           typename InputIterator4,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> merge_by_key(
   thrust::execution_policy<DerivedPolicy>& exec,
   InputIterator1 keys_first1,
   InputIterator1 keys_last1,
@@ -147,8 +129,5 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
     values_result,
     ::cuda::std::less<value_type>());
 } // end merge_by_key()
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

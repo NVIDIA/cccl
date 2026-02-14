@@ -14,9 +14,6 @@
 //   struct tuple_size<tuple<Types...>>
 //     : public integral_constant<size_t, sizeof...(Types)> { };
 
-// UNSUPPORTED: libcpp-no-structured-bindings
-// UNSUPPORTED: msvc
-
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
@@ -49,7 +46,7 @@ __host__ __device__ void test_decomp_user_type()
 
 __host__ __device__ void test_decomp_tuple()
 {
-  typedef cuda::std::tuple<int> T;
+  using T = cuda::std::tuple<int>;
   {
     T s{99};
     auto [m1]  = s;
@@ -68,7 +65,7 @@ __host__ __device__ void test_decomp_tuple()
 
 __host__ __device__ void test_decomp_pair()
 {
-  typedef cuda::std::pair<int, double> T;
+  using T = cuda::std::pair<int, double>;
   {
     T s{99, 42.5};
     auto [m1, m2]  = s;
@@ -91,7 +88,7 @@ __host__ __device__ void test_decomp_pair()
 
 __host__ __device__ void test_decomp_array()
 {
-  typedef cuda::std::array<int, 3> T;
+  using T = cuda::std::array<int, 3>;
   {
     T s{{99, 42, -1}};
     auto [m1, m2, m3]  = s;
@@ -131,7 +128,7 @@ __host__ __device__ int get(Test const&)
 template <>
 struct std::tuple_element<0, Test>
 {
-  typedef int type;
+  using type = int;
 };
 
 __host__ __device__ void test_before_tuple_size_specialization()

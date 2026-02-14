@@ -1,18 +1,21 @@
 #!/bin/bash
 
-source "$(dirname "$0")/build_common.sh"
+cd "$(dirname "${BASH_SOURCE[0]}")"
+source "./build_common.sh"
 
 print_environment_details
 
-PRESET="libcudacxx-cpp${CXX_STANDARD}"
-CMAKE_OPTIONS=""
+"./build_libcudacxx.sh" "$@"
+
+PRESET="libcudacxx"
+CMAKE_OPTIONS="-DCMAKE_CXX_STANDARD=${CXX_STANDARD} -DCMAKE_CUDA_STANDARD=${CXX_STANDARD}"
 
 configure_preset libcudacxx "$PRESET" "$CMAKE_OPTIONS"
 
-LIT_PRESET="libcudacxx-lit-cpp${CXX_STANDARD}"
+test_preset "libcudacxx (CTest)" "libcudacxx-ctest"
 
-source "./sccache_stats.sh" "start" || :
-test_preset "libcudacxx (lit)" ${LIT_PRESET}
-source "./sccache_stats.sh" "end" || :
+sccache -z > /dev/null || :
+test_preset "libcudacxx (lit)" "libcudacxx-lit"
+sccache --show-adv-stats || :
 
 print_time_summary

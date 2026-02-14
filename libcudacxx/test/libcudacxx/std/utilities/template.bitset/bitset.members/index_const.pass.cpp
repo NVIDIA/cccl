@@ -26,7 +26,7 @@ __host__ __device__ constexpr void test_index_const()
     {
       assert(v[N / 2] == v.test(N / 2));
     }
-#if !defined(_LIBCUDACXX_VERSION) || defined(_LIBCUDACXX_ABI_BITSET_span_BOOL_CONST_SUBSCRIPT_RETURN_BOOL)
+#if !defined(_CUDA_STD_VERSION) || defined(_LIBCUDACXX_ABI_BITSET_span_BOOL_CONST_SUBSCRIPT_RETURN_BOOL)
     static_assert(cuda::std::is_same_v<decltype(v[0]), bool>);
 #else
     static_assert(cuda::std::is_same_v<decltype(v[0]), typename cuda::std::bitset<N>::const_reference>);
@@ -50,7 +50,7 @@ __host__ __device__ constexpr bool test()
   const auto& set = set_;
   auto b          = set[0];
   set_[0]         = true;
-#if !defined(_LIBCUDACXX_VERSION) || defined(_LIBCUDACXX_ABI_BITSET_span_BOOL_CONST_SUBSCRIPT_RETURN_BOOL)
+#if !defined(_CUDA_STD_VERSION) || defined(_LIBCUDACXX_ABI_BITSET_span_BOOL_CONST_SUBSCRIPT_RETURN_BOOL)
   assert(!b);
 #else
   assert(b);

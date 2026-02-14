@@ -1,0 +1,261 @@
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+from __future__ import annotations
+
+from typing import Union
+
+import numpy as np
+
+from .. import _bindings
+from .. import _cccl_interop as cccl
+from .._caching import cache_with_registered_key_functions
+from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
+from .._utils.protocols import get_data_pointer, validate_and_get_stream
+from .._utils.temp_storage_buffer import TempStorageBuffer
+from ..typing import DeviceArrayLike, IteratorT
+
+
+class _Histogram:
+    __slots__ = [
+        "num_rows",
+        "d_samples_cccl",
+        "d_histogram_cccl",
+        "h_num_output_levels_cccl",
+        "h_lower_level_cccl",
+        "h_upper_level_cccl",
+        "build_result",
+    ]
+
+    def __init__(
+        self,
+        d_samples: DeviceArrayLike | IteratorT,
+        d_histogram: DeviceArrayLike,
+        h_num_output_levels: np.ndarray,
+        h_lower_level: np.ndarray,
+        h_upper_level: np.ndarray,
+        num_samples: int,
+    ):
+        num_channels = 1
+        num_active_channels = 1
+        is_evenly_segmented = True
+        self.num_rows = 1
+        num_levels = h_num_output_levels[0]
+        row_stride_samples = num_samples
+
+        self.d_samples_cccl = cccl.to_cccl_input_iter(d_samples)
+        self.d_histogram_cccl = cccl.to_cccl_output_iter(d_histogram)
+        self.h_num_output_levels_cccl = cccl.to_cccl_value(h_num_output_levels)
+        self.h_lower_level_cccl = cccl.to_cccl_value(h_lower_level)
+        self.h_upper_level_cccl = cccl.to_cccl_value(h_upper_level)
+
+        self.build_result = call_build(
+            _bindings.DeviceHistogramBuildResult,
+            num_channels,
+            num_active_channels,
+            self.d_samples_cccl,
+            num_levels,
+            self.d_histogram_cccl,
+            self.h_lower_level_cccl,
+            self.num_rows,
+            row_stride_samples,
+            is_evenly_segmented,
+        )
+
+    def __call__(
+        self,
+        temp_storage,
+        d_samples: DeviceArrayLike | IteratorT,
+        d_histogram: DeviceArrayLike,
+        h_num_output_levels: np.ndarray,
+        h_lower_level: np.ndarray,
+        h_upper_level: np.ndarray,
+        num_samples: int,
+        stream=None,
+    ):
+        set_cccl_iterator_state(self.d_samples_cccl, d_samples)
+        set_cccl_iterator_state(self.d_histogram_cccl, d_histogram)
+        self.h_num_output_levels_cccl.state = to_cccl_value_state(h_num_output_levels)
+        self.h_lower_level_cccl.state = to_cccl_value_state(h_lower_level)
+        self.h_upper_level_cccl.state = to_cccl_value_state(h_upper_level)
+
+        stream_handle = validate_and_get_stream(stream)
+        if temp_storage is None:
+            temp_storage_bytes = 0
+            d_temp_storage = 0
+        else:
+            temp_storage_bytes = temp_storage.nbytes
+            # Note: this is slightly slower, but supports all ndarray-like objects as long as they support CAI
+            # TODO: switch to use gpumemoryview once it's ready
+            d_temp_storage = get_data_pointer(temp_storage)
+
+        temp_storage_bytes = self.build_result.compute_even(
+            d_temp_storage,
+            temp_storage_bytes,
+            self.d_samples_cccl,
+            self.d_histogram_cccl,
+            self.h_num_output_levels_cccl,
+            self.h_lower_level_cccl,
+            self.h_upper_level_cccl,
+            num_samples,
+            self.num_rows,
+            num_samples,
+            stream_handle,
+        )
+
+        return temp_storage_bytes
+
+
+@cache_with_registered_key_functions
+def _make_histogram_even_impl(
+    d_samples: DeviceArrayLike | IteratorT,
+    d_histogram: DeviceArrayLike,
+    num_output_levels_val: int,
+    lower_level_val,
+    upper_level_val,
+    level_dtype,
+    num_samples: int,
+    uses_privatized_smem: bool,
+):
+    """Internal cached implementation of make_histogram_even.
+
+    The uses_privatized_smem parameter ensures kernels compiled
+    for different bin count regimes aren't reused.
+    """
+    # Reconstruct the numpy arrays expected by _Histogram
+    h_num_output_levels = np.array([num_output_levels_val], dtype=np.int32)
+    h_lower_level = np.array([lower_level_val], dtype=level_dtype)
+    h_upper_level = np.array([upper_level_val], dtype=level_dtype)
+
+    return _Histogram(
+        d_samples,
+        d_histogram,
+        h_num_output_levels,
+        h_lower_level,
+        h_upper_level,
+        num_samples,
+    )
+
+
+def make_histogram_even(
+    d_samples: DeviceArrayLike | IteratorT,
+    d_histogram: DeviceArrayLike,
+    h_num_output_levels: np.ndarray,
+    h_lower_level: np.ndarray,
+    h_upper_level: np.ndarray,
+    num_samples: int,
+):
+    """Implements a device-wide histogram that places ``d_samples`` into evenly-spaced bins.
+
+    Example:
+        Below, ``make_histogram_even`` is used to create a histogram object that can be reused.
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/histogram/histogram_object.py
+          :language: python
+          :start-after: # example-begin
+
+    Args:
+        d_samples: Device array or iterator containing the input samples to be histogrammed
+        d_histogram: Device array to store the histogram
+        h_num_output_levels: Host array containing the number of output levels
+        h_lower_level: Host array containing the lower level
+        h_upper_level: Host array containing the upper level
+        num_samples: Number of samples to be histogrammed
+
+    Returns:
+        A callable object that can be used to perform the histogram
+    """
+    # Extract scalar values from arrays for caching
+    num_output_levels_val = int(h_num_output_levels[0])
+    lower_level_val = h_lower_level[0].item()
+    upper_level_val = h_upper_level[0].item()
+    level_dtype = h_lower_level.dtype
+
+    # bins <= 256 uses privatized smem strategy. a different compile
+    # path than bins > 256. We should include this information when
+    # caching histogram build objects.
+    # See detail::histogram::max_privatized_smem_bins (dispatch_histogram.cuh)
+    num_bins = num_output_levels_val - 1
+    uses_privatized_smem = num_bins <= 256
+    return _make_histogram_even_impl(
+        d_samples,
+        d_histogram,
+        num_output_levels_val,
+        lower_level_val,
+        upper_level_val,
+        level_dtype,
+        num_samples,
+        uses_privatized_smem,
+    )
+
+
+def histogram_even(
+    d_samples: DeviceArrayLike | IteratorT,
+    d_histogram: DeviceArrayLike,
+    num_output_levels: int,
+    lower_level: Union[np.floating, np.integer],
+    upper_level: Union[np.floating, np.integer],
+    num_samples: int,
+    stream=None,
+):
+    """
+    Performs device-wide histogram computation with evenly-spaced bins.
+
+    This function automatically handles temporary storage allocation and execution.
+
+    Example:
+        Below, ``histogram_even`` is used to compute a histogram with evenly-spaced bins.
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/histogram/histogram_even_basic.py
+            :language: python
+            :start-after: # example-begin
+            :caption: Basic histogram example.
+
+    Args:
+        d_samples: Device array or iterator containing the input sequence of data samples
+        d_histogram: Device array to store the computed histogram
+        num_output_levels: Number of histogram bin levels (num_bins = num_output_levels - 1)
+        lower_level: Lower sample value bound (inclusive)
+        upper_level: Upper sample value bound (exclusive)
+        num_samples: Number of input samples
+        stream: CUDA stream for the operation (optional)
+    """
+    # Histogram can accept multiple channels, with one value per channel for
+    # each of these parameters. The API only supports one channel for now but we
+    # pass arrays to make_histogram_even to support multiple channels in the
+    # future.
+    h_num_output_levels = np.array([num_output_levels], dtype=np.int32)
+    h_lower_level = np.array([lower_level], dtype=type(lower_level))
+    h_upper_level = np.array([upper_level], dtype=type(upper_level))
+
+    histogram = make_histogram_even(
+        d_samples,
+        d_histogram,
+        h_num_output_levels,
+        h_lower_level,
+        h_upper_level,
+        num_samples,
+    )
+    temp_storage_bytes = histogram(
+        None,
+        d_samples,
+        d_histogram,
+        h_num_output_levels,
+        h_lower_level,
+        h_upper_level,
+        num_samples,
+        stream,
+    )
+    temp_storage = TempStorageBuffer(temp_storage_bytes, stream)
+    histogram(
+        temp_storage,
+        d_samples,
+        d_histogram,
+        h_num_output_levels,
+        h_lower_level,
+        h_upper_level,
+        num_samples,
+        stream,
+    )

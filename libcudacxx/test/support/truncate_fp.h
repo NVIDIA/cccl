@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if _CCCL_HAS_LONG_DOUBLE()
 __host__ __device__ inline long double truncate_fp(long double val)

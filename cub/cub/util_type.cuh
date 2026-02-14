@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2024, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * \file
@@ -48,28 +24,19 @@
 
 #include <thrust/iterator/detail/any_assign.h>
 
+#include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/remove_pointer.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/iterator>
 #include <cuda/std/limits>
-#include <cuda/type_traits>
-
-#if _CCCL_HAS_NVFP16()
-#  include <cuda_fp16.h>
-#endif // _CCCL_HAS_NVFP16()
-
-#if _CCCL_HAS_NVBF16()
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
-#  include <cuda_bf16.h>
-_CCCL_DIAG_POP
-#endif // _CCCL_HAS_NVBF16()
-
-// cuda_fp8.h resets default for C4127, so we have to guard the inclusion
-#if _CCCL_HAS_NVFP8()
-_CCCL_DIAG_PUSH
-#  include <cuda_fp8.h>
-_CCCL_DIAG_POP
-#endif // _CCCL_HAS_NVFP8()
 
 CUB_NAMESPACE_BEGIN
 
@@ -96,6 +63,20 @@ using it_difference_t = typename ::cuda::std::iterator_traits<It>::difference_ty
 
 template <typename It>
 using it_pointer_t = typename ::cuda::std::iterator_traits<It>::pointer;
+
+// Like sizeof(T) but works for void (yields 0)
+template <typename T>
+inline constexpr size_t size_of = sizeof(T);
+
+template <>
+inline constexpr size_t size_of<void> = 0;
+
+// Like alignof(T) but works for void (yields 0)
+template <typename T>
+inline constexpr size_t align_of = alignof(T);
+
+template <>
+inline constexpr size_t align_of<void> = 0;
 
 // use this whenever you need to lazily evaluate a trait. E.g., as an alternative in replace_if_use_default.
 template <template <typename...> typename Trait, typename... Args>
@@ -146,10 +127,7 @@ template <int N, int CURRENT_VAL = N, int COUNT = 0>
 struct Log2
 {
   /// Static logarithm value
-  enum
-  {
-    VALUE = Log2<N, (CURRENT_VAL >> 1), COUNT + 1>::VALUE
-  }; // Inductive case
+  static constexpr int VALUE = Log2<N, (CURRENT_VAL >> 1), COUNT + 1>::VALUE;
 };
 
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -157,26 +135,19 @@ struct Log2
 template <int N, int COUNT>
 struct Log2<N, 0, COUNT>
 {
-  enum
-  {
-    VALUE = (1 << (COUNT - 1) < N) ? // Base case
-              COUNT
-                                   : COUNT - 1
-  };
+  static constexpr int VALUE = (1 << (COUNT - 1) < N) ? COUNT : COUNT - 1;
 };
 
 #  endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Statically determine if N is a power-of-two
+ * deprecated [since 3.2]
  */
 template <int N>
-struct PowerOfTwo
+struct [[deprecated("Use cuda::is_power_of_two(N) instead")]] PowerOfTwo
 {
-  enum
-  {
-    VALUE = ((N & (N - 1)) == 0)
-  };
+  static constexpr bool VALUE = (N & (N - 1)) == 0;
 };
 
 #endif // _CCCL_DOXYGEN_INVOKED
@@ -219,7 +190,6 @@ struct NullType
 
 namespace detail
 {
-
 template <bool Value>
 inline constexpr auto bool_constant_v = ::cuda::std::bool_constant<Value>{};
 
@@ -228,7 +198,6 @@ using constant_t = ::cuda::std::integral_constant<decltype(Value), Value>;
 
 template <auto Value>
 inline constexpr auto constant_v = constant_t<Value>{};
-
 } // namespace detail
 
 /**
@@ -280,7 +249,6 @@ FutureValue(IterT) -> FutureValue<detail::it_value_t<IterT>, IterT>;
 
 namespace detail
 {
-
 /**
  * \brief Allows algorithms to instantiate a single kernel to support both immediate value and future value.
  */
@@ -289,7 +257,7 @@ struct InputValue
 {
   using value_type    = T;
   using iterator_type = IterT;
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T()
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T() const
   {
     if (m_is_future)
     {
@@ -326,7 +294,6 @@ private:
     T m_immediate_value;
   };
 };
-
 } // namespace detail
 
 /******************************************************************************
@@ -376,14 +343,32 @@ __CUB_ALIGN_BYTES(ulong2, 16)
 __CUB_ALIGN_BYTES(int4, 16)
 __CUB_ALIGN_BYTES(uint4, 16)
 __CUB_ALIGN_BYTES(float4, 16)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 __CUB_ALIGN_BYTES(long4, 16)
 __CUB_ALIGN_BYTES(ulong4, 16)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+__CUB_ALIGN_BYTES(long4_16a, 16)
+__CUB_ALIGN_BYTES(long4_32a, 32)
+__CUB_ALIGN_BYTES(ulong4_16a, 16)
+__CUB_ALIGN_BYTES(ulong4_32a, 32)
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 __CUB_ALIGN_BYTES(longlong2, 16)
 __CUB_ALIGN_BYTES(ulonglong2, 16)
 __CUB_ALIGN_BYTES(double2, 16)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 __CUB_ALIGN_BYTES(longlong4, 16)
 __CUB_ALIGN_BYTES(ulonglong4, 16)
 __CUB_ALIGN_BYTES(double4, 16)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+__CUB_ALIGN_BYTES(longlong4_16a, 16)
+__CUB_ALIGN_BYTES(longlong4_32a, 32)
+__CUB_ALIGN_BYTES(ulonglong4_16a, 16)
+__CUB_ALIGN_BYTES(ulonglong4_32a, 32)
+__CUB_ALIGN_BYTES(double4_16a, 16)
+__CUB_ALIGN_BYTES(double4_32a, 32)
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 // clang-format off
 template <typename T> struct AlignBytes<volatile T> : AlignBytes<T> {};
@@ -405,19 +390,19 @@ struct UnitWord
       (sizeof(T) % sizeof(Unit) == 0) && (int(ALIGN_BYTES) % int(UNIT_ALIGN_BYTES) == 0);
   };
 
-  /// Biggest shuffle word that T is a whole multiple of and is not larger than the alignment of T
+  /// Largest shuffle word such that sizeof(T) % sizeof(W) == 0 and alignof(W) <= alignof(T)
   using ShuffleWord =
     ::cuda::std::_If<IsMultiple<int>::IS_MULTIPLE,
                      unsigned int,
                      ::cuda::std::_If<IsMultiple<short>::IS_MULTIPLE, unsigned short, unsigned char>>;
 
-  /// Biggest volatile word that T is a whole multiple of and is not larger than the alignment of T
+  /// Largest volatile word such that sizeof(T) % sizeof(W) == 0 and alignof(W) <= alignof(T)
   using VolatileWord = ::cuda::std::_If<IsMultiple<long long>::IS_MULTIPLE, unsigned long long, ShuffleWord>;
 
-  /// Biggest memory-access word that T is a whole multiple of and is not larger than the alignment of T
+  /// Largest memory-access word such that sizeof(T) % sizeof(W) == 0 and alignof(W) <= alignof(T)
   using DeviceWord = ::cuda::std::_If<IsMultiple<longlong2>::IS_MULTIPLE, ulonglong2, VolatileWord>;
 
-  /// Biggest texture reference word that T is a whole multiple of and is not larger than the alignment of T
+  /// Biggest texture reference word such that sizeof(T) % sizeof(W) == 0 and alignof(W) <= alignof(T)
   using TextureWord = ::cuda::std::
     _If<IsMultiple<int4>::IS_MULTIPLE, uint4, ::cuda::std::_If<IsMultiple<int2>::IS_MULTIPLE, uint2, ShuffleWord>>;
 };
@@ -529,6 +514,7 @@ struct CubVector<T, 4>
   using Type     = CubVector;
 };
 
+// TODO(bgruber): should CubVectorType support (and how?) the new type4_16a and type4_32a vector types from CTK 13?
 /**
  * Macro for expanding partially-specialized built-in vector types
  */
@@ -628,15 +614,21 @@ CUB_DEFINE_VECTOR_TYPE(char,               char)
 CUB_DEFINE_VECTOR_TYPE(signed char,        char)
 CUB_DEFINE_VECTOR_TYPE(short,              short)
 CUB_DEFINE_VECTOR_TYPE(int,                int)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 CUB_DEFINE_VECTOR_TYPE(long,               long)
 CUB_DEFINE_VECTOR_TYPE(long long,          longlong)
+_CCCL_SUPPRESS_DEPRECATED_POP
 CUB_DEFINE_VECTOR_TYPE(unsigned char,      uchar)
 CUB_DEFINE_VECTOR_TYPE(unsigned short,     ushort)
 CUB_DEFINE_VECTOR_TYPE(unsigned int,       uint)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 CUB_DEFINE_VECTOR_TYPE(unsigned long,      ulong)
 CUB_DEFINE_VECTOR_TYPE(unsigned long long, ulonglong)
+_CCCL_SUPPRESS_DEPRECATED_POP
 CUB_DEFINE_VECTOR_TYPE(float,              float)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 CUB_DEFINE_VECTOR_TYPE(double,             double)
+_CCCL_SUPPRESS_DEPRECATED_POP
 CUB_DEFINE_VECTOR_TYPE(bool,               uchar)
 // clang-format on
 
@@ -652,7 +644,7 @@ CUB_DEFINE_VECTOR_TYPE(bool,               uchar)
 template <typename T>
 struct Uninitialized
 {
-  /// Biggest memory-access word that T is a whole multiple of and is not larger than the alignment of T
+  /// Largest memory-access word such that sizeof(T) % sizeof(W) == 0 and alignof(W) <= alignof(T)
   using DeviceWord = typename UnitWord<T>::DeviceWord;
 
   static constexpr ::cuda::std::size_t DATA_SIZE = sizeof(T);
@@ -822,8 +814,7 @@ struct BaseTraits<UNSIGNED_INTEGER, true, _UnsignedBits, T>
   }
 
   //! deprecated [Since 3.0]
-  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()")
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()") static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
   {
     UnsignedBits retval_bits = MAX_KEY;
     T retval;
@@ -832,8 +823,8 @@ struct BaseTraits<UNSIGNED_INTEGER, true, _UnsignedBits, T>
   }
 
   //! deprecated [Since 3.0]
-  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()")
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Lowest()
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()") static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T
+  Lowest()
   {
     UnsignedBits retval_bits = LOWEST_KEY;
     T retval;
@@ -870,16 +861,15 @@ struct BaseTraits<SIGNED_INTEGER, true, _UnsignedBits, T>
   };
 
   //! deprecated [Since 3.0]
-  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()")
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()") static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
   {
     UnsignedBits retval = MAX_KEY;
     return reinterpret_cast<T&>(retval);
   }
 
   //! deprecated [Since 3.0]
-  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()")
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Lowest()
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()") static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T
+  Lowest()
   {
     UnsignedBits retval = LOWEST_KEY;
     return reinterpret_cast<T&>(retval);
@@ -918,15 +908,14 @@ struct BaseTraits<FLOATING_POINT, true, _UnsignedBits, T>
   };
 
   //! deprecated [Since 3.0]
-  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()")
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()") static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
   {
     return ::cuda::std::numeric_limits<T>::max();
   }
 
   //! deprecated [Since 3.0]
-  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()")
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Lowest()
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()") static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T
+  Lowest()
   {
     return ::cuda::std::numeric_limits<T>::lowest();
   }
@@ -989,15 +978,14 @@ struct NumericTraits<__uint128_t>
   }
 
   //! deprecated [Since 3.0]
-  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()")
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()") static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
   {
     return MAX_KEY;
   }
 
   //! deprecated [Since 3.0]
-  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()")
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Lowest()
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()") static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T
+  Lowest()
   {
     return LOWEST_KEY;
   }
@@ -1029,16 +1017,15 @@ struct NumericTraits<__int128_t>
   };
 
   //! deprecated [Since 3.0]
-  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()")
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::max()") static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
   {
     UnsignedBits retval = MAX_KEY;
     return reinterpret_cast<T&>(retval);
   }
 
   //! deprecated [Since 3.0]
-  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()")
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Lowest()
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::numeric_limits<T>::lowest()") static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T
+  Lowest()
   {
     UnsignedBits retval = LOWEST_KEY;
     return reinterpret_cast<T&>(retval);

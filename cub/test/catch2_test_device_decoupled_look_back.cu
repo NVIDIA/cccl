@@ -1,32 +1,7 @@
-/******************************************************************************
- * Copyright (c) 2011-2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #undef NDEBUG
 #include <cub/device/device_scan.cuh>
@@ -44,7 +19,7 @@ __global__ void init_kernel(ScanTileStateT tile_state, int blocks_in_grid)
 template <class MessageT>
 __global__ void decoupled_look_back_kernel(cub::ScanTileState<MessageT> tile_state, MessageT* tile_data)
 {
-  using scan_op_t         = ::cuda::std::plus<>;
+  using scan_op_t         = cuda::std::plus<>;
   using scan_tile_state_t = cub::ScanTileState<MessageT>;
   using tile_prefix_op    = cub::TilePrefixCallbackOp<MessageT, scan_op_t, scan_tile_state_t>;
   using temp_storage_t    = typename tile_prefix_op::TempStorage;
@@ -150,7 +125,7 @@ C2H_TEST("Decoupled look-back works with various message types", "[decoupled loo
   REQUIRE(status == cudaSuccess);
 
   constexpr unsigned int threads_in_init_block = 256;
-  const unsigned int blocks_in_init_grid       = ::cuda::ceil_div(num_tiles, threads_in_init_block);
+  const unsigned int blocks_in_init_grid       = cuda::ceil_div(num_tiles, threads_in_init_block);
   init_kernel<<<blocks_in_init_grid, threads_in_init_block>>>(tile_status, num_tiles);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());

@@ -1,9 +1,8 @@
-.. _thrust-module-api:
-
 Thrust API documentation
 =========================
 
 .. toctree::
+   :hidden:
    :maxdepth: 1
 
    api_docs/algorithms

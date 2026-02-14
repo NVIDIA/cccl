@@ -26,52 +26,37 @@ section <libcudacxx-standard-api>`, :ref:`Extended API
 section <libcudacxx-extended-api>`, and :ref:`release section <libcudacxx-releases>`
 to find which features require newer releases.
 
-Releases of libcu++ are only tested against the latest releases of NVHPC
-and CUDA. It may be possible to use a newer version of libcu++ with an
+Releases of libcu++ are tested as part of CCCL against the latest releases of NVHPC
+and the two latest major versions of CUDA.
+
+. It may be possible to use a newer version of libcu++ with an
 older NVHPC or CUDA installation by using a libcu++ release from GitHub,
 but please be aware this is not officially supported.
 
 C++ Dialects
 ~~~~~~~~~~~~
 
-The NVIDIA C++ Standard Library supports the following C++ dialects:
-
--  C++11
--  C++14
--  C++17
-
-A number of features have been backported to earlier standards. Please
-see the [API section] for more details.
+The NVIDIA C++ Standard Library supports the
+`same dialects as CCCL <https://github.com/NVIDIA/cccl?tab=readme-ov-file#c-dialects>`_.
+A number of features have been backported to earlier standards.
+Please see the [API section] for more details.
 
 NVCC Host Compilers
 ~~~~~~~~~~~~~~~~~~~
 
-When used with NVCC, the NVIDIA C++ Standard Library supports the
-following host compilers:
-
--  MSVC 2019 and 2022.
--  GCC 6, until 13.
--  Clang 14 until 18.
--  ICPC latest.
--  NVHPC 20.9 and 20.11.
+Same as CCCL, see `here <https://github.com/NVIDIA/cccl?tab=readme-ov-file#host-compilers>`_.
 
 Device Architectures
 ~~~~~~~~~~~~~~~~~~~~
 
-The NVIDIA C++ Standard Library fully supports the following NVIDIA
-device architectures:
-
--  Volta: SM 70 and 72.
--  Turing: SM 75.
--  Ampere: SM 80.
-
+The NVIDIA C++ Standard Library fully supports the same device architectures as the CUDA Toolkits it supports.
 The following NVIDIA device architectures are partially supported:
 
 -  Maxwell: SM 50, 52 and 53.
 
    -  Synchronization facilities are supported.
 
--  Pascall: SM 60, 61 and 62.
+-  Pascal: SM 60, 61 and 62.
 
    -  Blocking synchronization facilities (e.g. most of the
       synchronization primitives) are not supported. Please see the

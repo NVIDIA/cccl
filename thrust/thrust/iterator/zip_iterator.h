@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 //! \file thrust/iterator/zip_iterator.h
 //! \brief An iterator which returns a tuple of the result of dereferencing a tuple of iterators when dereferenced
@@ -38,7 +25,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/advance.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/minimum_system.h>
 #include <thrust/iterator/detail/tuple_of_iterator_references.h>
@@ -46,6 +32,13 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/type_traits/integer_sequence.h>
 
+#include <cuda/std/__iterator/advance.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
@@ -55,9 +48,6 @@ class zip_iterator;
 
 namespace detail
 {
-template <typename... Ts>
-using minimum_category = minimum_type<Ts...>;
-
 template <typename IteratorTuple>
 struct make_zip_iterator_base
 {
@@ -67,8 +57,15 @@ struct make_zip_iterator_base
 template <typename... Its>
 struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
 {
+  // We need this to make proxy iterators work because those have a void reference type
+  template <class Iter>
+  using zip_iterator_reference_t =
+    ::cuda::std::conditional_t<::cuda::std::is_same_v<it_reference_t<Iter>, void>,
+                               decltype(*::cuda::std::declval<Iter>()),
+                               it_reference_t<Iter>>;
+
   // reference type is the type of the tuple obtained from the iterator's reference types.
-  using reference = tuple_of_iterator_references<it_reference_t<Its>...>;
+  using reference = tuple_of_iterator_references<zip_iterator_reference_t<Its>...>;
 
   // Boost's Value type is the same as reference type. using value_type = reference;
   using value_type = ::cuda::std::tuple<it_value_t<Its>...>;
@@ -77,15 +74,10 @@ struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
   using difference_type = it_difference_t<::cuda::std::tuple_element_t<0, ::cuda::std::tuple<Its...>>>;
 
   // Iterator system is the minimum system tag in the iterator tuple
-  using system = ::cuda::std::__type_fold_left<::cuda::std::__type_list<iterator_system_t<Its>...>,
-                                               any_system_tag,
-                                               ::cuda::std::__type_quote_trait<minimum_system>>;
+  using system = minimum_system_t<iterator_system_t<Its>...>;
 
   // Traversal category is the minimum traversal category in the iterator tuple
-  using traversal_category =
-    ::cuda::std::__type_fold_left<::cuda::std::__type_list<iterator_traversal_t<Its>...>,
-                                  random_access_traversal_tag,
-                                  ::cuda::std::__type_quote_trait<minimum_category>>;
+  using traversal_category = minimum_type<iterator_traversal_t<Its>...>;
 
   // The iterator facade type from which the zip iterator will be derived.
   using type =
@@ -116,8 +108,8 @@ struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
 //!
 //! \code
 //! #include <thrust/iterator/zip_iterator.h>
-//! #include <thrust/tuple.h>
 //! #include <thrust/device_vector.h>
+//! #include <cuda/std/tuple>
 //! ...
 //! thrust::device_vector<int> int_v{0, 1, 2};
 //! thrust::device_vector<float> float_v{0.0f, 1.0f, 2.0f};
@@ -129,22 +121,22 @@ struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
 //! using CharIterator = thrust::device_vector<char>::iterator;
 //!
 //! // alias for a tuple of these iterators
-//! using IteratorTuple = thrust::tuple<IntIterator, FloatIterator, CharIterator>;
+//! using IteratorTuple = cuda::std::tuple<IntIterator, FloatIterator, CharIterator>;
 //!
 //! // alias the zip_iterator of this tuple
 //! using ZipIterator = thrust::zip_iterator<IteratorTuple>;
 //!
 //! // finally, create the zip_iterator
-//! ZipIterator iter(thrust::make_tuple(int_v.begin(), float_v.begin(), char_v.begin()));
+//! ZipIterator iter(cuda::std::make_tuple(int_v.begin(), float_v.begin(), char_v.begin()));
 //!
 //! *iter;   // returns (0, 0.0f, 'a')
 //! iter[0]; // returns (0, 0.0f, 'a')
 //! iter[1]; // returns (1, 1.0f, 'b')
 //! iter[2]; // returns (2, 2.0f, 'c')
 //!
-//! thrust::get<0>(iter[2]); // returns 2
-//! thrust::get<1>(iter[0]); // returns 0.0f
-//! thrust::get<2>(iter[1]); // returns 'b'
+//! cuda::std::get<0>(iter[2]); // returns 2
+//! cuda::std::get<1>(iter[0]); // returns 0.0f
+//! cuda::std::get<2>(iter[1]); // returns 'b'
 //!
 //! // iter[3] is an out-of-bounds error
 //! \endcode
@@ -156,7 +148,7 @@ struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
 //!
 //! \code
 //! #include <thrust/zip_iterator.h>
-//! #include <thrust/tuple.h>
+//! #include <cuda/std/tuple>
 //! #include <thrust/device_vector.h>
 //!
 //! int main()
@@ -179,6 +171,10 @@ struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
 //! \see make_tuple
 //! \see tuple
 //! \see get
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
+ */
 template <typename IteratorTuple>
 class _CCCL_DECLSPEC_EMPTY_BASES zip_iterator : public detail::make_zip_iterator_base<IteratorTuple>::type
 {
@@ -250,7 +246,7 @@ private:
   template <typename OtherIteratorTuple>
   inline _CCCL_HOST_DEVICE bool equal(const zip_iterator<OtherIteratorTuple>& other) const
   {
-    return get<0>(get_iterator_tuple()) == get<0>(other.get_iterator_tuple());
+    return ::cuda::std::get<0>(get_iterator_tuple()) == ::cuda::std::get<0>(other.get_iterator_tuple());
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -297,7 +293,7 @@ private:
   inline _CCCL_HOST_DEVICE typename super_t::difference_type
   distance_to(const zip_iterator<OtherIteratorTuple>& other) const
   {
-    return get<0>(other.get_iterator_tuple()) - get<0>(get_iterator_tuple());
+    return ::cuda::std::get<0>(other.get_iterator_tuple()) - ::cuda::std::get<0>(get_iterator_tuple());
   }
 
   // The iterator tuple.
@@ -306,8 +302,10 @@ private:
   //! \endcond
 };
 
+#ifndef _CCCL_DOXYGEN_INVOKED
 template <class... Iterators>
 _CCCL_HOST_DEVICE zip_iterator(Iterators...) -> zip_iterator<::cuda::std::tuple<Iterators...>>;
+#endif // _CCCL_DOXYGEN_INVOKED
 
 //! \p make_zip_iterator creates a \p zip_iterator from a \p tuple of iterators.
 //!
@@ -343,7 +341,7 @@ THRUST_NAMESPACE_END
 // The reason is that libcu++ backported the C++20 range iterator machinery to C++17, but C++17 has slightly different
 // language rules, especially regarding `void`. We deemed to it too hard to work around the issues.
 #if _CCCL_STD_VER < 2020
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <typename IteratorTuple>
 struct iterator_traits<THRUST_NS_QUALIFIER::zip_iterator<IteratorTuple>>
 {
@@ -354,5 +352,5 @@ struct iterator_traits<THRUST_NS_QUALIFIER::zip_iterator<IteratorTuple>>
   using iterator_category = typename It::iterator_category;
   using difference_type   = typename It::difference_type;
 };
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 #endif // _CCCL_STD_VER < 2020

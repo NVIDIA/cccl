@@ -27,7 +27,7 @@ struct NothrowConstruct
 int main(int, char**)
 {
   {
-    typedef cuda::std::tuple<NothrowConstruct, NothrowConstruct> T;
+    using T = cuda::std::tuple<NothrowConstruct, NothrowConstruct>;
     T t(0, 1);
     unused(t); // Prevent unused warning
 

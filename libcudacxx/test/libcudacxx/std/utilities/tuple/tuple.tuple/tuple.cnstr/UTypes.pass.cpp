@@ -45,14 +45,14 @@ struct NoDefault
 __host__ __device__ void test_default_constructible_extension_sfinae()
 {
   {
-    typedef cuda::std::tuple<MoveOnly, NoDefault> Tuple;
+    using Tuple = cuda::std::tuple<MoveOnly, NoDefault>;
 
     static_assert(!cuda::std::is_constructible<Tuple, MoveOnly>::value, "");
 
     static_assert(cuda::std::is_constructible<Tuple, MoveOnly, NoDefault>::value, "");
   }
   {
-    typedef cuda::std::tuple<MoveOnly, MoveOnly, NoDefault> Tuple;
+    using Tuple = cuda::std::tuple<MoveOnly, MoveOnly, NoDefault>;
 
     static_assert(!cuda::std::is_constructible<Tuple, MoveOnly, MoveOnly>::value, "");
 
@@ -60,18 +60,18 @@ __host__ __device__ void test_default_constructible_extension_sfinae()
   }
   {
     // Same idea as above but with a nested tuple type.
-    typedef cuda::std::tuple<MoveOnly, NoDefault> Tuple;
-    typedef cuda::std::tuple<MoveOnly, Tuple, MoveOnly, MoveOnly> NestedTuple;
+    using Tuple       = cuda::std::tuple<MoveOnly, NoDefault>;
+    using NestedTuple = cuda::std::tuple<MoveOnly, Tuple, MoveOnly, MoveOnly>;
 
     static_assert(!cuda::std::is_constructible<NestedTuple, MoveOnly, MoveOnly, MoveOnly, MoveOnly>::value, "");
 
     static_assert(cuda::std::is_constructible<NestedTuple, MoveOnly, Tuple, MoveOnly, MoveOnly>::value, "");
   }
   // testing extensions
-#ifdef _LIBCUDACXX_VERSION
+#ifdef _CUDA_STD_VERSION
   {
-    typedef cuda::std::tuple<MoveOnly, int> Tuple;
-    typedef cuda::std::tuple<MoveOnly, Tuple, MoveOnly, MoveOnly> NestedTuple;
+    using Tuple       = cuda::std::tuple<MoveOnly, int>;
+    using NestedTuple = cuda::std::tuple<MoveOnly, Tuple, MoveOnly, MoveOnly>;
 
     static_assert(cuda::std::is_constructible<NestedTuple, MoveOnly, MoveOnly, MoveOnly, MoveOnly>::value, "");
 
@@ -98,7 +98,7 @@ int main(int, char**)
     assert(cuda::std::get<2>(t) == 2);
   }
   // extensions, MSVC issues
-#if defined(_LIBCUDACXX_VERSION) && !TEST_COMPILER(MSVC)
+#if defined(_CUDA_STD_VERSION) && !TEST_COMPILER(MSVC)
   {
     using E   = MoveOnly;
     using Tup = cuda::std::tuple<E, E, E>;

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_COMP_H
-#define _LIBCUDACXX___ALGORITHM_COMP_H
+#ifndef _CUDA_STD___ALGORITHM_COMP_H
+#define _CUDA_STD___ALGORITHM_COMP_H
 
 #include <cuda/std/detail/__config>
 
@@ -27,38 +27,32 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct __equal_to
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(const _T1& __lhs, const _T2& __rhs) const
+  [[nodiscard]] _CCCL_API constexpr bool operator()(const _T1& __lhs, const _T2& __rhs) const
     noexcept(noexcept(__lhs == __rhs))
   {
     return __lhs == __rhs;
   }
 };
 
-#if defined(_LIBCUDACXX_HAS_STRING)
-template <class _Lhs, class _Rhs>
-struct __is_trivial_equality_predicate<__equal_to, _Lhs, _Rhs> : true_type
-{};
-#endif // _LIBCUDACXX_HAS_STRING
-
 struct __less
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Up>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(const _Tp& __lhs, const _Up& __rhs) const
+  [[nodiscard]] _CCCL_API constexpr bool operator()(const _Tp& __lhs, const _Up& __rhs) const
     noexcept(noexcept(__lhs < __rhs))
   {
     return __lhs < __rhs;
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_COMP_H
+#endif // _CUDA_STD___ALGORITHM_COMP_H

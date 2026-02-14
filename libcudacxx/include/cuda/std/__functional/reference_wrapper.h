@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FUNCTIONAL_REFERENCE_WRAPPER_H
-#define _LIBCUDACXX___FUNCTIONAL_REFERENCE_WRAPPER_H
+#ifndef _CUDA_STD___FUNCTIONAL_REFERENCE_WRAPPER_H
+#define _CUDA_STD___FUNCTIONAL_REFERENCE_WRAPPER_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 class _CCCL_TYPE_VISIBILITY_DEFAULT reference_wrapper : public __weak_result_type<_Tp>
@@ -41,36 +41,37 @@ public:
   using type = _Tp;
 
 private:
-  type* __f_;
+  type* __f_{};
 
-  static _LIBCUDACXX_HIDE_FROM_ABI void __fun(_Tp&) noexcept;
+  static _CCCL_API void __fun(_Tp&) noexcept;
   static void __fun(_Tp&&) = delete;
 
 public:
-  template <class _Up,
-            class = enable_if_t<!__is_same_uncvref<_Up, reference_wrapper>::value, decltype(__fun(declval<_Up>()))>>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 reference_wrapper(_Up&& __u) noexcept(noexcept(__fun(declval<_Up>())))
+  template <
+    class _Up,
+    class = enable_if_t<!__is_same_uncvref<_Up, reference_wrapper>::value, decltype(__fun(::cuda::std::declval<_Up>()))>>
+  _CCCL_API constexpr reference_wrapper(_Up&& __u) noexcept(noexcept(__fun(::cuda::std::declval<_Up>())))
   {
     type& __f = static_cast<_Up&&>(__u);
-    __f_      = _CUDA_VSTD::addressof(__f);
+    __f_      = ::cuda::std::addressof(__f);
   }
 
   // access
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 operator type&() const noexcept
+  _CCCL_API constexpr operator type&() const noexcept
   {
     return *__f_;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 type& get() const noexcept
+  [[nodiscard]] _CCCL_API constexpr type& get() const noexcept
   {
     return *__f_;
   }
 
   // invoke
   template <class... _ArgTypes>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 typename __invoke_of<type&, _ArgTypes...>::type
-  operator()(_ArgTypes&&... __args) const noexcept(_CCCL_TRAIT(is_nothrow_invocable, _Tp&, _ArgTypes...))
+  _CCCL_API constexpr invoke_result_t<type&, _ArgTypes...> operator()(_ArgTypes&&... __args) const
+    noexcept(is_nothrow_invocable_v<_Tp&, _ArgTypes...>)
   {
-    return _CUDA_VSTD::__invoke(get(), _CUDA_VSTD::forward<_ArgTypes>(__args)...);
+    return ::cuda::std::invoke(get(), ::cuda::std::forward<_ArgTypes>(__args)...);
   }
 };
 
@@ -78,25 +79,25 @@ template <class _Tp>
 _CCCL_HOST_DEVICE reference_wrapper(_Tp&) -> reference_wrapper<_Tp>;
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 reference_wrapper<_Tp> ref(_Tp& __t) noexcept
+[[nodiscard]] _CCCL_API constexpr reference_wrapper<_Tp> ref(_Tp& __t) noexcept
 {
   return reference_wrapper<_Tp>(__t);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 reference_wrapper<_Tp> ref(reference_wrapper<_Tp> __t) noexcept
+[[nodiscard]] _CCCL_API constexpr reference_wrapper<_Tp> ref(reference_wrapper<_Tp> __t) noexcept
 {
   return __t;
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 reference_wrapper<const _Tp> cref(const _Tp& __t) noexcept
+[[nodiscard]] _CCCL_API constexpr reference_wrapper<const _Tp> cref(const _Tp& __t) noexcept
 {
   return reference_wrapper<const _Tp>(__t);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 reference_wrapper<const _Tp> cref(reference_wrapper<_Tp> __t) noexcept
+[[nodiscard]] _CCCL_API constexpr reference_wrapper<const _Tp> cref(reference_wrapper<_Tp> __t) noexcept
 {
   return __t;
 }
@@ -106,8 +107,8 @@ void ref(const _Tp&&) = delete;
 template <class _Tp>
 void cref(const _Tp&&) = delete;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___FUNCTIONAL_REFERENCE_WRAPPER_H
+#endif // _CUDA_STD___FUNCTIONAL_REFERENCE_WRAPPER_H

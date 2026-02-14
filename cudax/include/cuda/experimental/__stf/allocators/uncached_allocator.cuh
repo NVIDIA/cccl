@@ -32,7 +32,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Uncached block allocator where allocations and deallocations are
  * directly performed as CUDA API calls (cudaMallocAsync, ...)
@@ -71,5 +70,4 @@ class uncached_block_allocator : public block_allocator_interface
     return "uncached block allocator (wrapper)";
   }
 };
-
 } // end namespace cuda::experimental::stf

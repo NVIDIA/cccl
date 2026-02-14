@@ -37,7 +37,9 @@ static_assert(cuda::std::indirectly_copyable_storable<int*, int*>, "");
 static_assert(cuda::std::indirectly_copyable_storable<const int*, int*>, "");
 static_assert(!cuda::std::indirectly_copyable_storable<int*, const int*>, "");
 static_assert(!cuda::std::indirectly_copyable_storable<const int*, const int*>, "");
+#if !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
 static_assert(cuda::std::indirectly_copyable_storable<int*, int[2]>, "");
+#endif // !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
 static_assert(!cuda::std::indirectly_copyable_storable<int[2], int*>, "");
 static_assert(!cuda::std::indirectly_copyable_storable<MoveOnly*, MoveOnly*>, "");
 static_assert(!cuda::std::indirectly_copyable_storable<PointerTo<MoveOnly>, PointerTo<MoveOnly>>, "");
@@ -301,9 +303,7 @@ struct NotConstructibleFromRefIn
   __host__ __device__ ReferenceType& operator*() const;
 };
 
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <template <class> class X, template <class> class Y>
 struct basic_common_reference<NotConstructibleFromRefIn::ValueType, NotConstructibleFromRefIn::ReferenceType, X, Y>
@@ -316,8 +316,7 @@ struct basic_common_reference<NotConstructibleFromRefIn::ReferenceType, NotConst
 {
   using type = CommonType&;
 };
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
 
 static_assert(
   cuda::std::common_reference_with<NotConstructibleFromRefIn::ValueType&, NotConstructibleFromRefIn::ReferenceType&>,
@@ -354,9 +353,7 @@ struct NotAssignableFromRefIn
   __host__ __device__ ReferenceType& operator*() const;
 };
 
-namespace cuda
-{
-namespace std
+namespace cuda::std
 {
 template <template <class> class X, template <class> class Y>
 struct basic_common_reference<NotAssignableFromRefIn::ValueType, NotAssignableFromRefIn::ReferenceType, X, Y>
@@ -369,8 +366,7 @@ struct basic_common_reference<NotAssignableFromRefIn::ReferenceType, NotAssignab
 {
   using type = CommonType&;
 };
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
 
 static_assert(
   cuda::std::common_reference_with<NotAssignableFromRefIn::ValueType&, NotAssignableFromRefIn::ReferenceType&>, "");

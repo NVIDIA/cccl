@@ -44,7 +44,7 @@ int main(int argc, char** argv)
   cuda_safe_call(cudaEventCreate(&start));
   cuda_safe_call(cudaEventCreate(&stop));
 
-  cuda_safe_call(cudaEventRecord(start, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(start, ctx.fence()));
 
   // Compute each pixel
   ctx.parallel_for(blocked_partition(), exec_place::all_devices(), lbuffer.shape(), lbuffer.write())
@@ -80,7 +80,7 @@ int main(int argc, char** argv)
             buffer(x, y) = iterations;
           };
 
-  cuda_safe_call(cudaEventRecord(stop, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(stop, ctx.fence()));
 
   if (argc > 1)
   {

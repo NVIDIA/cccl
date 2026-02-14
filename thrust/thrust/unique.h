@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file unique.h
  *  \brief Move unique elements to the front of a range
@@ -31,7 +18,8 @@
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/pair.h>
+
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -79,6 +67,10 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/unique
  *  \see unique_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE ForwardIterator
@@ -118,6 +110,10 @@ unique(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Forward
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/unique
  *  \see unique_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator>
 ForwardIterator unique(ForwardIterator first, ForwardIterator last);
@@ -165,6 +161,10 @@ ForwardIterator unique(ForwardIterator first, ForwardIterator last);
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/unique
  *  \see unique_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
 _CCCL_HOST_DEVICE ForwardIterator unique(
@@ -210,6 +210,10 @@ _CCCL_HOST_DEVICE ForwardIterator unique(
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/unique
  *  \see unique_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename BinaryPredicate>
 ForwardIterator unique(ForwardIterator first, ForwardIterator last, BinaryPredicate binary_pred);
@@ -266,6 +270,10 @@ ForwardIterator unique(ForwardIterator first, ForwardIterator last, BinaryPredic
  *
  *  \see unique
  *  \see https://en.cppreference.com/w/cpp/algorithm/unique_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator unique_copy(
@@ -320,6 +328,10 @@ _CCCL_HOST_DEVICE OutputIterator unique_copy(
  *
  *  \see unique
  *  \see https://en.cppreference.com/w/cpp/algorithm/unique_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator>
 OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterator result);
@@ -369,6 +381,10 @@ OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterat
  *
  *  \see unique
  *  \see https://en.cppreference.com/w/cpp/algorithm/unique_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryPredicate>
 _CCCL_HOST_DEVICE OutputIterator unique_copy(
@@ -417,6 +433,10 @@ _CCCL_HOST_DEVICE OutputIterator unique_copy(
  *
  *  \see unique
  *  \see https://en.cppreference.com/w/cpp/algorithm/unique_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename BinaryPredicate>
 OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterator result, BinaryPredicate binary_pred);
@@ -466,7 +486,7 @@ OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterat
  *  int A[N] = {1, 3, 3, 3, 2, 2, 1}; // keys
  *  int B[N] = {9, 8, 7, 6, 5, 4, 3}; // values
  *
- *  thrust::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  new_end = thrust::unique_by_key(thrust::host, A, A + N, B);
  *
  *  // The first four keys in A are now {1, 3, 2, 1} and new_end.first - A is 4.
@@ -476,9 +496,13 @@ OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterat
  *  \see unique
  *  \see unique_by_key_copy
  *  \see reduce_by_key
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator1 keys_first,
   ForwardIterator1 keys_last,
@@ -523,7 +547,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key
  *  int A[N] = {1, 3, 3, 3, 2, 2, 1}; // keys
  *  int B[N] = {9, 8, 7, 6, 5, 4, 3}; // values
  *
- *  thrust::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  new_end = thrust::unique_by_key(A, A + N, B);
  *
  *  // The first four keys in A are now {1, 3, 2, 1} and new_end.first - A is 4.
@@ -533,9 +557,13 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key
  *  \see unique
  *  \see unique_by_key_copy
  *  \see reduce_by_key
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator1, typename ForwardIterator2>
-thrust::pair<ForwardIterator1, ForwardIterator2>
+::cuda::std::pair<ForwardIterator1, ForwardIterator2>
 unique_by_key(ForwardIterator1 keys_first, ForwardIterator1 keys_last, ForwardIterator2 values_first);
 
 /*! \p unique_by_key is a generalization of \p unique to key-value pairs.
@@ -580,7 +608,7 @@ unique_by_key(ForwardIterator1 keys_first, ForwardIterator1 keys_last, ForwardIt
  *  int A[N] = {1, 3, 3, 3, 2, 2, 1}; // keys
  *  int B[N] = {9, 8, 7, 6, 5, 4, 3}; // values
  *
- *  thrust::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  ::cuda::std::equal_to<int> binary_pred;
  *  new_end = thrust::unique_by_key(thrust::host, A, A + N, B, binary_pred);
  *
@@ -591,9 +619,13 @@ unique_by_key(ForwardIterator1 keys_first, ForwardIterator1 keys_last, ForwardIt
  *  \see unique
  *  \see unique_by_key_copy
  *  \see reduce_by_key
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator1 keys_first,
   ForwardIterator1 keys_last,
@@ -636,7 +668,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key
  *  int A[N] = {1, 3, 3, 3, 2, 2, 1}; // keys
  *  int B[N] = {9, 8, 7, 6, 5, 4, 3}; // values
  *
- *  thrust::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  ::cuda::std::equal_to<int> binary_pred;
  *  new_end = thrust::unique_by_key(A, A + N, B, binary_pred);
  *
@@ -647,9 +679,13 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key
  *  \see unique
  *  \see unique_by_key_copy
  *  \see reduce_by_key
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
-thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
+::cuda::std::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
   ForwardIterator1 keys_first, ForwardIterator1 keys_last, ForwardIterator2 values_first, BinaryPredicate binary_pred);
 
 /*! \p unique_by_key_copy is a generalization of \p unique_copy to key-value pairs.
@@ -698,7 +734,7 @@ thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
  *  int C[N];                         // output keys
  *  int D[N];                         // output values
  *
- *  thrust::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  new_end = thrust::unique_by_key_copy(thrust::host, A, A + N, B, C, D);
  *
  *  // The first four keys in C are now {1, 3, 2, 1} and new_end.first - C is 4.
@@ -708,13 +744,17 @@ thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
  *  \see unique_copy
  *  \see unique_by_key
  *  \see reduce_by_key
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
           typename InputIterator2,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -762,7 +802,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_c
  *  int C[N];                         // output keys
  *  int D[N];                         // output values
  *
- *  thrust::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  new_end = thrust::unique_by_key_copy(A, A + N, B, C, D);
  *
  *  // The first four keys in C are now {1, 3, 2, 1} and new_end.first - C is 4.
@@ -772,9 +812,13 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_c
  *  \see unique_copy
  *  \see unique_by_key
  *  \see reduce_by_key
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
-thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   InputIterator1 keys_first,
   InputIterator1 keys_last,
   InputIterator2 values_first,
@@ -829,7 +873,7 @@ thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
  *  int C[N];                         // output keys
  *  int D[N];                         // output values
  *
- *  thrust::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  ::cuda::std::equal_to<int> binary_pred;
  *  new_end = thrust::unique_by_key_copy(thrust::host, A, A + N, B, C, D, binary_pred);
  *
@@ -840,6 +884,10 @@ thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
  *  \see unique_copy
  *  \see unique_by_key
  *  \see reduce_by_key
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -847,7 +895,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -898,7 +946,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_c
  *  int C[N];                         // output keys
  *  int D[N];                         // output values
  *
- *  thrust::pair<int*,int*> new_end;
+ *  cuda::std::pair<int*,int*> new_end;
  *  ::cuda::std::equal_to<int> binary_pred;
  *  new_end = thrust::unique_by_key_copy(A, A + N, B, C, D, binary_pred);
  *
@@ -909,13 +957,17 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_c
  *  \see unique_copy
  *  \see unique_by_key
  *  \see reduce_by_key
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+::cuda::std::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   InputIterator1 keys_first,
   InputIterator1 keys_last,
   InputIterator2 values_first,
@@ -959,6 +1011,10 @@ thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
  *  \see unique_copy
  *  \see unique_by_key_copy
  *  \see reduce_by_key_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
 _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
@@ -977,7 +1033,6 @@ _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
  *  \param exec The execution policy to use for parallelization.
  *  \param first The beginning of the input range.
  *  \param last  The end of the input range.
- *  \param binary_pred  The binary predicate used to determine equality.
  *  \return The number of runs of equal elements in <tt>[first, new_last)</tt>
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
@@ -1003,6 +1058,10 @@ _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
  *  \see unique_copy
  *  \see unique_by_key_copy
  *  \see reduce_by_key_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
@@ -1040,6 +1099,10 @@ _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
  *  \see unique_copy
  *  \see unique_by_key_copy
  *  \see reduce_by_key_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename BinaryPredicate>
 _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator>
@@ -1052,7 +1115,6 @@ unique_count(ForwardIterator first, ForwardIterator last, BinaryPredicate binary
  *
  *  \param first The beginning of the input range.
  *  \param last  The end of the input range.
- *  \param binary_pred  The binary predicate used to determine equality.
  *  \return The number of runs of equal elements in <tt>[first, new_last)</tt>
  *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
@@ -1077,6 +1139,10 @@ unique_count(ForwardIterator first, ForwardIterator last, BinaryPredicate binary
  *  \see unique_copy
  *  \see unique_by_key_copy
  *  \see reduce_by_key_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator>
 _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator>

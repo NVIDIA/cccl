@@ -8,14 +8,17 @@
 //
 //===----------------------------------------------------------------------===//
 
-// IMPORTANT: This file intionally lacks a header guard.
+// IMPORTANT: This file intentionally lacks a header guard.
 
 #if !defined(_CUDAX_ASYNC_PROLOGUE_INCLUDED)
 #  error epilogue.cuh included without a prior inclusion of prologue.cuh
 #endif
 
-#undef _CCCL_IMMOVABLE_OPSTATE
 #undef _CUDAX_ASYNC_PROLOGUE_INCLUDED
+
+#if _CCCL_CUDA_COMPILER(NVHPC)
+_CCCL_END_NV_DIAG_SUPPRESS()
+#endif // _CCCL_CUDA_COMPILER(NVHPC)
 
 _CCCL_DIAG_POP
 #include <cuda/std/__cccl/epilogue.h>

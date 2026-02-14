@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 //! @file
 //! cub::DeviceSelect provides device-wide, parallel operations for compacting selected items from sequences of data
@@ -46,7 +22,11 @@
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 #include <cub/device/dispatch/dispatch_unique_by_key.cuh>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/cstdint>
+
 CUB_NAMESPACE_BEGIN
 
 //! @rst
@@ -76,6 +56,9 @@ struct DeviceSelect
   //! @rst
   //! Uses the ``d_flags`` sequence to selectively copy the corresponding items from ``d_in`` into ``d_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The value type of ``d_flags`` must be castable to ``bool`` (e.g., ``bool``, ``char``, ``int``, etc.).
   //! - Copies of the selected items are compacted into ``d_out`` and maintain their original relative ordering.
@@ -200,6 +183,9 @@ struct DeviceSelect
   //! Uses the ``d_flags`` sequence to selectively compact the items in `d_data``.
   //! The total number of items selected is written to ``d_num_selected_out``.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The value type of ``d_flags`` must be castable to ``bool`` (e.g., ``bool``, ``char``, ``int``, etc.).
   //! - Copies of the selected items are compacted in-place and maintain their original relative ordering.
   //! - | The ``d_data`` may equal ``d_flags``. The range ``[d_data, d_data + num_items)`` shall not overlap
@@ -315,6 +301,9 @@ struct DeviceSelect
   //! @rst
   //! Uses the ``select_op`` functor to selectively copy items from ``d_in`` into ``d_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Copies of the selected items are compacted into ``d_out`` and maintain
   //!   their original relative ordering.
@@ -454,6 +443,9 @@ struct DeviceSelect
   //! Uses the ``select_op`` functor to selectively compact items in ``d_data``.
   //! The total number of items selected is written to ``d_num_selected_out``.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - | Copies of the selected items are compacted in ``d_data`` and maintain
   //!   | their original relative ordering.
   //! - @devicestorage
@@ -583,6 +575,9 @@ struct DeviceSelect
   //! corresponding items from ``d_in`` into ``d_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The expression ``select_op(flag)`` must be convertible to ``bool``,
   //!   where the type of ``flag`` corresponds to the value type of ``FlagIterator``.
   //! - Copies of the selected items are compacted into ``d_out`` and maintain
@@ -701,6 +696,9 @@ struct DeviceSelect
   //! corresponding items in ``d_data``.
   //! The total number of items selected is written to ``d_num_selected_out``.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The expression ``select_op(flag)`` must be convertible to ``bool``,
   //!   where the type of ``flag`` corresponds to the value type of ``FlagIterator``.
   //! - Copies of the selected items are compacted in-place and maintain their original relative ordering.
@@ -806,6 +804,9 @@ struct DeviceSelect
   //! Given an input sequence ``d_in`` having runs of consecutive equal-valued keys,
   //! only the first key from each run is selectively copied to ``d_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The ``==`` equality operator is used to determine whether keys are equivalent
   //! - Copies of the selected items are compacted into ``d_out`` and maintain their original relative ordering.
@@ -925,6 +926,9 @@ struct DeviceSelect
   //! equal-valued keys, only the first key and its value from each run is selectively copied
   //! to ``d_keys_out`` and ``d_values_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The user-provided equality operator, `equality_op`, is used to determine whether keys are equivalent
   //! - Copies of the selected items are compacted into ``d_out`` and maintain
@@ -1086,6 +1090,9 @@ struct DeviceSelect
   //! equal-valued keys, only the first key and its value from each run is selectively copied
   //! to ``d_keys_out`` and ``d_values_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The ``==`` equality operator is used to determine whether keys are equivalent
   //! - Copies of the selected items are compacted into ``d_out`` and maintain

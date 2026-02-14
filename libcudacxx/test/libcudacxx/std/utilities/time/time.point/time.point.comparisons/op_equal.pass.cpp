@@ -3,6 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -10,26 +11,26 @@
 
 // time_point
 
-// template <class Clock, class Duration1, class Duration2>
+// template <cuda/std/class Clock, class Duration1, class Duration2>
 //   bool
-//   operator==(const time_point<Clock, Duration1>& lhs, const time_point<Clock, Duration2>& rhs);
+//   operator==(const time_point<cuda/std/Clock, Duration1>& lhs, const time_point<Clock, Duration2>& rhs);
 
-// template <class Clock, class Duration1, class Duration2>
+// template <cuda/std/class Clock, class Duration1, class Duration2>
 //   bool
-//   operator!=(const time_point<Clock, Duration1>& lhs, const time_point<Clock, Duration2>& rhs);
+//   operator!=(const time_point<cuda/std/Clock, Duration1>& lhs, const time_point<Clock, Duration2>& rhs);
 
 #include <cuda/std/cassert>
 #include <cuda/std/chrono>
 
 #include "test_macros.h"
 
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
-  typedef cuda::std::chrono::system_clock Clock;
-  typedef cuda::std::chrono::milliseconds Duration1;
-  typedef cuda::std::chrono::microseconds Duration2;
-  typedef cuda::std::chrono::time_point<Clock, Duration1> T1;
-  typedef cuda::std::chrono::time_point<Clock, Duration2> T2;
+  using Clock     = cuda::std::chrono::system_clock;
+  using Duration1 = cuda::std::chrono::milliseconds;
+  using Duration2 = cuda::std::chrono::microseconds;
+  using T1        = cuda::std::chrono::time_point<Clock, Duration1>;
+  using T2        = cuda::std::chrono::time_point<Clock, Duration2>;
 
   {
     T1 t1(Duration1(3));
@@ -56,30 +57,13 @@ int main(int, char**)
     assert((t1 != t2));
   }
 
-  {
-    constexpr T1 t1(Duration1(3));
-    constexpr T1 t2(Duration1(3));
-    static_assert((t1 == t2), "");
-    static_assert(!(t1 != t2), "");
-  }
-  {
-    constexpr T1 t1(Duration1(3));
-    constexpr T1 t2(Duration1(4));
-    static_assert(!(t1 == t2), "");
-    static_assert((t1 != t2), "");
-  }
-  {
-    constexpr T1 t1(Duration1(3));
-    constexpr T2 t2(Duration2(3000));
-    static_assert((t1 == t2), "");
-    static_assert(!(t1 != t2), "");
-  }
-  {
-    constexpr T1 t1(Duration1(3));
-    constexpr T2 t2(Duration2(3001));
-    static_assert(!(t1 == t2), "");
-    static_assert((t1 != t2), "");
-  }
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }

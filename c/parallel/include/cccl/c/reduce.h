@@ -32,6 +32,9 @@ typedef struct cccl_device_reduce_build_result_t
   CUkernel single_tile_kernel;
   CUkernel single_tile_second_kernel;
   CUkernel reduction_kernel;
+  CUkernel nondeterministic_atomic_kernel;
+  cccl_determinism_t determinism;
+  void* runtime_policy;
 } cccl_device_reduce_build_result_t;
 
 // TODO return a union of nvtx/cuda/nvrtc errors or a string?
@@ -41,6 +44,7 @@ CCCL_C_API CUresult cccl_device_reduce_build(
   cccl_iterator_t d_out,
   cccl_op_t op,
   cccl_value_t init,
+  cccl_determinism_t determinism,
   int cc_major,
   int cc_minor,
   const char* cub_path,
@@ -48,7 +52,34 @@ CCCL_C_API CUresult cccl_device_reduce_build(
   const char* libcudacxx_path,
   const char* ctk_path);
 
+// Extended version with build configuration
+CCCL_C_API CUresult cccl_device_reduce_build_ex(
+  cccl_device_reduce_build_result_t* build,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  cccl_op_t op,
+  cccl_value_t init,
+  cccl_determinism_t determinism,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config);
+
 CCCL_C_API CUresult cccl_device_reduce(
+  cccl_device_reduce_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  uint64_t num_items,
+  cccl_op_t op,
+  cccl_value_t init,
+  CUstream stream);
+
+CCCL_C_API CUresult cccl_device_reduce_nondeterministic(
   cccl_device_reduce_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,

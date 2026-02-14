@@ -12,14 +12,14 @@
 
 // unary_function
 
-// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/std/functional>
 #include <cuda/std/type_traits>
 
 int main(int, char**)
 {
-  typedef cuda::std::unary_function<int, bool> uf;
+  using uf = cuda::std::unary_function<int, bool>;
   static_assert((cuda::std::is_same<uf::argument_type, int>::value), "");
   static_assert((cuda::std::is_same<uf::result_type, bool>::value), "");
 

@@ -62,8 +62,7 @@ using make_tabulate_output_iterator_base =
 // Register tabulate_output_iterator_proxy with 'is_proxy_reference' from
 // type_traits to enable its use with algorithms.
 template <class BinaryFunction, class OutputIterator>
-struct is_proxy_reference<tabulate_output_iterator_proxy<BinaryFunction, OutputIterator>> : true_type
-{};
+inline constexpr bool is_proxy_reference_v<tabulate_output_iterator_proxy<BinaryFunction, OutputIterator>> = true;
 } // namespace detail
 
 //! \addtogroup iterators
@@ -105,7 +104,8 @@ struct is_proxy_reference<tabulate_output_iterator_proxy<BinaryFunction, OutputI
 //!
 //! \see make_tabulate_output_iterator
 template <typename BinaryFunction, typename System = use_default, typename DifferenceT = ptrdiff_t>
-class tabulate_output_iterator : public detail::make_tabulate_output_iterator_base<BinaryFunction, System, DifferenceT>
+class CCCL_DEPRECATED_BECAUSE("Use cuda::tabulate_output_iterator instead") tabulate_output_iterator
+    : public detail::make_tabulate_output_iterator_base<BinaryFunction, System, DifferenceT>
 {
 public:
   //! \cond
@@ -139,7 +139,9 @@ private:
 //! \param fun The \c BinaryFunction invoked whenever assigning to a dereferenced \p tabulate_output_iterator
 //! \see tabulate_output_iterator
 template <typename BinaryFunction>
-tabulate_output_iterator<BinaryFunction> _CCCL_HOST_DEVICE make_tabulate_output_iterator(BinaryFunction fun)
+CCCL_DEPRECATED_BECAUSE("Use cuda::make_tabulate_output_iterator instead")
+_CCCL_HOST_DEVICE tabulate_output_iterator<BinaryFunction>
+make_tabulate_output_iterator(BinaryFunction fun)
 {
   return tabulate_output_iterator<BinaryFunction>(fun);
 }

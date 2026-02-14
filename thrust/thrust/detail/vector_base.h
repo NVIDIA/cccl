@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file vector_base.h
  *  \brief Defines the interface to a base class for
@@ -35,19 +22,31 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/normal_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/iterator/reverse_iterator.h>
 
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__iterator/reverse_iterator.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/swap.h>
 #include <cuda/std/initializer_list>
-#include <cuda/std/utility>
 
 #include <vector>
 
 THRUST_NAMESPACE_BEGIN
 
+struct default_init_t
+{};
+struct no_init_t
+{};
+
+//! Tag to indicate that a vector's elements should be default initialized
+inline constexpr default_init_t default_init;
+
+//! Tag to indicate that a vector's elements should not be initialized
+inline constexpr no_init_t no_init;
+
 namespace detail
 {
-
 template <typename T, typename Alloc>
 class vector_base
 {
@@ -68,8 +67,8 @@ public:
   using iterator       = typename storage_type::iterator;
   using const_iterator = typename storage_type::const_iterator;
 
-  using reverse_iterator       = thrust::reverse_iterator<iterator>;
-  using const_reverse_iterator = thrust::reverse_iterator<const_iterator>;
+  using reverse_iterator       = ::cuda::std::reverse_iterator<iterator>;
+  using const_reverse_iterator = ::cuda::std::reverse_iterator<const_iterator>;
 
   /*! This constructor creates an empty vector_base.
    */
@@ -84,6 +83,16 @@ public:
    *  \param n The number of elements to create.
    */
   explicit vector_base(size_type n);
+
+  //! This constructor creates a vector_base with default-initialized elements.
+  //! \param n The number of elements to create.
+  explicit vector_base(size_type n, default_init_t);
+
+  //! This constructor creates a vector_base without initializing elements. It mandates that the element type is
+  //! trivially default-constructible.
+  //! \param n The number of elements to create.
+  template <typename T2 = T>
+  explicit vector_base(size_type n, no_init_t);
 
   /*! This constructor creates a vector_base with value-initialized elements.
    *  \param n The number of elements to create.
@@ -189,8 +198,7 @@ public:
    *  \param first The beginning of the range.
    *  \param last The end of the range.
    */
-  template <typename InputIterator,
-            ::cuda::std::enable_if_t<::cuda::std::__is_cpp17_input_iterator<InputIterator>::value, int> = 0>
+  template <typename InputIterator, ::cuda::std::enable_if_t<::cuda::std::__has_input_traversal<InputIterator>, int> = 0>
   vector_base(InputIterator first, InputIterator last);
 
   /*! This constructor builds a vector_base from a range.
@@ -198,8 +206,7 @@ public:
    *  \param last The end of the range.
    *  \param alloc The allocator to use by this vector_base.
    */
-  template <typename InputIterator,
-            ::cuda::std::enable_if_t<::cuda::std::__is_cpp17_input_iterator<InputIterator>::value, int> = 0>
+  template <typename InputIterator, ::cuda::std::enable_if_t<::cuda::std::__has_input_traversal<InputIterator>, int> = 0>
   vector_base(InputIterator first, InputIterator last, const Alloc& alloc);
 
   /*! The destructor erases the elements.
@@ -208,7 +215,7 @@ public:
 
   /*! \brief Resizes this vector_base to the specified number of elements.
    *  \param new_size Number of elements this vector_base should contain.
-   *  \throw std::length_error If n exceeds max_size9).
+   *  \throw std::length_error If n exceeds max_size().
    *
    *  This method will resize this vector_base to the specified number of
    *  elements. If the number is smaller than this vector_base's current
@@ -216,6 +223,19 @@ public:
    *  extended and new elements are value initialized.
    */
   void resize(size_type new_size);
+
+  //! \brief Resizes this vector_base to the specified number of elements, performing default-initialization instead of
+  //!         value-initialization.
+  //! \param new_size Number of elements this vector_base should contain.
+  //! \throw std::length_error If n exceeds max_size().
+  void resize(size_type new_size, default_init_t);
+
+  //! \brief Resizes this vector_base to the specified number of elements, without initializing elements. It mandates
+  //! that the element type is trivially default-constructible.
+  //! \param new_size Number of elements this vector_base should contain.
+  //! \throw std::length_error If n exceeds max_size().
+  template <typename T2 = T>
+  void resize(size_type new_size, no_init_t);
 
   /*! \brief Resizes this vector_base to the specified number of elements.
    *  \param new_size Number of elements this vector_base should contain.
@@ -491,13 +511,6 @@ protected:
   size_type m_size;
 
 private:
-  // these methods resolve the ambiguity of the constructor template of form (Iterator, Iterator)
-  template <typename IteratorOrIntegralType>
-  void init_dispatch(IteratorOrIntegralType begin, IteratorOrIntegralType end, false_type);
-
-  template <typename IteratorOrIntegralType>
-  void init_dispatch(IteratorOrIntegralType n, IteratorOrIntegralType value, true_type);
-
   template <typename InputIterator>
   void range_init(InputIterator first, InputIterator last);
 
@@ -515,6 +528,7 @@ private:
   void insert_dispatch(iterator position, InputIteratorOrIntegralType n, InputIteratorOrIntegralType x, true_type);
 
   // this method appends n value-initialized elements at the end
+  template <bool SkipInit = false>
   void append(size_type n);
 
   // this method performs insertion from a fill value
@@ -523,14 +537,6 @@ private:
   // this method performs insertion from a range
   template <typename InputIterator>
   void copy_insert(iterator position, InputIterator first, InputIterator last);
-
-  // these methods resolve the ambiguity of the assign() template of form (InputIterator, InputIterator)
-  template <typename InputIterator>
-  void assign_dispatch(InputIterator first, InputIterator last, false_type);
-
-  // these methods resolve the ambiguity of the assign() template of form (InputIterator, InputIterator)
-  template <typename Integral>
-  void assign_dispatch(Integral n, Integral x, true_type);
 
   // this method performs assignment from a range
   template <typename InputIterator>
@@ -587,7 +593,6 @@ bool operator!=(const vector_base<T1, Alloc1>& lhs, const std::vector<T2, Alloc2
 
 template <typename T1, typename Alloc1, typename T2, typename Alloc2>
 bool operator!=(const std::vector<T1, Alloc1>& lhs, const vector_base<T2, Alloc2>& rhs);
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file replace.h
  *  \brief Functions for replacing elements in a range with a particular value
@@ -33,8 +20,7 @@
 
 THRUST_NAMESPACE_BEGIN
 
-/*! \addtogroup transformations
- *  \addtogroup replacing
+/*! \addtogroup replacing
  *  \ingroup transformations
  *  \{
  */
@@ -85,6 +71,10 @@ THRUST_NAMESPACE_BEGIN
  *  \see \c replace_if
  *  \see \c replace_copy
  *  \see \c replace_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE void
@@ -134,6 +124,10 @@ replace(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \see \c replace_if
  *  \see \c replace_copy
  *  \see \c replace_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename T>
 void replace(ForwardIterator first, ForwardIterator last, const T& old_value, const T& new_value);
@@ -196,6 +190,10 @@ void replace(ForwardIterator first, ForwardIterator last, const T& old_value, co
  *  \see \c replace
  *  \see \c replace_copy
  *  \see \c replace_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate, typename T>
 _CCCL_HOST_DEVICE void replace_if(
@@ -257,6 +255,10 @@ _CCCL_HOST_DEVICE void replace_if(
  *  \see \c replace
  *  \see \c replace_copy
  *  \see \c replace_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename Predicate, typename T>
 void replace_if(ForwardIterator first, ForwardIterator last, Predicate pred, const T& new_value);
@@ -327,6 +329,10 @@ void replace_if(ForwardIterator first, ForwardIterator last, Predicate pred, con
  *  \see \c replace
  *  \see \c replace_copy
  *  \see \c replace_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate, typename T>
 _CCCL_HOST_DEVICE void replace_if(
@@ -397,6 +403,10 @@ _CCCL_HOST_DEVICE void replace_if(
  *  \see \c replace
  *  \see \c replace_copy
  *  \see \c replace_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename InputIterator, typename Predicate, typename T>
 void replace_if(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred, const T& new_value);
@@ -453,6 +463,10 @@ void replace_if(ForwardIterator first, ForwardIterator last, InputIterator stenc
  *  \see \c replace
  *  \see \c replace_if
  *  \see \c replace_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
 _CCCL_HOST_DEVICE OutputIterator replace_copy(
@@ -510,6 +524,10 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy(
  *  \see \c replace
  *  \see \c replace_if
  *  \see \c replace_copy_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename T>
 OutputIterator
@@ -580,6 +598,10 @@ replace_copy(InputIterator first, InputIterator last, OutputIterator result, con
  *  \see \c replace
  *  \see \c replace_if
  *  \see \c replace_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate, typename T>
 _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
@@ -650,6 +672,10 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
  *  \see \c replace
  *  \see \c replace_if
  *  \see \c replace_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename Predicate, typename T>
 OutputIterator
@@ -726,6 +752,10 @@ replace_copy_if(InputIterator first, InputIterator last, OutputIterator result, 
  *
  *  \see \c replace_copy
  *  \see \c replace_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -808,6 +838,10 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
  *
  *  \see \c replace_copy
  *  \see \c replace_if
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate, typename T>
 OutputIterator replace_copy_if(
@@ -818,8 +852,8 @@ OutputIterator replace_copy_if(
   Predicate pred,
   const T& new_value);
 
-/*! \} // end replacing
- *  \} // transformations
+/*!
+ * \} end group replacing
  */
 
 THRUST_NAMESPACE_END

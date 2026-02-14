@@ -34,10 +34,8 @@
 
 namespace cuda::experimental::stf
 {
-
 namespace reserved
 {
-
 // host-allocated pool, modeled as a hashtable keyed by size
 inline auto& host_pool()
 {
@@ -57,7 +55,6 @@ enum : size_t
 {
   maxPoolEntries = 16 * 1024
 };
-
 } // namespace reserved
 
 /**
@@ -126,8 +123,8 @@ inline void* allocateManagedMemory(size_t sz)
  * @param sz size in bytes
  * @param loc location of the call, defaulted
  */
-inline void
-deallocateHostMemory(void* p, size_t sz, const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
+inline void deallocateHostMemory(
+  void* p, size_t sz, const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
 {
   ::std::ignore = loc;
   assert([&] {
@@ -153,7 +150,7 @@ deallocateHostMemory(void* p, size_t sz, const _CUDA_VSTD::source_location loc =
  * @param loc location of the call, defaulted
  */
 inline void deallocateManagedMemory(
-  void* p, size_t sz, const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
+  void* p, size_t sz, const ::cuda::std::source_location loc = ::cuda::std::source_location::current())
 {
   ::std::ignore = loc;
   assert([&] {
@@ -1033,7 +1030,6 @@ UNITTEST("small_vector basics")
 
 namespace reserved
 {
-
 /*!
  * @brief A simple object pool with linear search for managing objects of type `T`.
  *
@@ -1119,7 +1115,5 @@ private:
    */
   ::std::vector<::std::unique_ptr<T>> payload;
 };
-
 } // end namespace reserved
-
 } // namespace cuda::experimental::stf

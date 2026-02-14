@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===
 
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
+
 //// clang-format off
 #include <disable_nvfp_conversions_and_operators.h>
 // clang-format on
@@ -39,7 +42,7 @@ int main(int, char**)
 #endif // ^^^ no native binary128 ^^^
   test_fp_native_type<cuda::std::__fp_format::__bfloat16, void>();
 #if _CCCL_HAS_LONG_DOUBLE() && LDBL_MIN_EXP == -16381 && LDBL_MAX_EXP == 16384 && LDBL_MANT_DIG == 64
-  test_fp_native_type<cuda::std::__fp_format::__fp80_x86, void>();
+  test_fp_native_type<cuda::std::__fp_format::__fp80_x86, long double>();
 #else // ^^^ has native __fp80_x86 ^^^ / vvv no native __fp80_x86 vvv
   test_fp_native_type<cuda::std::__fp_format::__fp80_x86, void>();
 #endif // ^^^ no native __fp80_x86 ^^^

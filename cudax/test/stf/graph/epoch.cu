@@ -10,7 +10,7 @@
 
 /**
  * @file
- * @brief Test explicit uses of the API to change epoch and create a sequence
+ * @brief Test explicit uses of the API to change stage and create a sequence
  *        of CUDA graphs
  */
 
@@ -38,7 +38,7 @@ int main()
     ctx.parallel_for(blocked_partition(), exec_place::current_device(), lA.shape(), lA.rw())
         ->*[] __host__ __device__(size_t i, slice<double> A) { A(i) = cos(A(i)); };
 
-    ctx.change_epoch();
+    ctx.change_stage();
   }
 
   ctx.finalize();

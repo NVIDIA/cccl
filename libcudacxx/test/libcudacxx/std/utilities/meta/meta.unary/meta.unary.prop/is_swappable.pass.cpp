@@ -18,7 +18,6 @@
 
 namespace MyNS
 {
-
 // Make the test types non-copyable so that generic cuda::std::swap is not valid.
 struct A
 {
@@ -57,7 +56,6 @@ struct DeletedSwap
 {
   __host__ __device__ friend void swap(DeletedSwap&, DeletedSwap&) = delete;
 };
-
 } // namespace MyNS
 
 #if 0 // We cannot test this because we need to avoid defining ambiguous overloads
@@ -90,7 +88,7 @@ int main(int, char**)
     // test non-referenceable types
     static_assert(!cuda::std::is_swappable<void>::value, "");
     static_assert(!cuda::std::is_swappable<int() const>::value, "");
-    static_assert(!cuda::std::is_swappable<int()&>::value, "");
+    static_assert(!cuda::std::is_swappable<int() &>::value, "");
   }
   {
     // test that a deleted swap is correctly handled.

@@ -38,7 +38,7 @@ struct A
 __host__ __device__ void ref(A) {}
 } // namespace adl
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+__host__ __device__ constexpr bool test()
 {
   {
     int i                                = 0;
@@ -58,9 +58,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 2017 && !TEST_COMPILER(NVRTC)
   static_assert(test());
-#endif // TEST_STD_VER > 2017 && !TEST_COMPILER(NVRTC)
 
   {
     unary_counting_predicate<bool (*)(int), int> cp(is5);

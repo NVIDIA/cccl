@@ -73,6 +73,7 @@ def nullContext(value):
 
 
 def makeReport(cmd, out, err, rc):
+    cmd = " ".join([f'"{a}"' for a in cmd])
     report = "Command: %s\n" % cmd
     report += "Exit Code: %d\n" % rc
     if out:

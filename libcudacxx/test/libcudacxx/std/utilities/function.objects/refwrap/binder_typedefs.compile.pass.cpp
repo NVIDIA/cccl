@@ -7,9 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// REQUIRES: c++03 || c++11 || c++14 || c++17
+// REQUIRES: c++17
 
-// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 // <functional>
 
@@ -17,7 +17,7 @@
 
 // check that binder typedefs exit
 
-// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/std/functional>
 #include <cuda/std/type_traits>
@@ -25,15 +25,15 @@
 
 struct UnaryFunction
 {
-  typedef long argument_type;
-  typedef char result_type;
+  using argument_type = long;
+  using result_type   = char;
 };
 
 struct BinaryFunction
 {
-  typedef int first_argument_type;
-  typedef char second_argument_type;
-  typedef long result_type;
+  using first_argument_type  = int;
+  using second_argument_type = char;
+  using result_type          = long;
 };
 
 static_assert(cuda::std::is_same<cuda::std::reference_wrapper<int (UnaryFunction::*)()>::result_type, int>::value, "");

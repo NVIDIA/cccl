@@ -6,8 +6,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#ifndef _LIBCUDACXX___EXPECTED_BAD_EXPECTED_ACCESS_H
-#define _LIBCUDACXX___EXPECTED_BAD_EXPECTED_ACCESS_H
+#ifndef _CUDA_STD___EXPECTED_BAD_EXPECTED_ACCESS_H
+#define _CUDA_STD___EXPECTED_BAD_EXPECTED_ACCESS_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,24 +26,24 @@
 #include <nv/target>
 
 #if _CCCL_HAS_EXCEPTIONS()
-#  ifdef __cpp_lib_expected
+#  if __cpp_lib_expected >= 202202L
 #    include <expected>
-#  else // ^^^ __cpp_lib_expected ^^^ / vvv !__cpp_lib_expected vvv
+#  else // ^^^ __cpp_lib_expected >= 202202L ^^^ / vvv __cpp_lib_expected < 202202L vvv
 #    include <exception>
-#  endif // !__cpp_lib_expected
+#  endif // ^^^ __cpp_lib_expected < 202202L ^^^
 #endif // !_CCCL_HAS_EXCEPTIONS()
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_EXCEPTIONS()
 
-#  ifdef __cpp_lib_expected
+#  if __cpp_lib_expected >= 202202L
 
 using ::std::bad_expected_access;
 
-#  else // ^^^ __cpp_lib_expected ^^^ / vvv !__cpp_lib_expected vvv
+#  else // ^^^ __cpp_lib_expected >= 202202L ^^^ / vvv __cpp_lib_expected < 202202L vvv
 
 template <class _Err>
 class bad_expected_access;
@@ -70,7 +70,7 @@ public:
   _CCCL_HOST_DEVICE
 #    endif // _CCCL_CUDA_COMPILER(CLANG)
   _CCCL_HIDE_FROM_ABI explicit bad_expected_access(_Err __e)
-      : __unex_(_CUDA_VSTD::move(__e))
+      : __unex_(::cuda::std::move(__e))
   {}
 
 #    if _CCCL_CUDA_COMPILER(CLANG) // Clang needs this or it breaks with device only types
@@ -81,47 +81,47 @@ public:
     __unex_.~_Err();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _Err& error() & noexcept
+  _CCCL_API inline _Err& error() & noexcept
   {
     return __unex_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI const _Err& error() const& noexcept
+  _CCCL_API inline const _Err& error() const& noexcept
   {
     return __unex_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _Err&& error() && noexcept
+  _CCCL_API inline _Err&& error() && noexcept
   {
-    return _CUDA_VSTD::move(__unex_);
+    return ::cuda::std::move(__unex_);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI const _Err&& error() const&& noexcept
+  _CCCL_API inline const _Err&& error() const&& noexcept
   {
-    return _CUDA_VSTD::move(__unex_);
+    return ::cuda::std::move(__unex_);
   }
 
 private:
   _Err __unex_;
 };
-#  endif // !__cpp_lib_expected
+#  endif // ^^^ __cpp_lib_expected < 202202L ^^^
 
 #endif // _CCCL_HAS_EXCEPTIONS()
 
 template <class _Err, class _Arg>
-[[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_expected_access([[maybe_unused]] _Arg&& __arg)
+[[noreturn]] _CCCL_API inline void __throw_bad_expected_access([[maybe_unused]] _Arg&& __arg)
 {
 #if _CCCL_HAS_EXCEPTIONS()
   NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (throw _CUDA_VSTD::bad_expected_access<_Err>(_CUDA_VSTD::forward<_Arg>(__arg));),
-                    ((void) __arg; _CUDA_VSTD_NOVERSION::terminate();))
+                    (throw ::cuda::std::bad_expected_access<_Err>(::cuda::std::forward<_Arg>(__arg));),
+                    ((void) __arg; ::cuda::std::terminate();))
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-  _CUDA_VSTD_NOVERSION::terminate();
+  ::cuda::std::terminate();
 #endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___EXPECTED_BAD_EXPECTED_ACCESS_H
+#endif // _CUDA_STD___EXPECTED_BAD_EXPECTED_ACCESS_H

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_META
-#define __CUDAX_ASYNC_DETAIL_META
+#ifndef __CUDAX_EXECUTION_META
+#define __CUDAX_EXECUTION_META
 
 #include <cuda/std/detail/__config>
 
@@ -26,151 +26,17 @@
 #include <cuda/std/__type_traits/is_valid_expansion.h>
 #include <cuda/std/__type_traits/type_list.h>
 
-#if __cpp_lib_three_way_comparison
+#include <cuda/experimental/__detail/utility.cuh>
+#include <cuda/experimental/__execution/diagnostics.cuh>
+
+#if __cpp_lib_three_way_comparison >= 201907L
 #  include <compare> // IWYU pragma: keep
-#endif
+#endif // __cpp_lib_three_way_comparison >= 201907L
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wgnu-string-literal-operator-template")
-_CCCL_DIAG_SUPPRESS_GCC("-Wnon-template-friend")
-
 namespace cuda::experimental::execution
 {
-template <class _Ret, class... _Args>
-using __fn_t _CCCL_NODEBUG_ALIAS = _Ret(_Args...);
-
-template <class _Ty>
-auto declval() noexcept -> _Ty&&;
-
-template <size_t... _Vals>
-struct __moffsets;
-
-// The following must be left undefined
-template <class...>
-struct _DIAGNOSTIC;
-
-struct _WHERE;
-
-struct _IN_ALGORITHM;
-
-struct _WHAT;
-
-struct _WHY;
-
-struct _WITH_FUNCTION;
-
-struct _WITH_SENDER;
-
-struct _WITH_ARGUMENTS;
-
-struct _WITH_QUERY;
-
-struct _WITH_ENVIRONMENT;
-
-struct _WITH_SIGNATURES;
-
-template <class>
-struct _WITH_COMPLETION_SIGNATURE;
-
-struct _FUNCTION_IS_NOT_CALLABLE;
-
-struct _UNKNOWN;
-
-struct _SENDER_HAS_TOO_MANY_SUCCESS_COMPLETIONS;
-
-struct _ARGUMENTS_ARE_NOT_DECAY_COPYABLE;
-
-template <class... _Sigs>
-struct _WITH_COMPLETIONS
-{};
-
-struct __merror_base
-{
-  // _CCCL_HIDE_FROM_ABI virtual ~__merror_base() = default;
-
-  _CCCL_HOST_DEVICE constexpr friend auto __ustdex_unhandled_error(void*) noexcept -> bool
-  {
-    return true;
-  }
-};
-
-template <class... _What>
-struct _ERROR : __merror_base
-{
-  // The following aliases are to simplify error propagation
-  // in the completion signatures meta-programming.
-  template <class...>
-  using __call _CCCL_NODEBUG_ALIAS = _ERROR;
-
-  using __partitioned _CCCL_NODEBUG_ALIAS = _ERROR;
-
-  template <template <class...> class, template <class...> class>
-  using __value_types _CCCL_NODEBUG_ALIAS = _ERROR;
-
-  template <template <class...> class>
-  using __error_types _CCCL_NODEBUG_ALIAS = _ERROR;
-
-  using __sends_stopped _CCCL_NODEBUG_ALIAS = _ERROR;
-
-  // The following operator overloads also simplify error propagation.
-  _CCCL_HOST_DEVICE auto operator+() -> _ERROR;
-
-  template <class _Ty>
-  _CCCL_HOST_DEVICE auto operator,(_Ty&) -> _ERROR&;
-
-  template <class... _With>
-  _CCCL_HOST_DEVICE auto with(_ERROR<_With...>&) -> _ERROR<_What..., _With...>&;
-};
-
-_CCCL_HOST_DEVICE constexpr auto __ustdex_unhandled_error(...) noexcept -> bool
-{
-  return false;
-}
-
-template <class _Ty>
-inline constexpr bool __type_is_error = false;
-
-template <class... _What>
-inline constexpr bool __type_is_error<_ERROR<_What...>> = true;
-
-template <class... _What>
-inline constexpr bool __type_is_error<_ERROR<_What...>&> = true;
-
-// True if any of the types in _Ts... are errors; false otherwise.
-template <class... _Ts>
-inline constexpr bool __type_contains_error =
-#if _CCCL_COMPILER(MSVC)
-  (__type_is_error<_Ts> || ...);
-#else
-  __ustdex_unhandled_error(static_cast<_CUDA_VSTD::__type_list<_Ts...>*>(nullptr));
-#endif
-
-template <class... _Ts>
-using __type_find_error _CCCL_NODEBUG_ALIAS = decltype(+(declval<_Ts&>(), ..., declval<_ERROR<_UNKNOWN>&>()));
-
-template <template <class...> class _Fn, class... _Ts>
-inline constexpr bool __type_valid_v = _CUDA_VSTD::_IsValidExpansion<_Fn, _Ts...>::value;
-
-template <bool _Error>
-struct __type_self_or_error_with_
-{
-  template <class _Ty, class... _With>
-  using __call _CCCL_NODEBUG_ALIAS = _Ty;
-};
-
-template <>
-struct __type_self_or_error_with_<true>
-{
-  template <class _Ty, class... _With>
-  using __call _CCCL_NODEBUG_ALIAS = decltype(declval<_Ty&>().with(declval<_ERROR<_With...>&>()));
-};
-
-template <class _Ty, class... _With>
-using __type_self_or_error_with _CCCL_NODEBUG_ALIAS =
-  _CUDA_VSTD::__type_call<__type_self_or_error_with_<__type_is_error<_Ty>>, _Ty, _With...>;
-
 template <bool>
 struct __type_try__;
 
@@ -229,9 +95,9 @@ struct __type_try_quote<_Fn, _Default>
 {
   template <class... _Ts>
   using __call _CCCL_NODEBUG_ALIAS =
-    typename _CUDA_VSTD::conditional_t<__type_valid_v<_Fn, _Ts...>, //
-                                       __type_try_quote<_Fn>,
-                                       _CUDA_VSTD::__type_always<_Default>>::template __call<_Ts...>;
+    typename ::cuda::std::_If<__is_instantiable_with<_Fn, _Ts...>, //
+                              __type_try_quote<_Fn>,
+                              ::cuda::std::__type_always<_Default>>::template __call<_Ts...>;
 };
 
 template <class _Return>
@@ -241,18 +107,18 @@ struct __type_function
   using __call _CCCL_NODEBUG_ALIAS = _Return(_Args...);
 };
 
-template <class _First, class _Second>
-struct __type_pair
+template <class _Return>
+struct __type_function1
 {
-  using first _CCCL_NODEBUG_ALIAS  = _First;
-  using second _CCCL_NODEBUG_ALIAS = _Second;
+  template <class _Arg>
+  using __call _CCCL_NODEBUG_ALIAS = _Return(_Arg);
 };
 
-template <class _Pair>
-using __type_first _CCCL_NODEBUG_ALIAS = typename _Pair::first;
+template <class _First, class _Second>
+using __type_first = _First;
 
-template <class _Pair>
-using __type_second _CCCL_NODEBUG_ALIAS = typename _Pair::second;
+template <class _First, class _Second>
+using __type_second = _Second;
 
 template <template <class...> class _Second, template <class...> class _First>
 struct __type_compose_quote
@@ -264,7 +130,7 @@ struct __type_compose_quote
 struct __type_count
 {
   template <class... _Ts>
-  using __call _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::integral_constant<size_t, sizeof...(_Ts)>;
+  using __call _CCCL_NODEBUG_ALIAS = ::cuda::std::integral_constant<size_t, sizeof...(_Ts)>;
 };
 
 template <class _Continuation>
@@ -272,11 +138,11 @@ struct __type_concat_into
 {
   template <class... _Args>
   using __call _CCCL_NODEBUG_ALIAS =
-    _CUDA_VSTD::__type_call1<_CUDA_VSTD::__type_concat<_CUDA_VSTD::__as_type_list<_Args>...>, _Continuation>;
+    ::cuda::std::__type_call1<::cuda::std::__type_concat<::cuda::std::__as_type_list<_Args>...>, _Continuation>;
 };
 
 template <template <class...> class _Continuation>
-struct __type_concat_into_quote : __type_concat_into<_CUDA_VSTD::__type_quote<_Continuation>>
+struct __type_concat_into_quote : __type_concat_into<::cuda::std::__type_quote<_Continuation>>
 {};
 
 template <class _Ty>
@@ -286,16 +152,19 @@ struct __type_self_or
   using __call _CCCL_NODEBUG_ALIAS = _Uy;
 };
 
-template <class _Ret>
-struct __type_quote_function
-{
-  template <class... _Args>
-  using __call _CCCL_NODEBUG_ALIAS = _Ret(_Args...);
-};
-} // namespace cuda::experimental::execution
+template <template <class...> class _Fn, class _Default, class... _Ts>
+using __type_call_or_quote =
+  typename ::cuda::std::_If<__is_instantiable_with<_Fn, _Ts...>,
+                            ::cuda::std::__type_quote<_Fn>,
+                            ::cuda::std::__type_always<_Default>>::template __call<_Ts...>;
 
-_CCCL_DIAG_POP
+template <class _Fn, class _Default, class... _Ts>
+using __type_call_or =
+  typename ::cuda::std::_If<__is_instantiable_with<_Fn::template __call, _Ts...>,
+                            _Fn,
+                            ::cuda::std::__type_always<_Default>>::template __call<_Ts...>;
+} // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_META

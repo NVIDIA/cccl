@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file partition.h
  *  \brief Reorganizes a range based on a predicate
@@ -30,12 +17,14 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
-#include <thrust/pair.h>
+
+#include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup reordering
  *  \ingroup algorithms
+ *  \{
  *
  *  \addtogroup partitioning
  *  \ingroup reordering
@@ -97,6 +86,10 @@ THRUST_NAMESPACE_BEGIN
  *  \see https://en.cppreference.com/w/cpp/algorithm/partition
  *  \see \p stable_partition
  *  \see \p partition_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
 _CCCL_HOST_DEVICE ForwardIterator partition(
@@ -154,6 +147,10 @@ _CCCL_HOST_DEVICE ForwardIterator partition(
  *  \see https://en.cppreference.com/w/cpp/algorithm/partition
  *  \see \p stable_partition
  *  \see \p partition_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator partition(ForwardIterator first, ForwardIterator last, Predicate pred);
@@ -218,6 +215,10 @@ ForwardIterator partition(ForwardIterator first, ForwardIterator last, Predicate
  *  \see https://en.cppreference.com/w/cpp/algorithm/partition
  *  \see \p stable_partition
  *  \see \p partition_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE ForwardIterator partition(
@@ -282,6 +283,10 @@ _CCCL_HOST_DEVICE ForwardIterator partition(
  *  \see https://en.cppreference.com/w/cpp/algorithm/partition
  *  \see \p stable_partition
  *  \see \p partition_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator partition(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred);
@@ -354,13 +359,17 @@ ForwardIterator partition(ForwardIterator first, ForwardIterator last, InputIter
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2008/n2569.pdf
  *  \see \p stable_partition_copy
  *  \see \p partition
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -430,9 +439,13 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2008/n2569.pdf
  *  \see \p stable_partition_copy
  *  \see \p partition
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator1, typename OutputIterator2, typename Predicate>
-thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
+::cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
   InputIterator first, InputIterator last, OutputIterator1 out_true, OutputIterator2 out_false, Predicate pred);
 
 /*! \p partition_copy differs from \p partition only in that the reordered
@@ -500,6 +513,10 @@ thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2008/n2569.pdf
  *  \see \p stable_partition_copy
  *  \see \p partition
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -507,7 +524,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -575,13 +592,17 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2008/n2569.pdf
  *  \see \p stable_partition_copy
  *  \see \p partition
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
+::cuda::std::pair<OutputIterator1, OutputIterator2> partition_copy(
   InputIterator1 first,
   InputIterator1 last,
   InputIterator2 stencil,
@@ -647,6 +668,10 @@ thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
  *  \see https://en.cppreference.com/w/cpp/algorithm/stable_partition
  *  \see \p partition
  *  \see \p stable_partition_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
 _CCCL_HOST_DEVICE ForwardIterator stable_partition(
@@ -707,6 +732,10 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
  *  \see https://en.cppreference.com/w/cpp/algorithm/stable_partition
  *  \see \p partition
  *  \see \p stable_partition_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator stable_partition(ForwardIterator first, ForwardIterator last, Predicate pred);
@@ -773,6 +802,10 @@ ForwardIterator stable_partition(ForwardIterator first, ForwardIterator last, Pr
  *  \see https://en.cppreference.com/w/cpp/algorithm/stable_partition
  *  \see \p partition
  *  \see \p stable_partition_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE ForwardIterator stable_partition(
@@ -839,6 +872,10 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
  *  \see https://en.cppreference.com/w/cpp/algorithm/stable_partition
  *  \see \p partition
  *  \see \p stable_partition_copy
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator stable_partition(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred);
@@ -913,13 +950,17 @@ ForwardIterator stable_partition(ForwardIterator first, ForwardIterator last, In
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2008/n2569.pdf
  *  \see \p partition_copy
  *  \see \p stable_partition
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
@@ -991,9 +1032,13 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partitio
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2008/n2569.pdf
  *  \see \p partition_copy
  *  \see \p stable_partition
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator1, typename OutputIterator2, typename Predicate>
-thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   InputIterator first, InputIterator last, OutputIterator1 out_true, OutputIterator2 out_false, Predicate pred);
 
 /*! \p stable_partition_copy differs from \p stable_partition only in that the reordered
@@ -1063,6 +1108,10 @@ thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2008/n2569.pdf
  *  \see \p partition_copy
  *  \see \p stable_partition
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -1070,7 +1119,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
   InputIterator1 last,
@@ -1140,13 +1189,17 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partitio
  *  \see http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2008/n2569.pdf
  *  \see \p partition_copy
  *  \see \p stable_partition
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,
           typename OutputIterator1,
           typename OutputIterator2,
           typename Predicate>
-thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+::cuda::std::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   InputIterator1 first,
   InputIterator1 last,
   InputIterator2 stencil,
@@ -1154,10 +1207,12 @@ thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   OutputIterator2 out_false,
   Predicate pred);
 
-/*! \} // end stream_compaction
+/*!
+ * \} end group partitioning
  */
 
-/*! \} // end reordering
+/*!
+ * \} end group reordering
  */
 
 /*! \addtogroup searching
@@ -1213,6 +1268,10 @@ thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
  *
  *  \see \p partition
  *  \see \p find_if_not
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
 _CCCL_HOST_DEVICE ForwardIterator partition_point(
@@ -1264,11 +1323,16 @@ _CCCL_HOST_DEVICE ForwardIterator partition_point(
  *
  *  \see \p partition
  *  \see \p find_if_not
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator partition_point(ForwardIterator first, ForwardIterator last, Predicate pred);
 
-/*! \} // searching
+/*!
+ * \} end group searching
  */
 
 /*! \addtogroup reductions
@@ -1322,6 +1386,10 @@ ForwardIterator partition_point(ForwardIterator first, ForwardIterator last, Pre
  *  \endcode
  *
  *  \see \p partition
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE bool is_partitioned(
@@ -1370,12 +1438,20 @@ _CCCL_HOST_DEVICE bool is_partitioned(
  *  \endcode
  *
  *  \see \p partition
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename Predicate>
 bool is_partitioned(InputIterator first, InputIterator last, Predicate pred);
 
-/*! \} // end predicates
- *  \} // end reductions
+/*!
+ * \} end group predicates
+ */
+
+/*!
+ * \} end group reductions
  */
 
 THRUST_NAMESPACE_END

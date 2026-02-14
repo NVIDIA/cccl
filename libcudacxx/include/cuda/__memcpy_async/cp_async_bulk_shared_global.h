@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_PTX__MEMCPY_ASYNC_CP_ASYNC_BULK_SHARED_GLOBAL_H_
-#define _CUDA_PTX__MEMCPY_ASYNC_CP_ASYNC_BULK_SHARED_GLOBAL_H_
+#ifndef _CUDA___MEMCPY_ASYNC_CP_ASYNC_BULK_SHARED_GLOBAL_H_
+#define _CUDA___MEMCPY_ASYNC_CP_ASYNC_BULK_SHARED_GLOBAL_H_
 
 #include <cuda/std/detail/__config>
 
@@ -22,39 +22,50 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  if __cccl_ptx_isa >= 800
 
+#    include <cuda/__memcpy_async/elect_one.h>
 #    include <cuda/__ptx/instructions/cp_async_bulk.h>
+#    include <cuda/__ptx/instructions/mbarrier_expect_tx.h>
 #    include <cuda/__ptx/ptx_dot_variants.h>
 #    include <cuda/__ptx/ptx_helper_functions.h>
+#    include <cuda/std/__type_traits/conditional.h>
 #    include <cuda/std/cstdint>
 
 #    include <nv/target>
 
 #    include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();
 template <typename _Group>
-inline _CCCL_DEVICE void __cp_async_bulk_shared_global(
-  const _Group& __g, char* __dest, const char* __src, _CUDA_VSTD::size_t __size, _CUDA_VSTD::uint64_t* __bar_handle)
+inline _CCCL_DEVICE void __cp_async_bulk_shared_global_and_expect_tx(
+  const _Group& __g, char* __dest, const char* __src, ::cuda::std::size_t __size, ::cuda::std::uint64_t* __bar_handle)
 {
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
-                    (if (__g.thread_rank() == 0) {
-                      _CUDA_VPTX::cp_async_bulk(
-                        _CUDA_VPTX::space_cluster, _CUDA_VPTX::space_global, __dest, __src, __size, __bar_handle);
-                    }),
-                    (__cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();));
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_90,
+    (if (::cuda::device::__group_elect_one(__g)) {
+      ::cuda::ptx::cp_async_bulk(
+        ::cuda::std::conditional_t<__cccl_ptx_isa >= 860, ::cuda::ptx::space_shared_t, ::cuda::ptx::space_cluster_t>{},
+        ::cuda::ptx::space_global,
+        __dest,
+        __src,
+        __size,
+        __bar_handle);
+      ::cuda::ptx::mbarrier_expect_tx(
+        ::cuda::ptx::sem_relaxed, ::cuda::ptx::scope_cta, ::cuda::ptx::space_shared, __bar_handle, __size);
+    }),
+    (::cuda::__cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();));
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #    include <cuda/std/__cccl/epilogue.h>
 
 #  endif // __cccl_ptx_isa >= 800
-#endif // _CCCL_CUDA_COMPILER
+#endif // _CCCL_CUDA_COMPILATION()
 
-#endif // _CUDA_PTX__MEMCPY_ASYNC_CP_ASYNC_BULK_SHARED_GLOBAL_H_
+#endif // _CUDA___MEMCPY_ASYNC_CP_ASYNC_BULK_SHARED_GLOBAL_H_

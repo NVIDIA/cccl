@@ -3,7 +3,7 @@
 
 multimem.red.relaxed.cta.global.min.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -19,7 +19,7 @@ multimem.red.relaxed.cta.global.min.u32
 
 multimem.red.relaxed.cluster.global.min.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -35,7 +35,7 @@ multimem.red.relaxed.cluster.global.min.u32
 
 multimem.red.relaxed.gpu.global.min.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -51,7 +51,7 @@ multimem.red.relaxed.gpu.global.min.u32
 
 multimem.red.relaxed.sys.global.min.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -67,7 +67,7 @@ multimem.red.relaxed.sys.global.min.u32
 
 multimem.red.release.cta.global.min.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -83,7 +83,7 @@ multimem.red.release.cta.global.min.u32
 
 multimem.red.release.cluster.global.min.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -99,7 +99,7 @@ multimem.red.release.cluster.global.min.u32
 
 multimem.red.release.gpu.global.min.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -115,7 +115,7 @@ multimem.red.release.gpu.global.min.u32
 
 multimem.red.release.sys.global.min.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -131,7 +131,7 @@ multimem.red.release.sys.global.min.u32
 
 multimem.red.relaxed.cta.global.min.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -147,7 +147,7 @@ multimem.red.relaxed.cta.global.min.u64
 
 multimem.red.relaxed.cluster.global.min.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -163,7 +163,7 @@ multimem.red.relaxed.cluster.global.min.u64
 
 multimem.red.relaxed.gpu.global.min.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -179,7 +179,7 @@ multimem.red.relaxed.gpu.global.min.u64
 
 multimem.red.relaxed.sys.global.min.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -195,7 +195,7 @@ multimem.red.relaxed.sys.global.min.u64
 
 multimem.red.release.cta.global.min.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -211,7 +211,7 @@ multimem.red.release.cta.global.min.u64
 
 multimem.red.release.cluster.global.min.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -227,7 +227,7 @@ multimem.red.release.cluster.global.min.u64
 
 multimem.red.release.gpu.global.min.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -243,7 +243,7 @@ multimem.red.release.gpu.global.min.u64
 
 multimem.red.release.sys.global.min.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -259,7 +259,7 @@ multimem.red.release.sys.global.min.u64
 
 multimem.red.relaxed.cta.global.min.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -275,7 +275,7 @@ multimem.red.relaxed.cta.global.min.s32
 
 multimem.red.relaxed.cluster.global.min.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -291,7 +291,7 @@ multimem.red.relaxed.cluster.global.min.s32
 
 multimem.red.relaxed.gpu.global.min.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -307,7 +307,7 @@ multimem.red.relaxed.gpu.global.min.s32
 
 multimem.red.relaxed.sys.global.min.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -323,7 +323,7 @@ multimem.red.relaxed.sys.global.min.s32
 
 multimem.red.release.cta.global.min.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -339,7 +339,7 @@ multimem.red.release.cta.global.min.s32
 
 multimem.red.release.cluster.global.min.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -355,7 +355,7 @@ multimem.red.release.cluster.global.min.s32
 
 multimem.red.release.gpu.global.min.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -371,7 +371,7 @@ multimem.red.release.gpu.global.min.s32
 
 multimem.red.release.sys.global.min.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -387,7 +387,7 @@ multimem.red.release.sys.global.min.s32
 
 multimem.red.relaxed.cta.global.min.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -403,7 +403,7 @@ multimem.red.relaxed.cta.global.min.s64
 
 multimem.red.relaxed.cluster.global.min.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -419,7 +419,7 @@ multimem.red.relaxed.cluster.global.min.s64
 
 multimem.red.relaxed.gpu.global.min.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -435,7 +435,7 @@ multimem.red.relaxed.gpu.global.min.s64
 
 multimem.red.relaxed.sys.global.min.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -451,7 +451,7 @@ multimem.red.relaxed.sys.global.min.s64
 
 multimem.red.release.cta.global.min.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -467,7 +467,7 @@ multimem.red.release.cta.global.min.s64
 
 multimem.red.release.cluster.global.min.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -483,7 +483,7 @@ multimem.red.release.cluster.global.min.s64
 
 multimem.red.release.gpu.global.min.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -499,7 +499,7 @@ multimem.red.release.gpu.global.min.s64
 
 multimem.red.release.sys.global.min.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -515,7 +515,7 @@ multimem.red.release.sys.global.min.s64
 
 multimem.red.relaxed.cta.global.max.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -531,7 +531,7 @@ multimem.red.relaxed.cta.global.max.u32
 
 multimem.red.relaxed.cluster.global.max.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -547,7 +547,7 @@ multimem.red.relaxed.cluster.global.max.u32
 
 multimem.red.relaxed.gpu.global.max.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -563,7 +563,7 @@ multimem.red.relaxed.gpu.global.max.u32
 
 multimem.red.relaxed.sys.global.max.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -579,7 +579,7 @@ multimem.red.relaxed.sys.global.max.u32
 
 multimem.red.release.cta.global.max.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -595,7 +595,7 @@ multimem.red.release.cta.global.max.u32
 
 multimem.red.release.cluster.global.max.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -611,7 +611,7 @@ multimem.red.release.cluster.global.max.u32
 
 multimem.red.release.gpu.global.max.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -627,7 +627,7 @@ multimem.red.release.gpu.global.max.u32
 
 multimem.red.release.sys.global.max.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -643,7 +643,7 @@ multimem.red.release.sys.global.max.u32
 
 multimem.red.relaxed.cta.global.max.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -659,7 +659,7 @@ multimem.red.relaxed.cta.global.max.u64
 
 multimem.red.relaxed.cluster.global.max.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -675,7 +675,7 @@ multimem.red.relaxed.cluster.global.max.u64
 
 multimem.red.relaxed.gpu.global.max.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -691,7 +691,7 @@ multimem.red.relaxed.gpu.global.max.u64
 
 multimem.red.relaxed.sys.global.max.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -707,7 +707,7 @@ multimem.red.relaxed.sys.global.max.u64
 
 multimem.red.release.cta.global.max.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -723,7 +723,7 @@ multimem.red.release.cta.global.max.u64
 
 multimem.red.release.cluster.global.max.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -739,7 +739,7 @@ multimem.red.release.cluster.global.max.u64
 
 multimem.red.release.gpu.global.max.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -755,7 +755,7 @@ multimem.red.release.gpu.global.max.u64
 
 multimem.red.release.sys.global.max.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -771,7 +771,7 @@ multimem.red.release.sys.global.max.u64
 
 multimem.red.relaxed.cta.global.max.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -787,7 +787,7 @@ multimem.red.relaxed.cta.global.max.s32
 
 multimem.red.relaxed.cluster.global.max.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -803,7 +803,7 @@ multimem.red.relaxed.cluster.global.max.s32
 
 multimem.red.relaxed.gpu.global.max.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -819,7 +819,7 @@ multimem.red.relaxed.gpu.global.max.s32
 
 multimem.red.relaxed.sys.global.max.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -835,7 +835,7 @@ multimem.red.relaxed.sys.global.max.s32
 
 multimem.red.release.cta.global.max.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -851,7 +851,7 @@ multimem.red.release.cta.global.max.s32
 
 multimem.red.release.cluster.global.max.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -867,7 +867,7 @@ multimem.red.release.cluster.global.max.s32
 
 multimem.red.release.gpu.global.max.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -883,7 +883,7 @@ multimem.red.release.gpu.global.max.s32
 
 multimem.red.release.sys.global.max.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -899,7 +899,7 @@ multimem.red.release.sys.global.max.s32
 
 multimem.red.relaxed.cta.global.max.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -915,7 +915,7 @@ multimem.red.relaxed.cta.global.max.s64
 
 multimem.red.relaxed.cluster.global.max.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -931,7 +931,7 @@ multimem.red.relaxed.cluster.global.max.s64
 
 multimem.red.relaxed.gpu.global.max.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -947,7 +947,7 @@ multimem.red.relaxed.gpu.global.max.s64
 
 multimem.red.relaxed.sys.global.max.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -963,7 +963,7 @@ multimem.red.relaxed.sys.global.max.s64
 
 multimem.red.release.cta.global.max.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -979,7 +979,7 @@ multimem.red.release.cta.global.max.s64
 
 multimem.red.release.cluster.global.max.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -995,7 +995,7 @@ multimem.red.release.cluster.global.max.s64
 
 multimem.red.release.gpu.global.max.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1011,7 +1011,7 @@ multimem.red.release.gpu.global.max.s64
 
 multimem.red.release.sys.global.max.s64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1027,7 +1027,7 @@ multimem.red.release.sys.global.max.s64
 
 multimem.red.relaxed.cta.global.add.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1043,7 +1043,7 @@ multimem.red.relaxed.cta.global.add.u32
 
 multimem.red.relaxed.cluster.global.add.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1059,7 +1059,7 @@ multimem.red.relaxed.cluster.global.add.u32
 
 multimem.red.relaxed.gpu.global.add.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1075,7 +1075,7 @@ multimem.red.relaxed.gpu.global.add.u32
 
 multimem.red.relaxed.sys.global.add.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1091,7 +1091,7 @@ multimem.red.relaxed.sys.global.add.u32
 
 multimem.red.release.cta.global.add.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1107,7 +1107,7 @@ multimem.red.release.cta.global.add.u32
 
 multimem.red.release.cluster.global.add.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1123,7 +1123,7 @@ multimem.red.release.cluster.global.add.u32
 
 multimem.red.release.gpu.global.add.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1139,7 +1139,7 @@ multimem.red.release.gpu.global.add.u32
 
 multimem.red.release.sys.global.add.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1155,7 +1155,7 @@ multimem.red.release.sys.global.add.u32
 
 multimem.red.relaxed.cta.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1171,7 +1171,7 @@ multimem.red.relaxed.cta.global.add.u64
 
 multimem.red.relaxed.cluster.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1187,7 +1187,7 @@ multimem.red.relaxed.cluster.global.add.u64
 
 multimem.red.relaxed.gpu.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1203,7 +1203,7 @@ multimem.red.relaxed.gpu.global.add.u64
 
 multimem.red.relaxed.sys.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1219,7 +1219,7 @@ multimem.red.relaxed.sys.global.add.u64
 
 multimem.red.release.cta.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1235,7 +1235,7 @@ multimem.red.release.cta.global.add.u64
 
 multimem.red.release.cluster.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1251,7 +1251,7 @@ multimem.red.release.cluster.global.add.u64
 
 multimem.red.release.gpu.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1267,7 +1267,7 @@ multimem.red.release.gpu.global.add.u64
 
 multimem.red.release.sys.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1283,7 +1283,7 @@ multimem.red.release.sys.global.add.u64
 
 multimem.red.relaxed.cta.global.add.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1299,7 +1299,7 @@ multimem.red.relaxed.cta.global.add.s32
 
 multimem.red.relaxed.cluster.global.add.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1315,7 +1315,7 @@ multimem.red.relaxed.cluster.global.add.s32
 
 multimem.red.relaxed.gpu.global.add.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1331,7 +1331,7 @@ multimem.red.relaxed.gpu.global.add.s32
 
 multimem.red.relaxed.sys.global.add.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1347,7 +1347,7 @@ multimem.red.relaxed.sys.global.add.s32
 
 multimem.red.release.cta.global.add.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1363,7 +1363,7 @@ multimem.red.release.cta.global.add.s32
 
 multimem.red.release.cluster.global.add.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1379,7 +1379,7 @@ multimem.red.release.cluster.global.add.s32
 
 multimem.red.release.gpu.global.add.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1395,7 +1395,7 @@ multimem.red.release.gpu.global.add.s32
 
 multimem.red.release.sys.global.add.s32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.s32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1411,7 +1411,7 @@ multimem.red.release.sys.global.add.s32
 
 multimem.red.relaxed.cta.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1427,7 +1427,7 @@ multimem.red.relaxed.cta.global.add.u64
 
 multimem.red.relaxed.cluster.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1443,7 +1443,7 @@ multimem.red.relaxed.cluster.global.add.u64
 
 multimem.red.relaxed.gpu.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1459,7 +1459,7 @@ multimem.red.relaxed.gpu.global.add.u64
 
 multimem.red.relaxed.sys.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1475,7 +1475,7 @@ multimem.red.relaxed.sys.global.add.u64
 
 multimem.red.release.cta.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1491,7 +1491,7 @@ multimem.red.release.cta.global.add.u64
 
 multimem.red.release.cluster.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1507,7 +1507,7 @@ multimem.red.release.cluster.global.add.u64
 
 multimem.red.release.gpu.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1523,7 +1523,7 @@ multimem.red.release.gpu.global.add.u64
 
 multimem.red.release.sys.global.add.u64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.u64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1539,7 +1539,7 @@ multimem.red.release.sys.global.add.u64
 
 multimem.red.relaxed.cta.global.and.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1555,7 +1555,7 @@ multimem.red.relaxed.cta.global.and.b32
 
 multimem.red.relaxed.cluster.global.and.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1571,7 +1571,7 @@ multimem.red.relaxed.cluster.global.and.b32
 
 multimem.red.relaxed.gpu.global.and.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1587,7 +1587,7 @@ multimem.red.relaxed.gpu.global.and.b32
 
 multimem.red.relaxed.sys.global.and.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1603,7 +1603,7 @@ multimem.red.relaxed.sys.global.and.b32
 
 multimem.red.release.cta.global.and.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1619,7 +1619,7 @@ multimem.red.release.cta.global.and.b32
 
 multimem.red.release.cluster.global.and.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1635,7 +1635,7 @@ multimem.red.release.cluster.global.and.b32
 
 multimem.red.release.gpu.global.and.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1651,7 +1651,7 @@ multimem.red.release.gpu.global.and.b32
 
 multimem.red.release.sys.global.and.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1667,7 +1667,7 @@ multimem.red.release.sys.global.and.b32
 
 multimem.red.relaxed.cta.global.or.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1683,7 +1683,7 @@ multimem.red.relaxed.cta.global.or.b32
 
 multimem.red.relaxed.cluster.global.or.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1699,7 +1699,7 @@ multimem.red.relaxed.cluster.global.or.b32
 
 multimem.red.relaxed.gpu.global.or.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1715,7 +1715,7 @@ multimem.red.relaxed.gpu.global.or.b32
 
 multimem.red.relaxed.sys.global.or.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1731,7 +1731,7 @@ multimem.red.relaxed.sys.global.or.b32
 
 multimem.red.release.cta.global.or.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1747,7 +1747,7 @@ multimem.red.release.cta.global.or.b32
 
 multimem.red.release.cluster.global.or.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1763,7 +1763,7 @@ multimem.red.release.cluster.global.or.b32
 
 multimem.red.release.gpu.global.or.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1779,7 +1779,7 @@ multimem.red.release.gpu.global.or.b32
 
 multimem.red.release.sys.global.or.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1795,7 +1795,7 @@ multimem.red.release.sys.global.or.b32
 
 multimem.red.relaxed.cta.global.xor.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1811,7 +1811,7 @@ multimem.red.relaxed.cta.global.xor.b32
 
 multimem.red.relaxed.cluster.global.xor.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1827,7 +1827,7 @@ multimem.red.relaxed.cluster.global.xor.b32
 
 multimem.red.relaxed.gpu.global.xor.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1843,7 +1843,7 @@ multimem.red.relaxed.gpu.global.xor.b32
 
 multimem.red.relaxed.sys.global.xor.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1859,7 +1859,7 @@ multimem.red.relaxed.sys.global.xor.b32
 
 multimem.red.release.cta.global.xor.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1875,7 +1875,7 @@ multimem.red.release.cta.global.xor.b32
 
 multimem.red.release.cluster.global.xor.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1891,7 +1891,7 @@ multimem.red.release.cluster.global.xor.b32
 
 multimem.red.release.gpu.global.xor.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1907,7 +1907,7 @@ multimem.red.release.gpu.global.xor.b32
 
 multimem.red.release.sys.global.xor.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b32 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1923,7 +1923,7 @@ multimem.red.release.sys.global.xor.b32
 
 multimem.red.relaxed.cta.global.and.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1939,7 +1939,7 @@ multimem.red.relaxed.cta.global.and.b64
 
 multimem.red.relaxed.cluster.global.and.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1955,7 +1955,7 @@ multimem.red.relaxed.cluster.global.and.b64
 
 multimem.red.relaxed.gpu.global.and.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1971,7 +1971,7 @@ multimem.red.relaxed.gpu.global.and.b64
 
 multimem.red.relaxed.sys.global.and.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -1987,7 +1987,7 @@ multimem.red.relaxed.sys.global.and.b64
 
 multimem.red.release.cta.global.and.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -2003,7 +2003,7 @@ multimem.red.release.cta.global.and.b64
 
 multimem.red.release.cluster.global.and.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -2019,7 +2019,7 @@ multimem.red.release.cluster.global.and.b64
 
 multimem.red.release.gpu.global.and.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -2035,7 +2035,7 @@ multimem.red.release.gpu.global.and.b64
 
 multimem.red.release.sys.global.and.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -2051,7 +2051,7 @@ multimem.red.release.sys.global.and.b64
 
 multimem.red.relaxed.cta.global.or.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -2067,7 +2067,7 @@ multimem.red.relaxed.cta.global.or.b64
 
 multimem.red.relaxed.cluster.global.or.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -2083,7 +2083,7 @@ multimem.red.relaxed.cluster.global.or.b64
 
 multimem.red.relaxed.gpu.global.or.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -2099,7 +2099,7 @@ multimem.red.relaxed.gpu.global.or.b64
 
 multimem.red.relaxed.sys.global.or.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -2115,7 +2115,7 @@ multimem.red.relaxed.sys.global.or.b64
 
 multimem.red.release.cta.global.or.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -2131,7 +2131,7 @@ multimem.red.release.cta.global.or.b64
 
 multimem.red.release.cluster.global.or.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -2147,7 +2147,7 @@ multimem.red.release.cluster.global.or.b64
 
 multimem.red.release.gpu.global.or.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -2163,7 +2163,7 @@ multimem.red.release.gpu.global.or.b64
 
 multimem.red.release.sys.global.or.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -2179,7 +2179,7 @@ multimem.red.release.sys.global.or.b64
 
 multimem.red.relaxed.cta.global.xor.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -2195,7 +2195,7 @@ multimem.red.relaxed.cta.global.xor.b64
 
 multimem.red.relaxed.cluster.global.xor.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -2211,7 +2211,7 @@ multimem.red.relaxed.cluster.global.xor.b64
 
 multimem.red.relaxed.gpu.global.xor.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -2227,7 +2227,7 @@ multimem.red.relaxed.gpu.global.xor.b64
 
 multimem.red.relaxed.sys.global.xor.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -2243,7 +2243,7 @@ multimem.red.relaxed.sys.global.xor.b64
 
 multimem.red.release.cta.global.xor.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -2259,7 +2259,7 @@ multimem.red.release.cta.global.xor.b64
 
 multimem.red.release.cluster.global.xor.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -2275,7 +2275,7 @@ multimem.red.release.cluster.global.xor.b64
 
 multimem.red.release.gpu.global.xor.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }
@@ -2291,7 +2291,7 @@ multimem.red.release.gpu.global.xor.b64
 
 multimem.red.release.sys.global.xor.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // multimem.red.sem.scope.global.op.b64 [addr], val; // PTX ISA 81, SM_90
    // .sem       = { .relaxed, .release }

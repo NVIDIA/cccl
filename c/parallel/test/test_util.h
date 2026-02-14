@@ -18,6 +18,8 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <memory>
+#include <numeric>
 #include <random>
 #include <string>
 #include <tuple>
@@ -48,9 +50,9 @@ inline std::string inspect_sass(const void* cubin, size_t cubin_size)
   temp_in_file.close();
 
   std::string command = "nvdisasm -gi ";
-  command += temp_in_filename;
+  command += temp_in_filename.string();
   command += " > ";
-  command += temp_out_filename;
+  command += temp_out_filename.string();
 
   int exec_code = std::system(command.c_str());
 
@@ -86,38 +88,46 @@ inline std::string compile(const std::string& source)
   nvrtcProgram prog;
   REQUIRE(NVRTC_SUCCESS == nvrtcCreateProgram(&prog, source.c_str(), "op.cu", 0, nullptr, nullptr));
 
-  const char* options[] = {"--std=c++17", "-rdc=true", "-dlto"};
+  // TEST_CTK_PATH needed to include cuda_fp16.h
+  const char* options[] = {"--std=c++17", "-rdc=true", "-dlto", TEST_CTK_PATH};
 
-  if (nvrtcCompileProgram(prog, 3, options) != NVRTC_SUCCESS)
+  if (nvrtcCompileProgram(prog, 4, options) != NVRTC_SUCCESS)
   {
     size_t log_size{};
     REQUIRE(NVRTC_SUCCESS == nvrtcGetProgramLogSize(prog, &log_size));
-    std::unique_ptr<char[]> log{new char[log_size]};
-    REQUIRE(NVRTC_SUCCESS == nvrtcGetProgramLog(prog, log.get()));
-    printf("%s\r\n", log.get());
+    std::vector<char> log(log_size);
+    REQUIRE(NVRTC_SUCCESS == nvrtcGetProgramLog(prog, log.data()));
+    printf("%s\r\n", log.data());
     REQUIRE(false);
   }
 
   std::size_t ltoir_size{};
   REQUIRE(NVRTC_SUCCESS == nvrtcGetLTOIRSize(prog, &ltoir_size));
 
-  std::unique_ptr<char[]> ltoir(new char[ltoir_size]);
+  std::vector<char> ltoir(ltoir_size);
 
-  REQUIRE(NVRTC_SUCCESS == nvrtcGetLTOIR(prog, ltoir.get()));
+  REQUIRE(NVRTC_SUCCESS == nvrtcGetLTOIR(prog, ltoir.data()));
   REQUIRE(NVRTC_SUCCESS == nvrtcDestroyProgram(&prog));
 
-  return std::string(ltoir.get(), ltoir_size);
+  return std::string(ltoir.data(), ltoir_size);
 }
 
 template <class T>
 std::vector<T> generate(std::size_t num_items)
 {
+  // Add support for 8-bit ints, otherwise MSVC fails with:
+  // error C2338: static_assert failed:
+  //   'invalid template argument for uniform_int_distribution:
+  //     N4950 [rand.req.genl]/1.5 requires one of
+  //       short, int, long, long long,
+  //       unsigned short, unsigned int, unsigned long, or unsigned long long'
+  using dist_type = std::conditional_t<sizeof(T) == 1, short, T>;
   std::random_device rnd_device;
   std::mt19937 mersenne_engine{rnd_device()}; // Generates random integers
-  std::uniform_int_distribution<T> dist{T{1}, T{42}};
+  std::uniform_int_distribution<dist_type> dist{dist_type{1}, dist_type{42}};
   std::vector<T> vec(num_items);
   std::generate(vec.begin(), vec.end(), [&]() {
-    return dist(mersenne_engine);
+    return static_cast<T>(dist(mersenne_engine));
   });
   return vec;
 }
@@ -180,6 +190,12 @@ cccl_type_info get_type_info()
   {
     info.type = cccl_type_enum::CCCL_UINT64;
   }
+#if _CCCL_HAS_NVFP16()
+  else if constexpr (std::is_same_v<T, __half>)
+  {
+    info.type = cccl_type_enum::CCCL_FLOAT16;
+  }
+#endif
   else if constexpr (std::is_same_v<T, float>)
   {
     info.type = cccl_type_enum::CCCL_FLOAT32;
@@ -198,6 +214,42 @@ cccl_type_info get_type_info()
   }
 
   return info;
+}
+
+std::string type_enum_to_name(cccl_type_enum type)
+{
+  switch (type)
+  {
+    case cccl_type_enum::CCCL_INT8:
+      return "char";
+    case cccl_type_enum::CCCL_INT16:
+      return "short";
+    case cccl_type_enum::CCCL_INT32:
+      return "int";
+    case cccl_type_enum::CCCL_INT64:
+      return "long long";
+    case cccl_type_enum::CCCL_UINT8:
+      return "unsigned char";
+    case cccl_type_enum::CCCL_UINT16:
+      return "unsigned short";
+    case cccl_type_enum::CCCL_UINT32:
+      return "unsigned int";
+    case cccl_type_enum::CCCL_UINT64:
+      return "unsigned long long";
+#if _CCCL_HAS_NVFP16()
+    case cccl_type_enum::CCCL_FLOAT16:
+      return "__half";
+#endif
+    case cccl_type_enum::CCCL_FLOAT32:
+      return "float";
+    case cccl_type_enum::CCCL_FLOAT64:
+      return "double";
+
+    default:
+      throw std::runtime_error("Unsupported type");
+  }
+
+  return "";
 }
 
 // TOOD: using more than than one `op` in the same TU will fail because
@@ -253,6 +305,14 @@ inline std::string get_reduce_op(cccl_type_enum t)
              "  double* a = reinterpret_cast<double*>(a_void); "
              "  double* b = reinterpret_cast<double*>(b_void); "
              "  double* out = reinterpret_cast<double*>(out_void); "
+             "  *out = *a + *b; "
+             "}";
+    case cccl_type_enum::CCCL_FLOAT16:
+      return "#include <cuda_fp16.h>\n"
+             "extern \"C\" __device__ void op(void* a_void, void* b_void, void* out_void) { "
+             "  __half* a = reinterpret_cast<__half*>(a_void); "
+             "  __half* b = reinterpret_cast<__half*>(b_void); "
+             "  __half* out = reinterpret_cast<__half*>(out_void); "
              "  *out = *a + *b; "
              "}";
     default:
@@ -370,6 +430,14 @@ inline std::string get_merge_sort_op(cccl_type_enum t)
              "  bool* result = reinterpret_cast<bool*>(result_void); "
              "  *result = *lhs < *rhs; "
              "}";
+    case cccl_type_enum::CCCL_FLOAT16:
+      return "#include <cuda_fp16.h>\n"
+             "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  __half* lhs = reinterpret_cast<__half*>(lhs_void); "
+             "  __half* rhs = reinterpret_cast<__half*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs < *rhs; "
+             "}";
     default:
       throw std::runtime_error("Unsupported type");
   }
@@ -450,6 +518,14 @@ inline std::string get_unique_by_key_op(cccl_type_enum t)
              "  bool* result = reinterpret_cast<bool*>(result_void); "
              "  *result = *lhs == *rhs; "
              "}";
+    case cccl_type_enum::CCCL_FLOAT16:
+      return "#include <cuda_fp16.h>\n"
+             "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  __half* lhs = reinterpret_cast<__half*>(lhs_void); "
+             "  __half* rhs = reinterpret_cast<__half*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs == *rhs; "
+             "}";
     default:
       throw std::runtime_error("Unsupported type");
   }
@@ -501,6 +577,13 @@ inline std::string get_unary_op(cccl_type_enum t)
              "  double* a = reinterpret_cast<double*>(a_void); "
              "  double* result = reinterpret_cast<double*>(result_void); "
              "  *result = 2 * *a; "
+             "}";
+    case cccl_type_enum::CCCL_FLOAT16:
+      return "#include <cuda_fp16.h>\n"
+             "extern \"C\" __device__ void op(void* a_void, void* result_void) { "
+             "  __half* a = reinterpret_cast<__half*>(a_void); "
+             "  __half* result = reinterpret_cast<__half*>(result_void); "
+             "  *result = __float2half(2.0f) * (*a); "
              "}";
     default:
       throw std::runtime_error("Unsupported type");
@@ -562,6 +645,12 @@ inline std::string get_radix_sort_decomposer_op(cccl_type_enum t)
              "  double* key = reinterpret_cast<double*>(key_void); "
              "  return key; "
              "};";
+    case cccl_type_enum::CCCL_FLOAT16:
+      return "#include <cuda_fp16.h>\n"
+             "extern \"C\" __device__ void* op(void* key_void) { "
+             "  __half* key = reinterpret_cast<__half*>(key_void); "
+             "  return key; "
+             "};";
 
     default:
       throw std::runtime_error("Unsupported type");
@@ -569,36 +658,27 @@ inline std::string get_radix_sort_decomposer_op(cccl_type_enum t)
   return "";
 }
 
-std::string type_enum_to_name(cccl_type_enum type)
+inline std::pair<std::string, std::string> get_three_way_partition_ops(cccl_type_enum t, int compare_to)
 {
-  switch (type)
-  {
-    case cccl_type_enum::CCCL_INT8:
-      return "::cuda::std::int8_t";
-    case cccl_type_enum::CCCL_INT16:
-      return "::cuda::std::int16_t";
-    case cccl_type_enum::CCCL_INT32:
-      return "::cuda::std::int32_t";
-    case cccl_type_enum::CCCL_INT64:
-      return "::cuda::std::int64_t";
-    case cccl_type_enum::CCCL_UINT8:
-      return "::cuda::std::uint8_t";
-    case cccl_type_enum::CCCL_UINT16:
-      return "::cuda::std::uint16_t";
-    case cccl_type_enum::CCCL_UINT32:
-      return "::cuda::std::uint32_t";
-    case cccl_type_enum::CCCL_UINT64:
-      return "::cuda::std::uint64_t";
-    case cccl_type_enum::CCCL_FLOAT32:
-      return "float";
-    case cccl_type_enum::CCCL_FLOAT64:
-      return "double";
-
-    default:
-      throw std::runtime_error("Unsupported type");
-  }
-
-  return "";
+  const std::string less_op_src = std::format(
+    "#include <cuda_fp16.h>\n"
+    "extern \"C\" __device__ void less_op(void* x_void, void* out_void) {{ "
+    "  {0}* x = reinterpret_cast<{0}*>(x_void); "
+    "  bool* out = reinterpret_cast<bool*>(out_void); "
+    "  *out = *x < static_cast<{0}>({1}); "
+    "}}",
+    type_enum_to_name(t),
+    compare_to);
+  const std::string greater_or_equal_op_src = std::format(
+    "#include <cuda_fp16.h>\n"
+    "extern \"C\" __device__ void greater_op(void* x_void, void* out_void) {{ "
+    "  {0}* x = reinterpret_cast<{0}*>(x_void); "
+    "  bool* out = reinterpret_cast<bool*>(out_void); "
+    "  *out = *x >= static_cast<{0}>({1}); "
+    "}}",
+    type_enum_to_name(t),
+    compare_to);
+  return {std::move(less_op_src), std::move(greater_or_equal_op_src)};
 }
 
 template <class T>
@@ -666,24 +746,30 @@ struct operation_t
 {
   std::string name;
   std::string code;
+  cccl_op_code_type code_type = CCCL_OP_LTOIR; // Default to LTO-IR for backward compatibility
 
   operation_t() = default;
 
-  operation_t(std::string_view op_name, std::string_view op_code)
+  operation_t(std::string_view op_name, std::string_view op_code, cccl_op_code_type op_code_type = CCCL_OP_LTOIR)
       : name(op_name)
       , code(op_code)
+      , code_type(op_code_type)
   {}
 
   operator cccl_op_t()
   {
     cccl_op_t op;
-    op.type       = cccl_op_kind_t::CCCL_STATELESS;
-    op.name       = name.c_str();
-    op.ltoir      = code.c_str();
-    op.ltoir_size = code.size();
-    op.size       = 1;
-    op.alignment  = 1;
-    op.state      = nullptr;
+    op.type              = cccl_op_kind_t::CCCL_STATELESS;
+    op.name              = name.c_str();
+    op.code              = code.c_str();
+    op.code_size         = code.size();
+    op.code_type         = code_type;
+    op.size              = 1;
+    op.alignment         = 1;
+    op.state             = nullptr;
+    op.extra_ltoirs      = nullptr;
+    op.extra_ltoir_sizes = nullptr;
+    op.num_extra_ltoirs  = 0;
     return op;
   }
 };
@@ -704,26 +790,60 @@ struct stateful_operation_t
   operator cccl_op_t()
   {
     cccl_op_t op;
-    op.type       = cccl_op_kind_t::CCCL_STATEFUL;
-    op.size       = sizeof(OpT);
-    op.alignment  = alignof(OpT);
-    op.state      = &op_state;
-    op.name       = name.c_str();
-    op.ltoir      = code.c_str();
-    op.ltoir_size = code.size();
+    op.type              = cccl_op_kind_t::CCCL_STATEFUL;
+    op.size              = sizeof(OpT);
+    op.alignment         = alignof(OpT);
+    op.state             = &op_state;
+    op.name              = name.c_str();
+    op.code              = code.c_str();
+    op.code_size         = code.size();
+    op.code_type         = CCCL_OP_LTOIR; // Stateful operations always use LTO-IR
+    op.extra_ltoirs      = nullptr;
+    op.extra_ltoir_sizes = nullptr;
+    op.num_extra_ltoirs  = 0;
     return op;
   }
 };
 
 inline operation_t make_operation(std::string_view name, const std::string& code)
 {
-  return operation_t{name, compile(code)};
+  return operation_t{name, compile(code), CCCL_OP_LTOIR};
+}
+
+inline operation_t make_cpp_operation(std::string_view name, const std::string& cpp_code)
+{
+  return operation_t{name, cpp_code, CCCL_OP_CPP_SOURCE};
 }
 
 template <class OpT>
 stateful_operation_t<OpT> make_operation(std::string_view name, const std::string& code, OpT op)
 {
   return {op, name, compile(code)};
+}
+
+static cccl_op_t make_well_known_unary_operation()
+{
+  return {cccl_op_kind_t::CCCL_NEGATE, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr, nullptr, nullptr, 0};
+}
+
+static cccl_op_t make_well_known_binary_operation()
+{
+  return {cccl_op_kind_t::CCCL_PLUS, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr, nullptr, nullptr, 0};
+}
+
+static cccl_op_t make_well_known_less_binary_predicate()
+{
+  return {cccl_op_kind_t::CCCL_LESS, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr, nullptr, nullptr, 0};
+}
+
+static cccl_op_t make_well_known_unique_binary_predicate()
+{
+  return {cccl_op_kind_t::CCCL_EQUAL_TO, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr, nullptr, nullptr, 0};
+}
+
+static cccl_op_t make_well_known_greater_equal_binary_predicate()
+{
+  return {cccl_op_kind_t::CCCL_GREATER_EQUAL, "", "", 0, CCCL_OP_LTOIR, 1, 1, nullptr, nullptr, nullptr, 0};
 }
 
 template <class ValueT, class StateT>
@@ -817,8 +937,10 @@ inline std::tuple<std::string, std::string, std::string> make_random_access_iter
 {
   std::string state_def_src      = std::format("struct {0} {{ {1}* data; }};\n", iterator_state_name, value_type);
   std::string advance_fn_def_src = std::format(
-    "extern \"C\" __device__ void {0}({1}* state, unsigned long long offset) {{\n"
-    "  state->data += offset;\n"
+    "extern \"C\" __device__ void {0}(void* state, const void* offset) {{\n"
+    "  auto* typed_state = static_cast<{1}*>(state);\n"
+    "  auto offset_val = *static_cast<const unsigned long long*>(offset);\n"
+    "  typed_state->data += offset_val;\n"
     "}}",
     advance_fn_name,
     iterator_state_name);
@@ -827,8 +949,9 @@ inline std::tuple<std::string, std::string, std::string> make_random_access_iter
   if (kind == iterator_kind::INPUT)
   {
     dereference_fn_def_src = std::format(
-      "extern \"C\" __device__ {1} {0}({2}* state) {{\n"
-      "  return (*state->data){3};\n"
+      "extern \"C\" __device__ void {0}(const void* state, {1}* result) {{\n"
+      "  auto* typed_state = static_cast<const {2}*>(state);\n"
+      "  *result = (*typed_state->data){3};\n"
       "}}",
       dereference_fn_name,
       value_type,
@@ -838,8 +961,10 @@ inline std::tuple<std::string, std::string, std::string> make_random_access_iter
   else
   {
     dereference_fn_def_src = std::format(
-      "extern \"C\" __device__ void {0}({1}* state, {2} x) {{\n"
-      "  *state->data = x{3};\n"
+      "extern \"C\" __device__ void {0}(void* state, const void* x) {{\n"
+      "  auto* typed_state = static_cast<{1}*>(state);\n"
+      "  auto x_val = *static_cast<const {2}*>(x);\n"
+      "  *typed_state->data = x_val{3};\n"
       "}}",
       dereference_fn_name,
       iterator_state_name,
@@ -877,19 +1002,22 @@ inline std::tuple<std::string, std::string, std::string> make_counting_iterator_
 {
   std::string iterator_state_def_src = std::format("struct {0} {{ {1} value; }};\n", iterator_state_name, value_type);
   std::string advance_fn_def_src     = std::format(
-    "extern \"C\" __device__ void {0}({1}* state, unsigned long long offset) {{\n"
-        "  state->value += offset;\n"
+    "extern \"C\" __device__ void {0}(void* state, const void* offset) {{\n"
+        "  auto* typed_state = static_cast<{1}*>(state);\n"
+        "  auto offset_val = *static_cast<const unsigned long long*>(offset);\n"
+        "  typed_state->value += offset_val;\n"
         "}}",
     advance_fn_name,
     iterator_state_name);
 
   std::string dereference_fn_def_src = std::format(
-    "extern \"C\" __device__ {1} {0}({2}* state) {{ \n"
-    "  return state->value;\n"
+    "extern \"C\" __device__ void {0}(const void* state, {2}* result) {{ \n"
+    "  auto* typed_state = static_cast<const {1}*>(state);\n"
+    "  *result = typed_state->value;\n"
     "}}",
     dereference_fn_name,
-    value_type,
-    iterator_state_name);
+    iterator_state_name,
+    value_type);
 
   return std::make_tuple(iterator_state_def_src, advance_fn_def_src, dereference_fn_def_src);
 }
@@ -919,13 +1047,12 @@ inline std::tuple<std::string, std::string, std::string> make_constant_iterator_
   std::string_view dereference_fn_name)
 {
   std::string iterator_state_src = std::format("struct {0} {{ {1} value; }};\n", iterator_state_name, value_type);
-  std::string advance_fn_src     = std::format(
-    "extern \"C\" __device__ void {0}({1}* state, unsigned long long offset) {{ }}",
-    advance_fn_name,
-    iterator_state_name);
+  std::string advance_fn_src =
+    std::format("extern \"C\" __device__ void {0}(void* state, const void* offset) {{ }}", advance_fn_name);
   std::string dereference_fn_src = std::format(
-    "extern \"C\" __device__ {1} {0}({2}* state) {{ \n"
-    "  return state->value;\n"
+    "extern \"C\" __device__ void {0}(const void* state, {1}* result) {{ \n"
+    "  auto* typed_state = static_cast<const {2}*>(state);\n"
+    "  *result = typed_state->value;\n"
     "}}",
     dereference_fn_name,
     value_type,
@@ -962,8 +1089,10 @@ inline std::tuple<std::string, std::string, std::string> make_reverse_iterator_s
 {
   std::string iterator_state_src = std::format("struct {0} {{ {1}* data; }};\n", iterator_state_name, value_type);
   std::string advance_fn_src     = std::format(
-    "extern \"C\" __device__ void {0}({1}* state, unsigned long long offset) {{\n"
-        "  state->data -= offset;\n"
+    "extern \"C\" __device__ void {0}(void* state, const void* offset) {{\n"
+        "  auto* typed_state = static_cast<{1}*>(state);\n"
+        "  auto offset_val = *static_cast<const unsigned long long*>(offset);\n"
+        "  typed_state->data -= offset_val;\n"
         "}}",
     advance_fn_name,
     iterator_state_name);
@@ -971,19 +1100,22 @@ inline std::tuple<std::string, std::string, std::string> make_reverse_iterator_s
   if (kind == iterator_kind::INPUT)
   {
     dereference_fn_src = std::format(
-      "extern \"C\" __device__ {1} {0}({2}* state) {{\n"
-      "  return (*state->data){3};\n"
+      "extern \"C\" __device__ void {0}(const void* state, {2}* result) {{\n"
+      "  auto* typed_state = static_cast<const {1}*>(state);\n"
+      "  *result = (*typed_state->data){3};\n"
       "}}",
       dereference_fn_name,
-      value_type,
       iterator_state_name,
+      value_type,
       transform);
   }
   else
   {
     dereference_fn_src = std::format(
-      "extern \"C\" __device__ void {0}({1}* state, {2} x) {{\n"
-      "  *state->data = x{3};\n"
+      "extern \"C\" __device__ void {0}(void* state, const void* x) {{\n"
+      "  auto* typed_state = static_cast<{1}*>(state);\n"
+      "  auto x_val = *static_cast<const {2}*>(x);\n"
+      "  *typed_state->data = x_val{3};\n"
       "}}",
       dereference_fn_name,
       iterator_state_name,
@@ -992,6 +1124,79 @@ inline std::tuple<std::string, std::string, std::string> make_reverse_iterator_s
   }
 
   return std::make_tuple(iterator_state_src, advance_fn_src, dereference_fn_src);
+}
+
+inline std::tuple<std::string, std::string, std::string> make_step_counting_iterator_sources(
+  std::string_view index_ty_name,
+  std::string_view state_name,
+  std::string_view advance_fn_name,
+  std::string_view dereference_fn_name)
+{
+  static constexpr std::string_view it_state_src_tmpl = R"XXX(
+struct {0} {{
+  {1} linear_id;
+  {1} segment_size;
+}};
+)XXX";
+
+  const std::string it_state_def_src = std::format(it_state_src_tmpl, state_name, index_ty_name);
+
+  static constexpr std::string_view it_def_src_tmpl = R"XXX(
+extern "C" __device__ void {0}(void* state, const void* offset)
+{{
+  auto* typed_state = static_cast<{1}*>(state);
+  auto offset_val = *static_cast<const {2}*>(offset);
+  typed_state->linear_id += offset_val;
+}}
+)XXX";
+
+  const std::string it_advance_fn_def_src =
+    std::format(it_def_src_tmpl, /*0*/ advance_fn_name, state_name, index_ty_name);
+
+  static constexpr std::string_view it_deref_src_tmpl = R"XXX(
+extern "C" __device__ void {0}(const void* state, {1}* result)
+{{
+  auto* typed_state = static_cast<const {2}*>(state);
+  *result = (typed_state->linear_id) * (typed_state->segment_size);
+}}
+)XXX";
+
+  const std::string it_deref_fn_def_src =
+    std::format(it_deref_src_tmpl, dereference_fn_name, index_ty_name, state_name);
+
+  return std::make_tuple(it_state_def_src, it_advance_fn_def_src, it_deref_fn_def_src);
+}
+
+// Host-side advance function for iterator states that have a `linear_id` member
+template <typename StateT>
+inline void host_advance_linear_id(void* state, cccl_increment_t offset)
+{
+  auto* st    = reinterpret_cast<StateT*>(state);
+  using Index = decltype(st->linear_id);
+  if constexpr (std::is_signed_v<Index>)
+  {
+    st->linear_id += offset.signed_offset;
+  }
+  else
+  {
+    st->linear_id += offset.unsigned_offset;
+  }
+}
+
+// Host-side advance for iterator states that contain a nested `base_it_state.value`
+template <typename StateT>
+inline void host_advance_base_value(void* state, cccl_increment_t offset)
+{
+  auto st      = reinterpret_cast<StateT*>(state);
+  using IndexT = decltype(st->base_it_state.value);
+  if constexpr (std::is_signed_v<IndexT>)
+  {
+    st->base_it_state.value += offset.signed_offset;
+  }
+  else
+  {
+    st->base_it_state.value += offset.unsigned_offset;
+  }
 }
 
 template <class ValueT>
@@ -1017,6 +1222,7 @@ inline std::tuple<std::string, std::string, std::string> make_stateful_transform
   std::string_view transform_it_advance_fn_name,
   std::string_view transform_it_dereference_fn_name,
   std::string_view transformed_value_type,
+  std::string_view base_value_type,
   name_source_t base_it_state,
   name_source_t base_it_advance_fn,
   name_source_t base_it_dereference_fn,
@@ -1044,8 +1250,9 @@ struct {0} {{
 
   static constexpr std::string_view transform_it_advance_fn_src_tmpl = R"XXX(
 {3}
-extern "C" __device__ void {0}({1} *transform_it_state, unsigned long long offset) {{
-    {2}(&(transform_it_state->base_it_state), offset);
+extern "C" __device__ void {0}(void* transform_it_state, const void* offset) {{
+    auto* typed_state = static_cast<{1}*>(transform_it_state);
+    {2}(&(typed_state->base_it_state), offset);
 }}
 )XXX";
 
@@ -1059,10 +1266,13 @@ extern "C" __device__ void {0}({1} *transform_it_state, unsigned long long offse
   static constexpr std::string_view transform_it_dereference_fn_src_tmpl = R"XXX(
 {5}
 {6}
-extern "C" __device__ {2} {0}({1} *transform_it_state) {{
-    return {3}(
-        &(transform_it_state->functor_state),
-        {4}(&(transform_it_state->base_it_state))
+extern "C" __device__ void {0}(const void* transform_it_state, {2}* result) {{
+    auto* typed_state = static_cast<const {1}*>(transform_it_state);
+    {7} base_result;
+    {4}(&(typed_state->base_it_state), &base_result);
+    *result = {3}(
+        const_cast<decltype(typed_state->functor_state)*>(&(typed_state->functor_state)),
+        base_result
     );
 }}
 )XXX";
@@ -1075,7 +1285,8 @@ extern "C" __device__ {2} {0}({1} *transform_it_state) {{
     /* 3 */ transform_op.name /* transformation functor function name */,
     /* 4 */ base_it_dereference_fn.name /* deref function of base iterator */,
     /* 5 */ base_it_dereference_fn.def_src,
-    /* 6 */ transform_op.def_src);
+    /* 6 */ transform_op.def_src,
+    /* 7 */ base_value_type);
 
   return std::make_tuple(transform_it_state_src, transform_it_advance_fn_src, transform_it_dereference_fn_src);
 }
@@ -1083,6 +1294,7 @@ extern "C" __device__ {2} {0}({1} *transform_it_state) {{
 template <typename ValueT, typename BaseIteratorStateT, typename TransformerStateT>
 auto make_stateful_transform_input_iterator(
   std::string_view transformed_value_type,
+  std::string_view base_value_type,
   name_source_t base_it_state,
   name_source_t base_it_advance_fn,
   name_source_t base_it_dereference_fn,
@@ -1099,6 +1311,7 @@ auto make_stateful_transform_input_iterator(
       transform_it_advance_fn_name,
       transform_it_dereference_fn_name,
       transformed_value_type,
+      base_value_type,
       base_it_state,
       base_it_advance_fn,
       base_it_dereference_fn,
@@ -1120,6 +1333,7 @@ inline std::tuple<std::string, std::string, std::string> make_stateless_transfor
   std::string_view transform_it_advance_fn_name,
   std::string_view transform_it_dereference_fn_name,
   std::string_view transformed_value_type,
+  std::string_view base_value_type,
   name_source_t base_it_state,
   name_source_t base_it_advance_fn,
   name_source_t base_it_dereference_fn,
@@ -1141,8 +1355,9 @@ struct {0} {{
 
   static constexpr std::string_view transform_it_advance_fn_src_tmpl = R"XXX(
 {3}
-extern "C" __device__ void {0}({1} *transform_it_state, unsigned long long offset) {{
-    {2}(&(transform_it_state->base_it_state), offset);
+extern "C" __device__ void {0}(void *transform_it_state, const void* offset) {{
+    auto* typed_state = static_cast<{1}*>(transform_it_state);
+    {2}(&(typed_state->base_it_state), offset);
 }}
 )XXX";
 
@@ -1156,10 +1371,10 @@ extern "C" __device__ void {0}({1} *transform_it_state, unsigned long long offse
   static constexpr std::string_view transform_it_dereference_fn_src_tmpl = R"XXX(
 {5}
 {6}
-extern "C" __device__ {2} {0}({1} *transform_it_state) {{
-    return {3}(
-        {4}(&(transform_it_state->base_it_state))
-    );
+extern "C" __device__ void {0}({1} *transform_it_state, {2}* result) {{
+    {7} base_result;
+    {4}(&(transform_it_state->base_it_state), &base_result);
+    *result = {3}(base_result);
 }}
 )XXX";
 
@@ -1171,7 +1386,8 @@ extern "C" __device__ {2} {0}({1} *transform_it_state) {{
     /* 3 */ transform_op.name /* transformation functor function name */,
     /* 4 */ base_it_dereference_fn.name /* deref function of base iterator */,
     /* 5 */ base_it_dereference_fn.def_src,
-    /* 6 */ transform_op.def_src);
+    /* 6 */ transform_op.def_src,
+    /* 7 */ base_value_type);
 
   return std::make_tuple(transform_it_state_src, transform_it_advance_fn_src, transform_it_dereference_fn_src);
 }
@@ -1179,6 +1395,7 @@ extern "C" __device__ {2} {0}({1} *transform_it_state) {{
 template <typename ValueT, typename BaseIteratorStateT>
 auto make_stateless_transform_input_iterator(
   std::string_view transformed_value_type,
+  std::string_view base_value_type,
   name_source_t base_it_state,
   name_source_t base_it_advance_fn,
   name_source_t base_it_dereference_fn,
@@ -1194,6 +1411,7 @@ auto make_stateless_transform_input_iterator(
       transform_it_advance_fn_name,
       transform_it_deref_fn_name,
       transformed_value_type,
+      base_value_type,
       base_it_state,
       base_it_advance_fn,
       base_it_dereference_fn,
@@ -1206,6 +1424,59 @@ auto make_stateless_transform_input_iterator(
     {transform_it_deref_fn_name, transform_it_deref_fn_src});
 
   return transform_it;
+}
+
+inline std::tuple<std::string, std::string, std::string> make_discard_iterator_sources(
+  iterator_kind kind,
+  std::string_view value_type,
+  std::string_view iterator_state_name,
+  std::string_view advance_fn_name,
+  std::string_view dereference_fn_name)
+{
+  std::string state_def_src      = std::format("struct {0} {{ {1}* data; }};\n", iterator_state_name, value_type);
+  std::string advance_fn_def_src = std::format(
+    "extern \"C\" __device__ void {0}(void* /*state*/, const void* /*offset*/) {{\n"
+    "}}",
+    advance_fn_name,
+    iterator_state_name);
+
+  std::string dereference_fn_def_src;
+  if (kind == iterator_kind::INPUT)
+  {
+    dereference_fn_def_src = std::format(
+      "extern \"C\" __device__ void {0}(const void* /*state*/, {2}* /*result*/) {{\n"
+      "}}",
+      dereference_fn_name,
+      iterator_state_name,
+      value_type);
+  }
+  else
+  {
+    dereference_fn_def_src = std::format(
+      "extern \"C\" __device__ void {0}(void* /*state*/, const void* /*x*/) {{\n"
+      "}}",
+      dereference_fn_name,
+      iterator_state_name,
+      value_type);
+  }
+
+  return std::make_tuple(state_def_src, advance_fn_def_src, dereference_fn_def_src);
+}
+
+template <typename ValueT>
+auto make_discard_iterator(iterator_kind kind, std::string_view value_type, std::string prefix = "")
+{
+  std::string iterator_state_name = std::format("{0}struct_t", prefix);
+  std::string advance_fn_name     = std::format("{0}advance", prefix);
+  std::string dereference_fn_name = std::format("{0}dereference", prefix);
+
+  const auto& [iterator_state_src, advance_fn_src, dereference_fn_src] =
+    make_discard_iterator_sources(kind, value_type, iterator_state_name, advance_fn_name, dereference_fn_name);
+  name_source_t iterator_state = {iterator_state_name, iterator_state_src};
+  operation_t advance          = {advance_fn_name, advance_fn_src};
+  operation_t dereference      = {dereference_fn_name, dereference_fn_src};
+
+  return make_iterator<ValueT, random_access_iterator_state_t<ValueT>>(iterator_state, advance, dereference);
 }
 
 template <class T>

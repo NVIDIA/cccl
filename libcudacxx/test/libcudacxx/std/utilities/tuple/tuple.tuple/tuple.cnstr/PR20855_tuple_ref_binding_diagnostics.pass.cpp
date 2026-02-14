@@ -13,6 +13,7 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/iterator/transform_iterator.h
  *  \brief An iterator which adapts another iterator by applying a function to the result of its dereference
@@ -47,9 +34,13 @@
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/std/__functional/identity.h>
+#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__memory/construct_at.h>
-#include <cuda/std/functional>
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/is_copy_assignable.h>
+#include <cuda/std/__type_traits/is_copy_constructible.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/remove_reference.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -58,12 +49,11 @@ class transform_iterator;
 
 namespace detail
 {
-
 template <class UnaryFunc, class Iterator>
 struct transform_iterator_reference
 {
   // by default, dereferencing the iterator yields the same as the function.
-  using type = decltype(::cuda::std::declval<UnaryFunc>()(::cuda::std::declval<it_value_t<Iterator>>()));
+  using type = ::cuda::std::invoke_result_t<UnaryFunc&, it_value_t<Iterator>>;
 };
 
 // for certain function objects, we need to tweak the reference type. Notably, identity functions must decay to values.
@@ -76,8 +66,8 @@ struct transform_iterator_reference<::cuda::std::identity, Iterator>
 template <typename Eval, class Iterator>
 struct transform_iterator_reference<functional::actor<Eval>, Iterator>
 {
-  using type = ::cuda::std::remove_reference_t<decltype(::cuda::std::declval<functional::actor<Eval>>()(
-    ::cuda::std::declval<it_value_t<Iterator>>()))>;
+  using type =
+    ::cuda::std::remove_reference_t<::cuda::std::invoke_result_t<functional::actor<Eval>&, it_value_t<Iterator>>>;
 };
 
 // Type function to compute the iterator_adaptor instantiation to be used for transform_iterator
@@ -93,11 +83,10 @@ public:
     iterator_adaptor<transform_iterator<UnaryFunc, Iterator, Reference, Value>,
                      Iterator,
                      value_type,
-                     use_default,
-                     typename ::cuda::std::iterator_traits<Iterator>::iterator_category,
+                     use_default, // pick system from Iterator
+                     use_default, // pick traversal from Iterator
                      reference>;
 };
-
 } // namespace detail
 
 //! \addtogroup iterators
@@ -131,11 +120,7 @@ public:
 //!
 //! int main()
 //! {
-//!   thrust::device_vector<float> v(4);
-//!   v[0] = 1.0f;
-//!   v[1] = 4.0f;
-//!   v[2] = 9.0f;
-//!   v[3] = 16.0f;
+//!   thrust::device_vector<float> v{1.0f, 4.0f, 9.0f, 16.0f};
 //!
 //!   using FloatIterator = thrust::device_vector<float>::iterator;
 //!
@@ -173,11 +158,7 @@ public:
 //! int main()
 //! {
 //!   // initialize a device array
-//!   thrust::device_vector<float> v(4);
-//!   v[0] = 1.0f;
-//!   v[1] = 2.0f;
-//!   v[2] = 3.0f;
-//!   v[3] = 4.0f;
+//!   thrust::device_vector<float> v{1.0f, 2.0f, 3.0f, 4.0f};
 //!
 //!   float sum_of_squares =
 //!    thrust::reduce(thrust::make_transform_iterator(v.begin(), square()),
@@ -206,11 +187,7 @@ public:
 //!
 //! int main()
 //! {
-//!   thrust::device_vector<float> v(4);
-//!   v[0] = 1.0f;
-//!   v[1] = 4.0f;
-//!   v[2] = 9.0f;
-//!   v[3] = 16.0f;
+//!   thrust::device_vector<float> v{1.0f, 4.0f, 9.0f, 16.0f};
 //!
 //!   using FloatIterator = thrust::device_vector<float>::iterator;
 //!
@@ -228,6 +205,10 @@ public:
 //! \endcode
 //!
 //! \see make_transform_iterator
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
+ */
 template <class AdaptableUnaryFunction, class Iterator, class Reference = use_default, class Value = use_default>
 class transform_iterator
     : public detail::make_transform_iterator_base<AdaptableUnaryFunction, Iterator, Reference, Value>::type
@@ -278,18 +259,18 @@ public:
   _CCCL_HOST_DEVICE transform_iterator& operator=(transform_iterator const& other)
   {
     super_t::operator=(other);
-    if constexpr (_CCCL_TRAIT(::cuda::std::is_copy_assignable, AdaptableUnaryFunction))
+    if constexpr (::cuda::std::is_copy_assignable_v<AdaptableUnaryFunction>)
     {
       m_f = other.m_f;
     }
-    else if constexpr (_CCCL_TRAIT(::cuda::std::is_copy_constructible, AdaptableUnaryFunction))
+    else if constexpr (::cuda::std::is_copy_constructible_v<AdaptableUnaryFunction>)
     {
       ::cuda::std::__destroy_at(&m_f);
       ::cuda::std::__construct_at(&m_f, other.m_f);
     }
     else
     {
-      static_assert(_CCCL_TRAIT(::cuda::std::is_copy_constructible, AdaptableUnaryFunction),
+      static_assert(::cuda::std::is_copy_constructible_v<AdaptableUnaryFunction>,
                     "Cannot use thrust::transform_iterator with a functor that is neither copy constructible nor "
                     "copy assignable");
     }

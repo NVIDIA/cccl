@@ -10,14 +10,10 @@
 #ifndef SUPPORT_TEST_ITERATORS_H
 #define SUPPORT_TEST_ITERATORS_H
 
-#include <cuda/std/iterator>
-
-#if defined(_LIBCUDACXX_HAS_STDEXCEPT)
-#  include <cuda/std/stdexcept>
-#endif
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
 #include <cuda/std/cstddef>
+#include <cuda/std/iterator>
 #include <cuda/std/utility>
 
 #include "test_macros.h"
@@ -34,11 +30,11 @@ class cpp17_output_iterator
   friend class cpp17_output_iterator;
 
 public:
-  typedef cuda::std::output_iterator_tag iterator_category;
-  typedef void value_type;
-  typedef typename cuda::std::iterator_traits<It>::difference_type difference_type;
-  typedef It pointer;
-  typedef typename cuda::std::iterator_traits<It>::reference reference;
+  using iterator_category = cuda::std::output_iterator_tag;
+  using value_type        = void;
+  using difference_type   = typename cuda::std::iterator_traits<It>::difference_type;
+  using pointer           = It;
+  using reference         = typename cuda::std::iterator_traits<It>::reference;
 
   __host__ __device__ constexpr explicit cpp17_output_iterator(It it)
       : it_(cuda::std::move(it))
@@ -86,18 +82,18 @@ static_assert(cuda::std::output_iterator<cpp17_output_iterator<int*>, int>, "");
 template <class It, class ItTraits = It>
 class cpp17_input_iterator
 {
-  typedef cuda::std::iterator_traits<ItTraits> Traits;
+  using Traits = cuda::std::iterator_traits<ItTraits>;
   It it_;
 
   template <class U, class T>
   friend class cpp17_input_iterator;
 
 public:
-  typedef cuda::std::input_iterator_tag iterator_category;
-  typedef typename Traits::value_type value_type;
-  typedef typename Traits::difference_type difference_type;
-  typedef It pointer;
-  typedef typename Traits::reference reference;
+  using iterator_category = cuda::std::input_iterator_tag;
+  using value_type        = typename Traits::value_type;
+  using difference_type   = typename Traits::difference_type;
+  using pointer           = It;
+  using reference         = typename Traits::reference;
 
   __host__ __device__ constexpr explicit cpp17_input_iterator(It it)
       : it_(it)
@@ -160,11 +156,11 @@ class forward_iterator
   friend class forward_iterator;
 
 public:
-  typedef cuda::std::forward_iterator_tag iterator_category;
-  typedef typename cuda::std::iterator_traits<It>::value_type value_type;
-  typedef typename cuda::std::iterator_traits<It>::difference_type difference_type;
-  typedef It pointer;
-  typedef typename cuda::std::iterator_traits<It>::reference reference;
+  using iterator_category = cuda::std::forward_iterator_tag;
+  using value_type        = typename cuda::std::iterator_traits<It>::value_type;
+  using difference_type   = typename cuda::std::iterator_traits<It>::difference_type;
+  using pointer           = It;
+  using reference         = typename cuda::std::iterator_traits<It>::reference;
 
   __host__ __device__ constexpr forward_iterator()
       : it_()
@@ -209,6 +205,11 @@ public:
     return x.it_ != y.it_;
   }
 
+  __host__ __device__ constexpr It base() const
+  {
+    return it_;
+  }
+
   __host__ __device__ friend constexpr It base(const forward_iterator& i)
   {
     return i.it_;
@@ -228,11 +229,11 @@ class bidirectional_iterator
   friend class bidirectional_iterator;
 
 public:
-  typedef cuda::std::bidirectional_iterator_tag iterator_category;
-  typedef typename cuda::std::iterator_traits<It>::value_type value_type;
-  typedef typename cuda::std::iterator_traits<It>::difference_type difference_type;
-  typedef It pointer;
-  typedef typename cuda::std::iterator_traits<It>::reference reference;
+  using iterator_category = cuda::std::bidirectional_iterator_tag;
+  using value_type        = typename cuda::std::iterator_traits<It>::value_type;
+  using difference_type   = typename cuda::std::iterator_traits<It>::difference_type;
+  using pointer           = It;
+  using reference         = typename cuda::std::iterator_traits<It>::reference;
 
   __host__ __device__ constexpr bidirectional_iterator()
       : it_()
@@ -305,11 +306,11 @@ class random_access_iterator
   friend class random_access_iterator;
 
 public:
-  typedef cuda::std::random_access_iterator_tag iterator_category;
-  typedef typename cuda::std::iterator_traits<It>::value_type value_type;
-  typedef typename cuda::std::iterator_traits<It>::difference_type difference_type;
-  typedef It pointer;
-  typedef typename cuda::std::iterator_traits<It>::reference reference;
+  using iterator_category = cuda::std::random_access_iterator_tag;
+  using value_type        = typename cuda::std::iterator_traits<It>::value_type;
+  using difference_type   = typename cuda::std::iterator_traits<It>::difference_type;
+  using pointer           = It;
+  using reference         = typename cuda::std::iterator_traits<It>::reference;
 
   __host__ __device__ constexpr random_access_iterator()
       : it_()
@@ -571,12 +572,12 @@ class contiguous_iterator
   friend class contiguous_iterator;
 
 public:
-  typedef cuda::std::contiguous_iterator_tag iterator_category;
-  typedef typename cuda::std::iterator_traits<It>::value_type value_type;
-  typedef typename cuda::std::iterator_traits<It>::difference_type difference_type;
-  typedef It pointer;
-  typedef typename cuda::std::iterator_traits<It>::reference reference;
-  typedef typename cuda::std::remove_pointer<It>::type element_type;
+  using iterator_category = cuda::std::contiguous_iterator_tag;
+  using value_type        = typename cuda::std::iterator_traits<It>::value_type;
+  using difference_type   = typename cuda::std::iterator_traits<It>::difference_type;
+  using pointer           = It;
+  using reference         = typename cuda::std::iterator_traits<It>::reference;
+  using element_type      = typename cuda::std::remove_pointer<It>::type;
 
   __host__ __device__ constexpr It base() const
   {
@@ -700,6 +701,7 @@ public:
   void operator,(T const&) = delete;
 };
 static_assert(cuda::std::random_access_iterator<contiguous_iterator<int*>>, "");
+static_assert(cuda::std::contiguous_iterator<contiguous_iterator<int*>>, "");
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
@@ -714,12 +716,12 @@ class three_way_contiguous_iterator
   friend class three_way_contiguous_iterator;
 
 public:
-  typedef cuda::std::contiguous_iterator_tag iterator_category;
-  typedef typename cuda::std::iterator_traits<It>::value_type value_type;
-  typedef typename cuda::std::iterator_traits<It>::difference_type difference_type;
-  typedef It pointer;
-  typedef typename cuda::std::iterator_traits<It>::reference reference;
-  typedef typename cuda::std::remove_pointer<It>::type element_type;
+  using iterator_category = cuda::std::contiguous_iterator_tag;
+  using value_type        = typename cuda::std::iterator_traits<It>::value_type;
+  using difference_type   = typename cuda::std::iterator_traits<It>::difference_type;
+  using pointer           = It;
+  using reference         = typename cuda::std::iterator_traits<It>::reference;
+  using element_type      = typename cuda::std::remove_pointer<It>::type;
 
   __host__ __device__ constexpr It base() const
   {
@@ -836,11 +838,11 @@ __host__ __device__ constexpr Iter base(Iter i)
 template <typename T>
 struct ThrowingIterator
 {
-  typedef cuda::std::bidirectional_iterator_tag iterator_category;
-  typedef ptrdiff_t difference_type;
-  typedef const T value_type;
-  typedef const T* pointer;
-  typedef const T& reference;
+  using iterator_category = cuda::std::bidirectional_iterator_tag;
+  using difference_type   = ptrdiff_t;
+  using value_type        = const T;
+  using pointer           = const T*;
+  using reference         = const T&;
 
   enum ThrowingAction
   {
@@ -969,11 +971,11 @@ private:
 template <typename T>
 struct NonThrowingIterator
 {
-  typedef cuda::std::bidirectional_iterator_tag iterator_category;
-  typedef ptrdiff_t difference_type;
-  typedef const T value_type;
-  typedef const T* pointer;
-  typedef const T& reference;
+  using iterator_category = cuda::std::bidirectional_iterator_tag;
+  using difference_type   = ptrdiff_t;
+  using value_type        = const T;
+  using pointer           = const T*;
+  using reference         = const T&;
 
   __host__ __device__ NonThrowingIterator()
       : begin_(nullptr)
@@ -1440,7 +1442,6 @@ private:
 
 namespace adl
 {
-
 class Iterator
 {
 public:
@@ -1595,7 +1596,6 @@ public:
   }
 #endif // TEST_STD_VER< 2020
 };
-
 } // namespace adl
 
 // Proxy
@@ -1616,6 +1616,10 @@ inline constexpr bool IsProxy = false;
 
 template <class T>
 inline constexpr bool IsProxy<Proxy<T>> = true;
+
+#if TEST_COMPILER(MSVC)
+_CCCL_BEGIN_NV_DIAG_SUPPRESS(1805) // MSVC complains that if we pass a pointer type, adding const is useless
+#endif // TEST_COMPILER(MSVC)
 
 template <class T>
 struct Proxy
@@ -1668,10 +1672,6 @@ struct Proxy
     data = cuda::std::forward<Other>(other).getData();
     return *this;
   }
-
-#if TEST_COMPILER(MSVC)
-  TEST_NV_DIAG_SUPPRESS(1805) // MSVC complains that if we pass a pointer type, adding const is useless
-#endif // TEST_COMPILER(MSVC)
 
   // const assignment required to make ProxyIterator model cuda::std::indirectly_writable
   _CCCL_TEMPLATE(class Other)
@@ -1734,9 +1734,11 @@ struct Proxy
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
 
-namespace cuda
-{
-namespace std
+#if TEST_COMPILER(MSVC)
+_CCCL_END_NV_DIAG_SUPPRESS()
+#endif // TEST_COMPILER(MSVC)
+
+namespace cuda::std
 {
 // This is to make ProxyIterator model `cuda::std::indirectly_readable`
 template <class T, class U, template <class> class TQual, template <class> class UQual>
@@ -1749,8 +1751,7 @@ template <class T, class U>
 struct common_type<Proxy<T>, Proxy<U>>
     : public enable_if<cuda::std::__has_common_type<T, U>, Proxy<cuda::std::common_type_t<T, U>>>
 {};
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
 
 // ProxyIterator
 // ======================================================================
@@ -1831,10 +1832,11 @@ struct ProxyIterator : ProxyIteratorBase<Base>
   // If operator* returns Proxy<Foo&>, iter_move will return Proxy<Foo&&>
   // Note cuda::std::move(*it) returns Proxy<Foo&>&&, which is not what we want as
   // it will likely result in a copy rather than a move
-  __host__ __device__ friend constexpr Proxy<cuda::std::iter_rvalue_reference_t<Base>>
-  iter_move(const ProxyIterator& p) noexcept
+  // MSVC falls over its feet without the template indirection
+  template <class B2 = Base>
+  __host__ __device__ friend constexpr auto iter_move(const ProxyIterator<B2>& p) noexcept
   {
-    return {cuda::std::ranges::iter_move(p.base_)};
+    return Proxy<cuda::std::iter_rvalue_reference_t<Base>>{cuda::std::ranges::iter_move(p.base_)};
   }
 
   // Specialization of iter_swap

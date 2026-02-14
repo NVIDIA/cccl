@@ -3,10 +3,11 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/std/chrono>
+// <chrono>
 
 // duration
 
@@ -22,10 +23,11 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/chrono>
+#include <cuda/std/ratio>
 
 #include "test_macros.h"
 
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
   {
     cuda::std::chrono::seconds s1(3);
@@ -69,48 +71,13 @@ int main(int, char**)
     assert(s1 == s2);
     assert(!(s1 != s2));
   }
-  {
-    constexpr cuda::std::chrono::seconds s1(3);
-    constexpr cuda::std::chrono::seconds s2(3);
-    static_assert(s1 == s2, "");
-    static_assert(!(s1 != s2), "");
-  }
-  {
-    constexpr cuda::std::chrono::seconds s1(3);
-    constexpr cuda::std::chrono::seconds s2(4);
-    static_assert(!(s1 == s2), "");
-    static_assert(s1 != s2, "");
-  }
-  {
-    constexpr cuda::std::chrono::milliseconds s1(3);
-    constexpr cuda::std::chrono::microseconds s2(3000);
-    static_assert(s1 == s2, "");
-    static_assert(!(s1 != s2), "");
-  }
-  {
-    constexpr cuda::std::chrono::milliseconds s1(3);
-    constexpr cuda::std::chrono::microseconds s2(4000);
-    static_assert(!(s1 == s2), "");
-    static_assert(s1 != s2, "");
-  }
-  {
-    constexpr cuda::std::chrono::duration<int, cuda::std::ratio<2, 3>> s1(9);
-    constexpr cuda::std::chrono::duration<int, cuda::std::ratio<3, 5>> s2(10);
-    static_assert(s1 == s2, "");
-    static_assert(!(s1 != s2), "");
-  }
-  {
-    constexpr cuda::std::chrono::duration<int, cuda::std::ratio<2, 3>> s1(10);
-    constexpr cuda::std::chrono::duration<int, cuda::std::ratio<3, 5>> s2(9);
-    static_assert(!(s1 == s2), "");
-    static_assert(s1 != s2, "");
-  }
-  {
-    constexpr cuda::std::chrono::duration<int, cuda::std::ratio<2, 3>> s1(9);
-    constexpr cuda::std::chrono::duration<double, cuda::std::ratio<3, 5>> s2(10);
-    static_assert(s1 == s2, "");
-    static_assert(!(s1 != s2), "");
-  }
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }

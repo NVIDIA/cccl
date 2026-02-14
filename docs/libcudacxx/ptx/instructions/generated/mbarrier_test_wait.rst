@@ -3,7 +3,7 @@
 
 mbarrier.test_wait.shared.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.test_wait.shared.b64 waitComplete, [addr], state;                                                  // 1.  PTX ISA 70, SM_80
    template <typename = void>
@@ -13,7 +13,7 @@ mbarrier.test_wait.shared.b64
 
 mbarrier.test_wait.acquire.cta.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.test_wait.sem.scope.shared::cta.b64        waitComplete, [addr], state;                        // 2.   PTX ISA 80, SM_90
    // .sem       = { .acquire }
@@ -27,7 +27,7 @@ mbarrier.test_wait.acquire.cta.shared::cta.b64
 
 mbarrier.test_wait.acquire.cluster.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.test_wait.sem.scope.shared::cta.b64        waitComplete, [addr], state;                        // 2.   PTX ISA 80, SM_90
    // .sem       = { .acquire }
@@ -41,7 +41,7 @@ mbarrier.test_wait.acquire.cluster.shared::cta.b64
 
 mbarrier.test_wait.relaxed.cta.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.test_wait.sem.scope.shared::cta.b64 waitComplete, [addr], state; // PTX ISA 86, SM_90
    // .sem       = { .relaxed }
@@ -55,7 +55,7 @@ mbarrier.test_wait.relaxed.cta.shared::cta.b64
 
 mbarrier.test_wait.relaxed.cluster.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.test_wait.sem.scope.shared::cta.b64 waitComplete, [addr], state; // PTX ISA 86, SM_90
    // .sem       = { .relaxed }

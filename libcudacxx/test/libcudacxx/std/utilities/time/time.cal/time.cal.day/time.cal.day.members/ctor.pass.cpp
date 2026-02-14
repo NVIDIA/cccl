@@ -3,6 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -22,7 +23,7 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
   using day = cuda::std::chrono::day;
 
@@ -30,17 +31,29 @@ int main(int, char**)
   static_assert(noexcept(day(0U)));
   static_assert(noexcept(static_cast<unsigned>(day(0U))));
 
-  constexpr day d0{};
-  static_assert(static_cast<unsigned>(d0) == 0, "");
+  {
+    day d{};
+    assert(static_cast<unsigned>(d) == 0);
+  }
 
-  constexpr day d1{1};
-  static_assert(static_cast<unsigned>(d1) == 1, "");
+  {
+    day d{1};
+    assert(static_cast<unsigned>(d) == 1);
+  }
 
   for (unsigned i = 0; i <= 255; ++i)
   {
-    day day(i);
-    assert(static_cast<unsigned>(day) == i);
+    day d(i);
+    assert(static_cast<unsigned>(d) == i);
   }
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }

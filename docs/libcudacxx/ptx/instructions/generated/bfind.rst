@@ -3,7 +3,7 @@
 
 bfind.u32
 ^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // bfind.u32 dest, a_reg; // PTX ISA 20, SM_50
    template <typename = void>
@@ -12,7 +12,7 @@ bfind.u32
 
 bfind.shiftamt.u32
 ^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // bfind.shiftamt.u32 dest, a_reg; // PTX ISA 20, SM_50
    template <typename = void>
@@ -21,7 +21,7 @@ bfind.shiftamt.u32
 
 bfind.u64
 ^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // bfind.u64 dest, a_reg; // PTX ISA 20, SM_50
    template <typename = void>
@@ -30,7 +30,7 @@ bfind.u64
 
 bfind.shiftamt.u64
 ^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // bfind.shiftamt.u64 dest, a_reg; // PTX ISA 20, SM_50
    template <typename = void>
@@ -39,7 +39,7 @@ bfind.shiftamt.u64
 
 bfind.s32
 ^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // bfind.s32 dest, a_reg; // PTX ISA 20, SM_50
    template <typename = void>
@@ -48,7 +48,7 @@ bfind.s32
 
 bfind.shiftamt.s32
 ^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // bfind.shiftamt.s32 dest, a_reg; // PTX ISA 20, SM_50
    template <typename = void>
@@ -57,7 +57,7 @@ bfind.shiftamt.s32
 
 bfind.s64
 ^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // bfind.s64 dest, a_reg; // PTX ISA 20, SM_50
    template <typename = void>
@@ -66,7 +66,7 @@ bfind.s64
 
 bfind.shiftamt.s64
 ^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // bfind.shiftamt.s64 dest, a_reg; // PTX ISA 20, SM_50
    template <typename = void>

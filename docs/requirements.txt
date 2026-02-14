@@ -1,0 +1,11 @@
+# Documentation dependencies
+sphinx>=8.1.3
+breathe>=4.36.0
+exhale>=0.3.0
+nvidia-sphinx-theme>=0.0.8
+myst-parser>=4.0.1
+sphinx-copybutton>=0.5.2
+sphinx-design>=0.6.1
+nbsphinx>=0.9.0
+numpydoc>=1.5.0
+numpy>=1.24.0  # Required for type annotations in Python modules

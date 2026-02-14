@@ -28,8 +28,8 @@
 // cuda::std::array not supported
 /*
 // Use 1256 to try and blow the template instantiation depth for all compilers.
-typedef cuda::std::array<char, 1256> array_t;
-typedef cuda::std::tuple<array_t> tuple_t;
+using array_t = cuda::std::array<char, 1256>;
+using tuple_t = cuda::std::tuple<array_t>;
 */
 
 int main(int, char**)

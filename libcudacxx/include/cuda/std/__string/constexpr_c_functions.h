@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___STRING_CONSTEXPR_C_FUNCTIONS_H
-#define _LIBCUDACXX___STRING_CONSTEXPR_C_FUNCTIONS_H
+#ifndef _CUDA_STD___STRING_CONSTEXPR_C_FUNCTIONS_H
+#define _CUDA_STD___STRING_CONSTEXPR_C_FUNCTIONS_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/climits>
@@ -33,12 +32,12 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // __cccl_strcpy
 
 template <class _CharT>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _CharT*
+_CCCL_API constexpr _CharT*
 __cccl_strcpy_impl_constexpr(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src) noexcept
 {
   _CharT* __dst_it = __dst;
@@ -59,26 +58,25 @@ __cccl_strcpy_impl_host(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRI
   }
   else
   {
-    return _CUDA_VSTD::__cccl_strcpy_impl_constexpr(__dst, __src);
+    return ::cuda::std::__cccl_strcpy_impl_constexpr(__dst, __src);
   }
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _CharT*
-__cccl_strcpy(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src) noexcept
+_CCCL_API constexpr _CharT* __cccl_strcpy(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    NV_IF_TARGET(NV_IS_HOST, (return _CUDA_VSTD::__cccl_strcpy_impl_host(__dst, __src);))
+    NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_strcpy_impl_host(__dst, __src);))
   }
-  return _CUDA_VSTD::__cccl_strcpy_impl_constexpr(__dst, __src);
+  return ::cuda::std::__cccl_strcpy_impl_constexpr(__dst, __src);
 }
 
 // __cccl_strncpy
 
 template <class _CharT>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _CharT*
+_CCCL_API constexpr _CharT*
 __cccl_strncpy_impl_constexpr(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src, size_t __n) noexcept
 {
   _CharT* __dst_it = __dst;
@@ -108,26 +106,26 @@ __cccl_strncpy_impl_host(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTR
   }
   else
   {
-    return _CUDA_VSTD::__cccl_strncpy_impl_constexpr(__dst, __src, __n);
+    return ::cuda::std::__cccl_strncpy_impl_constexpr(__dst, __src, __n);
   }
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _CharT*
+_CCCL_API constexpr _CharT*
 __cccl_strncpy(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src, size_t __n) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    NV_IF_TARGET(NV_IS_HOST, (return _CUDA_VSTD::__cccl_strncpy_impl_host(__dst, __src, __n);))
+    NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_strncpy_impl_host(__dst, __src, __n);))
   }
-  return _CUDA_VSTD::__cccl_strncpy_impl_constexpr(__dst, __src, __n);
+  return ::cuda::std::__cccl_strncpy_impl_constexpr(__dst, __src, __n);
 }
 
 // __cccl_strlen
 
 template <class _CharT>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t __cccl_strlen_impl_constexpr(const _CharT* __ptr) noexcept
+[[nodiscard]] _CCCL_API constexpr size_t __cccl_strlen_impl_constexpr(const _CharT* __ptr) noexcept
 {
   size_t __len = 0;
   while (*__ptr++ != _CharT('\0'))
@@ -147,26 +145,25 @@ template <class _CharT>
   }
   else
   {
-    return _CUDA_VSTD::__cccl_strlen_impl_constexpr(__ptr);
+    return ::cuda::std::__cccl_strlen_impl_constexpr(__ptr);
   }
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t __cccl_strlen(const _CharT* __ptr) noexcept
+[[nodiscard]] _CCCL_API constexpr size_t __cccl_strlen(const _CharT* __ptr) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    NV_IF_TARGET(NV_IS_HOST, (return _CUDA_VSTD::__cccl_strlen_impl_host(__ptr);))
+    NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_strlen_impl_host(__ptr);))
   }
-  return _CUDA_VSTD::__cccl_strlen_impl_constexpr(__ptr);
+  return ::cuda::std::__cccl_strlen_impl_constexpr(__ptr);
 }
 
 // __cccl_strcmp
 
 template <class _CharT>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int
-__cccl_strcmp_impl_constexpr(const _CharT* __lhs, const _CharT* __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr int __cccl_strcmp_impl_constexpr(const _CharT* __lhs, const _CharT* __rhs) noexcept
 {
   using _UCharT = __make_nbit_uint_t<sizeof(_CharT) * CHAR_BIT>;
 
@@ -194,25 +191,25 @@ __cccl_strcmp_impl_host(const _CharT* __lhs, const _CharT* __rhs) noexcept
   }
   else
   {
-    return _CUDA_VSTD::__cccl_strcmp_impl_constexpr(__lhs, __rhs);
+    return ::cuda::std::__cccl_strcmp_impl_constexpr(__lhs, __rhs);
   }
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_strcmp(const _CharT* __lhs, const _CharT* __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr int __cccl_strcmp(const _CharT* __lhs, const _CharT* __rhs) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    NV_IF_TARGET(NV_IS_HOST, (return _CUDA_VSTD::__cccl_strcmp_impl_host(__lhs, __rhs);))
+    NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_strcmp_impl_host(__lhs, __rhs);))
   }
-  return _CUDA_VSTD::__cccl_strcmp_impl_constexpr(__lhs, __rhs);
+  return ::cuda::std::__cccl_strcmp_impl_constexpr(__lhs, __rhs);
 }
 
 // __cccl_strncmp
 
 template <class _CharT>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int
+[[nodiscard]] _CCCL_API constexpr int
 __cccl_strncmp_impl_constexpr(const _CharT* __lhs, const _CharT* __rhs, size_t __n) noexcept
 {
   using _UCharT = __make_nbit_uint_t<sizeof(_CharT) * CHAR_BIT>;
@@ -246,27 +243,25 @@ __cccl_strncmp_impl_host(const _CharT* __lhs, const _CharT* __rhs, size_t __n) n
   }
   else
   {
-    return _CUDA_VSTD::__cccl_strncmp_impl_constexpr(__lhs, __rhs, __n);
+    return ::cuda::std::__cccl_strncmp_impl_constexpr(__lhs, __rhs, __n);
   }
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int
-__cccl_strncmp(const _CharT* __lhs, const _CharT* __rhs, size_t __n) noexcept
+[[nodiscard]] _CCCL_API constexpr int __cccl_strncmp(const _CharT* __lhs, const _CharT* __rhs, size_t __n) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    NV_IF_TARGET(NV_IS_HOST, (return _CUDA_VSTD::__cccl_strncmp_impl_host(__lhs, __rhs, __n);))
+    NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_strncmp_impl_host(__lhs, __rhs, __n);))
   }
-  return _CUDA_VSTD::__cccl_strncmp_impl_constexpr(__lhs, __rhs, __n);
+  return ::cuda::std::__cccl_strncmp_impl_constexpr(__lhs, __rhs, __n);
 }
 
 // __cccl_strchr
 
 template <class _CharT>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CharT*
-__cccl_strchr_impl_constexpr(_CharT* __ptr, _CharT __c) noexcept
+[[nodiscard]] _CCCL_API constexpr _CharT* __cccl_strchr_impl_constexpr(_CharT* __ptr, _CharT __c) noexcept
 {
   while (*__ptr != __c)
   {
@@ -291,30 +286,29 @@ template <class _CharT>
   }
   else
   {
-    return _CUDA_VSTD::__cccl_strchr_impl_constexpr<_CharT>(__ptr, __c);
+    return ::cuda::std::__cccl_strchr_impl_constexpr<_CharT>(__ptr, __c);
   }
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CharT* __cccl_strchr(_CharT* __ptr, _CharT __c) noexcept
+[[nodiscard]] _CCCL_API constexpr _CharT* __cccl_strchr(_CharT* __ptr, _CharT __c) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    NV_IF_TARGET(NV_IS_HOST, (return _CUDA_VSTD::__cccl_strchr_impl_host<_CharT>(__ptr, __c);))
+    NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_strchr_impl_host<_CharT>(__ptr, __c);))
   }
-  return _CUDA_VSTD::__cccl_strchr_impl_constexpr<_CharT>(__ptr, __c);
+  return ::cuda::std::__cccl_strchr_impl_constexpr<_CharT>(__ptr, __c);
 }
 
 // __cccl_strrchr
 
 template <class _CharT>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CharT*
-__cccl_strrchr_impl_constexpr(_CharT* __ptr, _CharT __c) noexcept
+[[nodiscard]] _CCCL_API constexpr _CharT* __cccl_strrchr_impl_constexpr(_CharT* __ptr, _CharT __c) noexcept
 {
   if (__c == _CharT('\0'))
   {
-    return __ptr + _CUDA_VSTD::__cccl_strlen(__ptr);
+    return __ptr + ::cuda::std::__cccl_strlen(__ptr);
   }
 
   _CharT* __last{};
@@ -341,26 +335,25 @@ template <class _CharT>
   }
   else
   {
-    return _CUDA_VSTD::__cccl_strrchr_impl_constexpr<_CharT>(__ptr, __c);
+    return ::cuda::std::__cccl_strrchr_impl_constexpr<_CharT>(__ptr, __c);
   }
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CharT* __cccl_strrchr(_CharT* __ptr, _CharT __c) noexcept
+[[nodiscard]] _CCCL_API constexpr _CharT* __cccl_strrchr(_CharT* __ptr, _CharT __c) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    NV_IF_TARGET(NV_IS_HOST, (return _CUDA_VSTD::__cccl_strrchr_impl_host<_CharT>(__ptr, __c);))
+    NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_strrchr_impl_host<_CharT>(__ptr, __c);))
   }
-  return _CUDA_VSTD::__cccl_strrchr_impl_constexpr<_CharT>(__ptr, __c);
+  return ::cuda::std::__cccl_strrchr_impl_constexpr<_CharT>(__ptr, __c);
 }
 
 // __cccl_memchr
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp*
-__cccl_memchr_impl_constexpr(_Tp* __ptr, _Tp __c, size_t __n) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp* __cccl_memchr_impl_constexpr(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
   while (__n--)
   {
@@ -384,26 +377,25 @@ template <class _Tp>
   }
   else
   {
-    return _CUDA_VSTD::__cccl_memchr_impl_constexpr<_Tp>(__ptr, __c, __n);
+    return ::cuda::std::__cccl_memchr_impl_constexpr<_Tp>(__ptr, __c, __n);
   }
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* __cccl_memchr(_Tp* __ptr, _Tp __c, size_t __n) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp* __cccl_memchr(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    NV_IF_TARGET(NV_IS_HOST, (return _CUDA_VSTD::__cccl_memchr_impl_host<_Tp>(__ptr, __c, __n);))
+    NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_memchr_impl_host<_Tp>(__ptr, __c, __n);))
   }
-  return _CUDA_VSTD::__cccl_memchr_impl_constexpr<_Tp>(__ptr, __c, __n);
+  return ::cuda::std::__cccl_memchr_impl_constexpr<_Tp>(__ptr, __c, __n);
 }
 
 // __cccl_memmove
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp*
-__cccl_memmove_impl_constexpr(_Tp* __dst, const _Tp* __src, size_t __n) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp* __cccl_memmove_impl_constexpr(_Tp* __dst, const _Tp* __src, size_t __n) noexcept
 {
   const auto __dst_copy = __dst;
 
@@ -437,23 +429,23 @@ __cccl_memmove_impl_host(_Tp* __dst, const _Tp* __src, size_t __n) noexcept
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* __cccl_memmove(_Tp* __dst, const _Tp* __src, size_t __n) noexcept
+_CCCL_API constexpr _Tp* __cccl_memmove(_Tp* __dst, const _Tp* __src, size_t __n) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
 #if defined(_CCCL_BUILTIN_MEMMOVE)
     return reinterpret_cast<_Tp*>(_CCCL_BUILTIN_MEMMOVE(__dst, __src, __n * sizeof(_Tp)));
 #else // ^^^ _CCCL_BUILTIN_MEMMOVE ^^^ / vvv !_CCCL_BUILTIN_MEMMOVE vvv
-    NV_IF_TARGET(NV_IS_HOST, (return _CUDA_VSTD::__cccl_memmove_impl_host(__dst, __src, __n);))
+    NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_memmove_impl_host(__dst, __src, __n);))
 #endif // ^^^ !_CCCL_BUILTIN_MEMMOVE ^^^
   }
-  return _CUDA_VSTD::__cccl_memmove_impl_constexpr(__dst, __src, __n);
+  return ::cuda::std::__cccl_memmove_impl_constexpr(__dst, __src, __n);
 }
 
 // __cccl_memcmp
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int
+[[nodiscard]] _CCCL_API constexpr int
 __cccl_memcmp_impl_constexpr(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noexcept
 {
   using _Up = __make_nbit_uint_t<sizeof(_Tp) * CHAR_BIT>;
@@ -481,30 +473,29 @@ __cccl_memcmp_impl_host(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noexcept
   }
   else
   {
-    return _CUDA_VSTD::__cccl_memcmp_impl_constexpr(__lhs, __rhs, __n);
+    return ::cuda::std::__cccl_memcmp_impl_constexpr(__lhs, __rhs, __n);
   }
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int
-__cccl_memcmp(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noexcept
+[[nodiscard]] _CCCL_API constexpr int __cccl_memcmp(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
 #if defined(_CCCL_BUILTIN_MEMCMP)
     return _CCCL_BUILTIN_MEMCMP(__lhs, __rhs, __n * sizeof(_Tp));
 #else // ^^^ _CCCL_BUILTIN_MEMCMP ^^^ / vvv !_CCCL_BUILTIN_MEMCMP vvv
-    NV_IF_TARGET(NV_IS_HOST, (return _CUDA_VSTD::__cccl_memcmp_impl_host(__lhs, __rhs, __n);))
+    NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_memcmp_impl_host(__lhs, __rhs, __n);))
 #endif // ^^^ !_CCCL_BUILTIN_MEMCMP ^^^
   }
-  return _CUDA_VSTD::__cccl_memcmp_impl_constexpr(__lhs, __rhs, __n);
+  return ::cuda::std::__cccl_memcmp_impl_constexpr(__lhs, __rhs, __n);
 }
 
 // __cccl_memcpy
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp*
+[[nodiscard]] _CCCL_API constexpr _Tp*
 __cccl_memcpy_impl_constexpr(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRICT __src, size_t __n) noexcept
 {
   const auto __dst_copy = __dst;
@@ -526,25 +517,23 @@ __cccl_memcpy_impl_host(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRICT __s
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp*
-__cccl_memcpy(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRICT __src, size_t __n) noexcept
+_CCCL_API constexpr _Tp* __cccl_memcpy(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRICT __src, size_t __n) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
 #if defined(_CCCL_BUILTIN_MEMCPY)
     return reinterpret_cast<_Tp*>(_CCCL_BUILTIN_MEMCPY(__dst, __src, __n * sizeof(_Tp)));
 #else // ^^^ _CCCL_BUILTIN_MEMCPY ^^^ / vvv !_CCCL_BUILTIN_MEMCPY vvv
-    NV_IF_TARGET(NV_IS_HOST, (return _CUDA_VSTD::__cccl_memcpy_impl_host(__dst, __src, __n);))
+    NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_memcpy_impl_host(__dst, __src, __n);))
 #endif // ^^^ !_CCCL_BUILTIN_MEMCPY ^^^
   }
-  return _CUDA_VSTD::__cccl_memcpy_impl_constexpr(__dst, __src, __n);
+  return ::cuda::std::__cccl_memcpy_impl_constexpr(__dst, __src, __n);
 }
 
 // __cccl_memset
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp*
-__cccl_memset_impl_constexpr(_Tp* __ptr, _Tp __c, size_t __n) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp* __cccl_memset_impl_constexpr(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
   const auto __ptr_copy = __ptr;
 
@@ -565,27 +554,27 @@ template <class _Tp>
   }
   else
   {
-    return _CUDA_VSTD::__cccl_memset_impl_constexpr(__ptr, __c, __n);
+    return ::cuda::std::__cccl_memset_impl_constexpr(__ptr, __c, __n);
   }
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* __cccl_memset(_Tp* __ptr, _Tp __c, size_t __n) noexcept
+_CCCL_API constexpr _Tp* __cccl_memset(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
 #if defined(_CCCL_BUILTIN_MEMSET)
     return reinterpret_cast<_Tp*>(_CCCL_BUILTIN_MEMSET(__ptr, __c, __n * sizeof(_Tp)));
 #else // ^^^ _CCCL_BUILTIN_MEMSET ^^^ / vvv !_CCCL_BUILTIN_MEMSET vvv
-    NV_IF_TARGET(NV_IS_HOST, (return _CUDA_VSTD::__cccl_memset_impl_host(__ptr, __c, __n);))
+    NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_memset_impl_host(__ptr, __c, __n);))
 #endif // ^^^ !_CCCL_BUILTIN_MEMSET ^^^
   }
-  return _CUDA_VSTD::__cccl_memset_impl_constexpr(__ptr, __c, __n);
+  return ::cuda::std::__cccl_memset_impl_constexpr(__ptr, __c, __n);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___STRING_CONSTEXPR_C_FUNCTIONS_H
+#endif // _CUDA_STD___STRING_CONSTEXPR_C_FUNCTIONS_H

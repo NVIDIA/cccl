@@ -62,8 +62,6 @@ file. Use ``_CCCL_CUDA_COMPILATION()`` to check for the compilation of a CUDA so
 **CUDA identification/version macros**:
 
 +----------------------------------+------------------------------------------------------------------------------------------------+
-| ``_CCCL_HAS_CUDA_COMPILER()``    | CUDA compiler is available                                                                     |
-+----------------------------------+------------------------------------------------------------------------------------------------+
 | ``_CCCL_CUDA_COMPILATION()``     | CUDA code is being compiled                                                                    |
 +----------------------------------+------------------------------------------------------------------------------------------------+
 | ``_CCCL_HOST_COMPILATION()``     | Compiling host code, ``true`` when executing the CUDA host pass or compiling a C++ source file |
@@ -253,8 +251,6 @@ The following macros are required only if the target C++ version does not suppor
 +------------------------+--------------------------------------------------------------------------------------------+
 | ``_CCCL_REQUIRES(X)``  | ``requires`` clause                                                                        |
 +------------------------+--------------------------------------------------------------------------------------------+
-| ``_CCCL_TRAIT(X)``     | Selects variable template ``is_meow_v<T>`` instead of ``is_meow<T>::value`` when available |
-+------------------------+--------------------------------------------------------------------------------------------+
 | ``_CCCL_AND``          | Traits conjunction only used with ``_CCCL_REQUIRES``                                       |
 +------------------------+--------------------------------------------------------------------------------------------+
 
@@ -263,12 +259,12 @@ Usage example:
 .. code-block:: c++
 
     _CCCL_TEMPLATE(typename T)
-    _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, T) _CCCL_AND(sizeof(T) > 1))
+    _CCCL_REQUIRES(is_integral_v<T> _CCCL_AND(sizeof(T) > 1))
 
 .. code-block:: c++
 
     _CCCL_TEMPLATE(typename T)
-    _CCCL_REQUIRES(_CCCL_TRAIT(is_arithmetic, T) _CCCL_AND (!_CCCL_TRAIT(is_integral, T)))
+    _CCCL_REQUIRES(is_arithmetic_v<T> _CCCL_AND (!is_integral_v<T>))
 
 
 **Portable feature testing**:
@@ -277,8 +273,6 @@ Usage example:
 | ``_CCCL_HAS_BUILTIN(X)`` |  Portable ``__has_builtin(X)``                   |
 +--------------------------+--------------------------------------------------+
 | ``_CCCL_HAS_FEATURE(X)`` |  Portable ``__has_feature(X)``                   |
-+--------------------------+--------------------------------------------------+
-| ``_CCCL_HAS_INCLUDE(X)`` |  Portable ``__has_include(X)`` (before C++17)    |
 +--------------------------+--------------------------------------------------+
 
 **Portable attributes**:
@@ -298,7 +292,8 @@ Usage example:
 +----------------------------------+------------------------------------------------------------------------------+
 | ``_CCCL_CONST``                  | Portable "constant" function attribute                                       |
 +----------------------------------+------------------------------------------------------------------------------+
-
+| ``_CCCL_LIFETIMEBOUND``          | Portable "lifetime bound" function attribute                                 |
++----------------------------------+------------------------------------------------------------------------------+
 
 **Portable Builtin Macros**:
 
@@ -332,6 +327,91 @@ Usage example:
 | ``_CCCL_PRAGMA_NOUNROLL()``    | Portable ``#pragma nounroll`` pragma      |
 +--------------------------------+-------------------------------------------+
 
+**Conditional Constant Evaluation Macros**
+
+In C++23, the ``if consteval`` statement (`link <https://en.cppreference.com/w/cpp/language/if.html>`_) was introduced. CCCL mimics the behaviour with a set of macros that expand to an implementation supported by the compiler. If the compiler doesn't support any kind of conditional constant evaluation, the macros expand to predefined fallback values.
+
++------------------------------------+-----------------------------------------------------------------------------------+
+| ``_CCCL_IF_CONSTEVAL``             | Equivalent to ``if consteval`` statement (fallbacks to ``if constexpr (false)``)  |
++------------------------------------+-----------------------------------------------------------------------------------+
+| ``_CCCL_IF_CONSTEVAL_DEFAULT``     | Equivalent to ``if consteval`` statement (fallbacks to ``if constexpr (true)``)   |
++------------------------------------+-----------------------------------------------------------------------------------+
+| ``_CCCL_IF_NOT_CONSTEVAL``         | Equivalent to ``if !consteval`` statement (fallbacks to ``if constexpr (true)``)  |
++------------------------------------+-----------------------------------------------------------------------------------+
+| ``_CCCL_IF_NOT_CONSTEVAL_DEFAULT`` | Equivalent to ``if !consteval`` statement (fallbacks to ``if constexpr (false)``) |
++------------------------------------+-----------------------------------------------------------------------------------+
+
+**Exception Macros**
+
+CUDA doesn't support exceptions in device code, however, sometimes we need to write host/device functions that use exceptions on host and ``__trap()`` on device. CCCL provides a set of macros that should be used in place of the standard C++ keywords to make the code compile in both, host and device code.
+
++-----------------------------+------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_TRY``               | Replacement for the ``try`` keyword.                                                                             |
++-----------------------------+------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_CATCH (X)``         | Replacement for the ``catch (/*X*/)`` statement.                                                                 |
++-----------------------------+------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_CATCH_ALL``         | Replacement for the ``catch (...)`` statement.                                                                   |
++-----------------------------+------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_THROW(X, ...)``     | Replacement for the ``throw X(...)`` expression. ``X`` must be fully qualified type, without the leading ``::``. |
++-----------------------------+------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_RETHROW``           | Replacement for the plain ``throw`` expression.                                                                  |
++-----------------------------+------------------------------------------------------------------------------------------------------------------+
+
+*Note*: The ``_CCCL_CATCH`` clause must always introduce a named variable, like: ``_CCCL_CATCH(const exception_type& var)``.
+
+.. note::
+
+  ``_CCCL_THROW`` requires to include the ``<stdexcept>`` header, regardless exceptions are enabled or not.
+
+Example:
+
+.. code-block:: c++
+
+    __host__ __device__ void* alloc(cuda::std::size_t nbytes)
+    {
+        if (void* ptr = cuda::std::malloc(nbytes))
+        {
+            return ptr;
+        }
+        _CCCL_THROW(std::bad_alloc); // on device calls cuda::std::terminate()
+    }
+
+    __host__ __device__ void do_something(int* buff)
+    {
+        _CCCL_THROW(std::runtime_error, "Something went wrong"); // on device calls cuda::std::terminate()
+    }
+
+    __host__ __device__ void fn(cuda::std::size_t n)
+    {
+        int* buff{};
+        _CCCL_TRY
+        {
+            buff = reinterpret_cast<int*>(alloc(n * sizeof(int)));
+            do_something(buff);
+        }
+        _CCCL_CATCH ([[maybe_unused]] const std::bad_alloc& e) // must be always named
+        {
+            std::fprintf(stderr, "Failed to allocate memory\n"); // We can directly call host-only functions
+            cuda::std::terminate();
+        }
+        _CCCL_CATCH_ALL // or _CCCL_CATCH_FALLTHOUGH
+        {
+            cuda::std::free(buff);
+            _CCCL_RETHROW;
+        }
+    }
+
+    __global__ void kernel()
+    {
+        fn(10);
+    }
+
+    int main()
+    {
+        fn(10);
+        return 0;
+    }
+
 ----
 
 Visibility Macros
@@ -342,7 +422,7 @@ Visibility Macros
 +-------------------------------+-----------------------------------------------------------------------------------------------------+
 | ``_CCCL_HIDE_FROM_ABI``       | Hidden visibility (i.e. ``inline``, not exported, not instantiated)                                 |
 +-------------------------------+-----------------------------------------------------------------------------------------------------+
-| ``_LIBCUDACXX_HIDE_FROM_ABI`` | Host/device function with hidden visibility. Most libcu++ functions are hidden with this attribute  |
+| ``_CCCL_API``                 | Host/device function with hidden visibility. Most CCCL functions are hidden with this attribute     |
 +-------------------------------+-----------------------------------------------------------------------------------------------------+
 
 ----
@@ -350,8 +430,6 @@ Visibility Macros
 Other Common Macros
 -------------------
 
-+-----------------------------+--------------------------------------------+
-| ``_CUDA_VSTD``              | ``cuda::std`` namespace. To use in libcu++ |
 +-----------------------------+--------------------------------------------+
 | ``_CCCL_TO_STRING(X)``      | ``X`` to literal string                    |
 +-----------------------------+--------------------------------------------+
@@ -364,9 +442,9 @@ Debugging Macros
 ----------------
 
 +-----------------------------------+-------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_ASSERT(COND, MSG)``       | Portable CCCL assert macro. Requires (``CCCL_ENABLE_HOST_ASSERTIONS`` or ``CCCL_ENABLE_DEVICE_ASSERTIONS``) |
+| ``_CCCL_ASSERT(COND, MSG)``       | Portable, conditional CCCL `assert()` macro. Requires (``CCCL_ENABLE_ASSERTIONS`` or a debug build)         |
 +-----------------------------------+-------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_VERIFY(COND, MSG)``       | Portable ``alignas(X)`` keyword (variable)                                                                  |
+| ``_CCCL_VERIFY(COND, MSG)``       | Portable, always-on `assert()` reserved for critical checks that are always required                        |
 +-----------------------------------+-------------------------------------------------------------------------------------------------------------+
 | ``_CCCL_ENABLE_ASSERTIONS``       | Enable assertions                                                                                           |
 +-----------------------------------+-------------------------------------------------------------------------------------------------------------+
@@ -390,17 +468,19 @@ Warning Suppression Macros
 
 **Compiler-specific Suppression Macros**:
 
-+-----------------------------------+-------------------------------------------------------------+
-| ``_CCCL_DIAG_SUPPRESS_CLANG(X)``  | Suppress clang warning, e.g. ``"-Wattributes"``             |
-+-----------------------------------+-------------------------------------------------------------+
-| ``_CCCL_DIAG_SUPPRESS_GCC(X)``    | Suppress gcc warning, e.g. ``"-Wattributes"``               |
-+-----------------------------------+-------------------------------------------------------------+
-| ``_CCCL_DIAG_SUPPRESS_NVHPC(X)``  | Suppress nvhpc warning, e.g. ``expr_has_no_effect``         |
-+-----------------------------------+-------------------------------------------------------------+
-| ``_CCCL_DIAG_SUPPRESS_MSVC(X)``   | Suppress msvc warning, e.g. ``4127``                        |
-+-----------------------------------+-------------------------------------------------------------+
-| ``_CCCL_NV_DIAG_SUPPRESS(X)``     | Suppress nvcc warning, e.g. ``177``                         |
-+-----------------------------------+-------------------------------------------------------------+
++-------------------------------------+-------------------------------------------------------------+
+| ``_CCCL_DIAG_SUPPRESS_CLANG(X)``    | Suppress clang warning, e.g. ``"-Wattributes"``             |
++-------------------------------------+-------------------------------------------------------------+
+| ``_CCCL_DIAG_SUPPRESS_GCC(X)``      | Suppress gcc warning, e.g. ``"-Wattributes"``               |
++-------------------------------------+-------------------------------------------------------------+
+| ``_CCCL_DIAG_SUPPRESS_NVHPC(X)``    | Suppress nvhpc warning, e.g. ``expr_has_no_effect``         |
++-------------------------------------+-------------------------------------------------------------+
+| ``_CCCL_DIAG_SUPPRESS_MSVC(X)``     | Suppress msvc warning, e.g. ``4127``                        |
++-------------------------------------+-------------------------------------------------------------+
+| ``_CCCL_BEGIN_NV_DIAG_SUPPRESS(X)`` | Start to suppress nvcc warning, e.g. ``177``                |
++-------------------------------------+-------------------------------------------------------------+
+| ``_CCCL_END_NV_DIAG_SUPPRESS()``    | End to suppress nvcc warning                                |
++-------------------------------------+-------------------------------------------------------------+
 
 Usage example:
 

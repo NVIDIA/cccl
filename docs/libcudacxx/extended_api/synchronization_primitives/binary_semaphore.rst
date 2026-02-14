@@ -1,6 +1,6 @@
 .. _libcudacxx-extended-api-synchronization-binary-semaphore:
 
-cuda::binary_semaphore
+``cuda::binary_semaphore``
 ==========================
 
 Defined in header ``<cuda/semaphore>``:

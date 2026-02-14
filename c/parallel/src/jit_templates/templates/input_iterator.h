@@ -40,12 +40,14 @@ struct input_iterator_t
 
   __device__ value_type operator*() const
   {
-    return Iterator.dereference(&state);
+    value_type result;
+    Iterator.dereference(&state, &result);
+    return result;
   }
 
   __device__ input_iterator_t& operator+=(difference_type diff)
   {
-    Iterator.advance(&state, diff);
+    Iterator.advance(&state, &diff);
     return *this;
   }
 
@@ -78,6 +80,18 @@ struct input_iterator_traits
     if (it.type == cccl_iterator_kind_t::CCCL_POINTER)
     {
       return cuda::std::make_optional(specialization{cccl_type_enum_to_name(it.value_type.type, true), ""});
+    }
+
+    return cuda::std::nullopt;
+  }
+
+  template <typename Tag, typename StorageT>
+  static cuda::std::optional<specialization> special(tagged_arg<StorageT, cccl_iterator_t> it)
+  {
+    if (it.value.type == cccl_iterator_kind_t::CCCL_POINTER)
+    {
+      return cuda::std::make_optional(
+        specialization{cccl_type_enum_to_name<StorageT>(it.value.value_type.type, true), ""});
     }
 
     return cuda::std::nullopt;

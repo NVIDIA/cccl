@@ -21,7 +21,8 @@ __global__ void test_bmsk(void** fn_ptr)
     NV_PROVIDES_SM_70,
     (
         // bmsk.clamp.b32 dest, a_reg, b_reg;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)(uint32_t, uint32_t)>(cuda::ptx::bmsk_clamp));));
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<cuda::std::uint32_t (*)(cuda::std::uint32_t, cuda::std::uint32_t)>(cuda::ptx::bmsk_clamp));));
 #endif // __cccl_ptx_isa >= 760
 
 #if __cccl_ptx_isa >= 760
@@ -29,6 +30,7 @@ __global__ void test_bmsk(void** fn_ptr)
     NV_PROVIDES_SM_70,
     (
         // bmsk.wrap.b32 dest, a_reg, b_reg;
-        * fn_ptr++ = reinterpret_cast<void*>(static_cast<uint32_t (*)(uint32_t, uint32_t)>(cuda::ptx::bmsk_wrap));));
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<cuda::std::uint32_t (*)(cuda::std::uint32_t, cuda::std::uint32_t)>(cuda::ptx::bmsk_wrap));));
 #endif // __cccl_ptx_isa >= 760
 }

@@ -223,14 +223,13 @@ static_assert(::cuda::std::is_same<::cuda::std::__type_push_front<::cuda::std::_
 static_assert(::cuda::std::is_same<::cuda::std::__as_type_list<DoNotInstantiate<int, float, double>>,
                                    ::cuda::std::__type_list<int, float, double>>::value,
               "");
-static_assert(::cuda::std::is_same<::cuda::std::__as_type_list<_CUDA_VSTD::pair<int, float>>,
+static_assert(::cuda::std::is_same<::cuda::std::__as_type_list<::cuda::std::pair<int, float>>,
                                    ::cuda::std::__type_list<int, float>>::value,
               "");
-static_assert(
-  ::cuda::std::is_same<
-    ::cuda::std::__as_type_list<_CUDA_VSTD::index_sequence<0, 1>>,
-    ::cuda::std::__type_list<_CUDA_VSTD::integral_constant<size_t, 0>, _CUDA_VSTD::integral_constant<size_t, 1>>>::value,
-  "");
+static_assert(::cuda::std::is_same<::cuda::std::__as_type_list<::cuda::std::index_sequence<0, 1>>,
+                                   ::cuda::std::__type_list<::cuda::std::integral_constant<size_t, 0>,
+                                                            ::cuda::std::integral_constant<size_t, 1>>>::value,
+              "");
 static_assert(::cuda::std::is_same<::cuda::std::__as_type_list<int(float&, double&&)>,
                                    ::cuda::std::__type_list<int, float&, double&&>>::value,
               "");

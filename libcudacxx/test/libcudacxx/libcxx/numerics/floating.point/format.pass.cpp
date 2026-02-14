@@ -8,12 +8,16 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
+
 // clang-format off
 #include <disable_nvfp_conversions_and_operators.h>
 // clang-format on
 
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/cassert>
+#include <cuda/std/limits>
 
 #include "test_macros.h"
 

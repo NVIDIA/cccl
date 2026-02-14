@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include <cub/block/block_scan.cuh>
 
@@ -166,11 +142,11 @@ struct min_init_value_op_t
   {
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{});
+      scan.ExclusiveScan(thread_data, thread_data, initial_value, cuda::minimum<>{});
     }
     else
     {
-      scan.InclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{});
+      scan.InclusiveScan(thread_data, thread_data, initial_value, cuda::minimum<>{});
     }
   }
 };
@@ -183,11 +159,11 @@ struct min_op_t
   {
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScan(thread_data, thread_data, ::cuda::minimum<>{});
+      scan.ExclusiveScan(thread_data, thread_data, cuda::minimum<>{});
     }
     else
     {
-      scan.InclusiveScan(thread_data, thread_data, ::cuda::minimum<>{});
+      scan.InclusiveScan(thread_data, thread_data, cuda::minimum<>{});
     }
   }
 };
@@ -206,11 +182,11 @@ struct min_init_value_aggregate_op_t
 
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{}, block_aggregate);
+      scan.ExclusiveScan(thread_data, thread_data, initial_value, cuda::minimum<>{}, block_aggregate);
     }
     else
     {
-      scan.InclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{}, block_aggregate);
+      scan.InclusiveScan(thread_data, thread_data, initial_value, cuda::minimum<>{}, block_aggregate);
     }
 
     const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
@@ -295,7 +271,7 @@ template <class T, scan_mode Mode>
 struct min_prefix_op_t
 {
   T m_prefix;
-  static constexpr T min_identity = ::cuda::std::numeric_limits<T>::max();
+  static constexpr T min_identity = cuda::std::numeric_limits<T>::max();
 
   struct block_prefix_op_t
   {
@@ -310,7 +286,7 @@ struct min_prefix_op_t
     __device__ T operator()(T block_aggregate)
     {
       T retval = (linear_tid == 0) ? prefix : min_identity;
-      prefix   = ::cuda::minimum<>{}(prefix, block_aggregate);
+      prefix   = cuda::minimum<>{}(prefix, block_aggregate);
       return retval;
     }
   };
@@ -323,11 +299,11 @@ struct min_prefix_op_t
 
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScan(thread_data, thread_data, ::cuda::minimum<>{}, prefix_op);
+      scan.ExclusiveScan(thread_data, thread_data, cuda::minimum<>{}, prefix_op);
     }
     else
     {
-      scan.InclusiveScan(thread_data, thread_data, ::cuda::minimum<>{}, prefix_op);
+      scan.InclusiveScan(thread_data, thread_data, cuda::minimum<>{}, prefix_op);
     }
   }
 };
@@ -375,7 +351,13 @@ T host_scan(scan_mode mode, c2h::host_vector<T>& result, ScanOpT scan_op, T init
 
 using types = c2h::type_list<std::uint8_t, std::uint16_t, std::int32_t, std::int64_t>;
 // FIXME(bgruber): uchar3 fails the test, see #3835
-using vec_types              = c2h::type_list<ulonglong4, /*uchar3,*/ short2>;
+using vec_types = c2h::type_list<
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  ulonglong4_16a,
+#else // _CCCL_CTK_AT_LEAST(13, 0)
+  ulonglong4,
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+  /*uchar3,*/ short2>;
 using block_dim_x            = c2h::enum_type_list<int, 17, 32, 65, 96>;
 using block_dim_yz           = c2h::enum_type_list<int, 1, 2>;
 using items_per_thread       = c2h::enum_type_list<int, 1, 9>;

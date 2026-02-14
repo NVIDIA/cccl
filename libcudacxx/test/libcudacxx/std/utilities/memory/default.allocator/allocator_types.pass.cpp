@@ -16,22 +16,22 @@
 // class allocator
 // {
 // public:
-//     typedef size_t    size_type;
-//     typedef ptrdiff_t difference_type;
-//     typedef T         value_type;
+//     using size_type       = size_t;
+//     using difference_type = ptrdiff_t;
+//     using value_type      = T;
 //
-//     typedef T*        pointer;           // deprecated in C++17, removed in C++20
-//     typedef T const*  const_pointer;     // deprecated in C++17, removed in C++20
-//     typedef T&        reference;         // deprecated in C++17, removed in C++20
-//     typedef T const&  const_reference;   // deprecated in C++17, removed in C++20
-//     template< class U > struct rebind { typedef allocator<U> other; }; // deprecated in C++17, removed in C++20
+//     using pointer         = T*;           // deprecated in C++17, removed in C++20
+//     using const_pointer   = T const*;     // deprecated in C++17, removed in C++20
+//     using reference       = T&;         // deprecated in C++17, removed in C++20
+//     using const_reference = T const&;   // deprecated in C++17, removed in C++20
+//     template< class U > struct rebind { using other = allocator<U>; }; // deprecated in C++17, removed in C++20
 //
-//     typedef true_type propagate_on_container_move_assignment;
-//     typedef true_type is_always_equal;
+//     using propagate_on_container_move_assignment  = true_type;
+//     using is_always_equal                         = true_type;
 // ...
 // };
 
-// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/std/__memory_>
 #include <cuda/std/cstddef>
@@ -44,7 +44,7 @@ struct U;
 template <typename T>
 __host__ __device__ void test()
 {
-  typedef cuda::std::allocator<T> Alloc;
+  using Alloc = cuda::std::allocator<T>;
   static_assert((cuda::std::is_same<typename Alloc::size_type, cuda::std::size_t>::value), "");
   static_assert((cuda::std::is_same<typename Alloc::difference_type, cuda::std::ptrdiff_t>::value), "");
   static_assert((cuda::std::is_same<typename Alloc::value_type, T>::value), "");
@@ -64,7 +64,7 @@ __host__ __device__ void test()
 int main(int, char**)
 {
   test<char>();
-#ifdef _LIBCUDACXX_VERSION
+#ifdef _CUDA_STD_VERSION
   test<char const>(); // extension
 #endif
   return 0;

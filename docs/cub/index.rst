@@ -7,13 +7,14 @@ CUB
    :hidden:
    :maxdepth: 3
 
-   modules
-   developer_overview
+   Overview <self>
    test_overview
    benchmarking
    tuning
+   developer_overview
    releases
-   ${repo_docs_api_path}/cub_api
+   API documentation <api>
+   API reference <api/index>
 
 What is CUB?
 ==================================================
@@ -495,8 +496,7 @@ like access to such things.)
 Contributors
 ==================================================
 
-CUB is developed as an open-source project by NVIDIA.
-The primary contributor is the CCCL team.
+CUB is developed as open-source as part of the CUDA Core Compute Libraries (CCCL) by NVIDIA.
 
 
 Open Source License

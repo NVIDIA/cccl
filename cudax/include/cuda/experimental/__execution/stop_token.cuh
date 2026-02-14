@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_STOP_TOKEN
-#define __CUDAX_ASYNC_DETAIL_STOP_TOKEN
+#ifndef __CUDAX_EXECUTION_STOP_TOKEN
+#define __CUDAX_EXECUTION_STOP_TOKEN
 
 #include <cuda/std/detail/__config>
 
@@ -21,16 +21,21 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/boolean_testable.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__thread/threading_support.h>
+#include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/atomic>
 
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/thread.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 
-#if _CCCL_HAS_INCLUDE(<stop_token>) && __cpp_lib_jthread >= 201911
+#if __has_include(<stop_token>) && __cpp_lib_jthread >= 201911
 #  include <stop_token>
-#endif
+#endif // __has_include(<stop_token>) && __cpp_lib_jthread >= 201911
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -50,7 +55,7 @@ namespace __stok
 {
 struct __inplace_stop_callback_base
 {
-  _CCCL_API void __execute() noexcept
+  _CCCL_API constexpr void __execute() noexcept
   {
     this->__execute_fn_(this);
   }
@@ -58,13 +63,13 @@ struct __inplace_stop_callback_base
 protected:
   using __execute_fn_t _CCCL_NODEBUG_ALIAS = void(__inplace_stop_callback_base*) noexcept;
 
-  _CCCL_API explicit __inplace_stop_callback_base(const inplace_stop_source* __source,
-                                                  __execute_fn_t* __execute) noexcept
+  _CCCL_API constexpr explicit __inplace_stop_callback_base(
+    const inplace_stop_source* __source, __execute_fn_t* __execute) noexcept
       : __source_(__source)
       , __execute_fn_(__execute)
   {}
 
-  _CCCL_API void __register_callback() noexcept;
+  _CCCL_API constexpr void __register_callback() noexcept;
 
   friend inplace_stop_source;
 
@@ -73,7 +78,7 @@ protected:
   __inplace_stop_callback_base* __next_      = nullptr;
   __inplace_stop_callback_base** __prev_ptr_ = nullptr;
   bool* __removed_during_callback_           = nullptr;
-  _CUDA_VSTD::atomic<bool> __callback_completed_{false};
+  ::cuda::std::atomic<bool> __callback_completed_{false};
 };
 
 struct __spin_wait
@@ -89,7 +94,7 @@ struct __spin_wait
     else
     {
       --__count_;
-      _CUDA_VSTD::__cccl_thread_yield_processor();
+      ::cuda::std::__cccl_thread_yield_processor();
     }
   }
 
@@ -108,7 +113,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT never_stop_token
 private:
   struct __callback_type
   {
-    _CCCL_API explicit __callback_type(never_stop_token, __ignore) noexcept {}
+    _CCCL_API constexpr explicit __callback_type(never_stop_token, ::cuda::std::__ignore_t) noexcept {}
   };
 
 public:
@@ -147,13 +152,13 @@ public:
   _CCCL_API ~inplace_stop_source();
   inplace_stop_source(inplace_stop_source&&) = delete;
 
-  _CCCL_API auto get_token() const noexcept -> inplace_stop_token;
+  _CCCL_API constexpr auto get_token() const noexcept -> inplace_stop_token;
 
   _CCCL_API auto request_stop() noexcept -> bool;
 
   _CCCL_API auto stop_requested() const noexcept -> bool
   {
-    return (__state_.load(_CUDA_VSTD::memory_order_acquire) & __stop_requested_flag) != 0;
+    return (__state_.load(::cuda::std::memory_order_acquire) & __stop_requested_flag) != 0;
   }
 
 private:
@@ -174,7 +179,7 @@ private:
   static constexpr uint8_t __stop_requested_flag = 1;
   static constexpr uint8_t __locked_flag         = 2;
 
-  mutable _CUDA_VSTD::atomic<uint8_t> __state_{0};
+  mutable ::cuda::std::atomic<uint8_t> __state_{0};
   mutable __stok::__inplace_stop_callback_base* __callbacks_ = nullptr;
   execution::__thread_id __notifying_thread_;
 };
@@ -186,45 +191,46 @@ public:
   template <class _Fun>
   using callback_type _CCCL_NODEBUG_ALIAS = inplace_stop_callback<_Fun>;
 
-  _CCCL_API inplace_stop_token() noexcept
-      : __source_(nullptr)
-  {}
+  _CCCL_HIDE_FROM_ABI inplace_stop_token() = default;
 
   _CCCL_HIDE_FROM_ABI inplace_stop_token(const inplace_stop_token& __other) noexcept = default;
 
-  _CCCL_API inplace_stop_token(inplace_stop_token&& __other) noexcept
+  _CCCL_API constexpr inplace_stop_token(inplace_stop_token&& __other) noexcept
       : __source_(execution::__exchange(__other.__source_, {}))
   {}
 
-  _CCCL_HIDE_FROM_ABI auto operator=(const inplace_stop_token& __other) noexcept -> inplace_stop_token& = default;
+  _CCCL_HIDE_FROM_ABI constexpr auto operator=(const inplace_stop_token& __other) noexcept
+    -> inplace_stop_token& = default;
 
-  _CCCL_API auto operator=(inplace_stop_token&& __other) noexcept -> inplace_stop_token&
+  _CCCL_API constexpr auto operator=(inplace_stop_token&& __other) noexcept -> inplace_stop_token&
   {
     __source_ = execution::__exchange(__other.__source_, nullptr);
     return *this;
   }
 
-  [[nodiscard]] _CCCL_API auto stop_requested() const noexcept -> bool
+  [[nodiscard]] _CCCL_API constexpr auto stop_requested() const noexcept -> bool
   {
     return __source_ != nullptr && __source_->stop_requested();
   }
 
-  [[nodiscard]] _CCCL_API auto stop_possible() const noexcept -> bool
+  [[nodiscard]] _CCCL_API constexpr auto stop_possible() const noexcept -> bool
   {
     return __source_ != nullptr;
   }
 
-  _CCCL_API void swap(inplace_stop_token& __other) noexcept
+  _CCCL_API constexpr void swap(inplace_stop_token& __other) noexcept
   {
     execution::__swap(__source_, __other.__source_);
   }
 
-  _CCCL_API friend auto operator==(const inplace_stop_token& __a, const inplace_stop_token& __b) noexcept -> bool
+  _CCCL_API friend constexpr auto operator==(const inplace_stop_token& __a, const inplace_stop_token& __b) noexcept
+    -> bool
   {
     return __a.__source_ == __b.__source_;
   }
 
-  _CCCL_API friend auto operator!=(const inplace_stop_token& __a, const inplace_stop_token& __b) noexcept -> bool
+  _CCCL_API friend constexpr auto operator!=(const inplace_stop_token& __a, const inplace_stop_token& __b) noexcept
+    -> bool
   {
     return __a.__source_ != __b.__source_;
   }
@@ -234,14 +240,14 @@ private:
   template <class>
   friend class inplace_stop_callback;
 
-  _CCCL_API explicit inplace_stop_token(const inplace_stop_source* __source) noexcept
+  _CCCL_API constexpr explicit inplace_stop_token(const inplace_stop_source* __source) noexcept
       : __source_(__source)
   {}
 
-  const inplace_stop_source* __source_;
+  const inplace_stop_source* __source_ = nullptr;
 };
 
-_CCCL_API inline auto inplace_stop_source::get_token() const noexcept -> inplace_stop_token
+_CCCL_API constexpr auto inplace_stop_source::get_token() const noexcept -> inplace_stop_token
 {
   return inplace_stop_token{this};
 }
@@ -252,8 +258,8 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT inplace_stop_callback : __stok::__inplace_st
 {
 public:
   template <class _Fun2>
-  _CCCL_API explicit inplace_stop_callback(inplace_stop_token __token,
-                                           _Fun2&& __fun) noexcept(_CUDA_VSTD::is_nothrow_constructible_v<_Fun, _Fun2>)
+  _CCCL_API constexpr explicit inplace_stop_callback(inplace_stop_token __token,
+                                                     _Fun2&& __fun) noexcept(__nothrow_constructible<_Fun, _Fun2>)
       : __stok::__inplace_stop_callback_base(__token.__source_, &inplace_stop_callback::__execute_impl)
       , __fun(static_cast<_Fun2&&>(__fun))
   {
@@ -269,17 +275,17 @@ public:
   }
 
 private:
-  _CCCL_API static void __execute_impl(__stok::__inplace_stop_callback_base* __cb) noexcept
+  _CCCL_API static constexpr void __execute_impl(__stok::__inplace_stop_callback_base* __cb) noexcept
   {
     static_cast<_Fun&&>(static_cast<inplace_stop_callback*>(__cb)->__fun)();
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS _Fun __fun;
+  _Fun __fun;
 };
 
 namespace __stok
 {
-_CCCL_API inline void __inplace_stop_callback_base::__register_callback() noexcept
+_CCCL_API constexpr void __inplace_stop_callback_base::__register_callback() noexcept
 {
   if (__source_ != nullptr)
   {
@@ -296,7 +302,7 @@ _CCCL_API inline void __inplace_stop_callback_base::__register_callback() noexce
 
 _CCCL_API inline inplace_stop_source::~inplace_stop_source()
 {
-  _CCCL_ASSERT((__state_.load(_CUDA_VSTD::memory_order_relaxed) & __locked_flag) == 0, "");
+  _CCCL_ASSERT((__state_.load(::cuda::std::memory_order_relaxed) & __locked_flag) == 0, "");
   _CCCL_ASSERT(__callbacks_ == nullptr, "");
 }
 
@@ -320,7 +326,7 @@ _CCCL_API inline auto inplace_stop_source::request_stop() noexcept -> bool
       __callbacks_->__prev_ptr_ = &__callbacks_;
     }
 
-    __state_.store(__stop_requested_flag, _CUDA_VSTD::memory_order_release);
+    __state_.store(__stop_requested_flag, ::cuda::std::memory_order_release);
 
     bool __removed_during_callback_      = false;
     __callbk->__removed_during_callback_ = &__removed_during_callback_;
@@ -330,43 +336,43 @@ _CCCL_API inline auto inplace_stop_source::request_stop() noexcept -> bool
     if (!__removed_during_callback_)
     {
       __callbk->__removed_during_callback_ = nullptr;
-      __callbk->__callback_completed_.store(true, _CUDA_VSTD::memory_order_release);
+      __callbk->__callback_completed_.store(true, ::cuda::std::memory_order_release);
     }
 
     __lock();
   }
 
-  __state_.store(__stop_requested_flag, _CUDA_VSTD::memory_order_release);
+  __state_.store(__stop_requested_flag, ::cuda::std::memory_order_release);
   return false;
 }
 
 _CCCL_API inline auto inplace_stop_source::__lock() const noexcept -> uint8_t
 {
   __stok::__spin_wait __spin;
-  auto __old_state = __state_.load(_CUDA_VSTD::memory_order_relaxed);
+  auto __old_state = __state_.load(::cuda::std::memory_order_relaxed);
   do
   {
     while ((__old_state & __locked_flag) != 0)
     {
       __spin.__wait();
-      __old_state = __state_.load(_CUDA_VSTD::memory_order_relaxed);
+      __old_state = __state_.load(::cuda::std::memory_order_relaxed);
     }
   } while (!__state_.compare_exchange_weak(
-    __old_state, __old_state | __locked_flag, _CUDA_VSTD::memory_order_acquire, _CUDA_VSTD::memory_order_relaxed));
+    __old_state, __old_state | __locked_flag, ::cuda::std::memory_order_acquire, ::cuda::std::memory_order_relaxed));
 
   return __old_state;
 }
 
 _CCCL_API inline void inplace_stop_source::__unlock(uint8_t __old_state) const noexcept
 {
-  (void) __state_.store(__old_state, _CUDA_VSTD::memory_order_release);
+  (void) __state_.store(__old_state, ::cuda::std::memory_order_release);
 }
 
 _CCCL_API inline auto inplace_stop_source::__try_lock_unless_stop_requested(bool __set_stop_requested) const noexcept
   -> bool
 {
   __stok::__spin_wait __spin;
-  auto __old_state = __state_.load(_CUDA_VSTD::memory_order_relaxed);
+  auto __old_state = __state_.load(::cuda::std::memory_order_relaxed);
   do
   {
     while (true)
@@ -383,14 +389,14 @@ _CCCL_API inline auto inplace_stop_source::__try_lock_unless_stop_requested(bool
       else
       {
         __spin.__wait();
-        __old_state = __state_.load(_CUDA_VSTD::memory_order_relaxed);
+        __old_state = __state_.load(::cuda::std::memory_order_relaxed);
       }
     }
   } while (!__state_.compare_exchange_weak(
     __old_state,
     __set_stop_requested ? (__locked_flag | __stop_requested_flag) : __locked_flag,
-    _CUDA_VSTD::memory_order_acq_rel,
-    _CUDA_VSTD::memory_order_relaxed));
+    ::cuda::std::memory_order_acq_rel,
+    ::cuda::std::memory_order_relaxed));
 
   // Lock acquired successfully
   return true;
@@ -452,7 +458,7 @@ inplace_stop_source::__remove_callback(__stok::__inplace_stop_callback_base* __c
       // Concurrently executing on another thread.
       // Wait until the other thread finishes executing the callback.
       __stok::__spin_wait __spin;
-      while (!__callbk->__callback_completed_.load(_CUDA_VSTD::memory_order_acquire))
+      while (!__callbk->__callback_completed_.load(::cuda::std::memory_order_acquire))
       {
         __spin.__wait();
       }
@@ -472,8 +478,39 @@ struct __on_stop_request
 
 template <class _Token, class _Callback>
 using stop_callback_for_t _CCCL_NODEBUG_ALIAS = typename _Token::template callback_type<_Callback>;
+
+namespace __detail
+{
+template <template <class> class>
+struct __check_type_alias_exists;
+} // namespace __detail
+
+template <class _Token>
+_CCCL_CONCEPT stoppable_token = _CCCL_REQUIRES_EXPR((_Token), const _Token& __token)(
+  requires(__nothrow_copyable<_Token>),
+  requires(__nothrow_movable<_Token>),
+  requires(cuda::std::equality_comparable<_Token>),
+  _Satisfies(cuda::std::__boolean_testable) __token.stop_requested(),
+  _Satisfies(cuda::std::__boolean_testable) __token.stop_possible(),
+  noexcept(__token.stop_requested()),
+  noexcept(__token.stop_possible()),
+  typename(__detail::__check_type_alias_exists<_Token::template callback_type>));
+
+template <class _Token, typename _Callback, typename _Initializer = _Callback>
+_CCCL_CONCEPT stoppable_token_for = _CCCL_REQUIRES_EXPR((_Token, _Callback, _Initializer))(
+  requires(stoppable_token<_Token>),
+  requires(__callable<_Callback>),
+  typename(stop_callback_for_t<_Token, _Callback>),
+  requires(__constructible<_Callback, _Initializer>),
+  requires(__constructible<stop_callback_for_t<_Token, _Callback>, const _Token&, _Initializer>));
+
+template <class _Token>
+_CCCL_CONCEPT unstoppable_token = _CCCL_REQUIRES_EXPR((_Token))(
+  requires(stoppable_token<_Token>),
+  _Satisfies(cuda::std::__boolean_testable) _Token::stop_possible(),
+  requires(!_Token::stop_possible()));
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_STOP_TOKEN

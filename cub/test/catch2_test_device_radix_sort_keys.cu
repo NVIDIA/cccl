@@ -1,42 +1,17 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/util_type.cuh>
 
 #include <thrust/functional.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/memory.h>
 #include <thrust/scatter.h>
 #include <thrust/transform.h>
 
+#include <cuda/iterator>
 #include <cuda/std/type_traits>
 
 #include <algorithm>
@@ -193,8 +168,8 @@ C2H_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sor
   using bits_t = typename cub::Traits<key_t>::UnsignedBits;
 
   constexpr std::size_t num_bits = sizeof(key_t) * CHAR_BIT;
-  const key_t positive_zero      = ::cuda::std::bit_cast<key_t>(bits_t(0));
-  const key_t negative_zero      = ::cuda::std::bit_cast<key_t>(bits_t(1) << (num_bits - 1));
+  const key_t positive_zero      = cuda::std::bit_cast<key_t>(bits_t(0));
+  const key_t negative_zero      = cuda::std::bit_cast<key_t>(bits_t(1) << (num_bits - 1));
 
   constexpr std::size_t max_num_items = 1 << 18;
   const std::size_t num_items         = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
@@ -211,7 +186,7 @@ C2H_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sor
     for (int i = 0; i < 2; ++i)
     {
       c2h::gen(C2H_SEED(1), indices, std::size_t(0), num_items);
-      auto begin = thrust::make_constant_iterator(i == 0 ? positive_zero : negative_zero);
+      auto begin = cuda::constant_iterator(i == 0 ? positive_zero : negative_zero);
       auto end   = begin + num_indices;
       thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), in_keys.begin());
     }
@@ -270,7 +245,7 @@ C2H_TEST("DeviceRadixSort::SortKeys: NaN handling", "[keys][radix][sort][device]
       {
         has_nans = true;
         c2h::gen(C2H_SEED(1), indices, std::size_t(0), num_items);
-        auto begin = thrust::make_constant_iterator(nan_val);
+        auto begin = cuda::constant_iterator(nan_val);
         auto end   = begin + num_indices;
         thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), in_keys.begin());
       }
@@ -517,7 +492,7 @@ C2H_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check",
 
   // Test problem sizes near and at the maximum offset value to ensure that internal calculations
   // do not overflow.
-  constexpr std::size_t max_offset    = ::cuda::std::numeric_limits<num_items_t>::max();
+  constexpr std::size_t max_offset    = cuda::std::numeric_limits<num_items_t>::max();
   constexpr std::size_t min_num_items = max_offset - 5;
   constexpr std::size_t max_num_items = max_offset;
   const std::size_t num_items         = GENERATE_COPY(min_num_items, max_num_items);

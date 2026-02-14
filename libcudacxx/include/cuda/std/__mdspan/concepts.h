@@ -15,8 +15,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MDSPAN_CONCEPTS_H
-#define _LIBCUDACXX___MDSPAN_CONCEPTS_H
+#ifndef _CUDA_STD___MDSPAN_CONCEPTS_H
+#define _CUDA_STD___MDSPAN_CONCEPTS_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,55 +33,48 @@
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
-#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
-#include <cuda/std/__type_traits/remove_const.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/declval.h>
 #include <cuda/std/span>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 namespace __mdspan_detail
 {
-
 // [mdspan.layout.stride.expo]/3
-template <class>
-struct __is_extents : false_type
-{};
-
-template <class _Tp>
-inline constexpr bool __is_extents_v = __is_extents<_Tp>::value;
 
 // [mdspan.layout.general]/2
 template <class _Layout, class _Mapping>
 inline constexpr bool __is_mapping_of =
-  _CCCL_TRAIT(is_same, typename _Layout::template mapping<typename _Mapping::extents_type>, _Mapping);
+  is_same_v<typename _Layout::template mapping<typename _Mapping::extents_type>, _Mapping>;
 
 // [mdspan.layout.reqmts]/1
 template <class _Mapping>
 _CCCL_CONCEPT __layout_mapping_req_type = _CCCL_REQUIRES_EXPR((_Mapping))(
   requires(copyable<_Mapping>),
   requires(equality_comparable<_Mapping>),
-  requires(_CCCL_TRAIT(is_nothrow_move_constructible, _Mapping)),
-  requires(_CCCL_TRAIT(is_move_assignable, _Mapping)),
-  requires(_CCCL_TRAIT(is_nothrow_swappable, _Mapping)));
+  requires(is_nothrow_move_constructible_v<_Mapping>),
+  requires(is_move_assignable_v<_Mapping>),
+  requires(is_nothrow_swappable_v<_Mapping>));
 
 // [mdspan.layout.reqmts]/2-4
 template <class _Mapping>
 _CCCL_CONCEPT __layout_mapping_req_types = _CCCL_REQUIRES_EXPR((_Mapping))(
-  requires(__is_extents_v<typename _Mapping::extents_type>),
+  requires(__is_cuda_std_extents_v<typename _Mapping::extents_type>),
   requires(same_as<typename _Mapping::index_type, typename _Mapping::extents_type::index_type>),
   requires(same_as<typename _Mapping::rank_type, typename _Mapping::extents_type::rank_type>),
   requires(__is_mapping_of<typename _Mapping::layout_type, _Mapping>));
@@ -105,7 +98,7 @@ _CCCL_CONCEPT __layout_mapping_req = _CCCL_REQUIRES_EXPR((_Mapping))(
 template <class _Mapping>
 _CCCL_CONCEPT __layout_mapping_alike = _CCCL_REQUIRES_EXPR((_Mapping))(
   requires(__is_mapping_of<typename _Mapping::layout_type, _Mapping>),
-  requires(__is_extents_v<typename _Mapping::extents_type>),
+  requires(__is_cuda_std_extents_v<typename _Mapping::extents_type>),
   requires(same_as<bool, decltype(_Mapping::is_always_strided())>),
   requires(same_as<bool, decltype(_Mapping::is_always_exhaustive())>),
   requires(same_as<bool, decltype(_Mapping::is_always_unique())>),
@@ -115,9 +108,14 @@ _CCCL_CONCEPT __layout_mapping_alike = _CCCL_REQUIRES_EXPR((_Mapping))(
 
 template <class _IndexType, class... _Indices>
 _CCCL_CONCEPT __all_convertible_to_index_type =
-  (_CCCL_TRAIT(is_convertible, _Indices, _IndexType) && ... && true)
-  && (_CCCL_TRAIT(is_nothrow_constructible, _IndexType, _Indices) && ... && true);
+  (is_convertible_v<_Indices, _IndexType> && ... && true)
+  && (is_nothrow_constructible_v<_IndexType, _Indices> && ... && true);
 
+template <class _Extent, size_t _Size>
+static constexpr bool __matches_dynamic_rank = (_Size == _Extent::rank_dynamic());
+
+template <class _Extent, size_t _Size>
+static constexpr bool __matches_static_rank = (_Size == _Extent::rank()) && (_Size != _Extent::rank_dynamic());
 } // namespace __mdspan_detail
 
 template <class _Tp, class _IndexType>
@@ -129,11 +127,15 @@ _CCCL_CONCEPT __index_pair_like = _CCCL_REQUIRES_EXPR((_Tp, _IndexType))(
 // [mdspan.submdspan.strided.slice]/3
 
 template <class _Tp>
-_CCCL_CONCEPT __index_like =
-  _CCCL_TRAIT(is_signed, _Tp) || _CCCL_TRAIT(is_unsigned, _Tp) || __integral_constant_like<_Tp>;
+_CCCL_CONCEPT __index_like = is_signed_v<_Tp> || is_unsigned_v<_Tp> || __integral_constant_like<_Tp>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+template <class _AccessorPolicy>
+_CCCL_CONCEPT __has_detect_invalidity =
+  _CCCL_REQUIRES_EXPR((_AccessorPolicy), _AccessorPolicy __ap)(__ap.__detectably_invalid(
+    ::cuda::std::declval<typename _AccessorPolicy::data_handle_type>(), ::cuda::std::declval<::cuda::std::size_t>()));
+
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MDSPAN_CONCEPTS_H
+#endif // _CUDA_STD___MDSPAN_CONCEPTS_H

@@ -11,4 +11,4 @@ Random Number Engines
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*function_group__random__number__engine__templates*
+   ../../api/group__random__number__engine__templates*

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_CONCEPTS
-#define __CUDAX_ASYNC_DETAIL_CONCEPTS
+#ifndef __CUDAX_EXECUTION_CONCEPTS
+#define __CUDAX_EXECUTION_CONCEPTS
 
 #include <cuda/std/detail/__config>
 
@@ -24,42 +24,36 @@
 #include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
+#include <cuda/std/__concepts/copyable.h>
+#include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_callable.h>
-#include <cuda/std/__type_traits/is_move_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 
-#include <cuda/experimental/__execution/completion_signatures.cuh>
+#include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/get_completion_signatures.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
 namespace cuda::experimental::execution
 {
-// Utilities:
-template <class _Ty>
-_CCCL_API constexpr auto __is_constexpr_helper(_Ty) -> bool
-{
-  return true;
-}
-
 // Receiver concepts:
 template <class _Rcvr>
 _CCCL_CONCEPT receiver = //
   _CCCL_REQUIRES_EXPR((_Rcvr)) //
   ( //
-    requires(__is_receiver<_CUDA_VSTD::decay_t<_Rcvr>>), //
-    requires(_CUDA_VSTD::move_constructible<_CUDA_VSTD::decay_t<_Rcvr>>), //
-    requires(_CUDA_VSTD::constructible_from<_CUDA_VSTD::decay_t<_Rcvr>, _Rcvr>), //
-    requires(_CUDA_VSTD::is_nothrow_move_constructible_v<_CUDA_VSTD::decay_t<_Rcvr>>) //
+    requires(__is_receiver<decay_t<_Rcvr>>), //
+    requires(::cuda::std::move_constructible<decay_t<_Rcvr>>), //
+    requires(::cuda::std::constructible_from<decay_t<_Rcvr>, _Rcvr>), //
+    requires(__nothrow_movable<decay_t<_Rcvr>>) //
   );
 
 template <class _Rcvr, class _Sig>
 inline constexpr bool __valid_completion_for = false;
 
 template <class _Rcvr, class _Tag, class... _As>
-inline constexpr bool __valid_completion_for<_Rcvr, _Tag(_As...)> = _CUDA_VSTD::__is_callable_v<_Tag, _Rcvr, _As...>;
+inline constexpr bool __valid_completion_for<_Rcvr, _Tag(_As...)> = __callable<_Tag, _Rcvr, _As...>;
 
 template <class _Rcvr, class _Completions>
 inline constexpr bool __has_completions = false;
@@ -73,12 +67,12 @@ _CCCL_CONCEPT receiver_of = //
   _CCCL_REQUIRES_EXPR((_Rcvr, _Completions)) //
   ( //
     requires(receiver<_Rcvr>), //
-    requires(__has_completions<_CUDA_VSTD::decay_t<_Rcvr>, _Completions>) //
+    requires(__has_completions<decay_t<_Rcvr>, _Completions>) //
   );
 
 // Queryable traits:
 template <class _Ty>
-_CCCL_CONCEPT __queryable = _CUDA_VSTD::destructible<_Ty>;
+_CCCL_CONCEPT __queryable = ::cuda::std::destructible<_Ty>;
 
 // Awaitable traits:
 template <class>
@@ -106,7 +100,7 @@ inline constexpr bool enable_sender = __enable_sender<_Sndr>();
 template <class... _Env>
 struct __completions_tester
 {
-  template <class _Sndr, bool EnableIfConstexpr = (get_completion_signatures<_Sndr, _Env...>(), true)>
+  template <class _Sndr, bool _EnableIfConstexpr = ((void) execution::get_completion_signatures<_Sndr, _Env...>(), true)>
   _CCCL_API static constexpr auto __is_valid(int) -> bool
   {
     return __valid_completion_signatures<completion_signatures_of_t<_Sndr, _Env...>>;
@@ -119,13 +113,16 @@ struct __completions_tester
   }
 };
 
+template <class _Sndr, class... _Env>
+_CCCL_CONCEPT __has_valid_completion_signatures = __completions_tester<_Env...>::template __is_valid<_Sndr>(0);
+
 template <class _Sndr>
 _CCCL_CONCEPT sender = //
   _CCCL_REQUIRES_EXPR((_Sndr)) //
   ( //
-    requires(enable_sender<_CUDA_VSTD::decay_t<_Sndr>>), //
-    requires(_CUDA_VSTD::move_constructible<_CUDA_VSTD::decay_t<_Sndr>>), //
-    requires(_CUDA_VSTD::constructible_from<_CUDA_VSTD::decay_t<_Sndr>, _Sndr>) //
+    requires(enable_sender<decay_t<_Sndr>>), //
+    requires(::cuda::std::move_constructible<decay_t<_Sndr>>), //
+    requires(::cuda::std::constructible_from<decay_t<_Sndr>, _Sndr>) //
   );
 
 template <class _Sndr, class... _Env>
@@ -134,8 +131,8 @@ _CCCL_CONCEPT sender_in = //
   ( //
     requires(sender<_Sndr>), //
     requires(sizeof...(_Env) <= 1), //
-    requires(_CUDA_VSTD::__fold_and_v<__queryable<_Env>...>), //
-    requires(__completions_tester<_Env...>::template __is_valid<_Sndr>(0)) //
+    requires((__queryable<_Env> && ... && true)), //
+    requires(__has_valid_completion_signatures<_Sndr, _Env...>) //
   );
 
 template <class _Sndr>
@@ -146,8 +143,18 @@ _CCCL_CONCEPT dependent_sender = //
     requires(__is_dependent_sender<_Sndr>()) //
   );
 
+// Scheduler concepts:
+template <class _Sch>
+_CCCL_CONCEPT scheduler = //
+  _CCCL_REQUIRES_EXPR((_Sch), __declfn_t<_Sch> __sch) //
+  ( //
+    requires(__is_scheduler<_Sch>), //
+    schedule(__sch()), //
+    requires(::cuda::std::equality_comparable<::cuda::std::remove_cvref_t<_Sch>>), //
+    requires(::cuda::std::copyable<::cuda::std::remove_cvref_t<_Sch>>) //
+  );
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif // __CUDAX_ASYNC_DETAIL_CONCEPTS
+#endif // __CUDAX_EXECUTION_CONCEPTS

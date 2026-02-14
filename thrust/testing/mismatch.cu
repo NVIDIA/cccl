@@ -24,11 +24,11 @@ void TestMismatchSimple()
 DECLARE_VECTOR_UNITTEST(TestMismatchSimple);
 
 template <typename InputIterator1, typename InputIterator2>
-thrust::pair<InputIterator1, InputIterator2>
+cuda::std::pair<InputIterator1, InputIterator2>
 mismatch(my_system& system, InputIterator1 first, InputIterator1, InputIterator2)
 {
   system.validate_dispatch();
-  return thrust::make_pair(first, first);
+  return cuda::std::make_pair(first, first);
 }
 
 void TestMismatchDispatchExplicit()
@@ -43,10 +43,10 @@ void TestMismatchDispatchExplicit()
 DECLARE_UNITTEST(TestMismatchDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2>
-thrust::pair<InputIterator1, InputIterator2> mismatch(my_tag, InputIterator1 first, InputIterator1, InputIterator2)
+cuda::std::pair<InputIterator1, InputIterator2> mismatch(my_tag, InputIterator1 first, InputIterator1, InputIterator2)
 {
   *first = 13;
-  return thrust::make_pair(first, first);
+  return cuda::std::make_pair(first, first);
 }
 
 void TestMismatchDispatchImplicit()

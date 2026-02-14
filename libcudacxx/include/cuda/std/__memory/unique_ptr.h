@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_UNIQUE_PTR_H
-#define _LIBCUDACXX___MEMORY_UNIQUE_PTR_H
+#ifndef _CUDA_STD___MEMORY_UNIQUE_PTR_H
+#define _CUDA_STD___MEMORY_UNIQUE_PTR_H
 
 #include <cuda/std/detail/__config>
 
@@ -54,24 +54,25 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete
 {
-  static_assert(!_CCCL_TRAIT(is_function, _Tp), "default_delete cannot be instantiated for function types");
+  static_assert(!is_function_v<_Tp>, "default_delete cannot be instantiated for function types");
 
   _CCCL_HIDE_FROM_ABI constexpr default_delete() noexcept = default;
 
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20
-  default_delete(const default_delete<_Up>&, enable_if_t<_CCCL_TRAIT(is_convertible, _Up*, _Tp*), int> = 0) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20
+  default_delete(const default_delete<_Up>&, enable_if_t<is_convertible_v<_Up*, _Tp*>, int> = 0) noexcept
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void operator()(_Tp* __ptr) const noexcept
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void operator()(_Tp* __ptr) const noexcept
   {
     static_assert(sizeof(_Tp) >= 0, "cannot delete an incomplete type");
-    static_assert(!is_void<_Tp>::value, "cannot delete an incomplete type");
+    static_assert(!is_void_v<_Tp>, "cannot delete an incomplete type");
     delete __ptr;
   }
 };
@@ -82,12 +83,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete<_Tp[]>
   _CCCL_HIDE_FROM_ABI constexpr default_delete() noexcept = default;
 
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 default_delete(
-    const default_delete<_Up[]>&, enable_if_t<_CCCL_TRAIT(is_convertible, _Up (*)[], _Tp (*)[]), int> = 0) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20
+  default_delete(const default_delete<_Up[]>&, enable_if_t<is_convertible_v<_Up (*)[], _Tp (*)[]>, int> = 0) noexcept
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 enable_if_t<_CCCL_TRAIT(is_convertible, _Up (*)[], _Tp (*)[]), void>
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 enable_if_t<is_convertible_v<_Up (*)[], _Tp (*)[]>, void>
   operator()(_Up* __ptr) const noexcept
   {
     static_assert(sizeof(_Up) >= 0, "cannot delete an incomplete type");
@@ -98,26 +100,26 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete<_Tp[]>
 template <class _Deleter>
 struct __unique_ptr_deleter_sfinae
 {
-  static_assert(!_CCCL_TRAIT(is_reference, _Deleter), "incorrect specialization");
-  typedef const _Deleter& __lval_ref_type;
-  typedef _Deleter&& __good_rval_ref_type;
-  typedef true_type __enable_rval_overload;
+  static_assert(!is_reference_v<_Deleter>, "incorrect specialization");
+  using __lval_ref_type        = const _Deleter&;
+  using __good_rval_ref_type   = _Deleter&&;
+  using __enable_rval_overload = true_type;
 };
 
 template <class _Deleter>
 struct __unique_ptr_deleter_sfinae<_Deleter const&>
 {
-  typedef const _Deleter& __lval_ref_type;
-  typedef const _Deleter&& __bad_rval_ref_type;
-  typedef false_type __enable_rval_overload;
+  using __lval_ref_type        = const _Deleter&;
+  using __bad_rval_ref_type    = const _Deleter&&;
+  using __enable_rval_overload = false_type;
 };
 
 template <class _Deleter>
 struct __unique_ptr_deleter_sfinae<_Deleter&>
 {
-  typedef _Deleter& __lval_ref_type;
-  typedef _Deleter&& __bad_rval_ref_type;
-  typedef false_type __enable_rval_overload;
+  using __lval_ref_type        = _Deleter&;
+  using __bad_rval_ref_type    = _Deleter&&;
+  using __enable_rval_overload = false_type;
 };
 
 #if defined(_LIBCUDACXX_ABI_ENABLE_UNIQUE_PTR_TRIVIAL_ABI)
@@ -130,12 +132,11 @@ template <class _Tp, class _Dp = default_delete<_Tp>>
 class _LIBCUDACXX_UNIQUE_PTR_TRIVIAL_ABI _CCCL_TYPE_VISIBILITY_DEFAULT unique_ptr
 {
 public:
-  typedef _Tp element_type;
-  typedef _Dp deleter_type;
-  typedef _CCCL_NODEBUG_ALIAS typename __pointer<_Tp, deleter_type>::type pointer;
+  using element_type                = _Tp;
+  using deleter_type                = _Dp;
+  using pointer _CCCL_NODEBUG_ALIAS = typename __pointer<_Tp, deleter_type>::type;
 
-  static_assert(!_CCCL_TRAIT(is_rvalue_reference, deleter_type),
-                "the specified deleter type cannot be an rvalue reference");
+  static_assert(!is_rvalue_reference_v<deleter_type>, "the specified deleter type cannot be an rvalue reference");
 
 private:
   __compressed_pair<pointer, deleter_type> __ptr_;
@@ -145,7 +146,7 @@ private:
     int __for_bool_;
   };
 
-  typedef _CCCL_NODEBUG_ALIAS __unique_ptr_deleter_sfinae<_Dp> _DeleterSFINAE;
+  using _DeleterSFINAE _CCCL_NODEBUG_ALIAS = __unique_ptr_deleter_sfinae<_Dp>;
 
   template <bool _Dummy>
   using _LValRefType _CCCL_NODEBUG_ALIAS = typename __dependent_type<_DeleterSFINAE, _Dummy>::__lval_ref_type;
@@ -158,71 +159,70 @@ private:
 
   template <bool _Dummy, class _Deleter = typename __dependent_type<type_identity<deleter_type>, _Dummy>::type>
   using _EnableIfDeleterDefaultConstructible _CCCL_NODEBUG_ALIAS =
-    typename enable_if<is_default_constructible<_Deleter>::value && !is_pointer<_Deleter>::value>::type;
+    typename enable_if<is_default_constructible_v<_Deleter> && !is_pointer_v<_Deleter>>::type;
 
   template <class _ArgType>
   using _EnableIfDeleterConstructible _CCCL_NODEBUG_ALIAS =
-    typename enable_if<is_constructible<deleter_type, _ArgType>::value>::type;
+    typename enable_if<is_constructible_v<deleter_type, _ArgType>>::type;
 
   template <class _UPtr, class _Up>
   using _EnableIfMoveConvertible _CCCL_NODEBUG_ALIAS =
-    typename enable_if<is_convertible<typename _UPtr::pointer, pointer>::value && !is_array<_Up>::value>::type;
+    typename enable_if<is_convertible_v<typename _UPtr::pointer, pointer> && !is_array_v<_Up>>::type;
 
   template <class _UDel>
-  using _EnableIfDeleterConvertible _CCCL_NODEBUG_ALIAS =
-    typename enable_if<(is_reference<_Dp>::value && is_same<_Dp, _UDel>::value)
-                       || (!is_reference<_Dp>::value && is_convertible<_UDel, _Dp>::value)>::type;
+  using _EnableIfDeleterConvertible _CCCL_NODEBUG_ALIAS = typename enable_if<
+    (is_reference_v<_Dp> && is_same_v<_Dp, _UDel>) || (!is_reference_v<_Dp> && is_convertible_v<_UDel, _Dp>)>::type;
 
   template <class _UDel>
-  using _EnableIfDeleterAssignable = typename enable_if<is_assignable<_Dp&, _UDel&&>::value>::type;
+  using _EnableIfDeleterAssignable = typename enable_if<is_assignable_v<_Dp&, _UDel&&>>::type;
 
 public:
   template <bool _Dummy = true, class = _EnableIfDeleterDefaultConstructible<_Dummy>>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr unique_ptr() noexcept
+  _CCCL_API constexpr unique_ptr() noexcept
       : __ptr_(__value_init_tag(), __value_init_tag())
   {}
 
   template <bool _Dummy = true, class = _EnableIfDeleterDefaultConstructible<_Dummy>>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr unique_ptr(nullptr_t) noexcept
+  _CCCL_API constexpr unique_ptr(nullptr_t) noexcept
       : __ptr_(__value_init_tag(), __value_init_tag())
   {}
 
   template <bool _Dummy = true, class = _EnableIfDeleterDefaultConstructible<_Dummy>>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 explicit unique_ptr(pointer __p) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 explicit unique_ptr(pointer __p) noexcept
       : __ptr_(__p, __value_init_tag())
   {}
 
   template <bool _Dummy = true, class = _EnableIfDeleterConstructible<_LValRefType<_Dummy>>>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 unique_ptr(pointer __p, _LValRefType<_Dummy> __d) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr(pointer __p, _LValRefType<_Dummy> __d) noexcept
       : __ptr_(__p, __d)
   {}
 
   template <bool _Dummy = true, class = _EnableIfDeleterConstructible<_GoodRValRefType<_Dummy>>>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 unique_ptr(pointer __p, _GoodRValRefType<_Dummy> __d) noexcept
-      : __ptr_(__p, _CUDA_VSTD::move(__d))
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr(pointer __p, _GoodRValRefType<_Dummy> __d) noexcept
+      : __ptr_(__p, ::cuda::std::move(__d))
   {
-    static_assert(!is_reference<deleter_type>::value, "rvalue deleter bound to reference");
+    static_assert(!is_reference_v<deleter_type>, "rvalue deleter bound to reference");
   }
 
   template <bool _Dummy = true, class = _EnableIfDeleterConstructible<_BadRValRefType<_Dummy>>>
-  _LIBCUDACXX_HIDE_FROM_ABI unique_ptr(pointer __p, _BadRValRefType<_Dummy> __d) = delete;
+  _CCCL_API inline unique_ptr(pointer __p, _BadRValRefType<_Dummy> __d) = delete;
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 unique_ptr(unique_ptr&& __u) noexcept
-      : __ptr_(__u.release(), _CUDA_VSTD::forward<deleter_type>(__u.get_deleter()))
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr(unique_ptr&& __u) noexcept
+      : __ptr_(__u.release(), ::cuda::std::forward<deleter_type>(__u.get_deleter()))
   {}
 
   template <class _Up,
             class _Ep,
             class = _EnableIfMoveConvertible<unique_ptr<_Up, _Ep>, _Up>,
             class = _EnableIfDeleterConvertible<_Ep>>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 unique_ptr(unique_ptr<_Up, _Ep>&& __u) noexcept
-      : __ptr_(__u.release(), _CUDA_VSTD::forward<_Ep>(__u.get_deleter()))
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr(unique_ptr<_Up, _Ep>&& __u) noexcept
+      : __ptr_(__u.release(), ::cuda::std::forward<_Ep>(__u.get_deleter()))
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 unique_ptr& operator=(unique_ptr&& __u) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr& operator=(unique_ptr&& __u) noexcept
   {
     reset(__u.release());
-    __ptr_.second() = _CUDA_VSTD::forward<deleter_type>(__u.get_deleter());
+    __ptr_.second() = ::cuda::std::forward<deleter_type>(__u.get_deleter());
     return *this;
   }
 
@@ -230,60 +230,60 @@ public:
             class _Ep,
             class = _EnableIfMoveConvertible<unique_ptr<_Up, _Ep>, _Up>,
             class = _EnableIfDeleterAssignable<_Ep>>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 unique_ptr& operator=(unique_ptr<_Up, _Ep>&& __u) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr& operator=(unique_ptr<_Up, _Ep>&& __u) noexcept
   {
     reset(__u.release());
-    __ptr_.second() = _CUDA_VSTD::forward<_Ep>(__u.get_deleter());
+    __ptr_.second() = ::cuda::std::forward<_Ep>(__u.get_deleter());
     return *this;
   }
 
   unique_ptr(unique_ptr const&)            = delete;
   unique_ptr& operator=(unique_ptr const&) = delete;
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 ~unique_ptr()
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 ~unique_ptr()
   {
     reset();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 unique_ptr& operator=(nullptr_t) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr& operator=(nullptr_t) noexcept
   {
     reset();
     return *this;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 add_lvalue_reference_t<_Tp> operator*() const
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 add_lvalue_reference_t<_Tp> operator*() const
   {
     return *__ptr_.first();
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 pointer operator->() const noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 pointer operator->() const noexcept
   {
     return __ptr_.first();
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 pointer get() const noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 pointer get() const noexcept
   {
     return __ptr_.first();
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 deleter_type& get_deleter() noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 deleter_type& get_deleter() noexcept
   {
     return __ptr_.second();
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 const deleter_type& get_deleter() const noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 const deleter_type& get_deleter() const noexcept
   {
     return __ptr_.second();
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 explicit operator bool() const noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 explicit operator bool() const noexcept
   {
     return __ptr_.first() != nullptr;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 pointer release() noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 pointer release() noexcept
   {
     pointer __t    = __ptr_.first();
     __ptr_.first() = pointer();
     return __t;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void reset(pointer __p = pointer()) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void reset(pointer __p = pointer()) noexcept
   {
     pointer __tmp  = __ptr_.first();
     __ptr_.first() = __p;
@@ -293,7 +293,7 @@ public:
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void swap(unique_ptr& __u) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void swap(unique_ptr& __u) noexcept
   {
     __ptr_.swap(__u.__ptr_);
   }
@@ -303,9 +303,9 @@ template <class _Tp, class _Dp>
 class _LIBCUDACXX_UNIQUE_PTR_TRIVIAL_ABI _CCCL_TYPE_VISIBILITY_DEFAULT unique_ptr<_Tp[], _Dp>
 {
 public:
-  typedef _Tp element_type;
-  typedef _Dp deleter_type;
-  typedef typename __pointer<_Tp, deleter_type>::type pointer;
+  using element_type = _Tp;
+  using deleter_type = _Dp;
+  using pointer      = typename __pointer<_Tp, deleter_type>::type;
 
 private:
   __compressed_pair<pointer, deleter_type> __ptr_;
@@ -318,11 +318,11 @@ private:
   struct _CheckArrayPointerConversion<_FromElem*>
       : integral_constant<
           bool,
-          is_same<_FromElem*, pointer>::value
-            || (is_same<pointer, element_type*>::value && is_convertible<_FromElem (*)[], element_type (*)[]>::value)>
+          is_same_v<_FromElem*, pointer>
+            || (is_same_v<pointer, element_type*> && is_convertible_v<_FromElem (*)[], element_type (*)[]>)>
   {};
 
-  typedef __unique_ptr_deleter_sfinae<_Dp> _DeleterSFINAE;
+  using _DeleterSFINAE = __unique_ptr_deleter_sfinae<_Dp>;
 
   template <bool _Dummy>
   using _LValRefType _CCCL_NODEBUG_ALIAS = typename __dependent_type<_DeleterSFINAE, _Dummy>::__lval_ref_type;
@@ -335,11 +335,11 @@ private:
 
   template <bool _Dummy, class _Deleter = typename __dependent_type<type_identity<deleter_type>, _Dummy>::type>
   using _EnableIfDeleterDefaultConstructible _CCCL_NODEBUG_ALIAS =
-    typename enable_if<is_default_constructible<_Deleter>::value && !is_pointer<_Deleter>::value>::type;
+    typename enable_if<is_default_constructible_v<_Deleter> && !is_pointer_v<_Deleter>>::type;
 
   template <class _ArgType>
   using _EnableIfDeleterConstructible _CCCL_NODEBUG_ALIAS =
-    typename enable_if<is_constructible<deleter_type, _ArgType>::value>::type;
+    typename enable_if<is_constructible_v<deleter_type, _ArgType>>::type;
 
   template <class _Pp>
   using _EnableIfPointerConvertible _CCCL_NODEBUG_ALIAS =
@@ -347,25 +347,24 @@ private:
 
   template <class _UPtr, class _Up, class _ElemT = typename _UPtr::element_type>
   using _EnableIfMoveConvertible _CCCL_NODEBUG_ALIAS = typename enable_if<
-    is_array<_Up>::value && is_same<pointer, element_type*>::value && is_same<typename _UPtr::pointer, _ElemT*>::value
-    && is_convertible<_ElemT (*)[], element_type (*)[]>::value>::type;
+    is_array_v<_Up> && is_same_v<pointer, element_type*> && is_same_v<typename _UPtr::pointer, _ElemT*>
+    && is_convertible_v<_ElemT (*)[], element_type (*)[]>>::type;
 
   template <class _UDel>
   using _EnableIfDeleterConvertible _CCCL_NODEBUG_ALIAS =
-    typename enable_if<(is_reference<_Dp>::value && is_same<_Dp, _UDel>::value)
-                       || (!is_reference<_Dp>::value && is_convertible<_UDel, _Dp>::value)>::type;
+    enable_if_t<(is_reference_v<_Dp> && is_same_v<_Dp, _UDel>) || (!is_reference_v<_Dp> && is_convertible_v<_UDel, _Dp>)>;
 
   template <class _UDel>
-  using _EnableIfDeleterAssignable _CCCL_NODEBUG_ALIAS = typename enable_if<is_assignable<_Dp&, _UDel&&>::value>::type;
+  using _EnableIfDeleterAssignable _CCCL_NODEBUG_ALIAS = enable_if_t<is_assignable_v<_Dp&, _UDel&&>>;
 
 public:
   template <bool _Dummy = true, class = _EnableIfDeleterDefaultConstructible<_Dummy>>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr unique_ptr() noexcept
+  _CCCL_API constexpr unique_ptr() noexcept
       : __ptr_(__value_init_tag(), __value_init_tag())
   {}
 
   template <bool _Dummy = true, class = _EnableIfDeleterDefaultConstructible<_Dummy>>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr unique_ptr(nullptr_t) noexcept
+  _CCCL_API constexpr unique_ptr(nullptr_t) noexcept
       : __ptr_(__value_init_tag(), __value_init_tag())
   {}
 
@@ -373,7 +372,7 @@ public:
             bool _Dummy = true,
             class       = _EnableIfDeleterDefaultConstructible<_Dummy>,
             class       = _EnableIfPointerConvertible<_Pp>>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 explicit unique_ptr(_Pp __p) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 explicit unique_ptr(_Pp __p) noexcept
       : __ptr_(__p, __value_init_tag())
   {}
 
@@ -381,12 +380,12 @@ public:
             bool _Dummy = true,
             class       = _EnableIfDeleterConstructible<_LValRefType<_Dummy>>,
             class       = _EnableIfPointerConvertible<_Pp>>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 unique_ptr(_Pp __p, _LValRefType<_Dummy> __d) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr(_Pp __p, _LValRefType<_Dummy> __d) noexcept
       : __ptr_(__p, __d)
   {}
 
   template <bool _Dummy = true, class = _EnableIfDeleterConstructible<_LValRefType<_Dummy>>>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 unique_ptr(nullptr_t, _LValRefType<_Dummy> __d) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr(nullptr_t, _LValRefType<_Dummy> __d) noexcept
       : __ptr_(nullptr, __d)
   {}
 
@@ -394,33 +393,33 @@ public:
             bool _Dummy = true,
             class       = _EnableIfDeleterConstructible<_GoodRValRefType<_Dummy>>,
             class       = _EnableIfPointerConvertible<_Pp>>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 unique_ptr(_Pp __p, _GoodRValRefType<_Dummy> __d) noexcept
-      : __ptr_(__p, _CUDA_VSTD::move(__d))
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr(_Pp __p, _GoodRValRefType<_Dummy> __d) noexcept
+      : __ptr_(__p, ::cuda::std::move(__d))
   {
-    static_assert(!is_reference<deleter_type>::value, "rvalue deleter bound to reference");
+    static_assert(!is_reference_v<deleter_type>, "rvalue deleter bound to reference");
   }
 
   template <bool _Dummy = true, class = _EnableIfDeleterConstructible<_GoodRValRefType<_Dummy>>>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 unique_ptr(nullptr_t, _GoodRValRefType<_Dummy> __d) noexcept
-      : __ptr_(nullptr, _CUDA_VSTD::move(__d))
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr(nullptr_t, _GoodRValRefType<_Dummy> __d) noexcept
+      : __ptr_(nullptr, ::cuda::std::move(__d))
   {
-    static_assert(!is_reference<deleter_type>::value, "rvalue deleter bound to reference");
+    static_assert(!is_reference_v<deleter_type>, "rvalue deleter bound to reference");
   }
 
   template <class _Pp,
             bool _Dummy = true,
             class       = _EnableIfDeleterConstructible<_BadRValRefType<_Dummy>>,
             class       = _EnableIfPointerConvertible<_Pp>>
-  _LIBCUDACXX_HIDE_FROM_ABI unique_ptr(_Pp __p, _BadRValRefType<_Dummy> __d) = delete;
+  _CCCL_API inline unique_ptr(_Pp __p, _BadRValRefType<_Dummy> __d) = delete;
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 unique_ptr(unique_ptr&& __u) noexcept
-      : __ptr_(__u.release(), _CUDA_VSTD::forward<deleter_type>(__u.get_deleter()))
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr(unique_ptr&& __u) noexcept
+      : __ptr_(__u.release(), ::cuda::std::forward<deleter_type>(__u.get_deleter()))
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 unique_ptr& operator=(unique_ptr&& __u) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr& operator=(unique_ptr&& __u) noexcept
   {
     reset(__u.release());
-    __ptr_.second() = _CUDA_VSTD::forward<deleter_type>(__u.get_deleter());
+    __ptr_.second() = ::cuda::std::forward<deleter_type>(__u.get_deleter());
     return *this;
   }
 
@@ -428,57 +427,57 @@ public:
             class _Ep,
             class = _EnableIfMoveConvertible<unique_ptr<_Up, _Ep>, _Up>,
             class = _EnableIfDeleterConvertible<_Ep>>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 unique_ptr(unique_ptr<_Up, _Ep>&& __u) noexcept
-      : __ptr_(__u.release(), _CUDA_VSTD::forward<_Ep>(__u.get_deleter()))
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr(unique_ptr<_Up, _Ep>&& __u) noexcept
+      : __ptr_(__u.release(), ::cuda::std::forward<_Ep>(__u.get_deleter()))
   {}
 
   template <class _Up,
             class _Ep,
             class = _EnableIfMoveConvertible<unique_ptr<_Up, _Ep>, _Up>,
             class = _EnableIfDeleterAssignable<_Ep>>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 unique_ptr& operator=(unique_ptr<_Up, _Ep>&& __u) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr& operator=(unique_ptr<_Up, _Ep>&& __u) noexcept
   {
     reset(__u.release());
-    __ptr_.second() = _CUDA_VSTD::forward<_Ep>(__u.get_deleter());
+    __ptr_.second() = ::cuda::std::forward<_Ep>(__u.get_deleter());
     return *this;
   }
 
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 ~unique_ptr()
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 ~unique_ptr()
   {
     reset();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 unique_ptr& operator=(nullptr_t) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr& operator=(nullptr_t) noexcept
   {
     reset();
     return *this;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 add_lvalue_reference_t<_Tp> operator[](size_t __i) const
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 add_lvalue_reference_t<_Tp> operator[](size_t __i) const
   {
     return __ptr_.first()[__i];
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 pointer get() const noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 pointer get() const noexcept
   {
     return __ptr_.first();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 deleter_type& get_deleter() noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 deleter_type& get_deleter() noexcept
   {
     return __ptr_.second();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 const deleter_type& get_deleter() const noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 const deleter_type& get_deleter() const noexcept
   {
     return __ptr_.second();
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 explicit operator bool() const noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 explicit operator bool() const noexcept
   {
     return __ptr_.first() != nullptr;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 pointer release() noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 pointer release() noexcept
   {
     pointer __t    = __ptr_.first();
     __ptr_.first() = pointer();
@@ -486,7 +485,7 @@ public:
   }
 
   template <class _Pp, enable_if_t<_CheckArrayPointerConversion<_Pp>::value, int> = 0>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void reset(_Pp __p) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void reset(_Pp __p) noexcept
   {
     pointer __tmp  = __ptr_.first();
     __ptr_.first() = __p;
@@ -496,7 +495,7 @@ public:
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void reset(nullptr_t = nullptr) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void reset(nullptr_t = nullptr) noexcept
   {
     pointer __tmp  = __ptr_.first();
     __ptr_.first() = nullptr;
@@ -506,29 +505,28 @@ public:
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void swap(unique_ptr& __u) noexcept
+  _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void swap(unique_ptr& __u) noexcept
   {
     __ptr_.swap(__u.__ptr_);
   }
 };
 
 template <class _Tp, class _Dp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 enable_if_t<__is_swappable<_Dp>::value, void>
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 enable_if_t<is_nothrow_swappable_v<_Dp>, void>
 swap(unique_ptr<_Tp, _Dp>& __x, unique_ptr<_Tp, _Dp>& __y) noexcept
 {
   __x.swap(__y);
 }
 
 template <class _T1, class _D1, class _T2, class _D2>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool
-operator==(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 bool operator==(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
 {
   return __x.get() == __y.get();
 }
 
 #if _CCCL_STD_VER <= 2017
 template <class _T1, class _D1, class _T2, class _D2>
-_LIBCUDACXX_HIDE_FROM_ABI
+_CCCL_API inline
 
   bool
   operator!=(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
@@ -538,19 +536,19 @@ _LIBCUDACXX_HIDE_FROM_ABI
 #endif
 
 template <class _T1, class _D1, class _T2, class _D2>
-_LIBCUDACXX_HIDE_FROM_ABI
+_CCCL_API inline
 
   bool
   operator<(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
 {
-  typedef typename unique_ptr<_T1, _D1>::pointer _P1;
-  typedef typename unique_ptr<_T2, _D2>::pointer _P2;
-  typedef typename common_type<_P1, _P2>::type _Vp;
+  using _P1 = typename unique_ptr<_T1, _D1>::pointer;
+  using _P2 = typename unique_ptr<_T2, _D2>::pointer;
+  using _Vp = typename common_type<_P1, _P2>::type;
   return less<_Vp>()(__x.get(), __y.get());
 }
 
 template <class _T1, class _D1, class _T2, class _D2>
-_LIBCUDACXX_HIDE_FROM_ABI
+_CCCL_API inline
 
   bool
   operator>(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
@@ -559,7 +557,7 @@ _LIBCUDACXX_HIDE_FROM_ABI
 }
 
 template <class _T1, class _D1, class _T2, class _D2>
-_LIBCUDACXX_HIDE_FROM_ABI
+_CCCL_API inline
 
   bool
   operator<=(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
@@ -568,7 +566,7 @@ _LIBCUDACXX_HIDE_FROM_ABI
 }
 
 template <class _T1, class _D1, class _T2, class _D2>
-_LIBCUDACXX_HIDE_FROM_ABI
+_CCCL_API inline
 
   bool
   operator>=(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
@@ -580,8 +578,8 @@ _LIBCUDACXX_HIDE_FROM_ABI
 #  if _CCCL_STD_VER >= 2020
 template <class _T1, class _D1, class _T2, class _D2>
   requires three_way_comparable_with<typename unique_ptr<_T1, _D1>::pointer, typename unique_ptr<_T2, _D2>::pointer>
-_LIBCUDACXX_HIDE_FROM_ABI
-compare_three_way_result_t<typename unique_ptr<_T1, _D1>::pointer, typename unique_ptr<_T2, _D2>::pointer>
+_CCCL_API inline compare_three_way_result_t<typename unique_ptr<_T1, _D1>::pointer,
+                                            typename unique_ptr<_T2, _D2>::pointer>
 operator<=>(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
 {
   return compare_three_way()(__x.get(), __y.get());
@@ -590,14 +588,14 @@ operator<=>(const unique_ptr<_T1, _D1>& __x, const unique_ptr<_T2, _D2>& __y)
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 template <class _T1, class _D1>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator==(const unique_ptr<_T1, _D1>& __x, nullptr_t) noexcept
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 bool operator==(const unique_ptr<_T1, _D1>& __x, nullptr_t) noexcept
 {
   return !__x;
 }
 
 #if _CCCL_STD_VER <= 2017
 template <class _T1, class _D1>
-_LIBCUDACXX_HIDE_FROM_ABI
+_CCCL_API inline
 
   bool
   operator==(nullptr_t, const unique_ptr<_T1, _D1>& __x) noexcept
@@ -606,7 +604,7 @@ _LIBCUDACXX_HIDE_FROM_ABI
 }
 
 template <class _T1, class _D1>
-_LIBCUDACXX_HIDE_FROM_ABI
+_CCCL_API inline
 
   bool
   operator!=(const unique_ptr<_T1, _D1>& __x, nullptr_t) noexcept
@@ -615,7 +613,7 @@ _LIBCUDACXX_HIDE_FROM_ABI
 }
 
 template <class _T1, class _D1>
-_LIBCUDACXX_HIDE_FROM_ABI
+_CCCL_API inline
 
   bool
   operator!=(nullptr_t, const unique_ptr<_T1, _D1>& __x) noexcept
@@ -625,51 +623,51 @@ _LIBCUDACXX_HIDE_FROM_ABI
 #endif // _CCCL_STD_VER <= 2017
 
 template <class _T1, class _D1>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator<(const unique_ptr<_T1, _D1>& __x, nullptr_t)
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 bool operator<(const unique_ptr<_T1, _D1>& __x, nullptr_t)
 {
-  typedef typename unique_ptr<_T1, _D1>::pointer _P1;
+  using _P1 = typename unique_ptr<_T1, _D1>::pointer;
   return less<_P1>()(__x.get(), nullptr);
 }
 
 template <class _T1, class _D1>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator<(nullptr_t, const unique_ptr<_T1, _D1>& __x)
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 bool operator<(nullptr_t, const unique_ptr<_T1, _D1>& __x)
 {
-  typedef typename unique_ptr<_T1, _D1>::pointer _P1;
+  using _P1 = typename unique_ptr<_T1, _D1>::pointer;
   return less<_P1>()(nullptr, __x.get());
 }
 
 template <class _T1, class _D1>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator>(const unique_ptr<_T1, _D1>& __x, nullptr_t)
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 bool operator>(const unique_ptr<_T1, _D1>& __x, nullptr_t)
 {
   return nullptr < __x;
 }
 
 template <class _T1, class _D1>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator>(nullptr_t, const unique_ptr<_T1, _D1>& __x)
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 bool operator>(nullptr_t, const unique_ptr<_T1, _D1>& __x)
 {
   return __x < nullptr;
 }
 
 template <class _T1, class _D1>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator<=(const unique_ptr<_T1, _D1>& __x, nullptr_t)
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 bool operator<=(const unique_ptr<_T1, _D1>& __x, nullptr_t)
 {
   return !(nullptr < __x);
 }
 
 template <class _T1, class _D1>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator<=(nullptr_t, const unique_ptr<_T1, _D1>& __x)
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 bool operator<=(nullptr_t, const unique_ptr<_T1, _D1>& __x)
 {
   return !(__x < nullptr);
 }
 
 template <class _T1, class _D1>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator>=(const unique_ptr<_T1, _D1>& __x, nullptr_t)
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 bool operator>=(const unique_ptr<_T1, _D1>& __x, nullptr_t)
 {
   return !(__x < nullptr);
 }
 
 template <class _T1, class _D1>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator>=(nullptr_t, const unique_ptr<_T1, _D1>& __x)
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 bool operator>=(nullptr_t, const unique_ptr<_T1, _D1>& __x)
 {
   return !(nullptr < __x);
 }
@@ -678,7 +676,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator>=(nullptr_t, const
 #  if _CCCL_STD_VER >= 2020
 template <class _T1, class _D1>
   requires three_way_comparable<typename unique_ptr<_T1, _D1>::pointer>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 compare_three_way_result_t<typename unique_ptr<_T1, _D1>::pointer>
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 compare_three_way_result_t<typename unique_ptr<_T1, _D1>::pointer>
 operator<=>(const unique_ptr<_T1, _D1>& __x, nullptr_t)
 {
   return compare_three_way()(__x.get(), static_cast<typename unique_ptr<_T1, _D1>::pointer>(nullptr));
@@ -689,54 +687,56 @@ operator<=>(const unique_ptr<_T1, _D1>& __x, nullptr_t)
 template <class _Tp>
 struct __unique_if
 {
-  typedef unique_ptr<_Tp> __unique_single;
+  using __unique_single = unique_ptr<_Tp>;
 };
 
 template <class _Tp>
 struct __unique_if<_Tp[]>
 {
-  typedef unique_ptr<_Tp[]> __unique_array_unknown_bound;
+  using __unique_array_unknown_bound = unique_ptr<_Tp[]>;
 };
 
 template <class _Tp, size_t _Np>
 struct __unique_if<_Tp[_Np]>
 {
-  typedef void __unique_array_known_bound;
+  using __unique_array_known_bound = void;
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class... _Args>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_single make_unique(_Args&&... __args)
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_single make_unique(_Args&&... __args)
 {
-  return unique_ptr<_Tp>(new _Tp(_CUDA_VSTD::forward<_Args>(__args)...));
+  return unique_ptr<_Tp>(new _Tp(::cuda::std::forward<_Args>(__args)...));
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_array_unknown_bound
-make_unique(size_t __n)
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_array_unknown_bound make_unique(size_t __n)
 {
-  typedef remove_extent_t<_Tp> _Up;
+  using _Up = remove_extent_t<_Tp>;
   return unique_ptr<_Tp>(new _Up[__n]());
 }
 
 template <class _Tp, class... _Args>
-_LIBCUDACXX_HIDE_FROM_ABI typename __unique_if<_Tp>::__unique_array_known_bound make_unique(_Args&&...) = delete;
+_CCCL_API inline typename __unique_if<_Tp>::__unique_array_known_bound make_unique(_Args&&...) = delete;
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_single make_unique_for_overwrite()
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_single make_unique_for_overwrite()
 {
   return unique_ptr<_Tp>(new _Tp);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_array_unknown_bound
+_CCCL_API inline _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_array_unknown_bound
 make_unique_for_overwrite(size_t __n)
 {
   return unique_ptr<_Tp>(new remove_extent_t<_Tp>[__n]);
 }
 
 template <class _Tp, class... _Args>
-_LIBCUDACXX_HIDE_FROM_ABI typename __unique_if<_Tp>::__unique_array_known_bound
-make_unique_for_overwrite(_Args&&...) = delete;
+_CCCL_API inline typename __unique_if<_Tp>::__unique_array_known_bound make_unique_for_overwrite(_Args&&...) = delete;
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash;
@@ -746,20 +746,20 @@ template <class _Tp, class _Dp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unique_ptr<_Tp, _Dp>>
 {
 #  if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  _LIBCUDACXX_DEPRECATED typedef unique_ptr<_Tp, _Dp> argument_type;
-  _LIBCUDACXX_DEPRECATED typedef size_t result_type;
+  using argument_type = CCCL_DEPRECATED unique_ptr<_Tp, _Dp>;
+  using result_type   = CCCL_DEPRECATED size_t;
 #  endif
 
-  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(const unique_ptr<_Tp, _Dp>& __ptr) const
+  _CCCL_API inline size_t operator()(const unique_ptr<_Tp, _Dp>& __ptr) const
   {
-    typedef typename unique_ptr<_Tp, _Dp>::pointer pointer;
+    using pointer = typename unique_ptr<_Tp, _Dp>::pointer;
     return hash<pointer>()(__ptr.get());
   }
 };
 #endif // __cuda_std__
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MEMORY_UNIQUE_PTR_H
+#endif // _CUDA_STD___MEMORY_UNIQUE_PTR_H

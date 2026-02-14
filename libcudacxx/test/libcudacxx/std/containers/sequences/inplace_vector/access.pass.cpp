@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
@@ -106,6 +106,32 @@ void test_exceptions()
     {
       const vec too_small{};
       auto res = too_small.at(5);
+      unused(res);
+    }
+    catch (const std::out_of_range&)
+    {}
+    catch (...)
+    {
+      assert(false);
+    }
+
+    try
+    {
+      vec too_small{};
+      auto res = too_small.at(too_small.size());
+      unused(res);
+    }
+    catch (const std::out_of_range&)
+    {}
+    catch (...)
+    {
+      assert(false);
+    }
+
+    try
+    {
+      const vec too_small{};
+      auto res = too_small.at(too_small.size());
       unused(res);
     }
     catch (const std::out_of_range&)

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_EMPTY_H
-#define _LIBCUDACXX___ITERATOR_EMPTY_H
+#ifndef _CUDA_STD___ITERATOR_EMPTY_H
+#define _CUDA_STD___ITERATOR_EMPTY_H
 
 #include <cuda/std/detail/__config>
 
@@ -26,29 +26,28 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Cont>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto empty(const _Cont& __c) noexcept(noexcept(__c.empty()))
-  -> decltype(__c.empty())
+[[nodiscard]] _CCCL_API constexpr auto empty(const _Cont& __c) noexcept(noexcept(__c.empty())) -> decltype(__c.empty())
 {
   return __c.empty();
 }
 
 template <class _Tp, size_t _Sz>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty(const _Tp (&)[_Sz]) noexcept
+[[nodiscard]] _CCCL_API constexpr bool empty(const _Tp (&)[_Sz]) noexcept
 {
   return false;
 }
 
 template <class _Ep>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty(initializer_list<_Ep> __il) noexcept
+[[nodiscard]] _CCCL_API constexpr bool empty(initializer_list<_Ep> __il) noexcept
 {
   return __il.size() == 0;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_EMPTY_H
+#endif // _CUDA_STD___ITERATOR_EMPTY_H

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_INTEGRAL_CONSTANT_H
-#define _LIBCUDACXX___TYPE_TRAITS_INTEGRAL_CONSTANT_H
+#ifndef _CUDA_STD___TYPE_TRAITS_INTEGRAL_CONSTANT_H
+#define _CUDA_STD___TYPE_TRAITS_INTEGRAL_CONSTANT_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,7 +22,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp, _Tp __v>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT integral_constant
@@ -30,11 +30,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT integral_constant
   static constexpr const _Tp value = __v;
   using value_type                 = _Tp;
   using type                       = integral_constant;
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator value_type() const noexcept
+  _CCCL_API constexpr operator value_type() const noexcept
   {
     return value;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type operator()() const noexcept
+  _CCCL_API constexpr value_type operator()() const noexcept
   {
     return value;
   }
@@ -47,7 +47,7 @@ using true_type  = integral_constant<bool, true>;
 using false_type = integral_constant<bool, false>;
 
 template <bool _Val>
-using _BoolConstant _LIBCUDACXX_DEPRECATED _CCCL_NODEBUG_ALIAS = integral_constant<bool, _Val>;
+using _BoolConstant CCCL_DEPRECATED _CCCL_NODEBUG_ALIAS = integral_constant<bool, _Val>;
 
 template <bool __b>
 using bool_constant = integral_constant<bool, __b>;
@@ -55,8 +55,8 @@ using bool_constant = integral_constant<bool, __b>;
 // deprecated [Since 2.7.0]
 #define _LIBCUDACXX_BOOL_CONSTANT(__b) bool_constant<(__b)>
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_INTEGRAL_CONSTANT_H
+#endif // _CUDA_STD___TYPE_TRAITS_INTEGRAL_CONSTANT_H

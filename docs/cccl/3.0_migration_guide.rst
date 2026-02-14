@@ -10,6 +10,38 @@ This page summarizes the changes and helps migrating from CCCL 2.x to CCCL 3.0.
 See also the `list of all deprecated APIs in CCCL 2.8 <https://github.com/NVIDIA/cccl/issues/3700>`_
 and the `list of breaking changes in CCCL 3.0 <https://github.com/NVIDIA/cccl/issues/101>`_.
 
+CUDA Toolkit changes
+--------------------
+
+CCCL is moving to its own include directory within the CUDA Toolkit. This may cause build failures and some initial confusion.
+This section will have some suggestions and mitigations to help maintain builds across both CUDA12 and future releases.
+
+The CTK-provided includes are changing in the following ways:
+
++-------------------------------+------------------------------------+
+| **Before CUDA 13.0**          | **After CUDA 13.0**                |
++-------------------------------+------------------------------------+
+| `${CTK_ROOT}/include/cuda/`   | `${CTK_ROOT}/include/cccl/cuda/`   |
++-------------------------------+------------------------------------+
+| `${CTK_ROOT}/include/cub/`    | `${CTK_ROOT}/include/cccl/cub/`    |
++-------------------------------+------------------------------------+
+| `${CTK_ROOT}/include/thrust/` | `${CTK_ROOT}/include/cccl/thrust/` |
++-------------------------------+------------------------------------+
+
+Due to these changes, and the fact that NVCC by default includes its own directories, you may encounter errors when including
+CCCL headers in source files that are compiled *only* by the host compiler.
+
+For example, when compiling with GCC or MSVC alone, you may see ``<cuda/...>``, ``<cub/...>``, or ``<thrust/...>`` headers missing.
+
+To mitigate this there are several solutions available depending on your build system:
+
+- **DO NOT** prefix missing includes with ``<cccl/>`` -- This will break.
+- CMake: link ``CCCL::CCCL`` to your target.
+  - Example: ``target_link_library(${MY_TARGET} PRIVATE CCCL::CCCL)``
+- Non-CMake: Directly include the CUDA Toolkit's CCCL directory. (Make/Other)
+  - Example: Add CCCL as an include flag ``-I${CTK_ROOT}/include/cccl``
+- Use a non-bundled CCCL. CCCL is available and maintained independently of the CTK.
+  - `See here for compatibility. <https://github.com/NVIDIA/cccl?tab=readme-ov-file#cuda-toolkit-ctk-compatibility>`_
 
 Removed macros
 --------------

@@ -18,14 +18,14 @@
 // class allocator<void>
 // {
 // public:
-//     typedef void*                                 pointer;
-//     typedef const void*                           const_pointer;
-//     typedef void                                  value_type;
+//     using pointer       = void*;
+//     using const_pointer = const void*;
+//     using value_type    = void;
 //
-//     template <class _Up> struct rebind {typedef allocator<_Up> other;};
+//     template <class _Up> struct rebind {using other = allocator<_Up>;};
 // };
 
-// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/std/__memory_>
 #include <cuda/std/type_traits>

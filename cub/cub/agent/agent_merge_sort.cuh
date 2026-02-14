@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2021, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2021, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -40,38 +16,54 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_merge_sort.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/system/cuda/detail/core/load_iterator.h>
-
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__cccl/cuda_capabilities.h>
 
 CUB_NAMESPACE_BEGIN
 
-template <int _BLOCK_THREADS,
-          int _ITEMS_PER_THREAD                     = 1,
-          cub::BlockLoadAlgorithm _LOAD_ALGORITHM   = cub::BLOCK_LOAD_DIRECT,
-          cub::CacheLoadModifier _LOAD_MODIFIER     = cub::LOAD_LDG,
-          cub::BlockStoreAlgorithm _STORE_ALGORITHM = cub::BLOCK_STORE_DIRECT>
+template <int BlockThreads,
+          int ItemsPerThread                      = 1,
+          cub::BlockLoadAlgorithm LoadAlgorithm   = cub::BLOCK_LOAD_DIRECT,
+          cub::CacheLoadModifier LoadModifier     = cub::LOAD_LDG,
+          cub::BlockStoreAlgorithm StoreAlgorithm = cub::BLOCK_STORE_DIRECT>
 struct AgentMergeSortPolicy
 {
-  static constexpr int BLOCK_THREADS    = _BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD = _ITEMS_PER_THREAD;
+  static constexpr int BLOCK_THREADS    = BlockThreads;
+  static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
   static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
 
-  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM   = _LOAD_ALGORITHM;
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER     = _LOAD_MODIFIER;
-  static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
+  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithm;
+  static constexpr cub::CacheLoadModifier LOAD_MODIFIER     = LoadModifier;
+  static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
 };
 
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 namespace detail
 {
-namespace merge_sort
-{
+// Only define this when needed.
+// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
+// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
+// version is always defined, and that's the only one needed for regular CUB operations.
+//
+// TODO: enable this unconditionally once concepts are always available
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  MergeSortAgentPolicy,
+  (GenericAgentPolicy),
+  (BLOCK_THREADS, BlockThreads, int),
+  (ITEMS_PER_THREAD, ItemsPerThread, int),
+  (ITEMS_PER_TILE, ItemsPerTile, int),
+  (LOAD_ALGORITHM, LoadAlgorithm, cub::BlockLoadAlgorithm),
+  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
+  (STORE_ALGORITHM, StoreAlgorithm, cub::BlockStoreAlgorithm))
+} // namespace detail
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES
 
+namespace detail::merge_sort
+{
 template <typename Policy,
           typename KeyInputIteratorT,
           typename ValueInputIteratorT,
@@ -91,10 +83,8 @@ struct AgentBlockSort
 
   using BlockMergeSortT = BlockMergeSort<KeyT, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, ValueT>;
 
-  using KeysLoadIt =
-    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyInputIteratorT>::type;
-  using ItemsLoadIt =
-    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueInputIteratorT>::type;
+  using KeysLoadIt  = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, KeyInputIteratorT>;
+  using ItemsLoadIt = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, ValueInputIteratorT>;
 
   using BlockLoadKeys  = typename cub::BlockLoadType<Policy, KeysLoadIt>::type;
   using BlockLoadItems = typename cub::BlockLoadType<Policy, ItemsLoadIt>::type;
@@ -163,10 +153,10 @@ struct AgentBlockSort
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
-    auto tile_idx     = static_cast<OffsetT>(blockIdx.x);
-    auto num_tiles    = static_cast<OffsetT>(gridDim.x);
-    auto tile_base    = tile_idx * ITEMS_PER_TILE;
-    int items_in_tile = (::cuda::std::min)(static_cast<int>(keys_count - tile_base), int{ITEMS_PER_TILE});
+    const auto tile_idx     = static_cast<OffsetT>(blockIdx.x);
+    const auto num_tiles    = static_cast<OffsetT>(gridDim.x);
+    const auto tile_base    = tile_idx * ITEMS_PER_TILE;
+    const int items_in_tile = (::cuda::std::min) (static_cast<int>(keys_count - tile_base), int{ITEMS_PER_TILE});
 
     if (tile_idx < num_tiles - 1)
     {
@@ -305,29 +295,6 @@ struct AgentPartition
   int items_per_tile;
   OffsetT num_partitions;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentPartition(
-    bool ping,
-    KeyIteratorT keys_ping,
-    KeyT* keys_pong,
-    OffsetT keys_count,
-    OffsetT partition_idx,
-    OffsetT* merge_partitions,
-    CompareOpT compare_op,
-    OffsetT target_merged_tiles_number,
-    int items_per_tile,
-    OffsetT num_partitions)
-      : ping(ping)
-      , keys_ping(keys_ping)
-      , keys_pong(keys_pong)
-      , keys_count(keys_count)
-      , partition_idx(partition_idx)
-      , merge_partitions(merge_partitions)
-      , compare_op(compare_op)
-      , target_merged_tiles_number(target_merged_tiles_number)
-      , items_per_tile(items_per_tile)
-      , num_partitions(num_partitions)
-  {}
-
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
     const OffsetT merged_tiles_number = target_merged_tiles_number / 2;
@@ -345,10 +312,10 @@ struct AgentPartition
     // partition_idx / target_merged_tiles_number
     const OffsetT local_tile_idx = mask & partition_idx;
 
-    const OffsetT keys1_beg = (::cuda::std::min)(keys_count, start);
-    const OffsetT keys1_end = (::cuda::std::min)(keys_count, detail::safe_add_bound_to_max(start, size));
+    const OffsetT keys1_beg = (::cuda::std::min) (keys_count, start);
+    const OffsetT keys1_end = (::cuda::std::min) (keys_count, detail::safe_add_bound_to_max(start, size));
     const OffsetT keys2_beg = keys1_end;
-    const OffsetT keys2_end = (::cuda::std::min)(keys_count, detail::safe_add_bound_to_max(keys2_beg, size));
+    const OffsetT keys2_end = (::cuda::std::min) (keys_count, detail::safe_add_bound_to_max(keys2_beg, size));
 
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
@@ -359,7 +326,7 @@ struct AgentPartition
     }
     else
     {
-      const OffsetT partition_at = (::cuda::std::min)(keys2_end - keys1_beg, items_per_tile * local_tile_idx);
+      const OffsetT partition_at = (::cuda::std::min) (keys2_end - keys1_beg, items_per_tile * local_tile_idx);
 
       OffsetT partition_diag =
         ping
@@ -378,6 +345,10 @@ struct AgentPartition
 
       merge_partitions[partition_idx] = keys1_beg + partition_diag;
     }
+
+    // TODO(bgruber): looking at SASS triggering the next launch here just generates a lot of noise and the PRE-EXIT
+    // just ends of right before EXIT anyway. So let's omit it.
+    // _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
   }
 };
 
@@ -440,11 +411,10 @@ struct AgentMerge
   //---------------------------------------------------------------------
   // Types and constants
   //---------------------------------------------------------------------
-  using KeysLoadPingIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyIteratorT>::type;
-  using ItemsLoadPingIt =
-    typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueIteratorT>::type;
-  using KeysLoadPongIt  = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, KeyT*>::type;
-  using ItemsLoadPongIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, ValueT*>::type;
+  using KeysLoadPingIt  = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, KeyIteratorT>;
+  using ItemsLoadPingIt = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, ValueIteratorT>;
+  using KeysLoadPongIt  = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, KeyT*>;
+  using ItemsLoadPongIt = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, ValueT*>;
 
   using KeysOutputPongIt  = KeyIteratorT;
   using ItemsOutputPongIt = ValueIteratorT;
@@ -508,6 +478,8 @@ struct AgentMerge
   template <bool IS_FULL_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(int tid, OffsetT tile_idx, OffsetT tile_base, int count)
   {
+    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+
     const OffsetT partition_beg = merge_partitions[tile_idx + 0];
     const OffsetT partition_end = merge_partitions[tile_idx + 1];
 
@@ -534,22 +506,21 @@ struct AgentMerge
     // diag >= keys1_beg, because diag is the distance of the total merge path so far (keys1 + keys2)
     // diag+ITEMS_PER_TILE >= keys1_end, because diag+ITEMS_PER_TILE is the distance of the merge path for the next tile
     // and keys1_end is key1's component of that path
-    const OffsetT keys2_beg = (::cuda::std::min)(max_keys2, diag - keys1_beg);
-    OffsetT keys2_end       = (::cuda::std::min)(
-      max_keys2, detail::safe_add_bound_to_max(diag, static_cast<OffsetT>(ITEMS_PER_TILE)) - keys1_end);
+    const OffsetT keys2_beg = (::cuda::std::min) (max_keys2, diag - keys1_beg);
+    OffsetT keys2_end =
+      (::cuda::std::min) (max_keys2,
+                          detail::safe_add_bound_to_max(diag, static_cast<OffsetT>(ITEMS_PER_TILE)) - keys1_end);
 
     // Check if it's the last tile in the tile group being merged
     if (mask == (mask & tile_idx))
     {
-      keys1_end = (::cuda::std::min)(keys_count - start, size);
-      keys2_end = (::cuda::std::min)(max_keys2, size);
+      keys1_end = (::cuda::std::min) (keys_count - start, size);
+      keys2_end = (::cuda::std::min) (max_keys2, size);
     }
 
     // number of keys per tile
     const int num_keys1 = static_cast<int>(keys1_end - keys1_beg);
     const int num_keys2 = static_cast<int>(keys2_end - keys2_beg);
-
-    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
     // load keys1 & keys2
     KeyT keys_local[ITEMS_PER_THREAD];
@@ -598,7 +569,7 @@ struct AgentMerge
     // we can use int type here, because the number of
     // items in shared memory is limited
     //
-    const int diag0_local = (::cuda::std::min)(num_keys1 + num_keys2, ITEMS_PER_THREAD * tid);
+    const int diag0_local = (::cuda::std::min) (num_keys1 + num_keys2, ITEMS_PER_THREAD * tid);
 
     const int keys1_beg_local = MergePath(
       &storage.keys_shared[0], &storage.keys_shared[num_keys1], num_keys1, num_keys2, diag0_local, compare_op);
@@ -733,7 +704,7 @@ struct AgentMerge
     const OffsetT tile_base = OffsetT(tile_idx) * ITEMS_PER_TILE;
     const int tid           = static_cast<int>(threadIdx.x);
     const int items_in_tile =
-      static_cast<int>((::cuda::std::min)(static_cast<OffsetT>(ITEMS_PER_TILE), keys_count - tile_base));
+      static_cast<int>((::cuda::std::min) (static_cast<OffsetT>(ITEMS_PER_TILE), keys_count - tile_base));
 
     if (tile_idx < num_tiles - 1)
     {
@@ -745,8 +716,6 @@ struct AgentMerge
     }
   }
 };
-
-} // namespace merge_sort
-} // namespace detail
+} // namespace detail::merge_sort
 
 CUB_NAMESPACE_END

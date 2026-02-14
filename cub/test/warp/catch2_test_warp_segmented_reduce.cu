@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_reduce.cuh>
@@ -142,7 +118,7 @@ void warp_reduce(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT 
 /**
  * @brief Compares the results returned from system under test against the expected results.
  */
-template <typename T, ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<T>, int> = 0>
+template <typename T, cuda::std::enable_if_t<cuda::std::is_floating_point_v<T>, int> = 0>
 void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_vector<T>& test_results)
 {
   REQUIRE_APPROX_EQ(expected_data, test_results);
@@ -151,7 +127,7 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_
 /**
  * @brief Compares the results returned from system under test against the expected results.
  */
-template <typename T, ::cuda::std::enable_if_t<!::cuda::std::is_floating_point_v<T>, int> = 0>
+template <typename T, cuda::std::enable_if_t<!cuda::std::is_floating_point_v<T>, int> = 0>
 void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_vector<T>& test_results)
 {
   REQUIRE(expected_data == test_results);
@@ -240,7 +216,18 @@ void compute_host_reference(
 using custom_t =
   c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t, c2h::lexicographical_less_comparable_t>;
 using full_type_list =
-  c2h::type_list<std::uint8_t, std::uint16_t, std::int32_t, std::int64_t, custom_t, ulonglong4, uchar3, short2>;
+  c2h::type_list<std::uint8_t,
+                 std::uint16_t,
+                 std::int32_t,
+                 std::int64_t,
+                 custom_t,
+#if _CCCL_CTK_AT_LEAST(13, 0)
+                 ulonglong4_16a,
+#else // _CCCL_CTK_AT_LEAST(13, 0)
+                 ulonglong4,
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+                 uchar3,
+                 short2>;
 
 using builtin_type_list = c2h::type_list<std::uint8_t, std::uint16_t, std::int32_t, std::int64_t>;
 
@@ -284,7 +271,7 @@ C2H_TEST("Warp segmented sum works", "[reduce][warp]", full_type_list, logical_w
   static_assert(segmented_mod == reduce_mode::tail_flags || segmented_mod == reduce_mode::head_flags,
                 "Segmented tests must either be head or tail flags");
   using warp_seg_sum_t =
-    ::cuda::std::_If<(segmented_mod == reduce_mode::tail_flags), warp_seg_sum_tail_t<type>, warp_seg_sum_head_t<type>>;
+    cuda::std::_If<(segmented_mod == reduce_mode::tail_flags), warp_seg_sum_tail_t<type>, warp_seg_sum_head_t<type>>;
 
   // Prepare test data
   c2h::device_vector<type> d_in(params::tile_size);
@@ -311,7 +298,7 @@ C2H_TEST("Warp segmented sum works", "[reduce][warp]", full_type_list, logical_w
     params::total_warps,
     params::logical_warp_threads,
     valid_items,
-    ::cuda::std::plus<type>{},
+    cuda::std::plus<type>{},
     h_out.begin());
 
   // Verify results
@@ -322,15 +309,15 @@ C2H_TEST("Warp segmented reduction works", "[reduce][warp]", builtin_type_list, 
 {
   using params   = params_t<TestType>;
   using type     = typename params::type;
-  using red_op_t = ::cuda::minimum<>;
+  using red_op_t = cuda::minimum<>;
 
   constexpr auto segmented_mod = c2h::get<2, TestType>::value;
   static_assert(segmented_mod == reduce_mode::tail_flags || segmented_mod == reduce_mode::head_flags,
                 "Segmented tests must either be head or tail flags");
   using warp_seg_reduction_t =
-    ::cuda::std::_If<(segmented_mod == reduce_mode::tail_flags),
-                     warp_seg_reduce_tail_t<type, red_op_t>,
-                     warp_seg_reduce_head_t<type, red_op_t>>;
+    cuda::std::_If<(segmented_mod == reduce_mode::tail_flags),
+                   warp_seg_reduce_tail_t<type, red_op_t>,
+                   warp_seg_reduce_head_t<type, red_op_t>>;
 
   // Prepare test data
   c2h::device_vector<type> d_in(params::tile_size);

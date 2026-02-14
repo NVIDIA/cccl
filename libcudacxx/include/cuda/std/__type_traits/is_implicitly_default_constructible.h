@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_IMPLICITLY_DEFAULT_CONSTRUCTIBLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_IMPLICITLY_DEFAULT_CONSTRUCTIBLE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_IMPLICITLY_DEFAULT_CONSTRUCTIBLE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_IMPLICITLY_DEFAULT_CONSTRUCTIBLE_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,14 +25,14 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // First of all, we can't implement this check in C++03 mode because the {}
 // default initialization syntax isn't valid.
 // Second, we implement the trait in a funny manner with two defaulted template
 // arguments to workaround Clang's PR43454.
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI void __test_implicit_default_constructible(_Tp);
+_CCCL_API inline void __test_implicit_default_constructible(_Tp);
 
 template <class _Tp, class = void, class = typename is_default_constructible<_Tp>::type>
 struct __is_implicitly_default_constructible : false_type
@@ -50,8 +50,8 @@ struct __is_implicitly_default_constructible<_Tp,
                                              false_type> : false_type
 {};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_IMPLICITLY_DEFAULT_CONSTRUCTIBLE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_IMPLICITLY_DEFAULT_CONSTRUCTIBLE_H

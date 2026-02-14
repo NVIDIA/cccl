@@ -122,8 +122,8 @@ struct checked_accessor
   {}
 
   _CCCL_TEMPLATE(class OtherElementType)
-  _CCCL_REQUIRES((!_CCCL_TRAIT(cuda::std::is_same, OtherElementType, element_type)) _CCCL_AND _CCCL_TRAIT(
-    cuda::std::is_convertible, OtherElementType (*)[], element_type (*)[]))
+  _CCCL_REQUIRES((!cuda::std::is_same_v<OtherElementType, element_type>)
+                   _CCCL_AND cuda::std::is_convertible_v<OtherElementType (*)[], element_type (*)[]>)
   __host__ __device__ explicit constexpr checked_accessor(const checked_accessor<OtherElementType>& other) noexcept
   {
     N = other.N;

@@ -3,7 +3,7 @@
 
 bmsk.clamp.b32
 ^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // bmsk.clamp.b32 dest, a_reg, b_reg; // PTX ISA 76, SM_70
    template <typename = void>
@@ -13,7 +13,7 @@ bmsk.clamp.b32
 
 bmsk.wrap.b32
 ^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // bmsk.wrap.b32 dest, a_reg, b_reg; // PTX ISA 76, SM_70
    template <typename = void>

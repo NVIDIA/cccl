@@ -4,274 +4,486 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
 #ifndef _CUDAX__LAUNCH_LAUNCH
 #define _CUDAX__LAUNCH_LAUNCH
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/__driver/driver_api.h>
+#include <cuda/__launch/configuration.h>
+#include <cuda/__launch/launch.h>
+#include <cuda/__stream/launch_transform.h>
+#include <cuda/__stream/stream_ref.h>
+#include <cuda/hierarchy>
 #include <cuda/std/__exception/cuda_error.h>
-#include <cuda/stream_ref>
+#include <cuda/std/__type_traits/is_function.h>
+#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/pod_tuple.h>
 
-#include <cuda/experimental/__launch/configuration.cuh>
-#include <cuda/experimental/__launch/launch_transform.cuh>
+#include <cuda/experimental/__execution/completion_signatures.cuh>
+#include <cuda/experimental/__execution/cpos.cuh>
+#include <cuda/experimental/__execution/visit.cuh>
+#include <cuda/experimental/__graph/concepts.cuh>
+#include <cuda/experimental/__graph/graph_node_ref.cuh>
+#include <cuda/experimental/__graph/path_builder.cuh>
+#include <cuda/experimental/__kernel/kernel_ref.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
-
-#include <cuda_runtime.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-#if _CCCL_STD_VER >= 2017
+_CCCL_BEGIN_NAMESPACE_CUDA
+
+template <class... _Args>
+[[nodiscard]] _CCCL_HOST_API ::CUfunction __get_cufunction_of(experimental::kernel_ref<void(_Args...)> __kernel)
+{
+  return ::cuda::__driver::__kernelGetFunction(__kernel.get());
+}
+
+_CCCL_TEMPLATE(typename _GraphInserter)
+_CCCL_REQUIRES(experimental::graph_inserter<_GraphInserter>)
+_CCCL_HOST_API experimental::graph_node_ref
+__do_launch(_GraphInserter&& __inserter, ::CUlaunchConfig& __config, ::CUfunction __kernel, void** __args_ptrs)
+{
+  ::CUDA_KERNEL_NODE_PARAMS __node_params{};
+  __node_params.func           = __kernel;
+  __node_params.gridDimX       = __config.gridDimX;
+  __node_params.gridDimY       = __config.gridDimY;
+  __node_params.gridDimZ       = __config.gridDimZ;
+  __node_params.blockDimX      = __config.blockDimX;
+  __node_params.blockDimY      = __config.blockDimY;
+  __node_params.blockDimZ      = __config.blockDimZ;
+  __node_params.sharedMemBytes = __config.sharedMemBytes;
+  __node_params.kernelParams   = __args_ptrs;
+
+  auto __dependencies = __inserter.get_dependencies();
+
+  const auto __node = ::cuda::__driver::__graphAddKernelNode(
+    __inserter.get_graph().get(), __dependencies.data(), __dependencies.size(), __node_params);
+
+  for (unsigned int __i = 0; __i < __config.numAttrs; ++__i)
+  {
+    ::cuda::__driver::__graphKernelNodeSetAttribute(__node, __config.attrs[__i].id, __config.attrs[__i].value);
+  }
+
+  // TODO skip the update if called on rvalue?
+  __inserter.__clear_and_set_dependency_node(__node);
+
+  return experimental::graph_node_ref{__node, __inserter.get_graph().get()};
+}
+
+_CCCL_TEMPLATE(typename _GraphInserter)
+_CCCL_REQUIRES(experimental::graph_inserter<_GraphInserter>)
+_CCCL_HOST_API ::cuda::stream_ref __stream_or_invalid([[maybe_unused]] const _GraphInserter& __inserter)
+{
+  return ::cuda::stream_ref{::cuda::invalid_stream};
+}
+
+_CCCL_TEMPLATE(typename _GraphInserter)
+_CCCL_REQUIRES(experimental::graph_inserter<_GraphInserter>)
+_CCCL_HOST_API _GraphInserter&& __forward_or_cast_to_stream_ref(_GraphInserter&& __inserter)
+{
+  return ::cuda::std::forward<_GraphInserter>(__inserter);
+}
+
+_CCCL_END_NAMESPACE_CUDA
+
 namespace cuda::experimental
 {
-
-namespace detail
+template <typename... _ExpTypes, typename _Dst, typename _Config>
+_CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __kernel, _ExpTypes... __args)
 {
-template <typename Config, typename Kernel, class... Args>
-__global__ void kernel_launcher(const Config conf, Kernel kernel_fn, Args... args)
-{
-  kernel_fn(conf, args...);
-}
-
-template <typename Kernel, class... Args>
-__global__ void kernel_launcher_no_config(Kernel kernel_fn, Args... args)
-{
-  kernel_fn(args...);
-}
-
-template <typename Config, typename Kernel, typename... Args>
-[[nodiscard]] cudaError_t
-launch_impl(::cuda::stream_ref stream, Config conf, const Kernel& kernel_fn, const Args&... args)
-{
-  static_assert(!::cuda::std::is_same_v<decltype(conf.dims), no_init_t>,
+  static_assert(!::cuda::std::is_same_v<decltype(__conf.hierarchy()), no_init_t>,
                 "Can't launch a configuration without hierarchy dimensions");
-  cudaLaunchConfig_t config{};
-  cudaError_t status                      = cudaSuccess;
-  constexpr bool has_cluster_level        = has_level<cluster_level, decltype(conf.dims)>;
-  constexpr unsigned int num_attrs_needed = detail::kernel_config_count_attr_space(conf) + has_cluster_level;
-  cudaLaunchAttribute attrs[num_attrs_needed == 0 ? 1 : num_attrs_needed];
-  config.attrs    = &attrs[0];
-  config.numAttrs = 0;
-  config.stream   = stream.get();
+  using _Hierarchy = typename _Config::hierarchy_type;
+  ::CUlaunchConfig __config{};
+  constexpr bool __has_cluster_level = _Hierarchy::has_level(cluster);
+  constexpr unsigned int __num_attrs_needed =
+    ::cuda::__detail::kernel_config_count_attr_space(__conf) + __has_cluster_level;
+  ::CUlaunchAttribute __attrs[__num_attrs_needed == 0 ? 1 : __num_attrs_needed];
+  __config.attrs    = &__attrs[0];
+  __config.numAttrs = 0;
 
-  status = detail::apply_kernel_config(conf, config, reinterpret_cast<void*>(kernel_fn));
-  if (status != cudaSuccess)
+  ::cudaError_t __status = cuda::__detail::apply_kernel_config(__conf, __config, __kernel);
+  if (__status != ::cudaSuccess)
   {
-    return status;
+    ::cuda::__throw_cuda_error(__status, "Failed to prepare a launch configuration");
   }
 
-  config.blockDim = conf.dims.extents(thread, block);
-  config.gridDim  = conf.dims.extents(block, grid);
+  __config.gridDimX  = block.dims(grid, __conf).x;
+  __config.gridDimY  = block.dims(grid, __conf).y;
+  __config.gridDimZ  = block.dims(grid, __conf).z;
+  __config.blockDimX = gpu_thread.dims(block, __conf).x;
+  __config.blockDimY = gpu_thread.dims(block, __conf).y;
+  __config.blockDimZ = gpu_thread.dims(block, __conf).z;
 
-  if constexpr (has_cluster_level)
+  if constexpr (__has_cluster_level)
   {
-    auto cluster_dims                            = conf.dims.extents(block, cluster);
-    config.attrs[config.numAttrs].id             = cudaLaunchAttributeClusterDimension;
-    config.attrs[config.numAttrs].val.clusterDim = {
-      static_cast<unsigned int>(cluster_dims.x),
-      static_cast<unsigned int>(cluster_dims.y),
-      static_cast<unsigned int>(cluster_dims.z)};
-    config.numAttrs++;
+    ::CUlaunchAttribute __cluster_dims_attr{};
+    __cluster_dims_attr.id                 = ::CU_LAUNCH_ATTRIBUTE_CLUSTER_DIMENSION;
+    __cluster_dims_attr.value.clusterDim.x = block.dims(cluster, __conf).x;
+    __cluster_dims_attr.value.clusterDim.y = block.dims(cluster, __conf).y;
+    __cluster_dims_attr.value.clusterDim.z = block.dims(cluster, __conf).z;
+    __config.attrs[__config.numAttrs++]    = __cluster_dims_attr;
   }
 
-  // TODO lower to cudaLaunchKernelExC?
-  return cudaLaunchKernelEx(&config, kernel_fn, args...);
+  const void* __pArgs[(sizeof...(__args) > 0) ? sizeof...(__args) : 1]{::cuda::std::addressof(__args)...};
+  return ::cuda::__do_launch(::cuda::std::forward<_Dst>(__dst), __config, __kernel, const_cast<void**>(__pArgs));
 }
-} // namespace detail
 
-/**
- * @brief Launch a kernel functor with specified configuration and arguments
- *
- * Launches a kernel functor object on the specified stream and with specified configuration.
- * Kernel functor object is a type with __device__ operator().
- * Functor might or might not accept the configuration as its first argument.
- *
- *
- * @par Snippet
- * @code
- * #include <cstdio>
- * #include <cuda/experimental/launch.cuh>
- *
- * struct kernel {
- *     template <typename Configuration>
- *     __device__ void operator()(Configuration conf, unsigned int thread_to_print) {
- *         if (conf.dims.rank(cudax::thread, cudax::grid) == thread_to_print) {
- *             printf("Hello from the GPU\n");
- *         }
- *     }
- * };
- *
- * void launch_kernel(cuda::stream_ref stream) {
- *     auto dims    = cudax::make_hierarchy(cudax::block_dims<128>(), cudax::grid_dims(4));
- *     auto config = cudax::make_config(dims, cudax::launch_cooperative());
- *
- *     cudax::launch(stream, config, kernel(), 42);
- * }
- * @endcode
- *
- * @param stream
- * cuda::stream_ref to launch the kernel into
- *
- * @param conf
- * configuration for this launch
- *
- * @param kernel
- * kernel functor to be launched
- *
- * @param args
- * arguments to be passed into the kernel functor
- */
-template <typename... Args, typename... Config, typename Dimensions, typename Kernel>
-void launch(
-  ::cuda::stream_ref stream, const kernel_config<Dimensions, Config...>& conf, const Kernel& kernel, Args&&... args)
+template <typename _Submitter>
+_CCCL_CONCEPT work_submitter =
+  graph_inserter<_Submitter> || ::cuda::std::is_convertible_v<_Submitter, ::cuda::stream_ref>;
+
+//! @brief Launch a kernel functor with specified configuration and arguments
+//!
+//! Launches a kernel functor object on the specified stream and with specified
+//! configuration. Kernel functor object is a type with __device__ operator().
+//! Functor might or might not accept the configuration as its first argument.
+//!
+//! @par Snippet
+//! @code
+//! #include <cstdio>
+//! #include <cuda/experimental/launch.cuh>
+//!
+//! struct kernel {
+//!     template <typename Configuration>
+//!     __device__ void operator()(Configuration conf, unsigned int
+//!     thread_to_print) {
+//!         if (conf.hierarchy().rank(cudax::thread, cudax::grid) == thread_to_print) {
+//!             printf("Hello from the GPU\n");
+//!         }
+//!     }
+//! };
+//!
+//! void launch_kernel(cuda::stream_ref stream) {
+//!     auto dims    = cudax::make_hierarchy(cudax::block_dims<128>(),
+//!     cudax::grid_dims(4)); auto config = cudax::make_config(dims,
+//!     cudax::launch_cooperative());
+//!
+//!     cudax::launch(stream, config, kernel(), 42);
+//! }
+//! @endcode
+//!
+//! @param stream
+//! cuda::stream_ref to launch the kernel into
+//!
+//! @param conf
+//! configuration for this launch
+//!
+//! @param kernel
+//! kernel functor to be launched
+//!
+//! @param args
+//! arguments to be passed into the kernel functor
+_CCCL_TEMPLATE(typename... _Args, typename... _Config, typename _Submitter, typename _Dimensions, typename _Kernel)
+_CCCL_REQUIRES(work_submitter<_Submitter> _CCCL_AND(!::cuda::std::is_pointer_v<_Kernel>)
+                 _CCCL_AND(!::cuda::std::is_function_v<_Kernel>) _CCCL_AND(!__detail::__is_kernel_ref_v<_Kernel>))
+_CCCL_HOST_API auto launch(_Submitter&& __submitter,
+                           const kernel_config<_Dimensions, _Config...>& __conf,
+                           const _Kernel& __kernel,
+                           _Args&&... __args)
 {
-  __ensure_current_device __dev_setter(stream);
-  cudaError_t status;
-  auto combined = conf.combine_with_default(kernel);
-  if constexpr (::cuda::std::is_invocable_v<Kernel, kernel_config<Dimensions, Config...>, kernel_arg_t<Args>...>)
+  __ensure_current_device __dev_setter{__submitter};
+  auto __combined = __conf.combine_with_default(__kernel);
+  if constexpr (::cuda::std::is_invocable_v<_Kernel,
+                                            kernel_config<_Dimensions, _Config...>,
+                                            ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>)
   {
-    auto launcher = detail::kernel_launcher<decltype(combined), Kernel, kernel_arg_t<Args>...>;
-    status        = detail::launch_impl(
-      stream,
-      combined,
-      launcher,
-      combined,
-      kernel,
-      __kernel_transform(__launch_transform(stream, std::forward<Args>(args)))...);
+    auto __launcher = ::cuda::
+      __kernel_launcher<decltype(__combined), _Kernel, ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>;
+    return ::cuda::experimental::__launch_impl(
+      ::cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)),
+      __combined,
+      ::cuda::__get_cufunction_of(__launcher),
+      __combined,
+      __kernel,
+      launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_Args>(__args))...);
   }
   else
   {
-    static_assert(::cuda::std::is_invocable_v<Kernel, kernel_arg_t<Args>...>);
-    auto launcher = detail::kernel_launcher_no_config<Kernel, kernel_arg_t<Args>...>;
-    status        = detail::launch_impl(
-      stream, combined, launcher, kernel, __kernel_transform(__launch_transform(stream, std::forward<Args>(args)))...);
-  }
-  if (status != cudaSuccess)
-  {
-    ::cuda::__throw_cuda_error(status, "Failed to launch a kernel");
+    static_assert(::cuda::std::is_invocable_v<_Kernel, ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>);
+    auto __launcher =
+      ::cuda::__kernel_launcher_no_config<_Kernel, ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>;
+    return ::cuda::experimental::__launch_impl(
+      ::cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)),
+      __combined,
+      ::cuda::__get_cufunction_of(__launcher),
+      __kernel,
+      launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_Args>(__args))...);
   }
 }
 
-/**
- * @brief Launch a kernel function with specified configuration and arguments
- *
- * Launches a kernel function on the specified stream and with specified configuration.
- * Kernel function is a function with __global__ annotation.
- * Function might or might not accept the configuration as its first argument.
- *
- *
- * @par Snippet
- * @code
- * #include <cstdio>
- * #include <cuda/experimental/launch.cuh>
- *
- * template <typename Configuration>
- * __global__ void kernel(Configuration conf, unsigned int thread_to_print) {
- *     if (conf.dims.rank(cudax::thread, cudax::grid) == thread_to_print) {
- *         printf("Hello from the GPU\n");
- *     }
- * }
- *
- * void launch_kernel(cuda::stream_ref stream) {
- *     auto dims    = cudax::make_hierarchy(cudax::block_dims<128>(), cudax::grid_dims(4));
- *     auto config = cudax::make_config(dims, cudax::launch_cooperative());
- *
- *     cudax::launch(stream, config, kernel<decltype(config)>, 42);
- * }
- * @endcode
- *
- * @param stream
- * cuda::stream_ref to launch the kernel into
- *
- * @param conf
- * configuration for this launch
- *
- * @param kernel
- * kernel function to be launched
- *
- * @param args
- * arguments to be passed into the kernel function
- */
-template <typename... ExpArgs, typename... ActArgs, typename... Config, typename Dimensions>
-void launch(::cuda::stream_ref stream,
-            const kernel_config<Dimensions, Config...>& conf,
-            void (*kernel)(kernel_config<Dimensions, Config...>, ExpArgs...),
-            ActArgs&&... args)
+//! @brief Launch a kernel function with specified configuration and arguments
+//!
+//! Launches a kernel function on the specified stream and with specified
+//! configuration. Kernel function is a function with __global__ annotation.
+//! Function might or might not accept the configuration as its first argument.
+//!
+//! @par Snippet
+//! @code
+//! #include <cstdio>
+//! #include <cuda/experimental/launch.cuh>
+//!
+//! template <typename Configuration>
+//! __global__ void kernel(Configuration conf, unsigned int thread_to_print) {
+//!     if (conf.dims.rank(cudax::thread, cudax::grid) == thread_to_print) {
+//!         printf("Hello from the GPU\n");
+//!     }
+//! }
+//!
+//! void launch_kernel(cuda::stream_ref stream) {
+//!     auto dims    = cudax::make_hierarchy(cudax::block_dims<128>(),
+//!     cudax::grid_dims(4)); auto config = cudax::make_config(dims,
+//!     cudax::launch_cooperative());
+//!
+//!     cudax::launch(stream, config, kernel<decltype(config)>, 42);
+//! }
+//! @endcode
+//!
+//! @param stream
+//! cuda::stream_ref to launch the kernel into
+//!
+//! @param conf
+//! configuration for this launch
+//!
+//! @param kernel
+//! kernel function to be launched
+//!
+//! @param args
+//! arguments to be passed into the kernel function
+//!
+_CCCL_TEMPLATE(
+  typename... _ExpArgs, typename... _ActArgs, typename _Submitter, typename... _Config, typename _Dimensions)
+_CCCL_REQUIRES(work_submitter<_Submitter> _CCCL_AND(sizeof...(_ExpArgs) == sizeof...(_ActArgs)))
+_CCCL_HOST_API auto launch(_Submitter&& __submitter,
+                           const kernel_config<_Dimensions, _Config...>& __conf,
+                           void (*__kernel)(kernel_config<_Dimensions, _Config...>, _ExpArgs...),
+                           _ActArgs&&... __args)
 {
-  __ensure_current_device __dev_setter(stream);
-  cudaError_t status = detail::launch_impl(
-    stream, //
-    conf,
-    kernel,
-    conf,
-    __kernel_transform(__launch_transform(stream, std::forward<ActArgs>(args)))...);
-
-  if (status != cudaSuccess)
-  {
-    ::cuda::__throw_cuda_error(status, "Failed to launch a kernel");
-  }
+  __ensure_current_device __dev_setter{__submitter};
+  return ::cuda::experimental::__launch_impl<kernel_config<_Dimensions, _Config...>, _ExpArgs...>(
+    ::cuda::__forward_or_cast_to_stream_ref<_Submitter>(__submitter), //
+    __conf,
+    ::cuda::__get_cufunction_of(__kernel),
+    __conf,
+    launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_ActArgs>(__args))...);
 }
 
-/**
- * @brief Launch a kernel function with specified configuration and arguments
- *
- * Launches a kernel function on the specified stream and with specified configuration.
- * Kernel function is a function with __global__ annotation.
- * Function might or might not accept the configuration as its first argument.
- *
- * @par Snippet
- * @code
- * #include <cstdio>
- * #include <cuda/experimental/launch.cuh>
- *
- * template <typename Configuration>
- * __global__ void kernel(Configuration conf, unsigned int thread_to_print) {
- *     if (conf.dims.rank(cudax::thread, cudax::grid) == thread_to_print) {
- *         printf("Hello from the GPU\n");
- *     }
- * }
- *
- * void launch_kernel(cuda::stream_ref stream) {
- *     auto dims    = cudax::make_hierarchy(cudax::block_dims<128>(), cudax::grid_dims(4));
- *     auto config = cudax::make_config(dims, cudax::launch_cooperative());
- *
- *     cudax::launch(stream, config, kernel<decltype(config)>, 42);
- * }
- * @endcode
- *
- * @param stream
- * cuda::stream_ref to launch the kernel into
- *
- * @param conf
- * configuration for this launch
- *
- * @param kernel
- * kernel function to be launched
- *
- * @param args
- * arguments to be passed into the kernel function
- */
-template <typename... ExpArgs, typename... ActArgs, typename... Config, typename Dimensions>
-void launch(::cuda::stream_ref stream,
-            const kernel_config<Dimensions, Config...>& conf,
-            void (*kernel)(ExpArgs...),
-            ActArgs&&... args)
+//! @brief Launch a kernel with specified configuration and arguments
+//!
+//! Launches a kernel on the specified stream and with specified configuration.
+//! Kernel might or might not accept the configuration as its first argument.
+//!
+//! @par Snippet
+//! @code
+//! #include <cstdio>
+//! #include <cuda/experimental/launch.cuh>
+//!
+//! template <typename Configuration>
+//! __global__ void kernel(Configuration conf, unsigned int thread_to_print) {
+//!     if (conf.hierarchy().rank(cudax::thread, cudax::grid) == thread_to_print) {
+//!         printf("Hello from the GPU\n");
+//!     }
+//! }
+//!
+//! void launch_kernel(cuda::stream_ref stream) {
+//!     auto dims    = cudax::make_hierarchy(cudax::block_dims<128>(),
+//!     cudax::grid_dims(4)); auto config = cudax::make_config(dims,
+//!     cudax::launch_cooperative());
+//!
+//!     cudax::launch(stream, config,
+//!     cudax::kernel_ref{kernel<decltype(config)}>, 42);
+//! }
+//! @endcode
+//!
+//! @param stream
+//! cuda::stream_ref to launch the kernel into
+//!
+//! @param conf
+//! configuration for this launch
+//!
+//! @param kernel
+//! kernel to be launched
+//!
+//! @param args
+//! arguments to be passed into the kernel
+//!
+_CCCL_TEMPLATE(
+  typename... _ExpArgs, typename... _ActArgs, typename _Submitter, typename... _Config, typename _Dimensions)
+_CCCL_REQUIRES(work_submitter<_Submitter> _CCCL_AND(sizeof...(_ExpArgs) == sizeof...(_ActArgs)))
+_CCCL_HOST_API auto launch(_Submitter&& __submitter,
+                           const kernel_config<_Dimensions, _Config...>& __conf,
+                           kernel_ref<void(kernel_config<_Dimensions, _Config...>, _ExpArgs...)> __kernel,
+                           _ActArgs&&... __args)
 {
-  __ensure_current_device __dev_setter(stream);
-  cudaError_t status = detail::launch_impl(
-    stream, //
-    conf,
-    kernel,
-    __kernel_transform(__launch_transform(stream, std::forward<ActArgs>(args)))...);
-
-  if (status != cudaSuccess)
-  {
-    ::cuda::__throw_cuda_error(status, "Failed to launch a kernel");
-  }
+  __ensure_current_device __dev_setter{__submitter};
+  return ::cuda::experimental::__launch_impl<kernel_config<_Dimensions, _Config...>, _ExpArgs...>(
+    ::cuda::__forward_or_cast_to_stream_ref<_Submitter>(__submitter), //
+    __conf,
+    ::cuda::__get_cufunction_of(__kernel),
+    __conf,
+    launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_ActArgs>(__args))...);
 }
 
+//! @brief Launch a kernel function with specified configuration and arguments
+//!
+//! Launches a kernel function on the specified stream and with specified
+//! configuration. Kernel function is a function with __global__ annotation.
+//! Function might or might not accept the configuration as its first argument.
+//!
+//! @par Snippet
+//! @code
+//! #include <cstdio>
+//! #include <cuda/experimental/launch.cuh>
+//!
+//! template <typename Configuration>
+//! __global__ void kernel(Configuration conf, unsigned int thread_to_print) {
+//!     if (conf.hierarchy().rank(cudax::thread, cudax::grid) == thread_to_print) {
+//!         printf("Hello from the GPU\n");
+//!     }
+//! }
+//!
+//! void launch_kernel(cuda::stream_ref stream) {
+//!     auto dims    = cudax::make_hierarchy(cudax::block_dims<128>(),
+//!     cudax::grid_dims(4)); auto config = cudax::make_config(dims,
+//!     cudax::launch_cooperative());
+//!
+//!     cudax::launch(stream, config, kernel<decltype(config)>, 42);
+//! }
+//! @endcode
+//!
+//! @param __stream
+//! cuda::stream_ref to launch the kernel into
+//!
+//! @param __conf
+//! configuration for this launch
+//!
+//! @param __kernel
+//! kernel function to be launched
+//!
+//! @param __args
+//! arguments to be passed into the kernel function
+_CCCL_TEMPLATE(
+  typename... _ExpArgs, typename... _ActArgs, typename _Submitter, typename... _Config, typename _Dimensions)
+_CCCL_REQUIRES(work_submitter<_Submitter> _CCCL_AND(sizeof...(_ExpArgs) == sizeof...(_ActArgs)))
+_CCCL_HOST_API auto launch(_Submitter&& __submitter,
+                           const kernel_config<_Dimensions, _Config...>& __conf,
+                           void (*__kernel)(_ExpArgs...),
+                           _ActArgs&&... __args)
+{
+  __ensure_current_device __dev_setter{__submitter};
+  return ::cuda::experimental::__launch_impl<_ExpArgs...>(
+    ::cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)), //
+    __conf,
+    ::cuda::__get_cufunction_of(__kernel),
+    launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_ActArgs>(__args))...);
+}
+
+//! @brief Launch a kernel with specified configuration and arguments
+//!
+//! Launches a kernel on the specified stream and with specified configuration.
+//! Kernel might or might not accept the configuration as its first argument.
+//!
+//! @par Snippet
+//! @code
+//! #include <cstdio>
+//! #include <cuda/experimental/launch.cuh>
+//!
+//! template <typename Configuration>
+//! __global__ void kernel(Configuration conf, unsigned int thread_to_print) {
+//!     if (conf.hierarchy().rank(cudax::thread, cudax::grid) == thread_to_print) {
+//!         printf("Hello from the GPU\n");
+//!     }
+//! }
+//!
+//! void launch_kernel(cuda::stream_ref stream) {
+//!     auto dims    = cudax::make_hierarchy(cudax::block_dims<128>(),
+//!     cudax::grid_dims(4)); auto config = cudax::make_config(dims,
+//!     cudax::launch_cooperative());
+//!
+//!     cudax::launch(stream, config,
+//!     cudax::kernel_ref{kernel<decltype(config)>}, 42);
+//! }
+//! @endcode
+//!
+//! @param __stream
+//! cuda::stream_ref to launch the kernel into
+//!
+//! @param __conf
+//! configuration for this launch
+//!
+//! @param __kernel
+//! kernel to be launched
+//!
+//! @param __args
+//! arguments to be passed into the kernel
+_CCCL_TEMPLATE(
+  typename... _ExpArgs, typename... _ActArgs, typename _Submitter, typename... _Config, typename _Dimensions)
+_CCCL_REQUIRES(work_submitter<_Submitter> _CCCL_AND(sizeof...(_ExpArgs) == sizeof...(_ActArgs)))
+_CCCL_HOST_API auto launch(_Submitter&& __submitter,
+                           const kernel_config<_Dimensions, _Config...>& __conf,
+                           kernel_ref<void(_ExpArgs...)> __kernel,
+                           _ActArgs&&... __args)
+{
+  __ensure_current_device __dev_setter{__submitter};
+  return ::cuda::experimental::__launch_impl<_ExpArgs...>(
+    ::cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)), //
+    __conf,
+    ::cuda::__get_cufunction_of(__kernel),
+    launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_ActArgs>(__args))...);
+}
+
+//
+// Lazy launch
+//
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __kernel_t
+{
+  template <class _Config, class _Fn, class... _Args>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+};
+
+template <class _Config, class _Fn, class... _Args>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __kernel_t::__sndr_t
+{
+  using sender_concept = execution::sender_t;
+
+  template <class _Self>
+  _CCCL_API static constexpr auto get_completion_signatures() noexcept
+  {
+    return execution::completion_signatures<execution::set_value_t(), execution::set_error_t(cudaError_t)>();
+  }
+
+  _CCCL_NO_UNIQUE_ADDRESS __kernel_t __tag_{};
+  ::cuda::std::__tuple<_Config, _Fn, _Args...> __args_;
+};
+
+template <class _Dimensions, class... _Config, class _Fn, class... _Args>
+_CCCL_API constexpr auto launch(kernel_config<_Dimensions, _Config...> __config, _Fn __fn, _Args... __args)
+  -> __kernel_t::__sndr_t<kernel_config<_Dimensions, _Config...>, _Fn, _Args...>
+{
+  return {{}, {_CCCL_MOVE(__config), _CCCL_MOVE(__fn), _CCCL_MOVE(__args)...}};
+}
+
+namespace execution
+{
+template <class _Config, class _Fn, class... _Args>
+inline constexpr int structured_binding_size<__kernel_t::__sndr_t<_Config, _Fn, _Args...>> = 2;
+} // namespace execution
 } // namespace cuda::experimental
-#endif // _CCCL_STD_VER >= 2017
 
 #include <cuda/std/__cccl/epilogue.h>
 

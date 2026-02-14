@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_merge.cuh>
 
-#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
 #include <thrust/sort.h>
+
+#include <cuda/iterator>
 
 #include <algorithm>
 
@@ -25,14 +26,14 @@ using types = c2h::type_list<std::uint8_t, std::int16_t, std::uint32_t, double>;
 
 template <typename Key,
           typename Offset,
-          typename CompareOp = ::cuda::std::less<Key>,
+          typename CompareOp = cuda::std::less<Key>,
           typename MergeKeys = decltype(::merge_keys)>
 void test_keys(Offset size1 = 3623, Offset size2 = 6346, CompareOp compare_op = {}, MergeKeys merge_keys = ::merge_keys)
 {
   CAPTURE(c2h::type_name<Key>(), c2h::type_name<Offset>(), size1, size2);
 
-  c2h::device_vector<Key> keys1_d(size1);
-  c2h::device_vector<Key> keys2_d(size2);
+  c2h::device_vector<Key> keys1_d(size1, thrust::default_init);
+  c2h::device_vector<Key> keys2_d(size2, thrust::default_init);
 
   c2h::gen(C2H_SEED(1), keys1_d);
   c2h::gen(C2H_SEED(1), keys2_d);
@@ -41,7 +42,7 @@ void test_keys(Offset size1 = 3623, Offset size2 = 6346, CompareOp compare_op = 
   thrust::sort(c2h::device_policy, keys2_d.begin(), keys2_d.end(), compare_op);
   // CAPTURE(keys1_d, keys2_d);
 
-  c2h::device_vector<Key> result_d(size1 + size2);
+  c2h::device_vector<Key> result_d(size1 + size2, thrust::default_init);
   merge_keys(thrust::raw_pointer_cast(keys1_d.data()),
              static_cast<Offset>(keys1_d.size()),
              thrust::raw_pointer_cast(keys2_d.data()),
@@ -51,11 +52,13 @@ void test_keys(Offset size1 = 3623, Offset size2 = 6346, CompareOp compare_op = 
 
   c2h::host_vector<Key> keys1_h = keys1_d;
   c2h::host_vector<Key> keys2_h = keys2_d;
-  c2h::host_vector<Key> reference_h(size1 + size2);
+  c2h::host_vector<Key> reference_h(size1 + size2, thrust::default_init);
   std::merge(keys1_h.begin(), keys1_h.end(), keys2_h.begin(), keys2_h.end(), reference_h.begin(), compare_op);
 
-  // FIXME(bgruber): comparing std::vectors (slower than thrust vectors) but compiles a lot faster
-  CHECK((detail::to_vec(reference_h) == detail::to_vec(c2h::host_vector<Key>(result_d))));
+  // comparing std::vectors instead compiles in 1m19s, thrust::host_vector 1m23s, thrust::device_vector 1m38
+  // let's pick the host_vector, so we don't stress device memory with another (potentially big) allocation
+  c2h::host_vector<Key> result_h(result_d); // perform copy outside CHECK() to propagate a potential bad_alloc
+  CHECK(reference_h == result_h);
 }
 
 C2H_TEST("DeviceMerge::MergeKeys key types", "[merge][device]", types)
@@ -73,7 +76,7 @@ try
   using offset_t = int64_t;
 
   // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  const auto num_items_int_max = static_cast<offset_t>(::cuda::std::numeric_limits<std::int32_t>::max());
+  const auto num_items_int_max = static_cast<offset_t>(cuda::std::numeric_limits<std::int32_t>::max());
 
   // Generate the input sizes to test for
   const offset_t num_items_lhs =
@@ -81,7 +84,7 @@ try
   const offset_t num_items_rhs =
     GENERATE_COPY(values({num_items_int_max + offset_t{1000000}, num_items_int_max, offset_t{3}}));
 
-  test_keys<key_t, offset_t>(num_items_lhs, num_items_rhs, ::cuda::std::less<>{});
+  test_keys<key_t, offset_t>(num_items_lhs, num_items_rhs, cuda::std::less<>{});
 }
 catch (const std::bad_alloc&)
 {
@@ -98,11 +101,47 @@ C2H_TEST("DeviceMerge::MergeKeys input sizes", "[merge][device]")
   test_keys<key_t>(size1, size2);
 }
 
+struct Dispatcher
+{
+  int items_per_tile = 0;
+
+  template <typename ActivePolicy>
+  _CCCL_HOST_DEVICE auto Invoke() -> cudaError
+  {
+    items_per_tile = ActivePolicy::merge_policy::ITEMS_PER_TILE;
+    return cudaSuccess;
+  }
+};
+
+template <typename PolicyHub>
+auto items_per_tile_on_current_device() -> int
+{
+  int ptx_version = 0;
+  REQUIRE(cub::PtxVersion(ptx_version) == cudaSuccess);
+  Dispatcher dispatcher{};
+  REQUIRE(PolicyHub::max_policy::Invoke(ptx_version, dispatcher) == cudaSuccess);
+  REQUIRE(dispatcher.items_per_tile != 0);
+  return dispatcher.items_per_tile;
+}
+
+C2H_TEST("DeviceMerge::MergeKeys almost tile-sized input sizes", "[merge][device]")
+{
+  using key_t    = int;
+  using offset_t = int;
+
+  const offset_t items_per_tile =
+    items_per_tile_on_current_device<cub::detail::merge::policy_hub<key_t, cub::NullType, offset_t>>();
+  test_keys<key_t>(items_per_tile - 1, 1);
+  test_keys<key_t>(items_per_tile, 1);
+  test_keys<key_t>(1, items_per_tile - 1);
+  test_keys<key_t>(1, items_per_tile);
+}
+
 // cannot put those in an anon namespace, or nvcc complains that the kernels have internal linkage
 using unordered_t = c2h::custom_type_t<c2h::equal_comparable_t>;
 struct order
 {
-  _CCCL_HOST_DEVICE auto operator()(const unordered_t& a, const unordered_t& b) const -> bool
+  __host__ __device__ auto operator()(const unordered_t& a, const unordered_t& b) const -> bool
   {
     return a.key < b.key;
   }
@@ -117,6 +156,8 @@ C2H_TEST("DeviceMerge::MergeKeys no operator<", "[merge][device]")
 
 namespace
 {
+// must use thrust::make_zip_iterator for now
+// see https://github.com/NVIDIA/cccl/issues/6400
 template <typename... Its>
 auto zip(Its... its) -> decltype(thrust::make_zip_iterator(its...))
 {
@@ -127,7 +168,7 @@ template <typename Value>
 struct key_to_value
 {
   template <typename Key>
-  _CCCL_HOST_DEVICE auto operator()(const Key& k) const -> Value
+  __host__ __device__ auto operator()(const Key& k) const -> Value
   {
     Value v{};
     convert(k, v, 0);
@@ -135,19 +176,19 @@ struct key_to_value
   }
 
   template <typename Key>
-  _CCCL_HOST_DEVICE static void convert(const Key& k, Value& v, ...)
+  __host__ __device__ static void convert(const Key& k, Value& v, ...)
   {
     v = static_cast<Value>(k);
   }
 
   template <template <typename> class... Policies>
-  _CCCL_HOST_DEVICE static void convert(const c2h::custom_type_t<Policies...>& k, Value& v, int)
+  __host__ __device__ static void convert(const c2h::custom_type_t<Policies...>& k, Value& v, int)
   {
     v = static_cast<Value>(k.val);
   }
 
   template <typename Key, template <typename> class... Policies>
-  _CCCL_HOST_DEVICE static void convert(const Key& k, c2h::custom_type_t<Policies...>& v, int)
+  __host__ __device__ static void convert(const Key& k, c2h::custom_type_t<Policies...>& v, int)
   {
     v     = {};
     v.val = static_cast<decltype(v.val)>(k);
@@ -158,7 +199,7 @@ struct key_to_value
 template <typename Key,
           typename Value,
           typename Offset,
-          typename CompareOp  = ::cuda::std::less<Key>,
+          typename CompareOp  = cuda::std::less<Key>,
           typename MergePairs = decltype(::merge_pairs)>
 void test_pairs(
   Offset size1 = 200, Offset size2 = 625, CompareOp compare_op = {}, MergePairs merge_pairs = ::merge_pairs)
@@ -166,23 +207,23 @@ void test_pairs(
   CAPTURE(c2h::type_name<Key>(), c2h::type_name<Value>(), c2h::type_name<Offset>(), size1, size2);
 
   // we start with random but sorted keys
-  c2h::device_vector<Key> keys1_d(size1);
-  c2h::device_vector<Key> keys2_d(size2);
+  c2h::device_vector<Key> keys1_d(size1, thrust::no_init);
+  c2h::device_vector<Key> keys2_d(size2, thrust::no_init);
   c2h::gen(C2H_SEED(1), keys1_d);
   c2h::gen(C2H_SEED(1), keys2_d);
   thrust::sort(c2h::device_policy, keys1_d.begin(), keys1_d.end(), compare_op);
   thrust::sort(c2h::device_policy, keys2_d.begin(), keys2_d.end(), compare_op);
 
   // the values must be functionally dependent on the keys (equal key => equal value), since merge is unstable
-  c2h::device_vector<Value> values1_d(size1);
-  c2h::device_vector<Value> values2_d(size2);
+  c2h::device_vector<Value> values1_d(size1, thrust::no_init);
+  c2h::device_vector<Value> values2_d(size2, thrust::no_init);
   thrust::transform(c2h::device_policy, keys1_d.begin(), keys1_d.end(), values1_d.begin(), key_to_value<Value>{});
   thrust::transform(c2h::device_policy, keys2_d.begin(), keys2_d.end(), values2_d.begin(), key_to_value<Value>{});
   //  CAPTURE(keys1_d, keys2_d, values1_d, values2_d);
 
   // compute CUB result
-  c2h::device_vector<Key> result_keys_d(size1 + size2);
-  c2h::device_vector<Value> result_values_d(size1 + size2);
+  c2h::device_vector<Key> result_keys_d(size1 + size2, thrust::no_init);
+  c2h::device_vector<Value> result_values_d(size1 + size2, thrust::no_init);
   merge_pairs(
     thrust::raw_pointer_cast(keys1_d.data()),
     thrust::raw_pointer_cast(values1_d.data()),
@@ -195,8 +236,8 @@ void test_pairs(
     compare_op);
 
   // compute reference result
-  c2h::host_vector<Key> reference_keys_h(size1 + size2);
-  c2h::host_vector<Value> reference_values_h(size1 + size2);
+  c2h::host_vector<Key> reference_keys_h(size1 + size2, thrust::no_init);
+  c2h::host_vector<Value> reference_values_h(size1 + size2, thrust::no_init);
   {
     c2h::host_vector<Key> keys1_h     = keys1_d;
     c2h::host_vector<Value> values1_h = values1_d;
@@ -209,7 +250,7 @@ void test_pairs(
                zip(keys2_h.end(), values2_h.end()),
                zip(reference_keys_h.begin(), reference_values_h.begin()),
                [&](const value_t& a, const value_t& b) {
-                 return compare_op(thrust::get<0>(a), thrust::get<0>(b));
+                 return compare_op(cuda::std::get<0>(a), cuda::std::get<0>(b));
                });
   }
 
@@ -261,7 +302,7 @@ try
   using key_t     = char;
   using value_t   = char;
   const auto size = std::int64_t{1} << GENERATE(30, 31, 32, 33);
-  test_pairs<key_t, value_t>(size, size, ::cuda::std::less<>{});
+  test_pairs<key_t, value_t>(size, size, cuda::std::less<>{});
 }
 catch (const std::bad_alloc&)
 {
@@ -277,38 +318,73 @@ C2H_TEST("DeviceMerge::MergePairs iterators", "[merge][device]")
   const offset_t size2    = 634;
   const auto values_start = 123456789;
 
-  auto key_it   = thrust::counting_iterator<key_t>{};
-  auto value_it = thrust::counting_iterator<key_t>{values_start};
+  const auto larger_size  = std::max(size1, size2);
+  const auto smaller_size = std::min(size1, size2);
 
-  // compute CUB result
-  c2h::device_vector<key_t> result_keys_d(size1 + size2);
-  c2h::device_vector<value_t> result_values_d(size1 + size2);
-  merge_pairs(
-    key_it,
-    value_it,
-    size1,
-    key_it,
-    value_it,
-    size2,
-    result_keys_d.begin(),
-    result_values_d.begin(),
-    ::cuda::std::less<key_t>{});
+  auto test = [&](auto key1_it, auto value1_it, auto key2_it, auto value2_it) {
+    // compute CUB result
+    c2h::device_vector<key_t> result_keys_d(size1 + size2);
+    c2h::device_vector<value_t> result_values_d(size1 + size2);
+    merge_pairs(
+      key1_it,
+      value1_it,
+      size1,
+      key2_it,
+      value2_it,
+      size2,
+      result_keys_d.begin(),
+      result_values_d.begin(),
+      cuda::std::less<key_t>{});
 
-  // check result
-  c2h::host_vector<key_t> result_keys_h     = result_keys_d;
-  c2h::host_vector<value_t> result_values_h = result_values_d;
-  const auto smaller_size                   = std::min(size1, size2);
-  for (offset_t i = 0; i < static_cast<offset_t>(result_keys_h.size()); i++)
+    // check result
+    c2h::host_vector<key_t> result_keys_h     = result_keys_d;
+    c2h::host_vector<value_t> result_values_h = result_values_d;
+
+    for (offset_t i = 0; i < static_cast<offset_t>(result_keys_h.size()); i++)
+    {
+      if (i < 2 * smaller_size)
+      {
+        CHECK(result_keys_h[i + 0] == i / 2);
+        CHECK(result_values_h[i + 0] == values_start + i / 2);
+      }
+      else
+      {
+        CHECK(result_keys_h[i] == i - smaller_size);
+        CHECK(result_values_h[i] == values_start + i - smaller_size);
+      }
+    }
+  };
+
+  auto key_it   = cuda::counting_iterator<key_t>{};
+  auto value_it = cuda::counting_iterator<key_t>{values_start};
+
+  c2h::device_vector<key_t> keys_vec(larger_size);
+  thrust::sequence(keys_vec.begin(), keys_vec.end());
+  c2h::device_vector<key_t> values_vec(larger_size);
+  thrust::sequence(values_vec.begin(), values_vec.end(), values_start);
+
+  SECTION("cit/cit/cit/cit")
   {
-    if (i < 2 * smaller_size)
-    {
-      CHECK(result_keys_h[i + 0] == i / 2);
-      CHECK(result_values_h[i + 0] == values_start + i / 2);
-    }
-    else
-    {
-      CHECK(result_keys_h[i] == i - smaller_size);
-      CHECK(result_values_h[i] == values_start + i - smaller_size);
-    }
+    test(key_it, value_it, key_it, value_it);
+  }
+  // key arrays have mixed types
+  SECTION("vec/cit/cit/cit")
+  {
+    test(keys_vec.begin(), value_it, key_it, value_it);
+  }
+  // value arrays have mixed types
+  SECTION("cit/vec/cit/cit")
+  {
+    test(key_it, values_vec.begin(), key_it, value_it);
+  }
+  // key and value arrays have mixed types
+  SECTION("cit/vec/vec/cit")
+  {
+    test(key_it, values_vec.begin(), keys_vec.begin(), value_it);
+  }
+  // values have different iterator and keys
+  SECTION("cit/vec/cit/vec")
+  {
+    test(key_it, values_vec.begin(), key_it, values_vec.begin());
   }
 }

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TUPLE_VECTOR_TYPES_H
-#define _LIBCUDACXX___TUPLE_VECTOR_TYPES_H
+#ifndef _CUDA_STD___TUPLE_VECTOR_TYPES_H
+#define _CUDA_STD___TUPLE_VECTOR_TYPES_H
 
 #include <cuda/std/detail/__config>
 
@@ -34,20 +34,16 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 #  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/__utility/move.h>
 
-#  if !_CCCL_CUDA_COMPILATION()
-#    include <cuda_runtime_api.h>
-#  endif // !_CCCL_CUDA_COMPILATION()
-
-#  define _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__name, __type, __size)              \
-    template <>                                                                       \
-    struct tuple_size<__name##__size> : _CUDA_VSTD::integral_constant<size_t, __size> \
-    {};                                                                               \
-                                                                                      \
-    template <size_t _Ip>                                                             \
-    struct tuple_element<_Ip, __name##__size>                                         \
-    {                                                                                 \
-      static_assert(_Ip < __size, "tuple_element index out of range");                \
-      using type = __type;                                                            \
+#  define _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__name, __type, __size, ...)                       \
+    template <>                                                                                     \
+    struct tuple_size<__name##__size##__VA_ARGS__> : ::cuda::std::integral_constant<size_t, __size> \
+    {};                                                                                             \
+                                                                                                    \
+    template <size_t _Ip>                                                                           \
+    struct tuple_element<_Ip, __name##__size##__VA_ARGS__>                                          \
+    {                                                                                               \
+      static_assert(_Ip < __size, "tuple_element index out of range");                              \
+      using type = __type;                                                                          \
     };
 
 #  define _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(__name, __type) \
@@ -56,26 +52,26 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
     _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__name, __type, 3)           \
     _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__name, __type, 4)
 
-#  define _LIBCUDACXX_SPECIALIZE_GET(__name, __base_type)                                                           \
-    template <size_t _Ip>                                                                                           \
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __base_type& get(__name& __val) noexcept                                    \
-    {                                                                                                               \
-      return _CUDA_VSTD::__get_element<_Ip>::template get<__name, __base_type>(__val);                              \
-    }                                                                                                               \
-    template <size_t _Ip>                                                                                           \
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr const __base_type& get(const __name& __val) noexcept                        \
-    {                                                                                                               \
-      return _CUDA_VSTD::__get_element<_Ip>::template get<__name, __base_type>(__val);                              \
-    }                                                                                                               \
-    template <size_t _Ip>                                                                                           \
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __base_type&& get(__name&& __val) noexcept                                  \
-    {                                                                                                               \
-      return _CUDA_VSTD::__get_element<_Ip>::template get<__name, __base_type>(static_cast<__name&&>(__val));       \
-    }                                                                                                               \
-    template <size_t _Ip>                                                                                           \
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr const __base_type&& get(const __name&& __val) noexcept                      \
-    {                                                                                                               \
-      return _CUDA_VSTD::__get_element<_Ip>::template get<__name, __base_type>(static_cast<const __name&&>(__val)); \
+#  define _LIBCUDACXX_SPECIALIZE_GET(__name, __base_type)                                                            \
+    template <size_t _Ip>                                                                                            \
+    _CCCL_API constexpr __base_type& get(__name& __val) noexcept                                                     \
+    {                                                                                                                \
+      return ::cuda::std::__get_element<_Ip>::template get<__name, __base_type>(__val);                              \
+    }                                                                                                                \
+    template <size_t _Ip>                                                                                            \
+    _CCCL_API constexpr const __base_type& get(const __name& __val) noexcept                                         \
+    {                                                                                                                \
+      return ::cuda::std::__get_element<_Ip>::template get<__name, __base_type>(__val);                              \
+    }                                                                                                                \
+    template <size_t _Ip>                                                                                            \
+    _CCCL_API constexpr __base_type&& get(__name&& __val) noexcept                                                   \
+    {                                                                                                                \
+      return ::cuda::std::__get_element<_Ip>::template get<__name, __base_type>(static_cast<__name&&>(__val));       \
+    }                                                                                                                \
+    template <size_t _Ip>                                                                                            \
+    _CCCL_API constexpr const __base_type&& get(const __name&& __val) noexcept                                       \
+    {                                                                                                                \
+      return ::cuda::std::__get_element<_Ip>::template get<__name, __base_type>(static_cast<const __name&&>(__val)); \
     }
 
 #  define _LIBCUDACXX_SPECIALIZE_GET_VECTOR(__name, __base_type) \
@@ -86,7 +82,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(char, signed char)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(uchar, unsigned char)
@@ -94,13 +90,57 @@ _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(short, short)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(ushort, unsigned short)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(int, int)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(uint, unsigned int)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(long, long)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(ulong, unsigned long)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(longlong, long long)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(ulonglong, unsigned long long)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(long, long, 4, _16a)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(long, long, 4, _32a)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(ulong, unsigned long, 4, _16a)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(ulong, unsigned long, 4, _32a)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(longlong, long long, 4, _16a)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(longlong, long long, 4, _32a)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(ulonglong, unsigned long long, 4, _16a)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(ulonglong, unsigned long long, 4, _32a)
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(float, float)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(double, double)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(double, double, 4, _16a)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(double, double, 4, _32a)
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(dim, unsigned int, 3)
+#  if _CCCL_HAS_NVFP16()
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__half, __half, 2)
+#  endif // _CCCL_HAS_NVFP16()
+#  if _CCCL_HAS_NVBF16()
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_bfloat16, __nv_bfloat16, 2)
+#  endif // _CCCL_HAS_NVBF16()
+#  if _CCCL_HAS_NVFP8()
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_fp8x, __nv_fp8_e5m2, 2, _e5m2)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_fp8x, __nv_fp8_e5m2, 4, _e5m2)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_fp8x, __nv_fp8_e4m3, 2, _e4m3)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_fp8x, __nv_fp8_e4m3, 4, _e4m3)
+#    if _CCCL_CTK_AT_LEAST(12, 8)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_fp8x, __nv_fp8_e8m0, 2, _e8m0)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_fp8x, __nv_fp8_e8m0, 4, _e8m0)
+#    endif // _CCCL_CTK_AT_LEAST(12, 8)
+#  endif // _CCCL_HAS_NVFP8()
+#  if _CCCL_HAS_NVFP6()
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_fp6x, __nv_fp6_e3m2, 2, _e3m2)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_fp6x, __nv_fp6_e3m2, 4, _e3m2)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_fp6x, __nv_fp6_e2m3, 2, _e2m3)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_fp6x, __nv_fp6_e2m3, 4, _e2m3)
+#  endif // _CCCL_HAS_NVFP6()
+#  if _CCCL_HAS_NVFP4()
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_fp4x, __nv_fp4_e2m1, 2, _e2m1)
+_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__nv_fp4x, __nv_fp4_e2m1, 4, _e2m1)
+#  endif // _CCCL_HAS_NVFP4()
 
 template <size_t _Ip>
 struct __get_element;
@@ -109,25 +149,25 @@ template <>
 struct __get_element<0>
 {
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _BaseType& get(_Vec& __val) noexcept
+  static _CCCL_API constexpr _BaseType& get(_Vec& __val) noexcept
   {
     return __val.x;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const _BaseType& get(const _Vec& __val) noexcept
+  static _CCCL_API constexpr const _BaseType& get(const _Vec& __val) noexcept
   {
     return __val.x;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _BaseType&& get(_Vec&& __val) noexcept
+  static _CCCL_API constexpr _BaseType&& get(_Vec&& __val) noexcept
   {
     return static_cast<_BaseType&&>(__val.x);
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const _BaseType&& get(const _Vec&& __val) noexcept
+  static _CCCL_API constexpr const _BaseType&& get(const _Vec&& __val) noexcept
   {
     return static_cast<const _BaseType&&>(__val.x);
   }
@@ -137,25 +177,25 @@ template <>
 struct __get_element<1>
 {
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _BaseType& get(_Vec& __val) noexcept
+  static _CCCL_API constexpr _BaseType& get(_Vec& __val) noexcept
   {
     return __val.y;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const _BaseType& get(const _Vec& __val) noexcept
+  static _CCCL_API constexpr const _BaseType& get(const _Vec& __val) noexcept
   {
     return __val.y;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _BaseType&& get(_Vec&& __val) noexcept
+  static _CCCL_API constexpr _BaseType&& get(_Vec&& __val) noexcept
   {
     return static_cast<_BaseType&&>(__val.y);
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const _BaseType&& get(const _Vec&& __val) noexcept
+  static _CCCL_API constexpr const _BaseType&& get(const _Vec&& __val) noexcept
   {
     return static_cast<const _BaseType&&>(__val.y);
   }
@@ -164,25 +204,25 @@ template <>
 struct __get_element<2>
 {
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _BaseType& get(_Vec& __val) noexcept
+  static _CCCL_API constexpr _BaseType& get(_Vec& __val) noexcept
   {
     return __val.z;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const _BaseType& get(const _Vec& __val) noexcept
+  static _CCCL_API constexpr const _BaseType& get(const _Vec& __val) noexcept
   {
     return __val.z;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _BaseType&& get(_Vec&& __val) noexcept
+  static _CCCL_API constexpr _BaseType&& get(_Vec&& __val) noexcept
   {
     return static_cast<_BaseType&&>(__val.z);
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const _BaseType&& get(const _Vec&& __val) noexcept
+  static _CCCL_API constexpr const _BaseType&& get(const _Vec&& __val) noexcept
   {
     return static_cast<const _BaseType&&>(__val.z);
   }
@@ -192,25 +232,25 @@ template <>
 struct __get_element<3>
 {
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _BaseType& get(_Vec& __val) noexcept
+  static _CCCL_API constexpr _BaseType& get(_Vec& __val) noexcept
   {
     return __val.w;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const _BaseType& get(const _Vec& __val) noexcept
+  static _CCCL_API constexpr const _BaseType& get(const _Vec& __val) noexcept
   {
     return __val.w;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _BaseType&& get(_Vec&& __val) noexcept
+  static _CCCL_API constexpr _BaseType&& get(_Vec&& __val) noexcept
   {
     return static_cast<_BaseType&&>(__val.w);
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const _BaseType&& get(const _Vec&& __val) noexcept
+  static _CCCL_API constexpr const _BaseType&& get(const _Vec&& __val) noexcept
   {
     return static_cast<const _BaseType&&>(__val.w);
   }
@@ -222,15 +262,59 @@ _LIBCUDACXX_SPECIALIZE_GET_VECTOR(short, short)
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(ushort, unsigned short)
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(int, int)
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(uint, unsigned int)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(long, long)
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(ulong, unsigned long)
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(longlong, long long)
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(ulonglong, unsigned long long)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+_LIBCUDACXX_SPECIALIZE_GET(long4_16a, long)
+_LIBCUDACXX_SPECIALIZE_GET(long4_32a, long)
+_LIBCUDACXX_SPECIALIZE_GET(ulong4_16a, unsigned long)
+_LIBCUDACXX_SPECIALIZE_GET(ulong4_32a, unsigned long)
+_LIBCUDACXX_SPECIALIZE_GET(longlong4_16a, long long)
+_LIBCUDACXX_SPECIALIZE_GET(longlong4_32a, long long)
+_LIBCUDACXX_SPECIALIZE_GET(ulonglong4_16a, unsigned long long)
+_LIBCUDACXX_SPECIALIZE_GET(ulonglong4_32a, unsigned long long)
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(float, float)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(double, double)
+_CCCL_SUPPRESS_DEPRECATED_POP
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+_LIBCUDACXX_SPECIALIZE_GET(double4_16a, double)
+_LIBCUDACXX_SPECIALIZE_GET(double4_32a, double)
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 _LIBCUDACXX_SPECIALIZE_GET(dim3, unsigned int)
+#  if _CCCL_HAS_NVFP16()
+_LIBCUDACXX_SPECIALIZE_GET(__half2, __half)
+#  endif // _CCCL_HAS_NVFP16()
+#  if _CCCL_HAS_NVBF16()
+_LIBCUDACXX_SPECIALIZE_GET(__nv_bfloat162, __nv_bfloat16)
+#  endif // _CCCL_HAS_NVBF16()
+#  if _CCCL_HAS_NVFP8()
+_LIBCUDACXX_SPECIALIZE_GET(__nv_fp8x2_e5m2, __nv_fp8_e5m2)
+_LIBCUDACXX_SPECIALIZE_GET(__nv_fp8x4_e5m2, __nv_fp8_e5m2)
+_LIBCUDACXX_SPECIALIZE_GET(__nv_fp8x2_e4m3, __nv_fp8_e4m3)
+_LIBCUDACXX_SPECIALIZE_GET(__nv_fp8x4_e4m3, __nv_fp8_e4m3)
+#    if _CCCL_CTK_AT_LEAST(12, 8)
+_LIBCUDACXX_SPECIALIZE_GET(__nv_fp8x2_e8m0, __nv_fp8_e8m0)
+_LIBCUDACXX_SPECIALIZE_GET(__nv_fp8x4_e8m0, __nv_fp8_e8m0)
+#    endif // _CCCL_CTK_AT_LEAST(12, 8)
+#  endif // _CCCL_HAS_NVFP8()
+#  if _CCCL_HAS_NVFP6()
+_LIBCUDACXX_SPECIALIZE_GET(__nv_fp6x2_e3m2, __nv_fp6_e3m2)
+_LIBCUDACXX_SPECIALIZE_GET(__nv_fp6x4_e3m2, __nv_fp6_e3m2)
+_LIBCUDACXX_SPECIALIZE_GET(__nv_fp6x2_e2m3, __nv_fp6_e2m3)
+_LIBCUDACXX_SPECIALIZE_GET(__nv_fp6x4_e2m3, __nv_fp6_e2m3)
+#  endif // _CCCL_HAS_NVFP6()
+#  if _CCCL_HAS_NVFP4()
+_LIBCUDACXX_SPECIALIZE_GET(__nv_fp4x2_e2m1, __nv_fp4_e2m1)
+_LIBCUDACXX_SPECIALIZE_GET(__nv_fp4x4_e2m1, __nv_fp4_e2m1)
+#  endif // _CCCL_HAS_NVFP4()
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
@@ -243,4 +327,4 @@ _CCCL_DIAG_POP
 
 #endif // _CCCL_HAS_CTK()
 
-#endif // _LIBCUDACXX___TUPLE_VECTOR_TYPES_H
+#endif // _CUDA_STD___TUPLE_VECTOR_TYPES_H

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file xor_combine_engine.h
  *  \brief A pseudorandom number generator which produces pseudorandom
@@ -36,6 +23,7 @@
 #include <thrust/random/detail/random_core_access.h>
 #include <thrust/random/detail/xor_combine_engine_max.h>
 
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstddef> // for size_t
 
 #include <iostream>
@@ -44,7 +32,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-
 /*! \addtogroup random_number_engine_adaptors
  *  \{
  */
@@ -99,8 +86,8 @@ public:
    */
   using result_type = typename thrust::detail::eval_if<
     (sizeof(typename base2_type::result_type) > sizeof(typename base1_type::result_type)),
-    thrust::detail::identity_<typename base2_type::result_type>,
-    thrust::detail::identity_<typename base1_type::result_type>>::type;
+    ::cuda::std::type_identity<typename base2_type::result_type>,
+    ::cuda::std::type_identity<typename base1_type::result_type>>::type;
 
   /*! The size of the first shift used in the generation algorithm.
    */
@@ -243,7 +230,6 @@ operator>>(std::basic_istream<CharT, Traits>& is, xor_combine_engine<Engine1_, s
 
 /*! \} // end random_number_engine_adaptors
  */
-
 } // namespace random
 
 // import names into thrust::

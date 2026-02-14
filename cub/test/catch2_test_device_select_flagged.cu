@@ -1,38 +1,15 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_select.cuh>
 
 #include <thrust/count.h>
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
+
+#include <cuda/iterator>
 
 #include <algorithm>
 
@@ -81,7 +58,11 @@ using all_types =
                  ulonglong2,
 // WAR bug in vec type handling in NVCC 12.0 + GCC 11.4 + C++20
 #if !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC, ==, 11, 4) && _CCCL_STD_VER == 2020)
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                 ulonglong4_16a,
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
                  ulonglong4,
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 #endif // !(NVCC 12.0 and GCC 11.4 and C++20)
                  int,
                  long2,
@@ -92,7 +73,11 @@ using types =
                  std::uint32_t,
 // WAR bug in vec type handling in NVCC 12.0 + GCC 11.4 + C++20
 #if !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC, ==, 11, 4) && _CCCL_STD_VER == 2020)
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                 ulonglong4_16a,
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
                  ulonglong4,
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 #endif // !(NVCC 12.0 and GCC 11.4 and C++20)
                  c2h::custom_type_t<c2h::equal_comparable_t>>;
 
@@ -436,7 +421,7 @@ try
   using offset_t = std::int64_t;
 
   // The partition size (the maximum number of items processed by a single kernel invocation) is an important boundary
-  constexpr auto max_partition_size = static_cast<offset_t>(::cuda::std::numeric_limits<std::int32_t>::max());
+  constexpr auto max_partition_size = static_cast<offset_t>(cuda::std::numeric_limits<std::int32_t>::max());
 
   offset_t num_items = GENERATE_COPY(
     values({
@@ -450,8 +435,8 @@ try
 
   // Input
   constexpr offset_t match_every_nth = 1000000;
-  auto in                            = thrust::make_counting_iterator(static_cast<type>(0));
-  auto flags_in = thrust::make_transform_iterator(in, mod_n<offset_t>{static_cast<offset_t>(match_every_nth)});
+  auto in                            = cuda::counting_iterator(static_cast<type>(0));
+  auto flags_in = cuda::transform_iterator(in, mod_n<offset_t>{static_cast<offset_t>(match_every_nth)});
 
   // Needs to be device accessible
   c2h::device_vector<offset_t> num_selected_out(1, 0);
@@ -464,8 +449,7 @@ try
 
   // Ensure that we created the correct output
   REQUIRE(num_selected_out[0] == expected_num_copied);
-  auto expected_out_it =
-    thrust::make_transform_iterator(in, multiply_n<offset_t>{static_cast<offset_t>(match_every_nth)});
+  auto expected_out_it     = cuda::transform_iterator(in, multiply_n<offset_t>{static_cast<offset_t>(match_every_nth)});
   bool all_results_correct = thrust::equal(out.cbegin(), out.cend(), expected_out_it);
   REQUIRE(all_results_correct == true);
 }

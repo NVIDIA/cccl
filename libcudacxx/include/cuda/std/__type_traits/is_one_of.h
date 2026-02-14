@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_ONE_OF
-#define _LIBCUDACXX___TYPE_TRAITS_IS_ONE_OF
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_ONE_OF_H
+#define _CUDA_STD___TYPE_TRAITS_IS_ONE_OF_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,13 +25,13 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <typename T, typename... TArgs>
 inline constexpr bool __is_one_of_v = (is_same_v<T, TArgs> || ...);
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_ONE_OF
+#endif // _CUDA_STD___TYPE_TRAITS_IS_ONE_OF_H

@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TUPLE_MAKE_TUPLE_INDICES_H
-#define _LIBCUDACXX___TUPLE_MAKE_TUPLE_INDICES_H
+#ifndef _CUDA_STD___TUPLE_MAKE_TUPLE_INDICES_H
+#define _CUDA_STD___TUPLE_MAKE_TUPLE_INDICES_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,7 +25,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <size_t _Ep, size_t _Sp = 0>
 struct __make_tuple_indices
@@ -37,8 +37,8 @@ struct __make_tuple_indices
 template <size_t _Ep, size_t _Sp = 0>
 using __make_tuple_indices_t = typename __make_tuple_indices<_Ep, _Sp>::type;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TUPLE_MAKE_TUPLE_INDICES_H
+#endif // _CUDA_STD___TUPLE_MAKE_TUPLE_INDICES_H

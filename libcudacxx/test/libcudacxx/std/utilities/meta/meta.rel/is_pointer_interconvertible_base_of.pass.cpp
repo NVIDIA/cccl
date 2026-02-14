@@ -11,6 +11,8 @@
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 struct BaseA
 {};
 
@@ -34,7 +36,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES NonStandard
     : BaseA
     , BaseB
 {
-  virtual ~NonStandard() = default;
+  TEST_NVRTC_VIRTUAL_DEFAULT_DTOR_ANNOTATION virtual ~NonStandard() = default;
 
   int m;
 };

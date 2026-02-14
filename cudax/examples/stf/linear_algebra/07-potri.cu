@@ -1517,10 +1517,10 @@ void run(int N, int NB)
   cudaEvent_t startEvent, stopEvent;
 
   cuda_safe_call(cudaSetDevice(0));
-  cuda_safe_call(cudaStreamSynchronize(ctx.task_fence()));
+  cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
   cuda_safe_call(cudaEventCreate(&startEvent));
   cuda_safe_call(cudaEventCreate(&stopEvent));
-  cuda_safe_call(cudaEventRecord(startEvent, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(startEvent, ctx.fence()));
 
   ctx.get_dot()->set_current_color("green");
   PDPOTRF(A);
@@ -1613,7 +1613,7 @@ void run(int N, int NB)
   }
 
   cuda_safe_call(cudaSetDevice(0));
-  cuda_safe_call(cudaEventRecord(stopEvent, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(stopEvent, ctx.fence()));
 
   ctx.finalize();
 

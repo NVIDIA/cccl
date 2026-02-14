@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
+
 // test numeric_limits
 
 // max_exponent10
@@ -38,9 +41,9 @@ int main(int, char**)
   test<signed char>();
   test<unsigned char>();
   test<wchar_t>();
-#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
   test<char8_t>();
-#endif
+#endif // _CCCL_HAS_CHAR8_T()
   test<char16_t>();
   test<char32_t>();
   test<short>();

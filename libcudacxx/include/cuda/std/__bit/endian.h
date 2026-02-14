@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___BIT_ENDIAN_H
-#define _LIBCUDACXX___BIT_ENDIAN_H
+#ifndef _CUDA_STD___BIT_ENDIAN_H
+#define _CUDA_STD___BIT_ENDIAN_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,7 +23,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 enum class endian
 {
@@ -32,8 +32,8 @@ enum class endian
   native = _CCCL_ENDIAN_NATIVE(),
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___BIT_ENDIAN_H
+#endif // _CUDA_STD___BIT_ENDIAN_H

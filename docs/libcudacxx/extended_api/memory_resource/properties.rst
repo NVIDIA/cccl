@@ -67,10 +67,10 @@ require a stateful property with ``cuda::has_property_with`` as shown in the exa
    template<class MemoryResource>
    void* allocate_check_alignment(MemoryResource& resource, std::size_t size) {
        if constexpr(cuda::has_property_with<MemoryResource, required_alignment, std::size_t>) {
-           return resource.allocate(size, get_property(resource, required_alignment{}));
+           return resource.allocate_sync(size, get_property(resource, required_alignment{}));
        } else {
            // Use default alignment
-           return resource.allocate(size, 42);
+           return resource.allocate_sync(size, 42);
        }
    }
 
@@ -83,11 +83,11 @@ base type at all. This common use case is covered by ``cuda::forward_property``,
    class logging_resource : cuda::forward_property<logging_resource<MemoryResource>, MemoryResource> {
        MemoryResource base;
    public:
-       void* allocate(std::size_t size, std::size_t alignment) {
+       void* allocate_sync(std::size_t size, std::size_t alignment) {
            std::cout << "allocating\n";
-           return base.allocate(size, alignment);
+           return base.allocate_sync(size, alignment);
        }
-       void deallocate(void* ptr, std::size_t size, std::size_t alignment) noexcept {
+       void deallocate_sync(void* ptr, std::size_t size, std::size_t alignment) noexcept {
            std::cout << "deallocating\n";
            return base.deallocate(ptr, size, alignment);
        }

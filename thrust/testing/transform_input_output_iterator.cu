@@ -7,15 +7,15 @@
 
 #include <unittest/unittest.h>
 
-// There is an unfortunate miscompilation of the gcc-13 vectorizer leading to OOB writes
+// There is an unfortunate miscompilation of the gcc-12/gcc-13 vectorizer leading to OOB writes
 // Adding this attribute suffices that this miscompilation does not appear anymore
-#if _CCCL_COMPILER(GCC, >=, 13)
+#if _CCCL_COMPILER(GCC, >=, 12)
 #  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
-#else // _CCCL_COMPILER(GCC, <, 13)
+#else // _CCCL_COMPILER(GCC, <, 12)
 #  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 #endif
 
-// ensure that we properly support thrust::reverse_iterator from cuda::std
+// ensure that we properly support thrust::transform_input_output_iterator from cuda::std
 void TestTransformInputOutputIteratorTraits()
 {
   using input_func  = ::cuda::std::negate<int>;
@@ -34,7 +34,7 @@ void TestTransformInputOutputIteratorTraits()
 
   static_assert(cuda::std::is_same_v<thrust::iterator_traversal_t<it>, thrust::random_access_traversal_tag>);
 
-  static_assert(cuda::std::__is_cpp17_random_access_iterator<it>::value);
+  static_assert(cuda::std::__has_random_access_traversal<it>);
 
   static_assert(!cuda::std::output_iterator<it, int>);
   static_assert(cuda::std::input_iterator<it>);

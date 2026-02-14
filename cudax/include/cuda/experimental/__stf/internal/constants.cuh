@@ -29,7 +29,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Encodes an access mode (read, write, redux, ...)
  */
@@ -58,6 +57,7 @@ inline access_mode operator|(access_mode lhs, access_mode rhs)
   return access_mode(as_underlying(lhs) | as_underlying(rhs));
 }
 
+//! @brief In-place version of `operator|`
 inline access_mode& operator|=(access_mode& lhs, access_mode rhs)
 {
   return lhs = lhs | rhs;
@@ -98,5 +98,4 @@ inline const char* access_mode_string(access_mode mode)
  */
 class no_init
 {};
-
 } // namespace cuda::experimental::stf

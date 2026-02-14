@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file tuple.h
  *  \brief A type encapsulating a heterogeneous collection of elements.
@@ -59,12 +46,18 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see pair
  *  \see tuple
+ *
+ *  \deprecated Use cuda::std::tuple_element instead
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 #ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
 template <size_t N, class T>
-using tuple_element = _CUDA_VSTD::tuple_element<N, T>;
+using tuple_element = ::cuda::std::tuple_element<N, T>;
 #else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
-using _CUDA_VSTD::tuple_element;
+using ::cuda::std::tuple_element;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 /*! This metafunction returns the number of elements
@@ -74,12 +67,18 @@ using _CUDA_VSTD::tuple_element;
  *
  *  \see pair
  *  \see tuple
+ *
+ *  \deprecated Use cuda::std::tuple_size instead
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 #ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
 template <class T>
-using tuple_size = _CUDA_VSTD::tuple_size<T>;
+using tuple_size = ::cuda::std::tuple_size<T>;
 #else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
-using _CUDA_VSTD::tuple_size;
+using ::cuda::std::tuple_size;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 /*! \brief \p tuple is a heterogeneous, fixed-size collection of values.
@@ -118,20 +117,23 @@ using _CUDA_VSTD::tuple_size;
  *  \see tuple_element
  *  \see tuple_size
  *  \see tie
+ *
+ *  \deprecated Use cuda::std::tuple instead
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 #ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
 template <class... Ts>
-using tuple = _CUDA_VSTD::tuple<T...>;
+using tuple = ::cuda::std::tuple<T...>;
 #else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
-using _CUDA_VSTD::tuple;
+using ::cuda::std::tuple;
 #endif // _CCCL_DOXYGEN_INVOKED
 
-using _CUDA_VSTD::get;
-using _CUDA_VSTD::make_tuple;
-using _CUDA_VSTD::tie;
-
-/*! \endcond
- */
+using ::cuda::std::get;
+using ::cuda::std::make_tuple;
+using ::cuda::std::tie;
 
 /*! \} // tuple
  */

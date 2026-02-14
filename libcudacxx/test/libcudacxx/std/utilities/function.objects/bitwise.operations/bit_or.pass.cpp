@@ -10,7 +10,7 @@
 
 // bit_or
 
-// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
@@ -39,7 +39,7 @@ __global__ void test_global_kernel()
 
 int main(int, char**)
 {
-  typedef cuda::std::bit_or<int> F;
+  using F   = cuda::std::bit_or<int>;
   const F f = F();
 #if TEST_STD_VER <= 2017
   static_assert((cuda::std::is_same<int, F::first_argument_type>::value), "");
@@ -52,7 +52,7 @@ int main(int, char**)
   assert(f(0x58D3, 0) == 0x58D3);
   assert(f(0xFFFF, 0x58D3) == 0xFFFF);
 
-  typedef cuda::std::bit_or<> F2;
+  using F2    = cuda::std::bit_or<>;
   const F2 f2 = F2();
   assert(f2(0xEA95, 0xEA95) == 0xEA95);
   assert(f2(0xEA95L, 0xEA95) == 0xEA95);

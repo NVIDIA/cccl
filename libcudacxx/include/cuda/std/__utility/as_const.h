@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___UTILITY_AS_CONST_H
-#define _LIBCUDACXX___UTILITY_AS_CONST_H
+#ifndef _CUDA_STD___UTILITY_AS_CONST_H
+#define _CUDA_STD___UTILITY_AS_CONST_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,9 +22,30 @@
 
 #include <cuda/std/__type_traits/add_const.h>
 
+#if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 12)
+#  define _CCCL_HAS_BUILTIN_STD_AS_CONST() 1
+#else // ^^^ has builtin std::as_const ^^^ / vvv no builtin std::as_const vvv
+#  define _CCCL_HAS_BUILTIN_STD_AS_CONST() 0
+#endif // ^^^ no builtin std::as_const ^^^
+
+// nvcc warns about host only std::as_const being used in device code
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_HAS_BUILTIN_STD_AS_CONST
+#  define _CCCL_HAS_BUILTIN_STD_AS_CONST() 0
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+
+// include minimal std:: headers
+#if _CCCL_HAS_BUILTIN_STD_AS_CONST()
+#  if _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__utility/as_const.h>)
+#    include <__utility/as_const.h>
+#  elif !_CCCL_COMPILER(NVRTC)
+#    include <utility>
+#  endif
+#endif // _CCCL_HAS_BUILTIN_STD_AS_CONST()
+
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_BUILTIN_STD_AS_CONST()
 
@@ -35,7 +56,7 @@ using ::std::as_const;
 #else // ^^^ _CCCL_HAS_BUILTIN_STD_AS_CONST() ^^^ / vvv !_CCCL_HAS_BUILTIN_STD_AS_CONST() vvv
 
 template <class _Tp>
-[[nodiscard]] _CCCL_INTRINSIC _LIBCUDACXX_HIDE_FROM_ABI constexpr add_const_t<_Tp>& as_const(_Tp& __t) noexcept
+[[nodiscard]] _CCCL_INTRINSIC _CCCL_API constexpr add_const_t<_Tp>& as_const(_Tp& __t) noexcept
 {
   return __t;
 }
@@ -43,10 +64,10 @@ template <class _Tp>
 template <class _Tp>
 void as_const(const _Tp&&) = delete;
 
-#endif // _CCCL_HAS_BUILTIN_STD_AS_CONST()
+#endif // ^^^ !_CCCL_HAS_BUILTIN_STD_AS_CONST() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___UTILITY_AS_CONST_H
+#endif // _CUDA_STD___UTILITY_AS_CONST_H

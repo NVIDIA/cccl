@@ -10,7 +10,7 @@
 
 // modulus
 
-// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
@@ -39,7 +39,7 @@ __global__ void test_global_kernel()
 
 int main(int, char**)
 {
-  typedef cuda::std::modulus<int> F;
+  using F   = cuda::std::modulus<int>;
   const F f = F();
 #if TEST_STD_VER <= 2017
   static_assert((cuda::std::is_same<int, F::first_argument_type>::value), "");
@@ -48,7 +48,7 @@ int main(int, char**)
 #endif // TEST_STD_VER <= 2017
   assert(f(36, 8) == 4);
 
-  typedef cuda::std::modulus<> F2;
+  using F2    = cuda::std::modulus<>;
   const F2 f2 = F2();
   assert(f2(36, 8) == 4);
   assert(f2(36L, 8) == 4);

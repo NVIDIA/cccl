@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #undef NDEBUG
 #include <algorithm>
@@ -56,8 +32,8 @@ static __device__ bool operator==(const custom_t& lhs, const custom_t& rhs)
 
 struct decomposer_t
 {
-  __device__ ::cuda::std::tuple<float&, long long int&> //
-  operator()(custom_t & key) const
+  __device__ cuda::std::tuple<float&, long long int&> //
+  operator()(custom_t& key) const
   {
     return {key.f, key.lli};
   }
@@ -139,7 +115,7 @@ __global__ void sort_keys_bits()
   // decompose(in[1]) = 01000010001010011001100110011010 00010000000000...0000
   //                    <-----------  higher bits  /  lower bits  ----------->
   //
-  // The bit subrange `[60, 68)` specifies differentiating key bits:
+  // The bit subrange [60, 68) specifies differentiating key bits:
   //
   //                    <------------- fp32 -----------> <------ int64 ------>
   // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
@@ -236,7 +212,7 @@ __global__ void sort_keys_descending_bits()
   // decompose(in[1]) = 01000001110000011001100110011010 00100000000000...0000
   //                    <-----------  higher bits  /  lower bits  ----------->
   //
-  // The bit subrange `[60, 68)` specifies differentiating key bits:
+  // The bit subrange [60, 68) specifies differentiating key bits:
   //
   //                    <------------- fp32 -----------> <------ int64 ------>
   // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
@@ -349,7 +325,7 @@ __global__ void sort_pairs_bits()
   // decompose(in[1]) = 01000010001010011001100110011010 00010000000000...0000
   //                    <-----------  higher bits  /  lower bits  ----------->
   //
-  // The bit subrange `[60, 68)` specifies differentiating key bits:
+  // The bit subrange [60, 68) specifies differentiating key bits:
   //
   //                    <------------- fp32 -----------> <------ int64 ------>
   // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
@@ -468,7 +444,7 @@ __global__ void sort_pairs_descending_bits()
   // decompose(in[1]) = 01000001110000011001100110011010 00100000000000...0000
   //                    <-----------  higher bits  /  lower bits  ----------->
   //
-  // The bit subrange `[60, 68)` specifies differentiating key bits:
+  // The bit subrange [60, 68) specifies differentiating key bits:
   //
   //                    <------------- fp32 -----------> <------ int64 ------>
   // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
@@ -573,7 +549,7 @@ __global__ void sort_keys_blocked_to_striped_bits()
   // decompose(in[3]) = 01000010001010011001100110011010 00001000000000...0000
   //                    <-----------  higher bits  /  lower bits  ----------->
   //
-  // The bit subrange `[60, 68)` specifies differentiating key bits:
+  // The bit subrange [60, 68) specifies differentiating key bits:
   //
   //                    <------------- fp32 -----------> <------ int64 ------>
   // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0100xxxxxxxxxx...xxxx
@@ -692,7 +668,7 @@ __global__ void sort_pairs_blocked_to_striped_bits()
   // decompose(in[3]) = 01000010001010011001100110011010 00001000000000...0000
   //                    <-----------  higher bits  /  lower bits  ----------->
   //
-  // The bit subrange `[60, 68)` specifies differentiating key bits:
+  // The bit subrange [60, 68) specifies differentiating key bits:
   //
   //                    <------------- fp32 -----------> <------ int64 ------>
   // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0100xxxxxxxxxx...xxxx
@@ -802,7 +778,7 @@ __global__ void sort_keys_descending_blocked_to_striped_bits()
   // decompose(in[3]) = 01000010001010011001100110011010 00001000000000...0000
   //                    <-----------  higher bits  /  lower bits  ----------->
   //
-  // The bit subrange `[60, 68)` specifies differentiating key bits:
+  // The bit subrange [60, 68) specifies differentiating key bits:
   //
   //                    <------------- fp32 -----------> <------ int64 ------>
   // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0100xxxxxxxxxx...xxxx
@@ -926,7 +902,7 @@ __global__ void sort_pairs_descending_blocked_to_striped_bits()
   // decompose(in[3]) = 01000010001010011001100110011010 00001000000000...0000
   //                    <-----------  higher bits  /  lower bits  ----------->
   //
-  // The bit subrange `[60, 68)` specifies differentiating key bits:
+  // The bit subrange [60, 68) specifies differentiating key bits:
   //
   //                    <------------- fp32 -----------> <------ int64 ------>
   // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0100xxxxxxxxxx...xxxx

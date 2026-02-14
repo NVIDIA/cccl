@@ -30,7 +30,6 @@
 #include <cuda/std/__barrier/poll_tester.h>
 
 //! TODO: Drop cuda only features
-#include <cuda/__barrier/aligned_size.h>
 #include <cuda/__barrier/barrier.h>
 #include <cuda/__barrier/barrier_arrive_tx.h>
 #include <cuda/__barrier/barrier_block_scope.h>

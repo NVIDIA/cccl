@@ -6,6 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: msvc && nvcc-12.0
+
 // <algorithm>
 
 // template<InputIterator InIter, typename OutIter>
@@ -13,7 +15,7 @@
 //   OutIter
 //   move(InIter first, InIter last, OutIter result);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #if defined(_LIBCUDACXX_HAS_MEMORY)
 #  include <cuda/std/memory>

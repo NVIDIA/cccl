@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/memory.h
  *  \brief Abstractions for Thrust's memory model.
@@ -41,102 +28,6 @@ THRUST_NAMESPACE_BEGIN
 /*! \addtogroup memory_management Memory Management
  *  \{
  */
-
-// define pointer for the purpose of Doxygenating it
-// it is actually defined elsewhere
-#if 0
-/*! \p pointer stores a pointer to an object allocated in memory. Like \p device_ptr, this
- *  type ensures type safety when dispatching standard algorithms on ranges resident in memory.
- *
- *  \p pointer generalizes \p device_ptr by relaxing the backend system associated with the \p pointer.
- *  Instead of the backend system specified by \p THRUST_DEVICE_SYSTEM, \p pointer's
- *  system is given by its second template parameter, \p Tag. For the purpose of Thrust dispatch,
- *  <tt>device_ptr<Element></tt> and <tt>pointer<Element,device_system_tag></tt> are considered equivalent.
- *
- *  The raw pointer encapsulated by a \p pointer may be obtained through its <tt>get</tt> member function
- *  or the \p raw_pointer_cast free function.
- *
- *  \tparam Element specifies the type of the pointed-to object.
- *
- *  \tparam Tag specifies the system with which this \p pointer is associated. This may be any Thrust
- *          backend system, or a user-defined tag.
- *
- *  \tparam Reference allows the client to specify the reference type returned upon derereference.
- *          By default, this type is <tt>reference<Element,pointer></tt>.
- *
- *  \tparam Derived allows the client to specify the name of the derived type when \p pointer is used as
- *          a base class. This is useful to ensure that arithmetic on values of the derived type return
- *          values of the derived type as a result. By default, this type is <tt>pointer<Element,Tag,Reference></tt>.
- *
- *  \note \p pointer is not a smart pointer; it is the client's responsibility to deallocate memory
- *        pointer to by \p pointer.
- *
- *  \see device_ptr
- *  \see reference
- *  \see raw_pointer_cast
- */
-template<typename Element, typename Tag, typename Reference = thrust::use_default, typename Derived = thrust::use_default>
-  class pointer
-{
-  public:
-    /*! The type of the raw pointer
-     */
-    using raw_pointer = typename super_t::base_type;
-
-    /*! \p pointer's default constructor initializes its encapsulated pointer to \c 0
-     */
-    _CCCL_HOST_DEVICE
-    pointer();
-
-    /*! This constructor allows construction of a <tt>pointer<const T, ...></tt> from a <tt>T*</tt>.
-     *
-     *  \param ptr A raw pointer to copy from, presumed to point to a location in \p Tag's memory.
-     *  \tparam OtherElement \p OtherElement shall be convertible to \p Element.
-     */
-    template<typename OtherElement>
-    _CCCL_HOST_DEVICE
-    explicit pointer(OtherElement *ptr);
-
-    /*! This constructor allows initialization from another pointer-like object.
-     *
-     *  \param other The \p OtherPointer to copy.
-     *
-     *  \tparam OtherPointer The tag associated with \p OtherPointer shall be convertible to \p Tag,
-     *                       and its element type shall be convertible to \p Element.
-     */
-    template<typename OtherPointer>
-    _CCCL_HOST_DEVICE
-    pointer(const OtherPointer &other,
-            typename thrust::detail::enable_if_pointer_is_convertible<
-              OtherPointer,
-              pointer<Element,Tag,Reference,Derived>
-            >::type * = 0);
-
-    /*! Assignment operator allows assigning from another pointer-like object whose element type
-     *  is convertible to \c Element.
-     *
-     *  \param other The other pointer-like object to assign from.
-     *  \return <tt>*this</tt>
-     *
-     *  \tparam OtherPointer The tag associated with \p OtherPointer shall be convertible to \p Tag,
-     *                       and its element type shall be convertible to \p Element.
-     */
-    template<typename OtherPointer>
-    _CCCL_HOST_DEVICE
-    typename thrust::detail::enable_if_pointer_is_convertible<
-      OtherPointer,
-      pointer,
-      derived_type &
-    >::type
-    operator=(const OtherPointer &other);
-
-    /*! \p get returns this \p pointer's encapsulated raw pointer.
-     *  \return This \p pointer's raw pointer.
-     */
-    _CCCL_HOST_DEVICE
-    Element *get() const;
-};
-#endif
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Doxygen cannot handle both versions
 
@@ -171,6 +62,10 @@ template<typename Element, typename Tag, typename Reference = thrust::use_defaul
  *
  *  \see free
  *  \see device_malloc
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy>
 _CCCL_HOST_DEVICE pointer<void, DerivedPolicy>
@@ -210,6 +105,10 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::
  *
  *  \see free
  *  \see device_malloc
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T, typename DerivedPolicy>
 _CCCL_HOST_DEVICE pointer<T, DerivedPolicy>
@@ -244,7 +143,7 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::
  *  // allocate storage for 100 ints with thrust::get_temporary_buffer
  *  const int N = 100;
  *
- *  using ptr_and_size_t = thrust::pair<
+ *  using ptr_and_size_t = cuda::std::pair<
  *    thrust::pointer<int,thrust::device_system_tag>,
  *    std::ptrdiff_t
  *  >;
@@ -264,10 +163,14 @@ malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::
  *
  *  \see malloc
  *  \see return_temporary_buffer
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T, typename DerivedPolicy>
-_CCCL_HOST_DEVICE
-thrust::pair<thrust::pointer<T, DerivedPolicy>, typename thrust::pointer<T, DerivedPolicy>::difference_type>
+_CCCL_HOST_DEVICE ::cuda::std::pair<thrust::pointer<T, DerivedPolicy>,
+                                    typename thrust::pointer<T, DerivedPolicy>::difference_type>
 get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>& system,
                      typename thrust::pointer<T, DerivedPolicy>::difference_type n);
 
@@ -299,6 +202,10 @@ get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>&
  *  // deallocate ptr with thrust::free
  *  thrust::free(device_sys, ptr);
  *  \endcode
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename Pointer>
 _CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedPolicy>& system, Pointer ptr);
@@ -326,7 +233,7 @@ _CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedP
  *  // allocate storage for 100 ints with thrust::get_temporary_buffer
  *  const int N = 100;
  *
- *  using ptr_and_size_t = thrust::pair<
+ *  using ptr_and_size_t = cuda::std::pair<
  *    thrust::pointer<int,thrust::device_system_tag>,
  *    std::ptrdiff_t
  *  >;
@@ -346,6 +253,10 @@ _CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedP
  *
  *  \see free
  *  \see get_temporary_buffer
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename Pointer>
 _CCCL_HOST_DEVICE void return_temporary_buffer(
@@ -357,6 +268,10 @@ _CCCL_HOST_DEVICE void return_temporary_buffer(
  *  \param ptr The pointer of interest.
  *  \return <tt>ptr.get()</tt>, if the expression is well formed; <tt>ptr</tt>, otherwise.
  *  \see raw_reference_cast
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename Pointer>
 _CCCL_HOST_DEVICE typename thrust::detail::pointer_traits<Pointer>::raw_pointer raw_pointer_cast(Pointer ptr);
@@ -367,10 +282,14 @@ _CCCL_HOST_DEVICE typename thrust::detail::pointer_traits<Pointer>::raw_pointer 
  *  If the argument is not a reference wrapper, the result is a reference to the argument.
  *
  *  \param ref The reference of interest.
- *  \return <tt>*thrust::raw_pointer_cast(&ref)</tt>.
+ *  \return The raw reference obtained by dereferencing the result of \p raw_pointer_cast applied to the address of ref.
  *  \note There are two versions of \p raw_reference_cast. One for <tt>const</tt> references,
  *        and one for non-<tt>const</tt>.
  *  \see raw_pointer_cast
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T& ref);
@@ -381,10 +300,14 @@ _CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T& 
  *  If the argument is not a reference wrapper, the result is a reference to the argument.
  *
  *  \param ref The reference of interest.
- *  \return <tt>*thrust::raw_pointer_cast(&ref)</tt>.
+ *  \return The raw reference obtained by dereferencing the result of \p raw_pointer_cast applied to the address of ref.
  *  \note There are two versions of \p raw_reference_cast. One for <tt>const</tt> references,
  *        and one for non-<tt>const</tt>.
  *  \see raw_pointer_cast
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename T>
 _CCCL_HOST_DEVICE typename detail::raw_reference<const T>::type raw_reference_cast(const T& ref);

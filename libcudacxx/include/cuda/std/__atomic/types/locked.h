@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMIC_TYPES_LOCKED_H
-#define _LIBCUDACXX___ATOMIC_TYPES_LOCKED_H
+#ifndef _CUDA_STD___ATOMIC_TYPES_LOCKED_H
+#define _CUDA_STD___ATOMIC_TYPES_LOCKED_H
 
 #include <cuda/std/detail/__config>
 
@@ -29,7 +29,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // Locked atomics must override the dispatch to be able to implement RMW primitives around the embedded lock.
 template <typename _Tp>
@@ -39,7 +39,7 @@ struct __atomic_locked_storage
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_locked_tag;
 
   _Tp __a_value;
-  mutable __atomic_storage<_LIBCUDACXX_ATOMIC_FLAG_TYPE> __a_lock;
+  mutable __atomic_storage<_CCCL_ATOMIC_FLAG_TYPE> __a_lock;
 
   _CCCL_HIDE_FROM_ABI explicit constexpr __atomic_locked_storage() noexcept = default;
 
@@ -51,24 +51,24 @@ struct __atomic_locked_storage
   template <typename _Sco>
   _CCCL_HOST_DEVICE inline void __lock(_Sco) const volatile noexcept
   {
-    while (1 == __atomic_exchange_dispatch(&__a_lock, _LIBCUDACXX_ATOMIC_FLAG_TYPE(true), memory_order_acquire, _Sco{}))
+    while (1 == __atomic_exchange_dispatch(&__a_lock, _CCCL_ATOMIC_FLAG_TYPE(true), memory_order_acquire, _Sco{}))
       /*spin*/;
   }
   template <typename _Sco>
   _CCCL_HOST_DEVICE inline void __lock(_Sco) const noexcept
   {
-    while (1 == __atomic_exchange_dispatch(&__a_lock, _LIBCUDACXX_ATOMIC_FLAG_TYPE(true), memory_order_acquire, _Sco{}))
+    while (1 == __atomic_exchange_dispatch(&__a_lock, _CCCL_ATOMIC_FLAG_TYPE(true), memory_order_acquire, _Sco{}))
       /*spin*/;
   }
   template <typename _Sco>
   _CCCL_HOST_DEVICE inline void __unlock(_Sco) const volatile noexcept
   {
-    __atomic_store_dispatch(&__a_lock, _LIBCUDACXX_ATOMIC_FLAG_TYPE(false), memory_order_release, _Sco{});
+    __atomic_store_dispatch(&__a_lock, _CCCL_ATOMIC_FLAG_TYPE(false), memory_order_release, _Sco{});
   }
   template <typename _Sco>
   _CCCL_HOST_DEVICE inline void __unlock(_Sco) const noexcept
   {
-    __atomic_store_dispatch(&__a_lock, _LIBCUDACXX_ATOMIC_FLAG_TYPE(false), memory_order_release, _Sco{});
+    __atomic_store_dispatch(&__a_lock, _CCCL_ATOMIC_FLAG_TYPE(false), memory_order_release, _Sco{});
   }
 };
 
@@ -218,8 +218,8 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_xor_dispatch(_Sto* __a, _Up __patte
   return __old;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ATOMIC_TYPES_LOCKED_H
+#endif // _CUDA_STD___ATOMIC_TYPES_LOCKED_H

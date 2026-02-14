@@ -43,7 +43,7 @@ public:
 
 int main(int, char**)
 {
-  typedef cuda::std::iterator_traits<not_an_iterator> It;
+  using It = cuda::std::iterator_traits<not_an_iterator>;
   static_assert(!(has_value_type<It>::value), "");
 
   return 0;

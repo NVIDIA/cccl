@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include <cub/config.cuh>
 
@@ -173,9 +149,9 @@ void __global__ __launch_bounds__(
   kernel_test_info->uses_vsmem_ptr =
     (reinterpret_cast<char*>(&temp_storage)
      == (static_cast<char*>(vsmem.gmem_ptr) + (blockIdx.x * vsmem_helper_t::vsmem_per_block)));
-  kernel_test_info->uses_fallback_agent = ::cuda::std::is_same_v<typename vsmem_helper_t::agent_t, fallback_agent_t>;
+  kernel_test_info->uses_fallback_agent = cuda::std::is_same_v<typename vsmem_helper_t::agent_t, fallback_agent_t>;
   kernel_test_info->uses_fallback_policy =
-    ::cuda::std::is_same_v<typename vsmem_helper_t::agent_policy_t, fallback_policy_t>;
+    cuda::std::is_same_v<typename vsmem_helper_t::agent_policy_t, fallback_policy_t>;
 
   // Instantiate the algorithm's agent
   agent_t agent(temp_storage, d_in, d_out);
@@ -298,7 +274,7 @@ struct dispatch_dummy_algorithm_t
     constexpr auto block_threads    = vsmem_helper_t::agent_policy_t::BLOCK_THREADS;
     constexpr auto items_per_thread = vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD;
     constexpr auto tile_size        = block_threads * items_per_thread;
-    const auto num_tiles            = ::cuda::ceil_div(num_items, tile_size);
+    const auto num_tiles            = cuda::ceil_div(num_items, tile_size);
     const auto total_vsmem          = num_tiles * vsmem_helper_t::vsmem_per_block;
 
     // Get device ordinal
@@ -307,7 +283,7 @@ struct dispatch_dummy_algorithm_t
     // Compute temporary storage requirements
     void* allocations[1]            = {nullptr};
     std::size_t allocation_sizes[1] = {total_vsmem};
-    error = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    error = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
     if (cudaSuccess != error)
     {
       return error;

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_ADVANCE_H
-#define _LIBCUDACXX___ITERATOR_ADVANCE_H
+#ifndef _CUDA_STD___ITERATOR_ADVANCE_H
+#define _CUDA_STD___ITERATOR_ADVANCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,22 +31,22 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIter,
           class _Distance,
-          class _IntegralDistance = decltype(_CUDA_VSTD::__convert_to_integral(_CUDA_VSTD::declval<_Distance>())),
-          class                   = enable_if_t<is_integral<_IntegralDistance>::value>>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void advance(_InputIter& __i, _Distance __orig_n)
+          class _IntegralDistance = decltype(::cuda::std::__convert_to_integral(::cuda::std::declval<_Distance>())),
+          class                   = enable_if_t<is_integral_v<_IntegralDistance>>>
+_CCCL_API constexpr void advance(_InputIter& __i, _Distance __orig_n)
 {
   using _Difference = typename iterator_traits<_InputIter>::difference_type;
-  _Difference __n   = static_cast<_Difference>(_CUDA_VSTD::__convert_to_integral(__orig_n));
-  if constexpr (__is_cpp17_random_access_iterator<_InputIter>::value) // To support pointers to incomplete types
+  _Difference __n   = static_cast<_Difference>(::cuda::std::__convert_to_integral(__orig_n));
+  if constexpr (__has_random_access_traversal<_InputIter>) // To support pointers to incomplete types
   {
     __i += __n;
   }
-  else if constexpr (__is_cpp17_bidirectional_iterator<_InputIter>::value)
+  else if constexpr (__has_bidirectional_traversal<_InputIter>)
   {
     if (__n >= 0)
     {
@@ -73,19 +73,18 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void advance(_InputIter& __i, _Distance __or
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 // [range.iter.op.advance]
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
-_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__advance)
+_CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
+_CCCL_BEGIN_NAMESPACE_CPO(__advance)
 struct __fn
 {
 private:
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter_difference>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto
-  __magnitude_geq(_Iter_difference __a, _Iter_difference __b) noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto __magnitude_geq(_Iter_difference __a, _Iter_difference __b) noexcept
   {
     return __a == 0 ? __b == 0 : //
              __a > 0 ? __a >= __b
@@ -98,7 +97,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Ip& __i, iter_difference_t<_Ip> __n) const
+  _CCCL_API constexpr void operator()(_Ip& __i, iter_difference_t<_Ip> __n) const
   {
     _CCCL_ASSERT(__n >= 0 || bidirectional_iterator<_Ip>, "If `n < 0`, then `bidirectional_iterator<I>` must be true.");
 
@@ -139,12 +138,12 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip> _CCCL_AND sentinel_for<_Sp, _Ip>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Ip& __i, _Sp __bound_sentinel) const
+  _CCCL_API constexpr void operator()(_Ip& __i, _Sp __bound_sentinel) const
   {
     // If `I` and `S` model `assignable_from<I&, S>`, equivalent to `i = std::move(bound_sentinel)`.
     if constexpr (assignable_from<_Ip&, _Sp>)
     {
-      __i = _CUDA_VSTD::move(__bound_sentinel);
+      __i = ::cuda::std::move(__bound_sentinel);
     }
     // Otherwise, if `S` and `I` model `sized_sentinel_for<S, I>`,
     // equivalent to `ranges::advance(i, bound_sentinel - i)`.
@@ -171,8 +170,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip> _CCCL_AND sentinel_for<_Sp, _Ip>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Ip>
-  operator()(_Ip& __i, iter_difference_t<_Ip> __n, _Sp __bound_sentinel) const
+  _CCCL_API constexpr iter_difference_t<_Ip> operator()(_Ip& __i, iter_difference_t<_Ip> __n, _Sp __bound_sentinel) const
   {
     _CCCL_ASSERT((__n >= 0) || (bidirectional_iterator<_Ip> && same_as<_Ip, _Sp>),
                  "If `n < 0`, then `bidirectional_iterator<I> && same_as<I, S>` must be true.");
@@ -213,18 +211,17 @@ public:
       }
       return __n;
     }
-    _CCCL_UNREACHABLE();
   }
 };
-_LIBCUDACXX_END_NAMESPACE_CPO
+_CCCL_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
 _CCCL_GLOBAL_CONSTANT auto advance = __advance::__fn{};
 } // namespace __cpo
 
-_LIBCUDACXX_END_NAMESPACE_RANGES
+_CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_ADVANCE_H
+#endif // _CUDA_STD___ITERATOR_ADVANCE_H

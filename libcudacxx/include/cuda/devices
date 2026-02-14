@@ -1,0 +1,33 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_DEVICES
+#define _CUDA_DEVICES
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/__device/all_devices.h>
+#include <cuda/__device/arch_id.h>
+#include <cuda/__device/arch_traits.h>
+#include <cuda/__device/attributes.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/__device/device_ref.h>
+#include <cuda/__device/physical_device.h>
+#include <cuda/version>
+
+#endif // _CUDA_DEVICES

@@ -1,4 +1,4 @@
--- _stf_lower_level_api
+.. _stf_lower_level_api:
 
 Lower-level API
 ===============

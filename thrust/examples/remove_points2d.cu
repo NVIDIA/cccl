@@ -2,8 +2,6 @@
 #include <thrust/random.h>
 #include <thrust/remove.h>
 
-#include "include/host_device.h"
-
 // This example generates random points in the
 // unit square [0,1)x[0,1) and then removes all
 // points where x^2 + y^2 > 1
@@ -18,8 +16,8 @@ struct is_outside_circle
   inline __host__ __device__ bool operator()(const Tuple& tuple) const
   {
     // unpack the tuple into x and y coordinates
-    const T x = thrust::get<0>(tuple);
-    const T y = thrust::get<1>(tuple);
+    const T x = cuda::std::get<0>(tuple);
+    const T y = cuda::std::get<1>(tuple);
 
     if (x * x + y * y > 1)
     {
@@ -50,7 +48,7 @@ int main()
   // print the initial points
   std::cout << std::fixed;
   std::cout << "Generated " << N << " points" << std::endl;
-  for (size_t i = 0; i < N; i++)
+  for (size_t i = 0; i < x.size(); i++)
   {
     std::cout << "(" << x[i] << "," << y[i] << ")" << std::endl;
   }
@@ -69,7 +67,7 @@ int main()
 
   // print the filtered points
   std::cout << "After stream compaction, " << new_size << " points remain" << std::endl;
-  for (size_t i = 0; i < new_size; i++)
+  for (size_t i = 0; i < x.size(); i++)
   {
     std::cout << "(" << x[i] << "," << y[i] << ")" << std::endl;
   }

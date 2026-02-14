@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -36,36 +13,38 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
+
+#  include <cub/block/block_load.cuh>
+#  include <cub/iterator/cache_modified_input_iterator.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/mpl/math.h>
 #  include <thrust/detail/temporary_array.h>
-#  include <thrust/distance.h>
 #  include <thrust/extrema.h>
-#  include <thrust/pair.h>
 #  include <thrust/set_operations.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/get_value.h>
-#  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
+#  include <cuda/std/__bit/popcount.h>
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub
 {
-
 namespace __set_operations
 {
-
 template <bool UpperBound, class IntT, class Size, class It, class T, class Comp>
-THRUST_DEVICE_FUNCTION void binary_search_iteration(It data, Size& begin, Size& end, T key, int shift, Comp comp)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
+binary_search_iteration(It data, Size& begin, Size& end, T key, int shift, Comp comp)
 {
   IntT scale = (1 << shift) - 1;
   Size mid   = (begin + scale * end) >> shift;
@@ -83,7 +62,7 @@ THRUST_DEVICE_FUNCTION void binary_search_iteration(It data, Size& begin, Size& 
 }
 
 template <bool UpperBound, class Size, class T, class It, class Comp>
-THRUST_DEVICE_FUNCTION Size binary_search(It data, Size count, T key, Comp comp)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE Size binary_search(It data, Size count, T key, Comp comp)
 {
   Size begin = 0;
   Size end   = count;
@@ -95,7 +74,7 @@ THRUST_DEVICE_FUNCTION Size binary_search(It data, Size count, T key, Comp comp)
 }
 
 template <bool UpperBound, class IntT, class Size, class T, class It, class Comp>
-THRUST_DEVICE_FUNCTION Size biased_binary_search(It data, Size count, T key, IntT levels, Comp comp)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE Size biased_binary_search(It data, Size count, T key, IntT levels, Comp comp)
 {
   Size begin = 0;
   Size end   = count;
@@ -125,7 +104,7 @@ THRUST_DEVICE_FUNCTION Size biased_binary_search(It data, Size count, T key, Int
 }
 
 template <bool UpperBound, class Size, class It1, class It2, class Comp>
-THRUST_DEVICE_FUNCTION Size merge_path(It1 a, Size aCount, It2 b, Size bCount, Size diag, Comp comp)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE Size merge_path(It1 a, Size aCount, It2 b, Size bCount, Size diag, Comp comp)
 {
   using T = thrust::detail::it_value_t<It1>;
 
@@ -151,7 +130,7 @@ THRUST_DEVICE_FUNCTION Size merge_path(It1 a, Size aCount, It2 b, Size bCount, S
 }
 
 template <class It1, class It2, class Size, class Size2, class CompareOp>
-THRUST_DEVICE_FUNCTION pair<Size, Size>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::pair<Size, Size>
 balanced_path(It1 keys1, It2 keys2, Size num_keys1, Size num_keys2, Size diag, Size2 levels, CompareOp compare_op)
 {
   using T = thrust::detail::it_value_t<It1>;
@@ -193,7 +172,7 @@ balanced_path(It1 keys1, It2 keys2, Size num_keys1, Size num_keys2, Size diag, S
 
     index1 = start1 + advance1;
   }
-  return thrust::make_pair(index1, (diag - index1) + star);
+  return ::cuda::std::make_pair(index1, (diag - index1) + star);
 } // func balanced_path
 
 template <int _BLOCK_THREADS,
@@ -203,12 +182,9 @@ template <int _BLOCK_THREADS,
           cub::BlockScanAlgorithm _SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS>
 struct PtxPolicy
 {
-  enum
-  {
-    BLOCK_THREADS    = _BLOCK_THREADS,
-    ITEMS_PER_THREAD = _ITEMS_PER_THREAD,
-    ITEMS_PER_TILE   = _BLOCK_THREADS * _ITEMS_PER_THREAD - 1
-  };
+  static constexpr int BLOCK_THREADS    = _BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD = _ITEMS_PER_THREAD;
+  static constexpr int ITEMS_PER_TILE   = _BLOCK_THREADS * _ITEMS_PER_THREAD - 1;
 
   static const cub::BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
   static const cub::CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
@@ -218,24 +194,16 @@ struct PtxPolicy
 template <class Arch, class T, class U>
 struct Tuning;
 
-namespace mpl = thrust::detail::mpl::math;
-
 template <class T, class U>
 struct Tuning<core::detail::sm52, T, U>
 {
-  enum
-  {
-    MAX_INPUT_BYTES             = mpl::max<size_t, sizeof(T), sizeof(U)>::value,
-    COMBINED_INPUT_BYTES        = sizeof(T), // + sizeof(U),
-    NOMINAL_4B_ITEMS_PER_THREAD = 15,
-    ITEMS_PER_THREAD =
-      mpl::min<int,
-               NOMINAL_4B_ITEMS_PER_THREAD,
-               mpl::max<int,
-                        1,
-                        static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1)
-                                         / COMBINED_INPUT_BYTES)>::value>::value,
-  };
+  static constexpr int MAX_INPUT_BYTES             = static_cast<int>(::cuda::std::max(sizeof(T), sizeof(U)));
+  static constexpr int COMBINED_INPUT_BYTES        = sizeof(T); // + sizeof(U)
+  static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 15;
+  static constexpr int ITEMS_PER_THREAD            = ::cuda::std::min(
+    NOMINAL_4B_ITEMS_PER_THREAD,
+    ::cuda::std::max(
+      1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES)));
 
   using type =
     PtxPolicy<256, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
@@ -244,23 +212,21 @@ struct Tuning<core::detail::sm52, T, U>
 template <class T, class U>
 struct Tuning<core::detail::sm60, T, U>
 {
-  enum
-  {
-    MAX_INPUT_BYTES             = mpl::max<size_t, sizeof(T), sizeof(U)>::value,
-    COMBINED_INPUT_BYTES        = sizeof(T), // + sizeof(U),
-    NOMINAL_4B_ITEMS_PER_THREAD = 19,
-    ITEMS_PER_THREAD =
-      mpl::min<int,
-               NOMINAL_4B_ITEMS_PER_THREAD,
-               mpl::max<int,
-                        1,
-                        static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1)
-                                         / COMBINED_INPUT_BYTES)>::value>::value,
-  };
+  static constexpr int MAX_INPUT_BYTES             = static_cast<int>(::cuda::std::max(sizeof(T), sizeof(U)));
+  static constexpr int COMBINED_INPUT_BYTES        = sizeof(T); // + sizeof(U),
+  static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 19;
+  static constexpr int ITEMS_PER_THREAD            = ::cuda::std::min(
+    NOMINAL_4B_ITEMS_PER_THREAD,
+    ::cuda::std::max(
+      1, static_cast<int>(((NOMINAL_4B_ITEMS_PER_THREAD * 4) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES)));
 
   using type =
     PtxPolicy<512, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>;
 }; // tuning sm60
+
+// a helper metaprogram that returns type of a block loader
+template <class PtxPlan, class It, class T = thrust::detail::it_value_t<It>>
+using BlockLoad = cub::BlockLoad<T, PtxPlan::BLOCK_THREADS, PtxPlan::ITEMS_PER_THREAD, PtxPlan::LOAD_ALGORITHM, 1, 1>;
 
 template <class KeysIt1,
           class KeysIt2,
@@ -289,15 +255,15 @@ struct SetOpAgent
   {
     using tuning = Tuning<Arch, key_type, value_type>;
 
-    using KeysLoadIt1   = typename core::detail::LoadIterator<PtxPlan, KeysIt1>::type;
-    using KeysLoadIt2   = typename core::detail::LoadIterator<PtxPlan, KeysIt2>::type;
-    using ValuesLoadIt1 = typename core::detail::LoadIterator<PtxPlan, ValuesIt1>::type;
-    using ValuesLoadIt2 = typename core::detail::LoadIterator<PtxPlan, ValuesIt2>::type;
+    using KeysLoadIt1   = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, KeysIt1>;
+    using KeysLoadIt2   = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, KeysIt2>;
+    using ValuesLoadIt1 = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, ValuesIt1>;
+    using ValuesLoadIt2 = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, ValuesIt2>;
 
-    using BlockLoadKeys1   = typename core::detail::BlockLoad<PtxPlan, KeysLoadIt1>::type;
-    using BlockLoadKeys2   = typename core::detail::BlockLoad<PtxPlan, KeysLoadIt2>::type;
-    using BlockLoadValues1 = typename core::detail::BlockLoad<PtxPlan, ValuesLoadIt1>::type;
-    using BlockLoadValues2 = typename core::detail::BlockLoad<PtxPlan, ValuesLoadIt2>::type;
+    using BlockLoadKeys1   = BlockLoad<PtxPlan, KeysLoadIt1>;
+    using BlockLoadKeys2   = BlockLoad<PtxPlan, KeysLoadIt2>;
+    using BlockLoadValues1 = BlockLoad<PtxPlan, ValuesLoadIt1>;
+    using BlockLoadValues2 = BlockLoad<PtxPlan, ValuesLoadIt2>;
 
     using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, ::cuda::std::plus<>, ScanTileState>;
 
@@ -352,11 +318,8 @@ struct SetOpAgent
 
   using TempStorage = typename ptx_plan::TempStorage;
 
-  enum
-  {
-    ITEMS_PER_THREAD = ptx_plan::ITEMS_PER_THREAD,
-    BLOCK_THREADS    = ptx_plan::BLOCK_THREADS,
-  };
+  static constexpr int ITEMS_PER_THREAD = ptx_plan::ITEMS_PER_THREAD;
+  static constexpr int BLOCK_THREADS    = ptx_plan::BLOCK_THREADS;
 
   struct impl
   {
@@ -376,7 +339,7 @@ struct SetOpAgent
     ValuesOutputIt values_out;
     CompareOp compare_op;
     SetOp set_op;
-    pair<Size, Size>* partitions;
+    ::cuda::std::pair<Size, Size>* partitions;
     std::size_t* output_count;
 
     //---------------------------------------------------------------------
@@ -384,7 +347,7 @@ struct SetOpAgent
     //---------------------------------------------------------------------
 
     template <bool IS_FULL_TILE, class T, class It1, class It2>
-    THRUST_DEVICE_FUNCTION void
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void
     gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, int count2)
     {
       if (IS_FULL_TILE)
@@ -420,7 +383,7 @@ struct SetOpAgent
     }
 
     template <class T, class It>
-    THRUST_DEVICE_FUNCTION void reg_to_shared(It output, T (&input)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[ITEMS_PER_THREAD])
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
@@ -431,7 +394,7 @@ struct SetOpAgent
     }
 
     template <class OutputIt, class T, class SharedIt>
-    void THRUST_DEVICE_FUNCTION scatter(
+    void _CCCL_DEVICE_API _CCCL_FORCEINLINE scatter(
       OutputIt output,
       T (&input)[ITEMS_PER_THREAD],
       SharedIt shared,
@@ -458,7 +421,7 @@ struct SetOpAgent
       }
     }
 
-    int THRUST_DEVICE_FUNCTION serial_set_op(
+    int _CCCL_DEVICE_API _CCCL_FORCEINLINE serial_set_op(
       key_type* keys,
       int keys1_beg,
       int keys2_beg,
@@ -479,12 +442,12 @@ struct SetOpAgent
     //---------------------------------------------------------------------
 
     template <bool IS_LAST_TILE>
-    void THRUST_DEVICE_FUNCTION consume_tile(Size tile_idx)
+    void _CCCL_DEVICE_API _CCCL_FORCEINLINE consume_tile(Size tile_idx)
     {
       using core::detail::uninitialized_array;
 
-      pair<Size, Size> partition_beg = partitions[tile_idx + 0];
-      pair<Size, Size> partition_end = partitions[tile_idx + 1];
+      ::cuda::std::pair<Size, Size> partition_beg = partitions[tile_idx + 0];
+      ::cuda::std::pair<Size, Size> partition_end = partitions[tile_idx + 1];
 
       Size keys1_beg = partition_beg.first;
       Size keys1_end = partition_end.first;
@@ -507,7 +470,7 @@ struct SetOpAgent
 
       int diag_loc = min<int>(ITEMS_PER_THREAD * threadIdx.x, num_keys1 + num_keys2);
 
-      pair<int, int> partition_loc = balanced_path(
+      ::cuda::std::pair<int, int> partition_loc = balanced_path(
         &storage.load_storage.keys_shared[0],
         &storage.load_storage.keys_shared[num_keys1],
         num_keys1,
@@ -528,7 +491,7 @@ struct SetOpAgent
 
       __syncthreads();
 
-      pair<int, int> partition1_loc = thrust::make_pair(
+      ::cuda::std::pair<int, int> partition1_loc = ::cuda::std::make_pair(
         storage.load_storage.offset[threadIdx.x] >> 16, storage.load_storage.offset[threadIdx.x] & 0xFFFF);
 
       int keys1_end_loc = partition1_loc.first;
@@ -562,7 +525,7 @@ struct SetOpAgent
       Size tile_output_count    = 0;
       Size thread_output_prefix = 0;
       Size tile_output_prefix   = 0;
-      Size thread_output_count  = static_cast<Size>(__popc(active_mask));
+      Size thread_output_count  = static_cast<Size>(::cuda::std::popcount(static_cast<unsigned>(active_mask)));
 
       if (tile_idx == 0) // first tile
       {
@@ -597,7 +560,7 @@ struct SetOpAgent
               tile_output_prefix,
               tile_output_count);
 
-      if (HAS_VALUES::value)
+      if constexpr (HAS_VALUES::value)
       {
         value_type values_loc[ITEMS_PER_THREAD];
         gmem_to_reg<!IS_LAST_TILE>(values_loc, values1_in + keys1_beg, values2_in + keys2_beg, num_keys1, num_keys2);
@@ -640,27 +603,27 @@ struct SetOpAgent
     // Constructor
     //---------------------------------------------------------------------
 
-    THRUST_DEVICE_FUNCTION
-    impl(TempStorage& storage_,
-         ScanTileState& tile_state_,
-         KeysIt1 keys1_,
-         KeysIt2 keys2_,
-         ValuesIt1 values1_,
-         ValuesIt2 values2_,
-         Size keys1_count_,
-         Size keys2_count_,
-         KeysOutputIt keys_out_,
-         ValuesOutputIt values_out_,
-         CompareOp compare_op_,
-         SetOp set_op_,
-         pair<Size, Size>* partitions_,
-         std::size_t* output_count_)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE impl(
+      TempStorage& storage_,
+      ScanTileState& tile_state_,
+      KeysIt1 keys1_,
+      KeysIt2 keys2_,
+      ValuesIt1 values1_,
+      ValuesIt2 values2_,
+      Size keys1_count_,
+      Size keys2_count_,
+      KeysOutputIt keys_out_,
+      ValuesOutputIt values_out_,
+      CompareOp compare_op_,
+      SetOp set_op_,
+      ::cuda::std::pair<Size, Size>* partitions_,
+      std::size_t* output_count_)
         : storage(storage_)
         , tile_state(tile_state_)
-        , keys1_in(core::detail::make_load_iterator(ptx_plan(), keys1_))
-        , keys2_in(core::detail::make_load_iterator(ptx_plan(), keys2_))
-        , values1_in(core::detail::make_load_iterator(ptx_plan(), values1_))
-        , values2_in(core::detail::make_load_iterator(ptx_plan(), values2_))
+        , keys1_in(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(keys1_))
+        , keys2_in(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(keys2_))
+        , values1_in(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(values1_))
+        , values2_in(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(values2_))
         , keys1_count(keys1_count_)
         , keys2_count(keys2_count_)
         , keys_out(keys_out_)
@@ -699,7 +662,7 @@ struct SetOpAgent
     ValuesOutputIt values_output,
     CompareOp compare_op,
     SetOp set_op,
-    pair<Size, Size>* partitions,
+    ::cuda::std::pair<Size, Size>* partitions,
     std::size_t* output_count,
     ScanTileState tile_state,
     char* shmem)
@@ -742,7 +705,7 @@ struct PartitionAgent
     Size keys1_count,
     Size keys2_count,
     Size num_partitions,
-    pair<Size, Size>* partitions,
+    ::cuda::std::pair<Size, Size>* partitions,
     CompareOp compare_op,
     int items_per_tile,
     char* /*shmem*/)
@@ -750,8 +713,9 @@ struct PartitionAgent
     Size partition_idx = blockDim.x * blockIdx.x + threadIdx.x;
     if (partition_idx < num_partitions)
     {
-      Size partition_at         = min<Size>(partition_idx * items_per_tile, keys1_count + keys2_count);
-      pair<Size, Size> diag     = balanced_path(keys1, keys2, keys1_count, keys2_count, partition_at, 4ll, compare_op);
+      Size partition_at = min<Size>(partition_idx * items_per_tile, keys1_count + keys2_count);
+      ::cuda::std::pair<Size, Size> diag =
+        balanced_path(keys1, keys2, keys1_count, keys2_count, partition_at, 4ll, compare_op);
       partitions[partition_idx] = diag;
     }
   }
@@ -787,7 +751,7 @@ struct serial_set_intersection
 {
   // max_input_size <= 32
   template <class T, class CompareOp, int ITEMS_PER_THREAD>
-  int THRUST_DEVICE_FUNCTION operator()(
+  int _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
@@ -842,7 +806,7 @@ struct serial_set_symmetric_difference
 {
   // max_input_size <= 32
   template <class T, class CompareOp, int ITEMS_PER_THREAD>
-  int THRUST_DEVICE_FUNCTION operator()(
+  int _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
@@ -904,7 +868,7 @@ struct serial_set_difference
 {
   // max_input_size <= 32
   template <class T, class CompareOp, int ITEMS_PER_THREAD>
-  int THRUST_DEVICE_FUNCTION operator()(
+  int _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
@@ -966,7 +930,7 @@ struct serial_set_union
 {
   // max_input_size <= 32
   template <class T, class CompareOp, int ITEMS_PER_THREAD>
-  int THRUST_DEVICE_FUNCTION operator()(
+  int _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(
     T* keys,
     int keys1_beg,
     int keys2_beg,
@@ -1095,8 +1059,8 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   status = tile_state.Init(static_cast<int>(num_tiles), allocations[0], allocation_sizes[0]);
   _CUDA_CUB_RET_IF_FAIL(status);
 
-  pair<Size, Size>* partitions = (pair<Size, Size>*) allocations[1];
-  char* vshmem_ptr             = vshmem_storage > 0 ? (char*) allocations[2] : nullptr;
+  ::cuda::std::pair<Size, Size>* partitions = (::cuda::std::pair<Size, Size>*) allocations[1];
+  char* vshmem_ptr                          = vshmem_storage > 0 ? (char*) allocations[2] : nullptr;
 
   init_agent ia(init_plan, num_tiles, stream, "set_op::init_agent");
   ia.launch(tile_state, num_tiles);
@@ -1136,7 +1100,7 @@ template <typename HAS_VALUES,
           typename ValuesOutputIt,
           typename CompareOp,
           typename SetOp>
-THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> set_operations(
+THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> set_operations(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -1156,7 +1120,7 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> set_operations(
 
   if (num_keys1 + num_keys2 == 0)
   {
-    return thrust::make_pair(keys_output, values_output);
+    return ::cuda::std::make_pair(keys_output, values_output);
   }
 
   size_t temp_storage_bytes = 0;
@@ -1227,7 +1191,7 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> set_operations(
 
   std::size_t output_count = cuda_cub::get_value(policy, d_output_count);
 
-  return thrust::make_pair(keys_output + output_count, values_output + output_count);
+  return ::cuda::std::make_pair(keys_output + output_count, values_output + output_count);
 }
 } // namespace __set_operations
 
@@ -1438,7 +1402,7 @@ template <class Derived,
           class KeysOutputIt,
           class ItemsOutputIt,
           class CompareOp>
-pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_difference_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_difference_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -1450,7 +1414,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_difference_by_key(
   ItemsOutputIt items_result,
   CompareOp compare_op)
 {
-  auto ret = thrust::make_pair(keys_result, items_result);
+  auto ret = ::cuda::std::make_pair(keys_result, items_result);
   THRUST_CDP_DISPATCH(
     (ret = __set_operations::set_operations<thrust::detail::true_type>(
        policy,
@@ -1479,7 +1443,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_difference_by_key(
 }
 
 template <class Derived, class KeysIt1, class KeysIt2, class ItemsIt1, class ItemsIt2, class KeysOutputIt, class ItemsOutputIt>
-pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_difference_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_difference_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -1515,7 +1479,7 @@ template <class Derived,
           class KeysOutputIt,
           class ItemsOutputIt,
           class CompareOp>
-pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_intersection_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_intersection_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -1526,7 +1490,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_intersection_by_key(
   ItemsOutputIt items_result,
   CompareOp compare_op)
 {
-  auto ret = thrust::make_pair(keys_result, items_result);
+  auto ret = ::cuda::std::make_pair(keys_result, items_result);
   THRUST_CDP_DISPATCH(
     (ret = __set_operations::set_operations<thrust::detail::true_type>(
        policy,
@@ -1554,7 +1518,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_intersection_by_key(
 }
 
 template <class Derived, class KeysIt1, class KeysIt2, class ItemsIt1, class ItemsIt2, class KeysOutputIt, class ItemsOutputIt>
-pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_intersection_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_intersection_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -1588,7 +1552,7 @@ template <class Derived,
           class KeysOutputIt,
           class ItemsOutputIt,
           class CompareOp>
-pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_symmetric_difference_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_symmetric_difference_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -1600,7 +1564,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_symmetric_difference_by_
   ItemsOutputIt items_result,
   CompareOp compare_op)
 {
-  auto ret = thrust::make_pair(keys_result, items_result);
+  auto ret = ::cuda::std::make_pair(keys_result, items_result);
   THRUST_CDP_DISPATCH(
     (ret = __set_operations::set_operations<thrust::detail::true_type>(
        policy,
@@ -1629,7 +1593,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_symmetric_difference_by_
 }
 
 template <class Derived, class KeysIt1, class KeysIt2, class ItemsIt1, class ItemsIt2, class KeysOutputIt, class ItemsOutputIt>
-pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_symmetric_difference_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_symmetric_difference_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -1665,7 +1629,7 @@ template <class Derived,
           class KeysOutputIt,
           class ItemsOutputIt,
           class CompareOp>
-pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -1677,7 +1641,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
   ItemsOutputIt items_result,
   CompareOp compare_op)
 {
-  auto ret = thrust::make_pair(keys_result, items_result);
+  auto ret = ::cuda::std::make_pair(keys_result, items_result);
   THRUST_CDP_DISPATCH(
     (ret = __set_operations::set_operations<thrust::detail::true_type>(
        policy,
@@ -1706,7 +1670,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
 }
 
 template <class Derived, class KeysIt1, class KeysIt2, class ItemsIt1, class ItemsIt2, class KeysOutputIt, class ItemsOutputIt>
-pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
+::cuda::std::pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
   execution_policy<Derived>& policy,
   KeysIt1 keys1_first,
   KeysIt1 keys1_last,
@@ -1730,7 +1694,6 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
     items_result,
     ::cuda::std::less<value_type>());
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

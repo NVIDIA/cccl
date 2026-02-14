@@ -30,7 +30,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Designates execution that is to run on a specific CUDA stream
  *
@@ -50,14 +49,14 @@ public:
     }
 
     /* We set the current device to be the device on which the CUDA stream was created */
-    exec_place activate(backend_ctx_untyped& bctx) const override
+    exec_place activate() const override
     {
-      return exec_place::device(dstream.dev_id).activate(bctx);
+      return exec_place::device(dstream.dev_id).activate();
     }
 
-    void deactivate(backend_ctx_untyped& bctx, const exec_place& prev) const override
+    void deactivate(const exec_place& prev) const override
     {
-      return exec_place::device(dstream.dev_id).deactivate(bctx, prev);
+      return exec_place::device(dstream.dev_id).deactivate(prev);
     }
 
     stream_pool& get_stream_pool(async_resources_handle&, bool) const override
@@ -68,6 +67,33 @@ public:
     ::std::string to_string() const override
     {
       return "exec(stream id=" + ::std::to_string(dstream.id) + " dev=" + ::std::to_string(dstream.dev_id) + ")";
+    }
+
+    bool operator==(const exec_place::impl& rhs) const override
+    {
+      if (typeid(*this) != typeid(rhs))
+      {
+        return false;
+      }
+      const auto& other = static_cast<const impl&>(rhs);
+      // Compare by stream handle
+      return dstream.stream == other.dstream.stream;
+    }
+
+    size_t hash() const override
+    {
+      // Hash the stream handle, not the affine data place
+      return ::std::hash<cudaStream_t>()(dstream.stream);
+    }
+
+    bool operator<(const exec_place::impl& rhs) const override
+    {
+      if (typeid(*this) != typeid(rhs))
+      {
+        return typeid(*this).before(typeid(rhs));
+      }
+      const auto& other = static_cast<const impl&>(rhs);
+      return dstream.stream < other.dstream.stream;
     }
 
   private:
@@ -95,5 +121,4 @@ inline exec_place_cuda_stream exec_place::cuda_stream(const decorated_stream& ds
 {
   return exec_place_cuda_stream(dstream);
 }
-
 } // end namespace cuda::experimental::stf

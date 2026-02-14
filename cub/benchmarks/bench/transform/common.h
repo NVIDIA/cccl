@@ -5,115 +5,84 @@
 
 // keep checks at the top so compilation of discarded variants fails really fast
 #include <cub/device/dispatch/dispatch_transform.cuh>
-#if !TUNE_BASE && TUNE_ALGORITHM == 1
+#if !TUNE_BASE
 #  if _CCCL_PP_COUNT(__CUDA_ARCH_LIST__) != 1
 #    error "When tuning, this benchmark does not support being compiled for multiple architectures"
 #  endif
-#  if (__CUDA_ARCH_LIST__) < 900
-#    error "Cannot compile algorithm 4 (ublkcp) below sm90"
-#  endif
-#  ifndef _CUB_HAS_TRANSFORM_UBLKCP
-#    error "Cannot tune for ublkcp algorithm, which is not provided by CUB (old CTK?)"
-#  endif
-#endif
+#  if TUNE_ALGORITHM == 3
+#    if (__CUDA_ARCH_LIST__) < 900
+#      error "Cannot compile algorithm 3 (ublkcp) below sm90"
+#    endif
+#  endif // TUNE_ALGORITHM == 3
+#endif // !TUNE_BASE
 
 #include <cub/util_namespace.cuh>
 
+#include <cuda/__numeric/narrow.h>
 #include <cuda/std/type_traits>
 
 #include <stdexcept>
 
 #include <nvbench_helper.cuh>
 
-template <typename... RandomAccessIteratorsIn>
-#if TUNE_BASE
-using policy_hub_t = cub::detail::transform::policy_hub<false, ::cuda::std::tuple<RandomAccessIteratorsIn...>>;
-#else
-struct policy_hub_t
+#if !TUNE_BASE
+struct policy_selector
 {
-  struct max_policy : cub::ChainedPolicy<500, max_policy, max_policy>
+  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> cub::detail::transform::transform_policy
   {
-    static constexpr int min_bif    = cub::detail::transform::arch_to_min_bytes_in_flight(__CUDA_ARCH_LIST__);
-    static constexpr auto algorithm = static_cast<cub::detail::transform::Algorithm>(TUNE_ALGORITHM);
-    using algo_policy =
-      ::cuda::std::_If<algorithm == cub::detail::transform::Algorithm::prefetch,
-                       cub::detail::transform::prefetch_policy_t<TUNE_THREADS>,
-                       cub::detail::transform::async_copy_policy_t<TUNE_THREADS>>;
-  };
-};
-#endif
-
-#ifdef TUNE_T
-using element_types = nvbench::type_list<TUNE_T>;
-#else
-using element_types =
-  nvbench::type_list<std::int8_t,
-                     std::int16_t,
-                     float,
-                     double
-#  ifdef NVBENCH_HELPER_HAS_I128
-                     ,
-                     __int128
-#  endif
-                     >;
-#endif
-
-// BabelStream uses 2^25, H200 can fit 2^31 int128s
-// 2^20 chars / 2^16 int128 saturate V100 (min_bif =12 * SM count =80)
-// 2^21 chars / 2^17 int128 saturate A100 (min_bif =16 * SM count =108)
-// 2^23 chars / 2^19 int128 saturate H100/H200 HBM3 (min_bif =32or48 * SM count =132)
-// inline auto array_size_powers = std::vector<nvbench::int64_t>{28};
-inline auto array_size_powers = nvbench::range(16, 28, 4);
-
-template <typename OffsetT,
-          typename... RandomAccessIteratorsIn,
-          typename RandomAccessIteratorOut,
-          typename TransformOp,
-          typename ExecTag = decltype(nvbench::exec_tag::no_batch)>
-void bench_transform(
-  nvbench::state& state,
-  ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
-  RandomAccessIteratorOut output,
-  OffsetT num_items,
-  TransformOp transform_op,
-  ExecTag exec_tag = nvbench::exec_tag::no_batch)
-{
-  state.exec(nvbench::exec_tag::gpu | exec_tag, [&](const nvbench::launch& launch) {
-    cub::detail::transform::dispatch_t<
-      cub::detail::transform::requires_stable_address::no,
-      OffsetT,
-      ::cuda::std::tuple<RandomAccessIteratorsIn...>,
-      RandomAccessIteratorOut,
-      TransformOp,
-      policy_hub_t<RandomAccessIteratorsIn...>>::dispatch(inputs, output, num_items, transform_op, launch.get_stream());
-  });
-}
-
-// Modified from BabelStream to also work for integers
-inline constexpr auto startA      = 1; // BabelStream: 0.1
-inline constexpr auto startB      = 2; // BabelStream: 0.2
-inline constexpr auto startC      = 3; // BabelStream: 0.1
-inline constexpr auto startScalar = 4; // BabelStream: 0.4
-
-// TODO(bgruber): we should put those somewhere into libcu++:
-// from C++ GSL
-struct narrowing_error : std::runtime_error
-{
-  narrowing_error()
-      : std::runtime_error("Narrowing error")
-  {}
-};
-
-// from C++ GSL
-// implementation insipired by: https://github.com/microsoft/GSL/blob/main/include/gsl/narrow
-template <typename DstT, typename SrcT, ::cuda::std::enable_if_t<::cuda::std::is_arithmetic_v<SrcT>, int> = 0>
-constexpr DstT narrow(SrcT value)
-{
-  constexpr bool is_different_signedness = ::cuda::std::is_signed_v<SrcT> != ::cuda::std::is_signed_v<DstT>;
-  const auto converted                   = static_cast<DstT>(value);
-  if (static_cast<SrcT>(converted) != value || (is_different_signedness && ((converted < DstT{}) != (value < SrcT{}))))
-  {
-    throw narrowing_error{};
+    const int min_bytes_in_flight =
+      cub::detail::transform::arch_to_min_bytes_in_flight(::cuda::arch_id{__CUDA_ARCH_LIST__ / 10}) + TUNE_BIF_BIAS;
+#  if TUNE_ALGORITHM == 0
+    constexpr auto algorithm = cub::detail::transform::Algorithm::prefetch;
+    constexpr auto policy    = cub::detail::transform::prefetch_policy{
+      TUNE_THREADS
+#    ifdef TUNE_ITEMS_PER_THREAD_NO_INPUT
+      ,
+      TUNE_ITEMS_PER_THREAD_NO_INPUT
+#    endif // TUNE_ITEMS_PER_THREAD_NO_INPUT
+    };
+    return {min_bytes_in_flight, algorithm, policy, {}, {}};
+#  elif TUNE_ALGORITHM == 1
+    constexpr auto algorithm = cub::detail::transform::Algorithm::vectorized;
+    constexpr auto policy    = cub::detail::transform::vectorized_policy{
+      TUNE_THREADS, (1 << TUNE_VEC_SIZE_POW2) * TUNE_VECTORS_PER_THREAD, (1 << TUNE_VEC_SIZE_POW2)};
+    return {min_bytes_in_flight, algorithm, {}, policy, {}};
+#  elif TUNE_ALGORITHM == 2
+    constexpr auto algorithm = cub::detail::transform::Algorithm::memcpy_async;
+    constexpr auto policy =
+      cub::detail::transform::async_copy_policy{TUNE_THREADS, cub::detail::transform::ldgsts_size_and_align};
+    return {min_bytes_in_flight, algorithm, {}, {}, policy};
+#  elif TUNE_ALGORITHM == 3
+    constexpr auto algorithm = cub::detail::transform::Algorithm::ublkcp;
+    constexpr auto policy    = cub::detail::transform::async_copy_policy{
+      TUNE_THREADS, cub::detail::transform::bulk_copy_alignment(::cuda::arch_id{__CUDA_ARCH_LIST__ / 10})};
+    return {min_bytes_in_flight, algorithm, {}, {}, policy};
+#  else // TUNE_ALGORITHM
+#    error Policy hub does not yet implement the specified value for algorithm
+#  endif // TUNE_ALGORITHM
   }
-  return converted;
+};
+#endif // !TUNE_BASE
+
+template <typename OffsetT, typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename TransformOp>
+void bench_transform(nvbench::state& state,
+                     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
+                     RandomAccessIteratorOut output,
+                     OffsetT num_items,
+                     TransformOp transform_op)
+{
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](const nvbench::launch& launch) {
+    cub::detail::transform::dispatch<cub::detail::transform::requires_stable_address::no>(
+      inputs,
+      output,
+      num_items,
+      cub::detail::transform::always_true_predicate{},
+      transform_op,
+      launch.get_stream()
+#if !TUNE_BASE
+        ,
+      policy_selector{}
+#endif // !TUNE_BASE
+    );
+  });
 }

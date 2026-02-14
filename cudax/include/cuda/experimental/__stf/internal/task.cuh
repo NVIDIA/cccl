@@ -38,15 +38,12 @@
 
 namespace cuda::experimental::stf
 {
-
 namespace reserved
 {
-
 class mapping_id_tag
 {};
 
 using mapping_id_t = reserved::unique_id<reserved::mapping_id_tag>;
-
 } // end namespace reserved
 
 class backend_ctx_untyped;
@@ -121,6 +118,15 @@ private:
     // acquire the logical_data_untypeds accessed by the task
     event_list input_events;
 
+    // We make it mutable because presumably read-only access using this list
+    // may optimize it too
+    mutable event_list ready_prereqs;
+
+    auto& get_ready_prereqs() const
+    {
+      return ready_prereqs;
+    }
+
     // A string useful for debugging purpose
     mutable ::std::string symbol;
 
@@ -148,7 +154,9 @@ private:
     // composite data place when using a grid of places for example.
     data_place affine_data_place;
 
-    ::std::vector<::std::function<void()>> post_submission_hooks;
+    // Automatically capture work when this is a graph task (ignored with a
+    // CUDA stream backend).
+    bool enable_capture = false;
   };
 
 protected:
@@ -271,13 +279,16 @@ public:
   {
     return pimpl->e_place;
   }
+
   exec_place& get_exec_place()
   {
     return pimpl->e_place;
   }
+
   void set_exec_place(const exec_place& place)
   {
-    pimpl->e_place = place;
+    // This will both update the execution place and the affine data place
+    on(place);
   }
 
   /// Get and Set the affine data place of the task
@@ -345,6 +356,16 @@ public:
     return pimpl->input_events;
   }
 
+  void set_ready_prereqs(event_list _ready_prereqs)
+  {
+    pimpl->ready_prereqs = mv(_ready_prereqs);
+  }
+
+  event_list& get_ready_prereqs() const
+  {
+    return pimpl->ready_prereqs;
+  }
+
   // Get the unique task identifier
   int get_unique_id() const
   {
@@ -362,12 +383,14 @@ public:
     return ::std::hash<impl*>()(pimpl.get());
   }
 
-  void add_post_submission_hook(::std::vector<::std::function<void()>>& hooks)
+  void enable_capture()
   {
-    for (auto& h : hooks)
-    {
-      pimpl->post_submission_hooks.push_back(h);
-    }
+    pimpl->enable_capture = true;
+  }
+
+  bool is_capture_enabled() const
+  {
+    return pimpl->enable_capture;
   }
 
   /**
@@ -405,7 +428,6 @@ public:
 
 namespace reserved
 {
-
 /* This method lazily allocates data (possibly reclaiming memory) and copies data if needed */
 template <typename Data>
 void dep_allocate(
@@ -476,7 +498,6 @@ void dep_allocate(
     }
   }
 }
-
 } // end namespace reserved
 
 // inline size_t task_state::hash() const {
@@ -703,5 +724,4 @@ struct hash<task>
     return t.hash();
   }
 };
-
 } // namespace cuda::experimental::stf

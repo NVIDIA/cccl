@@ -9,7 +9,6 @@
 //===----------------------------------------------------------------------===//
 
 #include <cstdint>
-#include <iostream> // std::cerr
 #include <optional> // std::optional
 #include <string>
 
@@ -20,8 +19,41 @@
 #include "test_util.h"
 #include <cccl/c/radix_sort.h>
 
-using key_types = std::tuple<uint8_t, int16_t, uint32_t, double>;
-using item_t    = float;
+using key_types =
+  c2h::type_list<uint8_t,
+                 int16_t,
+                 uint32_t,
+#if _CCCL_HAS_NVFP16()
+                 __half,
+#endif
+                 double>;
+using item_t = float;
+
+template <typename KeyTy, typename ItemTy, bool descending = false, bool overwrite_okay = false>
+struct TestParameters
+{
+  using KeyT                             = KeyTy;
+  using ItemT                            = ItemTy;
+  static constexpr bool m_descending     = descending;
+  static constexpr bool m_overwrite_okay = overwrite_okay;
+
+  constexpr TestParameters() {}
+
+  bool is_descending() const
+  {
+    return m_descending;
+  }
+  bool is_overwrite_okay() const
+  {
+    return m_overwrite_okay;
+  }
+};
+
+using test_params_tuple =
+  c2h::type_list<TestParameters<c2h::get<0, key_types>, item_t, false, false>,
+                 TestParameters<c2h::get<1, key_types>, item_t, true, false>,
+                 TestParameters<c2h::get<2, key_types>, item_t, false, true>,
+                 TestParameters<c2h::get<3, key_types>, item_t, true, true>>;
 
 using BuildResultT = cccl_device_radix_sort_build_result_t;
 
@@ -42,8 +74,15 @@ auto& get_cache()
   return fixture<radix_sort_build_cache_t, Tag>::get_or_create().get_value();
 }
 
+template <bool CheckSASS = true>
 struct radix_sort_build
 {
+  static constexpr auto should_check_sass(int cc_major)
+  {
+    // TODO: re-enable w/ nvrtc version check
+    return CheckSASS && cc_major < 9;
+  }
+
   // operator arguments are (build_ptr, <all_args_of_algo_driver>, cc_major, cc_minor, <paths>)
   //   of all_args_of_algo_driver we pick out what gets passed to cccl_algo_build function
   CUresult operator()(
@@ -104,7 +143,7 @@ struct radix_sort_run
   }
 };
 
-template <typename BuildCache = radix_sort_build_cache_t, typename KeyT = std::string>
+template <bool CheckSASS = true, typename BuildCache = radix_sort_build_cache_t, typename KeyT = std::string>
 void radix_sort(
   cccl_sort_order_t sort_order,
   cccl_iterator_t d_keys_in,
@@ -121,7 +160,7 @@ void radix_sort(
   std::optional<BuildCache>& cache,
   const std::optional<KeyT>& lookup_key)
 {
-  AlgorithmExecute<BuildResultT, radix_sort_build, radix_sort_cleanup, radix_sort_run, BuildCache, KeyT>(
+  AlgorithmExecute<BuildResultT, radix_sort_build<CheckSASS>, radix_sort_cleanup, radix_sort_run, BuildCache, KeyT>(
     cache,
     lookup_key,
     sort_order,
@@ -139,35 +178,40 @@ void radix_sort(
 }
 
 struct DeviceRadixSort_SortKeys_Fixture_Tag;
-TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortKeys works", "[radix_sort]", key_types)
+C2H_TEST("DeviceRadixSort::SortKeys works", "[radix_sort]", test_params_tuple)
 {
+  using T     = c2h::get<0, TestType>;
+  using KeyT  = typename T::KeyT;
+  using ItemT = typename T::ItemT;
+
+  constexpr auto this_test_params = T();
   // We want a mix of small and large sizes because different implementations will be called
-  const int num_items      = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
-  const bool is_descending = GENERATE(false, true);
-  const auto order         = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
+  bool is_descending  = this_test_params.is_descending();
+  const auto order    = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
 
   const int begin_bit          = 0;
-  const int end_bit            = sizeof(TestType) * 8;
-  const bool is_overwrite_okay = GENERATE(false, true);
+  const int end_bit            = sizeof(KeyT) * 8;
+  const bool is_overwrite_okay = this_test_params.is_overwrite_okay();
   int selector                 = -1;
 
   static constexpr cccl_op_t decomposer_no_op{};
   static constexpr const char* unused_decomposer_retty = "";
 
   // problem descriptor: (order, TestType, item_t, is_overwrite_ok, items_present = false)
-  std::vector<TestType> input_keys    = make_shuffled_sequence<TestType>(num_items);
-  std::vector<TestType> expected_keys = input_keys;
+  std::vector<KeyT> input_keys    = make_shuffled_sequence<KeyT>(num_items);
+  std::vector<KeyT> expected_keys = input_keys;
 
-  pointer_t<TestType> input_keys_it(input_keys);
-  pointer_t<TestType> output_keys_it(num_items);
+  pointer_t<KeyT> input_keys_it(input_keys);
+  pointer_t<KeyT> output_keys_it(num_items);
 
-  pointer_t<item_t> input_items_it, output_items_it;
+  pointer_t<ItemT> input_items_it, output_items_it;
 
   auto& build_cache = get_cache<DeviceRadixSort_SortKeys_Fixture_Tag>();
 
   const std::string& key_string = KeyBuilder::join(
     {KeyBuilder::bool_as_key(is_descending),
-     KeyBuilder::type_as_key<TestType>(),
+     KeyBuilder::type_as_key<T>(),
      KeyBuilder::type_as_key<item_t>(),
      KeyBuilder::bool_as_key(is_overwrite_okay)});
   const auto& test_key = std::make_optional(key_string);
@@ -192,7 +236,7 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortKeys works", "[radix_sort]", key_t
 
   if (is_descending)
   {
-    std::sort(expected_keys.begin(), expected_keys.end(), std::greater<TestType>());
+    std::sort(expected_keys.begin(), expected_keys.end(), std::greater<KeyT>());
   }
   else
   {
@@ -200,19 +244,24 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortKeys works", "[radix_sort]", key_t
   }
 
   auto& output_keys = (is_overwrite_okay && selector == 0) ? input_keys_it : output_keys_it;
-  REQUIRE(expected_keys == std::vector<TestType>(output_keys));
+  REQUIRE(expected_keys == std::vector<KeyT>(output_keys));
 }
 
 struct DeviceRadixSort_SortPairs_Fixture_Tag;
-TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortPairs works", "[radix_sort]", key_types)
+C2H_TEST("DeviceRadixSort::SortPairs works", "[radix_sort]", test_params_tuple)
 {
-  const int num_items      = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
-  const bool is_descending = GENERATE(false, true);
-  const auto order         = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
+  using T     = c2h::get<0, TestType>;
+  using KeyT  = typename T::KeyT;
+  using ItemT = typename T::ItemT;
+
+  constexpr auto this_test_params = T();
+  const int num_items             = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
+  const bool is_descending        = this_test_params.is_descending();
+  const auto order                = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
 
   const int begin_bit          = 0;
-  const int end_bit            = sizeof(TestType) * 8;
-  const bool is_overwrite_okay = GENERATE(false, true);
+  const int end_bit            = sizeof(KeyT) * 8;
+  const bool is_overwrite_okay = this_test_params.is_overwrite_okay();
   int selector                 = -1;
 
   static constexpr cccl_op_t decomposer_no_op{};
@@ -220,31 +269,31 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortPairs works", "[radix_sort]", key_
 
   // problem descriptor in this example: (order, TestType, item_t, is_overwrite_ok)
 
-  std::vector<TestType> input_keys = make_shuffled_sequence<TestType>(num_items);
-  std::vector<item_t> input_items(num_items);
-  std::transform(input_keys.begin(), input_keys.end(), input_items.begin(), [](TestType key) {
-    return static_cast<item_t>(key);
+  std::vector<KeyT> input_keys = make_shuffled_sequence<KeyT>(num_items);
+  std::vector<ItemT> input_items(num_items);
+  std::transform(input_keys.begin(), input_keys.end(), input_items.begin(), [](KeyT key) {
+    return static_cast<ItemT>(key);
   });
 
-  std::vector<TestType> expected_keys = input_keys;
-  std::vector<item_t> expected_items  = input_items;
+  std::vector<KeyT> expected_keys   = input_keys;
+  std::vector<ItemT> expected_items = input_items;
 
-  pointer_t<TestType> input_keys_it(input_keys);
-  pointer_t<TestType> output_keys_it(num_items);
+  pointer_t<KeyT> input_keys_it(input_keys);
+  pointer_t<KeyT> output_keys_it(num_items);
 
-  pointer_t<item_t> input_items_it(input_items);
-  pointer_t<item_t> output_items_it(num_items);
+  pointer_t<ItemT> input_items_it(input_items);
+  pointer_t<ItemT> output_items_it(num_items);
 
   auto& build_cache = get_cache<DeviceRadixSort_SortPairs_Fixture_Tag>();
 
   const std::string& key_string = KeyBuilder::join(
     {KeyBuilder::bool_as_key(is_descending),
-     KeyBuilder::type_as_key<TestType>(),
-     KeyBuilder::type_as_key<item_t>(),
+     KeyBuilder::type_as_key<KeyT>(),
+     KeyBuilder::type_as_key<ItemT>(),
      KeyBuilder::bool_as_key(is_overwrite_okay)});
   const auto& test_key = std::make_optional(key_string);
 
-  radix_sort(
+  radix_sort<false>(
     order,
     input_keys_it,
     output_keys_it,
@@ -264,8 +313,8 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortPairs works", "[radix_sort]", key_
 
   if (is_descending)
   {
-    std::sort(expected_keys.begin(), expected_keys.end(), std::greater<TestType>());
-    std::sort(expected_items.begin(), expected_items.end(), std::greater<TestType>());
+    std::sort(expected_keys.begin(), expected_keys.end(), std::greater<KeyT>());
+    std::sort(expected_items.begin(), expected_items.end(), std::greater<ItemT>());
   }
   else
   {
@@ -275,6 +324,6 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortPairs works", "[radix_sort]", key_
 
   auto& output_keys  = (is_overwrite_okay && selector == 0) ? input_keys_it : output_keys_it;
   auto& output_items = (is_overwrite_okay && selector == 0) ? input_items_it : output_items_it;
-  REQUIRE(expected_keys == std::vector<TestType>(output_keys));
-  REQUIRE(expected_items == std::vector<item_t>(output_items));
+  REQUIRE(expected_keys == std::vector<KeyT>(output_keys));
+  REQUIRE(expected_items == std::vector<ItemT>(output_items));
 }

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file general_copy.h
  *  \brief Sequential copy algorithms for general iterators.
@@ -33,15 +20,10 @@
 #include <thrust/detail/type_traits.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace sequential
+namespace system::detail::sequential
 {
 namespace general_copy_detail
 {
-
 // sometimes OutputIterator's reference type is reported as void
 // in that case, just assume that we're able to assign to it OK
 template <typename InputIterator, typename OutputIterator>
@@ -86,7 +68,6 @@ iter_assign(OutputIterator dst, InputIterator src)
   // insert a temporary and hope for the best
   *dst = static_cast<value_type>(*src);
 }
-
 } // namespace general_copy_detail
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -122,8 +103,5 @@ _CCCL_HOST_DEVICE OutputIterator general_copy_n(InputIterator first, Size n, Out
 
   return result;
 } // end general_copy_n()
-
-} // end namespace sequential
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::sequential
 THRUST_NAMESPACE_END

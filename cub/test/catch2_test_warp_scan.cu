@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include <cub/util_arch.cuh>
 #include <cub/util_macro.cuh>
@@ -163,11 +139,11 @@ struct min_op_t
   {
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScan(thread_data, thread_data, ::cuda::minimum<>{});
+      scan.ExclusiveScan(thread_data, thread_data, cuda::minimum<>{});
     }
     else
     {
-      scan.InclusiveScan(thread_data, thread_data, ::cuda::minimum<>{});
+      scan.InclusiveScan(thread_data, thread_data, cuda::minimum<>{});
     }
   }
 };
@@ -185,11 +161,11 @@ struct min_aggregate_op_t
 
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScan(thread_data, thread_data, ::cuda::minimum<>{}, warp_aggregate);
+      scan.ExclusiveScan(thread_data, thread_data, cuda::minimum<>{}, warp_aggregate);
     }
     else
     {
-      scan.InclusiveScan(thread_data, thread_data, ::cuda::minimum<>{}, warp_aggregate);
+      scan.InclusiveScan(thread_data, thread_data, cuda::minimum<>{}, warp_aggregate);
     }
 
     const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
@@ -210,11 +186,11 @@ struct min_init_value_op_t
   {
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{});
+      scan.ExclusiveScan(thread_data, thread_data, initial_value, cuda::minimum<>{});
     }
     else
     {
-      scan.InclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{});
+      scan.InclusiveScan(thread_data, thread_data, initial_value, cuda::minimum<>{});
     }
   }
 };
@@ -233,11 +209,11 @@ struct min_init_value_aggregate_op_t
 
     if constexpr (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{}, warp_aggregate);
+      scan.ExclusiveScan(thread_data, thread_data, initial_value, cuda::minimum<>{}, warp_aggregate);
     }
     else
     {
-      scan.InclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{}, warp_aggregate);
+      scan.InclusiveScan(thread_data, thread_data, initial_value, cuda::minimum<>{}, warp_aggregate);
     }
 
     const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
@@ -254,7 +230,7 @@ struct min_scan_op_t
   template <class T, class WarpScanT>
   __device__ void operator()(WarpScanT& scan, T& thread_data, T& inclusive_output, T& exclusive_output) const
   {
-    scan.Scan(thread_data, inclusive_output, exclusive_output, ::cuda::minimum<>{});
+    scan.Scan(thread_data, inclusive_output, exclusive_output, cuda::minimum<>{});
   }
 };
 
@@ -265,7 +241,7 @@ struct min_init_value_scan_op_t
   template <class WarpScanT>
   __device__ void operator()(WarpScanT& scan, T& thread_data, T& inclusive_output, T& exclusive_output) const
   {
-    scan.Scan(thread_data, inclusive_output, exclusive_output, initial_value, ::cuda::minimum<>{});
+    scan.Scan(thread_data, inclusive_output, exclusive_output, initial_value, cuda::minimum<>{});
   }
 };
 
@@ -327,7 +303,14 @@ using types                = c2h::type_list<std::uint8_t, std::uint16_t, std::in
 using logical_warp_threads = c2h::enum_type_list<int, 32, 16, 9, 2>;
 using modes                = c2h::enum_type_list<scan_mode, scan_mode::exclusive, scan_mode::inclusive>;
 
-using vec_types = c2h::type_list<ulonglong4, uchar3, short2>;
+using vec_types = c2h::type_list<
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  ulonglong4_16a,
+#else // _CCCL_CTK_AT_LEAST(13, 0)
+  ulonglong4,
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+  uchar3,
+  short2>;
 
 using warp_combine_type = int;
 
@@ -462,7 +445,7 @@ C2H_TEST("Warp scan works with custom scan op", "[scan][warp]", types, logical_w
     [](type l, type r) {
       return std::min(l, r);
     },
-    ::cuda::std::numeric_limits<type>::max());
+    cuda::std::numeric_limits<type>::max());
 
   // From the documentation -
   // Computes an exclusive prefix scan using the specified binary scan functor
@@ -508,7 +491,7 @@ C2H_TEST("Warp custom op scan returns valid warp aggregate", "[scan][warp]", typ
     [](type l, type r) {
       return std::min(l, r);
     },
-    ::cuda::std::numeric_limits<type>::max());
+    cuda::std::numeric_limits<type>::max());
 
   // From the documentation -
   // Computes an exclusive prefix scan using the specified binary scan functor
@@ -618,7 +601,7 @@ C2H_TEST("Warp combination scan works with custom scan op", "[scan][warp]", logi
     [](type l, type r) {
       return std::min(l, r);
     },
-    ::cuda::std::numeric_limits<type>::max());
+    cuda::std::numeric_limits<type>::max());
 
   compute_host_reference(
     scan_mode::inclusive,
@@ -627,7 +610,7 @@ C2H_TEST("Warp combination scan works with custom scan op", "[scan][warp]", logi
     [](type l, type r) {
       return std::min(l, r);
     },
-    ::cuda::std::numeric_limits<type>::max());
+    cuda::std::numeric_limits<type>::max());
 
   // According to WarpScan::Scan documentation -
   // Because no initial value is supplied, the exclusive_output computed for warp-lane0 is

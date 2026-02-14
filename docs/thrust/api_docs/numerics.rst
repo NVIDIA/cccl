@@ -9,4 +9,4 @@ Numerics
    :glob:
    :maxdepth: 2
 
-   ${repo_docs_api_path}/*function_group__complex*
+   ../api/group__complex*

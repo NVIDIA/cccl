@@ -41,6 +41,7 @@ typedef struct cccl_device_radix_sort_build_result_t
   CUkernel exclusive_sum_kernel;
   CUkernel onesweep_kernel;
   cccl_sort_order_t order;
+  void* runtime_policy;
 } cccl_device_radix_sort_build_result_t;
 
 CCCL_C_API CUresult cccl_device_radix_sort_build(
@@ -56,6 +57,22 @@ CCCL_C_API CUresult cccl_device_radix_sort_build(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path);
+
+// Extended version with build configuration
+CCCL_C_API CUresult cccl_device_radix_sort_build_ex(
+  cccl_device_radix_sort_build_result_t* build,
+  cccl_sort_order_t sort_order,
+  cccl_iterator_t input_keys_it,
+  cccl_iterator_t input_values_it,
+  cccl_op_t decomposer,
+  const char* decomposer_return_type,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  cccl_build_config* config);
 
 CCCL_C_API CUresult cccl_device_radix_sort(
   cccl_device_radix_sort_build_result_t build,

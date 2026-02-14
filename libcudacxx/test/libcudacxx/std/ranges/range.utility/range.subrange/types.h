@@ -33,12 +33,12 @@ using SizedIntPtrSubrange = cuda::std::ranges::subrange<int*, int*, cuda::std::r
 
 struct MoveOnlyForwardIter
 {
-  typedef cuda::std::forward_iterator_tag iterator_category;
-  typedef int value_type;
-  typedef cuda::std::ptrdiff_t difference_type;
-  typedef int* pointer;
-  typedef int& reference;
-  typedef MoveOnlyForwardIter self;
+  using iterator_category = cuda::std::forward_iterator_tag;
+  using value_type        = int;
+  using difference_type   = cuda::std::ptrdiff_t;
+  using pointer           = int*;
+  using reference         = int&;
+  using self              = MoveOnlyForwardIter;
 
   int* base = nullptr;
 
@@ -89,13 +89,13 @@ struct MoveOnlyForwardIter
 
 struct SizedSentinelForwardIter
 {
-  typedef cuda::std::forward_iterator_tag iterator_category;
-  typedef int value_type;
-  typedef cuda::std::ptrdiff_t difference_type;
-  typedef int* pointer;
-  typedef int& reference;
-  typedef cuda::std::make_unsigned_t<cuda::std::ptrdiff_t> udifference_type;
-  typedef SizedSentinelForwardIter self;
+  using iterator_category = cuda::std::forward_iterator_tag;
+  using value_type        = int;
+  using difference_type   = cuda::std::ptrdiff_t;
+  using pointer           = int*;
+  using reference         = int&;
+  using udifference_type  = cuda::std::make_unsigned_t<cuda::std::ptrdiff_t>;
+  using self              = SizedSentinelForwardIter;
 
   SizedSentinelForwardIter() = default;
   __host__ __device__ constexpr explicit SizedSentinelForwardIter(int* ptr, bool* minusWasCalled)
@@ -143,12 +143,12 @@ static_assert(cuda::std::sized_sentinel_for<SizedSentinelForwardIter, SizedSenti
 
 struct ConvertibleForwardIter
 {
-  typedef cuda::std::forward_iterator_tag iterator_category;
-  typedef int value_type;
-  typedef cuda::std::ptrdiff_t difference_type;
-  typedef int* pointer;
-  typedef int& reference;
-  typedef ConvertibleForwardIter self;
+  using iterator_category = cuda::std::forward_iterator_tag;
+  using value_type        = int;
+  using difference_type   = cuda::std::ptrdiff_t;
+  using pointer           = int*;
+  using reference         = int&;
+  using self              = ConvertibleForwardIter;
 
   int* base_ = nullptr;
 
@@ -185,13 +185,13 @@ static_assert(cuda::std::is_convertible_v<ConvertibleForwardIter, int*>, "");
 template <bool EnableConvertible>
 struct ConditionallyConvertibleBase
 {
-  typedef cuda::std::forward_iterator_tag iterator_category;
-  typedef int value_type;
-  typedef cuda::std::ptrdiff_t difference_type;
-  typedef int* pointer;
-  typedef int& reference;
-  typedef cuda::std::make_unsigned_t<cuda::std::ptrdiff_t> udifference_type;
-  typedef ConditionallyConvertibleBase self;
+  using iterator_category = cuda::std::forward_iterator_tag;
+  using value_type        = int;
+  using difference_type   = cuda::std::ptrdiff_t;
+  using pointer           = int*;
+  using reference         = int&;
+  using udifference_type  = cuda::std::make_unsigned_t<cuda::std::ptrdiff_t>;
+  using self              = ConditionallyConvertibleBase;
 
   int* base_ = nullptr;
 
@@ -249,17 +249,11 @@ struct ForwardBorrowedRange
   }
 };
 
-namespace cuda
-{
-namespace std
-{
-namespace ranges
+namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<ForwardBorrowedRange> = true;
-}
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std::ranges
 
 struct ForwardRange
 {
@@ -279,17 +273,11 @@ struct ConvertibleForwardBorrowedRange
   }
 };
 
-namespace cuda
-{
-namespace std
-{
-namespace ranges
+namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<ConvertibleForwardBorrowedRange> = true;
-}
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std::ranges
 
 struct ForwardBorrowedRangeDifferentSentinel
 {
@@ -326,17 +314,11 @@ struct ForwardBorrowedRangeDifferentSentinel
   }
 };
 
-namespace cuda
-{
-namespace std
-{
-namespace ranges
+namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<ForwardBorrowedRangeDifferentSentinel> = true;
-}
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std::ranges
 
 using DifferentSentinelSubrange = cuda::std::ranges::
   subrange<ForwardIter, ForwardBorrowedRangeDifferentSentinel::sentinel, cuda::std::ranges::subrange_kind::unsized>;
@@ -380,17 +362,11 @@ struct DifferentSentinelWithSizeMember
   }
 };
 
-namespace cuda
-{
-namespace std
-{
-namespace ranges
+namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<DifferentSentinelWithSizeMember> = true;
-}
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std::ranges
 
 using DifferentSentinelWithSizeMemberSubrange = cuda::std::ranges::
   subrange<ForwardIter, DifferentSentinelWithSizeMember::sentinel, cuda::std::ranges::subrange_kind::unsized>;

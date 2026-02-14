@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -39,15 +15,11 @@
 #include <thrust/system/cuda/config.h>
 
 #include <cuda/cmath>
-#include <cuda/std/__cccl/cuda_capabilities.h>
 
 THRUST_NAMESPACE_BEGIN
 
-namespace cuda_cub
+namespace cuda_cub::detail
 {
-namespace detail
-{
-
 struct _CCCL_VISIBILITY_HIDDEN triple_chevron
 {
   using Size = size_t;
@@ -83,10 +55,11 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   }
 #endif
 
+#if !_CCCL_COMPILER(NVRTC)
   template <class K, class... Args>
   cudaError_t _CCCL_HOST doit_host(K k, Args const&... args) const
   {
-#if _CCCL_HAS_PDL
+#  if _CCCL_HAS_PDL()
     if (dependent_launch)
     {
       cudaLaunchAttribute attribute[1];
@@ -100,19 +73,20 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
       config.stream           = stream;
       config.attrs            = attribute;
       config.numAttrs         = 1;
-#  if _CCCL_COMPILER(MSVC) && _CCCL_CUDACC_BELOW(12, 3)
+#    if _CCCL_COMPILER(MSVC) && _CCCL_CUDACC_BELOW(12, 3)
       cudaLaunchKernelEx_MSVC_workaround(&config, k, args...);
-#  else
+#    else
       cudaLaunchKernelEx(&config, k, args...);
-#  endif
+#    endif
     }
     else
-#endif // _CCCL_HAS_PDL
+#  endif // _CCCL_HAS_PDL()
     {
       k<<<grid, block, shared_mem, stream>>>(args...);
     }
     return cudaPeekAtLastError();
   }
+#endif // !_CCCL_COMPILER(NVRTC)
 
   template <class T>
   size_t _CCCL_DEVICE align_up(size_t offset) const
@@ -177,13 +151,12 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class K, class... Args>
-  THRUST_FUNCTION cudaError_t doit(K k, Args const&... args) const
+  _CCCL_API _CCCL_FORCEINLINE cudaError_t doit(K k, Args const&... args) const
   {
     NV_IF_TARGET(NV_IS_HOST, (return doit_host(k, args...);), (return doit_device(k, args...);));
   }
 
 }; // struct triple_chevron
-} // namespace detail
-} // namespace cuda_cub
+} // namespace cuda_cub::detail
 
 THRUST_NAMESPACE_END

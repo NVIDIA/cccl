@@ -29,7 +29,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Automatically runs code when a scope is exited (`SCOPE(exit)`), exited by means of an exception
  * (`SCOPE(fail)`), or exited normally (`SCOPE(success)`).
@@ -67,6 +66,7 @@ enum class scope_guard_condition
   success
 };
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 template <scope_guard_condition cond, typename F>
 auto operator->*(::std::integral_constant<scope_guard_condition, cond>, F&& f)
 {
@@ -106,7 +106,7 @@ auto operator->*(::std::integral_constant<scope_guard_condition, cond>, F&& f)
     ::std::forward<F>(f),
     cond == scope_guard_condition::exit ? -1 : ::std::uncaught_exceptions() + (cond == scope_guard_condition::fail));
 }
-
+#endif // !_CCCL_DOXYGEN_INVOKED
 } // namespace cuda::experimental::stf
 
 #ifdef UNITTESTED_FILE

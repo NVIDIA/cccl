@@ -31,8 +31,8 @@ __device__ static inline void fence_proxy_async(
 */
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void __cuda_ptx_fence_proxy_async_is_not_supported_before_SM_90__();
-template <dot_space _Space>
-_CCCL_DEVICE static inline void fence_proxy_async(space_t<_Space> __space)
+template <::cuda::ptx::dot_space _Space>
+_CCCL_DEVICE static inline void fence_proxy_async(::cuda::ptx::space_t<_Space> __space)
 {
   static_assert(__space == space_global || __space == space_cluster || __space == space_shared, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900

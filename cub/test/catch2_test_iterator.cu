@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2024, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
@@ -33,41 +9,43 @@
 #include <cub/util_allocator.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/iterator/transform_iterator.h>
-
 #include <cuda/__cccl_config>
+#include <cuda/iterator>
 #include <cuda/std/__cccl/dialect.h>
 
 #include <cstdint>
 
 #include <c2h/catch2_test_helper.h>
 
-using scalar_types = c2h::type_list<std::int8_t, std::int16_t, std::int32_t, std::int64_t, float, double>;
+// %PARAM% TEST_VEC_SIZE types 1:2:3:4
 
-using types = ::cuda::std::__type_push_back<
-  scalar_types,
-  char2,
-  short2,
-  int2,
-  long2,
-  longlong2,
-  float2,
-  double2,
-  char3,
-  short3,
-  int3,
-  long3,
-  longlong3,
-  float3,
-  double3,
-  char4,
-  short4,
-  int4,
-  long4,
-  longlong4,
-  float4,
-  double4,
-  c2h::custom_type_t<c2h::equal_comparable_t, c2h::accumulateable_t>>;
+// We start suppressing deprecation warnings but do not stop at the end of the file. This suppresses warnings in the
+// compiler-generated `catch2_test_iterator.compute_120.cudafe1.stub.c`
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
+#if TEST_VEC_SIZE == 1
+using types = c2h::type_list<std::int8_t, std::int16_t, std::int32_t, std::int64_t, float, double>;
+#elif TEST_VEC_SIZE == 2
+using types = c2h::type_list<char2, short2, int2, long2, longlong2, float2, double2>;
+#elif TEST_VEC_SIZE == 3
+using types = c2h::type_list<char3, short3, int3, long3, longlong3, float3, double3>;
+#elif TEST_VEC_SIZE == 4
+using types =
+  c2h::type_list<char4,
+                 short4,
+                 int4,
+                 float4,
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                 long4_16a,
+                 longlong4_16a,
+                 double4_16a,
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
+                 long4,
+                 longlong4,
+                 double4,
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+                 c2h::custom_type_t<c2h::equal_comparable_t, c2h::accumulateable_t>>;
+#endif
 
 template <typename InputIteratorT, typename T>
 __global__ void test_iterator_kernel(InputIteratorT d_in, T* d_out, InputIteratorT* d_itrs)
@@ -109,8 +87,7 @@ void test_iterator(InputIteratorT d_in, const c2h::host_vector<T>& h_reference)
   CHECK(d_in == h_itrs[1]);
 }
 
-static_assert(
-  ::cuda::std::is_void_v<cub::detail::it_value_t<cub::CacheModifiedOutputIterator<cub::STORE_DEFAULT, int>>>);
+static_assert(cuda::std::is_void_v<cub::detail::it_value_t<cub::CacheModifiedOutputIterator<cub::STORE_DEFAULT, int>>>);
 
 // using cache_modifiers =
 //   c2h::enum_type_list<cub::CacheLoadModifier,
@@ -142,7 +119,7 @@ static_assert(
 template <typename T>
 struct transform_op_t
 {
-  _CCCL_HOST_DEVICE T operator()(T input) const
+  __host__ __device__ T operator()(T input) const
   {
     return input + input;
   }
@@ -160,6 +137,7 @@ C2H_TEST("Test tex-obj texture iterator", "[iterator]", types)
   const auto h_reference = c2h::host_vector<T>{
     h_data[0], h_data[100], h_data[1000], h_data[10000], h_data[1], h_data[21], h_data[11], h_data[0]};
   cub::TexObjInputIterator<T> d_obj_itr;
+
   CubDebugExit(
     d_obj_itr.BindTexture(const_cast<const T*>(thrust::raw_pointer_cast(d_data.data())), sizeof(T) * TEST_VALUES));
   test_iterator(d_obj_itr, h_reference);
@@ -189,7 +167,7 @@ C2H_TEST("Test texture transform iterator", "[iterator]", types)
   TextureIterator d_tex_itr;
   CubDebugExit(
     d_tex_itr.BindTexture(const_cast<const T*>(thrust::raw_pointer_cast(d_data.data())), sizeof(T) * TEST_VALUES));
-  thrust::transform_iterator<transform_op_t<T>, TextureIterator> xform_itr(d_tex_itr, op);
+  cuda::transform_iterator<transform_op_t<T>, TextureIterator> xform_itr(d_tex_itr, op);
   test_iterator(xform_itr, h_reference);
   CubDebugExit(d_tex_itr.UnbindTexture());
 }

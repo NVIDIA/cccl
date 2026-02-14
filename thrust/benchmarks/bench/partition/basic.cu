@@ -1,60 +1,11 @@
-/******************************************************************************
- * Copyright (c) 2011-2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/partition.h>
 
 #include "nvbench_helper.cuh"
-
-template <class T>
-struct less_then_t
-{
-  T m_val;
-
-  __host__ __device__ bool operator()(const T& val) const
-  {
-    return val < m_val;
-  }
-};
-
-template <typename T>
-T value_from_entropy(double percentage)
-{
-  if (percentage == 1)
-  {
-    return std::numeric_limits<T>::max();
-  }
-
-  const auto max_val = static_cast<double>(std::numeric_limits<T>::max());
-  const auto min_val = static_cast<double>(std::numeric_limits<T>::lowest());
-  const auto result  = min_val + percentage * max_val - percentage * min_val;
-  return static_cast<T>(result);
-}
 
 template <typename T>
 static void basic(nvbench::state& state, nvbench::type_list<T>)
@@ -64,7 +15,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements"));
   const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
 
-  T val = value_from_entropy<T>(entropy_to_probability(entropy));
+  const T val = lerp_min_max<T>(entropy_to_probability(entropy));
   select_op_t select_op{val};
 
   thrust::device_vector<T> input = generate(elements);
@@ -82,7 +33,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
                  input.cbegin(),
                  input.cend(),
                  output.begin(),
-                 thrust::make_reverse_iterator(output.begin() + elements),
+                 cuda::std::make_reverse_iterator(output.begin() + elements),
                  select_op);
              });
 }

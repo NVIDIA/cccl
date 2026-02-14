@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ITERATOR_DEFAULT_SENTINEL_H
-#define _LIBCUDACXX___ITERATOR_DEFAULT_SENTINEL_H
+#ifndef _CUDA_STD___ITERATOR_DEFAULT_SENTINEL_H
+#define _CUDA_STD___ITERATOR_DEFAULT_SENTINEL_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,14 +23,14 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct default_sentinel_t
 {};
 inline constexpr default_sentinel_t default_sentinel{};
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ITERATOR_DEFAULT_SENTINEL_H
+#endif // _CUDA_STD___ITERATOR_DEFAULT_SENTINEL_H

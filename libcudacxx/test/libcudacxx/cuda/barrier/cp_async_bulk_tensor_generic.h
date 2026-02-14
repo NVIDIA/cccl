@@ -187,7 +187,7 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
   alignas(128) __shared__ int smem_buffer[smem_len];
 #if _CCCL_CUDA_COMPILER(CLANG)
   __shared__ char barrier_data[sizeof(barrier)];
-  barrier& bar = cuda::std::bit_cast<barrier>(barrier_data);
+  barrier& bar = reinterpret_cast<barrier&>(barrier_data);
 #else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG)
   __shared__ barrier bar;
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
@@ -253,6 +253,7 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
 }
 
 #if !TEST_COMPILER(NVRTC)
+#  if _CCCL_CTK_BELOW(12, 5)
 PFN_cuTensorMapEncodeTiled get_cuTensorMapEncodeTiled()
 {
   void* driver_ptr = nullptr;
@@ -261,6 +262,17 @@ PFN_cuTensorMapEncodeTiled get_cuTensorMapEncodeTiled()
   assert(code == cudaSuccess && "Could not get driver API");
   return reinterpret_cast<PFN_cuTensorMapEncodeTiled>(driver_ptr);
 }
+#  else // ^^^ _CCCL_CTK_BELOW(12, 5) ^^^ / vvv _CCCL_CTK_AT_LEAST(12, 5) vvv
+PFN_cuTensorMapEncodeTiled_v12000 get_cuTensorMapEncodeTiled()
+{
+  void* driver_ptr = nullptr;
+  cudaDriverEntryPointQueryResult driver_status;
+  auto code =
+    cudaGetDriverEntryPointByVersion("cuTensorMapEncodeTiled", &driver_ptr, 12000, cudaEnableDefault, &driver_status);
+  assert(code == cudaSuccess && "Could not get driver API");
+  return reinterpret_cast<PFN_cuTensorMapEncodeTiled_v12000>(driver_ptr);
+}
+#  endif // _CCCL_CTK_AT_LEAST(12, 5)
 #endif // !TEST_COMPILER(NVRTC)
 
 #if !TEST_COMPILER(NVRTC)

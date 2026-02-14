@@ -6,8 +6,6 @@
 
 #include <assert.h>
 
-#include "include/host_device.h"
-
 // We have a matrix stored in a `thrust::device_vector`. We want to perform a
 // scan on each row of a matrix.
 

@@ -29,12 +29,12 @@ static_assert(cuda::std::random_access_iterator<int const volatile*>, "");
 
 struct wrong_iterator_category
 {
-  typedef cuda::std::bidirectional_iterator_tag iterator_category;
-  typedef int value_type;
-  typedef cuda::std::ptrdiff_t difference_type;
-  typedef int* pointer;
-  typedef int& reference;
-  typedef wrong_iterator_category self;
+  using iterator_category = cuda::std::bidirectional_iterator_tag;
+  using value_type        = int;
+  using difference_type   = cuda::std::ptrdiff_t;
+  using pointer           = int*;
+  using reference         = int&;
+  using self              = wrong_iterator_category;
 
   __host__ __device__ reference operator*() const;
   __host__ __device__ pointer operator->() const;
@@ -89,12 +89,12 @@ static_assert(!cuda::std::random_access_iterator<wrong_iterator_category>, "");
 template <class Child>
 struct common_base
 {
-  typedef cuda::std::random_access_iterator_tag iterator_category;
-  typedef int value_type;
-  typedef cuda::std::ptrdiff_t difference_type;
-  typedef int* pointer;
-  typedef int& reference;
-  typedef Child self;
+  using iterator_category = cuda::std::random_access_iterator_tag;
+  using value_type        = int;
+  using difference_type   = cuda::std::ptrdiff_t;
+  using pointer           = int*;
+  using reference         = int&;
+  using self              = Child;
 
   __host__ __device__ reference operator*() const;
   __host__ __device__ pointer operator->() const;

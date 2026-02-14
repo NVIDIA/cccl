@@ -28,8 +28,8 @@ __host__ __device__ constexpr bool test()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
-  static_assert(_CCCL_TRAIT(cuda::std::is_convertible, const unsigned&, int)
-                && _CCCL_TRAIT(cuda::std::is_nothrow_constructible, int, const unsigned&));
+  static_assert(
+    cuda::std::is_convertible_v<const unsigned&, int> && cuda::std::is_nothrow_constructible_v<int, const unsigned&>);
 
   static_assert(cuda::std::is_same_v<
                 decltype(cuda::std::layout_stride::mapping(cuda::std::extents<int>(), cuda::std::array<unsigned, 0>())),

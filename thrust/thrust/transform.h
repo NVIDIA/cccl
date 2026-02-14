@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/transform.h
  *  \brief Transforms input ranges using a function object
@@ -29,7 +16,26 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/execution_policy.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/system/detail/generic/select_system.h>
+
+#include <cuda/std/__iterator/incrementable_traits.h>
+
+// Include all active backend system implementations (generic, sequential, host and device)
+#include <thrust/system/detail/generic/transform.h>
+#include <thrust/system/detail/sequential/transform.h>
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(transform.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(transform.h)
+
+// Some build systems need a hint to know which files we could include
+#if 0
+#  include <thrust/system/cpp/detail/transform.h>
+#  include <thrust/system/cuda/detail/transform.h>
+#  include <thrust/system/omp/detail/transform.h>
+#  include <thrust/system/tbb/detail/transform.h>
+#endif
 
 THRUST_NAMESPACE_BEGIN
 
@@ -90,14 +96,24 @@ THRUST_NAMESPACE_BEGIN
 //! :ref:`copyable arguments <address-stability>`.
 //! @endrst
 //!
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
+ */
 //! \see https://en.cppreference.com/w/cpp/algorithm/transform
+_CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename UnaryFunction>
 _CCCL_HOST_DEVICE OutputIterator transform(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
   InputIterator last,
   OutputIterator result,
-  UnaryFunction op);
+  UnaryFunction op)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform");
+  using thrust::system::detail::generic::transform;
+  return transform(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, op);
+}
 
 //! This version of \p transform applies a unary function to each element of an input sequence and stores the result in
 //! the corresponding position in an output sequence. Specifically, for each iterator <tt>i</tt> in the range [\p first,
@@ -141,9 +157,25 @@ _CCCL_HOST_DEVICE OutputIterator transform(
 //! :ref:`copyable arguments <address-stability>`.
 //! @endrst
 //!
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
+ */
 //!  \see https://en.cppreference.com/w/cpp/algorithm/transform
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction>
-OutputIterator transform(InputIterator first, InputIterator last, OutputIterator result, UnaryFunction op);
+OutputIterator transform(InputIterator first, InputIterator last, OutputIterator result, UnaryFunction op)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform");
+  using thrust::system::detail::generic::select_system;
+
+  using System1 = typename thrust::iterator_system<InputIterator>::type;
+  using System2 = typename thrust::iterator_system<OutputIterator>::type;
+
+  System1 system1;
+  System2 system2;
+
+  return thrust::transform(select_system(system1, system2), first, last, result, op);
+}
 
 //! This version of \p transform applies a binary function to each pair of elements from two input sequences and stores
 //! the result in the corresponding position in an output sequence. Specifically, for each iterator <tt>i</tt> in the
@@ -201,7 +233,12 @@ OutputIterator transform(InputIterator first, InputIterator last, OutputIterator
 //! :ref:`copyable arguments <address-stability>`.
 //! @endrst
 //!
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
+ */
 //! \see https://en.cppreference.com/w/cpp/algorithm/transform
+_CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy,
           typename InputIterator1,
           typename InputIterator2,
@@ -213,7 +250,12 @@ _CCCL_HOST_DEVICE OutputIterator transform(
   InputIterator1 last1,
   InputIterator2 first2,
   OutputIterator result,
-  BinaryFunction op);
+  BinaryFunction op)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform");
+  using thrust::system::detail::generic::transform;
+  return transform(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, result, op);
+}
 
 //! This version of \p transform applies a binary function to each pair of elements from two input sequences and stores
 //! the result in the corresponding position in an output sequence. Specifically, for each iterator <tt>i</tt> in the
@@ -264,10 +306,28 @@ _CCCL_HOST_DEVICE OutputIterator transform(
 //! :ref:`copyable arguments <address-stability>`.
 //! @endrst
 //!
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
+ */
 //! \see https://en.cppreference.com/w/cpp/algorithm/transform
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename BinaryFunction>
 OutputIterator
-transform(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputIterator result, BinaryFunction op);
+transform(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputIterator result, BinaryFunction op)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform");
+  using thrust::system::detail::generic::select_system;
+
+  using System1 = typename thrust::iterator_system<InputIterator1>::type;
+  using System2 = typename thrust::iterator_system<InputIterator2>::type;
+  using System3 = typename thrust::iterator_system<OutputIterator>::type;
+
+  System1 system1;
+  System2 system2;
+  System3 system3;
+
+  return thrust::transform(select_system(system1, system2, system3), first1, last1, first2, result, op);
+}
 
 /*! This version of \p transform_if conditionally applies a unary function
  *  to each element of an input sequence and stores the result in the corresponding
@@ -334,7 +394,12 @@ transform(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, Ou
  *  \endcode
  *
  *  \see thrust::transform
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
+_CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy,
           typename InputIterator,
           typename ForwardIterator,
@@ -346,7 +411,12 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
   InputIterator last,
   ForwardIterator result,
   UnaryFunction op,
-  Predicate pred);
+  Predicate pred)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if");
+  using thrust::system::detail::generic::transform_if;
+  return transform_if(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, op, pred);
+}
 
 /*! This version of \p transform_if conditionally applies a unary function
  *  to each element of an input sequence and stores the result in the corresponding
@@ -407,10 +477,26 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
  *  \endcode
  *
  *  \see thrust::transform
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator, typename ForwardIterator, typename UnaryFunction, typename Predicate>
 ForwardIterator
-transform_if(InputIterator first, InputIterator last, ForwardIterator result, UnaryFunction op, Predicate pred);
+transform_if(InputIterator first, InputIterator last, ForwardIterator result, UnaryFunction op, Predicate pred)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if");
+  using thrust::system::detail::generic::select_system;
+
+  using System1 = typename thrust::iterator_system<InputIterator>::type;
+  using System2 = typename thrust::iterator_system<ForwardIterator>::type;
+
+  System1 system1;
+  System2 system2;
+
+  return thrust::transform_if(select_system(system1, system2), first, last, result, op, pred);
+}
 
 /*! This version of \p transform_if conditionally applies a unary function
  *  to each element of an input sequence and stores the result in the corresponding
@@ -475,7 +561,12 @@ transform_if(InputIterator first, InputIterator last, ForwardIterator result, Un
  *  \endcode
  *
  *  \see thrust::transform
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
+_CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy,
           typename InputIterator1,
           typename InputIterator2,
@@ -489,7 +580,13 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
   InputIterator2 stencil,
   ForwardIterator result,
   UnaryFunction op,
-  Predicate pred);
+  Predicate pred)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if");
+  using thrust::system::detail::generic::transform_if;
+  return transform_if(
+    thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, stencil, result, op, pred);
+}
 
 /*! This version of \p transform_if conditionally applies a unary function
  *  to each element of an input sequence and stores the result in the corresponding
@@ -547,6 +644,10 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
  *  \endcode
  *
  *  \see thrust::transform
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,
@@ -559,7 +660,21 @@ ForwardIterator transform_if(
   InputIterator2 stencil,
   ForwardIterator result,
   UnaryFunction op,
-  Predicate pred);
+  Predicate pred)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if");
+  using thrust::system::detail::generic::select_system;
+
+  using System1 = typename thrust::iterator_system<InputIterator1>::type;
+  using System2 = typename thrust::iterator_system<InputIterator2>::type;
+  using System3 = typename thrust::iterator_system<ForwardIterator>::type;
+
+  System1 system1;
+  System2 system2;
+  System3 system3;
+
+  return thrust::transform_if(select_system(system1, system2, system3), first, last, stencil, result, op, pred);
+}
 
 /*! This version of \p transform_if conditionally applies a binary function
  *  to each pair of elements from two input sequences and stores the result in the corresponding
@@ -629,7 +744,12 @@ ForwardIterator transform_if(
  *  \endcode
  *
  *  \see thrust::transform
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
+_CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy,
           typename InputIterator1,
           typename InputIterator2,
@@ -645,7 +765,20 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
   InputIterator3 stencil,
   ForwardIterator result,
   BinaryFunction binary_op,
-  Predicate pred);
+  Predicate pred)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if");
+  using thrust::system::detail::generic::transform_if;
+  return transform_if(
+    thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
+    first1,
+    last1,
+    first2,
+    stencil,
+    result,
+    binary_op,
+    pred);
+}
 
 /*! This version of \p transform_if conditionally applies a binary function
  *  to each pair of elements from two input sequences and stores the result in the corresponding
@@ -709,6 +842,10 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
  *  \endcode
  *
  *  \see thrust::transform
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,
@@ -723,11 +860,264 @@ ForwardIterator transform_if(
   InputIterator3 stencil,
   ForwardIterator result,
   BinaryFunction binary_op,
-  Predicate pred);
+  Predicate pred)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if");
+  using thrust::system::detail::generic::select_system;
+
+  using System1 = typename thrust::iterator_system<InputIterator1>::type;
+  using System2 = typename thrust::iterator_system<InputIterator2>::type;
+  using System3 = typename thrust::iterator_system<InputIterator3>::type;
+  using System4 = typename thrust::iterator_system<ForwardIterator>::type;
+
+  System1 system1;
+  System2 system2;
+  System3 system3;
+  System4 system4;
+
+  return thrust::transform_if(
+    select_system(system1, system2, system3, system4), first1, last1, first2, stencil, result, binary_op, pred);
+}
+
+//! Like \ref transform, but uses an element count instead of an iterator to the last element of the input sequence.
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 3.1.0
+ *  \endverbatim
+ */
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename UnaryFunction>
+_CCCL_HOST_DEVICE OutputIterator transform_n(
+  const detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  ::cuda::std::iter_difference_t<InputIterator> count,
+  OutputIterator result,
+  UnaryFunction op)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_n");
+  using thrust::system::detail::generic::transform_n;
+  return transform_n(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, count, result, op);
+}
+
+//! Like \ref transform, but uses an element count instead of an iterator to the last element of the input sequence.
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 3.1.0
+ *  \endverbatim
+ */
+template <typename InputIterator, typename OutputIterator, typename UnaryFunction>
+OutputIterator transform_n(
+  InputIterator first, ::cuda::std::iter_difference_t<InputIterator> count, OutputIterator result, UnaryFunction op)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_n");
+  iterator_system_t<InputIterator> system1;
+  iterator_system_t<OutputIterator> system2;
+  using thrust::system::detail::generic::select_system;
+  return thrust::transform_n(select_system(system1, system2), first, count, result, op);
+}
+
+//! Like \ref transform, but uses an element count instead of an iterator to the last element of the input sequence.
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 3.1.0
+ *  \endverbatim
+ */
+template <typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename OutputIterator,
+          typename BinaryFunction>
+_CCCL_HOST_DEVICE OutputIterator transform_n(
+  const detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator1 first1,
+  ::cuda::std::iter_difference_t<InputIterator1> count,
+  InputIterator2 first2,
+  OutputIterator result,
+  BinaryFunction op)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_n");
+  using thrust::system::detail::generic::transform_n;
+  return transform_n(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, count, first2, result, op);
+}
+
+//! Like \ref transform, but uses an element count instead of an iterator to the last element of the input sequence.
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 3.1.0
+ *  \endverbatim
+ */
+template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename BinaryFunction>
+OutputIterator transform_n(
+  InputIterator1 first1,
+  ::cuda::std::iter_difference_t<InputIterator1> count,
+  InputIterator2 first2,
+  OutputIterator result,
+  BinaryFunction op)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_n");
+  iterator_system_t<InputIterator1> system1;
+  iterator_system_t<InputIterator2> system2;
+  iterator_system_t<OutputIterator> system3;
+  using thrust::system::detail::generic::select_system;
+  return thrust::transform_n(select_system(system1, system2, system3), first1, count, first2, result, op);
+}
+
+//! Like \ref transform_if, but uses an element count instead of an iterator to the last element of the input sequence.
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 3.1.0
+ *  \endverbatim
+ */
+template <typename DerivedPolicy,
+          typename InputIterator,
+          typename ForwardIterator,
+          typename UnaryFunction,
+          typename Predicate>
+_CCCL_HOST_DEVICE ForwardIterator transform_if_n(
+  const detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  ::cuda::std::iter_difference_t<InputIterator> count,
+  ForwardIterator result,
+  UnaryFunction op,
+  Predicate pred)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if_n");
+  using thrust::system::detail::generic::transform_if_n;
+  return transform_if_n(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, count, result, op, pred);
+}
+
+//! Like \ref transform_if, but uses an element count instead of an iterator to the last element of the input sequence.
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 3.1.0
+ *  \endverbatim
+ */
+template <typename InputIterator, typename ForwardIterator, typename UnaryFunction, typename Predicate>
+ForwardIterator transform_if_n(
+  InputIterator first,
+  ::cuda::std::iter_difference_t<InputIterator> count,
+  ForwardIterator result,
+  UnaryFunction op,
+  Predicate pred)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if_n");
+  iterator_system_t<InputIterator> system1;
+  iterator_system_t<ForwardIterator> system2;
+  using thrust::system::detail::generic::select_system;
+  return thrust::transform_if_n(select_system(system1, system2), first, count, result, op, pred);
+}
+
+//! Like \ref transform_if, but uses an element count instead of an iterator to the last element of the input sequence.
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 3.1.0
+ *  \endverbatim
+ */
+template <typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename ForwardIterator,
+          typename UnaryFunction,
+          typename Predicate>
+_CCCL_HOST_DEVICE ForwardIterator transform_if_n(
+  const detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator1 first,
+  ::cuda::std::iter_difference_t<InputIterator1> count,
+  InputIterator2 stencil,
+  ForwardIterator result,
+  UnaryFunction op,
+  Predicate pred)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if_n");
+  using thrust::system::detail::generic::transform_if_n;
+  return transform_if_n(
+    thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, count, stencil, result, op, pred);
+}
+
+//! Like \ref transform_if, but uses an element count instead of an iterator to the last element of the input sequence.
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 3.1.0
+ *  \endverbatim
+ */
+template <typename InputIterator1,
+          typename InputIterator2,
+          typename ForwardIterator,
+          typename UnaryFunction,
+          typename Predicate>
+ForwardIterator transform_if_n(
+  InputIterator1 first,
+  ::cuda::std::iter_difference_t<InputIterator1> count,
+  InputIterator2 stencil,
+  ForwardIterator result,
+  UnaryFunction op,
+  Predicate pred)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if_n");
+  iterator_system_t<InputIterator1> system1;
+  iterator_system_t<InputIterator2> system2;
+  iterator_system_t<ForwardIterator> system3;
+  using thrust::system::detail::generic::select_system;
+  return thrust::transform_if_n(select_system(system1, system2, system3), first, count, stencil, result, op, pred);
+}
+
+//! Like \ref transform_if, but uses an element count instead of an iterator to the last element of the input sequence.
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 3.1.0
+ *  \endverbatim
+ */
+template <typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename InputIterator3,
+          typename ForwardIterator,
+          typename BinaryFunction,
+          typename Predicate>
+_CCCL_HOST_DEVICE ForwardIterator transform_if_n(
+  const detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator1 first1,
+  ::cuda::std::iter_difference_t<InputIterator1> count,
+  InputIterator2 first2,
+  InputIterator3 stencil,
+  ForwardIterator result,
+  BinaryFunction binary_op,
+  Predicate pred)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if_n");
+  using thrust::system::detail::generic::transform_if_n;
+  return transform_if_n(
+    thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
+    first1,
+    count,
+    first2,
+    stencil,
+    result,
+    binary_op,
+    pred);
+}
+
+//! Like \ref transform_if, but uses an element count instead of an iterator to the last element of the input sequence.
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 3.1.0
+ *  \endverbatim
+ */
+template <typename InputIterator1,
+          typename InputIterator2,
+          typename InputIterator3,
+          typename ForwardIterator,
+          typename BinaryFunction,
+          typename Predicate>
+ForwardIterator transform_if_n(
+  InputIterator1 first1,
+  ::cuda::std::iter_difference_t<InputIterator1> count,
+  InputIterator2 first2,
+  InputIterator3 stencil,
+  ForwardIterator result,
+  BinaryFunction binary_op,
+  Predicate pred)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if_n");
+  iterator_system_t<InputIterator1> system1;
+  iterator_system_t<InputIterator2> system2;
+  iterator_system_t<InputIterator3> system3;
+  iterator_system_t<ForwardIterator> system4;
+  using thrust::system::detail::generic::select_system;
+  return thrust::transform_if_n(
+    select_system(system1, system2, system3, system4), first1, count, first2, stencil, result, binary_op, pred);
+}
 
 /*! \} // end transformations
  */
 
 THRUST_NAMESPACE_END
-
-#include <thrust/detail/transform.inl>

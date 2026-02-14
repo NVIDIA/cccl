@@ -39,9 +39,9 @@ __host__ __device__ void test_is_not_convertible()
   static_assert((!cuda::std::is_convertible_v<const T, const U>), "");
 }
 
-typedef void Function();
-typedef void ConstFunction() const;
-typedef char Array[1];
+using Function      = void();
+using ConstFunction = void() const;
+using Array         = char[1];
 
 struct StringType
 {
@@ -198,7 +198,7 @@ int main(int, char**)
   static_assert((cuda::std::is_convertible<Array, StringType>::value), "");
 #if !TEST_COMPILER(MSVC) && !TEST_COMPILER(NVRTC)
   // TODO: Investigate why this is failing.
-  static_assert((cuda::std::is_convertible<char(&)[], StringType>::value), "");
+  static_assert((cuda::std::is_convertible<char (&)[], StringType>::value), "");
 #endif // !TEST_COMPILER(MSVC) && !TEST_COMPILER(NVRTC)
 
   // char

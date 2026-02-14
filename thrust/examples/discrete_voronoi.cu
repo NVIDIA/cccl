@@ -3,14 +3,14 @@
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/random.h>
-#include <thrust/tuple.h>
+
+#include <cuda/std/tuple>
 
 #include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 
-#include "include/host_device.h"
 #include "include/timer.h"
 
 // Compute an approximate Voronoi Diagram with a Jump Flooding Algorithm (JFA)
@@ -26,11 +26,11 @@
 // Tuple  = <seeds,seeds + k,seeds + m*k, seeds - k,
 //           seeds - m*k, seeds+ k+m*k,seeds + k-m*k,
 //           seeds- k+m*k,seeds - k+m*k, i>
-struct minFunctor
+struct voronoi_site_selector
 {
   int m, n, k;
 
-  __host__ __device__ minFunctor(int m, int n, int k)
+  __host__ __device__ voronoi_site_selector(int m, int n, int k)
       : m(m)
       , n(n)
       , k(k)
@@ -69,8 +69,8 @@ struct minFunctor
   __host__ __device__ int operator()(const Tuple& t)
   {
     // Current point and site
-    int i = thrust::get<9>(t);
-    int v = thrust::get<0>(t);
+    int i = cuda::std::get<9>(t);
+    int v = cuda::std::get<0>(t);
 
     // Current point coordinates
     int y = i / m;
@@ -78,40 +78,40 @@ struct minFunctor
 
     if (x >= k)
     {
-      v = minVoro(x, y, v, thrust::get<3>(t));
+      v = minVoro(x, y, v, cuda::std::get<3>(t));
 
       if (y >= k)
       {
-        v = minVoro(x, y, v, thrust::get<8>(t));
+        v = minVoro(x, y, v, cuda::std::get<8>(t));
       }
 
       if (y + k < n)
       {
-        v = minVoro(x, y, v, thrust::get<7>(t));
+        v = minVoro(x, y, v, cuda::std::get<7>(t));
       }
     }
 
     if (x + k < m)
     {
-      v = minVoro(x, y, v, thrust::get<1>(t));
+      v = minVoro(x, y, v, cuda::std::get<1>(t));
 
       if (y >= k)
       {
-        v = minVoro(x, y, v, thrust::get<6>(t));
+        v = minVoro(x, y, v, cuda::std::get<6>(t));
       }
       if (y + k < n)
       {
-        v = minVoro(x, y, v, thrust::get<5>(t));
+        v = minVoro(x, y, v, cuda::std::get<5>(t));
       }
     }
 
     if (y >= k)
     {
-      v = minVoro(x, y, v, thrust::get<4>(t));
+      v = minVoro(x, y, v, cuda::std::get<4>(t));
     }
     if (y + k < n)
     {
-      v = minVoro(x, y, v, thrust::get<2>(t));
+      v = minVoro(x, y, v, cuda::std::get<2>(t));
     }
 
     // global return
@@ -199,7 +199,7 @@ void jfa(thrust::device_vector<int>& in, thrust::device_vector<int>& out, unsign
       thrust::counting_iterator<int>(0))
       + n * m,
     out.begin(),
-    minFunctor(m, n, k));
+    voronoi_site_selector(m, n, k));
 }
 /********************************************/
 

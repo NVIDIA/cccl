@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___ANNOTATED_PTR_APPLY_ACCESS_PROPERTY
-#define _CUDA___ANNOTATED_PTR_APPLY_ACCESS_PROPERTY
+#ifndef _CUDA___ANNOTATED_PTR_APPLY_ACCESS_PROPERTY_H
+#define _CUDA___ANNOTATED_PTR_APPLY_ACCESS_PROPERTY_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,13 +22,14 @@
 #endif // no system header
 
 #include <cuda/__annotated_ptr/access_property.h>
+#include <cuda/__memory/address_space.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _Shape>
-_LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
+_CCCL_API inline void apply_access_property(
   [[maybe_unused]] const volatile void* __ptr,
   [[maybe_unused]] _Shape __shape,
   [[maybe_unused]] access_property::persisting __prop) noexcept
@@ -37,13 +38,12 @@ _LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
   NV_IF_TARGET(
     NV_PROVIDES_SM_80,
     (_CCCL_ASSERT(__ptr != nullptr, "null pointer");
-     auto __ptr1 = const_cast<void*>(__ptr);
-     if (!__isGlobal(__ptr1))
+     if (!::cuda::device::is_address_from(__ptr, ::cuda::device::address_space::global))
      {
        return;
      }
      constexpr size_t __line_size = 128;
-     auto __p                     = reinterpret_cast<uint8_t*>(__ptr1);
+     auto __p                     = reinterpret_cast<uint8_t*>(const_cast<void*>(__ptr));
      auto __nbytes                = static_cast<size_t>(__shape);
      // Apply to all 128 bytes aligned cache lines inclusive of __p
      for (size_t __i = 0; __i < __nbytes; __i += __line_size) {
@@ -53,7 +53,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
 }
 
 template <typename _Shape>
-_LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
+_CCCL_API inline void apply_access_property(
   [[maybe_unused]] const volatile void* __ptr,
   [[maybe_unused]] _Shape __shape,
   [[maybe_unused]] access_property::normal __prop) noexcept
@@ -62,13 +62,12 @@ _LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
   NV_IF_TARGET(
     NV_PROVIDES_SM_80,
     (_CCCL_ASSERT(__ptr != nullptr, "null pointer");
-     auto __ptr1 = const_cast<void*>(__ptr);
-     if (!__isGlobal(__ptr1))
+     if (!::cuda::device::is_address_from(__ptr, ::cuda::device::address_space::global))
      {
        return;
      }
      constexpr size_t __line_size = 128;
-     auto __p                     = reinterpret_cast<uint8_t*>(__ptr1);
+     auto __p                     = reinterpret_cast<uint8_t*>(const_cast<void*>(__ptr));
      auto __nbytes                = static_cast<size_t>(__shape);
      // Apply to all 128 bytes aligned cache lines inclusive of __p
      for (size_t __i = 0; __i < __nbytes; __i += __line_size) {
@@ -77,8 +76,8 @@ _LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
   // clang-format on
 }
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___ANNOTATED_PTR_APPLY_ACCESS_PROPERTY
+#endif // _CUDA___ANNOTATED_PTR_APPLY_ACCESS_PROPERTY_H

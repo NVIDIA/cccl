@@ -28,7 +28,7 @@ __host__ __device__ void test(const cuda::std::complex<T>& c, cuda::std::complex
 template <class T>
 __host__ __device__ void test()
 {
-  test(cuda::std::complex<T>(0, 0), cuda::std::complex<T>(-INFINITY, 0));
+  test(cuda::std::complex<T>(0, 0), cuda::std::complex<T>(-cuda::std::numeric_limits<T>::infinity(), 0));
 }
 
 template <class T>
@@ -39,7 +39,25 @@ __host__ __device__ void test_edges()
   for (unsigned i = 0; i < N; ++i)
   {
     cuda::std::complex<T> r = log10(testcases[i]);
-    cuda::std::complex<T> z = log(testcases[i]) / cuda::std::log(T(10.0));
+    const T log10_e         = cuda::std::__numbers<T>::__log10e();
+    cuda::std::complex<T> z = log(testcases[i]) * log10_e;
+
+    // The __half or __nv_float16 functions use fp32, we need to account for this
+    // as we are checking for floating-point equality:
+#if _LIBCUDACXX_HAS_NVFP16()
+    if constexpr (cuda::std::is_same_v<T, __half>)
+    {
+      z = log(cuda::std::complex<float>(testcases[i])) * 0.434294481903251827651128918916605082294397f;
+    }
+#endif // _LIBCUDACXX_HAS_NVFP16()
+
+#if _LIBCUDACXX_HAS_NVBF16()
+    if constexpr (cuda::std::is_same_v<T, __nv_bfloat16>)
+    {
+      z = log(cuda::std::complex<float>(testcases[i])) * 0.434294481903251827651128918916605082294397f;
+    }
+#endif // _LIBCUDACXX_HAS_NVBF16()
+
     if (cuda::std::isnan(real(r)))
     {
       assert(cuda::std::isnan(real(z)));

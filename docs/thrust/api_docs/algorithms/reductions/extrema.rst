@@ -7,4 +7,4 @@ Extrema
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*function_group__extrema*
+   ../../../api/group__extrema*

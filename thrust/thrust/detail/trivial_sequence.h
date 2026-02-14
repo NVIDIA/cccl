@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file trivial_sequence.h
  *  \brief Container-like class for wrapping sequences.  The wrapped
@@ -42,15 +29,14 @@ THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 // never instantiated
-template <typename Iterator, typename DerivedPolicy, typename is_trivial>
+template <typename Iterator, typename DerivedPolicy, bool is_trivial>
 struct _trivial_sequence
 {};
 
 // trivial case
 template <typename Iterator, typename DerivedPolicy>
-struct _trivial_sequence<Iterator, DerivedPolicy, thrust::detail::true_type>
+struct _trivial_sequence<Iterator, DerivedPolicy, true>
 {
   using iterator_type = Iterator;
   Iterator first, last;
@@ -83,7 +69,7 @@ struct _trivial_sequence<Iterator, DerivedPolicy, thrust::detail::true_type>
 
 // non-trivial case
 template <typename Iterator, typename DerivedPolicy>
-struct _trivial_sequence<Iterator, DerivedPolicy, thrust::detail::false_type>
+struct _trivial_sequence<Iterator, DerivedPolicy, false>
 {
   using iterator_value = it_value_t<Iterator>;
   using iterator_type  = typename thrust::detail::temporary_array<iterator_value, DerivedPolicy>::iterator;
@@ -116,16 +102,14 @@ struct _trivial_sequence<Iterator, DerivedPolicy, thrust::detail::false_type>
 };
 
 template <typename Iterator, typename DerivedPolicy>
-struct trivial_sequence
-    : detail::_trivial_sequence<Iterator, DerivedPolicy, typename thrust::is_contiguous_iterator<Iterator>::type>
+struct trivial_sequence : detail::_trivial_sequence<Iterator, DerivedPolicy, is_contiguous_iterator_v<Iterator>>
 {
-  using super_t = _trivial_sequence<Iterator, DerivedPolicy, typename thrust::is_contiguous_iterator<Iterator>::type>;
+  using super_t = _trivial_sequence<Iterator, DerivedPolicy, is_contiguous_iterator_v<Iterator>>;
 
   _CCCL_HOST_DEVICE trivial_sequence(thrust::execution_policy<DerivedPolicy>& exec, Iterator first, Iterator last)
       : super_t(exec, first, last)
   {}
 };
-
 } // end namespace detail
 
 THRUST_NAMESPACE_END

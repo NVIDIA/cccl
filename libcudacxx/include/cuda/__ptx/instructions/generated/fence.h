@@ -14,8 +14,8 @@ __device__ static inline void fence(
 */
 #if __cccl_ptx_isa >= 600
 extern "C" _CCCL_DEVICE void __cuda_ptx_fence_is_not_supported_before_SM_70__();
-template <dot_scope _Scope>
-_CCCL_DEVICE static inline void fence(sem_sc_t, scope_t<_Scope> __scope)
+template <::cuda::ptx::dot_scope _Scope>
+_CCCL_DEVICE static inline void fence(::cuda::ptx::sem_sc_t, ::cuda::ptx::scope_t<_Scope> __scope)
 {
   // __sem == sem_sc (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_gpu || __scope == scope_sys, "");
@@ -51,7 +51,7 @@ __device__ static inline void fence(
 #if __cccl_ptx_isa >= 780
 extern "C" _CCCL_DEVICE void __cuda_ptx_fence_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline void fence(sem_sc_t, scope_cluster_t)
+_CCCL_DEVICE static inline void fence(::cuda::ptx::sem_sc_t, ::cuda::ptx::scope_cluster_t)
 {
 // __sem == sem_sc (due to parameter type constraint)
 // __scope == scope_cluster (due to parameter type constraint)
@@ -75,8 +75,8 @@ __device__ static inline void fence(
 */
 #if __cccl_ptx_isa >= 600
 extern "C" _CCCL_DEVICE void __cuda_ptx_fence_is_not_supported_before_SM_70__();
-template <dot_scope _Scope>
-_CCCL_DEVICE static inline void fence(sem_acq_rel_t, scope_t<_Scope> __scope)
+template <::cuda::ptx::dot_scope _Scope>
+_CCCL_DEVICE static inline void fence(::cuda::ptx::sem_acq_rel_t, ::cuda::ptx::scope_t<_Scope> __scope)
 {
   // __sem == sem_acq_rel (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_gpu || __scope == scope_sys, "");
@@ -112,7 +112,7 @@ __device__ static inline void fence(
 #if __cccl_ptx_isa >= 780
 extern "C" _CCCL_DEVICE void __cuda_ptx_fence_is_not_supported_before_SM_90__();
 template <typename = void>
-_CCCL_DEVICE static inline void fence(sem_acq_rel_t, scope_cluster_t)
+_CCCL_DEVICE static inline void fence(::cuda::ptx::sem_acq_rel_t, ::cuda::ptx::scope_cluster_t)
 {
 // __sem == sem_acq_rel (due to parameter type constraint)
 // __scope == scope_cluster (due to parameter type constraint)
@@ -136,8 +136,8 @@ __device__ static inline void fence(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_fence_is_not_supported_before_SM_90__();
-template <dot_scope _Scope>
-_CCCL_DEVICE static inline void fence(sem_acquire_t, scope_t<_Scope> __scope)
+template <::cuda::ptx::dot_scope _Scope>
+_CCCL_DEVICE static inline void fence(::cuda::ptx::sem_acquire_t, ::cuda::ptx::scope_t<_Scope> __scope)
 {
   // __sem == sem_acquire (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
@@ -176,8 +176,8 @@ __device__ static inline void fence(
 */
 #if __cccl_ptx_isa >= 860
 extern "C" _CCCL_DEVICE void __cuda_ptx_fence_is_not_supported_before_SM_90__();
-template <dot_scope _Scope>
-_CCCL_DEVICE static inline void fence(sem_release_t, scope_t<_Scope> __scope)
+template <::cuda::ptx::dot_scope _Scope>
+_CCCL_DEVICE static inline void fence(::cuda::ptx::sem_release_t, ::cuda::ptx::scope_t<_Scope> __scope)
 {
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");

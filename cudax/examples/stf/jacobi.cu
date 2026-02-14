@@ -109,7 +109,7 @@ int main(int argc, char** argv)
   cuda_safe_call(cudaEventCreate(&start));
   cuda_safe_call(cudaEventCreate(&stop));
 
-  cuda_safe_call(cudaEventRecord(start, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(start, ctx.fence()));
 
   auto spec = con(con<64>(), mem(sizeof(double)));
 
@@ -143,7 +143,7 @@ int main(int argc, char** argv)
     }
   };
 
-  cuda_safe_call(cudaEventRecord(stop, ctx.task_fence()));
+  cuda_safe_call(cudaEventRecord(stop, ctx.fence()));
 
   ctx.finalize();
 

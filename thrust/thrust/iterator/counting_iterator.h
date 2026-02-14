@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/iterator/counting_iterator.h
  *  \brief An iterator which returns an increasing incrementable value
@@ -44,14 +31,18 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/strided_iterator.h>
 
+#include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/type_traits>
-#include <cuda/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
-template <typename Incrementable, typename System, typename Traversal, typename Difference>
+template <typename Incrementable, typename System, typename Traversal, typename Difference, typename StrideHolder>
 class counting_iterator;
 
 namespace detail
@@ -60,11 +51,12 @@ template <typename Number>
 using counting_iterator_difference_type =
   ::cuda::std::_If<::cuda::std::is_integral_v<Number> && sizeof(Number) < sizeof(int), int, ::cuda::std::ptrdiff_t>;
 
-template <typename Incrementable, typename System, typename Traversal, typename Difference>
+template <typename Incrementable, typename System, typename Traversal, typename Difference, typename StrideHolder>
 struct make_counting_iterator_base
 {
-  using system =
-    typename eval_if<::cuda::std::is_same<System, use_default>::value, identity_<any_system_tag>, identity_<System>>::type;
+  using system = typename eval_if<::cuda::std::is_same_v<System, use_default>,
+                                  ::cuda::std::type_identity<any_system_tag>,
+                                  ::cuda::std::type_identity<System>>::type;
 
   using traversal = replace_if_use_default<Traversal, ::cuda::std::type_identity<random_access_traversal_tag>>;
   using difference =
@@ -75,7 +67,7 @@ struct make_counting_iterator_base
   // to the internal state of an iterator causes subtle bugs (consider the temporary
   // iterator created in the expression *(iter + i)) and has no compelling use case
   using type =
-    iterator_adaptor<counting_iterator<Incrementable, System, Traversal, Difference>,
+    iterator_adaptor<counting_iterator<Incrementable, System, Traversal, Difference, StrideHolder>,
                      Incrementable,
                      Incrementable,
                      system,
@@ -83,6 +75,8 @@ struct make_counting_iterator_base
                      Incrementable,
                      difference>;
 };
+
+using unit_stride = compile_time_value<1>;
 } // namespace detail
 
 //! \addtogroup iterators
@@ -134,15 +128,7 @@ struct make_counting_iterator_base
 //!  // this example computes indices for all the nonzero values in a sequence
 //!
 //!  // sequence of zero and nonzero values
-//!  thrust::device_vector<int> stencil(8);
-//!  stencil[0] = 0;
-//!  stencil[1] = 1;
-//!  stencil[2] = 1;
-//!  stencil[3] = 0;
-//!  stencil[4] = 0;
-//!  stencil[5] = 1;
-//!  stencil[6] = 0;
-//!  stencil[7] = 1;
+//!  thrust::device_vector<int> stencil{0, 1, 1, 0, 0, 1, 0, 1};
 //!
 //!  // storage for the nonzero indices
 //!  thrust::device_vector<int> indices(8);
@@ -163,15 +149,22 @@ struct make_counting_iterator_base
 //! \endcode
 //!
 //! \see make_counting_iterator
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
+ */
 template <typename Incrementable,
-          typename System     = use_default,
-          typename Traversal  = use_default,
-          typename Difference = use_default>
+          typename System       = use_default,
+          typename Traversal    = use_default,
+          typename Difference   = use_default,
+          typename StrideHolder = detail::unit_stride>
 class _CCCL_DECLSPEC_EMPTY_BASES counting_iterator
-    : public detail::make_counting_iterator_base<Incrementable, System, Traversal, Difference>::type
+    : public detail::make_counting_iterator_base<Incrementable, System, Traversal, Difference, StrideHolder>::type
+    , StrideHolder
 {
   //! \cond
-  using super_t = typename detail::make_counting_iterator_base<Incrementable, System, Traversal, Difference>::type;
+  using super_t =
+    typename detail::make_counting_iterator_base<Incrementable, System, Traversal, Difference, StrideHolder>::type;
   friend class iterator_core_access;
 
 public:
@@ -189,10 +182,11 @@ public:
   //! \param rhs The \p counting_iterator to copy.
   template <class OtherSystem,
             detail::enable_if_convertible_t<
-              typename iterator_system<counting_iterator<Incrementable, OtherSystem, Traversal, Difference>>::type,
-              typename iterator_system<super_t>::type,
+              iterator_system_t<counting_iterator<Incrementable, OtherSystem, Traversal, Difference, StrideHolder>>,
+              iterator_system_t<super_t>,
               int> = 0>
-  _CCCL_HOST_DEVICE counting_iterator(counting_iterator<Incrementable, OtherSystem, Traversal, Difference> const& rhs)
+  _CCCL_HOST_DEVICE
+  counting_iterator(counting_iterator<Incrementable, OtherSystem, Traversal, Difference, StrideHolder> const& rhs)
       : super_t(rhs.base())
   {}
 
@@ -204,18 +198,68 @@ public:
       : super_t(x)
   {}
 
+  _CCCL_HOST_DEVICE explicit counting_iterator(Incrementable x, StrideHolder stride)
+      : super_t(x)
+      , StrideHolder(stride)
+  {}
+
   //! \cond
 
 private:
+  template <typename S = StrideHolder>
+  _CCCL_HOST_DEVICE auto stride() const
+  {
+    return static_cast<const S&>(*this).value;
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE void advance(difference_type n)
+  {
+    if constexpr (::cuda::std::is_same_v<StrideHolder, detail::unit_stride>)
+    {
+      this->base_reference() = static_cast<Incrementable>(this->base_reference() + n);
+    }
+    else
+    {
+      this->base_reference() += n * stride();
+    }
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE void increment()
+  {
+    if constexpr (::cuda::std::is_same_v<StrideHolder, detail::unit_stride>)
+    {
+      ++this->base_reference();
+    }
+    else
+    {
+      this->base_reference() += stride();
+    }
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE void decrement()
+  {
+    if constexpr (::cuda::std::is_same_v<StrideHolder, detail::unit_stride>)
+    {
+      --this->base_reference();
+    }
+    else
+    {
+      this->base_reference() -= stride();
+    }
+  }
+
   _CCCL_HOST_DEVICE reference dereference() const
   {
     return this->base_reference();
   }
 
   // note that we implement equal specially for floating point counting_iterator
-  template <typename OtherSystem, typename OtherTraversal, typename OtherDifference>
-  _CCCL_HOST_DEVICE bool
-  equal(counting_iterator<Incrementable, OtherSystem, OtherTraversal, OtherDifference> const& y) const
+  template <typename OtherSystem, typename OtherTraversal, typename OtherDifference, typename OtherStrideHolder>
+  _CCCL_HOST_DEVICE bool equal(
+    counting_iterator<Incrementable, OtherSystem, OtherTraversal, OtherDifference, OtherStrideHolder> const& y) const
   {
     if constexpr (::cuda::is_floating_point_v<Incrementable>)
     {
@@ -228,10 +272,10 @@ private:
   }
 
   template <typename OtherSystem, typename OtherTraversal, typename OtherDifference>
-  _CCCL_HOST_DEVICE difference_type
-  distance_to(counting_iterator<Incrementable, OtherSystem, OtherTraversal, OtherDifference> const& y) const
+  _CCCL_HOST_DEVICE difference_type distance_to(
+    counting_iterator<Incrementable, OtherSystem, OtherTraversal, OtherDifference, StrideHolder> const& y) const
   {
-    if constexpr (::cuda::std::is_integral<Incrementable>::value)
+    if constexpr (::cuda::std::is_integral_v<Incrementable>)
     {
       return static_cast<difference_type>(y.base()) - static_cast<difference_type>(this->base());
     }
@@ -254,6 +298,30 @@ inline _CCCL_HOST_DEVICE counting_iterator<Incrementable> make_counting_iterator
 {
   return counting_iterator<Incrementable>(x);
 }
+
+// FIXME(bgruber): Sphinx fails to document the fancyiterators group if make_counting_iterator has overloads, so we
+// exclude them for now
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+
+//! Constructs a counting_iterator with a runtime stride
+template <typename Incrementable, typename Stride>
+_CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x, Stride stride)
+{
+  return counting_iterator<Incrementable, use_default, random_access_traversal_tag, use_default, runtime_value<Stride>>(
+    x, {stride});
+}
+
+//! Constructs a counting_iterator with a compile-time stride
+template <auto Stride, typename Incrementable>
+_CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x)
+{
+  return counting_iterator<Incrementable,
+                           use_default,
+                           random_access_traversal_tag,
+                           use_default,
+                           compile_time_value<Stride>>(x, {});
+}
+#endif // _CCCL_DOXYGEN_INVOKED
 
 //! \} // end fancyiterators
 //! \} // end iterators

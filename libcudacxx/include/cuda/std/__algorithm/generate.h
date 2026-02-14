@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_GENERATE_H
-#define _LIBCUDACXX___ALGORITHM_GENERATE_H
+#ifndef _CUDA_STD___ALGORITHM_GENERATE_H
+#define _CUDA_STD___ALGORITHM_GENERATE_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,11 +22,11 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Generator>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void generate(_ForwardIterator __first, _ForwardIterator __last, _Generator __gen)
+_CCCL_API constexpr void generate(_ForwardIterator __first, _ForwardIterator __last, _Generator __gen)
 {
   for (; __first != __last; ++__first)
   {
@@ -34,8 +34,8 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void generate(_ForwardIterator __first, _For
   }
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_GENERATE_H
+#endif // _CUDA_STD___ALGORITHM_GENERATE_H

@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * @file
@@ -50,8 +26,11 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/__algorithm_>
-#include <cuda/std/type_traits>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -171,12 +150,12 @@ CUB_NAMESPACE_BEGIN
 //!
 //!    .. code-block:: python
 //!
-//!        import cuda.cooperative.experimental as cudax
+//!        from cuda import coop
 //!        from pynvjitlink import patch
 //!        patch.patch_numba_linker(lto=True)
 //!
 //!        # Specialize radix sort for a 1D block of 128 threads owning 4 integer items each
-//!        block_radix_sort = cudax.block.radix_sort_keys(numba.int32, 128, 4)
+//!        block_radix_sort = coop.block.radix_sort_keys(numba.int32, 128, 4)
 //!        temp_storage_bytes = block_radix_sort.temp_storage_bytes
 //!
 //!        @cuda.jit(link=block_radix_sort.files)
@@ -209,46 +188,46 @@ CUB_NAMESPACE_BEGIN
 //! @tparam KeyT
 //!   KeyT type
 //!
-//! @tparam BLOCK_DIM_X
+//! @tparam BlockDimX
 //!   The thread block length in threads along the X dimension
 //!
-//! @tparam ITEMS_PER_THREAD
+//! @tparam ItemsPerThread
 //!   The number of items per thread
 //!
 //! @tparam ValueT
 //!   **[optional]** ValueT type (default: cub::NullType, which indicates a keys-only sort)
 //!
-//! @tparam RADIX_BITS
+//! @tparam RadixBits
 //!   **[optional]** The number of radix bits per digit place (default: 4 bits)
 //!
-//! @tparam MEMOIZE_OUTER_SCAN
+//! @tparam MemoizeOuterScan
 //!  **[optional]** Whether or not to buffer outer raking scan partials to incur fewer shared memory
 //!  reads at the expense of higher register pressure (default: true for architectures SM35 and
 //!  newer, false otherwise).
 //!
-//! @tparam INNER_SCAN_ALGORITHM
+//! @tparam InnerScanAlgorithm
 //!   **[optional]** The cub::BlockScanAlgorithm algorithm to use
 //!   (default: cub::BLOCK_SCAN_WARP_SCANS)
 //!
-//! @tparam SMEM_CONFIG
+//! @tparam SMemConfig
 //!   **[optional]*8 Shared memory bank mode (default: `cudaSharedMemBankSizeFourByte`)
 //!
-//! @tparam BLOCK_DIM_Y
+//! @tparam BlockDimY
 //!   **[optional]** The thread block length in threads along the Y dimension (default: 1)
 //!
-//! @tparam BLOCK_DIM_Z
+//! @tparam BlockDimZ
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
 template <typename KeyT,
-          int BLOCK_DIM_X,
-          int ITEMS_PER_THREAD,
-          typename ValueT                         = NullType,
-          int RADIX_BITS                          = 4,
-          bool MEMOIZE_OUTER_SCAN                 = true,
-          BlockScanAlgorithm INNER_SCAN_ALGORITHM = BLOCK_SCAN_WARP_SCANS,
-          cudaSharedMemConfig SMEM_CONFIG         = cudaSharedMemBankSizeFourByte,
-          int BLOCK_DIM_Y                         = 1,
-          int BLOCK_DIM_Z                         = 1>
+          int BlockDimX,
+          int ItemsPerThread,
+          typename ValueT                       = NullType,
+          int RadixBits                         = 4,
+          bool MemoizeOuterScan                 = true,
+          BlockScanAlgorithm InnerScanAlgorithm = BLOCK_SCAN_WARP_SCANS,
+          cudaSharedMemConfig SMemConfig        = cudaSharedMemBankSizeFourByte,
+          int BlockDimY                         = 1,
+          int BlockDimZ                         = 1>
 class BlockRadixSort
 {
 private:
@@ -256,14 +235,11 @@ private:
    * Constants and type definitions
    ******************************************************************************/
 
-  enum
-  {
-    // The thread block size in threads
-    BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
+  // The thread block size in threads
+  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
-    // Whether or not there are values to be trucked along with keys
-    KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>,
-  };
+  // Whether or not there are values to be trucked along with keys
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
   // KeyT traits and unsigned bits type
   using traits                 = detail::radix::traits_t<KeyT>;
@@ -272,34 +248,20 @@ private:
 
   /// Ascending BlockRadixRank utility type
   using AscendingBlockRadixRank =
-    BlockRadixRank<BLOCK_DIM_X,
-                   RADIX_BITS,
-                   false,
-                   MEMOIZE_OUTER_SCAN,
-                   INNER_SCAN_ALGORITHM,
-                   SMEM_CONFIG,
-                   BLOCK_DIM_Y,
-                   BLOCK_DIM_Z>;
+    BlockRadixRank<BlockDimX, RadixBits, false, MemoizeOuterScan, InnerScanAlgorithm, SMemConfig, BlockDimY, BlockDimZ>;
 
   /// Descending BlockRadixRank utility type
   using DescendingBlockRadixRank =
-    BlockRadixRank<BLOCK_DIM_X,
-                   RADIX_BITS,
-                   true,
-                   MEMOIZE_OUTER_SCAN,
-                   INNER_SCAN_ALGORITHM,
-                   SMEM_CONFIG,
-                   BLOCK_DIM_Y,
-                   BLOCK_DIM_Z>;
+    BlockRadixRank<BlockDimX, RadixBits, true, MemoizeOuterScan, InnerScanAlgorithm, SMemConfig, BlockDimY, BlockDimZ>;
 
   /// Digit extractor type
   using fundamental_digit_extractor_t = BFEDigitExtractor<KeyT>;
 
   /// BlockExchange utility type for keys
-  using BlockExchangeKeys = BlockExchange<KeyT, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using BlockExchangeKeys = BlockExchange<KeyT, BlockDimX, ItemsPerThread, false, BlockDimY, BlockDimZ>;
 
   /// BlockExchange utility type for values
-  using BlockExchangeValues = BlockExchange<ValueT, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using BlockExchangeValues = BlockExchange<ValueT, BlockDimX, ItemsPerThread, false, BlockDimY, BlockDimZ>;
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   /// Shared memory storage layout type
@@ -336,8 +298,8 @@ private:
   /// Rank keys (specialized for ascending sort)
   template <class DigitExtractorT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  RankKeys(bit_ordered_type (&unsigned_keys)[ITEMS_PER_THREAD],
-           int (&ranks)[ITEMS_PER_THREAD],
+  RankKeys(bit_ordered_type (&unsigned_keys)[ItemsPerThread],
+           int (&ranks)[ItemsPerThread],
            DigitExtractorT digit_extractor,
            ::cuda::std::false_type /*is_descending*/)
   {
@@ -347,8 +309,8 @@ private:
   /// Rank keys (specialized for descending sort)
   template <class DigitExtractorT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  RankKeys(bit_ordered_type (&unsigned_keys)[ITEMS_PER_THREAD],
-           int (&ranks)[ITEMS_PER_THREAD],
+  RankKeys(bit_ordered_type (&unsigned_keys)[ItemsPerThread],
+           int (&ranks)[ItemsPerThread],
            DigitExtractorT digit_extractor,
            ::cuda::std::true_type /*is_descending*/)
   {
@@ -357,8 +319,8 @@ private:
 
   /// ExchangeValues (specialized for key-value sort, to-blocked arrangement)
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExchangeValues(
-    ValueT (&values)[ITEMS_PER_THREAD],
-    int (&ranks)[ITEMS_PER_THREAD],
+    ValueT (&values)[ItemsPerThread],
+    int (&ranks)[ItemsPerThread],
     ::cuda::std::false_type /*is_keys_only*/,
     ::cuda::std::true_type /*is_blocked*/)
   {
@@ -370,8 +332,8 @@ private:
 
   /// ExchangeValues (specialized for key-value sort, to-striped arrangement)
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExchangeValues(
-    ValueT (&values)[ITEMS_PER_THREAD],
-    int (&ranks)[ITEMS_PER_THREAD],
+    ValueT (&values)[ItemsPerThread],
+    int (&ranks)[ItemsPerThread],
     ::cuda::std::false_type /*is_keys_only*/,
     ::cuda::std::false_type /*is_blocked*/)
   {
@@ -384,8 +346,8 @@ private:
   /// ExchangeValues (specialized for keys-only sort)
   template <bool IS_BLOCKED>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExchangeValues(
-    ValueT (& /*values*/)[ITEMS_PER_THREAD],
-    int (& /*ranks*/)[ITEMS_PER_THREAD],
+    ValueT (& /*values*/)[ItemsPerThread],
+    int (& /*ranks*/)[ItemsPerThread],
     ::cuda::std::true_type /*is_keys_only*/,
     ::cuda::std::bool_constant<IS_BLOCKED> /*is_blocked*/)
   {}
@@ -413,18 +375,18 @@ private:
    */
   template <bool DESCENDING, bool KEYS_ONLY, class DecomposerT = detail::identity_decomposer_t>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SortBlocked(
-    KeyT (&keys)[ITEMS_PER_THREAD],
-    ValueT (&values)[ITEMS_PER_THREAD],
+    KeyT (&keys)[ItemsPerThread],
+    ValueT (&values)[ItemsPerThread],
     int begin_bit,
     int end_bit,
     ::cuda::std::bool_constant<DESCENDING> is_descending,
     ::cuda::std::bool_constant<KEYS_ONLY> is_keys_only,
     DecomposerT decomposer = {})
   {
-    bit_ordered_type(&unsigned_keys)[ITEMS_PER_THREAD] = reinterpret_cast<bit_ordered_type(&)[ITEMS_PER_THREAD]>(keys);
+    bit_ordered_type(&unsigned_keys)[ItemsPerThread] = reinterpret_cast<bit_ordered_type(&)[ItemsPerThread]>(keys);
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int KEY = 0; KEY < ITEMS_PER_THREAD; KEY++)
+    for (int KEY = 0; KEY < ItemsPerThread; KEY++)
     {
       unsigned_keys[KEY] = bit_ordered_conversion::to_bit_ordered(decomposer, unsigned_keys[KEY]);
     }
@@ -432,14 +394,14 @@ private:
     // Radix sorting passes
     while (true)
     {
-      int pass_bits = _CUDA_VSTD::min(RADIX_BITS, end_bit - begin_bit);
+      int pass_bits = ::cuda::std::min(RadixBits, end_bit - begin_bit);
       auto digit_extractor =
         traits::template digit_extractor<fundamental_digit_extractor_t>(begin_bit, pass_bits, decomposer);
 
       // Rank the blocked keys
-      int ranks[ITEMS_PER_THREAD];
+      int ranks[ItemsPerThread];
       RankKeys(unsigned_keys, ranks, digit_extractor, is_descending);
-      begin_bit += RADIX_BITS;
+      begin_bit += RadixBits;
 
       __syncthreads();
 
@@ -460,7 +422,7 @@ private:
 
     // Untwiddle bits if necessary
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int KEY = 0; KEY < ITEMS_PER_THREAD; KEY++)
+    for (int KEY = 0; KEY < ItemsPerThread; KEY++)
     {
       unsigned_keys[KEY] = bit_ordered_conversion::from_bit_ordered(decomposer, unsigned_keys[KEY]);
     }
@@ -492,18 +454,18 @@ public:
    */
   template <bool DESCENDING, bool KEYS_ONLY, class DecomposerT = detail::identity_decomposer_t>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SortBlockedToStriped(
-    KeyT (&keys)[ITEMS_PER_THREAD],
-    ValueT (&values)[ITEMS_PER_THREAD],
+    KeyT (&keys)[ItemsPerThread],
+    ValueT (&values)[ItemsPerThread],
     int begin_bit,
     int end_bit,
     ::cuda::std::bool_constant<DESCENDING> is_descending,
     ::cuda::std::bool_constant<KEYS_ONLY> is_keys_only,
     DecomposerT decomposer = {})
   {
-    bit_ordered_type(&unsigned_keys)[ITEMS_PER_THREAD] = reinterpret_cast<bit_ordered_type(&)[ITEMS_PER_THREAD]>(keys);
+    bit_ordered_type(&unsigned_keys)[ItemsPerThread] = reinterpret_cast<bit_ordered_type(&)[ItemsPerThread]>(keys);
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int KEY = 0; KEY < ITEMS_PER_THREAD; KEY++)
+    for (int KEY = 0; KEY < ItemsPerThread; KEY++)
     {
       unsigned_keys[KEY] = bit_ordered_conversion::to_bit_ordered(decomposer, unsigned_keys[KEY]);
     }
@@ -511,14 +473,14 @@ public:
     // Radix sorting passes
     while (true)
     {
-      int pass_bits = _CUDA_VSTD::min(RADIX_BITS, end_bit - begin_bit);
+      int pass_bits = ::cuda::std::min(RadixBits, end_bit - begin_bit);
       auto digit_extractor =
         traits::template digit_extractor<fundamental_digit_extractor_t>(begin_bit, pass_bits, decomposer);
 
       // Rank the blocked keys
-      int ranks[ITEMS_PER_THREAD];
+      int ranks[ItemsPerThread];
       RankKeys(unsigned_keys, ranks, digit_extractor, is_descending);
-      begin_bit += RADIX_BITS;
+      begin_bit += RadixBits;
 
       __syncthreads();
 
@@ -546,7 +508,7 @@ public:
 
     // Untwiddle bits if necessary
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int KEY = 0; KEY < ITEMS_PER_THREAD; KEY++)
+    for (int KEY = 0; KEY < ItemsPerThread; KEY++)
     {
       unsigned_keys[KEY] = bit_ordered_conversion::from_bit_ordered(decomposer, unsigned_keys[KEY]);
     }
@@ -562,29 +524,42 @@ public:
   //! @{
 
   //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixSort()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
    * @brief Collective constructor using the specified memory allocation as temporary storage.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixSort(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  //! @} end member group
+  //! @}
   //! @name Sorting (blocked arrangements)
   //! @{
 
   //! @rst
   //! Performs an ascending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @granularity
   //! - @smemreuse
@@ -630,9 +605,9 @@ public:
   //! @param[in] end_bit
   //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Sort(KeyT (&keys)[ITEMS_PER_THREAD], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
+  Sort(KeyT (&keys)[ItemsPerThread], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
-    NullType values[ITEMS_PER_THREAD];
+    NullType values[ItemsPerThread];
 
     SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>);
   }
@@ -640,6 +615,9 @@ public:
   //! @rst
   //! Performs an ascending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @granularity
   //! * @smemreuse
@@ -697,9 +675,9 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
-  Sort(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer, int begin_bit, int end_bit)
+  Sort(KeyT (&keys)[ItemsPerThread], DecomposerT decomposer, int begin_bit, int end_bit)
   {
-    NullType values[ITEMS_PER_THREAD];
+    NullType values[ItemsPerThread];
 
     SortBlocked(
       keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
@@ -708,6 +686,9 @@ public:
   //! @rst
   //! Performs an ascending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @granularity
   //! * @smemreuse
@@ -757,7 +738,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
-  Sort(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
+  Sort(KeyT (&keys)[ItemsPerThread], DecomposerT decomposer)
   {
     Sort(keys, decomposer, 0, detail::radix::traits_t<KeyT>::default_end_bit(decomposer));
   }
@@ -765,6 +746,9 @@ public:
   //! @rst
   //! Performs an ascending block-wide radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>`
   //! of keys and values.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
@@ -821,11 +805,8 @@ public:
   //!
   //! @param[in] end_bit
   //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Sort(KeyT (&keys)[ITEMS_PER_THREAD],
-       ValueT (&values)[ITEMS_PER_THREAD],
-       int begin_bit = 0,
-       int end_bit   = sizeof(KeyT) * 8)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(
+    KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>);
   }
@@ -833,6 +814,9 @@ public:
   //! @rst
   //! Performs an ascending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
@@ -898,11 +882,8 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
-  Sort(KeyT (&keys)[ITEMS_PER_THREAD],
-       ValueT (&values)[ITEMS_PER_THREAD],
-       DecomposerT decomposer,
-       int begin_bit,
-       int end_bit)
+  Sort(
+    KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], DecomposerT decomposer, int begin_bit, int end_bit)
   {
     SortBlocked(
       keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
@@ -911,6 +892,9 @@ public:
   //! @rst
   //! Performs an ascending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
@@ -968,7 +952,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
-  Sort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], DecomposerT decomposer)
+  Sort(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], DecomposerT decomposer)
   {
     Sort(keys, values, decomposer, 0, detail::radix::traits_t<KeyT>::default_end_bit(decomposer));
   }
@@ -976,6 +960,9 @@ public:
   //! @rst
   //! Performs a descending block-wide radix sort over a :ref:`blocked arrangement <flexible-data-arrangement>`
   //! of keys.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @granularity
   //! - @smemreuse
@@ -1022,9 +1009,9 @@ public:
   //! @param[in] end_bit
   //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  SortDescending(KeyT (&keys)[ITEMS_PER_THREAD], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
+  SortDescending(KeyT (&keys)[ItemsPerThread], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
-    NullType values[ITEMS_PER_THREAD];
+    NullType values[ItemsPerThread];
 
     SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>);
   }
@@ -1032,6 +1019,9 @@ public:
   //! @rst
   //! Performs a descending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @granularity
   //! * @smemreuse
@@ -1089,9 +1079,9 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
-  SortDescending(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer, int begin_bit, int end_bit)
+  SortDescending(KeyT (&keys)[ItemsPerThread], DecomposerT decomposer, int begin_bit, int end_bit)
   {
-    NullType values[ITEMS_PER_THREAD];
+    NullType values[ItemsPerThread];
 
     SortBlocked(
       keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
@@ -1100,6 +1090,9 @@ public:
   //! @rst
   //! Performs a descending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @granularity
   //! * @smemreuse
@@ -1149,9 +1142,9 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
-  SortDescending(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
+  SortDescending(KeyT (&keys)[ItemsPerThread], DecomposerT decomposer)
   {
-    NullType values[ITEMS_PER_THREAD];
+    NullType values[ItemsPerThread];
 
     SortBlocked(
       keys,
@@ -1166,6 +1159,9 @@ public:
   //! @rst
   //! Performs a descending block-wide radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>`
   //! of keys and values.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
@@ -1221,10 +1217,7 @@ public:
   //! @param[in] end_bit
   //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
   _CCCL_DEVICE _CCCL_FORCEINLINE void SortDescending(
-    KeyT (&keys)[ITEMS_PER_THREAD],
-    ValueT (&values)[ITEMS_PER_THREAD],
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8)
+    KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     SortBlocked(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>);
   }
@@ -1232,6 +1225,9 @@ public:
   //! @rst
   //! Performs a descending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
@@ -1297,11 +1293,8 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
-  SortDescending(KeyT (&keys)[ITEMS_PER_THREAD],
-                 ValueT (&values)[ITEMS_PER_THREAD],
-                 DecomposerT decomposer,
-                 int begin_bit,
-                 int end_bit)
+  SortDescending(
+    KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], DecomposerT decomposer, int begin_bit, int end_bit)
   {
     SortBlocked(
       keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
@@ -1310,6 +1303,9 @@ public:
   //! @rst
   //! Performs a descending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
@@ -1367,7 +1363,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
-  SortDescending(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], DecomposerT decomposer)
+  SortDescending(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], DecomposerT decomposer)
   {
     SortBlocked(
       keys,
@@ -1379,13 +1375,16 @@ public:
       decomposer);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Sorting (blocked arrangement -> striped arrangement)
   //! @{
 
   //! @rst
   //! Performs an ascending radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>` of keys,
   //! leaving them in a :ref:`striped arrangement <flexible-data-arrangement>`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @granularity
   //! - @smemreuse
@@ -1432,9 +1431,9 @@ public:
   //! @param[in] end_bit
   //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
+  SortBlockedToStriped(KeyT (&keys)[ItemsPerThread], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
-    NullType values[ITEMS_PER_THREAD];
+    NullType values[ItemsPerThread];
 
     SortBlockedToStriped(
       keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>);
@@ -1444,6 +1443,9 @@ public:
   //! Performs an ascending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @granularity
   //! * @smemreuse
@@ -1501,9 +1503,9 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
-  SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer, int begin_bit, int end_bit)
+  SortBlockedToStriped(KeyT (&keys)[ItemsPerThread], DecomposerT decomposer, int begin_bit, int end_bit)
   {
-    NullType values[ITEMS_PER_THREAD];
+    NullType values[ItemsPerThread];
 
     SortBlockedToStriped(
       keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
@@ -1513,6 +1515,9 @@ public:
   //! Performs an ascending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @granularity
   //! * @smemreuse
@@ -1562,9 +1567,9 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
-  SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
+  SortBlockedToStriped(KeyT (&keys)[ItemsPerThread], DecomposerT decomposer)
   {
-    NullType values[ITEMS_PER_THREAD];
+    NullType values[ItemsPerThread];
 
     SortBlockedToStriped(
       keys,
@@ -1579,6 +1584,9 @@ public:
   //! @rst
   //! Performs an ascending radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>` of keys and
   //! values, leaving them in a :ref:`striped arrangement <flexible-data-arrangement>`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
@@ -1634,10 +1642,7 @@ public:
   //! @param[in] end_bit
   //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
   _CCCL_DEVICE _CCCL_FORCEINLINE void SortBlockedToStriped(
-    KeyT (&keys)[ITEMS_PER_THREAD],
-    ValueT (&values)[ITEMS_PER_THREAD],
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8)
+    KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     SortBlockedToStriped(
       keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>);
@@ -1647,6 +1652,9 @@ public:
   //! Performs an ascending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @granularity
   //! * @smemreuse
@@ -1707,11 +1715,8 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
-  SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD],
-                       ValueT (&values)[ITEMS_PER_THREAD],
-                       DecomposerT decomposer,
-                       int begin_bit,
-                       int end_bit)
+  SortBlockedToStriped(
+    KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], DecomposerT decomposer, int begin_bit, int end_bit)
   {
     SortBlockedToStriped(
       keys, values, begin_bit, end_bit, ::cuda::std::false_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
@@ -1721,6 +1726,9 @@ public:
   //! Performs an ascending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @granularity
   //! * @smemreuse
@@ -1773,7 +1781,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
-  SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], DecomposerT decomposer)
+  SortBlockedToStriped(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], DecomposerT decomposer)
   {
     SortBlockedToStriped(
       keys,
@@ -1788,6 +1796,9 @@ public:
   //! @rst
   //! Performs a descending radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>`
   //! of keys, leaving them in a :ref:`striped arrangement <flexible-data-arrangement>`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @granularity
   //! - @smemreuse
@@ -1834,9 +1845,9 @@ public:
   //! @param[in] end_bit
   //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  SortDescendingBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
+  SortDescendingBlockedToStriped(KeyT (&keys)[ItemsPerThread], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
-    NullType values[ITEMS_PER_THREAD];
+    NullType values[ItemsPerThread];
 
     SortBlockedToStriped(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>);
   }
@@ -1845,6 +1856,9 @@ public:
   //! Performs a descending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @granularity
   //! * @smemreuse
@@ -1902,9 +1916,9 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
-  SortDescendingBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer, int begin_bit, int end_bit)
+  SortDescendingBlockedToStriped(KeyT (&keys)[ItemsPerThread], DecomposerT decomposer, int begin_bit, int end_bit)
   {
-    NullType values[ITEMS_PER_THREAD];
+    NullType values[ItemsPerThread];
 
     SortBlockedToStriped(
       keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
@@ -1914,6 +1928,9 @@ public:
   //! Performs a descending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @granularity
   //! * @smemreuse
@@ -1963,9 +1980,9 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
-  SortDescendingBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
+  SortDescendingBlockedToStriped(KeyT (&keys)[ItemsPerThread], DecomposerT decomposer)
   {
-    NullType values[ITEMS_PER_THREAD];
+    NullType values[ItemsPerThread];
 
     SortBlockedToStriped(
       keys,
@@ -1980,6 +1997,9 @@ public:
   //! @rst
   //! Performs a descending radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>`
   //! of keys and values, leaving them in a :ref:`striped arrangement <flexible-data-arrangement>`
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
@@ -2035,10 +2055,7 @@ public:
   //! @param[in] end_bit
   //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
   _CCCL_DEVICE _CCCL_FORCEINLINE void SortDescendingBlockedToStriped(
-    KeyT (&keys)[ITEMS_PER_THREAD],
-    ValueT (&values)[ITEMS_PER_THREAD],
-    int begin_bit = 0,
-    int end_bit   = sizeof(KeyT) * 8)
+    KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     SortBlockedToStriped(keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>);
   }
@@ -2047,6 +2064,9 @@ public:
   //! Performs a descending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @granularity
   //! * @smemreuse
@@ -2108,11 +2128,7 @@ public:
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
   SortDescendingBlockedToStriped(
-    KeyT (&keys)[ITEMS_PER_THREAD],
-    ValueT (&values)[ITEMS_PER_THREAD],
-    DecomposerT decomposer,
-    int begin_bit,
-    int end_bit)
+    KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], DecomposerT decomposer, int begin_bit, int end_bit)
   {
     SortBlockedToStriped(
       keys, values, begin_bit, end_bit, ::cuda::std::true_type(), detail::bool_constant_v<KEYS_ONLY>, decomposer);
@@ -2122,6 +2138,9 @@ public:
   //! Performs a descending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @granularity
   //! * @smemreuse
@@ -2174,8 +2193,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE //
   ::cuda::std::enable_if_t< //
     !::cuda::std::is_convertible_v<DecomposerT, int>>
-  SortDescendingBlockedToStriped(
-    KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&values)[ITEMS_PER_THREAD], DecomposerT decomposer)
+  SortDescendingBlockedToStriped(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], DecomposerT decomposer)
   {
     SortBlockedToStriped(
       keys,
@@ -2187,7 +2205,7 @@ public:
       decomposer);
   }
 
-  //@}  end member group
+  //@}
 };
 
 CUB_NAMESPACE_END

@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 // <memory>
 
@@ -20,9 +20,9 @@
 //   void
 //   return_temporary_buffer(T* p);
 
-#include <cuda/std/__algorithm_>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+#include <cuda/std/memory>
 #include <cuda/std/utility>
 
 #include "test_macros.h"

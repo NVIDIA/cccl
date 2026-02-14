@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * \file
@@ -48,10 +24,12 @@
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
 
 #include <nv/target>
 
@@ -219,6 +197,14 @@ struct no_delay_constructor_t
   {
     return {};
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedConstructor()
+  {
+    using namespace ptx_json;
+    return object<key<"name">() = value<string("no_delay_constructor_t")>(), key<"params">() = array<L2WriteLatency>()>();
+  }
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency, unsigned int GridThreshold = 500>
@@ -247,6 +233,15 @@ struct reduce_by_key_delay_constructor_t
   {
     return {};
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedConstructor()
+  {
+    using namespace ptx_json;
+    return object<key<"name">()   = value<string("reduce_by_key_delay_constructor_t")>(),
+                  key<"params">() = array<Delay, L2WriteLatency, GridThreshold>()>();
+  }
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
@@ -269,6 +264,15 @@ struct fixed_delay_constructor_t
   {
     return {};
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedConstructor()
+  {
+    using namespace ptx_json;
+    return object<key<"name">()   = value<string("fixed_delay_constructor_t")>(),
+                  key<"params">() = array<Delay, L2WriteLatency>()>();
+  }
+#endif
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -294,6 +298,15 @@ struct exponential_backoff_constructor_t
   {
     return {InitialDelay};
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedConstructor()
+  {
+    using namespace ptx_json;
+    return object<key<"name">()   = value<string("exponential_backoff_constructor_t")>(),
+                  key<"params">() = array<InitialDelay, L2WriteLatency>()>();
+  }
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -332,6 +345,15 @@ struct exponential_backoff_jitter_constructor_t
   {
     return {InitialDelay, seed};
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedConstructor()
+  {
+    using namespace ptx_json;
+    return object<key<"name">()   = value<string("exponential_backoff_jitter_constructor_t")>(),
+                  key<"params">() = array<InitialDelay, L2WriteLatency>()>();
+  }
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -370,6 +392,15 @@ struct exponential_backoff_jitter_window_constructor_t
   {
     return {InitialDelay, seed};
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedConstructor()
+  {
+    using namespace ptx_json;
+    return object<key<"name">()   = value<string("exponential_backoff_jitter_window_constructor_t")>(),
+                  key<"params">() = array<InitialDelay, L2WriteLatency>()>();
+  }
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -411,6 +442,15 @@ struct exponential_backon_jitter_window_constructor_t
     max_delay >>= 1;
     return {max_delay, seed};
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedConstructor()
+  {
+    using namespace ptx_json;
+    return object<key<"name">()   = value<string("exponential_backon_jitter_window_constructor_t")>(),
+                  key<"params">() = array<InitialDelay, L2WriteLatency>()>();
+  }
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -451,6 +491,15 @@ struct exponential_backon_jitter_constructor_t
     max_delay >>= 1;
     return {max_delay, seed};
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedConstructor()
+  {
+    using namespace ptx_json;
+    return object<key<"name">()   = value<string("exponential_backon_jitter_constructor_t")>(),
+                  key<"params">() = array<InitialDelay, L2WriteLatency>()>();
+  }
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -479,6 +528,15 @@ struct exponential_backon_constructor_t
     max_delay >>= 1;
     return {max_delay};
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedConstructor()
+  {
+    using namespace ptx_json;
+    return object<key<"name">()   = value<string("exponential_backon_constructor_t")>(),
+                  key<"params">() = array<InitialDelay, L2WriteLatency>()>();
+  }
+#endif // CUB_ENABLE_POLICY_PTX_JSON
 };
 
 using default_no_delay_constructor_t = no_delay_constructor_t<450>;
@@ -541,51 +599,48 @@ struct tile_state_with_memory_order
   }
 };
 
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int num_tiles_to_num_tile_states(int num_tiles)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr size_t num_tiles_to_num_tile_states(size_t num_tiles)
 {
   return warp_threads + num_tiles;
 }
 
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE size_t
-tile_state_allocation_size(int bytes_per_description, int bytes_per_payload, int num_tiles)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_allocation_size(
+  size_t& temp_storage_bytes, size_t bytes_per_description, size_t bytes_per_payload, size_t num_tiles)
 {
-  int num_tile_states = num_tiles_to_num_tile_states(num_tiles);
+  size_t num_tile_states = num_tiles_to_num_tile_states(num_tiles);
   size_t allocation_sizes[]{
     // bytes needed for tile status descriptors
-    static_cast<size_t>(num_tile_states * bytes_per_description),
+    num_tile_states * bytes_per_description,
     // bytes needed for partials
-    static_cast<size_t>(num_tile_states * bytes_per_payload),
+    num_tile_states * bytes_per_payload,
     // bytes needed for inclusives
-    static_cast<size_t>(num_tile_states * bytes_per_payload)};
+    num_tile_states * bytes_per_payload};
   // Set the necessary size of the blob
-  size_t temp_storage_bytes = 0;
-  void* allocations[3]      = {};
-  AliasTemporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes);
-
-  return temp_storage_bytes;
+  temp_storage_bytes   = 0;
+  void* allocations[3] = {};
+  return alias_temporaries(nullptr, temp_storage_bytes, allocations, allocation_sizes);
 };
 
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_init(
-  int bytes_per_description,
-  int bytes_per_payload,
-  int num_tiles,
+  size_t bytes_per_description,
+  size_t bytes_per_payload,
+  size_t num_tiles,
   void* d_temp_storage,
   size_t temp_storage_bytes,
   void* (&allocations)[3])
 {
-  int num_tile_states = num_tiles_to_num_tile_states(num_tiles);
+  size_t num_tile_states = num_tiles_to_num_tile_states(num_tiles);
   size_t allocation_sizes[]{
     // bytes needed for tile status descriptors
-    static_cast<size_t>(num_tile_states * bytes_per_description),
+    num_tile_states * bytes_per_description,
     // bytes needed for partials
-    static_cast<size_t>(num_tile_states * bytes_per_payload),
+    num_tile_states * bytes_per_payload,
     // bytes needed for inclusives
-    static_cast<size_t>(num_tile_states * bytes_per_payload)};
+    num_tile_states * bytes_per_payload};
 
   // Set the necessary size of the blob
-  return AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+  return alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
 }
-
 } // namespace detail
 
 /**
@@ -599,6 +654,7 @@ struct ScanTileState;
  * that can be combined into one machine word that can be
  * read/written coherently in a single access.
  */
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document - causes Breathe/Sphinx parsing errors with nested templates
 template <typename T>
 struct ScanTileState<T, true>
 {
@@ -620,11 +676,7 @@ struct ScanTileState<T, true>
     T value;
   };
 
-  // Constants
-  enum
-  {
-    TILE_STATUS_PADDING = detail::warp_threads,
-  };
+  static constexpr int TILE_STATUS_PADDING = detail::warp_threads;
 
   // Device storage
   TxnWord* d_tile_descriptors;
@@ -640,16 +692,8 @@ struct ScanTileState<T, true>
   /**
    * @brief Initializer
    *
-   * @param[in] num_tiles
-   *   Number of tiles
-   *
    * @param[in] d_temp_storage
    *   Device-accessible allocation of temporary storage.
-   *   When nullptr, the required allocation size is written to \p temp_storage_bytes and no work is
-   * done.
-   *
-   * @param[in] temp_storage_bytes
-   *   Size in bytes of \t d_temp_storage allocation
    */
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t
   Init(int /*num_tiles*/, void* d_temp_storage, size_t /*temp_storage_bytes*/)
@@ -665,14 +709,13 @@ struct ScanTileState<T, true>
    *   Number of tiles
    *
    * @param[out] temp_storage_bytes
-   *   Size in bytes of \t d_temp_storage allocation
+   *   Size in bytes of @p d_temp_storage allocation
    */
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static constexpr cudaError_t
   AllocationSize(int num_tiles, size_t& temp_storage_bytes)
   {
-    temp_storage_bytes =
-      detail::tile_state_allocation_size(description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
-    return cudaSuccess;
+    return detail::tile_state_allocation_size(
+      temp_storage_bytes, description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
   }
 
   /**
@@ -808,6 +851,7 @@ public:
     return tile_descriptor.value;
   }
 };
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * Tile status interface specialized for scan status and value types that
@@ -821,11 +865,7 @@ struct ScanTileState<T, false>
   // Status word type
   using StatusWord = unsigned int;
 
-  // Constants
-  enum
-  {
-    TILE_STATUS_PADDING = detail::warp_threads,
-  };
+  static constexpr int TILE_STATUS_PADDING = detail::warp_threads;
 
   // Device storage
   StatusWord* d_tile_status;
@@ -854,7 +894,7 @@ struct ScanTileState<T, false>
    *   done.
    *
    * @param[in] temp_storage_bytes
-   *   Size in bytes of \t d_temp_storage allocation
+   *   Size in bytes of @p d_temp_storage allocation
    */
   /// Initializer
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t Init(int num_tiles, void* d_temp_storage, size_t temp_storage_bytes)
@@ -885,14 +925,13 @@ struct ScanTileState<T, false>
    *   Number of tiles
    *
    * @param[out] temp_storage_bytes
-   *   Size in bytes of \t d_temp_storage allocation
+   *   Size in bytes of @p d_temp_storage allocation
    */
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static constexpr cudaError_t
   AllocationSize(int num_tiles, size_t& temp_storage_bytes)
   {
-    temp_storage_bytes =
-      detail::tile_state_allocation_size(description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
-    return cudaSuccess;
+    return detail::tile_state_allocation_size(
+      temp_storage_bytes, description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
   }
   /**
    * Initialize (from device)
@@ -1000,20 +1039,18 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, false> : ScanTileState<KeyValuePai
  * Tile status interface for reduction by key, specialized for scan status and value types that
  * can be combined into one machine word that can be read/written coherently in a single access.
  */
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document - causes Breathe/Sphinx parsing errors with nested templates
 template <typename ValueT, typename KeyT>
 struct ReduceByKeyScanTileState<ValueT, KeyT, true>
 {
   using KeyValuePairT = KeyValuePair<KeyT, ValueT>;
 
   // Constants
-  enum
-  {
-    PAIR_SIZE        = static_cast<int>(sizeof(ValueT) + sizeof(KeyT)),
-    TXN_WORD_SIZE    = 1 << Log2<PAIR_SIZE + 1>::VALUE,
-    STATUS_WORD_SIZE = TXN_WORD_SIZE - PAIR_SIZE,
+  static constexpr int PAIR_SIZE        = static_cast<int>(sizeof(ValueT) + sizeof(KeyT));
+  static constexpr int TXN_WORD_SIZE    = 1 << Log2<PAIR_SIZE + 1>::VALUE;
+  static constexpr int STATUS_WORD_SIZE = TXN_WORD_SIZE - PAIR_SIZE;
 
-    TILE_STATUS_PADDING = detail::warp_threads,
-  };
+  static constexpr int TILE_STATUS_PADDING = detail::warp_threads;
 
   // Status word type
   using StatusWord = ::cuda::std::_If<
@@ -1065,7 +1102,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
    *   is written to \p temp_storage_bytes and no work is done.
    *
    * @param[in] temp_storage_bytes
-   *   Size in bytes of \t d_temp_storage allocation
+   *   Size in bytes of @p d_temp_storage allocation
    */
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t
   Init(int /*num_tiles*/, void* d_temp_storage, size_t /*temp_storage_bytes*/)
@@ -1081,7 +1118,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
    *   Number of tiles
    *
    * @param[out] temp_storage_bytes
-   *   Size in bytes of \t d_temp_storage allocation
+   *   Size in bytes of @p d_temp_storage allocation
    */
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static cudaError_t AllocationSize(int num_tiles, size_t& temp_storage_bytes)
   {
@@ -1180,15 +1217,16 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     value.key   = tile_descriptor.key;
   }
 };
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /******************************************************************************
- * Prefix call-back operator for coupling local block scan within a
+ * Prefix callback operator for coupling local block scan within a
  * block-cooperative scan
  ******************************************************************************/
 
 /**
- * Stateful block-scan prefix functor.  Provides the the running prefix for
- * the current tile by using the call-back warp to wait on on
+ * Stateful block-scan prefix functor.  Provides the running prefix for
+ * the current tile by using the callback warp to wait for
  * aggregates/prefixes from predecessor tiles to become available.
  *
  * @tparam DelayConstructorT

@@ -26,7 +26,7 @@
 int main(int, char**)
 {
   {
-    typedef cuda::std::tuple<int> T;
+    using T = cuda::std::tuple<int>;
     const T t(3);
     static_assert(cuda::std::is_same<const int&&, decltype(cuda::std::get<0>(cuda::std::move(t)))>::value, "");
     static_assert(noexcept(cuda::std::get<0>(cuda::std::move(t))), "");
@@ -37,7 +37,7 @@ int main(int, char**)
   // cuda::std::string not supported
   /*
   {
-  typedef cuda::std::tuple<cuda::std::string, int> T;
+  using T = cuda::std::tuple<cuda::std::string, int>;
   const T t("high", 5);
   static_assert(cuda::std::is_same<const cuda::std::string&&, decltype(cuda::std::get<0>(cuda::std::move(t)))>::value,
   ""); static_assert(noexcept(cuda::std::get<0>(cuda::std::move(t))), ""); static_assert(cuda::std::is_same<const int&&,
@@ -71,7 +71,7 @@ int main(int, char**)
   }
 
   {
-    typedef cuda::std::tuple<double, int> T;
+    using T = cuda::std::tuple<double, int>;
     constexpr const T t(2.718, 5);
     static_assert(cuda::std::get<0>(cuda::std::move(t)) == 2.718, "");
     static_assert(cuda::std::get<1>(cuda::std::move(t)) == 5, "");

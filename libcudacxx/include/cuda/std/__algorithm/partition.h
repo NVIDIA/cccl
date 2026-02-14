@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_PARTITION_H
-#define _LIBCUDACXX___ALGORITHM_PARTITION_H
+#ifndef _CUDA_STD___ALGORITHM_PARTITION_H
+#define _CUDA_STD___ALGORITHM_PARTITION_H
 
 #include <cuda/std/detail/__config>
 
@@ -28,18 +28,18 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Predicate, class _AlgPolicy, class _ForwardIterator, class _Sentinel>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_ForwardIterator, _ForwardIterator>
+_CCCL_API constexpr pair<_ForwardIterator, _ForwardIterator>
 __partition_impl(_ForwardIterator __first, _Sentinel __last, _Predicate __pred, forward_iterator_tag)
 {
   while (true)
   {
     if (__first == __last)
     {
-      return _CUDA_VSTD::make_pair(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__first));
+      return ::cuda::std::make_pair(::cuda::std::move(__first), ::cuda::std::move(__first));
     }
     if (!__pred(*__first))
     {
@@ -57,12 +57,12 @@ __partition_impl(_ForwardIterator __first, _Sentinel __last, _Predicate __pred, 
       ++__first;
     }
   }
-  return _CUDA_VSTD::make_pair(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__p));
+  return ::cuda::std::make_pair(::cuda::std::move(__first), ::cuda::std::move(__p));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Predicate, class _AlgPolicy, class _BidirectionalIterator, class _Sentinel>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_BidirectionalIterator, _BidirectionalIterator>
+_CCCL_API constexpr pair<_BidirectionalIterator, _BidirectionalIterator>
 __partition_impl(_BidirectionalIterator __first, _Sentinel __sentinel, _Predicate __pred, bidirectional_iterator_tag)
 {
   _BidirectionalIterator __original_last = _IterOps<_AlgPolicy>::next(__first, __sentinel);
@@ -74,7 +74,7 @@ __partition_impl(_BidirectionalIterator __first, _Sentinel __sentinel, _Predicat
     {
       if (__first == __last)
       {
-        return _CUDA_VSTD::make_pair(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__original_last));
+        return ::cuda::std::make_pair(::cuda::std::move(__first), ::cuda::std::move(__original_last));
       }
       if (!__pred(*__first))
       {
@@ -86,7 +86,7 @@ __partition_impl(_BidirectionalIterator __first, _Sentinel __sentinel, _Predicat
     {
       if (__first == --__last)
       {
-        return _CUDA_VSTD::make_pair(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__original_last));
+        return ::cuda::std::make_pair(::cuda::std::move(__first), ::cuda::std::move(__original_last));
       }
     } while (!__pred(*__last));
     _IterOps<_AlgPolicy>::iter_swap(__first, __last);
@@ -96,26 +96,25 @@ __partition_impl(_BidirectionalIterator __first, _Sentinel __sentinel, _Predicat
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _ForwardIterator, class _Sentinel, class _Predicate, class _IterCategory>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_ForwardIterator, _ForwardIterator>
+_CCCL_API constexpr pair<_ForwardIterator, _ForwardIterator>
 __partition(_ForwardIterator __first, _Sentinel __last, _Predicate&& __pred, _IterCategory __iter_category)
 {
-  return _CUDA_VSTD::__partition_impl<remove_cvref_t<_Predicate>&, _AlgPolicy>(
-    _CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __pred, __iter_category);
+  return ::cuda::std::__partition_impl<remove_cvref_t<_Predicate>&, _AlgPolicy>(
+    ::cuda::std::move(__first), ::cuda::std::move(__last), __pred, __iter_category);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Predicate>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
-partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
+_CCCL_API constexpr _ForwardIterator partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 {
   using _IterCategory = typename iterator_traits<_ForwardIterator>::iterator_category;
-  auto __result       = _CUDA_VSTD::__partition<_ClassicAlgPolicy>(
-    _CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __pred, _IterCategory());
+  auto __result       = ::cuda::std::__partition<_ClassicAlgPolicy>(
+    ::cuda::std::move(__first), ::cuda::std::move(__last), __pred, _IterCategory());
   return __result.first;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_PARTITION_H
+#endif // _CUDA_STD___ALGORITHM_PARTITION_H

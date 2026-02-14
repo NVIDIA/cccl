@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -36,7 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -48,13 +25,16 @@
 #  include <thrust/functional.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/dispatch.h>
-#  include <thrust/system/cuda/detail/par_to_seq.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/util.h>
 #  include <thrust/type_traits/is_contiguous_iterator.h>
 #  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__type_traits/is_pointer.h>
+#  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/cstdint>
-#  include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -68,10 +48,8 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
 
 namespace cuda_cub
 {
-
 namespace __adjacent_difference
 {
-
 template <cub::MayAlias AliasOpt, class InputIt, class OutputIt, class BinaryOp>
 cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   void* d_temp_storage,
@@ -153,8 +131,8 @@ adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt la
   using OutputValueT = thrust::detail::it_value_t<UnwrapOutputIt>;
 
   constexpr bool can_compare_iterators =
-    ::cuda::std::is_pointer<UnwrapInputIt>::value && ::cuda::std::is_pointer<UnwrapOutputIt>::value
-    && std::is_same<InputValueT, OutputValueT>::value;
+    ::cuda::std::is_pointer_v<UnwrapInputIt> && ::cuda::std::is_pointer_v<UnwrapOutputIt>
+    && std::is_same_v<InputValueT, OutputValueT>;
 
   auto first_unwrap  = thrust::try_unwrap_contiguous_iterator(first);
   auto result_unwrap = thrust::try_unwrap_contiguous_iterator(result);
@@ -184,7 +162,6 @@ adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt la
 
   return result + num_items;
 }
-
 } // namespace __adjacent_difference
 
 //-------------------------
@@ -209,11 +186,10 @@ adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt la
   using input_type = thrust::detail::it_value_t<InputIt>;
   return cuda_cub::adjacent_difference(policy, first, last, result, ::cuda::std::minus<input_type>());
 }
-
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
 
 //
 #  include <thrust/adjacent_difference.h>
 #  include <thrust/memory.h>
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

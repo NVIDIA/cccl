@@ -11,7 +11,7 @@
 #ifndef __COMMON_HOST_DEVICE_H__
 #define __COMMON_HOST_DEVICE_H__
 
-#include "testing.cuh"
+#include "utility.cuh"
 
 template <typename Dims, typename Lambda>
 void __global__ lambda_launcher(const Dims dims, const Lambda lambda)
@@ -67,12 +67,12 @@ void test_host_dev(const Dims& dims, const Lambda& lambda, const Filters&... fil
     cudaLaunchAttribute attrs[1];
     config.attrs = &attrs[0];
 
-    config.blockDim = dims.extents(cudax::thread, cudax::block);
-    config.gridDim  = dims.extents(cudax::block, cudax::grid);
+    config.blockDim = dims.extents(cuda::gpu_thread, cuda::block);
+    config.gridDim  = dims.extents(cuda::block, cuda::grid);
 
-    if constexpr (cudax::has_level<cudax::cluster_level, decltype(dims)>)
+    if constexpr (Dims::has_level(cluster))
     {
-      dim3 cluster_dims                            = dims.extents(cudax::block, cudax::cluster);
+      dim3 cluster_dims                            = dims.extents(cuda::block, cuda::cluster);
       config.attrs[config.numAttrs].id             = cudaLaunchAttributeClusterDimension;
       config.attrs[config.numAttrs].val.clusterDim = {cluster_dims.x, cluster_dims.y, cluster_dims.z};
       config.numAttrs                              = 1;

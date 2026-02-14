@@ -1,0 +1,47 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_STD___RANDOM_
+#define _CUDA_STD___RANDOM_
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/std/__random/bernoulli_distribution.h>
+#include <cuda/std/__random/binomial_distribution.h>
+#include <cuda/std/__random/cauchy_distribution.h>
+#include <cuda/std/__random/chi_squared_distribution.h>
+#include <cuda/std/__random/exponential_distribution.h>
+#include <cuda/std/__random/extreme_value_distribution.h>
+#include <cuda/std/__random/fisher_f_distribution.h>
+#include <cuda/std/__random/gamma_distribution.h>
+#include <cuda/std/__random/generate_canonical.h>
+#include <cuda/std/__random/geometric_distribution.h>
+#include <cuda/std/__random/linear_congruential_engine.h>
+#include <cuda/std/__random/lognormal_distribution.h>
+#include <cuda/std/__random/negative_binomial_distribution.h>
+#include <cuda/std/__random/normal_distribution.h>
+#include <cuda/std/__random/philox_engine.h>
+#include <cuda/std/__random/poisson_distribution.h>
+#include <cuda/std/__random/seed_seq.h>
+#include <cuda/std/__random/student_t_distribution.h>
+#include <cuda/std/__random/uniform_int_distribution.h>
+#include <cuda/std/__random/uniform_real_distribution.h>
+#include <cuda/std/__random/weibull_distribution.h>
+#include <cuda/std/version>
+
+#endif // _CUDA_STD___RANDOM_

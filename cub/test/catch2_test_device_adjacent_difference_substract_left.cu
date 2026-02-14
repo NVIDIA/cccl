@@ -1,36 +1,11 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_adjacent_difference.cuh>
 
-#include <thrust/iterator/discard_iterator.h>
+#include <cuda/iterator>
 
 #include <algorithm>
 #include <numeric>
@@ -61,7 +36,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeft can run with empty input", "[de
   constexpr int num_items = 0;
   c2h::device_vector<type> in(num_items);
 
-  adjacent_difference_subtract_left(in.begin(), num_items, ::cuda::std::minus<>{});
+  adjacent_difference_subtract_left(in.begin(), num_items, cuda::std::minus<>{});
 }
 
 C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy can run with empty input", "[device][adjacent_difference]", types)
@@ -72,7 +47,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy can run with empty input", 
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
 
-  adjacent_difference_subtract_left_copy(in.begin(), out.begin(), num_items, ::cuda::std::minus<>{});
+  adjacent_difference_subtract_left_copy(in.begin(), out.begin(), num_items, cuda::std::minus<>{});
 }
 
 C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy does not change the input", "[device][adjacent_difference]", types)
@@ -84,7 +59,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy does not change the input",
   c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<type> reference = in;
-  adjacent_difference_subtract_left_copy(in.begin(), thrust::discard_iterator<>(), num_items, ::cuda::std::minus<>{});
+  adjacent_difference_subtract_left_copy(in.begin(), cuda::discard_iterator(), num_items, cuda::std::minus<>{});
 
   REQUIRE(reference == in);
 }
@@ -101,7 +76,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeft works with iterators", "[device
   c2h::host_vector<type> reference(num_items);
   std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), std::minus<type>{});
 
-  adjacent_difference_subtract_left(in.begin(), num_items, ::cuda::std::minus<>{});
+  adjacent_difference_subtract_left(in.begin(), num_items, cuda::std::minus<>{});
 
   REQUIRE(reference == in);
 }
@@ -119,7 +94,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with iterators", "[de
   c2h::host_vector<type> reference(num_items);
   std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), std::minus<type>{});
 
-  adjacent_difference_subtract_left_copy(in.begin(), out.begin(), num_items, ::cuda::std::minus<>{});
+  adjacent_difference_subtract_left_copy(in.begin(), out.begin(), num_items, cuda::std::minus<>{});
 
   REQUIRE(reference == out);
 }
@@ -136,7 +111,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeft works with pointers", "[device]
   c2h::host_vector<type> reference(num_items);
   std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), std::minus<type>{});
 
-  adjacent_difference_subtract_left(thrust::raw_pointer_cast(in.data()), num_items, ::cuda::std::minus<>{});
+  adjacent_difference_subtract_left(thrust::raw_pointer_cast(in.data()), num_items, cuda::std::minus<>{});
 
   REQUIRE(reference == in);
 }
@@ -155,7 +130,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with pointers", "[dev
   std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), std::minus<type>{});
 
   adjacent_difference_subtract_left_copy(
-    thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), num_items, ::cuda::std::minus<>{});
+    thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), num_items, cuda::std::minus<>{});
 
   REQUIRE(reference == out);
 }
@@ -277,7 +252,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with large indexes",
   c2h::device_vector<int> error(1);
   int* d_error = thrust::raw_pointer_cast(error.data());
   adjacent_difference_subtract_left_copy(
-    thrust::counting_iterator<cuda::std::size_t>{0}, thrust::discard_iterator<>{}, num_items, check_difference{d_error});
+    cuda::counting_iterator<cuda::std::size_t>{0}, cuda::discard_iterator{}, num_items, check_difference{d_error});
   const int h_error = error[0];
   REQUIRE(h_error == 0);
 }
@@ -305,8 +280,8 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy uses right number of invoca
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<unsigned long long> counts(1, 0);
   adjacent_difference_subtract_left_copy(
-    thrust::counting_iterator<cuda::std::size_t>{0},
-    thrust::discard_iterator<>(),
+    cuda::counting_iterator<cuda::std::size_t>{0},
+    cuda::discard_iterator(),
     num_items,
     invocation_counter{thrust::raw_pointer_cast(counts.data())});
 

@@ -82,8 +82,8 @@ __host__ __device__ constexpr bool testReturnTypes()
   {
     int x[2][2] = {};
     unused(x);
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(x)), int(*)[2]>);
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(x)), const int(*)[2]>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(x)), int (*)[2]>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::cdata(x)), const int (*)[2]>);
   }
   {
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::data(cuda::std::declval<D&>())), char*>);
@@ -153,17 +153,12 @@ struct EnabledBorrowingDataMember
     return &globalBuff[0];
   }
 };
-namespace cuda
-{
-namespace std
-{
-namespace ranges
+
+namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<EnabledBorrowingDataMember> = true;
 }
-} // namespace std
-} // namespace cuda
 
 struct DataMemberAndBegin
 {
@@ -284,17 +279,12 @@ struct BeginMemberBorrowingEnabled
     return contiguous_iterator<const int*>{&globalBuff[1]};
   }
 };
-namespace cuda
-{
-namespace std
-{
-namespace ranges
+
+namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<BeginMemberBorrowingEnabled> = true;
 }
-} // namespace std
-} // namespace cuda
 
 static_assert(cuda::std::is_invocable_v<RangeDataT, BeginMemberBorrowingEnabled&>, "");
 static_assert(cuda::std::is_invocable_v<RangeDataT, BeginMemberBorrowingEnabled&&>, "");

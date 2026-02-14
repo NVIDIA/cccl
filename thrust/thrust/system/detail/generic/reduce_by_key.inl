@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -30,32 +17,28 @@
 #include <thrust/detail/temporary_array.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/iterator/is_output_iterator.h>
-#include <thrust/iterator/detail/minimum_system.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/scan.h>
 #include <thrust/scatter.h>
 #include <thrust/transform.h>
 
-#include <cuda/std/iterator>
+#include <cuda/std/__functional/not_fn.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
 namespace detail
 {
-namespace generic
-{
-namespace detail
-{
-
 template <typename ValueType, typename TailFlagType, typename AssociativeOperator>
 struct reduce_by_key_functor
 {
   AssociativeOperator binary_op;
 
-  using result_type = typename thrust::tuple<ValueType, TailFlagType>;
+  using result_type = typename ::cuda::std::tuple<ValueType, TailFlagType>;
 
   _CCCL_HOST_DEVICE reduce_by_key_functor(AssociativeOperator _binary_op)
       : binary_op(_binary_op)
@@ -63,11 +46,11 @@ struct reduce_by_key_functor
 
   _CCCL_HOST_DEVICE result_type operator()(result_type a, result_type b)
   {
-    return result_type(thrust::get<1>(b) ? thrust::get<0>(b) : binary_op(thrust::get<0>(a), thrust::get<0>(b)),
-                       thrust::get<1>(a) | thrust::get<1>(b));
+    return result_type(
+      ::cuda::std::get<1>(b) ? ::cuda::std::get<0>(b) : binary_op(::cuda::std::get<0>(a), ::cuda::std::get<0>(b)),
+      ::cuda::std::get<1>(a) | ::cuda::std::get<1>(b));
   }
 };
-
 } // end namespace detail
 
 template <typename ExecutionPolicy,
@@ -77,7 +60,7 @@ template <typename ExecutionPolicy,
           typename OutputIterator2,
           typename BinaryPredicate,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -96,7 +79,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
 
   if (keys_first == keys_last)
   {
-    return thrust::make_pair(keys_output, values_output);
+    return ::cuda::std::make_pair(keys_output, values_output);
   }
 
   // input size
@@ -138,7 +121,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   thrust::scatter_if(
     exec, scanned_values.begin(), scanned_values.end(), scanned_tail_flags.begin(), tail_flags.begin(), values_output);
 
-  return thrust::make_pair(keys_output + N, values_output + N);
+  return ::cuda::std::make_pair(keys_output + N, values_output + N);
 } // end reduce_by_key()
 
 template <typename ExecutionPolicy,
@@ -146,7 +129,7 @@ template <typename ExecutionPolicy,
           typename InputIterator2,
           typename OutputIterator1,
           typename OutputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -167,7 +150,7 @@ template <typename ExecutionPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   thrust::execution_policy<ExecutionPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -176,18 +159,13 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   OutputIterator2 values_output,
   BinaryPredicate binary_pred)
 {
-  using T = ::cuda::std::
-
-    _If<thrust::detail::is_output_iterator<OutputIterator2>,
-        thrust::detail::it_value_t<InputIterator2>,
-        thrust::detail::it_value_t<OutputIterator2>>;
+  using T = ::cuda::std::_If<thrust::detail::is_output_iterator<OutputIterator2>,
+                             thrust::detail::it_value_t<InputIterator2>,
+                             thrust::detail::it_value_t<OutputIterator2>>;
 
   // use plus<T> as default BinaryFunction
   return thrust::reduce_by_key(
     exec, keys_first, keys_last, values_first, keys_output, values_output, binary_pred, ::cuda::std::plus<T>());
 } // end reduce_by_key()
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

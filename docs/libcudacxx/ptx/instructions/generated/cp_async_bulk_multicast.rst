@@ -3,9 +3,9 @@
 
 cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
-   // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [srcMem], size, [smem_bar], ctaMask; // PTX ISA 80, SM_90a, SM_100a, SM_101a
+   // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [srcMem], size, [smem_bar], ctaMask; // PTX ISA 80, SM_90a, SM_100a, SM_110a
    // .dst       = { .shared::cluster }
    // .src       = { .global }
    template <typename = void>

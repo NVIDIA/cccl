@@ -10,7 +10,7 @@
 
 // less
 
-// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
@@ -38,7 +38,7 @@ __global__ void test_global_kernel()
 
 int main(int, char**)
 {
-  typedef cuda::std::less<int> F;
+  using F   = cuda::std::less<int>;
   const F f = F();
 #if TEST_STD_VER <= 2017
   static_assert((cuda::std::is_same<int, F::first_argument_type>::value), "");
@@ -53,7 +53,7 @@ int main(int, char**)
                  // test total ordering of int* for less<int*> and less<void>.
                  do_pointer_comparison_test<int, cuda::std::less>();))
 
-  typedef cuda::std::less<> F2;
+  using F2    = cuda::std::less<>;
   const F2 f2 = F2();
   assert(!f2(36, 36));
   assert(!f2(36, 6));

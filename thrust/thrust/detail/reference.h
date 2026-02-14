@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file
  *  \brief A pointer to a variable which resides in memory associated with a
@@ -31,16 +18,45 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/reference_forward_declaration.h>
+#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/adl/assign_value.h>
-#include <thrust/system/detail/adl/get_value.h>
-#include <thrust/system/detail/adl/iter_swap.h>
 #include <thrust/system/detail/generic/memory.h>
 #include <thrust/system/detail/generic/select_system.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_comparable.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__utility/move.h>
 
 #include <ostream>
+
+// Include all active backend system implementations (sequential, host and device) (there is no generic implementation)
+#include <thrust/system/detail/sequential/assign_value.h>
+#include <thrust/system/detail/sequential/get_value.h>
+#include <thrust/system/detail/sequential/iter_swap.h>
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(assign_value.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(get_value.h)
+#include __THRUST_HOST_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(iter_swap.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(assign_value.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(get_value.h)
+#include __THRUST_DEVICE_SYSTEM_ALGORITH_DETAIL_HEADER_INCLUDE(iter_swap.h)
+
+// Some build systems need a hint to know which files we could include
+#if 0
+#  include <thrust/system/cpp/detail/assign_value.h>
+#  include <thrust/system/cpp/detail/get_value.h>
+#  include <thrust/system/cpp/detail/iter_swap.h>
+#  include <thrust/system/cuda/detail/assign_value.h>
+#  include <thrust/system/cuda/detail/get_value.h>
+#  include <thrust/system/cuda/detail/iter_swap.h>
+#  include <thrust/system/omp/detail/assign_value.h>
+#  include <thrust/system/omp/detail/get_value.h>
+#  include <thrust/system/omp/detail/iter_swap.h>
+#  include <thrust/system/tbb/detail/assign_value.h>
+#  include <thrust/system/tbb/detail/get_value.h>
+#  include <thrust/system/tbb/detail/iter_swap.h>
+#endif
 
 THRUST_NAMESPACE_BEGIN
 
@@ -107,7 +123,7 @@ public:
    *
    *  \return <tt>*this</tt>.
    */
-  _CCCL_HOST_DEVICE derived_type& operator=(reference const& other)
+  _CCCL_HOST_DEVICE const derived_type& operator=(reference const& other) const
   {
     assign_from(&other);
     return derived();
@@ -124,21 +140,14 @@ public:
    *
    *  \return <tt>*this</tt>.
    */
-  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
-  _CCCL_HOST_DEVICE
-  /*! \cond
-   */
-  typename std::enable_if<
-    std::is_convertible<typename reference<OtherElement, OtherPointer, OtherDerived>::pointer, pointer>::value,
-    /*! \endcond
-     */
-    derived_type&
-    /*! \cond
-     */
-    >::type
-  /*! \endcond
-   */
-  operator=(reference<OtherElement, OtherPointer, OtherDerived> const& other)
+  template <
+    typename OtherElement,
+    typename OtherPointer,
+    typename OtherDerived,
+    ::cuda::std::enable_if_t<
+      ::cuda::std::is_convertible_v<typename reference<OtherElement, OtherPointer, OtherDerived>::pointer, pointer>,
+      int> = 0>
+  _CCCL_HOST_DEVICE const derived_type& operator=(reference<OtherElement, OtherPointer, OtherDerived> const& other) const
   {
     assign_from(&other);
     return derived();
@@ -150,7 +159,7 @@ public:
    *
    *  \return <tt>*this</tt>.
    */
-  _CCCL_HOST_DEVICE derived_type& operator=(value_type const& rhs)
+  _CCCL_HOST_DEVICE const derived_type& operator=(value_type const& rhs) const
   {
     assign_from(&rhs);
     return derived();
@@ -161,13 +170,11 @@ public:
    *
    *  \param other The \p tagged_reference to swap with.
    */
-  _CCCL_HOST_DEVICE void swap(derived_type& other)
+  _CCCL_HOST_DEVICE void swap(derived_type other)
   {
-    // Avoid default-constructing a system; instead, just use a null pointer
-    // for dispatch. This assumes that `get_value` will not access any system
-    // state.
-    typename thrust::iterator_system<pointer>::type* system = nullptr;
-    swap(system, other);
+    // we cannot construct a system solely from its type, since it may be stateful, so just use the system's tag
+    typename iterator_system_t<pointer>::tag_type tag;
+    swap(&tag, other);
   }
 
   _CCCL_HOST_DEVICE pointer operator&() const
@@ -179,11 +186,9 @@ public:
   // about what system the object is on.
   _CCCL_HOST_DEVICE operator value_type() const
   {
-    // Avoid default-constructing a system; instead, just use a null pointer
-    // for dispatch. This assumes that `get_value` will not access any system
-    // state.
-    typename thrust::iterator_system<pointer>::type* system = nullptr;
-    return convert_to_value_type(system);
+    // we cannot construct a system solely from its type, since it may be stateful, so just use the system's tag
+    typename iterator_system_t<pointer>::tag_type tag;
+    return convert_to_value_type(&tag);
   }
 
   _CCCL_HOST_DEVICE derived_type& operator++()
@@ -304,6 +309,102 @@ public:
     return derived();
   }
 
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<detail::ref_can_compare_equal<Pointer, OtherPointer>, bool>
+  operator==(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) noexcept(
+    ::cuda::std::__is_cpp17_nothrow_equality_comparable_v<value_type, ::cuda::std::remove_cvref_t<OtherElement>>)
+  { // MSVC cannot directly compare the references thinking its a recursive function call
+    const value_type& lhs_ref                                = *&lhs;
+    const ::cuda::std::remove_cvref_t<OtherElement>& rhs_ref = *&rhs;
+    return lhs_ref == rhs_ref;
+  }
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<!detail::ref_can_compare_equal<Pointer, OtherPointer>, bool>
+  operator==(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) = delete;
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<detail::ref_can_compare_equal<Pointer, OtherPointer>, bool>
+  operator!=(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) noexcept(
+    ::cuda::std::__is_cpp17_nothrow_equality_comparable_v<value_type, ::cuda::std::remove_cvref_t<OtherElement>>)
+  {
+    const value_type& lhs_ref                                = *&lhs;
+    const ::cuda::std::remove_cvref_t<OtherElement>& rhs_ref = *&rhs;
+    return !(lhs_ref == rhs_ref);
+  }
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<!detail::ref_can_compare_equal<Pointer, OtherPointer>, bool>
+  operator!=(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) = delete;
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<detail::ref_can_compare_less_than<Pointer, OtherPointer>, bool>
+  operator<(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) noexcept(
+    ::cuda::std::__is_cpp17_nothrow_less_than_comparable_v<value_type, ::cuda::std::remove_cvref_t<OtherElement>>)
+  { // MSVC cannot directly compare the references thinking its a recursive function call
+    const value_type& lhs_ref                                = *&lhs;
+    const ::cuda::std::remove_cvref_t<OtherElement>& rhs_ref = *&rhs;
+    return lhs_ref < rhs_ref;
+  }
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<!detail::ref_can_compare_less_than<Pointer, OtherPointer>, bool>
+  operator<(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) = delete;
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<detail::ref_can_compare_less_than<Pointer, OtherPointer>, bool>
+  operator>=(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) noexcept(
+    ::cuda::std::__is_cpp17_nothrow_less_than_comparable_v<value_type, ::cuda::std::remove_cvref_t<OtherElement>>)
+  { // MSVC cannot directly compare the references thinking its a recursive function call
+    const value_type& lhs_ref                                = *&lhs;
+    const ::cuda::std::remove_cvref_t<OtherElement>& rhs_ref = *&rhs;
+    return !(lhs_ref < rhs_ref);
+  }
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<!detail::ref_can_compare_less_than<Pointer, OtherPointer>, bool>
+  operator>=(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) = delete;
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<detail::ref_can_compare_less_than<Pointer, OtherPointer>, bool>
+  operator>(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) noexcept(
+    ::cuda::std::__is_cpp17_nothrow_less_than_comparable_v<value_type, ::cuda::std::remove_cvref_t<OtherElement>>)
+  { // MSVC cannot directly compare the references thinking its a recursive function call
+    const value_type& lhs_ref                                = *&lhs;
+    const ::cuda::std::remove_cvref_t<OtherElement>& rhs_ref = *&rhs;
+    return rhs_ref < lhs_ref;
+  }
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<!detail::ref_can_compare_less_than<Pointer, OtherPointer>, bool>
+  operator>(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) = delete;
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<detail::ref_can_compare_less_than<Pointer, OtherPointer>, bool>
+  operator<=(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) noexcept(
+    ::cuda::std::__is_cpp17_nothrow_less_than_comparable_v<value_type, ::cuda::std::remove_cvref_t<OtherElement>>)
+  { // MSVC cannot directly compare the references thinking its a recursive function call
+    const value_type& lhs_ref                                = *&lhs;
+    const ::cuda::std::remove_cvref_t<OtherElement>& rhs_ref = *&rhs;
+    return !(rhs_ref < lhs_ref);
+  }
+
+  template <typename OtherElement, typename OtherPointer, typename OtherDerived>
+  [[nodiscard]]
+  _CCCL_HOST_DEVICE friend ::cuda::std::enable_if_t<!detail::ref_can_compare_less_than<Pointer, OtherPointer>, bool>
+  operator<=(reference const& lhs, reference<OtherElement, OtherPointer, OtherDerived> const& rhs) = delete;
+
 private:
   pointer const ptr;
 
@@ -323,6 +424,11 @@ private:
     return static_cast<derived_type&>(*this);
   }
 
+  _CCCL_HOST_DEVICE const derived_type& derived() const
+  {
+    return static_cast<const derived_type&>(*this);
+  }
+
   template <typename System>
   _CCCL_HOST_DEVICE value_type convert_to_value_type(System* system) const
   {
@@ -340,25 +446,23 @@ private:
   }
 
   template <typename System0, typename System1, typename OtherPointer>
-  _CCCL_HOST_DEVICE void assign_from(System0* system0, System1* system1, OtherPointer src)
+  _CCCL_HOST_DEVICE void assign_from(System0* system0, System1* system1, OtherPointer src) const
   {
     using thrust::system::detail::generic::select_system;
     strip_const_assign_value(select_system(*system0, *system1), src);
   }
 
   template <typename OtherPointer>
-  _CCCL_HOST_DEVICE void assign_from(OtherPointer src)
+  _CCCL_HOST_DEVICE void assign_from(OtherPointer src) const
   {
-    // Avoid default-constructing systems; instead, just use a null pointer
-    // for dispatch. This assumes that `get_value` will not access any system
-    // state.
-    typename thrust::iterator_system<pointer>::type* system0      = nullptr;
-    typename thrust::iterator_system<OtherPointer>::type* system1 = nullptr;
-    assign_from(system0, system1, src);
+    // we cannot construct a system solely from its type, since it may be stateful, so just use the system's tag
+    typename iterator_system_t<pointer>::tag_type tag0;
+    typename iterator_system_t<OtherPointer>::tag_type tag1;
+    assign_from(&tag0, &tag1, src);
   }
 
   template <typename System, typename OtherPointer>
-  _CCCL_HOST_DEVICE void strip_const_assign_value(System const& system, OtherPointer src)
+  _CCCL_HOST_DEVICE void strip_const_assign_value(System const& system, OtherPointer src) const
   {
     System& non_const_system = const_cast<System&>(system);
 
@@ -367,7 +471,7 @@ private:
   }
 
   template <typename System>
-  _CCCL_HOST_DEVICE void swap(System* system, derived_type& other)
+  _CCCL_HOST_DEVICE void swap(System* system, derived_type other)
   {
     using thrust::system::detail::generic::iter_swap;
     using thrust::system::detail::generic::select_system;
@@ -445,7 +549,7 @@ public:
    *
    *  \return <tt>*this</tt>.
    */
-  _CCCL_HOST_DEVICE tagged_reference& operator=(tagged_reference const& other)
+  _CCCL_HOST_DEVICE const tagged_reference& operator=(tagged_reference const& other) const
   {
     return base_type::operator=(other);
   }
@@ -461,7 +565,7 @@ public:
    *  \return <tt>*this</tt>.
    */
   template <typename OtherElement, typename OtherTag>
-  _CCCL_HOST_DEVICE tagged_reference& operator=(tagged_reference<OtherElement, OtherTag> const& other)
+  _CCCL_HOST_DEVICE const tagged_reference& operator=(tagged_reference<OtherElement, OtherTag> const& other) const
   {
     return base_type::operator=(other);
   }
@@ -472,7 +576,7 @@ public:
    *
    *  \return <tt>*this</tt>.
    */
-  _CCCL_HOST_DEVICE tagged_reference& operator=(value_type const& rhs)
+  _CCCL_HOST_DEVICE const tagged_reference& operator=(value_type const& rhs) const
   {
     return base_type::operator=(rhs);
   }
@@ -494,7 +598,7 @@ class tagged_reference<void const, Tag>
 // note: this is not a hidden friend, because we have template specializations of tagged_reference
 template <typename Element, typename Tag>
 _CCCL_HOST_DEVICE void
-swap(tagged_reference<Element, Tag>& x, tagged_reference<Element, Tag>& y) noexcept(noexcept(x.swap(y)))
+swap(tagged_reference<Element, Tag> x, tagged_reference<Element, Tag> y) noexcept(noexcept(x.swap(y)))
 {
   x.swap(y);
 }

@@ -60,6 +60,7 @@
 #define _CCCL_COMPILER_MSVC()     _CCCL_VERSION_INVALID()
 #define _CCCL_COMPILER_MSVC2019() _CCCL_VERSION_INVALID()
 #define _CCCL_COMPILER_MSVC2022() _CCCL_VERSION_INVALID()
+#define _CCCL_COMPILER_MSVC2026() _CCCL_VERSION_INVALID()
 #define _CCCL_COMPILER_NVRTC()    _CCCL_VERSION_INVALID()
 
 // Determine the host compiler and its version
@@ -78,6 +79,7 @@
 #  undef _CCCL_COMPILER_GCC
 #  define _CCCL_COMPILER_GCC() (__GNUC__, __GNUC_MINOR__)
 #elif defined(_MSC_VER)
+// see https://learn.microsoft.com/en-us/cpp/overview/compiler-versions?view=msvc-180#version-macros
 #  undef _CCCL_COMPILER_MSVC
 #  define _CCCL_COMPILER_MSVC() (_MSC_VER / 100, _MSC_VER % 100)
 #  if _CCCL_COMPILER(MSVC, <, 19, 20)
@@ -90,14 +92,24 @@
 #    undef _CCCL_COMPILER_MSVC2019
 #    define _CCCL_COMPILER_MSVC2019() _CCCL_COMPILER_MSVC()
 #  endif // _CCCL_COMPILER(MSVC, >=, 19, 20) && _CCCL_COMPILER(MSVC, <, 19, 30)
-#  if _CCCL_COMPILER(MSVC, >=, 19, 30) && _CCCL_COMPILER(MSVC, <, 19, 40)
+#  if _CCCL_COMPILER(MSVC, >=, 19, 30) && _CCCL_COMPILER(MSVC, <, 19, 50)
 #    undef _CCCL_COMPILER_MSVC2022
 #    define _CCCL_COMPILER_MSVC2022() _CCCL_COMPILER_MSVC()
-#  endif // _CCCL_COMPILER(MSVC, >=, 19, 30) && _CCCL_COMPILER(MSVC, <, 19, 40)
+#  endif // _CCCL_COMPILER(MSVC, >=, 19, 30) && _CCCL_COMPILER(MSVC, <, 19, 50)
+#  if _CCCL_COMPILER(MSVC, >=, 19, 50)
+#    undef _CCCL_COMPILER_MSVC2026
+#    define _CCCL_COMPILER_MSVC2026() _CCCL_COMPILER_MSVC()
+#  endif // _CCCL_COMPILER(MSVC, >=, 19, 45)
 #elif defined(__CUDACC_RTC__)
 #  undef _CCCL_COMPILER_NVRTC
 #  define _CCCL_COMPILER_NVRTC() (__CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__)
 #endif
+
+#if defined(__CUDACC__) || defined(_NVHPC_CUDA)
+#  define _CCCL_CUDA_COMPILATION() 1
+#else // ^^^ compiling .cu file ^^^ / vvv not compiling .cu file vvv
+#  define _CCCL_CUDA_COMPILATION() 0
+#endif // ^^^ not compiling .cu file ^^^
 
 // The CUDA compiler version shares the implementation with the C++ compiler
 #define _CCCL_CUDA_COMPILER_MAKE_VERSION(_MAJOR, _MINOR) _CCCL_COMPILER_MAKE_VERSION(_MAJOR, _MINOR)
@@ -109,31 +121,21 @@
 #define _CCCL_CUDA_COMPILER_NVRTC() _CCCL_VERSION_INVALID()
 
 // Determine the cuda compiler
-#if defined(__NVCC__)
-#  undef _CCCL_CUDA_COMPILER_NVCC
-#  define _CCCL_CUDA_COMPILER_NVCC() (__CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__)
-#elif defined(_NVHPC_CUDA)
-#  undef _CCCL_CUDA_COMPILER_NVHPC
-#  define _CCCL_CUDA_COMPILER_NVHPC() _CCCL_COMPILER_NVHPC()
-#elif defined(__CUDA__) && _CCCL_COMPILER(CLANG)
-#  undef _CCCL_CUDA_COMPILER_CLANG
-#  define _CCCL_CUDA_COMPILER_CLANG() _CCCL_COMPILER_CLANG()
-#elif _CCCL_COMPILER(NVRTC)
-#  undef _CCCL_CUDA_COMPILER_NVRTC
-#  define _CCCL_CUDA_COMPILER_NVRTC() _CCCL_COMPILER_NVRTC()
-#endif // ^^^ _CCCL_COMPILER(NVRTC) ^^^
-
-#if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(CLANG) || _CCCL_CUDA_COMPILER(NVHPC) || _CCCL_CUDA_COMPILER(NVRTC)
-#  define _CCCL_HAS_CUDA_COMPILER() 1
-#else // ^^^ has cuda compiler ^^^ / vvv no cuda compiler vvv
-#  define _CCCL_HAS_CUDA_COMPILER() 0
-#endif // ^^^ no cuda compiler ^^^
-
-#if defined(__CUDACC__) || _CCCL_CUDA_COMPILER(NVHPC)
-#  define _CCCL_CUDA_COMPILATION() 1
-#else // ^^^ compiling .cu file ^^^ / vvv not compiling .cu file vvv
-#  define _CCCL_CUDA_COMPILATION() 0
-#endif // ^^^ not compiling .cu file ^^^
+#if _CCCL_CUDA_COMPILATION()
+#  if defined(__NVCC__)
+#    undef _CCCL_CUDA_COMPILER_NVCC
+#    define _CCCL_CUDA_COMPILER_NVCC() (__CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__)
+#  elif defined(_NVHPC_CUDA)
+#    undef _CCCL_CUDA_COMPILER_NVHPC
+#    define _CCCL_CUDA_COMPILER_NVHPC() _CCCL_COMPILER_NVHPC()
+#  elif defined(__CUDA__) && _CCCL_COMPILER(CLANG)
+#    undef _CCCL_CUDA_COMPILER_CLANG
+#    define _CCCL_CUDA_COMPILER_CLANG() _CCCL_COMPILER_CLANG()
+#  elif _CCCL_COMPILER(NVRTC)
+#    undef _CCCL_CUDA_COMPILER_NVRTC
+#    define _CCCL_CUDA_COMPILER_NVRTC() _CCCL_COMPILER_NVRTC()
+#  endif // ^^^ _CCCL_COMPILER(NVRTC) ^^^
+#endif // _CCCL_CUDA_COMPILATION()
 
 // Determine if we are compiling host code, this includes both CUDA and C++ compilation
 // nvc++ does not define __CUDA_ARCH__, but it compiles both host and device code at the same time
@@ -198,7 +200,8 @@
 // when compiling device code, and #pragma GCC unroll when compiling host code, but we need to suppress the warning
 // about the unknown pragma for nvcc.
 // #pragma GCC unroll does not support full unrolling, so we use the maximum value that it supports.
-#  define _CCCL_PRAGMA_UNROLL(_N)    _CCCL_NV_DIAG_SUPPRESS(1675) _CCCL_PRAGMA(GCC unroll _N) _CCCL_NV_DIAG_DEFAULT(1675)
+#  define _CCCL_PRAGMA_UNROLL(_N) \
+    _CCCL_BEGIN_NV_DIAG_SUPPRESS(1675) _CCCL_PRAGMA(GCC unroll _N) _CCCL_END_NV_DIAG_SUPPRESS()
 #  define _CCCL_PRAGMA_UNROLL_FULL() _CCCL_PRAGMA_UNROLL(65534)
 #else // ^^^ has pragma unroll support ^^^ / vvv no pragma unroll support vvv
 #  define _CCCL_PRAGMA_UNROLL(_N)

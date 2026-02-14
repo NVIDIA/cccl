@@ -32,16 +32,17 @@
 
 namespace cuda::experimental::stf
 {
-
 class stream_and_event;
 namespace reserved
 {
-
 inline event join_with_stream(
-  backend_ctx_untyped& bctx, decorated_stream dstream, event_list& prereq_in, ::std::string string, bool record_event);
+  const backend_ctx_untyped& bctx,
+  decorated_stream dstream,
+  event_list& prereq_in,
+  ::std::string string,
+  bool record_event);
 
 using stream_and_event_vector = small_vector<reserved::handle<stream_and_event>, 7>;
-
 } // namespace reserved
 
 /* This event type allows to synchronize a CUDA stream with a CUDA event in
@@ -154,7 +155,7 @@ public:
   /**
    * @brief Remove implicit dependencies already induced by more recent events using the same stream.
    */
-  bool factorize(backend_ctx_untyped&, reserved::event_vector& events) override
+  bool factorize(const backend_ctx_untyped&, reserved::event_vector& events) override
   {
     assert(events.size() >= 2);
     assert([&] {
@@ -239,7 +240,7 @@ public:
     // return true;
   }
 
-  void sync_with_stream(backend_ctx_untyped& bctx, event_list& prereqs, cudaStream_t stream) const override
+  void sync_with_stream(const backend_ctx_untyped& bctx, event_list& prereqs, cudaStream_t stream) const override
   {
     reserved::join_with_stream(bctx, decorated_stream(stream), prereqs, "sync", false);
   }
@@ -335,7 +336,7 @@ public:
     {
       for (int id : joined_ids)
       {
-        dot.add_edge(id, e->unique_prereq_id, 1);
+        dot.add_edge(id, e->unique_prereq_id, reserved::edge_type::prereqs);
       }
     }
 
@@ -430,10 +431,13 @@ private:
 
 namespace reserved
 {
-
 /* This creates a synchronization point between all entries of the prereq_in list, and a CUDA stream */
 inline event join_with_stream(
-  backend_ctx_untyped& bctx, decorated_stream dstream, event_list& prereq_in, ::std::string string, bool record_event)
+  const backend_ctx_untyped& bctx,
+  decorated_stream dstream,
+  event_list& prereq_in,
+  ::std::string string,
+  bool record_event)
 {
   // Make sure we reduce the number of resulting stream/event synchronization
   // API calls to a minimum. If the list was already optimized, this will be a no-op
@@ -451,6 +455,12 @@ inline event record_event_in_stream(const decorated_stream& dstream)
   return reserved::handle<stream_and_event>(dstream, true);
 }
 
+/* Overload to provide a symbol */
+inline event record_event_in_stream(const decorated_stream& dstream, reserved::per_ctx_dot& dot, ::std::string symbol)
+{
+  event res = record_event_in_stream(dstream);
+  res->set_symbol_with_dot(dot, mv(symbol));
+  return res;
+}
 } // end namespace reserved
-
 } // namespace cuda::experimental::stf

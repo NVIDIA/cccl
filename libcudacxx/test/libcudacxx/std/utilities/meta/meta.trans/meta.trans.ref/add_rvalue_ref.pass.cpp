@@ -46,7 +46,7 @@ int main(int, char**)
 {
   test_add_rvalue_reference<void, void>();
   test_add_rvalue_reference<int, int&&>();
-  test_add_rvalue_reference<int[3], int(&&)[3]>();
+  test_add_rvalue_reference<int[3], int (&&)[3]>();
   test_add_rvalue_reference<int&, int&>();
   test_add_rvalue_reference<const int&, const int&>();
   test_add_rvalue_reference<int*, int*&&>();
@@ -57,7 +57,7 @@ int main(int, char**)
   //  The term of art is "a referenceable type", which a cv- or ref-qualified function is not.
   test_function0<void()>();
   test_function1<void() const>();
-  test_function1<void()&>();
+  test_function1<void() &>();
   test_function1<void() &&>();
   test_function1<void() const&>();
   test_function1<void() const&&>();
@@ -65,7 +65,7 @@ int main(int, char**)
   //  But a cv- or ref-qualified member function *is* "a referenceable type"
   test_function0<void (Foo::*)()>();
   test_function0<void (Foo::*)() const>();
-  test_function0<void (Foo::*)()&>();
+  test_function0<void (Foo::*)() &>();
   test_function0<void (Foo::*)() &&>();
   test_function0<void (Foo::*)() const&>();
   test_function0<void (Foo::*)() const&&>();

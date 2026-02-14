@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMICS_FUNCTIONS_HOST_H
-#define _LIBCUDACXX___ATOMICS_FUNCTIONS_HOST_H
+#ifndef _CUDA_STD___ATOMICS_FUNCTIONS_HOST_H
+#define _CUDA_STD___ATOMICS_FUNCTIONS_HOST_H
 
 #include <cuda/std/detail/__config>
 
@@ -30,12 +30,29 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Watomic-alignment")
 
 #if !_CCCL_COMPILER(NVRTC)
+
+// The compiler can provide 128b atomic support. Some onus on user to guarantee support.
+#  if _CCCL_HOST_128_ATOMICS_ENABLED()
+#    define _LIBCUDACXX_INT128_WARN(TYPE)
+// The compiler supports 128b via libatomic or another API.
+#  elif _CCCL_HOST_128_ATOMICS_MAYBE()
+#    define _LIBCUDACXX_INT128_WARN(TYPE)                                                                        \
+      static_assert(                                                                                             \
+        sizeof(TYPE) < 16,                                                                                       \
+        "CCCL has detected possible support for 128 bit atomics. However this feature is experimental. You can " \
+        "define CCCL_ENABLE_EXPERIMENTAL_HOST_ATOMICS_128B to ignore and acknowledge that runtime corruption "   \
+        "may occur if you link with libatomic and use locked atomics.");
+// The compiler does not provide support or proof of support. eg. msvc
+#  else
+#    define _LIBCUDACXX_INT128_WARN(TYPE) \
+      static_assert(sizeof(TYPE) < 16, "atomic_ref<T> where sizeof(T) > 8 is not supported on this system.");
+#  endif
 
 template <typename _Tp>
 struct _CCCL_ALIGNAS(sizeof(_Tp)) __atomic_alignment_wrapper
@@ -65,12 +82,14 @@ inline void __atomic_signal_fence_host(memory_order __order)
 template <typename _Tp, typename _Up>
 inline void __atomic_store_host(_Tp* __a, _Up __val, memory_order __order)
 {
+  _LIBCUDACXX_INT128_WARN(_Tp)
   __atomic_store(&__atomic_force_align_host(__a)->__atom, &__val, __atomic_order_to_int(__order));
 }
 
 template <typename _Tp>
 inline auto __atomic_load_host(_Tp* __a, memory_order __order) -> remove_cv_t<_Tp>
 {
+  _LIBCUDACXX_INT128_WARN(_Tp)
   remove_cv_t<_Tp> __ret;
   __atomic_load(&__atomic_force_align_host(__a)->__atom, &__ret, __atomic_order_to_int(__order));
   return __ret;
@@ -79,6 +98,7 @@ inline auto __atomic_load_host(_Tp* __a, memory_order __order) -> remove_cv_t<_T
 template <typename _Tp, typename _Up>
 inline auto __atomic_exchange_host(_Tp* __a, _Up __val, memory_order __order) -> remove_cv_t<_Tp>
 {
+  _LIBCUDACXX_INT128_WARN(_Tp)
   remove_cv_t<_Tp> __ret;
   __atomic_exchange(&__atomic_force_align_host(__a)->__atom, &__val, &__ret, __atomic_order_to_int(__order));
   return __ret;
@@ -88,6 +108,7 @@ template <typename _Tp, typename _Up>
 inline bool __atomic_compare_exchange_strong_host(
   _Tp* __a, _Up* __expected, _Up __desired, memory_order __success, memory_order __failure)
 {
+  _LIBCUDACXX_INT128_WARN(_Tp)
   return __atomic_compare_exchange(
     &__atomic_force_align_host(__a)->__atom,
     // This is only alignment wrapped in order to prevent GCC-6 from triggering unused warning
@@ -102,6 +123,7 @@ template <typename _Tp, typename _Up>
 inline bool __atomic_compare_exchange_weak_host(
   _Tp* __a, _Up* __expected, _Up __desired, memory_order __success, memory_order __failure)
 {
+  _LIBCUDACXX_INT128_WARN(_Tp)
   return __atomic_compare_exchange(
     &__atomic_force_align_host(__a)->__atom,
     // This is only alignment wrapped in order to prevent GCC-6 from triggering unused warning
@@ -112,16 +134,18 @@ inline bool __atomic_compare_exchange_weak_host(
     __atomic_failure_order_to_int(__failure));
 }
 
-template <typename _Tp, typename _Td, enable_if_t<!is_floating_point<_Tp>::value, int> = 0>
+template <typename _Tp, typename _Td, enable_if_t<!is_floating_point_v<_Tp>, int> = 0>
 inline remove_cv_t<_Tp> __atomic_fetch_add_host(_Tp* __a, _Td __delta, memory_order __order)
 {
+  _LIBCUDACXX_INT128_WARN(_Tp)
   constexpr auto __skip_v = __atomic_ptr_skip_t<_Tp>::__skip;
   return __atomic_fetch_add(__a, __delta * __skip_v, __atomic_order_to_int(__order));
 }
 
-template <typename _Tp, typename _Td, enable_if_t<is_floating_point<_Tp>::value, int> = 0>
+template <typename _Tp, typename _Td, enable_if_t<is_floating_point_v<_Tp>, int> = 0>
 inline remove_cv_t<_Tp> __atomic_fetch_add_host(_Tp* __a, _Td __delta, memory_order __order)
 {
+  _LIBCUDACXX_INT128_WARN(_Tp)
   auto __expected = __atomic_load_host(__a, memory_order_relaxed);
   auto __desired  = __expected + __delta;
 
@@ -133,16 +157,18 @@ inline remove_cv_t<_Tp> __atomic_fetch_add_host(_Tp* __a, _Td __delta, memory_or
   return __expected;
 }
 
-template <typename _Tp, typename _Td, enable_if_t<!is_floating_point<_Tp>::value, int> = 0>
+template <typename _Tp, typename _Td, enable_if_t<!is_floating_point_v<_Tp>, int> = 0>
 inline remove_cv_t<_Tp> __atomic_fetch_sub_host(_Tp* __a, _Td __delta, memory_order __order)
 {
+  _LIBCUDACXX_INT128_WARN(_Tp)
   constexpr auto __skip_v = __atomic_ptr_skip_t<_Tp>::__skip;
   return __atomic_fetch_sub(__a, __delta * __skip_v, __atomic_order_to_int(__order));
 }
 
-template <typename _Tp, typename _Td, enable_if_t<is_floating_point<_Tp>::value, int> = 0>
+template <typename _Tp, typename _Td, enable_if_t<is_floating_point_v<_Tp>, int> = 0>
 inline remove_cv_t<_Tp> __atomic_fetch_sub_host(_Tp* __a, _Td __delta, memory_order __order)
 {
+  _LIBCUDACXX_INT128_WARN(_Tp)
   auto __expected = __atomic_load_host(__a, memory_order_relaxed);
   auto __desired  = __expected - __delta;
 
@@ -157,24 +183,28 @@ inline remove_cv_t<_Tp> __atomic_fetch_sub_host(_Tp* __a, _Td __delta, memory_or
 template <typename _Tp, typename _Td>
 inline remove_cv_t<_Tp> __atomic_fetch_and_host(_Tp* __a, _Td __pattern, memory_order __order)
 {
+  _LIBCUDACXX_INT128_WARN(_Tp)
   return __atomic_fetch_and(__a, __pattern, __atomic_order_to_int(__order));
 }
 
 template <typename _Tp, typename _Td>
 inline remove_cv_t<_Tp> __atomic_fetch_or_host(_Tp* __a, _Td __pattern, memory_order __order)
 {
+  _LIBCUDACXX_INT128_WARN(_Tp)
   return __atomic_fetch_or(__a, __pattern, __atomic_order_to_int(__order));
 }
 
 template <typename _Tp, typename _Td>
 inline remove_cv_t<_Tp> __atomic_fetch_xor_host(_Tp* __a, _Td __pattern, memory_order __order)
 {
+  _LIBCUDACXX_INT128_WARN(_Tp)
   return __atomic_fetch_xor(__a, __pattern, __atomic_order_to_int(__order));
 }
 
 template <typename _Tp, typename _Td>
 inline remove_cv_t<_Tp> __atomic_fetch_max_host(_Tp* __a, _Td __val, memory_order __order)
 {
+  _LIBCUDACXX_INT128_WARN(_Tp)
   auto __expected = __atomic_load_host(__a, memory_order_relaxed);
   auto __desired  = __expected > __val ? __expected : __val;
 
@@ -189,6 +219,7 @@ inline remove_cv_t<_Tp> __atomic_fetch_max_host(_Tp* __a, _Td __val, memory_orde
 template <typename _Tp, typename _Td>
 inline remove_cv_t<_Tp> __atomic_fetch_min_host(_Tp* __a, _Td __val, memory_order __order)
 {
+  _LIBCUDACXX_INT128_WARN(_Tp)
   auto __expected = __atomic_load_host(__a, memory_order_relaxed);
   auto __desired  = __expected < __val ? __expected : __val;
 
@@ -204,8 +235,8 @@ inline remove_cv_t<_Tp> __atomic_fetch_min_host(_Tp* __a, _Td __val, memory_orde
 
 _CCCL_DIAG_POP
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ATOMICS_FUNCTIONS_HOST_H
+#endif // _CUDA_STD___ATOMICS_FUNCTIONS_HOST_H

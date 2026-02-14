@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_DECAY_H
-#define _LIBCUDACXX___TYPE_TRAITS_DECAY_H
+#ifndef _CUDA_STD___TYPE_TRAITS_DECAY_H
+#define _CUDA_STD___TYPE_TRAITS_DECAY_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,7 +31,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_DECAY) && !defined(_LIBCUDACXX_USE_DECAY_FALLBACK)
 template <class _Tp>
@@ -56,9 +56,9 @@ struct __decay_impl<_Up, true>
 {
 public:
   using type _CCCL_NODEBUG_ALIAS =
-    conditional_t<is_array<_Up>::value,
+    conditional_t<is_array_v<_Up>,
                   remove_extent_t<_Up>*,
-                  conditional_t<is_function<_Up>::value, add_pointer_t<_Up>, remove_cv_t<_Up>>>;
+                  conditional_t<is_function_v<_Up>, add_pointer_t<_Up>, remove_cv_t<_Up>>>;
 };
 
 template <class _Tp>
@@ -76,8 +76,8 @@ using decay_t _CCCL_NODEBUG_ALIAS = typename decay<_Tp>::type;
 
 #endif // !_CCCL_BUILTIN_DECAY
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_DECAY_H
+#endif // _CUDA_STD___TYPE_TRAITS_DECAY_H

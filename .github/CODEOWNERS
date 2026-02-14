@@ -14,16 +14,20 @@ ci/ @nvidia/cccl-infra-codeowners
 .clang-format @nvidia/cccl-infra-codeowners
 .clangd @nvidia/cccl-infra-codeowners
 c2h/ @nvidia/cccl-infra-codeowners
+nvbench_helper/ @nvidia/cccl-infra-codeowners
 .vscode @nvidia/cccl-infra-codeowners
 
 # cmake
 **/CMakeLists.txt @nvidia/cccl-cmake-codeowners
 **/cmake/ @nvidia/cccl-cmake-codeowners
+# make an exception for the cudax test cmake file
+cudax/test/CMakeLists.txt @nvidia/cccl-cudax-codeowners
 
 # benchmarks
 benchmarks/ @nvidia/cccl-benchmark-codeowners
 **/benchmarks @nvidia/cccl-benchmark-codeowners
 
 # docs
+README.md @nvidia/cccl-codeowners
 docs/ @nvidia/cccl-codeowners
 examples/ @nvidia/cccl-codeowners

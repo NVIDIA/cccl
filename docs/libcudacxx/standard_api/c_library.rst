@@ -3,6 +3,13 @@
 C Library
 =========
 
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   c_library/cstring
+
+
 Any Standard C++ header not listed below is omitted.
 
 .. list-table::
@@ -75,7 +82,7 @@ Any Standard C++ header not listed below is omitted.
      - CUDA 12.3
      - `\<cstdlib\> <https://en.cppreference.com/w/cpp/header/cstdlib>`_
 
-   * - ``<cuda/std/cstring>``
+   * - :ref:`\<cuda/std/cstring\> <libcudacxx-standard-api-cstring>`
      - Provides array manipulation functions such as ``memcpy``, ``memset`` and ``memcmp``
      - CCCL 3.0.0
      - CUDA 13.0

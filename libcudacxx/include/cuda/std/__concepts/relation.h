@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CONCEPTS_RELATION_H
-#define _LIBCUDACXX___CONCEPTS_RELATION_H
+#ifndef _CUDA_STD___CONCEPTS_RELATION_H
+#define _CUDA_STD___CONCEPTS_RELATION_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,9 +25,9 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 // [concept.relation]
 
@@ -45,7 +45,7 @@ concept equivalence_relation = relation<_Rp, _Tp, _Up>;
 template <class _Rp, class _Tp, class _Up>
 concept strict_weak_order = relation<_Rp, _Tp, _Up>;
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Rp, class _Tp, class _Up>
 _CCCL_CONCEPT_FRAGMENT(
@@ -68,10 +68,10 @@ _CCCL_CONCEPT equivalence_relation = relation<_Rp, _Tp, _Up>;
 template <class _Rp, class _Tp, class _Up>
 _CCCL_CONCEPT strict_weak_order = relation<_Rp, _Tp, _Up>;
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CONCEPTS_RELATION_H
+#endif // _CUDA_STD___CONCEPTS_RELATION_H

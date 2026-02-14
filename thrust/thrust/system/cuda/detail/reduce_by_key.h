@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -36,30 +13,36 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <thrust/system/cuda/config.h>
 
+#  include <cub/block/block_load.cuh>
 #  include <cub/device/device_reduce.cuh>
+#  include <cub/iterator/cache_modified_input_iterator.cuh>
 #  include <cub/util_math.cuh>
 
 #  include <thrust/detail/alignment.h>
-#  include <thrust/detail/mpl/math.h>
 #  include <thrust/detail/raw_reference_cast.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/detail/type_traits.h>
 #  include <thrust/detail/type_traits/iterator/is_output_iterator.h>
-#  include <thrust/distance.h>
 #  include <thrust/functional.h>
-#  include <thrust/pair.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/core/agent_launcher.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/get_value.h>
-#  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/__algorithm/max.h>
+#  include <cuda/std/__algorithm/min.h>
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__type_traits/conditional.h>
+#  include <cuda/std/__type_traits/is_arithmetic.h>
+#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/cstdint>
-#  include <cuda/std/iterator>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -69,7 +52,7 @@ template <typename DerivedPolicy,
           typename OutputIterator1,
           typename OutputIterator2,
           typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
+_CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 keys_first,
   InputIterator1 keys_last,
@@ -80,18 +63,14 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
 
 namespace cuda_cub
 {
-
 namespace __reduce_by_key
 {
-
 template <bool>
 struct is_true : thrust::detail::false_type
 {};
 template <>
 struct is_true<true> : thrust::detail::true_type
 {};
-
-namespace mpl = thrust::detail::mpl::math;
 
 template <int _BLOCK_THREADS,
           int _ITEMS_PER_THREAD                   = 1,
@@ -100,12 +79,9 @@ template <int _BLOCK_THREADS,
           cub::BlockScanAlgorithm _SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS>
 struct PtxPolicy
 {
-  enum
-  {
-    BLOCK_THREADS    = _BLOCK_THREADS,
-    ITEMS_PER_THREAD = _ITEMS_PER_THREAD,
-    ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD
-  };
+  static constexpr int BLOCK_THREADS    = _BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD = _ITEMS_PER_THREAD;
+  static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   static const cub::BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
   static const cub::CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
@@ -118,26 +94,23 @@ struct Tuning;
 template <class Key, class Value>
 struct Tuning<core::detail::sm52, Key, Value>
 {
-  enum
-  {
-    MAX_INPUT_BYTES      = mpl::max<size_t, sizeof(Key), sizeof(Value)>::value,
-    COMBINED_INPUT_BYTES = sizeof(Key) + sizeof(Value),
-
-    NOMINAL_4B_ITEMS_PER_THREAD = 9,
-
-    ITEMS_PER_THREAD =
-      (MAX_INPUT_BYTES <= 8)
-        ? 9
-        : mpl::min<
-            int,
-            NOMINAL_4B_ITEMS_PER_THREAD,
-            mpl::max<int, 1, ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES>::
-              value>::value,
-  };
+  static constexpr int MAX_INPUT_BYTES             = ::cuda::std::max(int{sizeof(Key)}, int{sizeof(Value)});
+  static constexpr int COMBINED_INPUT_BYTES        = int{sizeof(Key)} + int{sizeof(Value)};
+  static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 9;
+  static constexpr int ITEMS_PER_THREAD =
+    (MAX_INPUT_BYTES <= 8)
+      ? 9
+      : ::cuda::std::min(
+          NOMINAL_4B_ITEMS_PER_THREAD,
+          ::cuda::std::max(1, ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES));
 
   using type =
     PtxPolicy<256, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_SCAN_WARP_SCANS>;
 }; // Tuning sm52
+
+// a helper metaprogram that returns type of a block loader
+template <class PtxPlan, class It, class T = thrust::detail::it_value_t<It>>
+using BlockLoad = cub::BlockLoad<T, PtxPlan::BLOCK_THREADS, PtxPlan::ITEMS_PER_THREAD, PtxPlan::LOAD_ALGORITHM, 1, 1>;
 
 template <class KeysInputIt,
           class ValuesInputIt,
@@ -164,11 +137,11 @@ struct ReduceByKeyAgent
   {
     using tuning = Tuning<Arch, key_type, value_type>;
 
-    using KeysLoadIt   = typename core::detail::LoadIterator<PtxPlan, KeysInputIt>::type;
-    using ValuesLoadIt = typename core::detail::LoadIterator<PtxPlan, ValuesInputIt>::type;
+    using KeysLoadIt   = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, KeysInputIt>;
+    using ValuesLoadIt = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, ValuesInputIt>;
 
-    using BlockLoadKeys   = typename core::detail::BlockLoad<PtxPlan, KeysLoadIt>::type;
-    using BlockLoadValues = typename core::detail::BlockLoad<PtxPlan, ValuesLoadIt>::type;
+    using BlockLoadKeys   = BlockLoad<PtxPlan, KeysLoadIt>;
+    using BlockLoadValues = BlockLoad<PtxPlan, ValuesLoadIt>;
 
     using BlockDiscontinuityKeys = cub::BlockDiscontinuity<key_type, PtxPlan::BLOCK_THREADS, 1, 1>;
 
@@ -202,18 +175,14 @@ struct ReduceByKeyAgent
   using BlockScan              = typename ptx_plan::BlockScan;
   using TempStorage            = typename ptx_plan::TempStorage;
 
-  enum
-  {
-    BLOCK_THREADS     = ptx_plan::BLOCK_THREADS,
-    ITEMS_PER_THREAD  = ptx_plan::ITEMS_PER_THREAD,
-    ITEMS_PER_TILE    = ptx_plan::ITEMS_PER_TILE,
-    TWO_PHASE_SCATTER = (ITEMS_PER_THREAD > 1),
+  static constexpr int BLOCK_THREADS      = ptx_plan::BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD   = ptx_plan::ITEMS_PER_THREAD;
+  static constexpr int ITEMS_PER_TILE     = ptx_plan::ITEMS_PER_TILE;
+  static constexpr bool TWO_PHASE_SCATTER = (ITEMS_PER_THREAD > 1);
 
-    // Whether or not the scan operation has a zero-valued identity value
-    // (true if we're performing addition on a primitive type)
-    HAS_IDENTITY_ZERO = ::cuda::std::is_same<ReductionOp, ::cuda::std::plus<value_type>>::value
-                     && ::cuda::std::is_arithmetic<value_type>::value
-  };
+  // Whether or not the scan operation has a zero-valued identity value (true
+  // if we're performing addition on a primitive type)
+  static constexpr int HAS_IDENTITY_ZERO = ::cuda::identity_element<ReductionOp, value_type>() == 0;
 
   struct impl
   {
@@ -234,47 +203,30 @@ struct ReduceByKeyAgent
     // Block scan utility methods
     //---------------------------------------------------------------------
 
-    // Scan with identity (first tile)
-    //
-    THRUST_DEVICE_FUNCTION void scan_tile(size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
-                                          size_value_pair_t& tile_aggregate,
-                                          thrust::detail::true_type /* has_identity */)
-    {
-      size_value_pair_t identity;
-      identity.value = 0;
-      identity.key   = 0;
-      BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, identity, scan_op, tile_aggregate);
-    }
-
-    // Scan without identity (first tile).
+    // Scan first tile
     // Without an identity, the first output item is undefined.
-    //
-    THRUST_DEVICE_FUNCTION void scan_tile(size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
-                                          size_value_pair_t& tile_aggregate,
-                                          thrust::detail::false_type /* has_identity */)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+    scan_first_tile(size_value_pair_t (&scan_items)[ITEMS_PER_THREAD], size_value_pair_t& tile_aggregate)
     {
-      BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, tile_aggregate);
+      if constexpr (HAS_IDENTITY_ZERO)
+      {
+        size_value_pair_t identity;
+        identity.value = 0;
+        identity.key   = 0;
+        BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, identity, scan_op, tile_aggregate);
+      }
+      else
+      {
+        BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, tile_aggregate);
+      }
     }
 
-    // Scan with identity (subsequent tile)
-    //
-    THRUST_DEVICE_FUNCTION void scan_tile(
-      size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
-      size_value_pair_t& tile_aggregate,
-      TilePrefixCallback& prefix_op,
-      thrust::detail::true_type /*  has_identity */)
-    {
-      BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, prefix_op);
-      tile_aggregate = prefix_op.GetBlockAggregate();
-    }
-
-    // Scan without identity (subsequent tile).
+    // Scan subsequent tile
     // Without an identity, the first output item is undefined.
-    THRUST_DEVICE_FUNCTION void scan_tile(
-      size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
-      size_value_pair_t& tile_aggregate,
-      TilePrefixCallback& prefix_op,
-      thrust::detail::false_type /* has_identity */)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+    scan_tile(size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
+              size_value_pair_t& tile_aggregate,
+              TilePrefixCallback& prefix_op)
     {
       BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, prefix_op);
       tile_aggregate = prefix_op.GetBlockAggregate();
@@ -285,7 +237,7 @@ struct ReduceByKeyAgent
     //---------------------------------------------------------------------
 
     template <bool IS_LAST_TILE>
-    THRUST_DEVICE_FUNCTION void zip_values_and_flags(
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void zip_values_and_flags(
       size_type num_remaining,
       value_type (&values)[ITEMS_PER_THREAD],
       size_type (&segment_flags)[ITEMS_PER_THREAD],
@@ -306,7 +258,7 @@ struct ReduceByKeyAgent
       }
     }
 
-    THRUST_DEVICE_FUNCTION void zip_keys_and_values(
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void zip_keys_and_values(
       key_type (&keys)[ITEMS_PER_THREAD],
       size_type (&segment_indices)[ITEMS_PER_THREAD],
       size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
@@ -328,7 +280,7 @@ struct ReduceByKeyAgent
 
     // Directly scatter flagged items to output offsets
     // (specialized for IS_SEGMENTED_REDUCTION_FIXUP == false)
-    THRUST_DEVICE_FUNCTION void scatter_direct(
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void scatter_direct(
       key_value_pair_t (&scatter_items)[ITEMS_PER_THREAD],
       size_type (&segment_flags)[ITEMS_PER_THREAD],
       size_type (&segment_indices)[ITEMS_PER_THREAD])
@@ -352,7 +304,7 @@ struct ReduceByKeyAgent
     // the previous value aggregate:
     //   * the scatter offsets must be decremented for value aggregates
     //
-    THRUST_DEVICE_FUNCTION void scatter_two_phase(
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void scatter_two_phase(
       key_value_pair_t (&scatter_items)[ITEMS_PER_THREAD],
       size_type (&segment_flags)[ITEMS_PER_THREAD],
       size_type (&segment_indices)[ITEMS_PER_THREAD],
@@ -385,7 +337,7 @@ struct ReduceByKeyAgent
 
     // Scatter flagged items
     //
-    THRUST_DEVICE_FUNCTION void scatter(
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void scatter(
       key_value_pair_t (&scatter_items)[ITEMS_PER_THREAD],
       size_type (&segment_flags)[ITEMS_PER_THREAD],
       size_type (&segment_indices)[ITEMS_PER_THREAD],
@@ -410,7 +362,7 @@ struct ReduceByKeyAgent
 
     // Finalize the carry-out from the last tile
     // (specialized for IS_SEGMENTED_REDUCTION_FIXUP == false)
-    THRUST_DEVICE_FUNCTION void
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void
     finalize_last_tile(size_type num_segments, size_type num_remaining, key_type last_key, value_type last_value)
     {
       // Last thread will output final count and last item, if necessary
@@ -440,7 +392,8 @@ struct ReduceByKeyAgent
     // and aggregated values (including this tile)
     //
     template <bool IS_LAST_TILE>
-    THRUST_DEVICE_FUNCTION void consume_first_tile(Size num_remaining, Size tile_offset, ScanTileState& tile_state)
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+    consume_first_tile(Size num_remaining, Size tile_offset, ScanTileState& tile_state)
     {
       key_type keys[ITEMS_PER_THREAD]; // Tile keys
       key_type pred_keys[ITEMS_PER_THREAD]; // Tile keys shifted up (predecessor)
@@ -496,7 +449,7 @@ struct ReduceByKeyAgent
 
       // Exclusive scan of values and segment_flags
       size_value_pair_t tile_aggregate;
-      scan_tile(scan_items, tile_aggregate, is_true<HAS_IDENTITY_ZERO>());
+      scan_first_tile(scan_items, tile_aggregate);
 
       if (threadIdx.x == 0)
       {
@@ -532,7 +485,7 @@ struct ReduceByKeyAgent
     // and aggregated values (including this tile)
 
     template <bool IS_LAST_TILE>
-    THRUST_DEVICE_FUNCTION void
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void
     consume_subsequent_tile(Size num_remaining, int tile_idx, Size tile_offset, ScanTileState& tile_state)
     {
       key_type keys[ITEMS_PER_THREAD]; // Tile keys
@@ -581,7 +534,7 @@ struct ReduceByKeyAgent
       // Exclusive scan of values and segment_flags
       size_value_pair_t tile_aggregate;
       TilePrefixCallback prefix_op(tile_state, storage.scan_storage.prefix, scan_op, tile_idx);
-      scan_tile(scan_items, tile_aggregate, prefix_op, is_true<HAS_IDENTITY_ZERO>());
+      scan_tile(scan_items, tile_aggregate, prefix_op);
       size_value_pair_t tile_inclusive_prefix = prefix_op.GetInclusivePrefix();
 
       // Unzip values and segment indices
@@ -598,7 +551,7 @@ struct ReduceByKeyAgent
       }
     }
     template <bool IS_LAST_TILE>
-    THRUST_DEVICE_FUNCTION void
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void
     consume_tile(size_type num_remaining, int tile_idx, size_type tile_offset, ScanTileState& tile_state)
     {
       if (tile_idx == 0)
@@ -615,7 +568,7 @@ struct ReduceByKeyAgent
     // Constructor : consume_range
     //---------------------------------------------------------------------
 
-    THRUST_DEVICE_FUNCTION impl(
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE impl(
       TempStorage& storage_,
       KeysInputIt keys_input_it_,
       ValuesInputIt values_input_it_,
@@ -628,8 +581,8 @@ struct ReduceByKeyAgent
       int /*num_tiles*/,
       ScanTileState& tile_state)
         : storage(storage_)
-        , keys_load_it(core::detail::make_load_iterator(ptx_plan(), keys_input_it_))
-        , values_load_it(core::detail::make_load_iterator(ptx_plan(), values_input_it_))
+        , keys_load_it(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(keys_input_it_))
+        , values_load_it(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(values_input_it_))
         , keys_output_it(keys_output_it_)
         , values_output_it(values_output_it_)
         , num_runs_output_it(num_runs_output_it_)
@@ -762,7 +715,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
   _CUDA_CUB_RET_IF_FAIL(status);
 
   void* allocations[2] = {nullptr, nullptr};
-  status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+  status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
   _CUDA_CUB_RET_IF_FAIL(status);
 
   if (d_temp_storage == nullptr)
@@ -804,7 +757,7 @@ template <typename Size,
           typename ValuesOutputIt,
           typename EqualityOp,
           typename ReductionOp>
-THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> reduce_by_key_dispatch(
+THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> reduce_by_key_dispatch(
   execution_policy<Derived>& policy,
   KeysInputIt keys_first,
   Size num_items,
@@ -819,7 +772,7 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> reduce_by_key_dispatc
 
   if (num_items == 0)
   {
-    return thrust::make_pair(keys_output, values_output);
+    return ::cuda::std::make_pair(keys_output, values_output);
   }
 
   cudaError_t status;
@@ -872,7 +825,7 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> reduce_by_key_dispatc
 
   const auto num_runs_out = cuda_cub::get_value(policy, d_num_runs_out);
 
-  return thrust::make_pair(keys_output + num_runs_out, values_output + num_runs_out);
+  return ::cuda::std::make_pair(keys_output + num_runs_out, values_output + num_runs_out);
 }
 
 template <typename Derived,
@@ -882,7 +835,7 @@ template <typename Derived,
           typename ValuesOutputIt,
           typename EqualityOp,
           typename ReductionOp>
-THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> reduce_by_key(
+THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> reduce_by_key(
   execution_policy<Derived>& policy,
   KeysInputIt keys_first,
   KeysInputIt keys_last,
@@ -896,7 +849,7 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> reduce_by_key(
 
   size_type num_items = ::cuda::std::distance(keys_first, keys_last);
 
-  pair<KeysOutputIt, ValuesOutputIt> result = thrust::make_pair(keys_output, values_output);
+  ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> result = ::cuda::std::make_pair(keys_output, values_output);
 
   if (num_items == 0)
   {
@@ -911,7 +864,6 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> reduce_by_key(
 
   return result;
 }
-
 } // namespace __reduce_by_key
 
 //-------------------------
@@ -926,7 +878,7 @@ template <class Derived,
           class ValOutputIt,
           class BinaryPred,
           class BinaryOp>
-pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
+::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt keys_first,
   KeyInputIt keys_last,
@@ -936,7 +888,7 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
   BinaryPred binary_pred,
   BinaryOp binary_op)
 {
-  auto ret = thrust::make_pair(keys_output, values_output);
+  auto ret = ::cuda::std::make_pair(keys_output, values_output);
   THRUST_CDP_DISPATCH(
     (ret = __reduce_by_key::reduce_by_key(
        policy, keys_first, keys_last, values_first, keys_output, values_output, binary_pred, binary_op);),
@@ -953,7 +905,7 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, class ValOutputIt, class BinaryPred>
-pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
+::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt keys_first,
   KeyInputIt keys_last,
@@ -977,7 +929,7 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, class ValOutputIt>
-pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
+::cuda::std::pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
   execution_policy<Derived>& policy,
   KeyInputIt keys_first,
   KeyInputIt keys_last,
@@ -989,7 +941,6 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
   return cuda_cub::reduce_by_key(
     policy, keys_first, keys_last, values_first, keys_output, values_output, ::cuda::std::equal_to<KeyT>());
 }
-
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END
@@ -997,4 +948,4 @@ THRUST_NAMESPACE_END
 #  include <thrust/memory.h>
 #  include <thrust/reduce.h>
 
-#endif
+#endif // _CCCL_CUDA_COMPILATION()

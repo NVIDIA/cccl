@@ -14,9 +14,48 @@
 
 using namespace cuda::experimental::stf;
 
+// Green contexts are only supported since CUDA 12.4
+#if _CCCL_CTK_AT_LEAST(12, 4)
+__global__ void axpy(double a, slice<const double> x, slice<double> y)
+{
+  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
+  int nthreads = gridDim.x * blockDim.x;
+
+  size_t n = x.extent(0);
+  for (int ind = tid; ind < n; ind += nthreads)
+  {
+    y(ind) += a * x(ind);
+  }
+}
+
+void debug_info(cudaStream_t stream, CUgreenCtx g_ctx)
+{
+  // Get the green context associated to that CUDA stream
+  CUgreenCtx stream_cugc;
+  cuda_safe_call(cuStreamGetGreenCtx(CUstream(stream), &stream_cugc));
+  assert(stream_cugc != nullptr);
+
+  CUcontext stream_green_primary;
+  CUcontext place_green_primary;
+
+  unsigned long long stream_ctxId;
+  unsigned long long place_ctxId;
+
+  // Convert green contexts to primary contexts and get their ID
+  cuda_safe_call(cuCtxFromGreenCtx(&stream_green_primary, stream_cugc));
+  cuda_safe_call(cuCtxGetId(stream_green_primary, &stream_ctxId));
+
+  cuda_safe_call(cuCtxFromGreenCtx(&place_green_primary, g_ctx));
+  cuda_safe_call(cuCtxGetId(place_green_primary, &place_ctxId));
+
+  // Make sure the stream belongs to the same green context as the execution place
+  EXPECT(stream_ctxId == place_ctxId);
+}
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
+
 int main()
 {
-#if CUDA_VERSION < 12040
+#if _CCCL_CTK_BELOW(12, 4)
   fprintf(stderr, "Green contexts are not supported by this version of CUDA: skipping test.\n");
   return 0;
 #else

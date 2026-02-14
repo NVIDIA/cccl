@@ -104,34 +104,34 @@ class CXXCompiler(object):
 
             if "__NVCC__" in macros.keys():
                 compiler_type = "nvcc"
-                major_ver = macros["__CUDACC_VER_MAJOR__"]
-                minor_ver = macros["__CUDACC_VER_MINOR__"]
-                patchlevel = macros["__CUDACC_VER_BUILD__"]
+                major_ver = int(macros["__CUDACC_VER_MAJOR__"])
+                minor_ver = int(macros["__CUDACC_VER_MINOR__"])
+                patchlevel = int(macros["__CUDACC_VER_BUILD__"])
             elif "__NVCOMPILER" in macros.keys():
                 compiler_type = "nvhpc"
                 # NVHPC, unfortunately, adds an extra space between the macro name
                 # and macro value in their macro dump mode.
-                major_ver = macros["__NVCOMPILER_MAJOR__"].strip()
-                minor_ver = macros["__NVCOMPILER_MINOR__"].strip()
-                patchlevel = macros["__NVCOMPILER_PATCHLEVEL__"].strip()
+                major_ver = int(macros["__NVCOMPILER_MAJOR__"].strip())
+                minor_ver = int(macros["__NVCOMPILER_MINOR__"].strip())
+                patchlevel = int(macros["__NVCOMPILER_PATCHLEVEL__"].strip())
             elif "__clang__" in macros.keys():
                 compiler_type = "clang"
                 # Treat Apple's LLVM fork differently.
                 if "__apple_build_version__" in macros.keys():
                     compiler_type = "apple-clang"
-                major_ver = macros["__clang_major__"]
-                minor_ver = macros["__clang_minor__"]
-                patchlevel = macros["__clang_patchlevel__"]
+                major_ver = int(macros["__clang_major__"])
+                minor_ver = int(macros["__clang_minor__"])
+                patchlevel = int(macros["__clang_patchlevel__"])
             elif "__GNUC__" in macros.keys():
                 compiler_type = "gcc"
-                major_ver = macros["__GNUC__"]
-                minor_ver = macros["__GNUC_MINOR__"]
-                patchlevel = macros["__GNUC_PATCHLEVEL__"]
+                major_ver = int(macros["__GNUC__"])
+                minor_ver = int(macros["__GNUC_MINOR__"])
+                patchlevel = int(macros["__GNUC_PATCHLEVEL__"])
             elif "_MSC_VER" in macros.keys():
                 compiler_type = "msvc"
-                major_ver = int(int(macros["_MSC_FULL_VER"]) / 10000000)
-                minor_ver = int(int(macros["_MSC_FULL_VER"]) / 100000 % 100)
-                patchlevel = int(int(macros["_MSC_FULL_VER"]) % 100000)
+                major_ver = int(macros["_MSC_FULL_VER"]) // 10000000
+                minor_ver = int(macros["_MSC_FULL_VER"]) // 100000 % 100
+                patchlevel = int(macros["_MSC_FULL_VER"]) % 100000
 
             if "__cplusplus" in macros.keys():
                 if "_MSVC_LANG" in macros.keys():
@@ -421,7 +421,12 @@ class CXXCompiler(object):
                 cmd, out, err, rc = self.preprocess(source_files, flags=flags, cwd=cwd)
 
         if rc != 0:
-            raise RuntimeError("Macros failed to dump")
+            err_str = "Macros failed to dump:\n\n"
+            err_str += f"Command: {' '.join(cmd)}\n\n"
+            err_str += f"Exit code: {rc}\n\n"
+            err_str += f"stdout:\n{out}\n\n"
+            err_str += f"stderr:\n{err}\n"
+            raise RuntimeError(err_str)
 
         parsed_macros = {}
         lines = [line.strip() for line in out.split("\n") if line.strip()]

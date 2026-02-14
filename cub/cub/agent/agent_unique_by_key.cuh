@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c), NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * @file
@@ -62,22 +38,19 @@ CUB_NAMESPACE_BEGIN
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-template <int _BLOCK_THREADS,
-          int _ITEMS_PER_THREAD                   = 1,
-          cub::BlockLoadAlgorithm _LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT,
-          cub::CacheLoadModifier _LOAD_MODIFIER   = cub::LOAD_LDG,
-          cub::BlockScanAlgorithm _SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS,
-          typename DelayConstructorT              = detail::fixed_delay_constructor_t<350, 450>>
+template <int BlockThreads,
+          int ItemsPerThread                    = 1,
+          cub::BlockLoadAlgorithm LoadAlgorithm = cub::BLOCK_LOAD_DIRECT,
+          cub::CacheLoadModifier LoadModifier   = cub::LOAD_LDG,
+          cub::BlockScanAlgorithm ScanAlgorithm = cub::BLOCK_SCAN_WARP_SCANS,
+          typename DelayConstructorT            = detail::fixed_delay_constructor_t<350, 450>>
 struct AgentUniqueByKeyPolicy
 {
-  enum
-  {
-    BLOCK_THREADS    = _BLOCK_THREADS,
-    ITEMS_PER_THREAD = _ITEMS_PER_THREAD,
-  };
-  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
-  static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+  static constexpr int BLOCK_THREADS                      = BlockThreads;
+  static constexpr int ITEMS_PER_THREAD                   = ItemsPerThread;
+  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
+  static constexpr cub::CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
+  static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
 
   struct detail
   {
@@ -85,15 +58,32 @@ struct AgentUniqueByKeyPolicy
   };
 };
 
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+namespace detail
+{
+// Only define this when needed.
+// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
+// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
+// version is always defined, and that's the only one needed for regular CUB operations.
+//
+// TODO: enable this unconditionally once concepts are always available
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  UniqueByKeyAgentPolicy,
+  (GenericAgentPolicy),
+  (BLOCK_THREADS, BlockThreads, int),
+  (ITEMS_PER_THREAD, ItemsPerThread, int),
+  (LOAD_ALGORITHM, LoadAlgorithm, cub::BlockLoadAlgorithm),
+  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
+  (SCAN_ALGORITHM, ScanAlgorithm, cub::BlockScanAlgorithm))
+} // namespace detail
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+
 /******************************************************************************
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
+namespace detail::unique_by_key
 {
-namespace unique_by_key
-{
-
 /**
  * @brief AgentUniqueByKey implements a stateful abstraction of CUDA thread blocks for participating
  * in device-wide unique-by-key
@@ -140,12 +130,9 @@ struct AgentUniqueByKey
   using ScanTileStateT = ScanTileState<OffsetT>;
 
   // Constants
-  enum
-  {
-    BLOCK_THREADS    = AgentUniqueByKeyPolicyT::BLOCK_THREADS,
-    ITEMS_PER_THREAD = AgentUniqueByKeyPolicyT::ITEMS_PER_THREAD,
-    ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD,
-  };
+  static constexpr int BLOCK_THREADS    = AgentUniqueByKeyPolicyT::BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD = AgentUniqueByKeyPolicyT::ITEMS_PER_THREAD;
+  static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for keys
   using WrappedKeyInputIteratorT = ::cuda::std::conditional_t<
@@ -326,7 +313,7 @@ struct AgentUniqueByKey
     OffsetT selection_flags[ITEMS_PER_THREAD];
     OffsetT selection_idx[ITEMS_PER_THREAD];
 
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       // Fill last elements with the first element
       // because collectives are not suffix guarded
@@ -341,7 +328,7 @@ struct AgentUniqueByKey
     __syncthreads();
 
     ValueT values[ITEMS_PER_THREAD];
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       // Fill last elements with the first element
       // because collectives are not suffix guarded
@@ -378,14 +365,14 @@ struct AgentUniqueByKey
     if (threadIdx.x == 0)
     {
       // Update tile status if this is not the last tile
-      if (!IS_LAST_TILE)
+      if constexpr (!IS_LAST_TILE)
       {
         tile_state.SetInclusive(0, num_tile_selections);
       }
     }
 
     // Do not count any out-of-bounds selections
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       int num_discount = ITEMS_PER_TILE - num_tile_items;
       num_tile_selections -= num_discount;
@@ -444,7 +431,7 @@ struct AgentUniqueByKey
     OffsetT selection_flags[ITEMS_PER_THREAD];
     OffsetT selection_idx[ITEMS_PER_THREAD];
 
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       // Fill last elements with the first element
       // because collectives are not suffix guarded
@@ -459,7 +446,7 @@ struct AgentUniqueByKey
     __syncthreads();
 
     ValueT values[ITEMS_PER_THREAD];
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       // Fill last elements with the first element
       // because collectives are not suffix guarded
@@ -500,7 +487,7 @@ struct AgentUniqueByKey
     num_tile_selections   = prefix_cb.GetBlockAggregate();
     num_selections_prefix = prefix_cb.GetExclusivePrefix();
 
-    if (IS_LAST_TILE)
+    if constexpr (IS_LAST_TILE)
     {
       int num_discount = ITEMS_PER_TILE - num_tile_items;
       num_tile_selections -= num_discount;
@@ -607,8 +594,6 @@ struct AgentUniqueByKey
     }
   }
 };
-
-} // namespace unique_by_key
-} // namespace detail
+} // namespace detail::unique_by_key
 
 CUB_NAMESPACE_END

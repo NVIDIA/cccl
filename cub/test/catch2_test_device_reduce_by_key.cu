@@ -1,32 +1,7 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_reduce.cuh>
 
@@ -53,7 +28,15 @@ using full_type_list = c2h::type_list<type_triple<std::uint8_t>, type_triple<std
 #elif TEST_TYPES == 1
 using full_type_list = c2h::type_list<type_triple<std::int32_t>, type_triple<std::int64_t>>;
 #elif TEST_TYPES == 2
-using full_type_list = c2h::type_list<type_triple<uchar3, uchar3, custom_t>, type_triple<ulonglong4>>;
+using full_type_list =
+  c2h::type_list<type_triple<uchar3, uchar3, custom_t>,
+                 type_triple<
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4_16a
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+                   >>;
 #elif TEST_TYPES == 3
 // clang-format off
 using full_type_list = c2h::type_list<
@@ -110,13 +93,13 @@ C2H_TEST("Device reduce-by-key works", "[by_key][reduce][device]", full_type_lis
 
   SECTION("sum")
   {
-    using op_t = ::cuda::std::plus<>;
+    using op_t = cuda::std::plus<>;
 
     // Binary reduction operator
     auto reduction_op = unwrap_op(reference_extended_fp(d_values_it), op_t{});
 
     // Prepare verification data
-    using accum_t = ::cuda::std::__accumulator_t<op_t, value_t, output_t>;
+    using accum_t = cuda::std::__accumulator_t<op_t, value_t, output_t>;
     c2h::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(in_values, segment_offsets, reduction_op, accum_t{}, expected_result.begin());
     c2h::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);
@@ -144,12 +127,12 @@ C2H_TEST("Device reduce-by-key works", "[by_key][reduce][device]", full_type_lis
 
   SECTION("min")
   {
-    using op_t = ::cuda::minimum<>;
+    using op_t = cuda::minimum<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(
-      in_values, segment_offsets, op_t{}, ::cuda::std::numeric_limits<value_t>::max(), expected_result.begin());
+      in_values, segment_offsets, op_t{}, cuda::std::numeric_limits<value_t>::max(), expected_result.begin());
     c2h::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);
 
     // Run test

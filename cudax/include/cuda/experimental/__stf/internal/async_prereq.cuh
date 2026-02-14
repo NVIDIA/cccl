@@ -39,13 +39,28 @@
 
 namespace cuda::experimental::stf
 {
-
 class event_impl;
 using event = reserved::handle<event_impl>;
 
 namespace reserved
 {
 using unique_id_t = unique_id<event>;
+
+//!
+//! Generates the next unique identifier for asynchronous prerequisite events in DOT.
+//!
+//! This function provides monotonically increasing unique IDs that are used to:
+//! - Establish ordering relationships between events in the task graph
+//! - Enable proper dependency tracking in asynchronous execution
+//! - Support event comparison and sorting operations
+//! - Facilitate debugging and visualization of event dependencies
+//!
+//! \return A unique integer identifier that is guaranteed to be larger than any previously returned ID
+//!
+inline int get_next_prereq_unique_id()
+{
+  return int(unique_id<event>::next_id());
+}
 
 using event_vector = small_vector<event, 7>;
 static_assert(sizeof(event_vector) == 120);
@@ -113,15 +128,23 @@ public:
    * @brief Sets a symbolic name for the event, useful for debugging or tracing.
    * @param s The symbolic name to associate with this event.
    */
-  template <typename context_t>
-  void set_symbol(context_t& ctx, ::std::string s)
+  void set_symbol_with_dot(reserved::per_ctx_dot& dot, ::std::string s)
   {
-    symbol    = mv(s);
-    auto& dot = *ctx.get_dot();
+    symbol = mv(s);
     if (dot.is_tracing())
     {
       dot.add_prereq_vertex(symbol, unique_prereq_id);
     }
+  }
+
+  /**
+   * @brief Sets a symbolic name for the event, useful for debugging or tracing.
+   * @param s The symbolic name to associate with this event.
+   */
+  template <typename context_t>
+  void set_symbol(context_t& ctx, ::std::string s)
+  {
+    set_symbol_with_dot(*ctx.get_dot(), mv(s));
   }
 
   /**
@@ -130,13 +153,13 @@ public:
    * @return True if redundant entries were removed and further uniqueness processing is unnecessary, false otherwise.
    * @note This function provides a hook for derived classes to implement optimization strategies.
    */
-  virtual bool factorize(backend_ctx_untyped&, reserved::event_vector&)
+  virtual bool factorize(const backend_ctx_untyped&, reserved::event_vector&)
   {
     return false;
   }
 
   // stream then depends on the list of events
-  virtual void sync_with_stream(backend_ctx_untyped&, event_list&, cudaStream_t) const
+  virtual void sync_with_stream(const backend_ctx_untyped&, event_list&, cudaStream_t) const
   {
     fprintf(stderr, "Unsupported synchronization with stream.\n");
     abort();
@@ -204,7 +227,7 @@ public:
   /// Optimize the list to remove redundant entries which are either
   /// identical events, or events which are implicit from other events in the
   /// list.
-  void optimize(backend_ctx_untyped& bctx)
+  void optimize(const backend_ctx_untyped& bctx)
   {
     // No need to remove duplicates on a list that was already sanitized,
     // and that has not been modified since
@@ -252,7 +275,7 @@ public:
   }
 
   // id_to can be the id of a task or another prereq
-  void dot_declare_prereqs(reserved::per_ctx_dot& dot, int id_to, int array_style = 0)
+  void dot_declare_prereqs(reserved::per_ctx_dot& dot, int id_to, reserved::edge_type style = reserved::edge_type::plain)
   {
     if (!dot.is_tracing_prereqs())
     {
@@ -261,12 +284,13 @@ public:
 
     for (auto& e : payload)
     {
-      dot.add_edge(e->unique_prereq_id, id_to, array_style);
+      dot.add_edge(e->unique_prereq_id, id_to, style);
     }
   }
 
   // id_from can be the id of a task or another prereq
-  void dot_declare_prereqs_from(reserved::per_ctx_dot& dot, int id_from, int array_style = 0) const
+  void dot_declare_prereqs_from(
+    reserved::per_ctx_dot& dot, int id_from, reserved::edge_type style = reserved::edge_type::plain) const
   {
     if (!dot.is_tracing_prereqs())
     {
@@ -275,7 +299,7 @@ public:
 
     for (auto& e : payload)
     {
-      dot.add_edge(id_from, e->unique_prereq_id, array_style);
+      dot.add_edge(id_from, e->unique_prereq_id, style);
     }
   }
 
@@ -474,8 +498,7 @@ void join(context_t& ctx, some_event& to, event_list& prereq_in)
   auto& dot = *ctx.get_dot();
   if (dot.is_tracing_prereqs())
   {
-    prereq_in.dot_declare_prereqs(dot, to.unique_prereq_id, 1);
+    prereq_in.dot_declare_prereqs(dot, to.unique_prereq_id, reserved::edge_type::prereqs);
   }
 }
-
 } // namespace cuda::experimental::stf

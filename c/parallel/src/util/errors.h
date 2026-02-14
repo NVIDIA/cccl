@@ -11,8 +11,9 @@
 #pragma once
 
 #include <cuda.h>
-#include <nvJitLink.h>
 #include <nvrtc.h>
+
+#include <nvrtc/nvjitlink_helper.h>
 
 void check(nvrtcResult result);
 void check(CUresult result);

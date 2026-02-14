@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CHARCONV_CHARS_FORMAT_H
-#define _LIBCUDACXX___CHARCONV_CHARS_FORMAT_H
+#ifndef _CUDA_STD___CHARCONV_CHARS_FORMAT_H
+#define _CUDA_STD___CHARCONV_CHARS_FORMAT_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,7 +24,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 enum class chars_format
 {
@@ -36,46 +36,46 @@ enum class chars_format
   general    = fixed | scientific,
 };
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr chars_format operator~(chars_format __v) noexcept
+[[nodiscard]] _CCCL_API constexpr chars_format operator~(chars_format __v) noexcept
 {
-  return chars_format(~_CUDA_VSTD::to_underlying(__v));
+  return chars_format(~::cuda::std::to_underlying(__v));
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr chars_format operator&(chars_format __lhs, chars_format __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr chars_format operator&(chars_format __lhs, chars_format __rhs) noexcept
 {
-  return chars_format(_CUDA_VSTD::to_underlying(__lhs) & _CUDA_VSTD::to_underlying(__rhs));
+  return chars_format(::cuda::std::to_underlying(__lhs) & ::cuda::std::to_underlying(__rhs));
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr chars_format operator|(chars_format __lhs, chars_format __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr chars_format operator|(chars_format __lhs, chars_format __rhs) noexcept
 {
-  return chars_format(_CUDA_VSTD::to_underlying(__lhs) | _CUDA_VSTD::to_underlying(__rhs));
+  return chars_format(::cuda::std::to_underlying(__lhs) | ::cuda::std::to_underlying(__rhs));
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr chars_format operator^(chars_format __lhs, chars_format __rhs) noexcept
+[[nodiscard]] _CCCL_API constexpr chars_format operator^(chars_format __lhs, chars_format __rhs) noexcept
 {
-  return chars_format(_CUDA_VSTD::to_underlying(__lhs) ^ _CUDA_VSTD::to_underlying(__rhs));
+  return chars_format(::cuda::std::to_underlying(__lhs) ^ ::cuda::std::to_underlying(__rhs));
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr chars_format& operator&=(chars_format& __lhs, chars_format __rhs) noexcept
+_CCCL_API constexpr chars_format& operator&=(chars_format& __lhs, chars_format __rhs) noexcept
 {
   __lhs = __lhs & __rhs;
   return __lhs;
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr chars_format& operator|=(chars_format& __lhs, chars_format __rhs) noexcept
+_CCCL_API constexpr chars_format& operator|=(chars_format& __lhs, chars_format __rhs) noexcept
 {
   __lhs = __lhs | __rhs;
   return __lhs;
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr chars_format& operator^=(chars_format& __lhs, chars_format __rhs) noexcept
+_CCCL_API constexpr chars_format& operator^=(chars_format& __lhs, chars_format __rhs) noexcept
 {
   __lhs = __lhs ^ __rhs;
   return __lhs;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CHARCONV_CHARS_FORMAT_H
+#endif // _CUDA_STD___CHARCONV_CHARS_FORMAT_H

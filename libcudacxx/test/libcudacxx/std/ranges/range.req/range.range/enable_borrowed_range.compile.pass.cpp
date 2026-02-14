@@ -15,10 +15,8 @@
 //  inline constexpr bool enable_borrowed_range = false;
 
 #include <cuda/std/array>
+#include <cuda/std/inplace_vector>
 #include <cuda/std/ranges>
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-#  include <cuda/std/vector>
-#endif
 
 #include "test_macros.h"
 
@@ -36,9 +34,7 @@ __host__ __device__ void test()
   // Sequence containers
   static_assert(!enable_borrowed_range<cuda::std::array<int, 0>>, "");
   static_assert(!enable_borrowed_range<cuda::std::array<int, 42>>, "");
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-  static_assert(!enable_borrowed_range<cuda::std::vector<int>>, "");
-#endif
+  static_assert(!enable_borrowed_range<cuda::std::inplace_vector<int, 3>>, "");
 
   // Both cuda::std::span and cuda::std::string_view have their own test.
 }

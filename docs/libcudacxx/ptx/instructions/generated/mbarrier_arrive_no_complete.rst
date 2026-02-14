@@ -3,7 +3,7 @@
 
 mbarrier.arrive.noComplete.shared.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.arrive.noComplete.shared.b64                       state,  [addr], count;    // 5.  PTX ISA 70, SM_80
    template <typename = void>

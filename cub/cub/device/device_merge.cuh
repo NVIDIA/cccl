@@ -16,7 +16,8 @@
 #include <cub/device/dispatch/dispatch_merge.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <cuda/std/functional>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -33,6 +34,9 @@ struct DeviceMerge
   //! Merges two sorted sequences of values (called keys) into a sorted output sequence. Merging is unstable,
   //! which means any two equivalent values (neither value is ordered before the other) may be written to the output
   //! sequence in any order.
+  //!
+  //! .. versionadded:: 2.7.0
+  //!    First appears in CUDA Toolkit 12.8.
   //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -109,6 +113,9 @@ struct DeviceMerge
   //! Merges two sorted sequences of key-value pairs into a sorted output sequence. Merging is unstable,
   //! which means any two equivalent values (neither value is ordered before the other) may be written to the output
   //! sequence in any order.
+  //!
+  //! .. versionadded:: 2.7.0
+  //!    First appears in CUDA Toolkit 12.8.
   //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++

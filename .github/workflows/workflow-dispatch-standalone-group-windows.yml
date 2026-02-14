@@ -15,7 +15,7 @@ on:
 jobs:
   run-jobs:
     name: ${{ matrix.name }}
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ github.repository == 'NVIDIA/cccl' && matrix.runner || 'windows-latest' }}
     permissions:
       id-token: write
       contents: read
@@ -25,7 +25,7 @@ jobs:
         include: ${{ fromJSON(inputs.job-array) }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
       - name: Run job
@@ -34,3 +34,6 @@ jobs:
           id:      ${{ matrix.id }}
           command: ${{ matrix.command }}
           image:   ${{ matrix.image }}
+          runner:  ${{ matrix.runner }}
+          cuda:    ${{ matrix.cuda }}
+          host:    ${{ matrix.host }}

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___MEMORY_ADDRESSOF_H
-#define _LIBCUDACXX___MEMORY_ADDRESSOF_H
+#ifndef _CUDA_STD___MEMORY_ADDRESSOF_H
+#define _CUDA_STD___MEMORY_ADDRESSOF_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,12 +21,35 @@
 #  pragma system_header
 #endif // no system header
 
+#if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 12)
+#  define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 1
+#else // ^^^ has builtin std::addressof ^^^ / vvv no builtin std::addressof vvv
+#  define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 0
+#endif // ^^^ no builtin std::addressof ^^^
+
+// nvcc warns about host only std::addressof being used in device code
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+#  undef _CCCL_HAS_BUILTIN_STD_ADDRESSOF
+#  define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 0
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
+
+// include minimal std:: headers
+#if _CCCL_HAS_BUILTIN_STD_ADDRESSOF()
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && __has_include(<bits/move.h>)
+#    include <bits/move.h>
+#  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__memory/addressof.h>)
+#    include <__memory/addressof.h>
+#  else
+#    include <cuda/std/__host_stdlib/memory>
+#  endif
+#endif // _CCCL_HAS_BUILTIN_STD_ADDRESSOF()
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4312) // warning C4312: 'type cast': conversion from '_Tp' to '_Tp *' of greater size
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_HAS_BUILTIN_STD_ADDRESSOF()
 
@@ -37,28 +60,31 @@ using ::std::addressof;
 #elif defined(_CCCL_BUILTIN_ADDRESSOF)
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _CCCL_NO_CFI constexpr _Tp* addressof(_Tp& __x) noexcept
+[[nodiscard]] _CCCL_API _CCCL_NO_CFI constexpr _Tp* addressof(_Tp& __x) noexcept
 {
   return _CCCL_BUILTIN_ADDRESSOF(__x);
 }
 
+template <class _Tp>
+_Tp* addressof(const _Tp&&) noexcept = delete;
+
 #else
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _CCCL_NO_CFI _Tp* addressof(_Tp& __x) noexcept
+[[nodiscard]] _CCCL_API _CCCL_NO_CFI _Tp* addressof(_Tp& __x) noexcept
 {
   return reinterpret_cast<_Tp*>(const_cast<char*>(&reinterpret_cast<const volatile char&>(__x)));
 }
 
-#endif // defined(_CCCL_BUILTIN_ADDRESSOF)
-
 template <class _Tp>
 _Tp* addressof(const _Tp&&) noexcept = delete;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+#endif // defined(_CCCL_BUILTIN_ADDRESSOF)
+
+_CCCL_END_NAMESPACE_CUDA_STD
 
 _CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___MEMORY_ADDRESSOF_H
+#endif // _CUDA_STD___MEMORY_ADDRESSOF_H

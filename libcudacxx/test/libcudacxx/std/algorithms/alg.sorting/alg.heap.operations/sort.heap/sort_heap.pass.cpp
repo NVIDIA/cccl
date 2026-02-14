@@ -15,7 +15,7 @@
 //   constexpr void  // constexpr in C++20
 //   sort_heap(Iter first, Iter last);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "MoveOnly.h"

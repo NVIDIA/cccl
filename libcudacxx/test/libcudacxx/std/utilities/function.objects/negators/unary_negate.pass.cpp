@@ -12,7 +12,7 @@
 
 #define _LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS
 #define _LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS
-// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
@@ -37,7 +37,7 @@ __global__ void test_global_kernel()
 
 int main(int, char**)
 {
-  typedef cuda::std::unary_negate<cuda::std::logical_not<int>> F;
+  using F   = cuda::std::unary_negate<cuda::std::logical_not<int>>;
   const F f = F(cuda::std::logical_not<int>());
 #if TEST_STD_VER <= 2017
   static_assert((cuda::std::is_same<F::argument_type, int>::value), "");

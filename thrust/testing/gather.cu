@@ -9,6 +9,14 @@
 
 #include <unittest/unittest.h>
 
+// There is an unfortunate miscompilation of the gcc-11 vectorizer leading to OOB writes
+// Adding this attribute suffices that this miscompilation does not appear anymore
+#if _CCCL_COMPILER(GCC, >=, 11)
+#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
+#else
+#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
+#endif
+
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 
@@ -307,7 +315,7 @@ void TestGatherIfToDiscardIterator(const size_t n)
 DECLARE_VARIABLE_UNITTEST(TestGatherIfToDiscardIterator);
 
 template <typename Vector>
-void TestGatherCountingIterator()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestGatherCountingIterator()
 {
   Vector source(10);
   thrust::sequence(source.begin(), source.end(), 0);

@@ -12,11 +12,11 @@
 // template<class Iter>
 // struct iterator_traits
 // {
-//   typedef typename Iter::difference_type difference_type;
-//   typedef typename Iter::value_type value_type;
-//   typedef typename Iter::pointer pointer;
-//   typedef typename Iter::reference reference;
-//   typedef typename Iter::iterator_category iterator_category;
+//   using difference_type   = typename Iter::difference_type;
+//   using value_type        = typename Iter::value_type;
+//   using pointer           = typename Iter::pointer;
+//   using reference         = typename Iter::reference;
+//   using iterator_category = typename Iter::iterator_category;
 // };
 
 #include <cuda/std/iterator>
@@ -36,11 +36,11 @@ struct A
 
 struct test_iterator
 {
-  typedef int difference_type;
-  typedef A value_type;
-  typedef A* pointer;
-  typedef A& reference;
-  typedef cuda::std::forward_iterator_tag iterator_category;
+  using difference_type   = int;
+  using value_type        = A;
+  using pointer           = A*;
+  using reference         = A&;
+  using iterator_category = cuda::std::forward_iterator_tag;
 };
 
 #if !TEST_COMPILER(NVRTC)
@@ -68,7 +68,7 @@ static_assert(cuda::std::__specialized_from_std<specialized_test_iterator>);
 int main(int, char**)
 {
   {
-    typedef cuda::std::iterator_traits<test_iterator> It;
+    using It = cuda::std::iterator_traits<test_iterator>;
     static_assert((cuda::std::is_same<It::difference_type, int>::value), "");
     static_assert((cuda::std::is_same<It::value_type, A>::value), "");
     static_assert((cuda::std::is_same<It::pointer, A*>::value), "");
@@ -78,14 +78,14 @@ int main(int, char**)
 
 #if !TEST_COMPILER(NVRTC)
   { // std::vector
-    typedef cuda::std::iterator_traits<typename std::vector<int>::iterator> It;
+    using It = cuda::std::iterator_traits<typename std::vector<int>::iterator>;
     static_assert((cuda::std::is_same<It::difference_type, std::ptrdiff_t>::value), "");
     static_assert((cuda::std::is_same<It::value_type, int>::value), "");
     static_assert((cuda::std::is_same<It::pointer, int*>::value), "");
     static_assert((cuda::std::is_same<It::reference, int&>::value), "");
     static_assert((cuda::std::is_same<It::iterator_category, std::random_access_iterator_tag>::value), "");
 
-    static_assert(cuda::std::__is_cpp17_random_access_iterator<typename std::vector<int>::iterator>::value, "");
+    static_assert(cuda::std::__has_random_access_traversal<typename std::vector<int>::iterator>, "");
   }
 
   { // specialization of std::iterator_traits

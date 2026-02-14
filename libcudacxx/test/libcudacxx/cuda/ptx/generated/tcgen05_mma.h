@@ -25,25 +25,118 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_f16_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               const uint32_t(&)[4],
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
                                bool,
-                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d,
-          // scale_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_tf32_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[4],
-                                   bool,
-                                   cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -55,25 +148,118 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_f16_t,
                                cuda::ptx::cta_group_2_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               const uint32_t(&)[8],
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
                                bool,
-                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d,
-          // scale_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_tf32_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[8],
-                                   bool,
-                                   cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -84,85 +270,259 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_f16_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               const uint32_t(&)[4],
-                               bool)>(cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_tf32_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[4],
-                                   bool)>(cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[4],
-                                   bool)>(cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::1.kind::i8 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_i8_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[4],
-                                   bool)>(cuda::ptx::tcgen05_mma));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
         // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_f16_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               const uint32_t(&)[4],
-                               bool)>(cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_tf32_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[4],
-                                   bool)>(cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[4],
-                                   bool)>(cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::1.kind::i8 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_i8_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[4],
-                                   bool)>(cuda::ptx::tcgen05_mma));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::i8 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_i8_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::i8 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_i8_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -173,85 +533,259 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_f16_t,
                                cuda::ptx::cta_group_2_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               const uint32_t(&)[8],
-                               bool)>(cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_tf32_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[8],
-                                   bool)>(cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[8],
-                                   bool)>(cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::2.kind::i8 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_i8_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[8],
-                                   bool)>(cuda::ptx::tcgen05_mma));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
         // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_f16_t,
                                cuda::ptx::cta_group_2_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               const uint32_t(&)[8],
-                               bool)>(cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_tf32_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[8],
-                                   bool)>(cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[8],
-                                   bool)>(cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::2.kind::i8 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_i8_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[8],
-                                   bool)>(cuda::ptx::tcgen05_mma));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::i8 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_i8_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::i8 [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_i8_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -262,42 +796,207 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_f16_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
                                bool,
-                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d, scale_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_f16_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   bool,
-                                   cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d, scale_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_tf32_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   bool,
-                                   cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d, scale_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_tf32_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   bool,
-                                   cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -306,87 +1005,481 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
     (
         // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(
-            cuda::ptx::kind_f16_t, cuda::ptx::cta_group_1_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
-            cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_f16_t, cuda::ptx::cta_group_2_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_tf32_t, cuda::ptx::cta_group_1_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_tf32_t, cuda::ptx::cta_group_2_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_f8f6f4_t, cuda::ptx::cta_group_1_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_f8f6f4_t, cuda::ptx::cta_group_2_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::1.kind::i8 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_i8_t, cuda::ptx::cta_group_1_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::2.kind::i8 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_i8_t, cuda::ptx::cta_group_2_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma));));
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
         // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(
-            cuda::ptx::kind_f16_t, cuda::ptx::cta_group_1_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
-            cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_f16_t, cuda::ptx::cta_group_2_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_tf32_t, cuda::ptx::cta_group_1_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_tf32_t, cuda::ptx::cta_group_2_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_f8f6f4_t, cuda::ptx::cta_group_1_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_f8f6f4_t, cuda::ptx::cta_group_2_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::1.kind::i8 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_i8_t, cuda::ptx::cta_group_1_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma));
-          // tcgen05.mma.cta_group::2.kind::i8 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_i8_t, cuda::ptx::cta_group_2_t, uint32_t, uint64_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma));));
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::i8 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_i8_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::i8 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_i8_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::i8 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_i8_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::i8 [d_tmem], a_desc, b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_i8_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -398,25 +1491,118 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_f16_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint32_t,
-                               uint64_t,
-                               uint32_t,
-                               const uint32_t(&)[4],
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
                                bool,
-                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane,
-          // enable_input_d, scale_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_tf32_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[4],
-                                   bool,
-                                   cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -428,25 +1614,118 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_f16_t,
                                cuda::ptx::cta_group_2_t,
-                               uint32_t,
-                               uint32_t,
-                               uint64_t,
-                               uint32_t,
-                               const uint32_t(&)[8],
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
                                bool,
-                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane,
-          // enable_input_d, scale_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_tf32_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[8],
-                                   bool,
-                                   cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d,
+        // scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -457,87 +1736,259 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_f16_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint32_t,
-                               uint64_t,
-                               uint32_t,
-                               const uint32_t(&)[4],
-                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_tf32_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[4],
-                                   bool)>(cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane,
-          // enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[4],
-                                   bool)>(cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::1.kind::i8 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_i8_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[4],
-                                   bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
         // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_f16_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint32_t,
-                               uint64_t,
-                               uint32_t,
-                               const uint32_t(&)[4],
-                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_tf32_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[4],
-                                   bool)>(cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane,
-          // enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[4],
-                                   bool)>(cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::1.kind::i8 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_i8_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[4],
-                                   bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::i8 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_i8_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::i8 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_i8_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[4],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -548,87 +1999,259 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_f16_t,
                                cuda::ptx::cta_group_2_t,
-                               uint32_t,
-                               uint32_t,
-                               uint64_t,
-                               uint32_t,
-                               const uint32_t(&)[8],
-                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_tf32_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[8],
-                                   bool)>(cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane,
-          // enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[8],
-                                   bool)>(cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::i8 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_i8_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[8],
-                                   bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
         // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_f16_t,
                                cuda::ptx::cta_group_2_t,
-                               uint32_t,
-                               uint32_t,
-                               uint64_t,
-                               uint32_t,
-                               const uint32_t(&)[8],
-                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_tf32_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[8],
-                                   bool)>(cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane,
-          // enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[8],
-                                   bool)>(cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::i8 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_i8_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   const uint32_t(&)[8],
-                                   bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::i8 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_i8_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::i8 [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_i8_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               const cuda::std::uint32_t (&)[8],
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -639,42 +2262,207 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_f16_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint32_t,
-                               uint64_t,
-                               uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
                                bool,
-                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, scale_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_f16_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   bool,
-                                   cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, scale_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_tf32_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   bool,
-                                   cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, scale_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_tf32_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   bool,
-                                   cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d, scale_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool,
+                               cuda::ptx::n32_t<0>)>(cuda::ptx::tcgen05_mma_tmem_a));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -683,87 +2471,481 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
     (
         // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(
-            cuda::ptx::kind_f16_t, cuda::ptx::cta_group_1_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
-            cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_f16_t, cuda::ptx::cta_group_2_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_tf32_t, cuda::ptx::cta_group_1_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_tf32_t, cuda::ptx::cta_group_2_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_f8f6f4_t, cuda::ptx::cta_group_1_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_f8f6f4_t, cuda::ptx::cta_group_2_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::1.kind::i8 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_i8_t, cuda::ptx::cta_group_1_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::i8 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_i8_t, cuda::ptx::cta_group_2_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma_tmem_a));));
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
         // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(
-            cuda::ptx::kind_f16_t, cuda::ptx::cta_group_1_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
-            cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_f16_t, cuda::ptx::cta_group_2_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_tf32_t, cuda::ptx::cta_group_1_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_tf32_t, cuda::ptx::cta_group_2_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_f8f6f4_t, cuda::ptx::cta_group_1_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_f8f6f4_t, cuda::ptx::cta_group_2_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::1.kind::i8 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_i8_t, cuda::ptx::cta_group_1_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::i8 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(
-                cuda::ptx::kind_i8_t, cuda::ptx::cta_group_2_t, uint32_t, uint32_t, uint64_t, uint32_t, bool)>(
-                cuda::ptx::tcgen05_mma_tmem_a));));
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f16 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f16_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::tf32 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_tf32_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::f8f6f4 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_f8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::i8 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_i8_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::i8 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_i8_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::i8 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_i8_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::i8 [d_tmem], [a_tmem], b_desc, idesc, enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_i8_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_tmem_a));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -775,271 +2957,88 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x));
-          // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X [d_tmem], a_desc, b_desc, idesc,
-          // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
         // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X [d_tmem], a_desc, b_desc, idesc,
         // [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x));
-          // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X [d_tmem], a_desc, b_desc, idesc,
-          // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x));));
-#endif // __cccl_ptx_isa >= 860
-
-#if __cccl_ptx_isa >= 860
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
-        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
-        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                               cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x));
-          // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
-          // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x));
-          // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
-          // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
-          // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
-    (
-        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
-        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                               cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x));
-          // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
-          // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x));
-          // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
-          // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
-          // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x));));
-#endif // __cccl_ptx_isa >= 860
-
-#if __cccl_ptx_isa >= 860
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
-        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X [d_tmem], a_desc, b_desc, idesc,
-        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                               cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X [d_tmem], a_desc, b_desc, idesc,
-          // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
-    (
-        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X [d_tmem], a_desc, b_desc, idesc,
-        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                               cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X [d_tmem], a_desc, b_desc, idesc,
-          // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x));));
-#endif // __cccl_ptx_isa >= 860
-
-#if __cccl_ptx_isa >= 860
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X [d_tmem], a_desc, b_desc, idesc,
         // [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X [d_tmem], a_desc, b_desc, idesc,
-          // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_100a,
     (
-        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X [d_tmem], a_desc, b_desc, idesc,
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X [d_tmem], a_desc, b_desc, idesc,
         // [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                               cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X [d_tmem], a_desc, b_desc, idesc,
-          // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a));));
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -1051,100 +3050,178 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
-          // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a));
-          // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
-          // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
-          // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
         // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
         // [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
-          // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a));
-          // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
-          // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
-          // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -1156,53 +3233,1910 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X [d_tmem], a_desc, b_desc, idesc,
-          // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
         // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X [d_tmem], a_desc, b_desc, idesc,
         // [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X [d_tmem], a_desc, b_desc, idesc,
-          // [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x));));
 #endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 880
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16));));
+#endif // __cccl_ptx_isa >= 880
+
+#if __cccl_ptx_isa >= 880
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32 [d_tmem], a_desc, b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32));));
+#endif // __cccl_ptx_isa >= 880
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 880
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a));));
+#endif // __cccl_ptx_isa >= 880
+
+#if __cccl_ptx_isa >= 880
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc, [scale_A_tmem],
+        // [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32 [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a));));
+#endif // __cccl_ptx_isa >= 880
 
 #if __cccl_ptx_isa >= 860
   NV_IF_TARGET(
@@ -1213,52 +5147,88 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_fill));
-          // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::fill [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_fill));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_fill));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
         // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::fill [d_tmem], a_desc,
         // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_fill));
-          // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::fill [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_fill));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::fill [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::fill [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::fill [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::fill [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_fill));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -1270,319 +5240,178 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_fill));
-          // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_fill));
-          // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_fill));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_fill));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_fill));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
         // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc, b_desc,
         // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_fill));
-          // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_fill));
-          // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_fill));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_fill));));
-#endif // __cccl_ptx_isa >= 860
-
-#if __cccl_ptx_isa >= 860
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_fill));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
-        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::fill [d_tmem], a_desc,
-        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                               cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_fill));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::fill [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_fill));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
-    (
-        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::fill [d_tmem], a_desc,
-        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                               cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_fill));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::fill [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_fill));));
-#endif // __cccl_ptx_isa >= 860
-
-#if __cccl_ptx_isa >= 860
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
-        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::fill [d_tmem], a_desc,
-        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                               cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_fill));
-          // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::fill [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_fill));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
-    (
-        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::fill [d_tmem], a_desc,
-        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                               cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_fill));
-          // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::fill [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_fill));));
-#endif // __cccl_ptx_isa >= 860
-
-#if __cccl_ptx_isa >= 860
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc, b_desc,
         // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill));
-          // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill));
-          // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_fill));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_100a,
     (
-        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc, b_desc,
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc, b_desc,
         // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill));
-          // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill));
-          // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_fill));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -1594,53 +5423,1910 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_fill));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::fill [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_fill));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_fill));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
         // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::fill [d_tmem], a_desc,
         // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_fill));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::fill [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_fill));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::fill [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::fill [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::fill [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::fill [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_fill));));
 #endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 880
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_fill));));
+#endif // __cccl_ptx_isa >= 880
+
+#if __cccl_ptx_isa >= 880
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_fill));));
+#endif // __cccl_ptx_isa >= 880
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::fill [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::fill [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::fill [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::fill [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::fill [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::fill [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_fill));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::fill [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_fill));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::fill [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::fill [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::fill [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::fill [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::fill [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::fill [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_fill));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 880
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_fill));));
+#endif // __cccl_ptx_isa >= 880
+
+#if __cccl_ptx_isa >= 880
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::fill [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_fill));));
+#endif // __cccl_ptx_isa >= 880
 
 #if __cccl_ptx_isa >= 860
   NV_IF_TARGET(
@@ -1651,52 +7337,88 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_use));
-          // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::use [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_use));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_use));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
         // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::use [d_tmem], a_desc, b_desc,
         // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_use));
-          // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::use [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_use));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_use));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -1708,319 +7430,178 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_use));
-          // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc, b_desc,
-          // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_use));
-          // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_use));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_use));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_use));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
         // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc, b_desc,
         // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_use));
-          // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc, b_desc,
-          // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_use));
-          // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_use));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_use));));
-#endif // __cccl_ptx_isa >= 860
-
-#if __cccl_ptx_isa >= 860
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_use));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
-        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::use [d_tmem], a_desc, b_desc,
-        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                               cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_use));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::use [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_use));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
-    (
-        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::use [d_tmem], a_desc, b_desc,
-        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                               cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_use));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::use [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_use));));
-#endif // __cccl_ptx_isa >= 860
-
-#if __cccl_ptx_isa >= 860
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
-        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::use [d_tmem], a_desc, b_desc,
-        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                               cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_use));
-          // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::use [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_use));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
-    (
-        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::use [d_tmem], a_desc, b_desc,
-        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                               cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_use));
-          // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::use [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_use));));
-#endif // __cccl_ptx_isa >= 860
-
-#if __cccl_ptx_isa >= 860
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc, b_desc,
         // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use));
-          // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc, b_desc,
-          // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use));
-          // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_use));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_100a,
     (
-        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc, b_desc,
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc, b_desc,
         // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use));
-          // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc, b_desc,
-          // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use));
-          // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_use));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -2032,53 +7613,1910 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_use));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::use [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_use));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_use));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
         // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::use [d_tmem], a_desc, b_desc,
         // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_use));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::use [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_use));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_use));));
 #endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 880
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_use));));
+#endif // __cccl_ptx_isa >= 880
+
+#if __cccl_ptx_isa >= 880
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_use));));
+#endif // __cccl_ptx_isa >= 880
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::use [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::use [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::use [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::use [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::use [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::use [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_use));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::use [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_use));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::use [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::use [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::use [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::use [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::use [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::use [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_use));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 880
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_use));));
+#endif // __cccl_ptx_isa >= 880
+
+#if __cccl_ptx_isa >= 880
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc, idesc,
+        // [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::use [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_use));));
+#endif // __cccl_ptx_isa >= 880
 
 #if __cccl_ptx_isa >= 860
   NV_IF_TARGET(
@@ -2089,52 +9527,88 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_lastuse));
-          // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::lastuse [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_lastuse));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_lastuse));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
         // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::lastuse [d_tmem], a_desc,
         // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_lastuse));
-          // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::lastuse [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_lastuse));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::lastuse [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::lastuse [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::lastuse [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::lastuse [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_lastuse));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -2146,319 +9620,178 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_lastuse));
-          // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_lastuse));
-          // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_lastuse));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_lastuse));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_lastuse));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
         // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc, b_desc,
         // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_lastuse));
-          // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_lastuse));
-          // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_lastuse));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_lastuse));));
-#endif // __cccl_ptx_isa >= 860
-
-#if __cccl_ptx_isa >= 860
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_lastuse));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
-        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::lastuse [d_tmem], a_desc,
-        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                               cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_lastuse));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::lastuse [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_lastuse));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
-    (
-        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::lastuse [d_tmem], a_desc,
-        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                               cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_lastuse));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::lastuse [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_lastuse));));
-#endif // __cccl_ptx_isa >= 860
-
-#if __cccl_ptx_isa >= 860
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
-        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::lastuse [d_tmem], a_desc,
-        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                               cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_lastuse));
-          // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::lastuse [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_lastuse));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
-    (
-        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::lastuse [d_tmem], a_desc,
-        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                               cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_lastuse));
-          // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::lastuse [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_lastuse));));
-#endif // __cccl_ptx_isa >= 860
-
-#if __cccl_ptx_isa >= 860
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
+    NV_HAS_FEATURE_SM_110a,
     (
         // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc, b_desc,
         // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse));
-          // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse));
-          // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_lastuse));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_100a,
     (
-        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc, b_desc,
         // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse));
-          // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse));
-          // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_lastuse));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -2470,53 +9803,1910 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_lastuse));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::lastuse [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_lastuse));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_lastuse));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
         // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::lastuse [d_tmem], a_desc,
         // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_lastuse));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::lastuse [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_lastuse));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::lastuse [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::lastuse [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::lastuse [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::lastuse [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_lastuse));));
 #endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 880
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_lastuse));));
+#endif // __cccl_ptx_isa >= 880
+
+#if __cccl_ptx_isa >= 880
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_lastuse));));
+#endif // __cccl_ptx_isa >= 880
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_lastuse));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_lastuse));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::lastuse [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_lastuse));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 880
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_lastuse));));
+#endif // __cccl_ptx_isa >= 880
+
+#if __cccl_ptx_isa >= 880
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::lastuse [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_lastuse));));
+#endif // __cccl_ptx_isa >= 880
 
 #if __cccl_ptx_isa >= 860
   NV_IF_TARGET(
@@ -2527,52 +11717,88 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_discard));
-          // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::discard [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_discard));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
         // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::discard [d_tmem], a_desc,
         // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_discard));
-          // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::discard [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_discard));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::discard [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::discard [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::discard [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::discard [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_collector_a_discard));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -2584,100 +11810,178 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_discard));
-          // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_discard));
-          // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_discard));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_discard));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
         // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc, b_desc,
         // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_discard));
-          // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_discard));
-          // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_discard));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_discard));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2x_collector_a_discard));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
@@ -2689,270 +11993,1908 @@ __global__ void test_tcgen05_mma(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_discard));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::discard [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_discard));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
         // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::discard [d_tmem], a_desc,
         // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_discard));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::discard [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_discard));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::discard [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::discard [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::discard [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::discard [d_tmem], a_desc,
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_collector_a_discard));));
 #endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 880
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_collector_a_discard));));
+#endif // __cccl_ptx_isa >= 880
+
+#if __cccl_ptx_isa >= 880
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], a_desc, b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_collector_a_discard));));
+#endif // __cccl_ptx_isa >= 880
 
 #if __cccl_ptx_isa >= 860
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
-        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::discard [d_tmem], a_desc,
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::discard [d_tmem], [a_tmem],
         // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_discard));
-          // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::discard [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_discard));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
-        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::discard [d_tmem], a_desc,
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::discard [d_tmem], [a_tmem],
         // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_discard));
-          // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::discard [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_discard));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::discard [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::discard [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::discard [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.scale_vec::1X.collector::a::discard [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_1x_tmem_a_collector_a_discard));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
-        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc, b_desc,
-        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard));
-          // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard));
-          // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
-        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc, b_desc,
-        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard));
-          // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard));
-          // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_1_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::2X.collector::a::discard [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_2_tmem_a_collector_a_discard));));
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
-        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::discard [d_tmem], a_desc,
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::discard [d_tmem], [a_tmem],
         // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_discard));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::discard [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_discard));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_discard));));
   NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_101a,
+    NV_HAS_FEATURE_SM_103a,
     (
-        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::discard [d_tmem], a_desc,
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::discard [d_tmem], [a_tmem],
         // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
                                cuda::ptx::cta_group_1_t,
-                               uint32_t,
-                               uint64_t,
-                               uint64_t,
-                               uint32_t,
-                               uint32_t,
-                               uint32_t,
-                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_discard));
-          // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::discard [d_tmem], a_desc,
-          // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
-            * fn_ptr++ = reinterpret_cast<void*>(
-              static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
-                                   cuda::ptx::cta_group_2_t,
-                                   uint32_t,
-                                   uint64_t,
-                                   uint64_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   uint32_t,
-                                   bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_discard));));
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::discard [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::discard [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::discard [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.scale_vec::4X.collector::a::discard [d_tmem], [a_tmem],
+        // b_desc, idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_vec_4x_tmem_a_collector_a_discard));));
 #endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 880
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block16.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block16_tmem_a_collector_a_discard));));
+#endif // __cccl_ptx_isa >= 880
+
+#if __cccl_ptx_isa >= 880
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf8f6f4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf8f6f4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::1.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_1_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.mma.cta_group::2.kind::mxf4nvf4.block_scale.block32.collector::a::discard [d_tmem], [a_tmem], b_desc,
+        // idesc, [scale_A_tmem], [scale_B_tmem], enable_input_d;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::kind_mxf4nvf4_t,
+                               cuda::ptx::cta_group_2_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint64_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               cuda::std::uint32_t,
+                               bool)>(cuda::ptx::tcgen05_mma_block_scale_block32_tmem_a_collector_a_discard));));
+#endif // __cccl_ptx_isa >= 880
 }

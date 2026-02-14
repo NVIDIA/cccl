@@ -32,7 +32,6 @@
 
 namespace cuda::experimental::stf
 {
-
 template <typename T>
 class shape_of;
 
@@ -78,12 +77,12 @@ class shape_of<scalar_view<T>>
 {
 public:
   shape_of() = default;
-  shape_of(const scalar_view<T>&)
-      : shape_of<scalar_view<T>>()
+  _CCCL_HOST_DEVICE shape_of(const scalar_view<T>&)
+      : shape_of()
   {}
 
   /// Mandatory method : defined the total number of elements in the shape
-  size_t size() const
+  _CCCL_HOST_DEVICE size_t size() const
   {
     return sizeof(T);
   }
@@ -331,5 +330,4 @@ struct hash<scalar_view<T>>
     return ::std::hash<T>{}(*s.addr);
   }
 };
-
 } // end namespace cuda::experimental::stf

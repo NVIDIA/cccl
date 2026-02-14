@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -36,7 +23,6 @@ THRUST_NAMESPACE_BEGIN
 
 namespace system
 {
-
 error_category ::~error_category()
 {
   ;
@@ -75,7 +61,6 @@ bool error_category ::operator<(const error_category& rhs) const
 
 namespace detail
 {
-
 class generic_error_category : public error_category
 {
 public:
@@ -282,7 +267,6 @@ public:
     }
   }
 }; // end system_category_result
-
 } // namespace detail
 
 inline const error_category& generic_category()
@@ -296,7 +280,6 @@ inline const error_category& system_category()
   static const detail::system_error_category result;
   return result;
 }
-
 } // namespace system
 
 THRUST_NAMESPACE_END

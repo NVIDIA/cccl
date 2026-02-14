@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// ADDITIONAL_COMPILE_FLAGS(has-fconstexpr-steps): -fconstexpr-steps=15000000
+// CONSTEXPR_STEPS: 15000000
 
 // bitset<N>& operator<<=(size_t pos); // constexpr since C++23
 

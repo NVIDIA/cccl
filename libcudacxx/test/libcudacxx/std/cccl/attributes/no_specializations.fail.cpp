@@ -8,6 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// MSVC downgrades the no_specializations attribute to a warning
+// which is currently ignored in .fail
+// FORCE_ALL_WARNINGS.
+
 #include <cuda/std/__cccl/attributes.h>
 
 #if _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS()

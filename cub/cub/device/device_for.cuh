@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
 
 #pragma once
 
@@ -38,26 +14,27 @@
 #endif // no system header
 
 #include <cub/device/dispatch/dispatch_for.cuh>
-#include <cub/device/dispatch/dispatch_for_each_in_extents.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
-#include <thrust/distance.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__fwd/mdspan.h>
+#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/iterator>
-#include <cuda/std/type_traits>
+#include <cuda/std/__mdspan/layout_left.h>
+#include <cuda/std/__mdspan/layout_right.h>
+#include <cuda/std/__memory/is_sufficiently_aligned.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/array>
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::for_each
 {
-
-namespace for_each
-{
-
 /**
  * `op_wrapper_t` turns bulk into a for-each operation by wrapping the user-provided unary operator.
  */
@@ -118,55 +95,40 @@ struct op_wrapper_vectorized_t
     }
   }
 };
-
-} // namespace for_each
-} // namespace detail
+} // namespace detail::for_each
 
 struct DeviceFor
 {
 private:
-  /**
-   * Checks if the pointer is aligned to the given vector type
-   */
-  template <class VectorT, class T>
-  CUB_RUNTIME_FUNCTION static bool is_aligned(const T* ptr)
+  template <bool UseVectorization, class RandomAccessOrContiguousIteratorT, class OffsetT, class OpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  for_each_n(RandomAccessOrContiguousIteratorT first, OffsetT num_items, OpT op, cudaStream_t stream)
   {
-    return (reinterpret_cast<size_t>(ptr) & (sizeof(VectorT) - 1)) == 0;
-  }
+    if constexpr (UseVectorization)
+    {
+      auto* unwrapped_first = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(first);
+      using wrapped_op_t =
+        detail::for_each::op_wrapper_vectorized_t<OffsetT, OpT, detail::it_value_t<RandomAccessOrContiguousIteratorT>>;
 
-  template <class RandomAccessIteratorT, class OffsetT, class OpT>
-  CUB_RUNTIME_FUNCTION static cudaError_t for_each_n(
-    RandomAccessIteratorT first,
-    OffsetT num_items,
-    OpT op,
-    cudaStream_t stream,
-    ::cuda::std::false_type /* do_not_vectorize */)
-  {
-    using wrapped_op_t = detail::for_each::op_wrapper_t<OffsetT, OpT, RandomAccessIteratorT>;
-    return detail::for_each::dispatch_t<OffsetT, wrapped_op_t>::dispatch(num_items, wrapped_op_t{first, op}, stream);
-  }
+      if (::cuda::std::is_sufficiently_aligned<alignof(typename wrapped_op_t::vector_t)>(unwrapped_first))
+      { // Vectorize loads
+        const OffsetT num_vec_items = ::cuda::ceil_div(num_items, wrapped_op_t::vec_size);
 
-  template <class ContiguousIteratorT, class OffsetT, class OpT>
-  CUB_RUNTIME_FUNCTION static cudaError_t for_each_n(
-    ContiguousIteratorT first, OffsetT num_items, OpT op, cudaStream_t stream, ::cuda::std::true_type /* vectorize */)
-  {
-    auto* unwrapped_first = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(first);
-    using wrapped_op_t =
-      detail::for_each::op_wrapper_vectorized_t<OffsetT, OpT, detail::it_value_t<ContiguousIteratorT>>;
+        return detail::for_each::dispatch<OffsetT, wrapped_op_t>(
+          num_vec_items,
+          wrapped_op_t{
+            unwrapped_first, op, num_items % wrapped_op_t::vec_size ? num_vec_items - 1 : num_vec_items, num_items},
+          stream);
+      }
 
-    if (is_aligned<typename wrapped_op_t::vector_t>(unwrapped_first))
-    { // Vectorize loads
-      const OffsetT num_vec_items = ::cuda::ceil_div(num_items, wrapped_op_t::vec_size);
-
-      return detail::for_each::dispatch_t<OffsetT, wrapped_op_t>::dispatch(
-        num_vec_items,
-        wrapped_op_t{
-          unwrapped_first, op, num_items % wrapped_op_t::vec_size ? num_vec_items - 1 : num_vec_items, num_items},
-        stream);
+      // Fallback to non-vectorized version
+      return for_each_n<false>(first, num_items, op, stream);
     }
-
-    // Fallback to non-vectorized version
-    return for_each_n(first, num_items, op, stream, ::cuda::std::false_type{});
+    else
+    {
+      using wrapped_op_t = detail::for_each::op_wrapper_t<OffsetT, OpT, RandomAccessOrContiguousIteratorT>;
+      return detail::for_each::dispatch<OffsetT, wrapped_op_t>(num_items, wrapped_op_t{first, op}, stream);
+    }
   }
 
 public:
@@ -178,6 +140,9 @@ public:
   //! The algorithm is similar to
   //! `bulk <https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2300r5.html#design-sender-adaptor-bulk>`_
   //! from P2300.
+  //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
   //!
   //! - The return value of ``op``, if any, is ignored.
   //! - @devicestorage
@@ -242,6 +207,9 @@ public:
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! Applies the function object ``op`` to each element in the range ``[first, first + num_items)``
+  //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
   //!
   //! - The return value of ``op``, if any, is ignored.
   //! - @devicestorage
@@ -316,6 +284,9 @@ public:
   //!
   //! Applies the function object ``op`` to each element in the range ``[first, last)``
   //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
+  //!
   //! - The return value of ``op``, if any, is ignored.
   //! - @devicestorage
   //!
@@ -387,6 +358,9 @@ public:
   //! Applies the function object ``op`` to each element in the range ``[first, first + num_items)``.
   //! Unlike the ``ForEachN`` algorithm, ``ForEachCopyN`` is allowed to invoke ``op`` on copies of the elements.
   //! This relaxation allows ``ForEachCopyN`` to vectorize loads.
+  //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
   //!
   //! - Allowed to invoke ``op`` on copies of the elements
   //! - The return value of ``op``, if any, is ignored.
@@ -464,6 +438,9 @@ public:
   //! Unlike the ``ForEach`` algorithm, ``ForEachCopy`` is allowed to invoke ``op`` on copies of the elements.
   //! This relaxation allows ``ForEachCopy`` to vectorize loads.
   //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
+  //!
   //! - Allowed to invoke ``op`` on copies of the elements
   //! - The return value of ``op``, if any, is ignored.
   //! - @devicestorage
@@ -538,6 +515,9 @@ public:
   //! `bulk <https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2300r5.html#design-sender-adaptor-bulk>`_
   //! from P2300.
   //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
+  //!
   //! - The return value of ``op``, if any, is ignored.
   //!
   //! A Simple Example
@@ -578,8 +558,12 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::Bulk");
     static_assert(::cuda::std::is_integral_v<ShapeT>, "ShapeT must be an integral type");
+    if (shape == 0)
+    {
+      return cudaSuccess;
+    }
     using offset_t = ShapeT;
-    return detail::for_each::dispatch_t<offset_t, OpT>::dispatch(static_cast<offset_t>(shape), op, stream);
+    return detail::for_each::dispatch<offset_t, OpT>(static_cast<offset_t>(shape), op, stream);
   }
 
 private:
@@ -592,9 +576,9 @@ private:
     // Disable auto-vectorization for now:
     // constexpr bool use_vectorization =
     //   detail::for_each::can_regain_copy_freedom<detail::it_value_t<RandomAccessIteratorT>, OpT>::value
-    //   && THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorT>::value;
-    using use_vectorization_t = ::cuda::std::bool_constant<false>;
-    return for_each_n<RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream, use_vectorization_t{});
+    //   && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorT>;
+    constexpr bool use_vectorization = false;
+    return for_each_n<use_vectorization, RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream);
   }
 
 public:
@@ -603,6 +587,9 @@ public:
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! Applies the function object ``op`` to each element in the range ``[first, first + num_items)``
+  //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
   //!
   //! - The return value of ``op``, if any, is ignored.
   //!
@@ -659,6 +646,9 @@ public:
   //!
   //! Applies the function object ``op`` to each element in the range ``[first, last)``
   //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
+  //!
   //! - The return value of ``op``, if any, is ignored.
   //!
   //! A Simple Example
@@ -714,9 +704,9 @@ private:
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachCopyNNoNVTX(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
   {
-    using offset_t            = NumItemsT;
-    using use_vectorization_t = THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorT>;
-    return for_each_n<RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream, use_vectorization_t{});
+    using offset_t                   = NumItemsT;
+    constexpr bool use_vectorization = THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorT>;
+    return for_each_n<use_vectorization, RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream);
   }
 
 public:
@@ -727,6 +717,9 @@ public:
   //! Applies the function object ``op`` to each element in the range ``[first, first + num_items)``.
   //! Unlike the ``ForEachN`` algorithm, ``ForEachCopyN`` is allowed to invoke ``op`` on copies of the elements.
   //! This relaxation allows ``ForEachCopyN`` to vectorize loads.
+  //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
   //!
   //! - Allowed to invoke ``op`` on copies of the elements
   //! - The return value of ``op``, if any, is ignored.
@@ -786,6 +779,9 @@ public:
   //! Unlike the ``ForEach`` algorithm, ``ForEachCopy`` is allowed to invoke ``op`` on copies of the elements.
   //! This relaxation allows ``ForEachCopy`` to vectorize loads.
   //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
+  //!
   //! - Allowed to invoke ``op`` on copies of the elements
   //! - The return value of ``op``, if any, is ignored.
   //!
@@ -843,7 +839,11 @@ public:
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! Iterate through a multi-dimensional extents into
+  //! Iterate through a multi-dimensional extents into a single linear index and a list of indices for each extent
+  //! dimension.
+  //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
   //!
   //! - a single linear index that represents the current iteration
   //! - indices of each extent dimension
@@ -901,7 +901,7 @@ public:
   //!
   //! @return cudaError_t
   //!   error status
-  template <typename IndexType, ::cuda::std::size_t... Extents, typename OpType>
+  template <typename IndexType, size_t... Extents, typename OpType>
   CUB_RUNTIME_FUNCTION static cudaError_t ForEachInExtents(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -909,8 +909,6 @@ public:
     OpType op,
     cudaStream_t stream = {})
   {
-    // TODO: check dimensions overflows
-    // TODO: check tha arity of OpType is equal to sizeof...(ExtentsType)
     if (d_temp_storage == nullptr)
     {
       temp_storage_bytes = 1;
@@ -924,6 +922,9 @@ public:
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! Iterate through a multi-dimensional extents producing
+  //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
   //!
   //! - a single linear index that represents the current iteration
   //! - list of indices containing the coordinates for each extent dimension
@@ -974,16 +975,126 @@ public:
   //!
   //! @return cudaError_t
   //!   error status
-  template <typename IndexType, ::cuda::std::size_t... Extents, typename OpType>
+  template <typename IndexType, size_t... Extents, typename OpType>
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, cudaStream_t stream = {})
   {
     using extents_type = ::cuda::std::extents<IndexType, Extents...>;
-    // TODO: check dimensions overflows
-    // TODO: check tha arity of OpType is equal to sizeof...(extents_type)
-    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
-    return detail::for_each_in_extents::dispatch_t<extents_type, OpType>::dispatch(extents, op, stream);
+    return cub::DeviceFor::ForEachInLayout(::cuda::std::layout_right::mapping<extents_type>{extents}, op, stream);
   }
+
+  /*********************************************************************************************************************
+   * ForEachInLayout
+   ********************************************************************************************************************/
+
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Iterate through multi-dimensional extents using a specific mdspan layout, applying a function object for each
+  //! element, passing
+  //!
+  //! .. versionadded:: 2.4.0
+  //!    First appears in CUDA Toolkit 12.5.
+  //!
+  //! - a single linear index that represents the current iteration
+  //! - a list of indices containing the coordinates for each extent dimension
+  //!
+  //! The iteration order depends on the layout type:
+  //!
+  //! - ``layout_right``: Iterates in row-major order (rightmost index varies fastest)
+  //! - ``layout_left``: Iterates in column-major order (leftmost index varies fastest)
+  //!
+  //! - The return value of ``op``, if any, is ignored.
+  //!
+  //! A Simple Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The following code snippet demonstrates how to use ``ForEachInLayout`` to iterate through a 2D matrix in
+  //! column-major order using ``layout_left``.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_layout_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-in-layout-op
+  //!     :end-before: example-end for-each-in-layout-op
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_layout_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-in-layout-example
+  //!     :end-before: example-end for-each-in-layout-example
+  //!
+  //! @endrst
+  //!
+  //! @tparam Layout
+  //!   **[inferred]** The mdspan layout type, must be either ``cuda::std::layout_left`` or ``cuda::std::layout_right``
+  //!
+  //! @tparam IndexType
+  //!   **[inferred]** An integral type that represents the extent index space
+  //!
+  //! @tparam Extents
+  //!   **[inferred]** The extent sizes for each rank index
+  //!
+  //! @tparam OpType
+  //!   **[inferred]** A function object with arity equal to the number of extents + 1 for the linear index (iteration).
+  //!   The first parameter is the linear index, followed by one parameter for each dimension coordinate.
+  //!
+  //! @param[in] layout
+  //!   Layout object that determines the iteration order (layout_left for column-major, layout_right for row-major)
+  //!
+  //! @param[in] extents
+  //!   Extents object that represents a multi-dimensional index space
+  //!
+  //! @param[in] op
+  //!   Function object to apply to each linear index (iteration) and multi-dimensional coordinates.
+  //!   Called as ``op(linear_index, coord_0, coord_1, ..., coord_n)``
+  //!
+  //! @param[in] stream
+  //!   CUDA stream to launch kernels within. Default stream is `nullptr`
+  //!
+  //! @return cudaError_t
+  //!   error status
+  _CCCL_TEMPLATE(typename LayoutMapping, typename OpType)
+  _CCCL_REQUIRES(::cuda::std::__is_cuda_std_layout_left_or_right_mapping_v<LayoutMapping>)
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEachInLayout(const LayoutMapping& layout_mapping, OpType op, cudaStream_t stream = {})
+  {
+    using namespace cub::detail;
+    using extents_type      = typename LayoutMapping::extents_type;
+    using extent_index_type = typename extents_type::index_type;
+    using fast_mod_array_t  = ::cuda::std::array<fast_div_mod<extent_index_type>, extents_type::rank()>;
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
+    static constexpr auto seq            = ::cuda::std::make_index_sequence<extents_type::rank()>{};
+    constexpr bool is_layout_right       = ::cuda::std::__is_cuda_std_layout_right_mapping_v<LayoutMapping>;
+    auto extents                         = layout_mapping.extents();
+    fast_mod_array_t sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod<is_layout_right>(extents, seq);
+    fast_mod_array_t extents_div_array   = cub::detail::extents_fast_div_mod(extents, seq);
+    for_each::op_wrapper_extents_t<OpType, extents_type, is_layout_right, fast_mod_array_t> op_wrapper{
+      op, extents, sub_sizes_div_array, extents_div_array};
+    return Bulk(static_cast<implicit_prom_t<extent_index_type>>(cub::detail::size(extents)), op_wrapper, stream);
+  }
+
+#ifndef _CCCL_DOXYGEN_INVOKED
+
+  _CCCL_TEMPLATE(typename LayoutMapping, typename OpType)
+  _CCCL_REQUIRES(::cuda::std::__is_cuda_std_layout_left_or_right_mapping_v<LayoutMapping>)
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ForEachInLayout(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    const LayoutMapping& layout_mapping,
+    OpType op,
+    cudaStream_t stream = {})
+  {
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+    return ForEachInLayout(layout_mapping, op, stream);
+  }
+
+#endif // !_CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

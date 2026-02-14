@@ -1,36 +1,13 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include <cub/util_macro.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_merge_sort.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
 
+#include <cuda/iterator>
 #include <cuda/std/type_traits>
 
 #include <algorithm>
@@ -405,13 +382,13 @@ C2H_TEST(
 {
   using params             = params_t<TestType>;
   using type               = typename params::type;
-  using warp_sort_delegate = ::cuda::std::_If<params::is_stable, warp_stable_sort_keys_t, warp_sort_keys_t>;
+  using warp_sort_delegate = cuda::std::_If<params::is_stable, warp_stable_sort_keys_t, warp_sort_keys_t>;
 
   // Prepare test data
   c2h::device_vector<type> d_in(params::tile_size);
   c2h::device_vector<type> d_out(params::tile_size);
-  auto segment_sizes     = thrust::make_constant_iterator(params::logical_warp_items);
-  const auto oob_default = ::cuda::std::numeric_limits<type>::max();
+  auto segment_sizes     = cuda::constant_iterator(params::logical_warp_items);
+  const auto oob_default = cuda::std::numeric_limits<type>::max();
   c2h::gen(C2H_SEED(10), d_in);
 
   // Run test
@@ -436,13 +413,13 @@ C2H_TEST("Warp sort keys-only on partial warp-tile works",
   using params = params_t<TestType>;
   using type   = typename params::type;
   using warp_sort_delegate =
-    ::cuda::std::_If<params::is_stable, warp_partial_stable_sort_keys_t, warp_partial_sort_keys_t>;
+    cuda::std::_If<params::is_stable, warp_partial_stable_sort_keys_t, warp_partial_sort_keys_t>;
 
   // Prepare test data
   c2h::device_vector<type> d_in(params::tile_size);
   c2h::device_vector<type> d_out(params::tile_size);
   c2h::device_vector<int> d_segment_sizes(params::total_warps);
-  const auto oob_default = ::cuda::std::numeric_limits<type>::max();
+  const auto oob_default = cuda::std::numeric_limits<type>::max();
   c2h::gen(C2H_SEED(5), d_in);
   c2h::gen(C2H_SEED(5), d_segment_sizes, 0, params::logical_warp_items);
 
@@ -470,15 +447,15 @@ C2H_TEST("Warp sort on keys-value pairs works",
   using params             = params_t<TestType>;
   using key_type           = typename params::type;
   using value_type         = typename c2h::get<4, TestType>;
-  using warp_sort_delegate = ::cuda::std::_If<params::is_stable, warp_stable_sort_pairs_t, warp_sort_pairs_t>;
+  using warp_sort_delegate = cuda::std::_If<params::is_stable, warp_stable_sort_pairs_t, warp_sort_pairs_t>;
 
   // Prepare test data
   c2h::device_vector<key_type> d_keys_in(params::tile_size);
   c2h::device_vector<key_type> d_keys_out(params::tile_size);
   c2h::device_vector<value_type> d_values_in(params::tile_size);
   c2h::device_vector<value_type> d_values_out(params::tile_size);
-  auto segment_sizes     = thrust::make_constant_iterator(params::logical_warp_items);
-  const auto oob_default = ::cuda::std::numeric_limits<key_type>::max();
+  auto segment_sizes     = cuda::constant_iterator(params::logical_warp_items);
+  const auto oob_default = cuda::std::numeric_limits<key_type>::max();
   c2h::gen(C2H_SEED(10), d_keys_in);
 
   // Run test
@@ -493,7 +470,7 @@ C2H_TEST("Warp sort on keys-value pairs works",
     cpu_kv_pairs,
     segment_sizes,
     params::total_warps,
-    thrust::make_tuple(oob_default, value_type{}),
+    cuda::std::make_tuple(oob_default, value_type{}),
     params::logical_warp_items);
 
   // Verify results
@@ -513,7 +490,7 @@ C2H_TEST("Warp sort on key-value pairs of a partial warp-tile works",
   using key_type   = typename params::type;
   using value_type = typename c2h::get<4, TestType>;
   using warp_sort_delegate =
-    ::cuda::std::_If<params::is_stable, warp_partial_stable_sort_pairs_t, warp_partial_sort_pairs_t>;
+    cuda::std::_If<params::is_stable, warp_partial_stable_sort_pairs_t, warp_partial_sort_pairs_t>;
 
   // Prepare test data
   c2h::device_vector<key_type> d_keys_in(params::tile_size);
@@ -521,7 +498,7 @@ C2H_TEST("Warp sort on key-value pairs of a partial warp-tile works",
   c2h::device_vector<value_type> d_values_in(params::tile_size);
   c2h::device_vector<value_type> d_values_out(params::tile_size);
   c2h::device_vector<int> d_segment_sizes(params::total_warps);
-  const auto oob_default = ::cuda::std::numeric_limits<key_type>::max();
+  const auto oob_default = cuda::std::numeric_limits<key_type>::max();
   c2h::gen(C2H_SEED(5), d_keys_in);
   c2h::gen(C2H_SEED(5), d_segment_sizes, 0, params::logical_warp_items);
 
@@ -538,7 +515,7 @@ C2H_TEST("Warp sort on key-value pairs of a partial warp-tile works",
     cpu_kv_pairs,
     segment_sizes,
     params::total_warps,
-    thrust::make_tuple(oob_default, value_type{}),
+    cuda::std::tuple(oob_default, value_type{}),
     params::logical_warp_items);
 
   // Verify results

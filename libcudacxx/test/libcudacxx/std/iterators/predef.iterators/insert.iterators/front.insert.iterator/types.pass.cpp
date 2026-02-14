@@ -18,20 +18,19 @@
 // protected:
 //   Container* container;
 // public:
-//   typedef Container                   container_type;
-//   typedef void                        value_type;
-//   typedef void                        difference_type;
-//   typedef void                        reference;
-//   typedef void                        pointer;
-//   typedef output_iterator_tag         iterator_category;
+//   using container_type    = Container;
+//   using value_type        = void;
+//   using difference_type   = void;
+//   using reference         = void;
+//   using pointer           = void;
+//   using iterator_category = output_iterator_tag;
 // };
 
+#include <cuda/std/inplace_vector>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
-#if defined(_LIBCUDACXX_HAS_VECTOR)
-#  include <cuda/std/vector>
 
-#  include "test_macros.h"
+#include "test_macros.h"
 
 template <class C>
 struct find_container : private cuda::std::front_insert_iterator<C>
@@ -48,13 +47,17 @@ struct find_container : private cuda::std::front_insert_iterator<C>
 template <class C>
 __host__ __device__ void test()
 {
-  typedef cuda::std::front_insert_iterator<C> R;
+  using R = cuda::std::front_insert_iterator<C>;
   C c;
   find_container<C> q(c);
   q.test();
   static_assert((cuda::std::is_same<typename R::container_type, C>::value), "");
   static_assert((cuda::std::is_same<typename R::value_type, void>::value), "");
+#if _CCCL_STD_VER < 2020
   static_assert((cuda::std::is_same<typename R::difference_type, void>::value), "");
+#else // ^^^ _CCCL_STD_VER < 2020 ^^^ / vvv _CCCL_STD_VER >= 2020 vvv
+  static_assert((cuda::std::is_same<typename R::difference_type, cuda::std::ptrdiff_t>::value), "");
+#endif // _CCCL_STD_VER < 2020
   static_assert((cuda::std::is_same<typename R::reference, void>::value), "");
   static_assert((cuda::std::is_same<typename R::pointer, void>::value), "");
   static_assert((cuda::std::is_same<typename R::iterator_category, cuda::std::output_iterator_tag>::value), "");
@@ -62,13 +65,7 @@ __host__ __device__ void test()
 
 int main(int, char**)
 {
-  test<cuda::std::vector<int>>();
+  test<cuda::std::inplace_vector<int, 3>>();
 
   return 0;
 }
-#else
-int main(int, char**)
-{
-  return 0;
-}
-#endif

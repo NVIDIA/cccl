@@ -36,7 +36,6 @@
 
 namespace cuda::experimental::stf
 {
-
 class stream_ctx;
 
 template <typename... Data>
@@ -73,7 +72,7 @@ public:
   // Returns the stream associated to that task : any asynchronous operation
   // in the task body should be performed asynchronously with respect to that
   // CUDA stream
-  cudaStream_t get_stream()
+  cudaStream_t get_stream() const
   {
     const auto& e_place = get_exec_place();
     if (e_place.is_grid())
@@ -89,7 +88,7 @@ public:
   }
 
   // TODO use a pos4 and check that we have a grid, of the proper dimension
-  cudaStream_t get_stream(size_t pos)
+  cudaStream_t get_stream(size_t pos) const
   {
     const auto& e_place = get_exec_place();
 
@@ -114,7 +113,7 @@ public:
   {
     const auto& e_place = get_exec_place();
 
-    event_list prereqs = acquire(ctx);
+    event_list ready_prereqs = acquire(ctx);
 
     /* Select the stream(s) */
     if (e_place.is_grid())
@@ -149,7 +148,7 @@ public:
         // multiple streams.
         if (!getenv("CUDASTF_DO_NOT_REUSE_STREAMS"))
         {
-          for (auto& e : prereqs)
+          for (auto& e : ready_prereqs)
           {
             // fprintf(stderr, "outbounds %d (%s)\n", e->outbound_deps.load(), e->get_symbol().c_str());
             if (e->outbound_deps == 0)
@@ -191,7 +190,7 @@ public:
     auto& s0 = e_place.is_grid() ? stream_grid[0] : dstream;
 
     /* Ensure that stream depend(s) on prereqs */
-    submitted_events = stream_async_op(ctx, s0, prereqs);
+    submitted_events = stream_async_op(ctx, s0, ready_prereqs);
     if (ctx.generate_event_symbols())
     {
       submitted_events.set_symbol("Submitted" + get_symbol());
@@ -203,17 +202,25 @@ public:
       insert_dependencies(stream_grid);
     }
 
+    auto& dot = ctx.get_dot();
+    if (dot->is_tracing())
+    {
+      dot->template add_vertex<task, logical_data_untyped>(*this);
+    }
+
+    set_ready_prereqs(mv(ready_prereqs));
+
     return *this;
   }
 
   void set_current_place(pos4 p)
   {
-    get_exec_place().as_grid().set_current_place(ctx, p);
+    get_exec_place().as_grid().set_current_place(p);
   }
 
   void unset_current_place()
   {
-    return get_exec_place().as_grid().unset_current_place(ctx);
+    return get_exec_place().as_grid().unset_current_place();
   }
 
   const exec_place& get_current_place()
@@ -307,11 +314,6 @@ public:
 
       clear();
     };
-
-    if (dot->is_tracing())
-    {
-      dot->template add_vertex<task, logical_data_untyped>(*this);
-    }
 
     // Default for the first argument is a `cudaStream_t`.
     if constexpr (::std::is_invocable_v<Fun, cudaStream_t>)
@@ -575,28 +577,23 @@ public:
       clear();
     };
 
-    if (dot->is_tracing())
-    {
-      dot->template add_vertex<task, logical_data_untyped>(*this);
-    }
-
     if constexpr (::std::is_invocable_v<Fun, cudaStream_t, Data...>)
     {
       // Invoke passing this task's stream as the first argument, followed by the slices
       auto t = tuple_prepend(get_stream(), typed_deps());
       return ::std::apply(::std::forward<Fun>(fun), t);
     }
-    else if constexpr (reserved::is_invocable_with_filtered<Fun, cudaStream_t, Data...>::value)
+    else if constexpr (reserved::is_applicable_v<Fun, reserved::remove_void_interface_from_pack_t<cudaStream_t, Data...>>)
     {
       // Use the filtered tuple
-      auto t = tuple_prepend(get_stream(), reserved::remove_void_interface_types(typed_deps()));
+      auto t = tuple_prepend(get_stream(), reserved::remove_void_interface(typed_deps()));
       return ::std::apply(::std::forward<Fun>(fun), t);
     }
     else
     {
       constexpr bool fun_invocable_task_deps = ::std::is_invocable_v<Fun, decltype(*this), Data...>;
       constexpr bool fun_invocable_task_non_void_deps =
-        reserved::is_invocable_with_filtered<Fun, decltype(*this), Data...>::value;
+        reserved::is_applicable_v<Fun, reserved::remove_void_interface_from_pack_t<decltype(*this), Data...>>;
 
       // Invoke passing `*this` as the first argument, followed by the slices
       static_assert(fun_invocable_task_deps || fun_invocable_task_non_void_deps,
@@ -609,7 +606,7 @@ public:
       else if constexpr (fun_invocable_task_non_void_deps)
       {
         return ::std::apply(::std::forward<Fun>(fun),
-                            tuple_prepend(*this, reserved::remove_void_interface_types(typed_deps())));
+                            tuple_prepend(*this, reserved::remove_void_interface(typed_deps())));
       }
     }
   }
@@ -890,5 +887,4 @@ public:
   }
 };
 #endif // _CCCL_DOXYGEN_INVOKED
-
 } // namespace cuda::experimental::stf

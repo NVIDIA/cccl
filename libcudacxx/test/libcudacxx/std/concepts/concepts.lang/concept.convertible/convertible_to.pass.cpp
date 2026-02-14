@@ -361,7 +361,7 @@ int main(int, char**)
   static_assert(convertible_to<const Array&, const char*>, "");
 
   static_assert(convertible_to<Array, StringType>, "");
-  static_assert(convertible_to<char(&)[], StringType>, "");
+  static_assert(convertible_to<char (&)[], StringType>, "");
 
   // char
   CheckNotConvertibleTo<char, void>();

@@ -14,7 +14,7 @@
 //   constexpr void      // constexpr after c++17
 //   generate_n(Iter first, Size n, Generator gen);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"

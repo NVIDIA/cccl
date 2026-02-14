@@ -1,38 +1,11 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_scan.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
-
+#include <cuda/iterator>
 #include <cuda/std/limits>
 
 #include <cstdint>
@@ -81,12 +54,12 @@ C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
   // Prepare input iterator
   input_t default_constant{};
   init_default_constant(default_constant);
-  auto in_it = thrust::make_constant_iterator(default_constant);
+  auto in_it = cuda::constant_iterator(default_constant);
 
   SECTION("inclusive sum")
   {
-    using op_t    = ::cuda::std::plus<>;
-    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    using op_t    = cuda::std::plus<>;
+    using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -103,8 +76,8 @@ C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
 
   SECTION("exclusive sum")
   {
-    using op_t    = ::cuda::std::plus<>;
-    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    using op_t    = cuda::std::plus<>;
+    using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -121,13 +94,13 @@ C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
 
   SECTION("inclusive scan")
   {
-    using op_t    = ::cuda::minimum<>;
-    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    using op_t    = cuda::minimum<>;
+    using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
     compute_inclusive_scan_reference(
-      in_it, in_it + num_items, expected_result.begin(), op_t{}, ::cuda::std::numeric_limits<accum_t>::max());
+      in_it, in_it + num_items, expected_result.begin(), op_t{}, cuda::std::numeric_limits<accum_t>::max());
 
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
@@ -140,8 +113,8 @@ C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
 
   SECTION("exclusive scan")
   {
-    using op_t    = ::cuda::std::plus<>;
-    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    using op_t    = cuda::std::plus<>;
+    using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -158,8 +131,8 @@ C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
 
   SECTION("exclusive scan with future-init value")
   {
-    using op_t    = ::cuda::std::plus<>;
-    using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    using op_t    = cuda::std::plus<>;
+    using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     accum_t init_value{};
@@ -295,7 +268,7 @@ C2H_TEST("Device scan works complex accumulator types", "[scan][device]")
   c2h::device_vector<custom_output_t> d_output{static_cast<size_t>(num_items), custom_output_t{nullptr, 0}};
   c2h::device_vector<int> d_ok_count(1);
 
-  auto index_it = thrust::make_counting_iterator(0);
+  auto index_it = cuda::counting_iterator(0);
   thrust::transform(
     c2h::device_policy,
     index_it,
@@ -305,7 +278,7 @@ C2H_TEST("Device scan works complex accumulator types", "[scan][device]")
 
   auto d_in_it  = thrust::raw_pointer_cast(d_input.data());
   auto d_out_it = thrust::raw_pointer_cast(d_output.data());
-  device_exclusive_scan(d_in_it, d_out_it, ::cuda::std::plus<>{}, init, num_items);
+  device_exclusive_scan(d_in_it, d_out_it, cuda::std::plus<>{}, init, num_items);
 
   REQUIRE(d_ok_count[0] == num_items);
 }

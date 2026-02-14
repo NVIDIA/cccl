@@ -10,6 +10,7 @@
 //
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-90
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 // UNSUPPORTED: nvrtc
 // NVRTC_SKIP_KERNEL_RUN // This will have effect once PR 433 is merged (line above should be removed.)
@@ -70,7 +71,7 @@ __device__ void test(int base_i, int base_j)
   alignas(128) __shared__ int smem_buffer[buf_len];
 #if _CCCL_CUDA_COMPILER(CLANG)
   __shared__ char barrier_data[sizeof(barrier)];
-  barrier& bar = cuda::std::bit_cast<barrier>(barrier_data);
+  barrier& bar = reinterpret_cast<barrier&>(barrier_data);
 #else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG)
   __shared__ barrier bar;
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
@@ -140,6 +141,7 @@ __device__ void test(int base_i, int base_j)
 }
 
 #if !TEST_COMPILER(NVRTC)
+#  if _CCCL_CTK_BELOW(12, 5)
 PFN_cuTensorMapEncodeTiled get_cuTensorMapEncodeTiled()
 {
   void* driver_ptr = nullptr;
@@ -148,7 +150,18 @@ PFN_cuTensorMapEncodeTiled get_cuTensorMapEncodeTiled()
   assert(code == cudaSuccess && "Could not get driver API");
   return reinterpret_cast<PFN_cuTensorMapEncodeTiled>(driver_ptr);
 }
-#endif // ! TEST_COMPILER(NVRTC)
+#  else // ^^^ _CCCL_CTK_BELOW(12, 5) ^^^ / vvv _CCCL_CTK_AT_LEAST(12, 5) vvv
+PFN_cuTensorMapEncodeTiled_v12000 get_cuTensorMapEncodeTiled()
+{
+  void* driver_ptr = nullptr;
+  cudaDriverEntryPointQueryResult driver_status;
+  auto code =
+    cudaGetDriverEntryPointByVersion("cuTensorMapEncodeTiled", &driver_ptr, 12000, cudaEnableDefault, &driver_status);
+  assert(code == cudaSuccess && "Could not get driver API");
+  return reinterpret_cast<PFN_cuTensorMapEncodeTiled_v12000>(driver_ptr);
+}
+#  endif // _CCCL_CTK_AT_LEAST(12, 5)
+#endif // !TEST_COMPILER(NVRTC)
 
 int main(int, char**)
 {

@@ -3,7 +3,7 @@
 
 mbarrier.arrive.shared.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.arrive.shared.b64                                  state,  [addr];           // 1.  PTX ISA 70, SM_80
    template <typename = void>
@@ -12,7 +12,7 @@ mbarrier.arrive.shared.b64
 
 mbarrier.arrive.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.arrive.shared::cta.b64                             state,  [addr], count;    // 2.  PTX ISA 78, SM_90
    template <typename = void>
@@ -22,7 +22,7 @@ mbarrier.arrive.shared::cta.b64
 
 mbarrier.arrive.release.cta.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.arrive.sem.scope.space.b64                   state,  [addr];           // 3a.  PTX ISA 80, SM_90
    // .sem       = { .release }
@@ -37,7 +37,7 @@ mbarrier.arrive.release.cta.shared::cta.b64
 
 mbarrier.arrive.release.cluster.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.arrive.sem.scope.space.b64                   state,  [addr];           // 3a.  PTX ISA 80, SM_90
    // .sem       = { .release }
@@ -52,7 +52,7 @@ mbarrier.arrive.release.cluster.shared::cta.b64
 
 mbarrier.arrive.release.cta.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.arrive.sem.scope.space.b64                   state,  [addr], count;    // 3b.  PTX ISA 80, SM_90
    // .sem       = { .release }
@@ -68,7 +68,7 @@ mbarrier.arrive.release.cta.shared::cta.b64
 
 mbarrier.arrive.release.cluster.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.arrive.sem.scope.space.b64                   state,  [addr], count;    // 3b.  PTX ISA 80, SM_90
    // .sem       = { .release }
@@ -84,7 +84,7 @@ mbarrier.arrive.release.cluster.shared::cta.b64
 
 mbarrier.arrive.release.cluster.shared::cluster.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.arrive.sem.scope.space.b64                   _, [addr];                // 4a.  PTX ISA 80, SM_90
    // .sem       = { .release }
@@ -99,7 +99,7 @@ mbarrier.arrive.release.cluster.shared::cluster.b64
 
 mbarrier.arrive.release.cluster.shared::cluster.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.arrive.sem.scope.space.b64                   _, [addr], count;         // 4b.  PTX ISA 80, SM_90
    // .sem       = { .release }
@@ -115,7 +115,7 @@ mbarrier.arrive.release.cluster.shared::cluster.b64
 
 mbarrier.arrive.relaxed.cta.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.arrive.sem.scope.space.b64 state, [addr], count; // PTX ISA 86, SM_90
    // .sem       = { .relaxed }
@@ -131,7 +131,7 @@ mbarrier.arrive.relaxed.cta.shared::cta.b64
 
 mbarrier.arrive.relaxed.cluster.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.arrive.sem.scope.space.b64 state, [addr], count; // PTX ISA 86, SM_90
    // .sem       = { .relaxed }
@@ -147,7 +147,7 @@ mbarrier.arrive.relaxed.cluster.shared::cta.b64
 
 mbarrier.arrive.relaxed.cta.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.arrive.sem.scope.space.b64 state, [addr]; // PTX ISA 86, SM_90
    // .sem       = { .relaxed }
@@ -162,7 +162,7 @@ mbarrier.arrive.relaxed.cta.shared::cta.b64
 
 mbarrier.arrive.relaxed.cluster.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.arrive.sem.scope.space.b64 state, [addr]; // PTX ISA 86, SM_90
    // .sem       = { .relaxed }
@@ -177,7 +177,7 @@ mbarrier.arrive.relaxed.cluster.shared::cta.b64
 
 mbarrier.arrive.relaxed.cluster.shared::cluster.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.arrive.sem.scope.space.b64 _, [addr], count; // PTX ISA 86, SM_90
    // .sem       = { .relaxed }
@@ -193,7 +193,7 @@ mbarrier.arrive.relaxed.cluster.shared::cluster.b64
 
 mbarrier.arrive.relaxed.cluster.shared::cluster.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code:: cuda
+.. code-block:: cuda
 
    // mbarrier.arrive.sem.scope.space.b64 _, [addr]; // PTX ISA 86, SM_90
    // .sem       = { .relaxed }

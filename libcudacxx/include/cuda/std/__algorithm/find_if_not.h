@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ALGORITHM_FIND_IF_NOT_H
-#define _LIBCUDACXX___ALGORITHM_FIND_IF_NOT_H
+#ifndef _CUDA_STD___ALGORITHM_FIND_IF_NOT_H
+#define _CUDA_STD___ALGORITHM_FIND_IF_NOT_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,11 +22,11 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _Predicate>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _InputIterator
+[[nodiscard]] _CCCL_API constexpr _InputIterator
 find_if_not(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 {
   for (; __first != __last; ++__first)
@@ -39,8 +39,8 @@ find_if_not(_InputIterator __first, _InputIterator __last, _Predicate __pred)
   return __first;
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___ALGORITHM_FIND_IF_NOT_H
+#endif // _CUDA_STD___ALGORITHM_FIND_IF_NOT_H

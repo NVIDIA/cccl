@@ -29,16 +29,13 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_temporary_storage.cuh>
 
+#include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__algorithm/max.h>
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace detail::temporary_storage
 {
-
-namespace temporary_storage
-{
-
 class slot;
 
 template <typename T>
@@ -98,7 +95,7 @@ public:
 private:
   _CCCL_HOST_DEVICE void set_bytes_required(size_t new_size)
   {
-    m_size = (::cuda::std::max)(m_size, new_size);
+    m_size = (::cuda::std::max) (m_size, new_size);
   }
 
   _CCCL_HOST_DEVICE size_t get_bytes_required() const
@@ -281,10 +278,10 @@ public:
   {
     this->prepare_interface();
 
-    // AliasTemporaries can return error only in mapping stage,
-    // so it's safe to ignore it here.
+    // alias_temporaries can return error only in mapping stage, so it's safe to ignore it here.
     size_t temp_storage_bytes{};
-    detail::AliasTemporaries(nullptr, temp_storage_bytes, m_pointers, m_sizes);
+    [[maybe_unused]] const auto error = detail::alias_temporaries(nullptr, temp_storage_bytes, m_pointers, m_sizes);
+    _CCCL_ASSERT(error == cudaSuccess, "");
 
     if (temp_storage_bytes == 0)
     {
@@ -316,7 +313,7 @@ public:
     this->prepare_interface();
 
     cudaError_t error = cudaSuccess;
-    if ((error = detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, m_pointers, m_sizes)))
+    if ((error = detail::alias_temporaries(d_temp_storage, temp_storage_bytes, m_pointers, m_sizes)))
     {
       return error;
     }
@@ -348,8 +345,33 @@ private:
   }
 };
 
-} // namespace temporary_storage
+template <typename MRT>
+CUB_RUNTIME_FUNCTION cudaError_t
+allocate(::cuda::stream_ref stream, void*& d_temp_storage, size_t temp_storage_bytes, MRT& mr)
+{
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST,
+    (
+      try { d_temp_storage = mr.allocate(stream, temp_storage_bytes); } catch (...) {
+        return cudaErrorMemoryAllocation;
+      }),
+    (d_temp_storage = mr.allocate(stream, temp_storage_bytes);));
+  return cudaSuccess;
+}
 
-} // namespace detail
+template <typename MRT>
+CUB_RUNTIME_FUNCTION cudaError_t
+deallocate(::cuda::stream_ref stream, void* d_temp_storage, size_t temp_storage_bytes, MRT& mr)
+{
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST,
+    (
+      try { mr.deallocate(stream, d_temp_storage, temp_storage_bytes); } catch (...) {
+        return cudaErrorMemoryAllocation;
+      }),
+    (mr.deallocate(stream, d_temp_storage, temp_storage_bytes);));
+  return cudaSuccess;
+}
+} // namespace detail::temporary_storage
 
 CUB_NAMESPACE_END

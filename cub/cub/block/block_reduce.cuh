@@ -1,34 +1,10 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 //! @file
-//! The cub::BlockReduce class provides :ref:`collective <collective-primitives>` methods for computing a parallel
-//! reduction of items partitioned across a CUDA thread block.
+//! The cub::BlockReduce class provides :ref:`collective <collective-primitives>` methods for
+//! computing a parallel reduction of items partitioned across a CUDA thread block.
 
 #pragma once
 
@@ -49,7 +25,12 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
+
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -57,7 +38,8 @@ CUB_NAMESPACE_BEGIN
  * Algorithmic variants
  ******************************************************************************/
 
-//! BlockReduceAlgorithm enumerates alternative algorithms for parallel reduction across a CUDA thread block.
+//! BlockReduceAlgorithm enumerates alternative algorithms for parallel reduction across a CUDA thread
+//! block.
 enum BlockReduceAlgorithm
 {
 
@@ -65,26 +47,25 @@ enum BlockReduceAlgorithm
   //! Overview
   //! ++++++++++++++++++++++++++
   //!
-  //! An efficient "raking" reduction algorithm that only supports commutative
-  //! reduction operators (true for most operations, e.g., addition).
+  //! An efficient "raking" reduction algorithm that only supports commutative reduction operators
+  //! (true for most operations, e.g., addition).
   //!
   //! Execution is comprised of three phases:
-  //!   #. Upsweep sequential reduction in registers (if threads contribute more
-  //!      than one input each). Threads in warps other than the first warp place
-  //!      their partial reductions into shared memory.
-  //!   #. Upsweep sequential reduction in shared memory. Threads within the first
-  //!      warp continue to accumulate by raking across segments of shared partial reductions
+  //!   #. Upsweep sequential reduction in registers (if threads contribute more than one input each).
+  //!      Threads in warps other than the first warp place their partial reductions into shared
+  //!      memory.
+  //!   #. Upsweep sequential reduction in shared memory. Threads within the first warp continue to
+  //!      accumulate by raking across segments of shared partial reductions
   //!   #. A warp-synchronous Kogge-Stone style reduction within the raking warp.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
   //!
-  //! - This variant performs less communication than BLOCK_REDUCE_RAKING_NON_COMMUTATIVE
-  //!   and is preferable when the reduction operator is commutative. This variant
-  //!   applies fewer reduction operators than BLOCK_REDUCE_WARP_REDUCTIONS, and can provide higher overall
-  //!   throughput across the GPU when suitably occupied. However, turn-around latency may be
-  //!   higher than to BLOCK_REDUCE_WARP_REDUCTIONS and thus less-desirable
-  //!   when the GPU is under-occupied.
+  //! - This variant performs less communication than BLOCK_REDUCE_RAKING_NON_COMMUTATIVE and is
+  //!   preferable when the reduction operator is commutative. This variant applies fewer reduction
+  //!   operators than BLOCK_REDUCE_WARP_REDUCTIONS, and can provide higher overall throughput across
+  //!   the GPU when suitably occupied. However, turn-around latency may be higher than to
+  //!   BLOCK_REDUCE_WARP_REDUCTIONS and thus less-desirable when the GPU is under-occupied.
   //!
   //! @endrst
   BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
@@ -93,27 +74,24 @@ enum BlockReduceAlgorithm
   //! Overview
   //! ++++++++++++++++++++++++++
   //!
-  //! An efficient "raking" reduction algorithm that supports commutative
-  //! (e.g., addition) and non-commutative (e.g., string concatenation) reduction
-  //! operators. @blocked.
+  //! An efficient "raking" reduction algorithm that supports commutative (e.g., addition) and
+  //! non-commutative (e.g., string concatenation) reduction operators. @blocked.
   //!
   //! Execution is comprised of three phases:
-  //!   #. Upsweep sequential reduction in registers (if threads contribute more
-  //!      than one input each). Each thread then places the partial reduction
-  //!      of its item(s) into shared memory.
-  //!   #. Upsweep sequential reduction in shared memory. Threads within a
-  //!      single warp rake across segments of shared partial reductions.
+  //!   #. Upsweep sequential reduction in registers (if threads contribute more than one input each).
+  //!      Each thread then places the partial reduction of its item(s) into shared memory.
+  //!   #. Upsweep sequential reduction in shared memory. Threads within a single warp rake across
+  //!      segments of shared partial reductions.
   //!   #. A warp-synchronous Kogge-Stone style reduction within the raking warp.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
   //!
-  //! - This variant performs more communication than BLOCK_REDUCE_RAKING
-  //!   and is only preferable when the reduction operator is non-commutative. This variant
-  //!   applies fewer reduction operators than BLOCK_REDUCE_WARP_REDUCTIONS, and can provide higher overall
-  //!   throughput across the GPU when suitably occupied. However, turn-around latency may be
-  //!   higher than to BLOCK_REDUCE_WARP_REDUCTIONS and thus less-desirable
-  //!   when the GPU is under-occupied.
+  //! - This variant performs more communication than BLOCK_REDUCE_RAKING and is only preferable when
+  //!   the reduction operator is non-commutative. This variant applies fewer reduction operators than
+  //!   BLOCK_REDUCE_WARP_REDUCTIONS, and can provide higher overall throughput across the GPU when
+  //!   suitably occupied. However, turn-around latency may be higher than to
+  //!   BLOCK_REDUCE_WARP_REDUCTIONS and thus less-desirable when the GPU is under-occupied.
   //!
   //! @endrst
   BLOCK_REDUCE_RAKING,
@@ -122,51 +100,104 @@ enum BlockReduceAlgorithm
   //! Overview
   //! ++++++++++++++++++++++++++
   //!
-  //! A quick "tiled warp-reductions" reduction algorithm that supports commutative
-  //! (e.g., addition) and non-commutative (e.g., string concatenation) reduction
-  //! operators.
+  //! A quick "tiled warp-reductions" reduction algorithm that supports commutative (e.g., addition)
+  //! and non-commutative (e.g., string concatenation) reduction operators.
   //!
   //! Execution is comprised of four phases:
-  //!   #. Upsweep sequential reduction in registers (if threads contribute more
-  //!      than one input each). Each thread then places the partial reduction
-  //!      of its item(s) into shared memory.
-  //!   #. Compute a shallow, but inefficient warp-synchronous Kogge-Stone style
-  //!      reduction within each warp.
-  //!   #. A propagation phase where the warp reduction outputs in each warp are
-  //!      updated with the aggregate from each preceding warp.
+  //!   #. Upsweep sequential reduction in registers (if threads contribute more than one input each).
+  //!      Each thread then places the partial reduction of its item(s) into shared memory.
+  //!   #. Compute a shallow, but inefficient warp-synchronous Kogge-Stone style reduction within
+  //!      each warp.
+  //!   #. A propagation phase where the warp reduction outputs in each warp are updated with the
+  //!      aggregate from each preceding warp.
   //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
   //!
-  //! - This variant applies more reduction operators than BLOCK_REDUCE_RAKING
-  //!   or BLOCK_REDUCE_RAKING_NON_COMMUTATIVE, which may result in lower overall
-  //!   throughput across the GPU. However turn-around latency may be lower and
-  //!   thus useful when the GPU is under-occupied.
+  //! - This variant applies more reduction operators than BLOCK_REDUCE_RAKING or
+  //!   BLOCK_REDUCE_RAKING_NON_COMMUTATIVE, which may result in lower overall throughput across the
+  //!   GPU. However turn-around latency may be lower and thus useful when the GPU is under-occupied.
   //!
   //! @endrst
   BLOCK_REDUCE_WARP_REDUCTIONS,
+
+  //! @rst
+  //! Overview
+  //! ++++++++++++++++++++++++++
+  //!
+  //! A quick "tiled warp-reductions" reduction algorithm that supports commutative (e.g., addition)
+  //! and non-commutative (e.g., string concatenation) reduction operators. This variant uses atomic
+  //! operations to reduce the warp-wide reduction results, making it non-deterministic, i.e. the
+  //! order of reduction operations is not guaranteed to be the same across different invocations of
+  //! the same kernel.
+  //!
+  //! Execution is comprised of three phases:
+  //!   #. Upsweep sequential reduction in registers (if threads contribute more than one input each).
+  //!      Each thread then places the partial reduction of its item(s) into shared memory.
+  //!   #. Compute a shallow, but non work-efficient warp-synchronous Kogge-Stone style reduction
+  //!      within each warp.
+  //!   #. Lane 0 of warp 0 stores its warp aggregate, while lane 0 of other warps use atomic
+  //!      operations to accumulate their warp aggregates into a shared location, making the final
+  //!      order non-deterministic.
+  //!   #. The final block-wide result is available to all threads.
+  //!
+  //! Performance Considerations
+  //! ++++++++++++++++++++++++++
+  //!
+  //! - This variant applies more reduction operators than BLOCK_REDUCE_RAKING or
+  //!   BLOCK_REDUCE_RAKING_NON_COMMUTATIVE, which may result in lower overall throughput across the
+  //!   GPU. However turn-around latency may be lower and thus useful when the GPU is under-occupied.
+  //!
+  //! @endrst
+  BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
 };
 
+#if !_CCCL_COMPILER(NVRTC) && !defined(_CCCL_DOXYGEN_INVOKED)
+inline ::std::ostream& operator<<(::std::ostream& os, const BlockReduceAlgorithm& alg)
+{
+  switch (alg)
+  {
+    case BlockReduceAlgorithm::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY:
+      return os << "BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY";
+    case BlockReduceAlgorithm::BLOCK_REDUCE_RAKING:
+      return os << "BLOCK_REDUCE_RAKING";
+    case BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS:
+      return os << "BLOCK_REDUCE_WARP_REDUCTIONS";
+    case BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC:
+      return os << "BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC";
+    default:
+      return os << "<unknown BlockReduceAlgorithm: " << static_cast<int>(alg) << ">";
+  }
+}
+#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
+
 //! @rst
-//! The BlockReduce class provides :ref:`collective <collective-primitives>` methods for computing a parallel reduction
-//! of items partitioned across a CUDA thread block.
+//! The BlockReduce class provides :ref:`collective <collective-primitives>` methods for computing a
+//! parallel reduction of items partitioned across a CUDA thread block.
 //!
 //! Overview
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! - A `reduction <http://en.wikipedia.org/wiki/Reduce_(higher-order_function)>`_ (or *fold*) uses a binary combining
-//!   operator to compute a single aggregate from a list of input elements.
+//! - A `reduction <http://en.wikipedia.org/wiki/Reduce_(higher-order_function)>`_ (or *fold*) uses a
+//!   binary combining operator to compute a single aggregate from a list of input elements.
 //! - @rowmajor
-//! - BlockReduce can be optionally specialized by algorithm to accommodate different latency/throughput
-//!   workload profiles:
+//! - BlockReduce can be optionally specialized by algorithm to accommodate different
+//!   latency/throughput workload profiles:
 //!
 //!   #. :cpp:enumerator:`cub::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY`:
 //!      An efficient "raking" reduction algorithm that only supports commutative reduction operators.
 //!   #. :cpp:enumerator:`cub::BLOCK_REDUCE_RAKING`:
-//!      An efficient "raking" reduction algorithm that supports commutative and non-commutative reduction operators.
-//!   #. :cpp:enumerator:`cub::BLOCK_REDUCE_WARP_REDUCTIONS`:
-//!      A quick "tiled warp-reductions" reduction algorithm that supports commutative and non-commutative
+//!      An efficient "raking" reduction algorithm that supports commutative and non-commutative
 //!      reduction operators.
+//!   #. :cpp:enumerator:`cub::BLOCK_REDUCE_WARP_REDUCTIONS`:
+//!      A quick "tiled warp-reductions" reduction algorithm that supports commutative and
+//!      non-commutative reduction operators.
+//!   #. :cpp:enumerator:`cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC`:
+//!      A quick "tiled warp-reductions" reduction algorithm that supports commutative and
+//!      non-commutative reduction operators. This variant uses atomic operations to reduce the
+//!      warp-wide reduction results, making it non-deterministic, i.e. the order of reduction
+//!      operations is not guaranteed to be the same across different invocations of the same
+//!      kernel.
 //!
 //! Performance Considerations
 //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -185,9 +216,9 @@ enum BlockReduceAlgorithm
 //!
 //! @blockcollective{BlockReduce}
 //!
-//! The code snippet below illustrates a sum reduction of 512 integer items that
-//! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
-//! where each thread owns 4 consecutive items.
+//! The code snippet below illustrates a sum reduction of 512 integer items that are partitioned in
+//! a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads where each thread
+//! owns 4 consecutive items.
 //!
 //! .. code-block:: c++
 //!
@@ -212,53 +243,52 @@ enum BlockReduceAlgorithm
 //! Re-using dynamically allocating shared memory
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! The ``block/example_block_reduce_dyn_smem.cu`` example illustrates usage of dynamically shared memory with
-//! BlockReduce and how to re-purpose the same memory region.
+//! The ``block/example_block_reduce_dyn_smem.cu`` example illustrates usage of dynamically shared
+//! memory with BlockReduce and how to re-purpose the same memory region.
 //!
 //! @endrst
 //!
 //! @tparam T
 //!   Data type being reduced
 //!
-//! @tparam BLOCK_DIM_X
+//! @tparam BlockDimX
 //!   The thread block length in threads along the X dimension
 //!
-//! @tparam ALGORITHM
+//! @tparam Algorithm
 //!   **[optional]** cub::BlockReduceAlgorithm enumerator specifying the underlying algorithm to use
 //!   (default: cub::BLOCK_REDUCE_WARP_REDUCTIONS)
 //!
-//! @tparam BLOCK_DIM_Y
+//! @tparam BlockDimY
 //!   **[optional]** The thread block length in threads along the Y dimension (default: 1)
 //!
-//! @tparam BLOCK_DIM_Z
+//! @tparam BlockDimZ
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
 template <typename T,
-          int BLOCK_DIM_X,
-          BlockReduceAlgorithm ALGORITHM = BLOCK_REDUCE_WARP_REDUCTIONS,
-          int BLOCK_DIM_Y                = 1,
-          int BLOCK_DIM_Z                = 1>
+          int BlockDimX,
+          BlockReduceAlgorithm Algorithm = BLOCK_REDUCE_WARP_REDUCTIONS,
+          int BlockDimY                  = 1,
+          int BlockDimZ                  = 1>
 class BlockReduce
 {
 private:
-  /// Constants
-  enum
-  {
-    /// The thread block size in threads
-    BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
-  };
+  /// The thread block size in threads
+  static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
-  using WarpReductions        = detail::BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
-  using RakingCommutativeOnly = detail::BlockReduceRakingCommutativeOnly<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
-  using Raking                = detail::BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using WarpReductions                 = detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ>;
+  using WarpReductionsNondeterministic = detail::BlockReduceWarpReductions<T, BlockDimX, BlockDimY, BlockDimZ, false>;
+  using RakingCommutativeOnly          = detail::BlockReduceRakingCommutativeOnly<T, BlockDimX, BlockDimY, BlockDimZ>;
+  using Raking                         = detail::BlockReduceRaking<T, BlockDimX, BlockDimY, BlockDimZ>;
 
   /// Internal specialization type
   using InternalBlockReduce =
-    ::cuda::std::_If<ALGORITHM == BLOCK_REDUCE_WARP_REDUCTIONS,
+    ::cuda::std::_If<Algorithm == BLOCK_REDUCE_WARP_REDUCTIONS,
                      WarpReductions,
-                     ::cuda::std::_If<ALGORITHM == BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
-                                      RakingCommutativeOnly,
-                                      Raking>>; // BlockReduceRaking
+                     ::cuda::std::_If<Algorithm == BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
+                                      WarpReductionsNondeterministic,
+                                      ::cuda::std::_If<Algorithm == BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
+                                                       RakingCommutativeOnly,
+                                                       Raking>>>; // BlockReduceRaking
 
   /// Shared memory storage layout type for BlockReduce
   using _TempStorage = typename InternalBlockReduce::TempStorage;
@@ -284,30 +314,44 @@ public:
   //! @name Collective constructors
   //! @{
 
-  //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
+  //! @brief Collective constructor using a private static allocation of shared memory as temporary
+  //! storage.
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduce()
       : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
   /**
    * @brief Collective constructor using the specified memory allocation as temporary storage.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduce(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+      , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  //! @}  end member group
+  //! @}
   //! @name Generic reductions
   //! @{
 
   //! @rst
   //! Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction functor.
   //! Each thread contributes one input element.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The return value is undefined in threads other than thread\ :sub:`0`.
   //! - @rowmajor
@@ -316,8 +360,8 @@ public:
   //! Snippet
   //! +++++++
   //!
-  //! The code snippet below illustrates a max reduction of 128 integer items that
-  //! are partitioned across 128 threads.
+  //! The code snippet below illustrates a max reduction of 128 integer items that are partitioned
+  //! across 128 threads.
   //!
   //! .. code-block:: c++
   //!
@@ -356,8 +400,11 @@ public:
   }
 
   //! @rst
-  //! Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction functor.
-  //! Each thread contributes an array of consecutive input elements.
+  //! Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction
+  //! functor. Each thread contributes an array of consecutive input elements.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The return value is undefined in threads other than thread\ :sub:`0`.
   //! - @granularity
@@ -388,6 +435,7 @@ public:
   //!
   //!        // Compute the block-wide max for thread0
   //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cuda::maximum<>{});
+  //!    }
   //!
   //! @endrst
   //!
@@ -411,8 +459,11 @@ public:
   }
 
   //! @rst
-  //! Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction functor.
-  //! The first ``num_valid`` threads each contribute one input element.
+  //! Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction
+  //! functor. The first ``num_valid`` threads each contribute one input element.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The return value is undefined in threads other than thread<sub>0</sub>.
   //! - @rowmajor
@@ -471,13 +522,16 @@ public:
     }
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Summation reductions
   //! @{
 
   //! @rst
   //! Computes a block-wide reduction for thread\ :sub:`0` using addition (+) as the reduction operator.
   //! Each thread contributes one input element.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The return value is undefined in threads other than thread\ :sub:`0`.
   //! - @rowmajor
@@ -486,8 +540,8 @@ public:
   //! Snippet
   //! +++++++
   //!
-  //! The code snippet below illustrates a sum reduction of 128 integer items that
-  //! are partitioned across 128 threads.
+  //! The code snippet below illustrates a sum reduction of 128 integer items that are partitioned
+  //! across 128 threads.
   //!
   //! .. code-block:: c++
   //!
@@ -519,8 +573,11 @@ public:
   }
 
   //! @rst
-  //! Computes a block-wide reduction for thread<sub>0</sub> using addition (+) as the reduction operator.
-  //! Each thread contributes an array of consecutive input elements.
+  //! Computes a block-wide reduction for thread<sub>0</sub> using addition (+) as the reduction
+  //! operator. Each thread contributes an array of consecutive input elements.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The return value is undefined in threads other than thread\ :sub:`0`.
   //! - @granularity
@@ -569,8 +626,11 @@ public:
   }
 
   //! @rst
-  //! Computes a block-wide reduction for thread\ :sub:`0` using addition (+) as the reduction operator.
-  //! The first ``num_valid`` threads each contribute one input element.
+  //! Computes a block-wide reduction for thread\ :sub:`0` using addition (+) as the reduction
+  //! operator. The first ``num_valid`` threads each contribute one input element.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The return value is undefined in threads other than thread\ :sub:`0`.
   //! - @rowmajor
@@ -623,7 +683,7 @@ public:
     }
   }
 
-  //! @}  end member group
+  //! @}
 };
 
 CUB_NAMESPACE_END

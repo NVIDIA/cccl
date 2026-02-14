@@ -12,6 +12,7 @@
 #define __CCCL_EXCEPTIONS_H
 
 #include <cuda/std/__cccl/compiler.h>
+#include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__cccl/system_header.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -27,9 +28,15 @@
 #elif _CCCL_COMPILER(NVRTC) // NVRTC has no exceptions
 #  define _CCCL_HAS_EXCEPTIONS() 0
 #elif _CCCL_COMPILER(MSVC) // MSVC needs special checks for `_HAS_EXCEPTIONS` and `_CPPUNWIND`
-#  define _CCCL_HAS_EXCEPTIONS() (_HAS_EXCEPTIONS != 0) && (_CPPUNWIND != 0)
+#  define _CCCL_HAS_EXCEPTIONS() ((_HAS_EXCEPTIONS != 0) && (_CPPUNWIND != 0)) // disabled with /EH
 #else // other compilers use `__EXCEPTIONS`
-#  define _CCCL_HAS_EXCEPTIONS() __EXCEPTIONS
+#  define _CCCL_HAS_EXCEPTIONS() (__EXCEPTIONS) // disabled with -fno-exceptions
 #endif // has exceptions
+
+#if _CCCL_HAS_EXCEPTIONS() && __cpp_constexpr_exceptions >= 202411L
+#  define _CCCL_HAS_CONSTEXPR_EXCEPTIONS() 1
+#else // ^^^ has constexpr exceptions ^^^ / vvv no constexpr exceptions vvv
+#  define _CCCL_HAS_CONSTEXPR_EXCEPTIONS() 0
+#endif // ^^^ no constexpr exceptions ^^^
 
 #endif // __CCCL_EXCEPTIONS_H

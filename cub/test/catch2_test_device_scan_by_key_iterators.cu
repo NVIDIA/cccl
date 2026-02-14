@@ -1,34 +1,11 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_scan.cuh>
+
+#include <cuda/iterator>
 
 #include <cstdint>
 
@@ -55,7 +32,7 @@ using custom_t =
                      c2h::lexicographical_greater_comparable_t>;
 
 // type_quad's parameters and defaults:
-// type_quad<value_in_t, value_out_t=value_in_t, key_t=int32_t, equality_op_t=::cuda::std::equal_to<>>
+// type_quad<value_in_t, value_out_t=value_in_t, key_t=int32_t, equality_op_t=cuda::std::equal_to<>>
 #if TEST_TYPES == 0
 using full_type_list = c2h::type_list<type_quad<std::uint8_t, std::int32_t, float>,
                                       type_quad<std::int8_t, std::int8_t, std::int32_t, Mod2Equality>>;
@@ -63,7 +40,18 @@ using full_type_list = c2h::type_list<type_quad<std::uint8_t, std::int32_t, floa
 using full_type_list = c2h::type_list<type_quad<std::int32_t>, type_quad<std::uint64_t>>;
 #elif TEST_TYPES == 2
 using full_type_list =
-  c2h::type_list<type_quad<uchar3, uchar3, custom_t>, type_quad<ulonglong4, ulonglong4, std::uint8_t, Mod2Equality>>;
+  c2h::type_list<type_quad<uchar3, uchar3, custom_t>,
+                 type_quad<
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4_16a,
+                   ulonglong4_16a
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
+                   ulonglong4,
+                   ulonglong4
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+                   ,
+                   std::uint8_t,
+                   Mod2Equality>>;
 #elif TEST_TYPES == 3
 using full_type_list = c2h::type_list<type_quad<custom_t, custom_t, custom_t>>;
 #endif
@@ -118,11 +106,11 @@ C2H_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
   // Prepare input data
   value_t default_constant{};
   init_default_constant(default_constant);
-  auto values_in_it = thrust::make_constant_iterator(default_constant);
+  auto values_in_it = cuda::constant_iterator(default_constant);
 
   SECTION("inclusive sum")
   {
-    using op_t = ::cuda::std::plus<>;
+    using op_t = cuda::std::plus<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -139,7 +127,7 @@ C2H_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
 
   SECTION("exclusive sum")
   {
-    using op_t = ::cuda::std::plus<>;
+    using op_t = cuda::std::plus<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -156,7 +144,7 @@ C2H_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
 
   SECTION("inclusive scan")
   {
-    using op_t = ::cuda::minimum<>;
+    using op_t = cuda::minimum<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -173,7 +161,7 @@ C2H_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
 
   SECTION("exclusive scan")
   {
-    using op_t = ::cuda::std::plus<>;
+    using op_t = cuda::std::plus<>;
 
     // Scan operator
     auto scan_op = op_t{};

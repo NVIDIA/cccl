@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2021, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2021, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -38,50 +14,54 @@
 #endif // no system header
 
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_load.cuh>
 #include <cub/warp/warp_merge_sort.cuh>
 #include <cub/warp/warp_store.cuh>
 
-#include <thrust/system/cuda/detail/core/util.h>
-
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 
-template <int WARP_THREADS_ARG,
-          int ITEMS_PER_THREAD_ARG,
-          cub::WarpLoadAlgorithm LOAD_ALGORITHM_ARG   = cub::WARP_LOAD_DIRECT,
-          cub::CacheLoadModifier LOAD_MODIFIER_ARG    = cub::LOAD_LDG,
-          cub::WarpStoreAlgorithm STORE_ALGORITHM_ARG = cub::WARP_STORE_DIRECT>
+template <int BlockThreadsArg,
+          int WarpThreadsArg,
+          int ItemsPerThreadArg,
+          cub::WarpLoadAlgorithm LoadAlgorithmArg   = cub::WARP_LOAD_DIRECT,
+          cub::CacheLoadModifier LoadModifierArg    = cub::LOAD_LDG,
+          cub::WarpStoreAlgorithm StoreAlgorithmArg = cub::WARP_STORE_DIRECT>
 struct AgentSubWarpMergeSortPolicy
 {
-  static constexpr int WARP_THREADS     = WARP_THREADS_ARG;
-  static constexpr int ITEMS_PER_THREAD = ITEMS_PER_THREAD_ARG;
-  static constexpr int ITEMS_PER_TILE   = WARP_THREADS * ITEMS_PER_THREAD;
+  static constexpr int BLOCK_THREADS      = BlockThreadsArg;
+  static constexpr int WARP_THREADS       = WarpThreadsArg;
+  static constexpr int ITEMS_PER_THREAD   = ItemsPerThreadArg;
+  static constexpr int ITEMS_PER_TILE     = WARP_THREADS * ITEMS_PER_THREAD;
+  static constexpr int SEGMENTS_PER_BLOCK = BLOCK_THREADS / WARP_THREADS;
 
-  static constexpr cub::WarpLoadAlgorithm LOAD_ALGORITHM   = LOAD_ALGORITHM_ARG;
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER    = LOAD_MODIFIER_ARG;
-  static constexpr cub::WarpStoreAlgorithm STORE_ALGORITHM = STORE_ALGORITHM_ARG;
+  static constexpr cub::WarpLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithmArg;
+  static constexpr cub::CacheLoadModifier LOAD_MODIFIER    = LoadModifierArg;
+  static constexpr cub::WarpStoreAlgorithm STORE_ALGORITHM = StoreAlgorithmArg;
 };
 
-template <int BLOCK_THREADS_ARG, typename SmallPolicy, typename MediumPolicy>
-struct AgentSmallAndMediumSegmentedSortPolicy
-{
-  static constexpr int BLOCK_THREADS = BLOCK_THREADS_ARG;
-  using SmallPolicyT                 = SmallPolicy;
-  using MediumPolicyT                = MediumPolicy;
-
-  static constexpr int SEGMENTS_PER_MEDIUM_BLOCK = BLOCK_THREADS / MediumPolicyT::WARP_THREADS;
-
-  static constexpr int SEGMENTS_PER_SMALL_BLOCK = BLOCK_THREADS / SmallPolicyT::WARP_THREADS;
-};
-
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 namespace detail
 {
-namespace sub_warp_merge_sort
-{
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  SubWarpMergeSortAgentPolicy,
+  (GenericAgentPolicy),
+  (BLOCK_THREADS, BlockThreads, int),
+  (WARP_THREADS, WarpThreads, int),
+  (ITEMS_PER_THREAD, ItemsPerThread, int),
+  (ITEMS_PER_TILE, ItemsPerTile, int),
+  (SEGMENTS_PER_BLOCK, SegmentsPerBlock, int),
+  (LOAD_ALGORITHM, LoadAlgorithm, cub::WarpLoadAlgorithm),
+  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
+  (STORE_ALGORITHM, StoreAlgorithm, cub::WarpStoreAlgorithm))
+} // namespace detail
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 
+namespace detail::sub_warp_merge_sort
+{
 /**
  * @brief AgentSubWarpSort implements a sub-warp merge sort.
  *
@@ -143,6 +123,24 @@ class AgentSubWarpSort
       _CCCL_UNREACHABLE();
     }
 #endif // _CCCL_HAS_NVFP16()
+
+#if _CCCL_HAS_NVBF16()
+    _CCCL_DEVICE bool operator()(__nv_bfloat16 lhs, __nv_bfloat16 rhs) const noexcept
+    {
+      // Need to explicitly cast to float for SM < 80.
+      if constexpr (IS_DESCENDING)
+      {
+        NV_IF_TARGET(
+          NV_PROVIDES_SM_80, (return __hgt(lhs, rhs);), (return __bfloat162float(lhs) > __bfloat162float(rhs);));
+      }
+      else
+      {
+        NV_IF_TARGET(
+          NV_PROVIDES_SM_80, (return __hlt(lhs, rhs);), (return __bfloat162float(lhs) < __bfloat162float(rhs);));
+      }
+      _CCCL_UNREACHABLE();
+    }
+#endif // _CCCL_HAS_NVBF16()
   };
 
 #if _CCCL_HAS_NVFP16()
@@ -152,6 +150,14 @@ class AgentSubWarpSort
     NV_IF_TARGET(NV_PROVIDES_SM_53, (return __heq(lhs, rhs);), (return __half2float(lhs) == __half2float(rhs);));
   }
 #endif // _CCCL_HAS_NVFP16()
+
+#if _CCCL_HAS_NVBF16()
+  _CCCL_DEVICE static bool equal(__nv_bfloat16 lhs, __nv_bfloat16 rhs)
+  {
+    // Need to explicitly cast to float for SM < 80.
+    NV_IF_TARGET(NV_PROVIDES_SM_80, (return __heq(lhs, rhs);), (return __bfloat162float(lhs) == __bfloat162float(rhs);));
+  }
+#endif // _CCCL_HAS_NVBF16()
 
   template <typename T>
   _CCCL_DEVICE static bool equal(T lhs, T rhs)
@@ -183,8 +189,8 @@ public:
 
   using WarpMergeSortT = WarpMergeSort<KeyT, PolicyT::ITEMS_PER_THREAD, PolicyT::WARP_THREADS, ValueT>;
 
-  using KeysLoadItT  = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<PolicyT, const KeyT*>::type;
-  using ItemsLoadItT = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<PolicyT, const ValueT*>::type;
+  using KeysLoadItT  = try_make_cache_modified_iterator_t<PolicyT::LOAD_MODIFIER, const KeyT*>;
+  using ItemsLoadItT = try_make_cache_modified_iterator_t<PolicyT::LOAD_MODIFIER, const ValueT*>;
 
   using WarpLoadKeysT = cub::WarpLoad<KeyT, PolicyT::ITEMS_PER_THREAD, PolicyT::LOAD_ALGORITHM, PolicyT::WARP_THREADS>;
   using WarpLoadItemsT =
@@ -335,8 +341,6 @@ private:
     }
   }
 };
-
-} // namespace sub_warp_merge_sort
-} // namespace detail
+} // namespace detail::sub_warp_merge_sort
 
 CUB_NAMESPACE_END

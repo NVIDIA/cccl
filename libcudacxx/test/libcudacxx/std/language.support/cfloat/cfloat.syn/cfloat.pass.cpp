@@ -145,7 +145,7 @@ int main(int, char**)
   static_assert(cuda::std::is_same_v<decltype(LDBL_MAX), long double>);
 
   // LDBL_EPSILON
-  static_assert(cuda::std::is_same_v < decltype(LDBL_EPSILON), long double);
+  static_assert(cuda::std::is_same_v<decltype(LDBL_EPSILON), long double>);
 
   // LDBL_DIG
   [[maybe_unused]] constexpr auto ldbl_dig = LDBL_DIG;

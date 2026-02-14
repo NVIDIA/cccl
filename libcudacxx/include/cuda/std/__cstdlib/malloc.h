@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CSTDLIB_MALLOC_H
-#define _LIBCUDACXX___CSTDLIB_MALLOC_H
+#ifndef _CUDA_STD___CSTDLIB_MALLOC_H
+#define _CUDA_STD___CSTDLIB_MALLOC_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,8 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/mul_hi.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/cstring>
+#include <cuda/std/__cstring/memset.h>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <cstdlib>
@@ -32,7 +33,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 using ::free;
 using ::malloc;
@@ -41,15 +42,15 @@ using ::malloc;
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __calloc_device(size_t __n, size_t __size) noexcept
 {
   void* __ptr{};
-
-  const size_t __nbytes = __n * __size;
-
-  if (::__umul64hi(__n, __size) == 0)
+  // check for overflow through a hypothetical larger integer
+  // TODO (miscco): use `mul_overflow` once implemented
+  if (::cuda::mul_hi(__n, __size) == 0)
   {
-    __ptr = _CUDA_VSTD::malloc(__nbytes);
+    const size_t __nbytes = __n * __size;
+    __ptr                 = ::cuda::std::malloc(__nbytes);
     if (__ptr != nullptr)
     {
-      _CUDA_VSTD::memset(__ptr, 0, __nbytes);
+      ::cuda::std::memset(__ptr, 0, __nbytes);
     }
   }
 
@@ -57,13 +58,13 @@ using ::malloc;
 }
 #endif // _CCCL_CUDA_COMPILATION()
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI void* calloc(size_t __n, size_t __size) noexcept
+[[nodiscard]] _CCCL_API inline void* calloc(size_t __n, size_t __size) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::calloc(__n, __size);), (return _CUDA_VSTD::__calloc_device(__n, __size);))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::calloc(__n, __size);), (return ::cuda::std::__calloc_device(__n, __size);))
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CSTDLIB_MALLOC_H
+#endif // _CUDA_STD___CSTDLIB_MALLOC_H

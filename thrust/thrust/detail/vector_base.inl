@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -26,27 +13,33 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/advance.h>
 #include <thrust/detail/copy.h>
 #include <thrust/detail/overlapped_copy.h>
 #include <thrust/detail/temporary_array.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/vector_base.h>
-#include <thrust/distance.h>
 #include <thrust/equal.h>
 #include <thrust/iterator/iterator_traits.h>
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/type_traits>
-
-#include <stdexcept>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__iterator/advance.h>
+#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__iterator/next.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_trivially_constructible.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/initializer_list>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 template <typename T, typename Alloc>
 vector_base<T, Alloc>::vector_base()
     : m_storage()
@@ -70,6 +63,38 @@ vector_base<T, Alloc>::vector_base(size_type n)
 {
   value_init(n);
 } // end vector_base::vector_base()
+
+template <typename T, typename Alloc>
+vector_base<T, Alloc>::vector_base(size_type n, default_init_t)
+    : m_storage()
+    , m_size(0)
+{
+  if (n > 0)
+  {
+    m_storage.allocate(n);
+    m_size = n;
+
+    if constexpr (!::cuda::std::is_trivially_constructible_v<T>)
+    {
+      m_storage.value_initialize_n(begin(), size());
+    }
+  }
+}
+
+template <typename T, typename Alloc>
+template <typename T2>
+vector_base<T, Alloc>::vector_base(size_type n, no_init_t)
+    : m_storage()
+    , m_size(0)
+{
+  static_assert(::cuda::std::is_trivially_constructible_v<T2>,
+                "The vector's element type must be trivially constructible to skip initialization.");
+  if (n > 0)
+  {
+    m_storage.allocate(n);
+    m_size = n;
+  }
+}
 
 template <typename T, typename Alloc>
 vector_base<T, Alloc>::vector_base(size_type n, const Alloc& alloc)
@@ -126,7 +151,13 @@ vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(const vector_base& v)
   {
     m_storage.destroy_on_allocator_mismatch(v.m_storage, begin(), end());
     m_storage.deallocate_on_allocator_mismatch(v.m_storage);
-
+    if constexpr (::cuda::std::allocator_traits<Alloc>::propagate_on_container_copy_assignment::value)
+    {
+      if (m_storage.get_allocator() != v.m_storage.get_allocator())
+      {
+        m_size = 0;
+      }
+    }
     m_storage.propagate_allocator(v.m_storage);
 
     assign(v.begin(), v.end());
@@ -209,13 +240,6 @@ vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(::cuda::std::initializer
 } // end vector_base::operator=()
 
 template <typename T, typename Alloc>
-template <typename IteratorOrIntegralType>
-void vector_base<T, Alloc>::init_dispatch(IteratorOrIntegralType n, IteratorOrIntegralType value, true_type)
-{
-  fill_init(n, value);
-} // end vector_base::init_dispatch()
-
-template <typename T, typename Alloc>
 void vector_base<T, Alloc>::value_init(size_type n)
 {
   if (n > 0)
@@ -241,13 +265,6 @@ void vector_base<T, Alloc>::fill_init(size_type n, const T& x)
 
 template <typename T, typename Alloc>
 template <typename InputIterator>
-void vector_base<T, Alloc>::init_dispatch(InputIterator first, InputIterator last, false_type)
-{
-  range_init(first, last);
-} // end vector_base::init_dispatch()
-
-template <typename T, typename Alloc>
-template <typename InputIterator>
 void vector_base<T, Alloc>::range_init(InputIterator first, InputIterator last)
 {
   using traversal = typename iterator_traversal<InputIterator>::type;
@@ -268,31 +285,23 @@ void vector_base<T, Alloc>::range_init(InputIterator first, InputIterator last)
 } // end vector_base::range_init()
 
 template <typename T, typename Alloc>
-template <typename InputIterator,
-          ::cuda::std::enable_if_t<::cuda::std::__is_cpp17_input_iterator<InputIterator>::value, int>>
+template <typename InputIterator, ::cuda::std::enable_if_t<::cuda::std::__has_input_traversal<InputIterator>, int>>
 vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last)
     : m_storage()
     , m_size(0)
 {
-  // check the type of InputIterator: if it's an integral type,
-  // we need to interpret this call as (size_type, value_type)
-  using Integer = ::cuda::std::is_integral<InputIterator>;
-
-  init_dispatch(first, last, Integer());
+  static_assert(!::cuda::std::is_integral_v<InputIterator>); // TODO(bgruber): remove, just for testing
+  range_init(first, last);
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
-template <typename InputIterator,
-          ::cuda::std::enable_if_t<::cuda::std::__is_cpp17_input_iterator<InputIterator>::value, int>>
+template <typename InputIterator, ::cuda::std::enable_if_t<::cuda::std::__has_input_traversal<InputIterator>, int>>
 vector_base<T, Alloc>::vector_base(InputIterator first, InputIterator last, const Alloc& alloc)
     : m_storage(alloc)
     , m_size(0)
 {
-  // check the type of InputIterator: if it's an integral type,
-  // we need to interpret this call as (size_type, value_type)
-  using Integer = ::cuda::std::is_integral<InputIterator>;
-
-  init_dispatch(first, last, Integer());
+  static_assert(!::cuda::std::is_integral_v<InputIterator>); // TODO(bgruber): remove, just for testing
+  range_init(first, last);
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
@@ -309,6 +318,35 @@ void vector_base<T, Alloc>::resize(size_type new_size)
     append(new_size - size());
   } // end else
 } // end vector_base::resize()
+
+template <typename T, typename Alloc>
+void vector_base<T, Alloc>::resize(size_type new_size, default_init_t)
+{
+  if (new_size < size())
+  {
+    erase(::cuda::std::next(begin(), new_size), end());
+  }
+  else
+  {
+    append</* SkipInit = */ ::cuda::std::is_trivially_constructible_v<T>>(new_size - size());
+  }
+}
+
+template <typename T, typename Alloc>
+template <typename T2>
+void vector_base<T, Alloc>::resize(size_type new_size, no_init_t)
+{
+  static_assert(::cuda::std::is_trivially_constructible_v<T2>,
+                "The vector's element type must be trivially constructible to skip initialization.");
+  if (new_size < size())
+  {
+    erase(::cuda::std::next(begin(), new_size), end());
+  }
+  else
+  {
+    append</* SkipInit = */ true>(new_size - size());
+  }
+}
 
 template <typename T, typename Alloc>
 void vector_base<T, Alloc>::resize(size_type new_size, const value_type& x)
@@ -593,11 +631,15 @@ template <typename T, typename Alloc>
 template <typename InputIterator>
 void vector_base<T, Alloc>::assign(InputIterator first, InputIterator last)
 {
-  // we could have received assign(n, x), so disambiguate on the
-  // type of InputIterator
-  using integral = typename ::cuda::std::is_integral<InputIterator>;
-
-  assign_dispatch(first, last, integral());
+  // we could have received assign(n, x), so disambiguate on the type of InputIterator
+  if constexpr (::cuda::std::is_integral_v<InputIterator>)
+  {
+    fill_assign(first, last);
+  }
+  else
+  {
+    range_assign(first, last);
+  }
 } // end vector_base::assign()
 
 template <typename T, typename Alloc>
@@ -637,20 +679,6 @@ void vector_base<T, Alloc>::insert(iterator position, InputIterator first, Input
 
   insert_dispatch(position, first, last, integral());
 } // end vector_base::insert()
-
-template <typename T, typename Alloc>
-template <typename InputIterator>
-void vector_base<T, Alloc>::assign_dispatch(InputIterator first, InputIterator last, false_type)
-{
-  range_assign(first, last);
-} // end vector_base::assign_dispatch()
-
-template <typename T, typename Alloc>
-template <typename Integral>
-void vector_base<T, Alloc>::assign_dispatch(Integral n, Integral x, true_type)
-{
-  fill_assign(n, x);
-} // end vector_base::assign_dispatch()
 
 template <typename T, typename Alloc>
 template <typename InputIterator>
@@ -777,6 +805,7 @@ void vector_base<T, Alloc>::copy_insert(iterator position, ForwardIterator first
 } // end vector_base::copy_insert()
 
 template <typename T, typename Alloc>
+template <bool SkipInit>
 void vector_base<T, Alloc>::append(size_type n)
 {
   if (n != 0)
@@ -785,8 +814,11 @@ void vector_base<T, Alloc>::append(size_type n)
     {
       // we've got room for all of them
 
-      // default construct new elements at the end of the vector
-      m_storage.value_initialize_n(end(), n);
+      if constexpr (!SkipInit)
+      {
+        // default construct new elements at the end of the vector
+        m_storage.value_initialize_n(end(), n);
+      }
 
       // extend the size
       m_size += n;
@@ -815,8 +847,12 @@ void vector_base<T, Alloc>::append(size_type n)
         // construct copy all elements into the newly allocated storage
         new_end = m_storage.uninitialized_copy(begin(), end(), new_storage.begin());
 
-        // construct new elements to insert
-        new_storage.value_initialize_n(new_end, n);
+        if constexpr (!SkipInit)
+        {
+          // construct new elements to insert
+          new_storage.value_initialize_n(new_end, n);
+        }
+
         new_end += n;
       } // end try
       catch (...)
@@ -1167,7 +1203,6 @@ bool operator!=(const std::vector<T1, Alloc1>& lhs, const vector_base<T2, Alloc2
 {
   return !(lhs == rhs);
 }
-
 } // end namespace detail
 
 THRUST_NAMESPACE_END

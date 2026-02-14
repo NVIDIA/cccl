@@ -9,6 +9,8 @@
 
 // void* memcpy(void* dst, const void* src, size_t count);
 
+#include <cuda/atomic>
+#include <cuda/std/atomic>
 #include <cuda/std/cassert>
 #include <cuda/std/cstring>
 
@@ -20,6 +22,9 @@ __host__ __device__ void test(T obj)
   unsigned char buf[sizeof(T)]{};
   assert(cuda::std::memcpy(buf, &obj, sizeof(T)) == buf);
   assert(cuda::std::memcmp(buf, &obj, sizeof(T)) == 0);
+  cuda::std::atomic<int>* in        = nullptr;
+  const cuda::std::atomic<int>* out = nullptr;
+  assert(memcpy(&in, &out, sizeof(int)) == &in); // verify possible name ambiguity
 }
 
 struct SmallObj

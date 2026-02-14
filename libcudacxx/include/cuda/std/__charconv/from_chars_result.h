@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CHARCONV_FROM_CHARS_RESULT_H
-#define _LIBCUDACXX___CHARCONV_FROM_CHARS_RESULT_H
+#ifndef _CUDA_STD___CHARCONV_FROM_CHARS_RESULT_H
+#define _CUDA_STD___CHARCONV_FROM_CHARS_RESULT_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,33 +24,33 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT from_chars_result
 {
   const char* ptr;
   errc ec;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit operator bool() const noexcept
+  _CCCL_API constexpr explicit operator bool() const noexcept
   {
     return ec == errc{};
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const from_chars_result& __lhs, const from_chars_result& __rhs) noexcept
   {
     return __lhs.ptr == __rhs.ptr && __lhs.ec == __rhs.ec;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const from_chars_result& __lhs, const from_chars_result& __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
 };
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___CHARCONV_FROM_CHARS_RESULT_H
+#endif // _CUDA_STD___CHARCONV_FROM_CHARS_RESULT_H

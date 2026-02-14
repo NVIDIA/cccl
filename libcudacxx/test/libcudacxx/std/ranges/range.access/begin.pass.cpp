@@ -97,8 +97,8 @@ __host__ __device__ constexpr bool testReturnTypes()
   {
     int x[2][2] = {};
     unused(x);
-    static_assert(cuda::std::same_as<decltype(cuda::std::ranges::begin(x)), int(*)[2]>, "");
-    static_assert(cuda::std::same_as<decltype(cuda::std::ranges::cbegin(x)), const int(*)[2]>, "");
+    static_assert(cuda::std::same_as<decltype(cuda::std::ranges::begin(x)), int (*)[2]>, "");
+    static_assert(cuda::std::same_as<decltype(cuda::std::ranges::cbegin(x)), const int (*)[2]>, "");
   }
   {
     Different x{};
@@ -176,17 +176,12 @@ struct EnabledBorrowingBeginMember
     return &globalBuff[0];
   }
 };
-namespace cuda
-{
-namespace std
-{
-namespace ranges
+
+namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<EnabledBorrowingBeginMember> = true;
 }
-} // namespace std
-} // namespace cuda
 
 struct BeginMemberFunction
 {
@@ -291,17 +286,11 @@ struct BeginFunctionEnabledBorrowing
   }
 };
 
-namespace cuda
-{
-namespace std
-{
-namespace ranges
+namespace cuda::std::ranges
 {
 template <>
 inline constexpr bool enable_borrowed_range<BeginFunctionEnabledBorrowing> = true;
 }
-} // namespace std
-} // namespace cuda
 
 struct BeginFunctionReturnsEmptyPtr
 {

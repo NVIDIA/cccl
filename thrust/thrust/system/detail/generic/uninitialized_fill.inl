@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -32,15 +19,10 @@
 #include <thrust/system/detail/generic/uninitialized_fill.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
 namespace detail
 {
-namespace generic
-{
-namespace detail
-{
-
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE void uninitialized_fill(
   thrust::execution_policy<DerivedPolicy>& exec,
@@ -62,7 +44,7 @@ _CCCL_HOST_DEVICE void uninitialized_fill(
 {
   using ValueType = thrust::detail::it_value_t<ForwardIterator>;
 
-  thrust::for_each(exec, first, last, thrust::detail::uninitialized_fill_functor<ValueType>(x));
+  thrust::for_each(exec, first, last, thrust::detail::uninitialized_fill_functor<ValueType>{x});
 } // end uninitialized_fill()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename Size, typename T>
@@ -86,9 +68,8 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_fill_n(
 {
   using ValueType = thrust::detail::it_value_t<ForwardIterator>;
 
-  return thrust::for_each_n(exec, first, n, thrust::detail::uninitialized_fill_functor<ValueType>(x));
+  return thrust::for_each_n(exec, first, n, thrust::detail::uninitialized_fill_functor<ValueType>{x});
 } // end uninitialized_fill()
-
 } // namespace detail
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
@@ -114,8 +95,5 @@ uninitialized_fill_n(thrust::execution_policy<DerivedPolicy>& exec, ForwardItera
   return thrust::system::detail::generic::detail::uninitialized_fill_n(
     exec, first, n, x, ValueTypeHasTrivialCopyConstructor());
 } // end uninitialized_fill()
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

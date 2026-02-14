@@ -2,12 +2,14 @@ Param(
     [Parameter(Mandatory = $false)]
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
-    [ValidateSet(11, 14, 17, 20)]
+    [ValidateSet(17, 20)]
     [int]$CXX_STANDARD = 17,
     [Parameter(Mandatory = $false)]
-    [ValidateNotNullOrEmpty()]
     [Alias("arch")]
-    [int]$CUDA_ARCH = 0
+    [string]$CUDA_ARCH = "",
+    [Parameter(Mandatory = $false)]
+    [Alias("cmake-options")]
+    [string]$CMAKE_OPTIONS = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -18,12 +20,12 @@ If($CURRENT_PATH -ne "ci") {
     pushd "$PSScriptRoot/.."
 }
 
-Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD, $CUDA_ARCH
+Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS)
 
-$PRESET = "libcudacxx-cpp${CXX_STANDARD}"
-$CMAKE_OPTIONS = ""
+$PRESET = "libcudacxx"
+$LOCAL_CMAKE_OPTIONS = "-DCMAKE_CXX_STANDARD=$CXX_STANDARD -DCMAKE_CUDA_STANDARD=$CXX_STANDARD"
 
-configure_and_build_preset "libcudacxx" "$PRESET" "$CMAKE_OPTIONS"
+configure_and_build_preset "libcudacxx" $PRESET $LOCAL_CMAKE_OPTIONS
 
 If($CURRENT_PATH -ne "ci") {
     popd

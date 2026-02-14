@@ -72,7 +72,7 @@ int main(void)
 try
 {
   // A CUDA stream on which to execute the vector addition kernel
-  cudax::stream stream(cudax::devices[0]);
+  cudax::stream stream(cuda::devices[0]);
 
   // Print the vector length to be used, and compute its size
   int numElements = 50000;
@@ -92,11 +92,10 @@ try
 
   // Define the kernel launch parameters
   constexpr int threadsPerBlock = 256;
-  auto config                   = cudax::distribute<threadsPerBlock>(numElements);
+  auto config                   = cuda::distribute<threadsPerBlock>(numElements);
 
   // Launch the vectorAdd kernel
-  printf(
-    "CUDA kernel launch with %d blocks of %d threads\n", config.dims.count(cudax::block, cudax::grid), threadsPerBlock);
+  printf("CUDA kernel launch with %zu blocks of %d threads\n", cuda::block.count(cuda::grid, config), threadsPerBlock);
   cudax::launch(stream, config, vectorAdd, in(A), in(B), out(C));
 
   printf("waiting for the stream to finish\n");

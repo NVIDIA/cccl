@@ -108,17 +108,16 @@ static_assert(check_incrementable_traits<unsigned_int_subtraction_with_cv const 
 
 struct specialised_incrementable_traits
 {};
-namespace cuda
-{
-namespace std
+
+namespace cuda::std
 {
 template <>
 struct incrementable_traits<specialised_incrementable_traits>
 {
   using difference_type = int;
 };
-} // namespace std
-} // namespace cuda
+} // namespace cuda::std
+
 static_assert(check_incrementable_traits<specialised_incrementable_traits, int>(), "");
 
 static_assert(!check_has_difference_type<void>, "");
@@ -139,13 +138,13 @@ static_assert(!check_has_difference_type<int (*)() noexcept>, "");
 static_assert(!check_has_difference_type<int (&)()>, "");
 static_assert(!check_has_difference_type<int (&)() noexcept>, "");
 
-#define TEST_POINTER_TO_MEMBER_FUNCTION(type, cv)                                 \
-  static_assert(!check_has_difference_type<int (type::*)() cv>, "");              \
-  static_assert(!check_has_difference_type<int (type::*)() cv noexcept>, "");     \
-  static_assert(!check_has_difference_type<int (type::*)() cv&>, "");             \
-  static_assert(!check_has_difference_type < int(type::*)() cv & noexcept >, ""); \
-  static_assert(!check_has_difference_type<int (type::*)() cv&&>, "");            \
-  static_assert(!check_has_difference_type < int(type::*)() cv && noexcept >, "");
+#define TEST_POINTER_TO_MEMBER_FUNCTION(type, cv)                               \
+  static_assert(!check_has_difference_type<int (type::*)() cv>, "");            \
+  static_assert(!check_has_difference_type<int (type::*)() cv noexcept>, "");   \
+  static_assert(!check_has_difference_type<int (type::*)() cv&>, "");           \
+  static_assert(!check_has_difference_type<int (type::*)() cv & noexcept>, ""); \
+  static_assert(!check_has_difference_type<int (type::*)() cv&&>, "");          \
+  static_assert(!check_has_difference_type < int (type::*)() cv && noexcept >, "");
 
 struct empty
 {};

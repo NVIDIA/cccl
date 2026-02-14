@@ -1,10 +1,10 @@
 # This test should always use per-thread streams on NVCC.
-set_target_properties(${test_target} PROPERTIES
-  COMPILE_OPTIONS
-    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--default-stream=per-thread>
+set_target_properties(
+  ${test_target}
+  PROPERTIES
+    COMPILE_OPTIONS
+      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--default-stream=per-thread>
 )
-
-thrust_fix_clang_nvcc_build_for(${test_target})
 
 # NVC++ does not have an equivalent option, and will always
 # use the global stream by default.

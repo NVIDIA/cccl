@@ -20,8 +20,10 @@ enforcing implicit data-driven dependencies.
 Implemented as a header-only C++ library, CUDASTF builds on top of CUDA
 APIs to simplify the development of multi-GPU applications.
 
-CUDASTF is currently capable of generating parallel applications using
-either the CUDA stream API or the CUDA graph API.
+CUDASTF enables the creation of highly concurrent parallel applications,
+leveraging both the CUDA stream API and the CUDA graph API for efficient
+task orchestration and data management. The same client code can run
+optimally on single- and multi-GPU systems.
 
 The Sequential Task Flow (STF) programming model
 ------------------------------------------------
@@ -61,7 +63,8 @@ asynchrony and asynchronous data management.
 
 To illustrate how a sequence of tasks can be transformed into a parallel
 application using annotated data accesses, consider the following
-example involving three logical data pieces denoted as X, Y and Z:
+example involving three logical data pieces denoted as ``X``, ``Y``,
+and ``Z``:
 
 ::
 
@@ -114,7 +117,7 @@ internally utilizes the CUDA library.
    # Linking flags
    nvcc -lcuda
 
-It is also possible to use CUDASTF without nvcc. This is for example
+It is also possible to use CUDASTF without ``nvcc``. This is for example
 useful when calling existing CUDA libraries such as CUBLAS which do not
 require authoring custom kernels. Note that CUDASTF APIs intended to
 automatically generate CUDA kernels such as ``parallel_for`` or
@@ -127,7 +130,7 @@ automatically generate CUDA kernels such as ``parallel_for`` or
    # Linking flags
    g++ -lcuda -lcudart
 
-Using CUDASTF within a cmake project
+Using CUDASTF within a CMake project
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 As part of the CCCL project, CUDASTF uses CMake for its build and installation
@@ -197,7 +200,7 @@ Compiling examples
 ^^^^^^^^^^^^^^^^^^
 
 The following commands compile STF examples from the root of the CCCL sources.
-Please note the `-j` option, which specifies how many processes should be used to
+Please note the ``-j`` option, which specifies how many processes should be used to
 compile the examples. Not specifying it will launch as many processes as there
 are processors on the machine, which might lead to an excessive resource
 consumption and system instability.
@@ -206,13 +209,13 @@ consumption and system instability.
 
     mkdir -p build
     cd build
-    cmake .. --preset cudax-cpp17
-    cd cudax-cpp17
-    ninja cudax.cpp17.examples.stf -j4
+    cmake .. --preset cudax
+    cd cudax
+    ninja cudax.examples.stf -j4
 
 To launch examples, simply run binaries under the `bin/`
 subdirectory in the current directory. For instance, to launch the `01-axpy`
-example :
+example:
 
 .. code:: bash
 
@@ -257,11 +260,11 @@ beneficial in terms of performance with a repeated task patterns. Unlike
 other context types, it is not allowed for a task to synchronize with
 the CUDA stream (e.g. with ``cudaStreamSynchronize``) within a task.
 
-Using either ``context``, ``stream_ctx`` or ``graph_ctx`` should result
+Using either ``context``, ``stream_ctx``, or ``graph_ctx`` should result
 in the same behaviour, even if the underlying implementation differs.
 One may switch from a type to another one by adapting how we initialize
 the context object, or by selecting an appropriate type to decide
-statically :
+statically:
 
 .. code:: cpp
 
@@ -274,12 +277,13 @@ statically :
    // statically select a context based on CUDA streams and CUDA events
    graph_ctx ctx;
 
-For the most part, all types can be used interchangeably. The difference
-lies in the mechanisms used internally to implement synchronization and
-to execute computation. There can be a minor runtime overhead and an
-increased compilation time when using the generic context type, but this
-generic type can be required when CUDASTF automatically select the
-context type (see Algorithms).
+For the most part, these types can be used interchangeably. The key
+difference is that ``stream_ctx`` and ``graph_ctx`` are statically bound to
+use either the CUDA stream or graph APIs, while ``context`` defers this
+decision to runtime, allowing dynamic selection of the appropriate backend.
+This flexibility does not introduce significant runtime overhead or
+compilation time differences, but it may be necessary when the user needs
+to select the context type dynamically (see Algorithms).
 
 Tasks in the Stream backend
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -304,7 +308,7 @@ supplies the CUDA graph, CUDASTF can automatically insert CUDA graph
 nodes to enable subsequent tasks to be submitted as child graphs of the
 user-supplied graph.
 
-Creating a ``graph_task`` results in creating a child graph in the
+Creating a ``graph_task`` object results in creating a child graph in the
 aforementioned graph associated to the ``graph_ctx`` object. The child
 graph implements the body of the task, and CUDASTF automatically inserts
 the appropriate dependencies to ensure this child graph is executed only
@@ -479,8 +483,8 @@ kernel. Example:
        }
    }
 
-Defining slices with multiple dimensions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Defining multidimensional slices
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Slices can be used on data with multiple dimensions, and possibly
 non-contiguous data.
@@ -726,7 +730,7 @@ Lower-level task API
    stf/lower_level_api
 
 A lower-level API that does not rely on lambda functions is also
-available, and is described `here <stf_lower_level_api>`.
+available, and is described `here <stf/lower_level_api.rst>`__.
 
 Synchronization
 ---------------
@@ -776,7 +780,7 @@ an asynchronous fence mechanism is available :
 
 .. code:: cpp
 
-    cudaStream_t stream = ctx.task_fence();
+    cudaStream_t stream = ctx.fence();
     cudaStreamSynchronize(stream);
 
 Another synchronization mechanism is the ``wait`` method of the
@@ -1843,7 +1847,7 @@ the ``->*`` notation is only compatible with *statically-typed* tasks,
 as the user-provided lambda function needs to be passed data instances
 of the proper types (for example ``slice<double>``) by CUDASTF. As a
 consequence, the ``stream_task<>`` needs to be manipulated with the
-`low-level API <#lower-level-api>`__.
+`low-level API <stf/lower_level_api.rst>`__.
 
 Combining typed and untyped tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1880,14 +1884,17 @@ all the benefits of statically available types):
 Modular use of CUDASTF
 ----------------------
 
-CUDASTF maintains data consistency throughout the system, and infers
-concurrency opportunities based on data accesses. Depending on the use cases,
-one may however already manage coherency or enforce dependencies.
+CUDASTF maintains data consistency throughout a context and infers
+concurrency opportunities based on data accesses. An existing application
+may however already manage coherency or enforce dependencies by other means.
+CUDASTF offers several facilities that facilitate incremental adoption
+in existing code.
 
-- The "logical data freezing" mechanism ensures data availability while letting
+- The ``logical data freezing`` mechanism ensures data availability while letting
   the application take care of synchronization.
-- Tokens make it possible to enforce concurrent execution while
+- ``Tokens`` make it possible to enforce concurrent execution while
   letting the application manage data allocations and data transfers.
+- ``Execution places`` can be used without tasks for example to automate the management of CUDA streams, or set the current execution context.
 
 Freezing logical data
 ^^^^^^^^^^^^^^^^^^^^^
@@ -1896,16 +1903,15 @@ When a piece of data is used very often, it can be beneficial to avoid enforcing
 data dependencies every time it is accessed. A common example would be data that
 is written once and then read many times.
 
-CUDASTF provides a mechanism called logical data freeze that allows a
+CUDASTF provides a mechanism called ``logical data freeze`` that allows a
 logical data to be accessed outside of tasks—or within tasks—without
-enforcing data dependencies for every access, which reduces overhead to a minimum.
-
+enforcing data dependencies for every access, which minimizes overhead.
 
 By default, calling the ``freeze`` method returns a frozen logical data object
 that can be accessed in read-only mode without additional synchronization. The
 ``get`` method of the frozen logical data returns a view of the underlying data
 on the specified data place. This view can be used asynchronously with respect
-to the stream passed to ``get`` until calling the non-blocking unfreeze
+to the stream passed to ``get`` until calling the non-blocking ``unfreeze``
 method on the frozen logical data. It is possible to call ``get`` multiple times.
 Modifying these frozen read-only views results in undefined behavior.
 If necessary, implicit data transfers or allocations are performed asynchronously
@@ -1921,7 +1927,7 @@ when calling ``get``.
     auto dX1 = frozen_ld.get(data_place::device(1), stream);
     auto hX = frozen_ld.get(data_place::host(), stream);
 
-    fx.unfreeze(stream);
+    frozen_ld.unfreeze(stream);
 
 While data are frozen, it is still possible to launch tasks which access
 them. CUDASTF will allow tasks with a read access modes to run
@@ -1934,7 +1940,7 @@ until data is made is made modifiable again, after ``unfreeze``.
     auto dX = frozen_ld.get(data_place::current_device(), stream);
     // kernel can modify dX
     kernel<<<..., stream>>>(dX);
-    fx.unfreeze(stream);
+    frozen_ld.unfreeze(stream);
 
 As shown above, it is also possible to create a modifiable frozen logical data,
 allowing an application to temporarily transfer ownership of the logical data
@@ -2010,6 +2016,319 @@ or an ``rw()`` access. There is no need to set any content in the token
 A token corresponds to a ``logical_data<void_interface>`` object, so that the
 ``token`` type serves as a short-hand for this type. ``ctx.token()`` thus
 returns an object with a ``token`` type.
+
+Stream management with execution places
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+CUDASTF's execution places can be used independently of the task system to
+manage CUDA streams in a structured way. This is useful when you want to use
+CUDASTF's place abstractions (devices, green contexts) for stream management
+without the full task-based programming model.
+
+The ``exec_place::pick_stream`` method returns a CUDA stream from the stream
+pool associated with a specific execution place. To use this facility, you need
+an ``async_resources_handle`` object, which manages the underlying stream pools.
+
+The method accepts an optional ``for_computation`` hint (defaults to ``true``)
+that may select between computation and data transfer stream pools to improve
+overlapping. This is purely a performance hint, and it does not affect correctness. Not all execution places enforce
+it.
+
+**Using execution places without a context:**
+
+When using execution places without a CUDASTF context, create a standalone
+``async_resources_handle``:
+
+.. code:: cpp
+
+    #include <cuda/experimental/stf.cuh>
+    using namespace cuda::experimental::stf;
+
+    // Create an async_resources_handle (manages stream pools)
+    async_resources_handle resources;
+
+    // Get a stream from the current device
+    exec_place place = exec_place::current_device();
+    cudaStream_t stream = place.pick_stream(resources);
+
+    // Use the stream for CUDA operations
+    myKernel<<<grid, block, 0, stream>>>(d_data);
+
+    // Get streams from specific devices
+    cudaStream_t stream_dev0 = exec_place::device(0).pick_stream(resources);
+    cudaStream_t stream_dev1 = exec_place::device(1).pick_stream(resources);
+
+Stream pools are populated lazily—CUDA streams are only created when first
+requested via ``pick_stream()``.
+
+**Using execution places alongside a context:**
+
+When working alongside a CUDASTF context, use ``ctx.async_resources()`` to
+ensure the same stream pools are shared between your code and the context's
+internal operations:
+
+.. code:: cpp
+
+    stream_ctx ctx;
+
+    // Get a stream using the context's async_resources
+    exec_place place = exec_place::device(0);
+    cudaStream_t stream = place.pick_stream(ctx.async_resources());
+
+    // This stream comes from the same pool used by the context internally.
+    // ctx.pick_stream() is a shorthand that uses the default execution place
+    // for the calling thread.
+    cudaStream_t ctx_stream = ctx.pick_stream();
+
+    ctx.finalize();
+
+**Getting multiple streams:**
+
+You can query the pool size and retrieve all streams as a vector:
+
+.. code:: cpp
+
+    async_resources_handle resources;
+    exec_place place = exec_place::current_device();
+
+    // Query the number of streams in the pool
+    size_t pool_size = place.stream_pool_size(resources);
+
+    // Get all streams from the pool as a vector
+    std::vector<cudaStream_t> streams = place.pick_all_streams(resources);
+
+    // Use the streams for concurrent operations
+    for (size_t i = 0; i < streams.size(); ++i) {
+        myKernel<<<grid, block, 0, streams[i]>>>(d_data[i]);
+    }
+
+Setting the current device or context
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``exec_place::activate()`` method provides a generic alternative to
+``cudaSetDevice()`` that works uniformly across different execution place types.
+This is useful when you want to set the current CUDA device or context without
+using CUDASTF tasks.
+
+The method returns an ``exec_place`` representing the previous state, which can
+be used to restore the original device or context.
+
+**Behavior by execution place type:**
+
+- **Device places** (``exec_place::device(id)``): Calls ``cudaSetDevice(id)``
+- **Green context places**: Sets the current CUDA driver context via ``cuCtxSetCurrent()``
+- **Host places**: No-op
+
+**Basic usage with devices:**
+
+.. code:: cpp
+
+    exec_place place = exec_place::device(1);
+    exec_place prev = place.activate();  // Switch to device 1
+
+    // ... perform operations on device 1 ...
+
+    place.deactivate(prev);  // Restore previous device
+
+**Alternative restoration pattern:**
+
+You can also restore by calling ``activate()`` on the returned place:
+
+.. code:: cpp
+
+    exec_place place = exec_place::device(1);
+    exec_place prev = place.activate();
+
+    // ... work on device 1 ...
+
+    prev.activate();  // Equivalent to place.deactivate(prev)
+
+**Usage with green contexts (CUDA 12.4+):**
+
+Green contexts provide SM-level partitioning of GPU resources. The
+``activate()``/``deactivate()`` methods handle the underlying driver context
+management:
+
+.. code:: cpp
+
+    // Create green contexts with 8 SMs each
+    green_context_helper gc(8, device_id);
+    auto view = gc.get_view(0);
+
+    exec_place gc_place = exec_place::green_ctx(view);
+    exec_place prev = gc_place.activate();  // Sets green context as current
+
+    // ... GPU work runs with SM affinity ...
+
+    gc_place.deactivate(prev);  // Restore original context
+
+**RAII guard for scoped activation:**
+
+For exception-safe code or when you want automatic restoration, use the
+``exec_place_guard`` RAII helper:
+
+.. code:: cpp
+
+    {
+        exec_place_guard guard(exec_place::device(1));
+        // Device 1 is now active
+        // ... perform operations on device 1 ...
+    }
+    // Previous device is automatically restored when guard goes out of scope
+
+The guard automatically restores the previous execution place when it goes out
+of scope, making it useful for exception-safe code.
+
+Memory allocation with data places
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Data places provide a unified interface for memory allocation that works across
+different memory types (host, device, managed) and place extensions (green
+contexts, user-defined places). This allows you to allocate memory without using
+CUDASTF tasks, while benefiting from the place abstraction.
+
+The ``data_place::allocate()`` and ``data_place::deallocate()`` methods provide
+raw memory allocation. The stream parameter defaults to ``nullptr``, which is
+convenient for non-stream-ordered allocations (host, managed) where the stream
+is ignored:
+
+.. code:: cpp
+
+    #include <cuda/experimental/stf.cuh>
+    using namespace cuda::experimental::stf;
+
+    // Allocate on host (pinned memory) - stream defaults to nullptr
+    void* host_ptr = data_place::host().allocate(1024);
+    // ... use host_ptr ...
+    data_place::host().deallocate(host_ptr, 1024);
+
+    // Allocate on a specific device (stream-ordered)
+    cudaStream_t stream;
+    cudaStreamCreate(&stream);
+    void* dev_ptr = data_place::device(0).allocate(1024, stream);
+    // ... use dev_ptr with stream ...
+    data_place::device(0).deallocate(dev_ptr, 1024, stream);
+    cudaStreamDestroy(stream);
+
+    // Allocate managed memory - stream defaults to nullptr
+    void* managed_ptr = data_place::managed().allocate(1024);
+    // ... use managed_ptr from host or device ...
+    data_place::managed().deallocate(managed_ptr, 1024);
+
+**Stream-ordered vs immediate allocations:**
+
+Different data places have different allocation behaviors:
+
+- **Host** (``data_place::host()``): Uses ``cudaMallocHost()`` / ``cudaFreeHost()`` - immediate, stream parameter is ignored
+- **Managed** (``data_place::managed()``): Uses ``cudaMallocManaged()`` / ``cudaFree()`` - immediate, stream parameter is ignored (note: ``cudaFree`` may introduce implicit synchronization)
+- **Device** (``data_place::device(id)``): Uses ``cudaMallocAsync()`` / ``cudaFreeAsync()`` - stream-ordered
+- **Extensions** (green contexts, etc.): Behavior depends on the extension implementation
+
+You can query whether a place uses stream-ordered allocation with
+``allocation_is_stream_ordered()``:
+
+.. code:: cpp
+
+    data_place place = data_place::device(0);
+    if (place.allocation_is_stream_ordered()) {
+        // Allocation is stream-ordered - synchronize via the stream
+        void* ptr = place.allocate(size, stream);
+        myKernel<<<grid, block, 0, stream>>>(ptr);
+        place.deallocate(ptr, size, stream);
+        cudaStreamSynchronize(stream);
+    } else {
+        // Allocation is immediate - stream is ignored, safe to use right away
+        void* ptr = place.allocate(size);
+        // ... use ptr ...
+        place.deallocate(ptr, size);
+    }
+
+This abstraction is particularly useful when writing generic code that needs to
+work with different types of places, including custom place extensions.
+
+VMM-based allocation with mem_create
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For advanced use cases involving CUDA's Virtual Memory Management (VMM) API,
+``data_place`` also provides the ``mem_create()`` method. This is a lower-level
+interface used internally by localized arrays (``composite_slice``) to create
+physical memory segments that are then mapped into a contiguous virtual address
+space.
+
+Unlike ``allocate()``, which returns a usable pointer directly, ``mem_create()``
+returns a ``CUmemGenericAllocationHandle`` that must be subsequently mapped with
+``cuMemMap()`` before use:
+
+.. code:: cpp
+
+    #include <cuda/experimental/stf.cuh>
+    using namespace cuda::experimental::stf;
+
+    // Create a physical memory handle for device 0
+    CUmemGenericAllocationHandle handle;
+    data_place::device(0).mem_create(&handle, size);
+
+    // The handle must be mapped to a virtual address before use
+    // (see CUDA VMM documentation for cuMemMap, cuMemSetAccess, etc.)
+
+**When to use each method:**
+
+- Use ``allocate()`` for most cases - it provides ready-to-use memory with
+  stream-ordered semantics where applicable.
+
+- Use ``mem_create()`` only when you need explicit control over virtual memory
+  mapping, such as creating localized arrays that span multiple devices with a
+  unified virtual address space.
+
+**Limitations of mem_create:**
+
+- Only supports device memory and host memory (pinned)
+- Managed memory is **not supported** by the VMM API
+- The returned handle requires additional VMM API calls to be usable
+
+Custom place extensions can override ``mem_create()`` to provide specialized
+VMM allocation behavior (e.g., memory localization for hardware partitions).
+
+Debugging
+---------
+
+Enabling internal checks
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+CUDASTF includes internal assertions (``_CCCL_ASSERT``) that help detect
+programming errors and invalid usage patterns during development. These checks
+are disabled by default for performance but can be enabled to aid debugging.
+
+**With CMake:**
+
+When building in Debug mode, assertions are enabled automatically:
+
+.. code:: bash
+
+   cmake -DCMAKE_BUILD_TYPE=Debug ..
+
+To explicitly enable assertions for any build type, add the compile definition
+to your target:
+
+.. code:: cmake
+
+   target_compile_definitions(your_target PRIVATE CCCL_ENABLE_ASSERTIONS)
+
+**With Makefile or manual compilation:**
+
+Add the ``-DCCCL_ENABLE_ASSERTIONS`` flag to your compiler invocation:
+
+.. code:: bash
+
+   # For nvcc
+   nvcc -DCCCL_ENABLE_ASSERTIONS ...
+
+   # For host compiler
+   g++ -DCCCL_ENABLE_ASSERTIONS ...
+
+Note that this flag enables the assertion checks themselves. For full debugging
+support (setting breakpoints, inspecting variables), you may also want to add
+debug symbol flags (``-g`` for host code, ``-G`` for device code).
 
 Tools
 -----

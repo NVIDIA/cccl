@@ -11,14 +11,14 @@
 
 // not2
 
-// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 
 int main(int, char**)
 {
-  typedef cuda::std::logical_and<int> F;
+  using F = cuda::std::logical_and<int>;
   assert(!cuda::std::not2(F())(36, 36));
   assert(cuda::std::not2(F())(36, 0));
   assert(cuda::std::not2(F())(0, 36));

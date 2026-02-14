@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_AGGREGATE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_AGGREGATE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_AGGREGATE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_AGGREGATE_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,21 +24,19 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#define _CCCL_BUILTIN_IS_AGGREGATE(...) __is_aggregate(__VA_ARGS__)
 
-#if defined(_CCCL_BUILTIN_IS_AGGREGATE)
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_aggregate : public bool_constant<_CCCL_BUILTIN_IS_AGGREGATE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_aggregate : bool_constant<_CCCL_BUILTIN_IS_AGGREGATE(_Tp)>
 {};
 
 template <class _Tp>
 inline constexpr bool is_aggregate_v = _CCCL_BUILTIN_IS_AGGREGATE(_Tp);
 
-#endif // defined(_CCCL_BUILTIN_IS_AGGREGATE)
-
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_AGGREGATE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_AGGREGATE_H

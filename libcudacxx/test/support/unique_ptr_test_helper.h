@@ -70,7 +70,7 @@ typename cuda::std::enable_if<cuda::std::is_array<T>::value, typename cuda::std:
   __host__ __device__
   newValue(int num_elements)
 {
-  typedef typename cuda::std::remove_all_extents<T>::type VT;
+  using VT = typename cuda::std::remove_all_extents<T>::type;
   assert(num_elements >= 1);
   return new VT[num_elements];
 }

@@ -12,7 +12,7 @@
 //   constexpr OutIter   // constexpr after C++17
 //   copy_n(InIter first, InIter::difference_type n, OutIter result);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "test_iterators.h"

@@ -1,45 +1,17 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_partition.cuh>
 
 #include <thrust/count.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/reverse_iterator.h>
-#include <thrust/iterator/tabulate_output_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
 #include <cuda/cmath>
+#include <cuda/iterator>
+#include <cuda/std/iterator>
 
 #include <algorithm>
 
@@ -89,7 +61,11 @@ using all_types =
                  ulonglong2,
 // WAR bug in vec type handling in NVCC 12.0 + GCC 11.4 + C++20
 #if !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC, ==, 11, 4) && _CCCL_STD_VER == 2020)
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                 ulonglong4_16a,
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
                  ulonglong4,
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 #endif // !(NVCC 12.0 and GCC 11.4 and C++20)
                  int,
                  long2,
@@ -100,7 +76,11 @@ using types =
                  std::uint32_t,
 // WAR bug in vec type handling in NVCC 12.0 + GCC 11.4 + C++20
 #if !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC, ==, 11, 4) && _CCCL_STD_VER == 2020)
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+                 ulonglong4_16a,
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
                  ulonglong4,
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 #endif // !(NVCC 12.0 and GCC 11.4 and C++20)
                  c2h::custom_type_t<c2h::equal_comparable_t>>;
 
@@ -361,17 +341,17 @@ struct convertible_from_T
       : val_(val)
   {}
 
-  _CCCL_HOST_DEVICE friend bool operator==(const convertible_from_T& a, const T& b)
+  __host__ __device__ friend bool operator==(const convertible_from_T& a, const T& b)
   {
     return a.val_ == b;
   }
 
-  _CCCL_HOST_DEVICE friend bool operator==(const T& a, const convertible_from_T& b)
+  __host__ __device__ friend bool operator==(const T& a, const convertible_from_T& b)
   {
     return a == b.val_;
   }
 
-  _CCCL_HOST_DEVICE friend auto operator<<(std::ostream& os, const convertible_from_T& value) -> std::ostream&
+  __host__ __device__ friend auto operator<<(std::ostream& os, const convertible_from_T& value) -> std::ostream&
   {
     return os << value.val_;
   }
@@ -410,13 +390,9 @@ try
   using type     = std::int64_t;
   using offset_t = typename c2h::get<0, TestType>;
 
-  auto num_items_max_ull =
-    std::min(static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
-             ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
-  offset_t num_items_max = static_cast<offset_t>(num_items_max_ull);
-  offset_t num_items_min =
-    num_items_max_ull > 10000 ? static_cast<offset_t>(num_items_max_ull - 10000ULL) : offset_t{0};
-  offset_t num_items = GENERATE_COPY(
+  const offset_t num_items_max = detail::make_large_offset<offset_t>();
+  const offset_t num_items_min = num_items_max > 10000 ? num_items_max - 10000ULL : offset_t{0};
+  const offset_t num_items     = GENERATE_COPY(
     values(
       {num_items_max, static_cast<offset_t>(num_items_max - 1), static_cast<offset_t>(1), static_cast<offset_t>(3)}),
     take(2, random(num_items_min, num_items_max)));
@@ -424,18 +400,16 @@ try
   // We select the first <cut_off_index> items and reject the rest
   const offset_t cut_off_index = num_items / 4;
 
-  auto in       = thrust::make_counting_iterator(offset_t{0});
-  auto in_flags = thrust::make_transform_iterator(
-    thrust::make_counting_iterator(offset_t{0}), less_than_t<type>{static_cast<type>(cut_off_index)});
+  auto in = cuda::counting_iterator(offset_t{0});
+  auto in_flags =
+    cuda::transform_iterator(cuda::counting_iterator(offset_t{0}), less_than_t<type>{static_cast<type>(cut_off_index)});
 
   // Prepare expected data
-  auto expected_selected_it = thrust::make_counting_iterator(offset_t{0});
-  auto expected_rejected_it = thrust::make_reverse_iterator(
-    thrust::make_counting_iterator(offset_t{cut_off_index}) + (num_items - cut_off_index));
+  auto expected_selected_it = cuda::counting_iterator(offset_t{0});
+  auto expected_rejected_it = cuda::std::make_reverse_iterator(cuda::counting_iterator<offset_t>(num_items));
   auto expected_result_op =
     make_index_to_expected_partition_op(expected_selected_it, expected_rejected_it, cut_off_index);
-  auto expected_result_it =
-    thrust::make_transform_iterator(thrust::make_counting_iterator(offset_t{0}), expected_result_op);
+  auto expected_result_it = cuda::transform_iterator(cuda::counting_iterator(offset_t{0}), expected_result_op);
 
   // Prepare helper to check results
   auto check_result_helper = detail::large_problem_test_helper(num_items);

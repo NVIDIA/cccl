@@ -11,7 +11,7 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 static_assert(cuda::std::is_default_constructible<cuda::stream_ref>::value, "");
 static_assert(!cuda::std::is_constructible<cuda::stream_ref, int>::value, "");
@@ -26,12 +26,6 @@ static_assert(has_value_type<cuda::stream_ref>, "");
 
 __host__ __device__ void test()
 {
-  { // default construction
-    cuda::stream_ref ref;
-    static_assert(noexcept(cuda::stream_ref{}), "");
-    assert(ref.get() == reinterpret_cast<cudaStream_t>(0));
-  }
-
   { // from stream
     cudaStream_t stream = reinterpret_cast<cudaStream_t>(42);
     cuda::stream_ref ref{stream};

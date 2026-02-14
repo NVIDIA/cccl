@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2020 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2020, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/system/omp/memory.h
  *  \brief Managing memory associated with Thrust's OpenMP system.
@@ -29,18 +16,16 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/pointer.h>
 #include <thrust/detail/reference.h>
 #include <thrust/system/omp/detail/execution_policy.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/__type_traits/add_lvalue_reference.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::omp
 {
-namespace omp
-{
-
 /*! \p omp::pointer stores a pointer to an object allocated in memory accessible
  *  by the \p omp system. This type provides type safety when dispatching
  *  algorithms on ranges resident in \p omp memory.
@@ -91,6 +76,9 @@ using pointer = thrust::pointer<T, thrust::system::omp::tag, thrust::tagged_refe
 template <typename T>
 using universal_pointer = thrust::pointer<T, thrust::system::omp::tag, ::cuda::std::add_lvalue_reference_t<T>>;
 
+template <typename T>
+using universal_host_pinned_pointer = universal_pointer<T>;
+
 /*! \p reference is a wrapped reference to an object stored in memory available
  *  to the \p omp system. \p reference is the type of the result of
  *  dereferencing a \p omp::pointer.
@@ -99,9 +87,7 @@ using universal_pointer = thrust::pointer<T, thrust::system::omp::tag, ::cuda::s
  */
 template <typename T>
 using reference = thrust::tagged_reference<T, thrust::system::omp::tag>;
-
-} // namespace omp
-} // namespace system
+} // namespace system::omp
 
 /*! \addtogroup system_backends Systems
  *  \ingroup system
@@ -114,6 +100,7 @@ namespace omp
 {
 using thrust::system::omp::pointer;
 using thrust::system::omp::reference;
+using thrust::system::omp::universal_host_pinned_pointer;
 using thrust::system::omp::universal_pointer;
 } // namespace omp
 

@@ -27,9 +27,9 @@ static_assert(equality_comparable<char const*>, "");
 static_assert(equality_comparable<char volatile*>, "");
 static_assert(equality_comparable<char const volatile*>, "");
 static_assert(equality_comparable<wchar_t&>, "");
-#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
 static_assert(equality_comparable<char8_t const&>, "");
-#endif // TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#endif // _CCCL_HAS_CHAR8_T()
 static_assert(equality_comparable<char16_t volatile&>, "");
 static_assert(equality_comparable<char32_t const volatile&>, "");
 static_assert(equality_comparable<unsigned char&&>, "");
@@ -49,27 +49,27 @@ static_assert(equality_comparable<int S::*>, "");
 static_assert(equality_comparable<int (S::*)()>, "");
 static_assert(equality_comparable<int (S::*)() noexcept>, "");
 static_assert(equality_comparable<int (S::*)() &>, "");
-static_assert(equality_comparable < int(S::*)() & noexcept >, "");
+static_assert(equality_comparable<int (S::*)() & noexcept>, "");
 static_assert(equality_comparable<int (S::*)() &&>, "");
-static_assert(equality_comparable < int(S::*)() && noexcept >, "");
+static_assert(equality_comparable < int (S::*)() && noexcept >, "");
 static_assert(equality_comparable<int (S::*)() const>, "");
 static_assert(equality_comparable<int (S::*)() const noexcept>, "");
 static_assert(equality_comparable<int (S::*)() const&>, "");
-static_assert(equality_comparable < int(S::*)() const& noexcept >, "");
+static_assert(equality_comparable<int (S::*)() const & noexcept>, "");
 static_assert(equality_comparable<int (S::*)() const&&>, "");
-static_assert(equality_comparable < int(S::*)() const&& noexcept >, "");
+static_assert(equality_comparable < int (S::*)() const&& noexcept >, "");
 static_assert(equality_comparable<int (S::*)() volatile>, "");
 static_assert(equality_comparable<int (S::*)() volatile noexcept>, "");
 static_assert(equality_comparable<int (S::*)() volatile&>, "");
-static_assert(equality_comparable < int(S::*)() volatile & noexcept >, "");
+static_assert(equality_comparable<int (S::*)() volatile & noexcept>, "");
 static_assert(equality_comparable<int (S::*)() volatile&&>, "");
-static_assert(equality_comparable < int(S::*)() volatile && noexcept >, "");
+static_assert(equality_comparable < int (S::*)() volatile && noexcept >, "");
 static_assert(equality_comparable<int (S::*)() const volatile>, "");
 static_assert(equality_comparable<int (S::*)() const volatile noexcept>, "");
 static_assert(equality_comparable<int (S::*)() const volatile&>, "");
-static_assert(equality_comparable < int(S::*)() const volatile& noexcept >, "");
+static_assert(equality_comparable<int (S::*)() const volatile & noexcept>, "");
 static_assert(equality_comparable<int (S::*)() const volatile&&>, "");
-static_assert(equality_comparable < int(S::*)() const volatile&& noexcept >, "");
+static_assert(equality_comparable < int (S::*)() const volatile&& noexcept >, "");
 
 static_assert(!equality_comparable<void>, "");
 } // namespace fundamentals

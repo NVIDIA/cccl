@@ -12,6 +12,7 @@ import platform
 import re
 import shlex
 import shutil
+import subprocess
 import sys
 
 import libcudacxx.util
@@ -189,10 +190,74 @@ class Configuration(object):
         self.lit_config.note(
             "Deduced compute capabilities are: %s" % deduced_compute_archs
         )
-        deduced_comput_archs_str = ", ".join(
+        deduced_comput_archs_str = ",".join(
             [str(element) for element in deduced_compute_archs]
         )
         return deduced_comput_archs_str
+
+    def _get_nvcc_archs(self):
+        if self.cxx.type != "nvcc":
+            self.lit_config.fatal(
+                "Retrieving compute capabilities is only supported for nvcc compiler type"
+            )
+            return []
+
+        cmd = (
+            f"{self.cxx.path} --help | grep -oE 'compute_[0-9]+' | "
+            "sed -E 's/compute_//g' | sort -ug"
+        )
+        result = subprocess.run(
+            cmd,
+            shell=True,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+        )
+        archs = result.stdout.strip().splitlines()
+
+        if not archs:
+            self.lit_config.fatal(
+                "Failed to retrieve compute capabilities or no capabilities found."
+            )
+            return []
+
+        return sorted(set(int(arch) for arch in archs))
+
+    def get_all_major_compute_capabilities(self):
+        archs = self._get_nvcc_archs()
+        if not archs:
+            return ""
+
+        # Build the same list used by --arch=all-major:
+
+        # Handle special case where the first architecture is not a round decade (e.g., first arch is 75, not 70).
+        oldest = archs[0]
+        archs = sorted(set((arch // 10 * 10) for arch in archs))
+        archs[0] = oldest
+        last_arch = archs[-1]
+        archs = [f"{arch}-real" for arch in archs]
+        archs.append(f"{last_arch}-virtual")
+
+        archs = ";".join(archs)
+
+        self.lit_config.note("Deduced major compute capabilities are: %s" % archs)
+
+        return archs
+
+    def get_all_compute_capabilities(self):
+        archs = self._get_nvcc_archs()
+        if not archs:
+            return ""
+        last_arch = archs[-1]
+        archs = [f"{arch}-real" for arch in archs]
+        archs.append(f"{last_arch}-virtual")
+
+        archs = ";".join(archs)
+
+        self.lit_config.note("Deduced compute capabilities are: %s" % archs)
+
+        return archs
 
     def get_modules_enabled(self):
         return self.get_lit_bool(
@@ -285,7 +350,7 @@ class Configuration(object):
                 # that the user wants it at the end, but we have no
                 # way of getting at that easily.
                 self.lit_config.fatal(
-                    "Cannot infer how to create a Valgrind " " executor."
+                    "Cannot infer how to create a Valgrind  executor."
                 )
         else:
             te = LocalExecutor()
@@ -351,7 +416,7 @@ class Configuration(object):
                     self.lit_config.note("inferred cxx_under_test as: %r" % cxx)
                 elif self.cxx_is_clang_cl:
                     self.lit_config.fatal(
-                        "Failed to find clang++ substitution for" " clang-cl"
+                        "Failed to find clang++ substitution for clang-cl"
                     )
             if not cxx:
                 self.lit_config.fatal(
@@ -752,8 +817,13 @@ class Configuration(object):
             self.lit_config.note("Compute Archs: %s" % compute_archs)
             if compute_archs == "native":
                 compute_archs = self.get_compute_capabilities()
+            elif compute_archs == "all":
+                compute_archs = self.get_all_compute_capabilities()
+            elif compute_archs == "all-major":
+                compute_archs = self.get_all_major_compute_capabilities()
 
-            compute_archs = set(sorted(re.split("\\s|;|,", compute_archs)))
+            compute_archs = sorted(set(re.split("\\s|;|,", compute_archs)))
+            arch_flags = []
             for s in compute_archs:
                 # Split arch and mode i.e. 80-virtual -> 80, virtual
                 arch, *mode = re.split("-", s)
@@ -776,10 +846,11 @@ class Configuration(object):
                     pre_sm_90 = True
                 if arch < 90 or (arch == 90 and subarchitecture < "a"):
                     pre_sm_90a = True
-                arch_flag = real_arch_format.format(str(arch) + subarchitecture)
+                arch = str(arch) + subarchitecture
+                arch_flags += [real_arch_format.format(arch)]
                 if mode.count("virtual"):
-                    arch_flag = virt_arch_format.format(str(arch) + subarchitecture)
-                self.cxx.compile_flags += [arch_flag]
+                    arch_flags += [virt_arch_format.format(arch)]
+            self.cxx.compile_flags += sorted(arch_flags)
         if pre_sm_32:
             self.config.available_features.add("pre-sm-32")
         if pre_sm_60:
@@ -914,8 +985,7 @@ class Configuration(object):
                 ["--target=" + self.config.target_triple]
             ):
                 self.lit_config.warning(
-                    "use_target is true but --target is "
-                    "not supported by the compiler"
+                    "use_target is true but --target is not supported by the compiler"
                 )
         if self.use_deployment:
             arch, name, version = self.config.deployment
@@ -979,9 +1049,13 @@ class Configuration(object):
         #    self.cxx.compile_flags += ['-nostdinc++']
         if cxx_headers is None:
             cxx_headers = os.path.join(self.libcudacxx_src_root, "include")
+            thrust_headers = os.path.join(self.libcudacxx_src_root, "../thrust/")
+            cub_headers = os.path.join(self.libcudacxx_src_root, "../cub/")
         if not os.path.isdir(cxx_headers):
             self.lit_config.fatal("cxx_headers='%s' is not a directory." % cxx_headers)
         self.cxx.compile_flags += ["-I" + cxx_headers]
+        self.cxx.compile_flags += ["-I" + thrust_headers]
+        self.cxx.compile_flags += ["-I" + cub_headers]
         if self.libcudacxx_obj_root is not None:
             cxxabi_headers = os.path.join(
                 self.libcudacxx_obj_root, "include", "c++build"
@@ -1302,7 +1376,6 @@ class Configuration(object):
             return
         if debug_level not in ["0", "1"]:
             self.lit_config.fatal('Invalid value for debug_level "%s".' % debug_level)
-        self.cxx.compile_flags += ["-D_LIBCUDACXX_DEBUG=%s" % debug_level]
 
     def configure_warnings(self):
         default_enable_warnings = (
@@ -1394,7 +1467,7 @@ class Configuration(object):
             if "nvcc" not in self.config.available_features:
                 # The '#define static_assert' provided by libc++ in C++03 mode
                 # causes an unused local typedef whenever it is used.
-                self.cxx.addWarningFlagIfSupported("-Wno-unused-local-typedef")
+                self.cxx.addWarningFlagIfSupported("-Wno-unused-local-typedefs")
 
     def configure_sanitizer(self):
         san = self.get_lit_conf("use_sanitizer", "").strip()
@@ -1457,7 +1530,7 @@ class Configuration(object):
                 self.config.available_features.add("sanitizer-new-delete")
             else:
                 self.lit_config.fatal(
-                    "unsupported value for " "use_sanitizer: {0}".format(san)
+                    "unsupported value for use_sanitizer: {0}".format(san)
                 )
             san_lib = self.get_lit_conf("sanitizer_library")
             if san_lib:
@@ -1480,8 +1553,7 @@ class Configuration(object):
             macros = self._dump_macros_verbose(flags=["-fcoroutines-ts"])
             if "__cpp_coroutines" not in macros:
                 self.lit_config.warning(
-                    "-fcoroutines-ts is supported but "
-                    "__cpp_coroutines is not defined"
+                    "-fcoroutines-ts is supported but __cpp_coroutines is not defined"
                 )
             # Consider coroutines supported only when the feature test macro
             # reflects a recent value.

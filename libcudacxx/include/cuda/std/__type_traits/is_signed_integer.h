@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_SIGNED_INTEGER_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_SIGNED_INTEGER_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_SIGNED_INTEGER_H
+#define _CUDA_STD___TYPE_TRAITS_IS_SIGNED_INTEGER_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,7 +24,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
 inline constexpr bool __cccl_is_signed_integer_v = false;
@@ -52,8 +52,8 @@ inline constexpr bool __cccl_is_signed_integer_v<__int128_t> = true;
 template <class _Tp>
 inline constexpr bool __cccl_is_cv_signed_integer_v = __cccl_is_signed_integer_v<remove_cv_t<_Tp>>;
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_SIGNED_INTEGER_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_SIGNED_INTEGER_H

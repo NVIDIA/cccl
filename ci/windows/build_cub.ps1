@@ -2,12 +2,14 @@ Param(
     [Parameter(Mandatory = $false)]
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
-    [ValidateSet(11, 14, 17, 20)]
+    [ValidateSet(17, 20)]
     [int]$CXX_STANDARD = 17,
     [Parameter(Mandatory = $false)]
-    [ValidateNotNullOrEmpty()]
     [Alias("arch")]
-    [int]$CUDA_ARCH = 0
+    [string]$CUDA_ARCH = "",
+    [Parameter(Mandatory = $false)]
+    [Alias("cmake-options")]
+    [string]$CMAKE_OPTIONS = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -18,16 +20,21 @@ If($CURRENT_PATH -ne "ci") {
     pushd "$PSScriptRoot/.."
 }
 
-Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList $CXX_STANDARD, $CUDA_ARCH
+Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS)
 
-$PRESET = "cub-cpp$CXX_STANDARD"
-$CMAKE_OPTIONS = ""
+$PRESET = "cub"
+$LOCAL_CMAKE_OPTIONS = "-DCMAKE_CXX_STANDARD=$CXX_STANDARD -DCMAKE_CUDA_STANDARD=$CXX_STANDARD"
 
 if ($CL_VERSION -lt [version]"19.20") {
-    $CMAKE_OPTIONS += "-DCCCL_IGNORE_DEPRECATED_COMPILER=ON "
+    $LOCAL_CMAKE_OPTIONS = "$LOCAL_CMAKE_OPTIONS -DCCCL_IGNORE_DEPRECATED_COMPILER=ON"
 }
 
-configure_and_build_preset "CUB" "$PRESET" "$CMAKE_OPTIONS"
+configure_and_build_preset "CUB" $PRESET $LOCAL_CMAKE_OPTIONS
+
+if ($env:GITHUB_ACTIONS) {
+    Write-Host "Packaging test artifacts..."
+    & bash "./upload_cub_test_artifacts.sh"
+}
 
 If($CURRENT_PATH -ne "ci") {
     popd

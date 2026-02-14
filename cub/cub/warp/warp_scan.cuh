@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 //! @file
 //! @rst
@@ -49,8 +25,9 @@
 #include <cub/warp/specializations/warp_scan_shfl.cuh>
 #include <cub/warp/specializations/warp_scan_smem.cuh>
 
-#include <cuda/ptx>
-#include <cuda/std/type_traits>
+#include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/conditional.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -113,6 +90,7 @@ CUB_NAMESPACE_BEGIN
 //!        // Compute warp-wide prefix sums
 //!        int warp_id = threadIdx.x / 32;
 //!        WarpScan(temp_storage[warp_id]).ExclusiveSum(thread_data, thread_data);
+//!    }
 //!
 //! Suppose the set of input ``thread_data`` across the block of threads is
 //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps of
@@ -142,6 +120,8 @@ CUB_NAMESPACE_BEGIN
 //!
 //!            // Compute warp-wide prefix sums
 //!            WarpScan(temp_storage).ExclusiveSum(thread_data, thread_data);
+//!        }
+//!    }
 //!
 //! Suppose the set of input ``thread_data`` across the warp of threads is
 //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` will be
@@ -164,17 +144,14 @@ private:
    * Constants and type definitions
    ******************************************************************************/
 
-  enum
-  {
-    /// Whether the logical warp size and the PTX warp size coincide
-    IS_ARCH_WARP = (LOGICAL_WARP_THREADS == detail::warp_threads),
+  /// Whether the logical warp size and the PTX warp size coincide
+  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == detail::warp_threads);
 
-    /// Whether the logical warp size is a power-of-two
-    IS_POW_OF_TWO = ((LOGICAL_WARP_THREADS & (LOGICAL_WARP_THREADS - 1)) == 0),
+  /// Whether the logical warp size is a power-of-two
+  static constexpr bool IS_POW_OF_TWO = ((LOGICAL_WARP_THREADS & (LOGICAL_WARP_THREADS - 1)) == 0);
 
-    /// Whether the data type is an integer (which has fully-associative addition)
-    IS_INTEGER = cuda::std::is_integral_v<T>
-  };
+  /// Whether the data type is an integer (which has fully-associative addition)
+  static constexpr bool IS_INTEGER = cuda::std::is_integral_v<T>;
 
   /// Internal specialization.
   /// Use SHFL-based scan if LOGICAL_WARP_THREADS is a power-of-two
@@ -214,12 +191,15 @@ public:
       , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS)
   {}
 
-  //! @}  end member group
+  //! @}
   //! @name Inclusive prefix sums
   //! @{
 
   //! @rst
   //! Computes an inclusive prefix sum across the calling warp.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -247,6 +227,7 @@ public:
   //!        // Compute inclusive warp-wide prefix sums
   //!        int warp_id = threadIdx.x / 32;
   //!        WarpScan(temp_storage[warp_id]).InclusiveSum(thread_data, thread_data);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps
@@ -266,6 +247,9 @@ public:
   //! @rst
   //! Computes an inclusive prefix sum across the calling warp.
   //! Also provides every thread with the warp-wide ``warp_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -293,9 +277,8 @@ public:
   //!        // Compute inclusive warp-wide prefix sums
   //!        int warp_aggregate;
   //!        int warp_id = threadIdx.x / 32;
-  //!        WarpScan(temp_storage[warp_id]).InclusiveSum(thread_data,
-  //!                                                     thread_data,
-  //!                                                     warp_aggregate);
+  //!        WarpScan(temp_storage[warp_id]).InclusiveSum(thread_data, thread_data, warp_aggregate);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps
@@ -316,13 +299,16 @@ public:
     InclusiveScan(input, inclusive_output, ::cuda::std::plus<>{}, warp_aggregate);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Exclusive prefix sums
   //! @{
 
   //! @rst
   //! Computes an exclusive prefix sum across the calling warp. The value of 0 is applied as the
   //! initial value, and is assigned to ``exclusive_output`` in *lane*\ :sub:`0`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @identityzero
   //! * @smemwarpreuse
@@ -351,6 +337,7 @@ public:
   //!        // Compute exclusive warp-wide prefix sums
   //!        int warp_id = threadIdx.x / 32;
   //!        WarpScan(temp_storage[warp_id]).ExclusiveSum(thread_data, thread_data);
+  //!    }
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps
@@ -372,6 +359,9 @@ public:
   //! Computes an exclusive prefix sum across the calling warp. The value of 0 is applied as the
   //! initial value, and is assigned to ``exclusive_output`` in *lane*\ :sub:`0`.
   //! Also provides every thread with the warp-wide ``warp_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @identityzero
   //! * @smemwarpreuse
@@ -425,13 +415,16 @@ public:
     ExclusiveScan(input, exclusive_output, initial_value, ::cuda::std::plus<>{}, warp_aggregate);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Inclusive prefix scans
   //! @{
 
   //! @rst
   //! Computes an inclusive prefix scan using the specified binary scan functor across the
   //! calling warp.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -488,6 +481,9 @@ public:
   //! Computes an inclusive prefix scan using the specified binary scan functor across the
   //! calling warp.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @smemwarpreuse
   //!
   //! Snippet
@@ -540,6 +536,9 @@ public:
   //! Computes an inclusive prefix scan using the specified binary scan functor across the
   //! calling warp. Also provides every thread with the warp-wide ``warp_aggregate`` of
   //! all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -603,6 +602,9 @@ public:
   //! calling warp. Also provides every thread with the warp-wide ``warp_aggregate`` of
   //! all inputs.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @smemwarpreuse
   //!
   //! Snippet
@@ -665,7 +667,271 @@ public:
       detail::bool_constant_v<IS_INTEGER>);
   }
 
-  //! @}  end member group
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document partial inclusive scans
+  //! @rst
+  //! Computes an inclusive prefix scan using the specified binary scan functor across the
+  //! calling warp. But only the first ``valid_items`` elements (corresponding to warp lanes) are
+  //! used in the calculation. The leftover invalid elements are never passed to the binary scan functor.
+
+  //!
+  //! * @smemwarpreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates four concurrent warp-wide inclusive prefix max scans
+  //! within a block of 128 threads (one per each of the 32-thread warps).
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize WarpScan for type int
+  //!        using WarpScan = cub::WarpScan<int>;
+  //!
+  //!        // Allocate WarpScan shared memory for 4 warps
+  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!
+  //!        // Obtain one input item per thread
+  //!        int thread_data = ...
+  //!        int warp_id = threadIdx.x / 32;
+  //!        int block_valid_items = 35;
+  //!        int warp_valid_items = block_valid_items - warp_id * 32;
+  //!
+  //!        // Compute inclusive warp-wide prefix max scans
+  //!        WarpScan(temp_storage[warp_id]).InclusiveScanPartial(
+  //!            thread_data, thread_data, cuda::maximum<>{}, warp_valid_items);
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
+  //! warp would be ``0, 0, 2, 2, ..., 30, 30``, the output for the second warp would be
+  //! ``32, 32, 34, -35, ..., 62, -63`` and the output in the third and fourth warps would remain unmodified.
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan operator type having member
+  //!   `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input item
+  //!
+  //! @param[out] inclusive_output
+  //!   Calling thread's output item. May be aliased with `input`
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan operator
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in warp
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScanPartial(T input, T& inclusive_output, ScanOp scan_op, int valid_items)
+  {
+    InternalWarpScan(temp_storage).InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
+  }
+
+  //! @rst
+  //! Computes an inclusive prefix scan using the specified binary scan functor across the
+  //! calling warp. But only the first ``valid_items`` elements (corresponding to warp lanes) are
+  //! used in the calculation. The leftover invalid elements are never passed to the binary scan functor.
+
+  //!
+  //! * @smemwarpreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates four concurrent warp-wide inclusive prefix sum scans
+  //! within a block of 128 threads (one per each of the 32-thread warps).
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_warp_scan_partial_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-warp-scan-init-value-partial
+  //!     :end-before: example-end inclusive-warp-scan-init-value-partial
+  //!
+  //! Suppose the set of input ``thread_data`` in the first warp is
+  //! ``{0, -1, 2, -3, ..., 28, -29, 30, -31}``, in the second warp is ``{1, -2, 3, -4, ..., 29, -30, 31, -32}`` etc.
+  //! The corresponding output ``thread_data`` for a max operation in the first
+  //! warp would be ``{3, 3, 3, 3, ..., 28,  28, 30,  30}``, the output for the second warp would be
+  //! ``{3, 3, 3, 3, ..., 29,  29, 31, -32}``, etc.
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan operator type having member
+  //!   `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input item
+  //!
+  //! @param[out] inclusive_output
+  //!   Calling thread's output item. May be aliased with `input`
+  //!
+  //! @param[in] initial_value
+  //!   Initial value to seed the inclusive scan (uniform across warp)
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan operator
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in warp
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  InclusiveScanPartial(T input, T& inclusive_output, T initial_value, ScanOp scan_op, int valid_items)
+  {
+    InternalWarpScan internal(temp_storage);
+
+    T exclusive_output;
+    internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
+
+    internal.UpdatePartial(input, inclusive_output, exclusive_output, scan_op, valid_items, initial_value);
+  }
+
+  //! @rst
+  //! Computes an inclusive prefix scan using the specified binary scan functor across the
+  //! calling warp. But only the first ``valid_items`` elements (corresponding to warp lanes) are
+  //! used in the calculation. The leftover invalid elements are never passed to the binary scan functor.
+  //! Also provides every thread with the warp-wide ``warp_aggregate`` of all valid inputs. If there are no valid
+  //! inputs, the aggregate is undefined.
+
+  //!
+  //! * @smemwarpreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates four concurrent warp-wide inclusive prefix max scans
+  //! within a block of 128 threads (one per each of the 32-thread warps).
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize WarpScan for type int
+  //!        using WarpScan = cub::WarpScan<int>;
+  //!
+  //!        // Allocate WarpScan shared memory for 4 warps
+  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!
+  //!        // Obtain one input item per thread
+  //!        int thread_data = ...
+  //!        int warp_id = threadIdx.x / 32;
+  //!        int block_valid_items = 35;
+  //!        int warp_valid_items = block_valid_items - warp_id * 32;
+  //!
+  //!        // Compute inclusive warp-wide prefix max scans
+  //!        int warp_aggregate;
+  //!        WarpScan(temp_storage[warp_id]).InclusiveScan(
+  //!            thread_data, thread_data, cuda::maximum<>{}, warp_valid_items, warp_aggregate);
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
+  //! warp would be ``0, 0, 2, 2, ..., 30, 30``, the output for the second warp would be
+  //! ``32, 32, 34, -35, ..., 62, -63`` and the output in the third and fourth warps would remain
+  //! unmodified. Furthermore, ``warp_aggregate`` would be assigned ``30`` for threads in
+  //! the first warp, ``34`` for threads in the second warp, and undefined for the third and
+  //! fourth warps.
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan operator type having member
+  //!   `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input item
+  //!
+  //! @param[out] inclusive_output
+  //!   Calling thread's output item. May be aliased with ``input``
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan operator
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in warp
+  //!
+  //! @param[out] warp_aggregate
+  //!   Warp-wide aggregate reduction of input items.
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  InclusiveScanPartial(T input, T& inclusive_output, ScanOp scan_op, int valid_items, T& warp_aggregate)
+  {
+    InternalWarpScan(temp_storage).InclusiveScanPartial(input, inclusive_output, scan_op, valid_items, warp_aggregate);
+  }
+
+  //! @rst
+  //! Computes an inclusive prefix scan using the specified binary scan functor across the
+  //! calling warp. But only the first ``valid_items`` elements (corresponding to warp lanes) are
+  //! used in the calculation. The leftover invalid elements are never passed to the binary scan functor.
+  //! Also provides every thread with the warp-wide ``warp_aggregate`` of all valid inputs. If there are no valid
+  //! inputs, the aggregate is undefined.
+
+  //!
+  //! * @smemwarpreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates four concurrent warp-wide inclusive prefix max scans
+  //! within a block of 128 threads (one scan per warp).
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_warp_scan_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-warp-scan-init-value-aggregate-partial
+  //!     :end-before: example-end inclusive-warp-scan-init-value-aggregate-partial
+  //!
+  //! Suppose the set of input ``thread_data`` in the first warp is
+  //! ``{0, 0, 0, 1, ..., 1}``, in the second warp is ``{0, 0, 1, ..., 1}`` etc.
+  //! For initial value equal to 3, the corresponding output
+  //! ``thread_data`` for a sum operation in the first warp would be
+  //! ``{3, 3, 3, 4, ..., 29, 30, 31, 32}``, the output for the second warp would be
+  //! ``{3, 3, 4, 5, ..., 30, 31, 32,  1}``, etc.  Furthermore,  ``warp_aggregate`` would be assigned
+  //! ``29`` for threads in the first warp, ``30`` for the threads in the second warp, etc.
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan operator type having member
+  //!   `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input item
+  //!
+  //! @param[out] inclusive_output
+  //!   Calling thread's output item. May be aliased with ``input``
+  //!
+  //! @param[in] initial_value
+  //!   Initial value to seed the inclusive scan (uniform across warp). It is not taken
+  //!   into account for warp_aggregate.
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan operator
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in warp
+  //!
+  //! @param[out] warp_aggregate
+  //!   Warp-wide aggregate reduction of input items.
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScanPartial(
+    T input, T& inclusive_output, T initial_value, ScanOp scan_op, int valid_items, T& warp_aggregate)
+  {
+    InternalWarpScan internal(temp_storage);
+
+    // Perform the inclusive scan operation
+    internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
+
+    // Update the inclusive_output and warp_aggregate using the Update function
+    T exclusive_output;
+    internal.UpdatePartial(
+      input, inclusive_output, exclusive_output, warp_aggregate, scan_op, valid_items, initial_value);
+  }
+
+#endif // _CCCL_DOXYGEN_INVOKED  // Do not document partial inclusive scans
+
+  //! @}
   //! @name Exclusive prefix scans
   //! @{
 
@@ -673,6 +939,9 @@ public:
   //! Computes an exclusive prefix scan using the specified binary scan functor across the
   //! calling warp. Because no initial value is supplied, the ``output`` computed for
   //! *lane*\ :sub:`0` is undefined.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -734,6 +1003,9 @@ public:
   //! @rst
   //! Computes an exclusive prefix scan using the specified binary scan functor across the
   //! calling warp.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -803,6 +1075,9 @@ public:
   //! calling warp. Because no initial value is supplied, the ``output`` computed for
   //! *lane*\ :sub:`0` is undefined. Also provides every thread with the warp-wide
   //! ``warp_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -875,6 +1150,9 @@ public:
   //! calling warp. Also provides every thread with the warp-wide ``warp_aggregate`` of
   //! all inputs.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @smemwarpreuse
   //!
   //! Snippet
@@ -910,7 +1188,7 @@ public:
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
   //! warp would be ``INT_MIN, 0, 0, 2, ..., 28, 30``, the output for the second warp would be
-  //! ``30, 32, 32, 34, ..., 60, 62``, etc. Furthermore, ``warp_aggregate`` would be assigned
+  //! ``INT_MIN, 32, 32, 34, ..., 60, 62``, etc. Furthermore, ``warp_aggregate`` would be assigned
   //! ``30`` for threads in the first warp, ``62`` for threads in the second warp, etc.
   //! @endrst
   //!
@@ -952,7 +1230,313 @@ public:
       detail::bool_constant_v<IS_INTEGER>);
   }
 
-  //! @}  end member group
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document partial exclusive scans
+  //! @rst
+  //! Computes an exclusive prefix scan using the specified binary scan functor across the
+  //! calling warp. But only the first ``valid_items`` elements (corresponding to warp lanes) are
+  //! used in the calculation. The leftover invalid elements are never passed to the binary scan functor.
+  //! Because no initial value is supplied, the ``output`` computed for
+  //! *lane*\ :sub:`0` is undefined.
+  //!
+  //! * @smemwarpreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates four concurrent warp-wide exclusive prefix max scans
+  //! within a block of 128 threads (one per each of the 32-thread warps).
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize WarpScan for type int
+  //!        using WarpScan = cub::WarpScan<int>;
+  //!
+  //!        // Allocate WarpScan shared memory for 4 warps
+  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!
+  //!        // Obtain one input item per thread
+  //!        int thread_data = ...
+  //!        int warp_id = threadIdx.x / 32;
+  //!        int block_valid_items = 35;
+  //!        int warp_valid_items = block_valid_items - warp_id * 32;
+  //!
+  //!        // Compute exclusive warp-wide prefix max scans
+  //!        WarpScan(temp_storage[warp_id]).ExclusiveScanPartial(
+  //!            thread_data, thread_data, cuda::maximum<>{}, warp_valid_items);
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
+  //! warp would be ``?, 0, 0, 2, ..., 28, 30``, the output for the second warp would be
+  //! ``?, 32, 32, -35, ..., 62, -63`` and the output in the third and fourth warps would remain unmodified.
+  //! (The output ``thread_data`` in warp *lane*\ :sub:`0` is undefined.)
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan operator type having member
+  //!   `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input item
+  //!
+  //! @param[out] exclusive_output
+  //!   Calling thread's output item. May be aliased with `input`
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan operator
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in warp
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScanPartial(T input, T& exclusive_output, ScanOp scan_op, int valid_items)
+  {
+    InternalWarpScan internal(temp_storage);
+
+    T inclusive_output;
+    internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
+
+    internal.UpdatePartial(input, inclusive_output, exclusive_output, scan_op, valid_items);
+  }
+
+  //! @rst
+  //! Computes an exclusive prefix scan using the specified binary scan functor across the
+  //! calling warp. But only the first ``valid_items`` elements (corresponding to warp lanes) are
+  //! used in the calculation. The leftover invalid elements are never passed to the binary scan functor.
+
+  //!
+  //! * @smemwarpreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates four concurrent warp-wide exclusive prefix max scans
+  //! within a block of 128 threads (one per each of the 32-thread warps).
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize WarpScan for type int
+  //!        using WarpScan = cub::WarpScan<int>;
+  //!
+  //!        // Allocate WarpScan shared memory for 4 warps
+  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!
+  //!        // Obtain one input item per thread
+  //!        int thread_data = ...
+  //!        int warp_id = threadIdx.x / 32;
+  //!        int block_valid_items = 35;
+  //!        int warp_valid_items = block_valid_items - warp_id * 32;
+  //!
+  //!        // Compute exclusive warp-wide prefix max scans
+  //!        WarpScan(temp_storage[warp_id]).ExclusiveScanPartial(
+  //!            thread_data, thread_data, INT_MIN, cuda::maximum<>{}, warp_valid_items);
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
+  //! warp would be ``INT_MIN, 0, 0, 2, ..., 28, 30``, the output for the second warp would be
+  //! ``30, 32, 32, -35, ..., 62, -63`` and the output in the third and fourth warps would remain unmodified.
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan operator type having member
+  //!   `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input item
+  //!
+  //! @param[out] exclusive_output
+  //!   Calling thread's output item. May be aliased with `input`
+  //!
+  //! @param[in] initial_value
+  //!   Initial value to seed the exclusive scan
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan operator
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in warp
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ExclusiveScanPartial(T input, T& exclusive_output, T initial_value, ScanOp scan_op, int valid_items)
+  {
+    InternalWarpScan internal(temp_storage);
+
+    T inclusive_output;
+    internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
+
+    internal.UpdatePartial(input, inclusive_output, exclusive_output, scan_op, valid_items, initial_value);
+  }
+
+  //! @rst
+  //! Computes an exclusive prefix scan using the specified binary scan functor across the
+  //! calling warp. But only the first ``valid_items`` elements (corresponding to warp lanes) are
+  //! used in the calculation. The leftover invalid elements are never passed to the binary scan functor.
+  //! Because no initial value is supplied, the ``output`` computed for *lane*\ :sub:`0` is undefined.
+  //! Also provides every thread with the warp-wide ``warp_aggregate`` of all valid inputs. If there are no valid
+  //! inputs, the aggregate is undefined.
+  //!
+  //! * @smemwarpreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates four concurrent warp-wide exclusive prefix max scans
+  //! within a block of 128 threads (one per each of the 32-thread warps).
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize WarpScan for type int
+  //!        using WarpScan = cub::WarpScan<int>;
+  //!
+  //!        // Allocate WarpScan shared memory for 4 warps
+  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!
+  //!        // Obtain one input item per thread
+  //!        int thread_data = ...
+  //!        int warp_id = threadIdx.x / 32;
+  //!        int block_valid_items = 35;
+  //!        int warp_valid_items = block_valid_items - warp_id * 32;
+  //!
+  //!        // Compute exclusive warp-wide prefix max scans
+  //!        int warp_aggregate;
+  //!        WarpScan(temp_storage[warp_id]).ExclusiveScanPartial(
+  //!            thread_data, thread_data, cuda::maximum<>{}, warp_valid_items, warp_aggregate);
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
+  //! warp would be ``?, 0, 0, 2, ..., 28, 30``, the output for the second warp would be
+  //! ``?, 32, 32, -35, ..., 62, -63``, and the output in the third and fourth warps would remain unmodified
+  //! (The output ``thread_data`` in warp *lane*\ :sub:`0` is undefined). Furthermore, ``warp_aggregate``
+  //! would be assigned ``30`` for threads in the first warp, ``34`` for threads in the second warp and
+  //! undefined for the third and fourth warps.
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan operator type having member
+  //!   `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input item
+  //!
+  //! @param[out] exclusive_output
+  //!   Calling thread's output item. May be aliased with `input`
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan operator
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in warp
+  //!
+  //! @param[out] warp_aggregate
+  //!   Warp-wide aggregate reduction of input items
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ExclusiveScanPartial(T input, T& exclusive_output, ScanOp scan_op, int valid_items, T& warp_aggregate)
+  {
+    InternalWarpScan internal(temp_storage);
+
+    T inclusive_output;
+    internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
+
+    internal.UpdatePartial(input, inclusive_output, exclusive_output, warp_aggregate, scan_op, valid_items);
+  }
+
+  //! @rst
+  //! Computes an exclusive prefix scan using the specified binary scan functor across the
+  //! calling warp. But only the first ``valid_items`` elements (corresponding to warp lanes) are
+  //! used in the calculation. The leftover invalid elements are never passed to the binary scan functor.
+  //! Also provides every thread with the warp-wide ``warp_aggregate`` of all valid inputs. If there are no valid
+  //! inputs, the aggregate is undefined.
+
+  //!
+  //! * @smemwarpreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates four concurrent warp-wide exclusive prefix max scans
+  //! within a block of 128 threads (one per each of the 32-thread warps).
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize WarpScan for type int
+  //!        using WarpScan = cub::WarpScan<int>;
+  //!
+  //!        // Allocate WarpScan shared memory for 4 warps
+  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!
+  //!        // Obtain one input item per thread
+  //!        int thread_data = ...
+  //!        int warp_id = threadIdx.x / 32;
+  //!        int block_valid_items = 35;
+  //!        int warp_valid_items = block_valid_items - warp_id * 32;
+  //!
+  //!        // Compute exclusive warp-wide prefix max scans
+  //!        int warp_aggregate;
+  //!        WarpScan(temp_storage[warp_id]).ExclusiveScanPartial(
+  //!            thread_data, thread_data, INT_MIN, cuda::maximum<>{}, warp_valid_items, warp_aggregate);
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
+  //! warp would be ``INT_MIN, 0, 0, 2, ..., 28, 30``, the output for the second warp would be
+  //! ``INT_MIN, 32, 32, -35, ..., 62, -63``, and the output in the third and fourth warps would
+  //! remain unmodified. Furthermore, ``warp_aggregate`` would be assigned
+  //! ``30`` for threads in the first warp, ``34`` for threads in the second warp and undefined
+  //! for the third and fourth warps.
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan operator type having member
+  //!   `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input item
+  //!
+  //! @param[out] exclusive_output
+  //!   Calling thread's output item.  May be aliased with `input`
+  //!
+  //! @param[in] initial_value
+  //!   Initial value to seed the exclusive scan
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan operator
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in warp
+  //!
+  //! @param[out] warp_aggregate
+  //!   Warp-wide aggregate reduction of input items
+  //!
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScanPartial(
+    T input, T& exclusive_output, T initial_value, ScanOp scan_op, int valid_items, T& warp_aggregate)
+  {
+    InternalWarpScan internal(temp_storage);
+
+    T inclusive_output;
+    internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
+
+    internal.UpdatePartial(
+      input, inclusive_output, exclusive_output, warp_aggregate, scan_op, valid_items, initial_value);
+  }
+
+#endif // _CCCL_DOXYGEN_INVOKED  // Do not document partial exclusive scans
+
+  //! @}
   //! @name Combination (inclusive & exclusive) prefix scans
   //! @{
 
@@ -960,6 +1544,9 @@ public:
   //! Computes both inclusive and exclusive prefix scans using the specified binary scan functor
   //! across the calling warp. Because no initial value is supplied, the ``exclusive_output``
   //! computed for *lane*\ :sub:`0` is undefined.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -1029,6 +1616,9 @@ public:
   //! Computes both inclusive and exclusive prefix scans using the specified binary scan functor
   //! across the calling warp.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @smemwarpreuse
   //!
   //! Snippet
@@ -1066,7 +1656,7 @@ public:
   //! first warp would be ``0, 0, 2, 2, ..., 30, 30``, the output for the second warp would be
   //! ``32, 32, 34, 34, ..., 62, 62``, etc. The corresponding output ``exclusive_partial`` in the
   //! first warp would be ``INT_MIN, 0, 0, 2, ..., 28, 30``, the output for the second warp would
-  //! be ``30, 32, 32, 34, ..., 60, 62``, etc.
+  //! be ``INT_MIN, 32, 32, 34, ..., 60, 62``, etc.
   //! @endrst
   //!
   //! @tparam ScanOp
@@ -1099,12 +1689,174 @@ public:
       input, inclusive_output, exclusive_output, scan_op, initial_value, detail::bool_constant_v<IS_INTEGER>);
   }
 
-  //! @}  end member group
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document partial combined scans
+  //! @rst
+  //! Computes both inclusive and exclusive prefix scans using the specified binary scan functor
+  //! across the calling warp. But only the first ``valid_items`` elements (corresponding to warp lanes) are
+  //! used in the calculation. The leftover invalid elements are never passed to the binary scan functor.
+  //! Because no initial value is supplied, the ``exclusive_output``
+  //! computed for *lane*\ :sub:`0` is undefined.
+  //!
+  //! * @smemwarpreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates four concurrent warp-wide exclusive prefix max scans
+  //! within a block of 128 threads (one per each of the 32-thread warps).
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize WarpScan for type int
+  //!        using WarpScan = cub::WarpScan<int>;
+  //!
+  //!        // Allocate WarpScan shared memory for 4 warps
+  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!
+  //!        // Obtain one input item per thread
+  //!        int thread_data = ...
+  //!        int warp_id = threadIdx.x / 32;
+  //!        int block_valid_items = 35;
+  //!        int warp_valid_items = block_valid_items - warp_id * 32;
+  //!
+  //!        // Compute exclusive warp-wide prefix max scans
+  //!        int inclusive_partial, exclusive_partial;
+  //!        WarpScan(temp_storage[warp_id]).ScanPartial(
+  //!            thread_data, inclusive_partial, exclusive_partial, cuda::maximum<>{}, warp_valid_items);
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``inclusive_partial`` in the
+  //! first warp would be ``0, 0, 2, 2, ..., 30, 30``, the output for the second warp would be
+  //! ``32, 32, 34, -35, ..., 62, -63``. The corresponding output ``exclusive_partial`` in the
+  //! first warp would be ``?, 0, 0, 2, ..., 28, 30``, the output for the second warp would be
+  //! ``?, 32, 32, -35, ..., 62, -63``. The third and fourth warps ``inclusive_partial`` and
+  //! ``exclusive_parttial`` would remain unmodified.
+  //! (The output ``thread_data`` in warp *lane*\ :sub:`0` is undefined.)
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan operator type having member
+  //!   `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input item
+  //!
+  //! @param[out] inclusive_output
+  //!   Calling thread's inclusive-scan output item
+  //!
+  //! @param[out] exclusive_output
+  //!   Calling thread's exclusive-scan output item
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan operator
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in warp
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ScanPartial(T input, T& inclusive_output, T& exclusive_output, ScanOp scan_op, int valid_items)
+  {
+    InternalWarpScan internal(temp_storage);
+
+    internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
+
+    internal.UpdatePartial(input, inclusive_output, exclusive_output, scan_op, valid_items);
+  }
+
+  //! @rst
+  //! Computes both inclusive and exclusive prefix scans using the specified binary scan functor
+  //! across the calling warp. But only the first ``valid_items`` elements (corresponding to warp lanes) are
+  //! used in the calculation. The leftover invalid elements are never passed to the binary scan functor.
+
+  //!
+  //! * @smemwarpreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates four concurrent warp-wide prefix max scans within a
+  //! block of 128 threads (one per each of the 32-thread warps).
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize WarpScan for type int
+  //!        using WarpScan = cub::WarpScan<int>;
+  //!
+  //!        // Allocate WarpScan shared memory for 4 warps
+  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!
+  //!        // Obtain one input item per thread
+  //!        int thread_data = ...
+  //!        int warp_id = threadIdx.x / 32;
+  //!        int block_valid_items = 35;
+  //!        int warp_valid_items = block_valid_items - warp_id * 32;
+  //!
+  //!        // Compute inclusive warp-wide prefix max scans
+  //!        int inclusive_partial, exclusive_partial;
+  //!        WarpScan(temp_storage[warp_id]).ScanPartial(
+  //!            thread_data, inclusive_partial, exclusive_partial, INT_MIN, cuda::maximum<>{}, warp_valid_items);
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``inclusive_partial`` in the
+  //! first warp would be ``0, 0, 2, 2, ..., 30, 30``, the output for the second warp would be
+  //! ``32, 32, 34, -35, ..., 62, -63``. The corresponding output ``exclusive_partial`` in the
+  //! first warp would be ``INT_MIN, 0, 0, 2, ..., 28, 30``, the output for the second warp would
+  //! be ``INT_MIN, 32, 32, -35, ..., 62, -63``. The third and fourth warps ``inclusive_partial`` and
+  //! ``exclusive_parttial`` would remain unmodified.
+
+  //! @endrst
+  //!
+  //! @tparam ScanOp
+  //!   **[inferred]** Binary scan operator type having member
+  //!   `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input item
+  //!
+  //! @param[out] inclusive_output
+  //!   Calling thread's inclusive-scan output item
+  //!
+  //! @param[out] exclusive_output
+  //!   Calling thread's exclusive-scan output item
+  //!
+  //! @param[in] initial_value
+  //!   Initial value to seed the exclusive scan
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan operator
+  //!
+  //! @param[in] valid_items
+  //!   Number of valid items in warp
+  template <typename ScanOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ScanPartial(T input, T& inclusive_output, T& exclusive_output, T initial_value, ScanOp scan_op, int valid_items)
+  {
+    InternalWarpScan internal(temp_storage);
+
+    internal.InclusiveScanPartial(input, inclusive_output, scan_op, valid_items);
+
+    internal.UpdatePartial(input, inclusive_output, exclusive_output, scan_op, valid_items, initial_value);
+  }
+
+#endif // _CCCL_DOXYGEN_INVOKED  // Do not document partial combined scans
+
+  //! @}
   //! @name Data exchange
   //! @{
 
   //! @rst
   //! Broadcast the value ``input`` from *lane*\ :sub:`src_lane` to all lanes in the warp
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @smemwarpreuse
   //!
@@ -1150,7 +1902,7 @@ public:
     return InternalWarpScan(temp_storage).Broadcast(input, src_lane);
   }
 
-  //@}  end member group
+  //@}
 };
 
 CUB_NAMESPACE_END

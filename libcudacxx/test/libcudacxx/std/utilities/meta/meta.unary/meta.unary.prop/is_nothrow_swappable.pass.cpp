@@ -17,7 +17,6 @@
 
 namespace MyNS
 {
-
 // Make the test types non-copyable so that generic cuda::std::swap is not valid.
 struct A
 {
@@ -50,7 +49,6 @@ struct ThrowingMove
     return *this;
   }
 };
-
 } // namespace MyNS
 
 int main(int, char**)

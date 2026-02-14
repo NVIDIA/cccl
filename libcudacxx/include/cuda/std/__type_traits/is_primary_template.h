@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_PRIMARY_TEMPLATE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_PRIMARY_TEMPLATE_H
+#ifndef _CUDA_STD___TYPE_TRAITS_IS_PRIMARY_TEMPLATE_H
+#define _CUDA_STD___TYPE_TRAITS_IS_PRIMARY_TEMPLATE_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__fwd/iterator_traits.h>
+#include <cuda/std/__fwd/iterator.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_base_of.h>
@@ -35,7 +35,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if _CCCL_COMPILER(MSVC)
 
@@ -70,39 +70,41 @@ using __select_traits = conditional_t<__is_primary_cccl_template<_Iter>::value, 
 #else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC) vvv
 
 // We also need to respect what the user is defining to std::iterator_traits
-#  if defined(__GLIBCXX__)
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX)
 // libstdc++ uses `is_base_of`
 template <class _Iter, bool>
 inline constexpr bool __is_primary_std_template_impl =
-  _CCCL_TRAIT(is_base_of, ::std::__iterator_traits<_Iter>, ::std::iterator_traits<_Iter>);
+  is_base_of_v<::std::__iterator_traits<_Iter>, ::std::iterator_traits<_Iter>>;
 template <class _Iter>
 inline constexpr bool __is_primary_std_template_impl<_Iter, true> = true;
 
 // This is needed because with a defaulted template argument subsumption fails for C++20 for concepts
 // that involve incrementable_traits
 template <class _Iter>
-struct __is_primary_std_template : bool_constant<__is_primary_std_template_impl<_Iter, _CCCL_TRAIT(is_pointer, _Iter)>>
+struct __is_primary_std_template : bool_constant<__is_primary_std_template_impl<_Iter, is_pointer_v<_Iter>>>
 {};
-#  elif defined(_LIBCPP_VERSION)
+#  elif _CCCL_HOST_STD_LIB(LIBCXX)
+
 // libc++ uses the same mechanism than we do with __primary_template
 template <class _Traits>
 using __test_for_primary_std_template = enable_if_t<_IsSame<_Traits, typename _Traits::__primary_template>::value>;
 template <class _Iter>
-using __is_primary_std_template = _IsValidExpansion<__test_for_primary_template, ::std::iterator_traits<_Iter>>;
-#  elif defined(_MSVC_STL_VERSION) || defined(_IS_WRS)
+using __is_primary_std_template = _IsValidExpansion<__test_for_primary_std_template, ::std::iterator_traits<_Iter>>;
+
+#  elif _CCCL_HOST_STD_LIB(STL)
 // On MSVC we must check for the base class because `_From_primary` is only defined in C++20
 template <class _Iter, bool>
 inline constexpr bool __is_primary_std_template_impl =
-  _CCCL_TRAIT(is_base_of, ::std::_Iterator_traits_base<_Iter>, ::std::iterator_traits<_Iter>);
+  is_base_of_v<::std::_Iterator_traits_base<_Iter>, ::std::iterator_traits<_Iter>>;
 template <class _Iter>
 inline constexpr bool __is_primary_std_template_impl<_Iter, true> = true;
 
 // This is needed because with a defaulted template argument subsumption fails for C++20 for concepts
 // that involve incrementable_traits
 template <class _Iter>
-struct __is_primary_std_template : bool_constant<__is_primary_std_template_impl<_Iter, _CCCL_TRAIT(is_pointer, _Iter)>>
+struct __is_primary_std_template : bool_constant<__is_primary_std_template_impl<_Iter, is_pointer_v<_Iter>>>
 {};
-#  endif // _MSVC_STL_VERSION || _IS_WRS
+#  endif // ^^^ _CCCL_HOST_STD_LIB(STL) ^^^
 
 template <class _Iter, class _OtherTraits>
 using __select_traits =
@@ -112,8 +114,8 @@ using __select_traits =
 
 #endif // !_CCCL_COMPILER(NVRTC)
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_PRIMARY_TEMPLATE_H
+#endif // _CUDA_STD___TYPE_TRAITS_IS_PRIMARY_TEMPLATE_H

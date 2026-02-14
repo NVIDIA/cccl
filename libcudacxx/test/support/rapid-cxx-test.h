@@ -444,93 +444,93 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#define TEST_WARN_EQUAL_COLLECTIONS(...)                                        \
-  do                                                                            \
-  {                                                                             \
-    TEST_SET_CHECKPOINT();                                                      \
-    ::rapid_cxx_test::test_outcome m_f(                                         \
-      ::rapid_cxx_test::failure_type::none,                                     \
-      __FILE__,                                                                 \
-      TEST_FUNC_NAME(),                                                         \
-      __LINE__,                                                                 \
-      "TEST_WARN_EQUAL_COLLECTIONS(" #__VA_ARGS__ ")",                          \
-      "");                                                                      \
-    if (not::rapid_cxx_test::detail::check_equal_collections_impl(__VA_ARGS__)) \
-    {                                                                           \
-      m_f.type = ::rapid_cxx_test::failure_type::warn;                          \
-    }                                                                           \
-    ::rapid_cxx_test::get_reporter().report(m_f);                               \
+#define TEST_WARN_EQUAL_COLLECTIONS(...)                                         \
+  do                                                                             \
+  {                                                                              \
+    TEST_SET_CHECKPOINT();                                                       \
+    ::rapid_cxx_test::test_outcome m_f(                                          \
+      ::rapid_cxx_test::failure_type::none,                                      \
+      __FILE__,                                                                  \
+      TEST_FUNC_NAME(),                                                          \
+      __LINE__,                                                                  \
+      "TEST_WARN_EQUAL_COLLECTIONS(" #__VA_ARGS__ ")",                           \
+      "");                                                                       \
+    if (not ::rapid_cxx_test::detail::check_equal_collections_impl(__VA_ARGS__)) \
+    {                                                                            \
+      m_f.type = ::rapid_cxx_test::failure_type::warn;                           \
+    }                                                                            \
+    ::rapid_cxx_test::get_reporter().report(m_f);                                \
   } while (false)
 #
 
-#define TEST_CHECK_EQUAL_COLLECTIONS(...)                                       \
-  do                                                                            \
-  {                                                                             \
-    TEST_SET_CHECKPOINT();                                                      \
-    ::rapid_cxx_test::test_outcome m_f(                                         \
-      ::rapid_cxx_test::failure_type::none,                                     \
-      __FILE__,                                                                 \
-      TEST_FUNC_NAME(),                                                         \
-      __LINE__,                                                                 \
-      "TEST_CHECK_EQUAL_COLLECTIONS(" #__VA_ARGS__ ")",                         \
-      "");                                                                      \
-    if (not::rapid_cxx_test::detail::check_equal_collections_impl(__VA_ARGS__)) \
-    {                                                                           \
-      m_f.type = ::rapid_cxx_test::failure_type::check;                         \
-    }                                                                           \
-    ::rapid_cxx_test::get_reporter().report(m_f);                               \
+#define TEST_CHECK_EQUAL_COLLECTIONS(...)                                        \
+  do                                                                             \
+  {                                                                              \
+    TEST_SET_CHECKPOINT();                                                       \
+    ::rapid_cxx_test::test_outcome m_f(                                          \
+      ::rapid_cxx_test::failure_type::none,                                      \
+      __FILE__,                                                                  \
+      TEST_FUNC_NAME(),                                                          \
+      __LINE__,                                                                  \
+      "TEST_CHECK_EQUAL_COLLECTIONS(" #__VA_ARGS__ ")",                          \
+      "");                                                                       \
+    if (not ::rapid_cxx_test::detail::check_equal_collections_impl(__VA_ARGS__)) \
+    {                                                                            \
+      m_f.type = ::rapid_cxx_test::failure_type::check;                          \
+    }                                                                            \
+    ::rapid_cxx_test::get_reporter().report(m_f);                                \
   } while (false)
 #
 
-#define TEST_REQUIRE_EQUAL_COLLECTIONS(...)                                     \
-  do                                                                            \
-  {                                                                             \
-    TEST_SET_CHECKPOINT();                                                      \
-    ::rapid_cxx_test::test_outcome m_f(                                         \
-      ::rapid_cxx_test::failure_type::none,                                     \
-      __FILE__,                                                                 \
-      TEST_FUNC_NAME(),                                                         \
-      __LINE__,                                                                 \
-      "TEST_REQUIRE_EQUAL_COLLECTIONS(" #__VA_ARGS__ ")",                       \
-      "");                                                                      \
-    if (not::rapid_cxx_test::detail::check_equal_collections_impl(__VA_ARGS__)) \
-    {                                                                           \
-      m_f.type = ::rapid_cxx_test::failure_type::require;                       \
-    }                                                                           \
-    ::rapid_cxx_test::get_reporter().report(m_f);                               \
-    if (m_f.type != ::rapid_cxx_test::failure_type::none)                       \
-    {                                                                           \
-      return;                                                                   \
-    }                                                                           \
+#define TEST_REQUIRE_EQUAL_COLLECTIONS(...)                                      \
+  do                                                                             \
+  {                                                                              \
+    TEST_SET_CHECKPOINT();                                                       \
+    ::rapid_cxx_test::test_outcome m_f(                                          \
+      ::rapid_cxx_test::failure_type::none,                                      \
+      __FILE__,                                                                  \
+      TEST_FUNC_NAME(),                                                          \
+      __LINE__,                                                                  \
+      "TEST_REQUIRE_EQUAL_COLLECTIONS(" #__VA_ARGS__ ")",                        \
+      "");                                                                       \
+    if (not ::rapid_cxx_test::detail::check_equal_collections_impl(__VA_ARGS__)) \
+    {                                                                            \
+      m_f.type = ::rapid_cxx_test::failure_type::require;                        \
+    }                                                                            \
+    ::rapid_cxx_test::get_reporter().report(m_f);                                \
+    if (m_f.type != ::rapid_cxx_test::failure_type::none)                        \
+    {                                                                            \
+      return;                                                                    \
+    }                                                                            \
   } while (false)
 #
 
-#define TEST_ASSERT_EQUAL_COLLECTIONS(...)                                      \
-  do                                                                            \
-  {                                                                             \
-    TEST_SET_CHECKPOINT();                                                      \
-    ::rapid_cxx_test::test_outcome m_f(                                         \
-      ::rapid_cxx_test::failure_type::none,                                     \
-      __FILE__,                                                                 \
-      TEST_FUNC_NAME(),                                                         \
-      __LINE__,                                                                 \
-      "TEST_ASSERT_EQUAL_COLLECTIONS(" #__VA_ARGS__ ")",                        \
-      "");                                                                      \
-    if (not::rapid_cxx_test::detail::check_equal_collections_impl(__VA_ARGS__)) \
-    {                                                                           \
-      m_f.type = ::rapid_cxx_test::failure_type::assert;                        \
-    }                                                                           \
-    ::rapid_cxx_test::get_reporter().report(m_f);                               \
-    if (m_f.type != ::rapid_cxx_test::failure_type::none)                       \
-    {                                                                           \
-      ::std::abort();                                                           \
-    }                                                                           \
+#define TEST_ASSERT_EQUAL_COLLECTIONS(...)                                       \
+  do                                                                             \
+  {                                                                              \
+    TEST_SET_CHECKPOINT();                                                       \
+    ::rapid_cxx_test::test_outcome m_f(                                          \
+      ::rapid_cxx_test::failure_type::none,                                      \
+      __FILE__,                                                                  \
+      TEST_FUNC_NAME(),                                                          \
+      __LINE__,                                                                  \
+      "TEST_ASSERT_EQUAL_COLLECTIONS(" #__VA_ARGS__ ")",                         \
+      "");                                                                       \
+    if (not ::rapid_cxx_test::detail::check_equal_collections_impl(__VA_ARGS__)) \
+    {                                                                            \
+      m_f.type = ::rapid_cxx_test::failure_type::assert;                         \
+    }                                                                            \
+    ::rapid_cxx_test::get_reporter().report(m_f);                                \
+    if (m_f.type != ::rapid_cxx_test::failure_type::none)                        \
+    {                                                                            \
+      ::std::abort();                                                            \
+    }                                                                            \
   } while (false)
 #
 
 namespace rapid_cxx_test
 {
-typedef void (*invoker_t)();
+using invoker_t = void (*)();
 
 ////////////////////////////////////////////////////////////////////////////
 struct test_case
@@ -570,7 +570,7 @@ struct failure_type
   };
 };
 
-typedef failure_type::enum_type failure_type_t;
+using failure_type_t = failure_type::enum_type;
 
 ////////////////////////////////////////////////////////////////////////////
 struct test_outcome
@@ -676,8 +676,8 @@ inline checkpoint const& get_checkpoint()
 class test_suite
 {
 public:
-  typedef test_case const* iterator;
-  typedef iterator const_iterator;
+  using iterator       = test_case const*;
+  using const_iterator = iterator;
 
 public:
   test_suite(const char* xname)
@@ -1005,7 +1005,6 @@ bool check_equal_collections_impl(Iter1 start1, Iter1 const end1, Iter2 start2, 
   return (start1 == end1 && start2 == end2);
 }
 } // namespace detail
-
 } // namespace rapid_cxx_test
 
 #if defined(__GNUC__)

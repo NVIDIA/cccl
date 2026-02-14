@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file thrust/iterator/discard_iterator.h
  *  \brief An iterator which "discards" (ignores) values assigned to it upon dereference
@@ -88,23 +75,8 @@ _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 //!
 //! int main()
 //! {
-//!   thrust::device_vector<int> keys(7), values(7);
-//!
-//!   keys[0] = 1;
-//!   keys[1] = 3;
-//!   keys[2] = 3;
-//!   keys[3] = 3;
-//!   keys[4] = 2;
-//!   keys[5] = 2;
-//!   keys[6] = 1;
-//!
-//!   values[0] = 9;
-//!   values[1] = 8;
-//!   values[2] = 7;
-//!   values[3] = 6;
-//!   values[4] = 5;
-//!   values[5] = 4;
-//!   values[6] = 3;
+//!   thrust::device_vector<int> keys{1, 3, 3, 3, 2, 2, 1};
+//!   thrust::device_vector<int> values{9, 8, 7, 6, 5, 4, 3};
 //!
 //!   thrust::device_vector<int> result(4);
 //!
@@ -122,6 +94,10 @@ _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 //! \endcode
 //!
 //! \see make_discard_iterator
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
+ */
 template <typename System = use_default>
 class discard_iterator : public detail::make_discard_iterator_base<System>::type
 {
@@ -165,10 +141,9 @@ private: // Core iterator interface
 //! \return A new \p discard_iterator with index as given by \p i.
 //! \see constant_iterator
 template <typename System = use_default>
-inline _CCCL_HOST_DEVICE discard_iterator<>
-make_discard_iterator(typename discard_iterator<System>::difference_type i = {})
+inline _CCCL_HOST_DEVICE discard_iterator<System> make_discard_iterator(::cuda::std::ptrdiff_t i = 0)
 {
-  return discard_iterator<System>(i);
+  return discard_iterator<System>{i};
 }
 
 //! \} // end fancyiterators

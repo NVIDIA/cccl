@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 //! \file thrust/iterator/constant_iterator.h
 //! \brief An iterator which returns a constant value when dereferenced
@@ -32,6 +19,7 @@
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_facade.h>
 
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -44,7 +32,7 @@ namespace detail
 template <typename Value, typename Incrementable, typename System>
 struct make_constant_iterator_base
 {
-  using incrementable = replace_if_use_default<Incrementable, identity_<::cuda::std::intmax_t>>;
+  using incrementable = replace_if_use_default<Incrementable, ::cuda::std::type_identity<::cuda::std::intmax_t>>;
   using base_iterator = counting_iterator<incrementable, System, random_access_traversal_tag>;
   using type =
     iterator_adaptor<constant_iterator<Value, Incrementable, System>,
@@ -95,11 +83,7 @@ struct make_constant_iterator_base
 //!
 //! int main()
 //! {
-//!   thrust::device_vector<int> data(4);
-//!   data[0] = 3;
-//!   data[1] = 7;
-//!   data[2] = 2;
-//!   data[3] = 5;
+//!   thrust::device_vector<int> data{3, 7, 2, 5};
 //!
 //!   // add 10 to all values in data
 //!   thrust::transform(data.begin(), data.end(),
@@ -114,6 +98,10 @@ struct make_constant_iterator_base
 //! \endcode
 //!
 //! \see make_constant_iterator
+/*! \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
+ */
 template <typename Value, typename Incrementable = use_default, typename System = use_default>
 class constant_iterator : public detail::make_constant_iterator_base<Value, Incrementable, System>::type
 {
@@ -135,11 +123,10 @@ public:
   //! Copy constructor copies the value of another \p constant_iterator with related System type.
   //!
   //! \param rhs The \p constant_iterator to copy.
-  template <
-    class OtherSystem,
-    detail::enable_if_convertible_t<typename iterator_system<constant_iterator<Value, Incrementable, OtherSystem>>::type,
-                                    typename iterator_system<super_t>::type,
-                                    int> = 0>
+  template <class OtherSystem,
+            detail::enable_if_convertible_t<iterator_system_t<constant_iterator<Value, Incrementable, OtherSystem>>,
+                                            iterator_system_t<super_t>,
+                                            int> = 0>
   _CCCL_HOST_DEVICE constant_iterator(constant_iterator<Value, Incrementable, OtherSystem> const& rhs)
       : super_t(rhs.base())
       , m_value(rhs.value())
@@ -188,8 +175,10 @@ private: // Core iterator interface
   //! \endcond
 };
 
+#ifndef _CCCL_DOXYGEN_INVOKED
 template <class ValueT>
 _CCCL_HOST_DEVICE constant_iterator(ValueT) -> constant_iterator<ValueT>;
+#endif // _CCCL_DOXYGEN_INVOKED
 
 //! This version of \p make_constant_iterator creates a \p constant_iterator from values given for both value and index.
 //! The type of \p constant_iterator may be inferred by the compiler from the types of its parameters.

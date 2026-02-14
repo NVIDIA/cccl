@@ -3,10 +3,11 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/std/chrono>
+// <chrono>
 
 // duration
 
@@ -17,11 +18,13 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/chrono>
+#include <cuda/std/ratio>
 
+#include "../../rep.h"
 #include "test_macros.h"
 #include "truncate_fp.h"
 
-int main(int, char**)
+__host__ __device__ constexpr bool test()
 {
   {
     cuda::std::chrono::nanoseconds ns1(15);
@@ -38,30 +41,29 @@ int main(int, char**)
     cuda::std::chrono::duration<int, cuda::std::ratio<3, 5>> s2(5);
     assert(s1 / s2 == 6);
   }
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
+
   {
     cuda::std::chrono::duration<int, cuda::std::ratio<2, 3>> s1(30);
     cuda::std::chrono::duration<double, cuda::std::ratio<3, 5>> s2(5);
     assert(s1 / s2 == truncate_fp(20. / 3));
   }
+
   {
-    constexpr cuda::std::chrono::nanoseconds ns1(15);
-    constexpr cuda::std::chrono::nanoseconds ns2(5);
-    static_assert(ns1 / ns2 == 3, "");
-  }
-  {
-    constexpr cuda::std::chrono::microseconds us1(15);
-    constexpr cuda::std::chrono::nanoseconds ns2(5);
-    static_assert(us1 / ns2 == 3000, "");
-  }
-  {
-    constexpr cuda::std::chrono::duration<int, cuda::std::ratio<2, 3>> s1(30);
-    constexpr cuda::std::chrono::duration<int, cuda::std::ratio<3, 5>> s2(5);
-    static_assert(s1 / s2 == 6, "");
-  }
-  {
-    constexpr cuda::std::chrono::duration<int, cuda::std::ratio<2, 3>> s1(30);
-    constexpr cuda::std::chrono::duration<double, cuda::std::ratio<3, 5>> s2(5);
-    static_assert(s1 / s2 == 20. / 3, "");
+    cuda::std::chrono::duration<int> d(5);
+    RepConstConvertibleLWG3050 x;
+
+    {
+      auto r = d / x;
+      assert(r.count() == 2);
+      static_assert(cuda::std::is_same_v<cuda::std::chrono::duration<long>, decltype(r)>);
+    }
   }
 
   return 0;

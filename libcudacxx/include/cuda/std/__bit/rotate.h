@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___BIT_ROTATE_H
-#define _LIBCUDACXX___BIT_ROTATE_H
+#ifndef _CUDA_STD___BIT_ROTATE_H
+#define _CUDA_STD___BIT_ROTATE_H
 
 #include <cuda/std/detail/__config>
 
@@ -23,7 +23,6 @@
 
 #include <cuda/__cmath/neg.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
@@ -31,64 +30,156 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#if _CCCL_CHECK_BUILTIN(builtin_rotateleft8)
+#  define _CCCL_BUILTIN_ROTATELEFT8(...) __builtin_rotateleft8(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_rotateleft16)
+#  define _CCCL_BUILTIN_ROTATELEFT16(...) __builtin_rotateleft16(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_rotateleft32)
+#  define _CCCL_BUILTIN_ROTATELEFT32(...) __builtin_rotateleft32(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_rotateleft64)
+#  define _CCCL_BUILTIN_ROTATELEFT44(...) __builtin_rotateleft64(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_rotateright8)
+#  define _CCCL_BUILTIN_ROTATERIGHT8(...) __builtin_rotateright8(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_rotateright16)
+#  define _CCCL_BUILTIN_ROTATERIGHT16(...) __builtin_rotateright16(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_rotateright32)
+#  define _CCCL_BUILTIN_ROTATERIGHT32(...) __builtin_rotateright32(__VA_ARGS__)
+#endif
+
+#if _CCCL_CHECK_BUILTIN(builtin_rotateright64)
+#  define _CCCL_BUILTIN_ROTATERIGHT44(...) __builtin_rotateright64(__VA_ARGS__)
+#endif
+
+// nvcc doesn't allow clang's rotater left/right builtins
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_ROTATELEFT8
+#  undef _CCCL_BUILTIN_ROTATELEFT16
+#  undef _CCCL_BUILTIN_ROTATELEFT32
+#  undef _CCCL_BUILTIN_ROTATELEFT64
+#  undef _CCCL_BUILTIN_ROTATERIGHT8
+#  undef _CCCL_BUILTIN_ROTATERIGHT16
+#  undef _CCCL_BUILTIN_ROTATERIGHT32
+#  undef _CCCL_BUILTIN_ROTATERIGHT64
+#endif // _CCCL_CUDA_COMPILER(NVCC)
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <typename _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __cccl_rotr_impl(_Tp __v, int __cnt) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp __cccl_rotr_impl(_Tp __v, int __cnt) noexcept
 {
   if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
-    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
       NV_IF_TARGET(NV_IS_DEVICE, (return ::__funnelshift_r(__v, __v, __cnt);))
     }
   }
+#if defined(_CCCL_BUILTIN_ROTATERIGHT8)
+  if constexpr (sizeof(_Tp) == sizeof(uint8_t))
+  {
+    return _CCCL_BUILTIN_ROTATERIGHT8(__v, __cnt);
+  }
+#endif // _CCCL_BUILTIN_ROTATERIGHT8
+#if defined(_CCCL_BUILTIN_ROTATERIGHT16)
+  if constexpr (sizeof(_Tp) == sizeof(uint16_t))
+  {
+    return _CCCL_BUILTIN_ROTATERIGHT16(__v, __cnt);
+  }
+#endif // _CCCL_BUILTIN_ROTATERIGHT16
+#if defined(_CCCL_BUILTIN_ROTATERIGHT32)
+  if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+  {
+    return _CCCL_BUILTIN_ROTATERIGHT32(__v, __cnt);
+  }
+#endif // _CCCL_BUILTIN_ROTATERIGHT32
+#if defined(_CCCL_BUILTIN_ROTATERIGHT64)
+  if constexpr (sizeof(_Tp) == sizeof(uint64_t))
+  {
+    return _CCCL_BUILTIN_ROTATERIGHT64(__v, __cnt);
+  }
+#endif // _CCCL_BUILTIN_ROTATERIGHT64
   constexpr auto __digits = numeric_limits<_Tp>::digits;
   auto __cnt_mod          = static_cast<uint32_t>(__cnt) % __digits; // __cnt is always >= 0
   return __cnt_mod == 0 ? __v : (__v >> __cnt_mod) | (__v << (__digits - __cnt_mod));
 }
 
 template <typename _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __cccl_rotl_impl(_Tp __v, int __cnt) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp __cccl_rotl_impl(_Tp __v, int __cnt) noexcept
 {
   if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
-    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
       NV_IF_TARGET(NV_IS_DEVICE, (return ::__funnelshift_l(__v, __v, __cnt);))
     }
   }
+#if defined(_CCCL_BUILTIN_ROTATELEFT8)
+  if constexpr (sizeof(_Tp) == sizeof(uint8_t))
+  {
+    return _CCCL_BUILTIN_ROTATELEFT8(__v, __cnt);
+  }
+#endif // _CCCL_BUILTIN_ROTATELEFT8
+#if defined(_CCCL_BUILTIN_ROTATELEFT16)
+  if constexpr (sizeof(_Tp) == sizeof(uint16_t))
+  {
+    return _CCCL_BUILTIN_ROTATELEFT16(__v, __cnt);
+  }
+#endif // _CCCL_BUILTIN_ROTATELEFT16
+#if defined(_CCCL_BUILTIN_ROTATELEFT32)
+  if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+  {
+    return _CCCL_BUILTIN_ROTATELEFT32(__v, __cnt);
+  }
+#endif // _CCCL_BUILTIN_ROTATELEFT32
+#if defined(_CCCL_BUILTIN_ROTATELEFT64)
+  if constexpr (sizeof(_Tp) == sizeof(uint64_t))
+  {
+    return _CCCL_BUILTIN_ROTATELEFT64(__v, __cnt);
+  }
+#endif // _CCCL_BUILTIN_ROTATELEFT64
   constexpr auto __digits = numeric_limits<_Tp>::digits;
   auto __cnt_mod          = static_cast<uint32_t>(__cnt) % __digits; // __cnt is always >= 0
   return __cnt_mod == 0 ? __v : (__v << __cnt_mod) | (__v >> (__digits - __cnt_mod));
 }
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp rotl(_Tp __v, int __cnt) noexcept
+_CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
+[[nodiscard]] _CCCL_API constexpr _Tp rotl(_Tp __v, int __cnt) noexcept
 {
   if (__cnt < 0)
   {
     __cnt = static_cast<int>(static_cast<unsigned>(::cuda::neg(__cnt)) % numeric_limits<_Tp>::digits);
-    return _CUDA_VSTD::__cccl_rotr_impl(__v, __cnt);
+    return ::cuda::std::__cccl_rotr_impl(__v, __cnt);
   }
-  return _CUDA_VSTD::__cccl_rotl_impl(__v, __cnt);
+  return ::cuda::std::__cccl_rotl_impl(__v, __cnt);
 }
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp rotr(_Tp __v, int __cnt) noexcept
+_CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
+[[nodiscard]] _CCCL_API constexpr _Tp rotr(_Tp __v, int __cnt) noexcept
 {
   if (__cnt < 0)
   {
     __cnt = static_cast<int>(static_cast<unsigned>(::cuda::neg(__cnt)) % numeric_limits<_Tp>::digits);
-    return _CUDA_VSTD::__cccl_rotl_impl(__v, __cnt);
+    return ::cuda::std::__cccl_rotl_impl(__v, __cnt);
   }
-  return _CUDA_VSTD::__cccl_rotr_impl(__v, __cnt);
+  return ::cuda::std::__cccl_rotr_impl(__v, __cnt);
 }
 
-_LIBCUDACXX_END_NAMESPACE_STD
+_CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _LIBCUDACXX___BIT_ROTATE_H
+#endif // _CUDA_STD___BIT_ROTATE_H

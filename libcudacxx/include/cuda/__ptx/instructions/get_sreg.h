@@ -30,13 +30,13 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
+_CCCL_BEGIN_NAMESPACE_CUDA_PTX
 
 // 10. Special Registers
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers
 #include <cuda/__ptx/instructions/generated/get_sreg.h>
 
-_LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+_CCCL_END_NAMESPACE_CUDA_PTX
 
 #include <cuda/std/__cccl/epilogue.h>
 

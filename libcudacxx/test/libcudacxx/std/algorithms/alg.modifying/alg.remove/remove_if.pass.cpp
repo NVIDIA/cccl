@@ -14,7 +14,7 @@
 //   constexpr Iter         // constexpr after C++17
 //   remove_if(Iter first, Iter last, Pred pred);
 
-#include <cuda/std/__algorithm_>
+#include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
 #include "counting_predicates.h"

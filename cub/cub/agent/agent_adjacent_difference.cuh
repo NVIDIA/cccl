@@ -1,29 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011-2021, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011-2021, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 #pragma once
 
@@ -40,6 +16,7 @@
 #include <cub/block/block_adjacent_difference.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
@@ -47,27 +24,24 @@
 
 CUB_NAMESPACE_BEGIN
 
-template <int _BLOCK_THREADS,
-          int _ITEMS_PER_THREAD                     = 1,
-          cub::BlockLoadAlgorithm _LOAD_ALGORITHM   = cub::BLOCK_LOAD_DIRECT,
-          cub::CacheLoadModifier _LOAD_MODIFIER     = cub::LOAD_LDG,
-          cub::BlockStoreAlgorithm _STORE_ALGORITHM = cub::BLOCK_STORE_DIRECT>
+template <int BlockThreads,
+          int ItemsPerThread                      = 1,
+          cub::BlockLoadAlgorithm LoadAlgorithm   = cub::BLOCK_LOAD_DIRECT,
+          cub::CacheLoadModifier LoadModifier     = cub::LOAD_LDG,
+          cub::BlockStoreAlgorithm StoreAlgorithm = cub::BLOCK_STORE_DIRECT>
 struct AgentAdjacentDifferencePolicy
 {
-  static constexpr int BLOCK_THREADS    = _BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD = _ITEMS_PER_THREAD;
+  static constexpr int BLOCK_THREADS    = BlockThreads;
+  static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
   static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
 
-  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM   = _LOAD_ALGORITHM;
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER     = _LOAD_MODIFIER;
-  static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
+  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM   = LoadAlgorithm;
+  static constexpr cub::CacheLoadModifier LOAD_MODIFIER     = LoadModifier;
+  static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
 };
 
-namespace detail
+namespace detail::adjacent_difference
 {
-namespace adjacent_difference
-{
-
 template <typename Policy,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -79,7 +53,7 @@ template <typename Policy,
           bool ReadLeft>
 struct AgentDifference
 {
-  using LoadIt = typename THRUST_NS_QUALIFIER::cuda_cub::core::detail::LoadIterator<Policy, InputIteratorT>::type;
+  using LoadIt = try_make_cache_modified_iterator_t<Policy::LOAD_MODIFIER, InputIteratorT>;
 
   using BlockLoad  = typename cub::BlockLoadType<Policy, LoadIt>::type;
   using BlockStore = typename cub::BlockStoreType<Policy, OutputIteratorT, OutputT>::type;
@@ -119,7 +93,7 @@ struct AgentDifference
     OffsetT num_items)
       : temp_storage(temp_storage.Alias())
       , input_it(input_it)
-      , load_it(THRUST_NS_QUALIFIER::cuda_cub::core::detail::make_load_iterator(Policy(), input_it))
+      , load_it(LoadIt(input_it))
       , first_tile_previous(first_tile_previous)
       , result(result)
       , difference_op(difference_op)
@@ -254,8 +228,6 @@ struct AgentDifferenceInit
     }
   }
 };
-
-} // namespace adjacent_difference
-} // namespace detail
+} // namespace detail::adjacent_difference
 
 CUB_NAMESPACE_END

@@ -37,7 +37,6 @@
 
 namespace cuda::experimental::stf
 {
-
 template <typename... Deps>
 class graph_task;
 
@@ -62,12 +61,12 @@ public:
   graph_task(backend_ctx_untyped ctx,
              cudaGraph_t g,
              ::std::mutex& graph_mutex,
-             size_t epoch,
+             size_t stage,
              exec_place e_place = exec_place::current_device())
       : task(mv(e_place))
       , ctx_graph(EXPECT(g))
       , graph_mutex(graph_mutex)
-      , epoch(epoch)
+      , stage(stage)
       , ctx(mv(ctx))
   {
     this->ctx.increment_task_count();
@@ -84,22 +83,39 @@ public:
   {
     ::std::lock_guard<::std::mutex> lock(graph_mutex);
 
-    event_list prereqs = acquire(ctx);
+    event_list ready_prereqs = acquire(ctx);
 
     // The CUDA graph API does not like duplicate dependencies
-    prereqs.optimize(ctx);
+    ready_prereqs.optimize(ctx);
 
     // Reserve for better performance
-    ready_dependencies.reserve(prereqs.size());
+    ready_dependencies.reserve(ready_prereqs.size());
 
-    for (auto& e : prereqs)
+    for (auto& e : ready_prereqs)
     {
       auto ge = reserved::graph_event(e, reserved::use_dynamic_cast);
-      if (ge->epoch == epoch)
+      if (ge->stage == stage)
       {
         ready_dependencies.push_back(ge->node);
       }
     }
+
+    if (is_capture_enabled())
+    {
+      // Select a stream from the pool
+      capture_stream = get_exec_place().getStream(ctx.async_resources(), true).stream;
+      // Use relaxed capture mode to allow capturing workloads that lazily initialize
+      // resources (e.g., set up memory pools)
+      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeRelaxed));
+    }
+
+    auto& dot = *ctx.get_dot();
+    if (dot.is_tracing())
+    {
+      dot.template add_vertex<task, logical_data_untyped>(*this);
+    }
+
+    set_ready_prereqs(mv(ready_prereqs));
 
     return *this;
   }
@@ -108,6 +124,13 @@ public:
   graph_task<>& end_uncleared()
   {
     ::std::lock_guard<::std::mutex> lock(graph_mutex);
+
+    if (is_capture_enabled())
+    {
+      cudaGraph_t childGraph = nullptr;
+      cuda_safe_call(cudaStreamEndCapture(capture_stream, &childGraph));
+      set_child_graph(childGraph);
+    }
 
     cudaGraphNode_t n;
 
@@ -119,7 +142,7 @@ public:
       // done_prereqs
       for (auto& node : done_nodes)
       {
-        auto gnp = reserved::graph_event(node, epoch, ctx_graph);
+        auto gnp = reserved::graph_event(node, stage, ctx_graph);
         gnp->set_symbol(ctx, "done " + get_symbol());
         /* This node is now the output dependency of the task */
         done_prereqs.add(mv(gnp));
@@ -137,21 +160,35 @@ public:
 #ifndef NDEBUG
           // Ensure the node does not have dependencies yet
           size_t num_deps;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+          cuda_safe_call(cudaGraphNodeGetDependencies(node, nullptr, nullptr, &num_deps));
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
           cuda_safe_call(cudaGraphNodeGetDependencies(node, nullptr, &num_deps));
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
           assert(num_deps == 0);
 
           // Ensure there are no output dependencies either (or we could not
           // add input dependencies later)
           size_t num_deps_out;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
+          cuda_safe_call(cudaGraphNodeGetDependentNodes(node, nullptr, nullptr, &num_deps_out));
+#  else // _CCCL_CTK_AT_LEAST(13, 0)
           cuda_safe_call(cudaGraphNodeGetDependentNodes(node, nullptr, &num_deps_out));
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
           assert(num_deps_out == 0);
 #endif
 
           // Repeat node as many times as there are input dependencies
           ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), node);
+#if _CCCL_CTK_AT_LEAST(13, 0)
+          cuda_safe_call(cudaGraphAddDependencies(
+            ctx_graph, ready_dependencies.data(), out_array.data(), nullptr, ready_dependencies.size()));
+#else // _CCCL_CTK_AT_LEAST(13, 0)
           cuda_safe_call(cudaGraphAddDependencies(
             ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
-          auto gnp = reserved::graph_event(node, epoch, ctx_graph);
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+
+          auto gnp = reserved::graph_event(node, stage, ctx_graph);
           gnp->set_symbol(ctx, "done " + get_symbol());
           /* This node is now the output dependency of the task */
           done_prereqs.add(mv(gnp));
@@ -161,11 +198,16 @@ public:
       {
         // First node depends on ready_dependencies
         ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), chained_task_nodes[0]);
+#if _CCCL_CTK_AT_LEAST(13, 0)
+        cuda_safe_call(cudaGraphAddDependencies(
+          ctx_graph, ready_dependencies.data(), out_array.data(), nullptr, ready_dependencies.size()));
+#else // _CCCL_CTK_AT_LEAST(13, 0)
         cuda_safe_call(
           cudaGraphAddDependencies(ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
         // Overall the task depends on the completion of the last node
-        auto gnp = reserved::graph_event(chained_task_nodes.back(), epoch, ctx_graph);
+        auto gnp = reserved::graph_event(chained_task_nodes.back(), stage, ctx_graph);
         gnp->set_symbol(ctx, "done " + get_symbol());
         done_prereqs.add(mv(gnp));
       }
@@ -187,7 +229,7 @@ public:
           cuda_safe_call(cudaGraphDestroy(childGraph));
         }
 
-        auto gnp = reserved::graph_event(n, epoch, ctx_graph);
+        auto gnp = reserved::graph_event(n, stage, ctx_graph);
         gnp->set_symbol(ctx, "done " + get_symbol());
         /* This node is now the output dependency of the task */
         done_prereqs.add(mv(gnp));
@@ -254,6 +296,12 @@ public:
     return dot.is_timing() || (calibrate && statistics.is_calibrating());
   }
 
+  // Only valid if we have defined a capture stream
+  cudaStream_t get_stream() const
+  {
+    return capture_stream;
+  }
+
   /**
    * @brief Invokes a lambda that takes either a `cudaStream_t` or a `cudaGraph_t`. Dependencies must be
    * set with `add_deps` manually before this call.
@@ -318,10 +366,12 @@ public:
       //
 
       // Get a stream from the pool associated to the execution place
-      cudaStream_t capture_stream = get_exec_place().getStream(ctx.async_resources(), true).stream;
+      capture_stream = get_exec_place().getStream(ctx.async_resources(), true).stream;
 
       cudaGraph_t childGraph = nullptr;
-      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeThreadLocal));
+      // Use relaxed capture mode to allow capturing workloads that lazily initialize
+      // resources (e.g., set up memory pools)
+      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeRelaxed));
 
       // Launch the user provided function
       f(capture_stream);
@@ -406,12 +456,12 @@ public:
 
   void set_current_place(pos4 p)
   {
-    get_exec_place().as_grid().set_current_place(ctx, p);
+    get_exec_place().as_grid().set_current_place(p);
   }
 
   void unset_current_place()
   {
-    get_exec_place().as_grid().unset_current_place(ctx);
+    get_exec_place().as_grid().unset_current_place();
   }
 
   const exec_place& get_current_place() const
@@ -436,6 +486,8 @@ private:
   cudaGraph_t child_graph       = nullptr;
   bool must_destroy_child_graph = false;
 
+  cudaStream_t capture_stream = nullptr;
+
   /* If the task corresponds to independent graph nodes, we do not use a
    * child graph, but add nodes directly */
   ::std::vector<cudaGraphNode_t> task_nodes;
@@ -452,7 +504,7 @@ private:
   // the graph_task class remains move assignable.
   ::std::reference_wrapper<::std::mutex> graph_mutex;
 
-  size_t epoch = 0;
+  size_t stage = 0;
 
   ::std::vector<cudaGraphNode_t> ready_dependencies;
 
@@ -475,10 +527,10 @@ public:
   graph_task(backend_ctx_untyped ctx,
              cudaGraph_t g,
              ::std::mutex& graph_mutex,
-             size_t epoch,
+             size_t stage,
              exec_place e_place,
              task_dep<Deps>... deps)
-      : graph_task<>(mv(ctx), g, graph_mutex, epoch, mv(e_place))
+      : graph_task<>(mv(ctx), g, graph_mutex, stage, mv(e_place))
   {
     static_assert(sizeof(*this) == sizeof(graph_task<>), "Cannot add state - it would be lost by slicing.");
     add_deps(mv(deps)...);
@@ -557,14 +609,9 @@ public:
       clear();
     };
 
-    if (dot.is_tracing())
-    {
-      dot.template add_vertex<task, logical_data_untyped>(*this);
-    }
-
     constexpr bool fun_invocable_stream_deps = ::std::is_invocable_v<Fun, cudaStream_t, Deps...>;
     constexpr bool fun_invocable_stream_non_void_deps =
-      reserved::is_invocable_with_filtered<Fun, cudaStream_t, Deps...>::value;
+      reserved::is_applicable_v<Fun, reserved::remove_void_interface_from_pack_t<cudaStream_t, Deps...>>;
 
     // Default for the first argument is a `cudaStream_t`.
     if constexpr (fun_invocable_stream_deps || fun_invocable_stream_non_void_deps)
@@ -584,7 +631,9 @@ public:
       cudaStream_t capture_stream = get_exec_place().getStream(ctx.async_resources(), true).stream;
 
       cudaGraph_t childGraph = nullptr;
-      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeThreadLocal));
+      // Use relaxed capture mode to allow capturing workloads that lazily initialize
+      // resources (e.g., set up memory pools)
+      cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeRelaxed));
 
       // Launch the user provided function
       if constexpr (fun_invocable_stream_deps)
@@ -595,7 +644,7 @@ public:
       {
         // Remove void arguments
         ::std::apply(::std::forward<Fun>(f),
-                     tuple_prepend(mv(capture_stream), reserved::remove_void_interface_types(typed_deps())));
+                     tuple_prepend(mv(capture_stream), reserved::remove_void_interface(typed_deps())));
       }
 
       cuda_safe_call(cudaStreamEndCapture(capture_stream, &childGraph));
@@ -610,7 +659,7 @@ public:
     {
       constexpr bool fun_invocable_graph_deps = ::std::is_invocable_v<Fun, cudaGraph_t, Deps...>;
       constexpr bool fun_invocable_graph_non_void_deps =
-        reserved::is_invocable_with_filtered<Fun, cudaGraph_t, Deps...>::value;
+        reserved::is_applicable_v<Fun, reserved::remove_void_interface_from_pack_t<cudaGraph_t, Deps...>>;
 
       static_assert(fun_invocable_graph_deps || fun_invocable_graph_non_void_deps,
                     "Incorrect lambda function signature.");
@@ -637,5 +686,4 @@ private:
     });
   }
 };
-
 } // namespace cuda::experimental::stf

@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
+
 // test numeric_limits
 
 // is_exact
@@ -30,9 +33,9 @@ int main(int, char**)
   test<signed char, true>();
   test<unsigned char, true>();
   test<wchar_t, true>();
-#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
   test<char8_t, true>();
-#endif
+#endif // _CCCL_HAS_CHAR8_T()
   test<char16_t, true>();
   test<char32_t, true>();
   test<short, true>();

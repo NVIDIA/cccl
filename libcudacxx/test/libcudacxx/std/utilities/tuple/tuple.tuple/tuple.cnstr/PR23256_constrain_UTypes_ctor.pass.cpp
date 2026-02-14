@@ -63,8 +63,8 @@ struct ExplicitUnconstrainedCtor
 
 int main(int, char**)
 {
-  typedef UnconstrainedCtor A;
-  typedef ExplicitUnconstrainedCtor ExplicitA;
+  using A         = UnconstrainedCtor;
+  using ExplicitA = ExplicitUnconstrainedCtor;
   {
     static_assert(cuda::std::is_copy_constructible<cuda::std::tuple<A>>::value, "");
     static_assert(cuda::std::is_move_constructible<cuda::std::tuple<A>>::value, "");

@@ -3,10 +3,13 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/sort.h>
 
+#include <cuda/std/algorithm>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
+#include <complex>
 #include <cstdint>
+#include <numeric>
 
 #include <unittest/unittest.h>
 
@@ -58,7 +61,7 @@ void TestCountingIteratorTraits()
 
   static_assert(cuda::std::is_same_v<thrust::iterator_traversal_t<it>, thrust::random_access_traversal_tag>);
 
-  static_assert(cuda::std::__is_cpp17_random_access_iterator<it>::value);
+  static_assert(cuda::std::__has_random_access_traversal<it>);
 
   static_assert(!cuda::std::output_iterator<it, int>);
   static_assert(cuda::std::input_iterator<it>);
@@ -284,5 +287,66 @@ void TestCountingIteratorDifference()
   ASSERT_EQUAL(diff, last - first);
 }
 DECLARE_UNITTEST(TestCountingIteratorDifference);
+
+void TestCountingIteratorDynamicStride()
+{
+  auto iter = thrust::make_counting_iterator(0, 2);
+  static_assert(sizeof(iter) == 2 * sizeof(int));
+
+  ASSERT_EQUAL(*iter, 0);
+  iter++;
+  ASSERT_EQUAL(*iter, 2);
+  iter++;
+  iter++;
+  ASSERT_EQUAL(*iter, 6);
+  iter += 5;
+  ASSERT_EQUAL(*iter, 16);
+  iter -= 10;
+  ASSERT_EQUAL(*iter, -4);
+}
+DECLARE_UNITTEST(TestCountingIteratorDynamicStride);
+
+void TestCountingIteratorStaticStride()
+{
+  auto iter = thrust::make_counting_iterator<2>(0);
+  static_assert(sizeof(decltype(iter)) == sizeof(int));
+
+  ASSERT_EQUAL(*iter, 0);
+  iter++;
+  ASSERT_EQUAL(*iter, 2);
+  iter++;
+  iter++;
+  ASSERT_EQUAL(*iter, 6);
+  iter += 5;
+  ASSERT_EQUAL(*iter, 16);
+  iter -= 10;
+  ASSERT_EQUAL(*iter, -4);
+}
+DECLARE_UNITTEST(TestCountingIteratorStaticStride);
+
+void TestCountingIteratorPointer()
+{
+  int arr[11];
+  std::iota(arr, arr + 11, 0);
+
+  auto iter = thrust::make_counting_iterator(&arr[2]);
+
+  ASSERT_EQUAL(*iter, &arr[2]);
+  ASSERT_EQUAL(**iter, 2);
+  iter++;
+  ASSERT_EQUAL(*iter, &arr[3]);
+  ASSERT_EQUAL(**iter, 3);
+  iter++;
+  iter++;
+  ASSERT_EQUAL(*iter, &arr[5]);
+  ASSERT_EQUAL(**iter, 5);
+  iter += 5;
+  ASSERT_EQUAL(*iter, &arr[10]);
+  ASSERT_EQUAL(**iter, 10);
+  iter -= 10;
+  ASSERT_EQUAL(*iter, &arr[0]);
+  ASSERT_EQUAL(**iter, 0);
+}
+DECLARE_UNITTEST(TestCountingIteratorPointer);
 
 _CCCL_DIAG_POP

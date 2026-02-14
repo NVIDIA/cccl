@@ -16,16 +16,30 @@
 
 namespace
 {
+struct S0
+{};
+struct S1
+{
+  int a;
+};
+struct S2
+{
+  int a, b;
+};
+static_assert(cudax_async::structured_binding_size<S0> == 0);
+static_assert(cudax_async::structured_binding_size<S1> == 1);
+static_assert(cudax_async::structured_binding_size<S2> == 2);
+
 template <class Fn>
 struct recursive_lambda
 {
-  Fn fn;
-
   template <class... Args>
-  __host__ __device__ auto operator()(Args&&... args)
+  auto operator()(Args&&... args)
   {
     return fn(*this, cuda::std::forward<Args>(args)...);
   }
+
+  Fn fn;
 };
 
 template <class Fn>

@@ -5,7 +5,7 @@
 
 #include "test_macros.h"
 
-#if defined(_LIBCUDACXX_VERSION)
+#if defined(_CUDA_STD_VERSION)
 namespace fs = std::__fs::filesystem;
 #else
 namespace fs = std::filesystem;

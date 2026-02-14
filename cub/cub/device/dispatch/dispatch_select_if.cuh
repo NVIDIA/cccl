@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * @file
@@ -48,7 +24,6 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_select_if.cuh>
-#include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
@@ -56,9 +31,17 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/std/__algorithm_>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__utility/swap.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 
 #include <nv/target>
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
 
 CUB_NAMESPACE_BEGIN
 
@@ -436,16 +419,18 @@ struct DispatchSelectIf
   // Offset type large enough to represent any index within the input and output iterators
   using num_total_items_t = OffsetT;
 
-  // Type used to provide streaming information about each partition's context
-  static constexpr per_partition_offset_t partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
+  // Whether the algorithm is a partitioning invocation (versus a selection invocation)
+  static constexpr bool is_partitioning_invocation = (SelectionOpt == SelectImpl::Partition);
 
-  // If the values representable by OffsetT exceed the partition_size, we use a kernel template specialization that
-  // supports streaming (i.e., splitting the input into partitions of up to partition_size number of items)
-  static constexpr bool may_require_streaming =
-    (static_cast<::cuda::std::uint64_t>(partition_size)
-     < static_cast<::cuda::std::uint64_t>(::cuda::std::numeric_limits<OffsetT>::max()));
+  // We always use a streaming context for selection. However, for a partitioning invocation, we only use a streaming
+  // context when necessary. I.e., if the values representable by OffsetT exceed the values representable by
+  // per_partition_offset_t.
+  static constexpr bool use_streaming_context =
+    (!is_partitioning_invocation)
+    || (static_cast<::cuda::std::uint64_t>(::cuda::std::numeric_limits<per_partition_offset_t>::max())
+        < static_cast<::cuda::std::uint64_t>(::cuda::std::numeric_limits<OffsetT>::max()));
 
-  using streaming_context_t = detail::select::streaming_context_t<num_total_items_t, may_require_streaming>;
+  using streaming_context_t = detail::select::streaming_context_t<num_total_items_t, use_streaming_context>;
 
   using ScanTileStateT = ScanTileState<per_partition_offset_t>;
 
@@ -573,12 +558,23 @@ struct DispatchSelectIf
     constexpr auto items_per_thread = VsmemHelperT::agent_policy_t::ITEMS_PER_THREAD;
     constexpr auto tile_size        = static_cast<OffsetT>(block_threads * items_per_thread);
 
+    // The maximum number of items per partition
+    static constexpr auto max_supported_partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
+    static constexpr auto full_tile_partition_size =
+      max_supported_partition_size - (max_supported_partition_size % (block_threads * items_per_thread));
+
+    // For partitioning invocations, we cap the partition size to the maximum number of items supported.
+    // For selection invocations, we cap at the largest multiple of a full tile. There's a selection-specific bug where
+    // we would otherwise overflow indices for the last partial tile, when discounting for the out-of-bounds items.
+    static constexpr per_partition_offset_t capped_partition_size =
+      is_partitioning_invocation ? max_supported_partition_size : full_tile_partition_size;
+
     // The maximum number of items for which we will ever invoke the kernel (i.e. largest partition size)
-    // The extra check of may_require_streaming ensures that OffsetT is larger than per_partition_offset_t to avoid
+    // The extra check of use_streaming_context ensures that OffsetT is larger than per_partition_offset_t to avoid
     // truncation of partition_size
     auto const max_partition_size =
-      (may_require_streaming && num_items > static_cast<OffsetT>(partition_size))
-        ? static_cast<OffsetT>(partition_size)
+      (use_streaming_context && num_items > static_cast<OffsetT>(capped_partition_size))
+        ? static_cast<OffsetT>(capped_partition_size)
         : num_items;
 
     // The number of partitions required to "iterate" over the total input (ternary to avoid div-by-zero)
@@ -617,7 +613,7 @@ struct DispatchSelectIf
       // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
       void* allocations[3] = {};
 
-      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -652,7 +648,7 @@ struct DispatchSelectIf
         }
 
         // Log scan_init_kernel configuration
-        int init_grid_size = _CUDA_VSTD::max(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
+        int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
 
 #ifdef CUB_DEBUG_LOG
         _CubLog("Invoking scan_init_kernel<<<%d, %d, 0, %lld>>>()\n",
@@ -662,11 +658,9 @@ struct DispatchSelectIf
 #endif
 
         // Invoke scan_init_kernel to initialize tile descriptors
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
-          .doit(scan_init_kernel, tile_status, current_num_tiles, d_num_selected_out);
-
-        // Check for failure to launch
-        error = CubDebug(cudaPeekAtLastError());
+        error = CubDebug(
+          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+            .doit(scan_init_kernel, tile_status, current_num_tiles, d_num_selected_out));
         if (cudaSuccess != error)
         {
           return error;
@@ -710,22 +704,20 @@ struct DispatchSelectIf
 #endif
 
         // Invoke select_if_kernel
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(current_num_tiles, block_threads, 0, stream)
-          .doit(select_if_kernel,
-                d_in,
-                d_flags,
-                d_selected_out,
-                d_num_selected_out,
-                tile_status,
-                select_op,
-                equality_op,
-                static_cast<per_partition_offset_t>(current_num_items),
-                current_num_tiles,
-                streaming_context,
-                cub::detail::vsmem_t{allocations[1]});
-
-        // Check for failure to launch
-        error = CubDebug(cudaPeekAtLastError());
+        error = CubDebug(
+          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(current_num_tiles, block_threads, 0, stream)
+            .doit(select_if_kernel,
+                  d_in,
+                  d_flags,
+                  d_selected_out,
+                  d_num_selected_out,
+                  tile_status,
+                  select_op,
+                  equality_op,
+                  static_cast<per_partition_offset_t>(current_num_items),
+                  current_num_tiles,
+                  streaming_context,
+                  cub::detail::vsmem_t{allocations[1]}));
         if (cudaSuccess != error)
         {
           return error;
@@ -836,3 +828,5 @@ struct DispatchSelectIf
 };
 
 CUB_NAMESPACE_END
+
+_CCCL_DIAG_POP

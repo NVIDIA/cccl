@@ -37,7 +37,6 @@
 
 namespace cuda::experimental::stf
 {
-
 class cb;
 
 #    ifdef STATEFUL_CALLBACKS
@@ -256,7 +255,7 @@ public:
   void launch_worker()
   {
     // Avoid C++ whining ...
-    typedef void* (*func_ptr)(void*);
+    using func_ptr = void* (*) (void*);
     pthread_create(&progress_thread, NULL, (func_ptr) &callback_queue::callback_queue_worker, this);
   }
 
@@ -600,7 +599,6 @@ inline bool cudaCallbackQueueProgress(callback_queue* q, bool flag)
 
   return false;
 }
-
 } // end namespace cuda::experimental::stf
 
 #  endif // !_CCCL_COMPILER(MSVC)

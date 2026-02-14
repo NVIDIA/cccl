@@ -1,30 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2018, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3
 
 /**
  * @file
@@ -46,10 +22,12 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
 
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/iterator/iterator_facade.h>
 
-#include <cuda/std/iterator>
-#include <cuda/std/type_traits>
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__utility/declval.h>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
@@ -100,6 +78,11 @@ CUB_NAMESPACE_BEGIN
  *
  * @tparam OffsetT
  *   The difference type of this iterator (Default: @p ptrdiff_t)
+ *
+ * @rst
+ * .. versionadded:: 2.2.0
+ *    First appears in CUDA Toolkit 12.3.
+ * @endrst
  */
 template <CacheLoadModifier MODIFIER, typename ValueType, typename OffsetT = ptrdiff_t>
 class CacheModifiedInputIterator
@@ -125,11 +108,9 @@ public:
 #if _CCCL_COMPILER(NVRTC)
   using iterator_category = ::cuda::std::random_access_iterator_tag;
 #else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
-  using iterator_category = typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
-    THRUST_NS_QUALIFIER::device_system_tag,
-    THRUST_NS_QUALIFIER::random_access_traversal_tag,
-    value_type,
-    reference>::type;
+  using iterator_category =
+    THRUST_NS_QUALIFIER::detail::iterator_facade_category_t<THRUST_NS_QUALIFIER::device_system_tag,
+                                                            THRUST_NS_QUALIFIER::random_access_traversal_tag>;
 #endif // _CCCL_COMPILER(NVRTC)
 
 public:
@@ -234,5 +215,26 @@ public:
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
+
+namespace detail
+{
+template <CacheLoadModifier LoadModifier, typename Iterator>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto try_make_cache_modified_iterator(Iterator it)
+{
+  if constexpr (::cuda::std::contiguous_iterator<Iterator>)
+  {
+    return CacheModifiedInputIterator<LoadModifier, it_value_t<Iterator>, it_difference_t<Iterator>>{
+      THRUST_NS_QUALIFIER::raw_pointer_cast(&*it)};
+  }
+  else
+  {
+    return it;
+  }
+}
+
+template <CacheLoadModifier LoadModifier, typename Iterator>
+using try_make_cache_modified_iterator_t =
+  decltype(try_make_cache_modified_iterator<LoadModifier>(::cuda::std::declval<Iterator>()));
+} // namespace detail
 
 CUB_NAMESPACE_END

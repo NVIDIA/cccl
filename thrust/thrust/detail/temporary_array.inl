@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2021 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2021, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -28,34 +15,15 @@
 
 #include <thrust/detail/temporary_array.h>
 #include <thrust/detail/type_traits.h>
-#include <thrust/distance.h>
 #include <thrust/system/detail/generic/select_system.h>
+
+#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace detail
 {
-namespace temporary_array_detail
-{
-
-template <typename T>
-struct avoid_initialization : ::cuda::std::is_trivially_copy_constructible<T>
-{};
-
-template <typename T, typename TemporaryArray, typename Size>
-_CCCL_HOST_DEVICE ::cuda::std::enable_if_t<avoid_initialization<T>::value> construct_values(TemporaryArray&, Size)
-{
-  // avoid the overhead of initialization
-} // end construct_values()
-
-template <typename T, typename TemporaryArray, typename Size>
-_CCCL_HOST_DEVICE ::cuda::std::enable_if_t<!avoid_initialization<T>::value> construct_values(TemporaryArray& a, Size n)
-{
-  a.value_initialize_n(a.begin(), n);
-} // end construct_values()
-
-} // namespace temporary_array_detail
-
 template <typename T, typename System>
 _CCCL_HOST_DEVICE temporary_array<T, System>::temporary_array(thrust::execution_policy<System>& system)
     : super_t(alloc_type(temporary_allocator<T, System>(system)))
@@ -65,7 +33,10 @@ template <typename T, typename System>
 _CCCL_HOST_DEVICE temporary_array<T, System>::temporary_array(thrust::execution_policy<System>& system, size_type n)
     : super_t(n, alloc_type(temporary_allocator<T, System>(system)))
 {
-  temporary_array_detail::construct_values<T>(*this, n);
+  if constexpr (!::cuda::std::is_trivially_copy_constructible_v<T>)
+  {
+    super_t::value_initialize_n(super_t::begin(), n);
+  }
 } // end temporary_array::temporary_array()
 
 template <typename T, typename System>
@@ -132,7 +103,6 @@ _CCCL_HOST_DEVICE temporary_array<T, System>::~temporary_array()
   // note that super_t::destroy will ignore trivial destructors automatically
   super_t::destroy(super_t::begin(), super_t::end());
 } // end temporary_array::~temporary_array()
-
 } // namespace detail
 
 THRUST_NAMESPACE_END

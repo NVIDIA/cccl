@@ -7,4 +7,4 @@ Transformed Reductions
    :glob:
    :maxdepth: 1
 
-   ${repo_docs_api_path}/*function_group__transformed__reductions*
+   ../../../api/group__transformed__reductions*

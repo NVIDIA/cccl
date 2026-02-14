@@ -33,10 +33,8 @@
 
 namespace cuda::experimental::stf
 {
-
 namespace reserved
 {
-
 class block_data_pool_set;
 
 /**
@@ -228,7 +226,6 @@ private:
   // To enable access to entries
   friend class block_data_pool_set;
 };
-
 } // end namespace reserved
 
 /**
@@ -259,7 +256,6 @@ struct pooled_allocator_config
 
 namespace reserved
 {
-
 /// This class implements a set of blocks of allocations
 class block_data_pool_set
 {
@@ -411,7 +407,6 @@ private:
   pooled_allocator_config config = {
     .max_entries_per_place = 1024, .max_ratio = 0.2, .max_footprint_per_place = ::std::nullopt};
 };
-
 } // end namespace reserved
 
 /**
@@ -526,5 +521,4 @@ private:
   // The (fixed) size of all blocks
   const size_t block_size;
 };
-
 } // end namespace cuda::experimental::stf

@@ -30,7 +30,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Acquires necessary resources and dependencies for a task to run.
  *
@@ -67,7 +66,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
   auto result = get_input_events();
 
   // Automatically set the appropriate context (device, SM affinity, ...)
-  pimpl->saved_place_ctx = eplace.activate(ctx);
+  pimpl->saved_place_ctx = eplace.activate();
 
   auto& task_deps = pimpl->deps;
 
@@ -201,7 +200,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
   if (dot.is_tracing())
   {
     // Declare that the node identified by unique_id depends on these prereqs
-    result.dot_declare_prereqs(dot, get_unique_id(), 1);
+    result.dot_declare_prereqs(dot, get_unique_id(), reserved::edge_type::prereqs);
   }
 
   // We consider the setup phase is over
@@ -219,8 +218,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
  * and marks the task as finished.
  *
  * After calling this function, the task is considered "over" and is transitioned
- * from the `running` phase to the `finished` phase. All associated resources are unlocked
- * and post-submission hooks (if any) are executed.
+ * from the `running` phase to the `finished` phase. All associated resources are unlocked.
  *
  * @param ctx The context of the backend, which manages the execution environment.
  * @param done_prereqs A list of events that must be marked as complete before the task can be released.
@@ -236,7 +234,6 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
  * - Resets the execution context (device, SM affinity, etc.) to its previous state.
  * - Unlocks mutexes for the logical data that were locked during task execution.
  * - Releases any references to logical data, preventing potential memory leaks.
- * - Executes any post-submission hooks attached to the task.
  *
  * The function also interacts with tracing and debugging tools, marking
  * the task's completion and declaring the task as a prerequisite for future tasks in the trace.
@@ -283,14 +280,14 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
   }
 
   // Automatically reset the context to its original configuration (device, SM affinity, ...)
-  get_exec_place().deactivate(ctx, pimpl->saved_place_ctx);
+  get_exec_place().deactivate(pimpl->saved_place_ctx);
 
   auto& dot = *ctx.get_dot();
   if (dot.is_tracing())
   {
     // These prereqs depend on the task identified by unique_id
     auto& done_prereqs_ = get_done_prereqs();
-    done_prereqs_.dot_declare_prereqs_from(dot, get_unique_id(), 1);
+    done_prereqs_.dot_declare_prereqs_from(dot, get_unique_id(), reserved::edge_type::prereqs);
   }
 
   // This task becomes a new "leaf task" until another task depends on it
@@ -314,19 +311,8 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
     dep.reset_logical_data();
   }
 
-  /* Execute hooks (if any) */
-  for (auto& hook : pimpl->post_submission_hooks)
-  {
-    hook();
-  }
-
-  // This will, in particular, release shared_ptr to logical data captured in
-  // the dependencies.
-  pimpl->post_submission_hooks.clear();
-
 #ifndef NDEBUG
   ctx.increment_finished_task_count();
 #endif
 }
-
 } // namespace cuda::experimental::stf

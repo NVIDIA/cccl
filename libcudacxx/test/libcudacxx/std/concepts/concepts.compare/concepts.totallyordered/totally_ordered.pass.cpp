@@ -58,9 +58,9 @@ static_assert(models_totally_ordered<char const*>(), "");
 static_assert(models_totally_ordered<char volatile*>(), "");
 static_assert(models_totally_ordered<char const volatile*>(), "");
 static_assert(models_totally_ordered<wchar_t&>(), "");
-#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
 static_assert(models_totally_ordered<char8_t const&>(), "");
-#endif // TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#endif // _CCCL_HAS_CHAR8_T()
 static_assert(models_totally_ordered<char16_t volatile&>(), "");
 static_assert(models_totally_ordered<char32_t const volatile&>(), "");
 static_assert(models_totally_ordered<unsigned char&&>(), "");
@@ -84,27 +84,27 @@ static_assert(!totally_ordered<int S::*>, "");
 static_assert(!totally_ordered<int (S::*)()>, "");
 static_assert(!totally_ordered<int (S::*)() noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() &>, "");
-static_assert(!totally_ordered < int(S::*)() & noexcept >, "");
+static_assert(!totally_ordered<int (S::*)() & noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() &&>, "");
-static_assert(!totally_ordered < int(S::*)() && noexcept >, "");
+static_assert(!totally_ordered < int (S::*)() && noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() const>, "");
 static_assert(!totally_ordered<int (S::*)() const noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() const&>, "");
-static_assert(!totally_ordered < int(S::*)() const& noexcept >, "");
+static_assert(!totally_ordered<int (S::*)() const & noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() const&&>, "");
-static_assert(!totally_ordered < int(S::*)() const&& noexcept >, "");
+static_assert(!totally_ordered < int (S::*)() const&& noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() volatile>, "");
 static_assert(!totally_ordered<int (S::*)() volatile noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() volatile&>, "");
-static_assert(!totally_ordered < int(S::*)() volatile & noexcept >, "");
+static_assert(!totally_ordered<int (S::*)() volatile & noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() volatile&&>, "");
-static_assert(!totally_ordered < int(S::*)() volatile && noexcept >, "");
+static_assert(!totally_ordered < int (S::*)() volatile && noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() const volatile>, "");
 static_assert(!totally_ordered<int (S::*)() const volatile noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() const volatile&>, "");
-static_assert(!totally_ordered < int(S::*)() const volatile& noexcept >, "");
+static_assert(!totally_ordered<int (S::*)() const volatile & noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() const volatile&&>, "");
-static_assert(!totally_ordered < int(S::*)() const volatile&& noexcept >, "");
+static_assert(!totally_ordered < int (S::*)() const volatile&& noexcept >, "");
 
 static_assert(!totally_ordered<void>, "");
 } // namespace fundamentals
