@@ -96,8 +96,9 @@ public:
   }
 
   /** @brief Partition a vector of execution places into a vector of subplaces */
-  place_partition(
-    async_resources_handle& handle, ::std::vector<::std::shared_ptr<exec_place>> places, place_partition_scope scope)
+  place_partition(async_resources_handle& handle,
+                  const ::std::vector<::std::shared_ptr<exec_place>>& places,
+                  place_partition_scope scope)
   {
     for (const auto& place : places)
     {
@@ -106,7 +107,7 @@ public:
   }
 
   /** @brief Partition a vector of execution places into a vector of subplaces without an async resource handle */
-  place_partition(::std::vector<::std::shared_ptr<exec_place>> places, place_partition_scope scope)
+  place_partition(const ::std::vector<::std::shared_ptr<exec_place>>& places, place_partition_scope scope)
   {
     for (const auto& place : places)
     {
@@ -117,7 +118,8 @@ public:
   ~place_partition() = default;
 
   // To iterate over all subplaces
-  using iterator = ::std::vector<exec_place>::iterator;
+  using iterator       = ::std::vector<exec_place>::iterator;
+  using const_iterator = ::std::vector<exec_place>::const_iterator;
   iterator begin()
   {
     return sub_places.begin();
@@ -125,7 +127,14 @@ public:
   iterator end()
   {
     return sub_places.end();
-    ;
+  }
+  const_iterator begin() const
+  {
+    return sub_places.begin();
+  }
+  const_iterator end() const
+  {
+    return sub_places.end();
   }
 
   /** @brief Number of subplaces in the partition */
@@ -146,7 +155,7 @@ public:
     return sub_places[i];
   }
 
-  exec_place_grid as_grid()
+  exec_place_grid as_grid() const
   {
     return make_grid(sub_places);
   }
