@@ -86,10 +86,10 @@ int main()
   {
     ctx.parallel_for(blocked_partition(), where, handle_X.shape(), handle_X.rw(), handle_Y.read())
         ->*[tr] __device__(size_t i, auto x, auto y) {
-              x(i) += (y((i+n-1) % n) + y((i+n+1) % n))/2;
+              x(i) += (y((i + n - 1) % n) + y((i + n + 1) % n)) / 2;
               tr.mark_access(pos4(i), shape(x), blocked_partition(), 1);
-              tr.mark_access(pos4((i+n-1) % n), shape(y), blocked_partition(), 1);
-              tr.mark_access(pos4((i+n+1) % n), shape(y), blocked_partition(), 1);
+              tr.mark_access(pos4((i + n - 1) % n), shape(y), blocked_partition(), 1);
+              tr.mark_access(pos4((i + n + 1) % n), shape(y), blocked_partition(), 1);
             };
   }
 

@@ -251,5 +251,4 @@ auto exec_place::partition_by_scope(Args&&... args)
 {
   return place_partition(*this, ::std::forward<Args>(args)...).as_grid();
 }
-
 } // end namespace cuda::experimental::stf
