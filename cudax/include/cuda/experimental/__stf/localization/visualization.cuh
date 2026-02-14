@@ -10,8 +10,8 @@
 
 /**
  * @file
- * @brief Implementation of the localized_array class which is used to allocate a piece
- * of data that is dispatched over multiple data places
+ * @brief Visualization and tracing utilities for locality with a communication matrix tracer for exec/data place
+ * accesses.
  */
 
 #pragma once
