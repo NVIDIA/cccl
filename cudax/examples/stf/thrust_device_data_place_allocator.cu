@@ -21,6 +21,7 @@
 #include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
 #include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/transform.h>
@@ -164,8 +165,7 @@ int main()
       all_ok &= run_with_place(cdp, "composite(blocked_partition, green_context_grid)");
     }
   }
-}
 #endif
 
-return all_ok ? 0 : 1;
+  return all_ok ? 0 : 1;
 }
