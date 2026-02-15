@@ -129,7 +129,7 @@ class _Scan:
 
         # Update op state for stateful ops
         op_adapter = make_op_adapter(op)
-        op_adapter.update_op_state(self.op_cccl)
+        self.op_cccl.state = op_adapter.get_state()
 
         match self.init_kind:
             case _bindings.InitKind.FUTURE_VALUE_INIT:
