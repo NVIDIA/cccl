@@ -552,7 +552,9 @@ template <class _Fn, class... _Iterators>
 _CCCL_HOST_DEVICE zip_transform_iterator(_Fn, _Iterators...) -> zip_transform_iterator<_Fn, _Iterators...>;
 
 //! @brief Creates a @c zip_transform_iterator from a tuple of iterators.
+//! @param __fun The functor used to transform the input ranges
 //! @param __t The tuple of iterators to wrap
+//! @relates zip_transform_iterator
 template <class _Fn, class... _Iterators>
 [[nodiscard]] _CCCL_API constexpr auto
 make_zip_transform_iterator(_Fn __fun, ::cuda::std::tuple<_Iterators...> __t) noexcept(
@@ -563,7 +565,9 @@ make_zip_transform_iterator(_Fn __fun, ::cuda::std::tuple<_Iterators...> __t) no
 }
 
 //! @brief Creates a @c zip_transform_iterator from a variadic number of iterators.
+//! @param __fun The functor used to transform the input ranges
 //! @param __iters The iterators to wrap
+//! @relates zip_transform_iterator
 template <class _Fn, class... _Iterators>
 [[nodiscard]] _CCCL_API constexpr auto make_zip_transform_iterator(_Fn __fun, _Iterators... __iters) noexcept(
   ::cuda::std::is_nothrow_move_constructible_v<_Fn>

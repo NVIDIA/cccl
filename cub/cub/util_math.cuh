@@ -49,6 +49,14 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT safe_add_bound_to_max(OffsetT lhs, O
   auto const capped_operand_rhs = (::cuda::std::min) (rhs, ::cuda::std::numeric_limits<OffsetT>::max() - lhs);
   return lhs + capped_operand_rhs;
 }
+
+constexpr _CCCL_HOST_DEVICE int nominal_8B_items_to_items(int nominal_8b_items_per_thread, int item_size)
+{
+  return item_size <= 8
+         ? nominal_8b_items_per_thread
+         : (::cuda::std::min) (nominal_8b_items_per_thread,
+                               (::cuda::std::max) (1, ((nominal_8b_items_per_thread * 8) + item_size - 1) / item_size));
+}
 } // namespace detail
 
 constexpr _CCCL_HOST_DEVICE int Nominal4BItemsToItemsCombined(int nominal_4b_items_per_thread, int combined_bytes)
@@ -67,13 +75,7 @@ constexpr _CCCL_HOST_DEVICE int Nominal4BItemsToItems(int nominal_4b_items_per_t
 template <typename ItemT>
 constexpr _CCCL_HOST_DEVICE int Nominal8BItemsToItems(int nominal_8b_items_per_thread)
 {
-  return sizeof(ItemT) <= 8u
-         ? nominal_8b_items_per_thread
-         : (::cuda::std::min) (nominal_8b_items_per_thread,
-                               (::cuda::std::max) (1,
-                                                   ((nominal_8b_items_per_thread * 8) + static_cast<int>(sizeof(ItemT))
-                                                    - 1)
-                                                     / static_cast<int>(sizeof(ItemT))));
+  return detail::nominal_8B_items_to_items(nominal_8b_items_per_thread, int{sizeof(ItemT)});
 }
 
 /**

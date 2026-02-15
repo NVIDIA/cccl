@@ -109,6 +109,36 @@ class _Histogram:
 
 
 @cache_with_registered_key_functions
+def _make_histogram_even_impl(
+    d_samples: DeviceArrayLike | IteratorT,
+    d_histogram: DeviceArrayLike,
+    num_output_levels_val: int,
+    lower_level_val,
+    upper_level_val,
+    level_dtype,
+    num_samples: int,
+    uses_privatized_smem: bool,
+):
+    """Internal cached implementation of make_histogram_even.
+
+    The uses_privatized_smem parameter ensures kernels compiled
+    for different bin count regimes aren't reused.
+    """
+    # Reconstruct the numpy arrays expected by _Histogram
+    h_num_output_levels = np.array([num_output_levels_val], dtype=np.int32)
+    h_lower_level = np.array([lower_level_val], dtype=level_dtype)
+    h_upper_level = np.array([upper_level_val], dtype=level_dtype)
+
+    return _Histogram(
+        d_samples,
+        d_histogram,
+        h_num_output_levels,
+        h_lower_level,
+        h_upper_level,
+        num_samples,
+    )
+
+
 def make_histogram_even(
     d_samples: DeviceArrayLike | IteratorT,
     d_histogram: DeviceArrayLike,
@@ -137,13 +167,27 @@ def make_histogram_even(
     Returns:
         A callable object that can be used to perform the histogram
     """
-    return _Histogram(
+    # Extract scalar values from arrays for caching
+    num_output_levels_val = int(h_num_output_levels[0])
+    lower_level_val = h_lower_level[0].item()
+    upper_level_val = h_upper_level[0].item()
+    level_dtype = h_lower_level.dtype
+
+    # bins <= 256 uses privatized smem strategy. a different compile
+    # path than bins > 256. We should include this information when
+    # caching histogram build objects.
+    # See detail::histogram::max_privatized_smem_bins (dispatch_histogram.cuh)
+    num_bins = num_output_levels_val - 1
+    uses_privatized_smem = num_bins <= 256
+    return _make_histogram_even_impl(
         d_samples,
         d_histogram,
-        h_num_output_levels,
-        h_lower_level,
-        h_upper_level,
+        num_output_levels_val,
+        lower_level_val,
+        upper_level_val,
+        level_dtype,
         num_samples,
+        uses_privatized_smem,
     )
 
 

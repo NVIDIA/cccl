@@ -18,57 +18,84 @@
 #include "test_macros.h"
 
 template <typename Barrier, template <typename, typename> class Selector, typename Initializer = constructor_initializer>
-__host__ __device__ void test(bool add_delay = false)
+__host__ __device__ int test(bool add_delay = false)
 {
+  printf("delay %s\r\n", add_delay ? "enabled" : "disabled");
+
   Selector<Barrier, Initializer> sel;
   SHARED Barrier* b;
-  b          = sel.construct(2);
-  auto delay = cuda::std::chrono::duration<int>(0);
+  b            = sel.construct(2);
+  auto delay   = cuda::std::chrono::nanoseconds(0);
+  auto timeout = cuda::std::chrono::nanoseconds(100000000);
 
   if (add_delay)
   {
-    delay = cuda::std::chrono::duration<int>(1);
+    delay = cuda::std::chrono::nanoseconds(100000);
   }
 
-  typename Barrier::arrival_token* tok = nullptr;
-  execute_on_main_thread([&] {
-    tok = new auto(b->arrive());
-  });
+  auto time = cuda::std::chrono::high_resolution_clock::now();
+  cuda::std::atomic_ref<decltype(time)> time_ref(time);
 
-  auto awaiter = LAMBDA()
+  auto measure = LAMBDA()->cuda::std::chrono::nanoseconds
   {
-    while (b->try_wait_for(cuda::std::move(*tok), delay) == false)
-    {
-    }
+    return cuda::std::chrono::duration_cast<cuda::std::chrono::nanoseconds>(
+      cuda::std::chrono::high_resolution_clock::now() - time_ref.load());
   };
-  auto arriver = LAMBDA()
-  {
-    (void) b->arrive();
-  };
-  concurrent_agents_launch(awaiter, arriver);
 
-  execute_on_main_thread([&] {
-    auto tok2 = b->arrive(2);
-    while (b->try_wait_for(cuda::std::move(tok2), delay) == false)
+  {
+    typename Barrier::arrival_token* tok = nullptr;
+    execute_on_main_thread([&] {
+      tok = new auto(b->arrive());
+    });
+
+    auto awaiter = LAMBDA()
     {
+      time_ref = cuda::std::chrono::high_resolution_clock::now();
+      while ((b->try_wait_for(cuda::std::move(*tok), delay) == false) && (measure() < timeout))
+      {
+      }
+      printf("p1 barrier delay: %lluns\r\n", measure().count());
+    };
+    auto arriver = LAMBDA()
+    {
+      (void) b->arrive();
+    };
+    concurrent_agents_launch(awaiter, arriver);
+    if (measure() > timeout)
+    {
+      printf("Deadlock detected in p1\r\n");
+      return 1;
     }
-  });
+  }
+  {
+    execute_on_main_thread([&] {
+      auto tok2 = b->arrive(2);
+      time_ref  = ::cuda::std::chrono::high_resolution_clock::now();
+      while ((b->try_wait_for(cuda::std::move(tok2), delay) == false) && (measure() < timeout))
+      {
+      }
+      printf("p2 barrier delay: %lluns\r\n", measure().count());
+    });
+    if (measure() > timeout)
+    {
+      printf("Deadlock detected in p2\r\n");
+      return 1;
+    }
+  }
+  return 0;
 }
 
 int main(int, char**)
 {
-  NV_IF_ELSE_TARGET(
+  int failure = 0;
+  NV_IF_TARGET(
     NV_IS_HOST,
-    (
-      // Required by concurrent_agents_launch to know how many we're launching
-      cuda_thread_count = 2;
+    (cuda_thread_count = 2; failure |= test<cuda::barrier<cuda::thread_scope_block>, local_memory_selector>();
+     failure |= test<cuda::barrier<cuda::thread_scope_block>, local_memory_selector>(true);),
+    (failure |= test<cuda::barrier<cuda::thread_scope_block>, shared_memory_selector>();
+     failure |= test<cuda::barrier<cuda::thread_scope_block>, global_memory_selector>();
+     failure |= test<cuda::barrier<cuda::thread_scope_block>, shared_memory_selector>(true);
+     failure |= test<cuda::barrier<cuda::thread_scope_block>, global_memory_selector>(true);))
 
-      test<cuda::barrier<cuda::thread_scope_block>, local_memory_selector>();
-      test<cuda::barrier<cuda::thread_scope_block>, local_memory_selector>(true);),
-    (test<cuda::barrier<cuda::thread_scope_block>, shared_memory_selector>();
-     test<cuda::barrier<cuda::thread_scope_block>, global_memory_selector>();
-     test<cuda::barrier<cuda::thread_scope_block>, shared_memory_selector>(true);
-     test<cuda::barrier<cuda::thread_scope_block>, global_memory_selector>(true);))
-
-  return 0;
+  return failure;
 }

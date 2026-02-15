@@ -11,6 +11,7 @@ CUDA C++ Core Libraries
    cub/index
    thrust/index
    cudax/index
+   cccl/tma
    cccl/3.0_migration_guide
    cccl/development/index
    cccl/contributing

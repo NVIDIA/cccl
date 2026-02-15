@@ -6,7 +6,7 @@
 from typing import Callable, Protocol, TypeVar
 
 from .iterators import IteratorBase
-from .op import OpAdapter, OpKind
+from .op import OpAdapter, OpKind, RawOp
 from .struct import _Struct
 
 
@@ -17,7 +17,7 @@ class DeviceArrayLike(Protocol):
     where a :class:`DeviceArrayLike` is expected. This includes CuPy arrays, Numba
     device arrays, PyTorch CUDA tensors, and other GPU array types.
 
-    See `CUDA Array Interface specification <https://numba.readthedocs.io/en/stable/cuda/cuda_array_interface.html>`_
+    See `CUDA Array Interface specification <https://nvidia.github.io/numba-cuda/user/cuda_array_interface.html>`_
     for details.
     """
 
@@ -47,16 +47,18 @@ Represents any subclass of :class:`IteratorBase <cuda.compute.iterators.Iterator
 See :py:mod:`cuda.compute.iterators` for all available iterators.
 """
 
-Operator = Callable | OpKind | OpAdapter
+Operator = Callable | OpKind | RawOp | OpAdapter
 """Type alias for operator objects passed to algorithm functions.
 
 Algorithms accept the following objects as operators:
 
 * Python functions or lambdas implementing the operator. This function will be JIT
-  compiled into device code using ``numba.cuda``.
+  compiled into device code using `numba.cuda <https://nvidia.github.io/numba-cuda/>`_.
 
 * :class:`OpKind <cuda.compute.op.OpKind>` enumerators which are pre-defined constants
   for common operations.
+
+* :class:`RawOp <cuda.compute.op.RawOp` objects containing pre-compiled device code.
 """
 
 __all__ = ["DeviceArrayLike", "GpuStruct", "IteratorT", "Operator"]

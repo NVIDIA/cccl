@@ -403,7 +403,19 @@ inline constexpr bool __is_cuda_maximum_v<::cuda::maximum<_Tp...>> = true;
  **********************************************************************************************************************/
 
 struct __no_identity_element
-{};
+{
+  template <class _Tp>
+  [[nodiscard]] _CCCL_API constexpr bool operator==(_Tp&&) noexcept
+  {
+    return false;
+  }
+
+  template <class _Tp>
+  [[nodiscard]] _CCCL_API constexpr bool operator!=(_Tp&&) noexcept
+  {
+    return true;
+  }
+};
 
 template <class _Op, class _Tp>
 [[nodiscard]] _CCCL_API constexpr auto identity_element() noexcept
