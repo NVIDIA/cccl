@@ -823,6 +823,13 @@ __libraryGetManagedNoThrow(::CUdeviceptr& __dptr, ::cuda::std::size_t& __nbytes,
   return static_cast<::cudaError_t>(__driver_fn(&__dptr, &__nbytes, __lib, __name));
 }
 
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__libraryGetUnifiedFunctionNoThrow(void*& __fn_ptr, ::CUlibrary __lib, const char* __name)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuLibraryGetUnifiedFunction);
+  return static_cast<::cudaError_t>(__driver_fn(&__fn_ptr, __lib, __name));
+}
+
 // Execution control
 
 [[nodiscard]] _CCCL_HOST_API inline ::cudaError_t

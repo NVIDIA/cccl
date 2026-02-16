@@ -197,6 +197,50 @@ public:
     return library_symbol_info{reinterpret_cast<void*>(__dptr), __size};
   }
 
+  //! @brief Checks if the library contains a unified function with the given name
+  //!
+  //! @param __name The name of the unified function to check for
+  //!
+  //! @return true if the library contains a unified function with the given name, false otherwise
+  //!
+  //! @throws cuda_error if the library could not be queried for the unified function
+  //!
+  //! @note Unified functions require PTX target at least 9.0
+  [[nodiscard]] bool has_unified_function(const char* __name) const
+  {
+    void* __fn_ptr{};
+    switch (const auto __res = ::cuda::__driver::__libraryGetUnifiedFunctionNoThrow(__fn_ptr, __library_, __name))
+    {
+      case ::cudaSuccess:
+        return true;
+      case ::cudaErrorSymbolNotFound:
+        return false;
+      default:
+        ::cuda::__throw_cuda_error(__res, "Failed to get the unified function from library");
+    }
+  }
+
+  //! @brief Gets a pointer and size of a unified function from the library
+  //!
+  //! @param __name The name of the unified function to retrieve
+  //!
+  //! @return A pair containing a pointer to the unified function and its size
+  //!
+  //! @throws cuda_error if the unified function could not be found in the library
+  //!
+  //! @note Unified functions require PTX target at least 9.0
+  template <class _Signature>
+  [[nodiscard]] _Signature* unified_function(const char* __name) const
+  {
+    void* __fn_ptr{};
+    if (const auto __res = ::cuda::__driver::__libraryGetUnifiedFunctionNoThrow(__fn_ptr, __library_, __name);
+        __res != ::cudaSuccess)
+    {
+      ::cuda::__throw_cuda_error(__res, "Failed to get the unified function from the library");
+    }
+    return reinterpret_cast<_Signature*>(__fn_ptr);
+  }
+
   //! @brief Gets the CUlibrary handle
   //!
   //! @return The CUlibrary handle wrapped by this `library_ref`
