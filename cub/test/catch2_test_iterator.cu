@@ -24,10 +24,6 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 // %PARAM% TEST_VEC_SIZE types 1:2:3:4
 
-// We start suppressing deprecation warnings but do not stop at the end of the file. This suppresses warnings in the
-// compiler-generated `catch2_test_iterator.compute_120.cudafe1.stub.c`
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-
 #if TEST_VEC_SIZE == 1
 using types = c2h::type_list<std::int8_t, std::int16_t, std::int32_t, std::int64_t, float, double>;
 #elif TEST_VEC_SIZE == 2
