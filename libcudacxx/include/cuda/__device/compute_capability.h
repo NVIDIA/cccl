@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__fwd/devices.h>
+#include <cuda/std/__charconv/from_chars.h>
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/to_underlying.h>
@@ -52,6 +53,7 @@ public:
   _CCCL_API constexpr compute_capability(int __major, int __minor) noexcept
       : __cc_{10 * __major + __minor}
   {
+    _CCCL_ASSERT(__major < ::cuda::std::numeric_limits<int>::max() / 10, "invalid major compute capability");
     _CCCL_ASSERT(__minor < 10, "invalid minor compute capability");
   }
 
@@ -176,17 +178,77 @@ inline namespace literals
 {
 inline namespace compute_capability_literals
 {
+_CCCL_DIAG_PUSH
+
+// In case of success, cuda::std::from_chars returns cuda::std::errc{}, which is not an enumerated type of errc, so we
+// need to suppress the warnings.
+_CCCL_DIAG_SUPPRESS_CLANG("-Wswitch")
+_CCCL_DIAG_SUPPRESS_GCC("-Wswitch")
+_CCCL_DIAG_SUPPRESS_MSVC(4063)
+
 // When cudafe++ recreates the source file for the host compiler, it produces `operator "" _cc`, which is deprecated by
 // CWG2521, so we need to suppress the warnings.
-_CCCL_DIAG_PUSH
 #if _CCCL_COMPILER(CLANG, >=, 20)
 _CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated-literal-operator")
 #endif // _CCCL_COMPILER(CLANG, >=, 20)
 
-_CCCL_API constexpr ::cuda::compute_capability operator""_cc(unsigned long long __v) noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL ::cuda::compute_capability
+__cc_literal_impl(const char* __start, const char* __end) noexcept
 {
-  _CCCL_VERIFY(::cuda::std::in_range<int>(__v), "irrepresentable compute capability");
-  return ::cuda::compute_capability{static_cast<int>(__v)};
+  int __major{};
+  const auto __major_result = ::cuda::std::from_chars(__start, __end, __major);
+  switch (__major_result.ec)
+  {
+    case ::cuda::std::errc{}:
+      break;
+    case ::cuda::std::errc::result_out_of_range:
+      _CCCL_VERIFY(false, "cuda::compute_capability literal major version out of range");
+    case ::cuda::std::errc::invalid_argument:
+    default:
+      _CCCL_VERIFY(false,
+                   "invalid cuda::compute_capability literal, must have format of `M.m` where `M`is the major version "
+                   "and `m` the minor version");
+  }
+
+  auto __it = __major_result.ptr;
+  _CCCL_VERIFY(__it != __end && *__it++ == '.', "cuda::compute_capability literal is missing the minor version part");
+  _CCCL_VERIFY(__it + 1 == __end, "cuda::compute_capability literal can have only 1 minor digit");
+  int __minor{};
+  const auto __minor_result = ::cuda::std::from_chars(__it, __end, __minor);
+  switch (__minor_result.ec)
+  {
+    case ::cuda::std::errc{}:
+      break;
+    case ::cuda::std::errc::result_out_of_range:
+      _CCCL_VERIFY(false, "cuda::compute_capability literal minor version out of range");
+    case ::cuda::std::errc::invalid_argument:
+    default:
+      _CCCL_VERIFY(false,
+                   "invalid cuda::compute_capability literal, must have format of `M.m` where `M`is the major version "
+                   "and `m` the minor version");
+  }
+
+  return ::cuda::compute_capability{__major, __minor};
+}
+
+//! @brief \c cuda::compute_capability literal. The expected format is `M.m` where `M`is the major version and `m` the
+//!        minor version.
+//!
+//! Examples:
+//! @code
+//! using namespace cuda::compute_capability_literals;
+//! const auto cc1 = 1.0_cc;
+//! const auto cc2 = 12.1_cc;
+//! const auto invalid_cc1 = 1_cc; // fails because of missing `.m`
+//! const auto invalid_cc2 = 0x8.0.cc; // fails, must be of base 10
+//! const auto invalid_cc3 = 1.103_cc // fails, minor version can have only 1 digit
+//! @endcode
+template <char... _Cs>
+_CCCL_API _CCCL_CONSTEVAL ::cuda::compute_capability operator""_cc() noexcept
+{
+  constexpr char __cs[]{_Cs...};
+  constexpr auto __ret = ::cuda::__cc_literal_impl(__cs, __cs + sizeof...(_Cs));
+  return __ret;
 }
 
 _CCCL_DIAG_POP

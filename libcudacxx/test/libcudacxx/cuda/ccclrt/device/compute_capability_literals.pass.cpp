@@ -17,7 +17,7 @@ __host__ __device__ constexpr bool test()
   {
     using namespace cuda::literals;
 
-    auto cc = 90_cc;
+    auto cc = 9.0_cc;
     static_assert(cuda::std::is_same_v<decltype(cc), cuda::compute_capability>);
     assert(cc.get() == 90);
   }
@@ -25,7 +25,7 @@ __host__ __device__ constexpr bool test()
   {
     using namespace cuda::compute_capability_literals;
 
-    auto cc = 90_cc;
+    auto cc = 9.0_cc;
     static_assert(cuda::std::is_same_v<decltype(cc), cuda::compute_capability>);
     assert(cc.get() == 90);
   }
@@ -33,7 +33,7 @@ __host__ __device__ constexpr bool test()
   {
     using namespace cuda::literals::compute_capability_literals;
 
-    auto cc = 90_cc;
+    auto cc = 9.0_cc;
     static_assert(cuda::std::is_same_v<decltype(cc), cuda::compute_capability>);
     assert(cc.get() == 90);
   }
