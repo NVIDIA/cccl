@@ -23,6 +23,7 @@
 
 #include <cuda/__fwd/devices.h>
 #include <cuda/std/__fwd/format.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/to_underlying.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -170,6 +171,18 @@ public:
     return __lhs.__cc_ >= __rhs.__cc_;
   }
 };
+
+inline namespace literals
+{
+inline namespace compute_capability_literals
+{
+_CCCL_API constexpr ::cuda::compute_capability operator""_cc(unsigned long long __v) noexcept
+{
+  _CCCL_VERIFY(::cuda::std::in_range<int>(__v), "irrepresentable compute capability");
+  return ::cuda::compute_capability{static_cast<int>(__v)};
+}
+} // namespace compute_capability_literals
+} // namespace literals
 
 _CCCL_END_NAMESPACE_CUDA
 
