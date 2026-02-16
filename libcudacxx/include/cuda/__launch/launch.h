@@ -127,7 +127,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void __assume_known_info() noexcept
   if constexpr (_BlockExts::static_extent(2) != __dext)
   {
     _CCCL_ASSUME(_CCCL_BLOCK_DIM_Z == _BlockExts::static_extent(2));
-    _CCCL_ASSUME(_CCCL_THREAD_IDX_Z < 0);
+    _CCCL_ASSUME(_CCCL_THREAD_IDX_Z < _CCCL_BLOCK_DIM_Z);
   }
 
   using _GridDesc = typename _Hierarchy::template level_desc_type<grid_level>;
