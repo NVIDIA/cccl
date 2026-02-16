@@ -132,13 +132,15 @@ C2H_CCCLRT_TEST("Library", "[library]")
   constexpr char unified_function_name[] = "unified_fn";
 
   const cuda::device_ref device{0};
+  const auto cc = device.attribute(cuda::device_attributes::compute_capability);
 
   // unified function requires at least sm90
-  const auto with_unified_function = (device.attribute(cuda::device_attributes::compute_capability_major) >= 9);
+  const auto with_unified_function = (cc >= cuda::compute_capability{90});
   const auto lib_src               = make_library_src(with_unified_function);
 
-  CUjit_option opts[]{CU_JIT_TARGET_FROM_CUCONTEXT};
-  void* opt_vals[]{nullptr};
+  // CUjit_target's underlying value is the same as cuda::compute_capability underlying value.
+  CUjit_option opts[]{CU_JIT_TARGET};
+  void* opt_vals[]{reinterpret_cast<void*>(cc.get())};
   CUlibrary lib1_native = ::cuda::__driver::__libraryLoadData(lib_src.c_str(), opts, opt_vals, 1, nullptr, nullptr, 0);
   CUlibrary lib2_native = ::cuda::__driver::__libraryLoadData(lib_src.c_str(), opts, opt_vals, 1, nullptr, nullptr, 0);
 
