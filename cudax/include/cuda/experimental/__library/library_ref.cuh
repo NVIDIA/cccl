@@ -26,6 +26,7 @@
 #include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__type_traits/is_function.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -232,6 +233,9 @@ public:
   template <class _Signature>
   [[nodiscard]] _Signature* unified_function(const char* __name) const
   {
+    static_assert(::cuda::std::is_function_v<_Signature>,
+                  "_Signature must be a function signature in form of R(Args...).");
+
     void* __fn_ptr{};
     if (const auto __res = ::cuda::__driver::__libraryGetUnifiedFunctionNoThrow(__fn_ptr, __library_, __name);
         __res != ::cudaSuccess)
