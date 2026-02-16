@@ -1,6 +1,8 @@
 name: Documentation Request
 description: Suggest an idea to improve CCCL
 title: '[DOC]: '
+type: documentation
+projects: ['NVIDIA/6']
 labels: ['doc']
 
 body:

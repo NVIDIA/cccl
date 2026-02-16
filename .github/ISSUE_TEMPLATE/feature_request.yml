@@ -1,6 +1,8 @@
 name: Feature Request
 description: Suggest an idea to improve CCCL
 title: '[FEA]: '
+type: feature
+projects: ['NVIDIA/6']
 labels: ['feature request']
 body:
   - type: checkboxes

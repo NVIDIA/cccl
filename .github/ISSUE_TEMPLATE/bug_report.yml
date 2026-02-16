@@ -1,6 +1,8 @@
 name: Bug Report
 description: Create a report to help us improve
 title: '[BUG]: '
+type: bug
+projects: ['NVIDIA/6']
 labels: ['bug']
 body:
   - type: checkboxes
