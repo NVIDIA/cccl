@@ -93,13 +93,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_to_arch_list(
   _CCCL_ASSERT(((device_arch == ::cuda::arch_id{(CudaArches * ArchMult) / 10}) || ...),
                "device_arch must appear in the list of architectures compiled for");
 
-  using policy_t = decltype(policy_selector(::cuda::arch_id{}));
-
   cudaError_t e = cudaErrorInvalidDeviceFunction;
 #  if _CCCL_STD_VER >= 2020
   // In C++20, we just create an integral_constant holding the policy, because policies are structural types in C++20.
   // This causes f to be only instantiated for each distinct policy, since the same policy for different arches results
   // in the same integral_constant type passed to f
+  using policy_t = decltype(policy_selector(::cuda::arch_id{}));
   (...,
    (device_arch == ::cuda::arch_id{(CudaArches * ArchMult) / 10}
       ? (e = f(

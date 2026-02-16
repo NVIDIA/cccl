@@ -3,15 +3,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from __future__ import annotations
+
 import ast
 import functools
 import inspect
 import operator
 import struct
 import textwrap
-import uuid
 from types import new_class
-from typing import Callable, Hashable, List, Tuple
+from typing import TYPE_CHECKING, Callable, Hashable, List, Tuple
 
 import numba
 import numba.cuda
@@ -46,7 +47,9 @@ from ._utils.protocols import (
     is_device_array,
 )
 from .op import OpAdapter
-from .typing import DeviceArrayLike
+
+if TYPE_CHECKING:
+    from .typing import DeviceArrayLike
 
 # -----------------------------------------------------------------------------
 # Struct registration and casting
@@ -430,6 +433,7 @@ def _numba_type_to_type_descriptor(numba_type):
     return cccl_types.from_numpy_dtype(dtype)
 
 
+@cache_with_registered_key_functions
 def _infer_return_type(py_func, input_types):
     # Ensure any gpu_struct classes referenced in the function are registered
     _ensure_function_structs_registered(py_func)
@@ -445,22 +449,6 @@ def _infer_return_type(py_func, input_types):
         py_func, input_numba_types, abi_info={"abi_name": abi_name}
     )
     return _numba_type_to_type_descriptor(return_type)
-
-
-# -----------------------------------------------------------------------------
-# Iterator compilation
-# -----------------------------------------------------------------------------
-
-
-@functools.lru_cache(maxsize=256)
-def _cached_compile(func, sig, abi_name=None, **kwargs):
-    """Cached wrapper around numba.cuda.compile."""
-    return numba.cuda.compile(func, sig, abi_info={"abi_name": abi_name}, **kwargs)
-
-
-def _get_abi_suffix():
-    """Generate a unique ABI suffix."""
-    return uuid.uuid4().hex
 
 
 # -----------------------------------------------------------------------------
@@ -864,9 +852,8 @@ class _StatefulOp(OpAdapter):
         self._cachable = CachableFunction(func)
         self._state = state
 
-    @property
-    def state(self):
-        return self._state
+    def get_state(self):
+        return self._state.to_bytes()
 
     def compile(self, input_types, output_type=None) -> Op:
         transformed_func = _transform_function_ast(self._func, self._state.names)
@@ -880,16 +867,6 @@ class _StatefulOp(OpAdapter):
     @property
     def is_stateful(self) -> bool:
         return True
-
-    def update_op_state(self, cccl_op) -> None:
-        """
-        Update state by detecting device arrays from the Python callable.
-
-        Args:
-            cccl_op: The compiled CCCL Op to update
-            op: The original Python callable (needed to detect current arrays)
-        """
-        cccl_op.state = self._state.to_bytes()
 
     @property
     def func(self) -> Callable:

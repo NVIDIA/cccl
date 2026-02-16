@@ -19,7 +19,18 @@ class ZipIterator(IteratorBase):
     """
     Iterator that zips multiple iterators together.
 
-    At each position, yields a tuple/struct of values from all underlying iterators.
+    At each position, yields a tuple of values from all underlying iterators.
+
+    Similar to `thrust::zip_iterator <https://nvidia.github.io/cccl/thrust/api/classthrust_1_1zip__iterator.html>`_.
+
+    Example:
+        The code snippet below demonstrates how to zip together an array and a
+        :class:`CountingIterator <cuda.compute.iterators.CountingIterator>` to
+        find the index of the maximum value of the array.
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/zip_iterator_counting.py
+            :language: python
+            :start-after: # example-begin
     """
 
     __slots__ = [

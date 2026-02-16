@@ -3,6 +3,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from __future__ import annotations
+
 from typing import Union
 
 import numpy as np
@@ -13,7 +15,7 @@ from .._caching import cache_with_registered_key_functions
 from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..typing import DeviceArrayLike, IteratorBase
+from ..typing import DeviceArrayLike, IteratorT
 
 
 class _Histogram:
@@ -29,7 +31,7 @@ class _Histogram:
 
     def __init__(
         self,
-        d_samples: DeviceArrayLike | IteratorBase,
+        d_samples: DeviceArrayLike | IteratorT,
         d_histogram: DeviceArrayLike,
         h_num_output_levels: np.ndarray,
         h_lower_level: np.ndarray,
@@ -65,7 +67,7 @@ class _Histogram:
     def __call__(
         self,
         temp_storage,
-        d_samples: DeviceArrayLike | IteratorBase,
+        d_samples: DeviceArrayLike | IteratorT,
         d_histogram: DeviceArrayLike,
         h_num_output_levels: np.ndarray,
         h_lower_level: np.ndarray,
@@ -107,8 +109,38 @@ class _Histogram:
 
 
 @cache_with_registered_key_functions
+def _make_histogram_even_impl(
+    d_samples: DeviceArrayLike | IteratorT,
+    d_histogram: DeviceArrayLike,
+    num_output_levels_val: int,
+    lower_level_val,
+    upper_level_val,
+    level_dtype,
+    num_samples: int,
+    uses_privatized_smem: bool,
+):
+    """Internal cached implementation of make_histogram_even.
+
+    The uses_privatized_smem parameter ensures kernels compiled
+    for different bin count regimes aren't reused.
+    """
+    # Reconstruct the numpy arrays expected by _Histogram
+    h_num_output_levels = np.array([num_output_levels_val], dtype=np.int32)
+    h_lower_level = np.array([lower_level_val], dtype=level_dtype)
+    h_upper_level = np.array([upper_level_val], dtype=level_dtype)
+
+    return _Histogram(
+        d_samples,
+        d_histogram,
+        h_num_output_levels,
+        h_lower_level,
+        h_upper_level,
+        num_samples,
+    )
+
+
 def make_histogram_even(
-    d_samples: DeviceArrayLike | IteratorBase,
+    d_samples: DeviceArrayLike | IteratorT,
     d_histogram: DeviceArrayLike,
     h_num_output_levels: np.ndarray,
     h_lower_level: np.ndarray,
@@ -135,18 +167,32 @@ def make_histogram_even(
     Returns:
         A callable object that can be used to perform the histogram
     """
-    return _Histogram(
+    # Extract scalar values from arrays for caching
+    num_output_levels_val = int(h_num_output_levels[0])
+    lower_level_val = h_lower_level[0].item()
+    upper_level_val = h_upper_level[0].item()
+    level_dtype = h_lower_level.dtype
+
+    # bins <= 256 uses privatized smem strategy. a different compile
+    # path than bins > 256. We should include this information when
+    # caching histogram build objects.
+    # See detail::histogram::max_privatized_smem_bins (dispatch_histogram.cuh)
+    num_bins = num_output_levels_val - 1
+    uses_privatized_smem = num_bins <= 256
+    return _make_histogram_even_impl(
         d_samples,
         d_histogram,
-        h_num_output_levels,
-        h_lower_level,
-        h_upper_level,
+        num_output_levels_val,
+        lower_level_val,
+        upper_level_val,
+        level_dtype,
         num_samples,
+        uses_privatized_smem,
     )
 
 
 def histogram_even(
-    d_samples: DeviceArrayLike | IteratorBase,
+    d_samples: DeviceArrayLike | IteratorT,
     d_histogram: DeviceArrayLike,
     num_output_levels: int,
     lower_level: Union[np.floating, np.integer],
