@@ -22,7 +22,7 @@ Defined in ``<cuda/numeric>`` header.
 
    } // namespace cuda
 
-The function ``cuda::mul_overflow`` performs multiplication of two values ``lhs`` and ``rhs`` with overflow checking. The result is the same as if the operands were first promoted to an infinite precision signed type, muled together and the result truncated to the type of the return value.
+The function ``cuda::mul_overflow`` performs multiplication of two values ``lhs`` and ``rhs`` with overflow checking. The result is the same as if the operands were first promoted to an infinite precision signed type, multiplied together and the result truncated to the type of the return value.
 
 **Parameters**
 
