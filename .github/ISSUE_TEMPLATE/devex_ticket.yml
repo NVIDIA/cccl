@@ -2,7 +2,6 @@ name: DevEx Request
 description: Suggest improvements to GitHub project infrastructure and workflows.
 title: '[DEVEX]: '
 projects: ['NVIDIA/6']
-labels: ['devex']
 body:
   - type: markdown
     attributes:
