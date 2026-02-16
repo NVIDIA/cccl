@@ -21,7 +21,7 @@ workflows:
   #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
-
+    - {jobs: ['test'],                    project: 'cudax', std: 'max', gpu: 'h100' }
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
     - {jobs: ['build'], std: 'minmax', ctk: '12.0', cxx: ['gcc7',  'gcc12', 'clang14',            'msvc2019', 'msvc14.39']}
