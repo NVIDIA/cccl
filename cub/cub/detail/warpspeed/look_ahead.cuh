@@ -30,10 +30,21 @@
 #  include <cuda/atomic>
 #endif // !defined(_CUDACC_DEVICE_ATOMIC_BUILTINS__) || _CCCL_COMPILER(MSVC)
 
+#include <nv/target>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::warpspeed
 {
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL size_t max_native_atomic_size() noexcept
+{
+#if _CCCL_CUDA_COMPILER(NVHPC)
+  return 8;
+#else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC)  vvv
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return 16;), (return 8;))
+#endif // !_CCCL_CUDA_COMPILER(NVHPC)
+}
+
 enum scan_state : ::cuda::std::uint32_t
 {
   empty          = 0,
@@ -63,7 +74,8 @@ storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, Ac
   _CCCL_ASSERT(::cuda::is_aligned(ptrTileStates, alignof(tile_state_t<AccumT>)), "");
   _CCCL_ASSERT(index >= 0 && index < gridDim.x, "Reading out of bounds tile state");
 
-  if constexpr (sizeof(tile_state_t<AccumT>) <= 16 && ::cuda::std::is_trivially_copyable_v<tile_state_t<AccumT>>)
+  if constexpr (sizeof(tile_state_t<AccumT>) <= cub::detail::warpspeed::max_native_atomic_size()
+                && ::cuda::std::is_trivially_copyable_v<tile_state_t<AccumT>>)
   {
     static_assert(::cuda::is_power_of_two(sizeof(tile_state_t<AccumT>)));
     tile_state_t<AccumT> tmp{scanState, sum};
@@ -90,7 +102,8 @@ _CCCL_DEVICE_API tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* pt
   _CCCL_ASSERT(index >= 0 && index < gridDim.x, "Reading out of bounds tile state");
 
   tile_state_t<AccumT> res;
-  if constexpr (sizeof(tile_state_t<AccumT>) <= 16 && ::cuda::std::is_trivially_copyable_v<tile_state_t<AccumT>>)
+  if constexpr (sizeof(tile_state_t<AccumT>) <= cub::detail::warpspeed::max_native_atomic_size()
+                && ::cuda::std::is_trivially_copyable_v<tile_state_t<AccumT>>)
   {
     static_assert(::cuda::is_power_of_two(sizeof(tile_state_t<AccumT>)));
 #  if defined(_CUDACC_DEVICE_ATOMIC_BUILTINS__) && !_CCCL_COMPILER(MSVC)
