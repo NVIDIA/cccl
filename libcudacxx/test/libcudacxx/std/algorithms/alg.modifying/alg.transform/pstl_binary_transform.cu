@@ -47,7 +47,7 @@ C2H_TEST("cuda::std::transform", "[parallel algorithm]")
       cuda::counting_iterator{0ull},
       output.begin(),
       cuda::std::minus<>{});
-    CHECK(thrust::all_of(output.begin(), output.end(), cuda::__equal_to_value{1}));
+    CHECK(thrust::all_of(output.begin(), output.end(), cuda::equal_to_value{1}));
   }
 
   SECTION("with provided stream")
@@ -61,7 +61,7 @@ C2H_TEST("cuda::std::transform", "[parallel algorithm]")
       cuda::counting_iterator{0ull},
       output.begin(),
       cuda::std::minus<>{});
-    CHECK(thrust::all_of(output.begin(), output.end(), cuda::__equal_to_value{1}));
+    CHECK(thrust::all_of(output.begin(), output.end(), cuda::equal_to_value{1}));
   }
 
   SECTION("with provided memory_resource")
@@ -75,7 +75,7 @@ C2H_TEST("cuda::std::transform", "[parallel algorithm]")
       cuda::counting_iterator{0ull},
       output.begin(),
       cuda::std::minus<>{});
-    CHECK(thrust::all_of(output.begin(), output.end(), cuda::__equal_to_value{1}));
+    CHECK(thrust::all_of(output.begin(), output.end(), cuda::equal_to_value{1}));
   }
 
   SECTION("with provided stream and memory_resource")
@@ -90,6 +90,6 @@ C2H_TEST("cuda::std::transform", "[parallel algorithm]")
       cuda::counting_iterator{0ull},
       output.begin(),
       cuda::std::minus<>{});
-    CHECK(thrust::all_of(output.begin(), output.end(), cuda::__equal_to_value{1}));
+    CHECK(thrust::all_of(output.begin(), output.end(), cuda::equal_to_value{1}));
   }
 }

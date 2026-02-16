@@ -327,8 +327,8 @@ C2H_TEST("Device three-way partition handles reverse iterator", "[partition][dev
 
   c2h::device_vector<type> first_and_unselected_part(num_items);
 
-  cuda::__equal_to_value<type> first_selector{first_part_val};
-  cuda::__equal_to_value<type> second_selector{second_part_val};
+  cuda::equal_to_value<type> first_selector{first_part_val};
+  cuda::equal_to_value<type> second_selector{second_part_val};
 
   c2h::device_vector<int> num_selected_out(2);
 
@@ -384,8 +384,8 @@ C2H_TEST("Device three-way partition handles single output", "[partition][device
 
   c2h::device_vector<type> output(num_items);
 
-  cuda::__equal_to_value<type> first_selector{first_part_val};
-  cuda::__equal_to_value<type> second_selector{second_part_val};
+  cuda::equal_to_value<type> first_selector{first_part_val};
+  cuda::equal_to_value<type> second_selector{second_part_val};
 
   c2h::device_vector<int> num_selected_out(2);
 
