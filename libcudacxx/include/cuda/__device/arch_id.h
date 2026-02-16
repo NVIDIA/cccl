@@ -39,8 +39,8 @@ enum class arch_id : int
 {
 #define _CCCL_DEFINE_ARCH_ID(_CC)          sm_##_CC = _CC,
 #define _CCCL_DEFINE_ARCH_SPECIFIC_ID(_CC) sm_##_CC##a = _CC * __arch_specific_id_multiplier,
-  _CCCL_PP_FOR_EACH(_CCCL_DEFINE_ARCH_ID, _CCCL_KNOWN_PTX_ARCH_LIST)
-    _CCCL_PP_FOR_EACH(_CCCL_DEFINE_ARCH_SPECIFIC_ID, _CCCL_KNOWN_PTX_ARCH_SPECIFIC_LIST)
+  _CCCL_PP_FOR_EACH(_CCCL_DEFINE_ARCH_ID, _CCCL_KNOWN_CUDA_ARCH_LIST)
+    _CCCL_PP_FOR_EACH(_CCCL_DEFINE_ARCH_SPECIFIC_ID, _CCCL_KNOWN_CUDA_ARCH_SPECIFIC_LIST)
 #undef _CCCL_DEFINE_ARCH_ID
 #undef _CCCL_DEFINE_ARCH_SPECIFIC_ID
 };
@@ -50,8 +50,8 @@ enum class arch_id : int
   return ::cuda::std::array{
 #define _CCCL_MAKE_ARCH_ID(_CC)          arch_id::sm_##_CC,
 #define _CCCL_MAKE_ARCH_SPECIFIC_ID(_CC) arch_id::sm_##_CC##a,
-    _CCCL_PP_FOR_EACH(_CCCL_MAKE_ARCH_ID, _CCCL_KNOWN_PTX_ARCH_LIST)
-      _CCCL_PP_FOR_EACH(_CCCL_MAKE_ARCH_SPECIFIC_ID, _CCCL_KNOWN_PTX_ARCH_SPECIFIC_LIST)
+    _CCCL_PP_FOR_EACH(_CCCL_MAKE_ARCH_ID, _CCCL_KNOWN_CUDA_ARCH_LIST)
+      _CCCL_PP_FOR_EACH(_CCCL_MAKE_ARCH_SPECIFIC_ID, _CCCL_KNOWN_CUDA_ARCH_SPECIFIC_LIST)
 #undef _CCCL_MAKE_ARCH_ID
 #undef _CCCL_MAKE_ARCH_SPECIFIC_ID
   };
@@ -67,7 +67,7 @@ enum class arch_id : int
   switch (__cc.get())
   {
 #define _CCCL_HAS_KNOWN_ARCH_CASE(_CC) case _CC:
-    _CCCL_PP_FOR_EACH(_CCCL_HAS_KNOWN_ARCH_CASE, _CCCL_KNOWN_PTX_ARCH_LIST)
+    _CCCL_PP_FOR_EACH(_CCCL_HAS_KNOWN_ARCH_CASE, _CCCL_KNOWN_CUDA_ARCH_LIST)
 #undef _CCCL_HAS_KNOWN_ARCH_CASE
     return true;
     default:
@@ -77,10 +77,10 @@ enum class arch_id : int
 
 [[nodiscard]] _CCCL_API constexpr bool __has_known_specific_arch(compute_capability __cc) noexcept
 {
-  switch (__cc.get() * __arch_specific_id_multiplier)
+  switch (__cc.get())
   {
 #define _CCCL_HAS_KNOWN_SPECFIC_ARCH_CASE(_CC) case _CC:
-    _CCCL_PP_FOR_EACH(_CCCL_HAS_KNOWN_SPECFIC_ARCH_CASE, _CCCL_KNOWN_PTX_ARCH_SPECIFIC_LIST)
+    _CCCL_PP_FOR_EACH(_CCCL_HAS_KNOWN_SPECFIC_ARCH_CASE, _CCCL_KNOWN_CUDA_ARCH_SPECIFIC_LIST)
 #undef _CCCL_HAS_KNOWN_SPECFIC_ARCH_CASE
     return true;
     default:

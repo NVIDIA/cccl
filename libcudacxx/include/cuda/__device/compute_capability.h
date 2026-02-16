@@ -181,7 +181,7 @@ template <int... _Vs>
 
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __all_compute_capabilities() noexcept
 {
-  return ::cuda::__make_all_compute_capabilities<_CCCL_KNOWN_PTX_ARCH_LIST>();
+  return ::cuda::__make_all_compute_capabilities<_CCCL_KNOWN_CUDA_ARCH_LIST>();
 }
 
 #if _CCCL_CUDA_COMPILATION()
@@ -199,7 +199,7 @@ template <int... _Vs>
 #  endif // ^^^ no arch list ^^^
 }
 
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __cc_list() noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __target_compute_capabilities() noexcept
 {
 #  if defined(__CUDA_ARCH_LIST__)
   return ::cuda::__make_cc_list<__CUDA_ARCH_LIST__>();
