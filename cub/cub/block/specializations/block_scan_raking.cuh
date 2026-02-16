@@ -27,6 +27,10 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_scan.cuh>
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
@@ -677,12 +681,12 @@ struct BlockScanRaking
         if constexpr (!BlockRakingLayout::UNGUARDED)
         {
           const int raking_segment_valid_items = BLOCK_THREADS - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
-          segment_valid_items                  = ::cuda::std::min(segment_valid_items, raking_segment_valid_items);
+          segment_valid_items                  = (::cuda::std::min) (segment_valid_items, raking_segment_valid_items);
         }
         const T upsweep_partial = UpsweepPartialTile(scan_op, segment_valid_items);
 
         // Warp-synchronous scan
-        const int valid_segments = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), SEGMENT_LENGTH);
+        const int valid_segments = ::cuda::ceil_div((::cuda::std::max) (valid_items, 0), SEGMENT_LENGTH);
         T exclusive_partial;
         WarpScan(temp_storage.warp_scan)
           .ExclusiveScanPartial(upsweep_partial, exclusive_partial, scan_op, valid_segments);
@@ -742,12 +746,12 @@ struct BlockScanRaking
         if constexpr (!BlockRakingLayout::UNGUARDED)
         {
           const int raking_segment_valid_items = BLOCK_THREADS - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
-          segment_valid_items                  = ::cuda::std::min(segment_valid_items, raking_segment_valid_items);
+          segment_valid_items                  = (::cuda::std::min) (segment_valid_items, raking_segment_valid_items);
         }
         T upsweep_partial = UpsweepPartialTile(scan_op, segment_valid_items);
 
         // Exclusive Warp-synchronous scan
-        const int valid_segments = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), SEGMENT_LENGTH);
+        const int valid_segments = ::cuda::ceil_div((::cuda::std::max) (valid_items, 0), SEGMENT_LENGTH);
         T exclusive_partial;
         WarpScan(temp_storage.warp_scan)
           .ExclusiveScanPartial(upsweep_partial, exclusive_partial, initial_value, scan_op, valid_segments);
@@ -809,12 +813,12 @@ struct BlockScanRaking
         if constexpr (!BlockRakingLayout::UNGUARDED)
         {
           const int raking_segment_valid_items = BLOCK_THREADS - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
-          segment_valid_items                  = ::cuda::std::min(segment_valid_items, raking_segment_valid_items);
+          segment_valid_items                  = (::cuda::std::min) (segment_valid_items, raking_segment_valid_items);
         }
         const T upsweep_partial = UpsweepPartialTile(scan_op, segment_valid_items);
 
         // Warp-synchronous scan
-        const int valid_segments = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), SEGMENT_LENGTH);
+        const int valid_segments = ::cuda::ceil_div((::cuda::std::max) (valid_items, 0), SEGMENT_LENGTH);
         T inclusive_partial;
         T exclusive_partial;
         WarpScan(temp_storage.warp_scan)
@@ -824,7 +828,7 @@ struct BlockScanRaking
         ExclusiveDownsweepPartialTile(scan_op, exclusive_partial, segment_valid_items, (linear_tid != 0u));
 
         // Broadcast aggregate to all threads
-        if (static_cast<int>(linear_tid) == ::cuda::std::min(valid_segments - 1, RAKING_THREADS - 1))
+        if (static_cast<int>(linear_tid) == (::cuda::std::min) (valid_segments - 1, RAKING_THREADS - 1))
         {
           temp_storage.block_aggregate = inclusive_partial;
         }
@@ -889,12 +893,12 @@ struct BlockScanRaking
         if constexpr (!BlockRakingLayout::UNGUARDED)
         {
           const int raking_segment_valid_items = BLOCK_THREADS - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
-          segment_valid_items                  = ::cuda::std::min(segment_valid_items, raking_segment_valid_items);
+          segment_valid_items                  = (::cuda::std::min) (segment_valid_items, raking_segment_valid_items);
         }
         const T upsweep_partial = UpsweepPartialTile(scan_op, segment_valid_items);
 
         // Warp-synchronous scan
-        const int valid_segments = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), SEGMENT_LENGTH);
+        const int valid_segments = ::cuda::ceil_div((::cuda::std::max) (valid_items, 0), SEGMENT_LENGTH);
         T exclusive_partial;
         WarpScan(temp_storage.warp_scan)
           .ExclusiveScanPartial(
@@ -989,12 +993,12 @@ struct BlockScanRaking
         if constexpr (!BlockRakingLayout::UNGUARDED)
         {
           const int raking_segment_valid_items = BLOCK_THREADS - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
-          segment_valid_items                  = ::cuda::std::min(segment_valid_items, raking_segment_valid_items);
+          segment_valid_items                  = (::cuda::std::min) (segment_valid_items, raking_segment_valid_items);
         }
         const T upsweep_partial = UpsweepPartialTile(scan_op, segment_valid_items);
 
         // Warp-synchronous scan
-        const int valid_segments = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), SEGMENT_LENGTH);
+        const int valid_segments = ::cuda::ceil_div((::cuda::std::max) (valid_items, 0), SEGMENT_LENGTH);
         T exclusive_partial;
         T block_aggregate;
         warp_scan.ExclusiveScanPartial(upsweep_partial, exclusive_partial, scan_op, valid_segments, block_aggregate);
@@ -1260,12 +1264,12 @@ struct BlockScanRaking
         if constexpr (!BlockRakingLayout::UNGUARDED)
         {
           const int raking_segment_valid_items = BLOCK_THREADS - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
-          segment_valid_items                  = ::cuda::std::min(segment_valid_items, raking_segment_valid_items);
+          segment_valid_items                  = (::cuda::std::min) (segment_valid_items, raking_segment_valid_items);
         }
         const T upsweep_partial = UpsweepPartialTile(scan_op, segment_valid_items);
 
         // Exclusive Warp-synchronous scan
-        const int valid_segments = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), SEGMENT_LENGTH);
+        const int valid_segments = ::cuda::ceil_div((::cuda::std::max) (valid_items, 0), SEGMENT_LENGTH);
         T exclusive_partial;
         WarpScan(temp_storage.warp_scan)
           .ExclusiveScanPartial(upsweep_partial, exclusive_partial, scan_op, valid_segments);
@@ -1326,12 +1330,12 @@ struct BlockScanRaking
         if constexpr (!BlockRakingLayout::UNGUARDED)
         {
           const int raking_segment_valid_items = BLOCK_THREADS - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
-          segment_valid_items                  = ::cuda::std::min(segment_valid_items, raking_segment_valid_items);
+          segment_valid_items                  = (::cuda::std::min) (segment_valid_items, raking_segment_valid_items);
         }
         const T upsweep_partial = UpsweepPartialTile(scan_op, segment_valid_items);
 
         // Warp-synchronous scan
-        const int valid_segments = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), SEGMENT_LENGTH);
+        const int valid_segments = ::cuda::ceil_div((::cuda::std::max) (valid_items, 0), SEGMENT_LENGTH);
         T inclusive_partial;
         T exclusive_partial;
         WarpScan(temp_storage.warp_scan)
@@ -1341,7 +1345,7 @@ struct BlockScanRaking
         InclusiveDownsweepPartialTile(scan_op, exclusive_partial, segment_valid_items, (linear_tid != 0u));
 
         // Broadcast aggregate to all threads
-        if (static_cast<int>(linear_tid) == ::cuda::std::min(valid_segments - 1, RAKING_THREADS - 1))
+        if (static_cast<int>(linear_tid) == (::cuda::std::min) (valid_segments - 1, RAKING_THREADS - 1))
         {
           temp_storage.block_aggregate = inclusive_partial;
         }
@@ -1420,12 +1424,12 @@ struct BlockScanRaking
         if constexpr (!BlockRakingLayout::UNGUARDED)
         {
           const int raking_segment_valid_items = BLOCK_THREADS - static_cast<int>(linear_tid) * SEGMENT_LENGTH;
-          segment_valid_items                  = ::cuda::std::min(segment_valid_items, raking_segment_valid_items);
+          segment_valid_items                  = (::cuda::std::min) (segment_valid_items, raking_segment_valid_items);
         }
         const T upsweep_partial = UpsweepPartialTile(scan_op, segment_valid_items);
 
         // Warp-synchronous scan
-        const int valid_segments = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), SEGMENT_LENGTH);
+        const int valid_segments = ::cuda::ceil_div((::cuda::std::max) (valid_items, 0), SEGMENT_LENGTH);
         T exclusive_partial;
         T block_aggregate;
         warp_scan.ExclusiveScanPartial(upsweep_partial, exclusive_partial, scan_op, valid_segments, block_aggregate);

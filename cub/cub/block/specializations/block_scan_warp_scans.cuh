@@ -25,6 +25,8 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/__algorithm/max.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -585,7 +587,7 @@ struct BlockScanWarpScans
       .ScanPartial(input, inclusive_output, exclusive_output, scan_op, warp_valid_items);
 
     // Compute the warp-wide prefix and block-wide aggregate for each warp.  Warp prefix for warp0 is invalid.
-    const int valid_warps = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), WARP_THREADS);
+    const int valid_warps = ::cuda::ceil_div((::cuda::std::max) (valid_items, 0), WARP_THREADS);
     const T warp_prefix =
       ComputeWarpPrefixPartialTile(scan_op, inclusive_output, block_aggregate, valid_warps, warp_valid_items);
 
@@ -634,7 +636,7 @@ struct BlockScanWarpScans
       .ScanPartial(input, inclusive_output, exclusive_output, scan_op, warp_valid_items);
 
     // Compute the warp-wide prefix and block-wide aggregate for each warp
-    const int valid_warps = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), WARP_THREADS);
+    const int valid_warps = ::cuda::ceil_div((::cuda::std::max) (valid_items, 0), WARP_THREADS);
     const T warp_prefix   = ComputeWarpPrefixPartialTile(
       scan_op, inclusive_output, block_aggregate, initial_value, valid_warps, warp_valid_items);
 
@@ -858,7 +860,7 @@ struct BlockScanWarpScans
     WarpScanT(temp_storage.warp_scan[warp_id]).InclusiveScanPartial(input, inclusive_output, scan_op, warp_valid_items);
 
     // Compute the warp-wide prefix and block-wide aggregate for each warp.  Warp prefix for warp0 is invalid.
-    const int valid_warps = ::cuda::ceil_div(::cuda::std::max(valid_items, 0), WARP_THREADS);
+    const int valid_warps = ::cuda::ceil_div((::cuda::std::max) (valid_items, 0), WARP_THREADS);
     const T warp_prefix =
       ComputeWarpPrefixPartialTile(scan_op, inclusive_output, block_aggregate, valid_warps, warp_valid_items);
 
