@@ -177,9 +177,11 @@ inline namespace literals
 inline namespace compute_capability_literals
 {
 // When cudafe++ recreates the source file for the host compiler, it produces `operator "" _cc`, which is deprecated by
-// CWG2521, so we need to suppress the warning.
+// CWG2521, so we need to suppress the warnings.
 _CCCL_DIAG_PUSH
+#if _CCCL_COMPILER(CLANG, >=, 20)
 _CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated-literal-operator")
+#endif // _CCCL_COMPILER(CLANG, >=, 20)
 
 _CCCL_API constexpr ::cuda::compute_capability operator""_cc(unsigned long long __v) noexcept
 {
