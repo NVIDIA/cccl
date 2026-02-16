@@ -137,10 +137,10 @@ C2H_CCCLRT_TEST("Library", "[library]")
   const auto with_unified_function = (device.attribute(cuda::device_attributes::compute_capability_major) >= 9);
   const auto lib_src               = make_library_src(with_unified_function);
 
-  CUlibrary lib1_native =
-    ::cuda::__driver::__libraryLoadData(lib_src.c_str(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-  CUlibrary lib2_native =
-    ::cuda::__driver::__libraryLoadData(lib_src.c_str(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+  CUjit_option opts[]{CU_JIT_TARGET_FROM_CUCONTEXT};
+  void* opt_vals[]{nullptr};
+  CUlibrary lib1_native = ::cuda::__driver::__libraryLoadData(lib_src.c_str(), opts, opt_vals, 1, nullptr, nullptr, 0);
+  CUlibrary lib2_native = ::cuda::__driver::__libraryLoadData(lib_src.c_str(), opts, opt_vals, 1, nullptr, nullptr, 0);
 
   // Types
   {
