@@ -403,7 +403,19 @@ inline constexpr bool __is_cuda_maximum_v<::cuda::maximum<_Tp...>> = true;
  **********************************************************************************************************************/
 
 struct __no_identity_element
-{};
+{
+  template <class _Tp>
+  [[nodiscard]] _CCCL_API constexpr bool operator==(_Tp&&) noexcept
+  {
+    return false;
+  }
+
+  template <class _Tp>
+  [[nodiscard]] _CCCL_API constexpr bool operator!=(_Tp&&) noexcept
+  {
+    return true;
+  }
+};
 
 template <class _Op, class _Tp>
 [[nodiscard]] _CCCL_API constexpr auto identity_element() noexcept
@@ -411,7 +423,7 @@ template <class _Op, class _Tp>
   using _Up = ::cuda::std::remove_cv_t<_Tp>;
   if constexpr (__is_cuda_std_plus_v<_Op>)
   {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
       return _Up{};
     }
@@ -426,7 +438,8 @@ template <class _Op, class _Tp>
   }
   else if constexpr (__is_cuda_std_multiplies_v<_Op>)
   {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_floating_point_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_floating_point_v<_Up>
+                  || ::cuda::std::is_same_v<_Up, char>)
     {
       return _Up{1};
     }
@@ -441,7 +454,7 @@ template <class _Op, class _Tp>
   }
   else if constexpr (__is_cuda_std_bit_and_v<_Op>)
   {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
       return static_cast<_Up>(~_Up{});
     }
@@ -452,7 +465,7 @@ template <class _Op, class _Tp>
   }
   else if constexpr (__is_cuda_std_bit_or_v<_Op>)
   {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
       return _Up{};
     }
@@ -463,7 +476,7 @@ template <class _Op, class _Tp>
   }
   else if constexpr (__is_cuda_std_bit_xor_v<_Op>)
   {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
       return _Up{};
     }
@@ -496,7 +509,7 @@ template <class _Op, class _Tp>
   }
   else if constexpr (__is_cuda_minimum_v<_Op>)
   {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
       return ::cuda::std::numeric_limits<_Up>::max();
     }
@@ -511,7 +524,7 @@ template <class _Op, class _Tp>
   }
   else if constexpr (__is_cuda_maximum_v<_Op>)
   {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
       return ::cuda::std::numeric_limits<_Up>::lowest();
     }
@@ -554,7 +567,7 @@ template <class _Op, class _Tp>
   if constexpr (__is_cuda_std_multiplies_v<_Op>)
   {
     // no absorbing element for floating-point due to NaN, infinity, and -1.0 * +0.0 = -0.0 (!= +0.0)
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
       return _Up{};
     }
@@ -565,7 +578,7 @@ template <class _Op, class _Tp>
   }
   else if constexpr (__is_cuda_std_bit_and_v<_Op>)
   {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
       return _Up{};
     }
@@ -576,7 +589,7 @@ template <class _Op, class _Tp>
   }
   else if constexpr (__is_cuda_std_bit_or_v<_Op>)
   {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
       return static_cast<_Up>(~_Up{});
     }
@@ -609,7 +622,7 @@ template <class _Op, class _Tp>
   }
   else if constexpr (__is_cuda_minimum_v<_Op>)
   {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
       return ::cuda::std::numeric_limits<_Up>::lowest();
     }
@@ -624,7 +637,7 @@ template <class _Op, class _Tp>
   }
   else if constexpr (__is_cuda_maximum_v<_Op>)
   {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
       return ::cuda::std::numeric_limits<_Up>::max();
     }

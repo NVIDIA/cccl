@@ -3,7 +3,7 @@
 Algorithm
 ==========
 
-The ``runtime`` part of the ``cuda/algorithm`` header provide stream-ordered, byte-wise primitives that operate on ``cuda::std::span`` and
+The ``runtime`` part of the ``cuda/algorithm`` header provides stream-ordered, byte-wise primitives that operate on ``cuda::std::span`` and
 ``cuda::std::mdspan``-compatible types. They require a ``cuda::stream_ref`` to enqueue work.
 
 ``cuda::copy_bytes``
@@ -14,7 +14,7 @@ Launch a byte-wise copy from source to destination on the provided stream.
 
 - Overloads accept ``cuda::std::span``-convertible contiguous ranges or ``cuda::std::mdspan``-convertible multi-dimensional views.
 - Elements must be trivially copyable
-- ``cuda::std::mdspan``-convertible types must convert to a mdspan that is exhaustive
+- ``cuda::std::mdspan``-convertible types must convert to an mdspan that is exhaustive
 - Source access order (during the copy call or in stream order) can be configured with ``cuda::copy_configuration``
 
 Availability: CCCL 3.1.0 / CUDA 13.1
@@ -40,7 +40,7 @@ Launch a byte-wise fill of the destination on the provided stream.
 
 - Overloads accept ``cuda::std::span``-convertible or ``cuda::std::mdspan``-convertible destinations.
 - Elements must be trivially copyable
-- ``cuda::std::mdspan``-convertible types must convert to a mdspan that is exhaustive
+- ``cuda::std::mdspan``-convertible types must convert to an mdspan that is exhaustive
 
 Availability: CCCL 3.1.0 / CUDA 13.1
 

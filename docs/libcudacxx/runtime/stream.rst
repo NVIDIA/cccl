@@ -3,6 +3,8 @@
 Streams
 =======
 
+Stream is conceptually a queue of operations for a specific device. It is passed as an argument to all asynchronous operations like kernel launch, memory copy and allocations.
+
 ``cuda::stream_ref``
 ---------------------
 .. _cccl-runtime-stream-stream-ref:
@@ -31,7 +33,7 @@ Example:
 
     // compare against other stream_ref or cudaStream_t
     assert(ref == stream);
-    assert(ref != cuda::stream_ref{nullptr});
+    assert(ref != cuda::invalid_stream);
 
     cudaStreamDestroy(stream);
 
@@ -41,8 +43,8 @@ Example:
 
 ``cuda::stream`` is an owning wrapper around a ``cudaStream_t`` that manages the lifetime of the underlying CUDA stream.
 It derives from ``stream_ref``, provides all of its functionality, and can be used anywhere a ``stream_ref`` is expected.
-It can be constructed for a specific ``cuda::device_ref``, moved (but not copied), converted from/to a cudaStream_t via
-``from_native_handle``/``release()``.
+It can be constructed for a specific ``cuda::device_ref``, moved (but not copied), and converted from or to a
+``cudaStream_t`` via ``from_native_handle``/``release()``.
 
 Availability: CCCL 3.1.0 / CUDA 13.1
 
@@ -56,7 +58,7 @@ Availability: CCCL 3.1.0 / CUDA 13.1
        // Create a stream on a specific device
        cuda::stream s{cuda::devices[0]};
 
-       // Pass to a stream ordered API
+      // Pass to a stream-ordered API
 
        // Synchronize the stream
        s.sync();

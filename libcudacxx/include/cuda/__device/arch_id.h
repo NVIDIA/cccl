@@ -196,7 +196,7 @@ template <class _Dummy = void>
 {
 #  if _CCCL_CUDA_COMPILER(NVHPC)
   const auto __cc = ::cuda::device::current_compute_capability();
-  if (::cuda::__is_known_arch_of(__cc))
+  if (::cuda::__has_known_arch(__cc))
   {
     return ::cuda::to_arch_id(__cc);
   }
