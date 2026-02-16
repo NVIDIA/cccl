@@ -176,11 +176,18 @@ inline namespace literals
 {
 inline namespace compute_capability_literals
 {
+// When cudafe++ recreates the source file for the host compiler, it produces `operator "" _cc`, which is deprecated by
+// CWG2521, so we need to suppress the warning.
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated-literal-operator")
+
 _CCCL_API constexpr ::cuda::compute_capability operator""_cc(unsigned long long __v) noexcept
 {
   _CCCL_VERIFY(::cuda::std::in_range<int>(__v), "irrepresentable compute capability");
   return ::cuda::compute_capability{static_cast<int>(__v)};
 }
+
+_CCCL_DIAG_POP
 } // namespace compute_capability_literals
 } // namespace literals
 
