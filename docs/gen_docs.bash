@@ -241,4 +241,60 @@ EOF
 
 touch "${HTML_DIR}/.nojekyll"
 
+# Reorganize output to include versioned directory and root assets
+VERSION="${SPHINX_CCCL_VER:-unstable}"
+BASE_URL="${CCCL_DOCS_BASE_URL:-https://nvidia.github.io/cccl/}"
+BASE_URL="${BASE_URL%/}/"
+IS_LATEST="${CCCL_DOCS_IS_LATEST:-true}"
+
+HTML_DIR="${BUILDDIR}/html"
+ORIG_DIR="${BUILDDIR}/html_orig"
+
+rm -rf "${ORIG_DIR}"
+mv "${HTML_DIR}" "${ORIG_DIR}"
+mkdir -p "${HTML_DIR}/${VERSION}"
+cp -a "${ORIG_DIR}/." "${HTML_DIR}/${VERSION}/"
+rm -rf "${ORIG_DIR}"
+
+# Redirect root index to the current version
+cat > "${HTML_DIR}/index.html" <<EOF
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="refresh" content="0; url=./${VERSION}/">
+    <title>Redirecting…</title>
+  </head>
+  <body>
+    <p>This page has moved. If you are not redirected automatically, follow this <a href="./${VERSION}/">link to the ${VERSION} documentation</a>.</p>
+  </body>
+</html>
+EOF
+
+# Copy objects.inv to the root to support intersphinx consumers
+if [ -f "${HTML_DIR}/${VERSION}/objects.inv" ]; then
+    cp "${HTML_DIR}/${VERSION}/objects.inv" "${HTML_DIR}/objects.inv"
+fi
+
+# Provide version metadata for the theme switcher
+cat > "${HTML_DIR}/nv-versions.json" <<EOF
+[
+  {
+    "name": "${VERSION}",
+    "version": "${VERSION}",
+    "url": "${BASE_URL}${VERSION}/",
+    "latest": ${IS_LATEST},
+    "preferred": ${IS_LATEST}
+  }
+]
+EOF
+
+cat > "${HTML_DIR}/versions.json" <<EOF
+{
+  "${VERSION}": "${VERSION}"
+}
+EOF
+
+touch "${HTML_DIR}/.nojekyll"
+
 echo "Documentation build complete! HTML output is in ${BUILDDIR}/html/"
