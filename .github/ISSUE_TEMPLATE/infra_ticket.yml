@@ -1,6 +1,7 @@
 name: Infra Ticket
 description: Request updates, report issues, etc. for CMake / GHA / CI / devcontainers.
 title: '[INFRA]: '
+labels: ['infra']
 projects: ['NVIDIA/6']
 body:
   - type: markdown
