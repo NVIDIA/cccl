@@ -23,9 +23,7 @@ using namespace cuda::experimental::stf;
 void test_green_ctx_affinity(bool use_green_ctx_data_place)
 {
   async_resources_handle handle;
-  auto gc_helper = handle.get_gc_helper(0, 8); // 8 SMs per green context
-
-  for (size_t i = 0; i < gc_helper->get_count(); i++)
+  for (auto p : place_partition(exec_place::current_device(), handle, place_partition_scope::green_context))
   {
     auto p = exec_place::green_ctx(gc_helper->get_view(i), use_green_ctx_data_place);
 
