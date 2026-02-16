@@ -34,10 +34,8 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-#if _CCCL_DEVICE_COMPILATION()
-
-[[nodiscard]]
-_CCCL_DEVICE_API inline bool __ptr_ranges_overlap_device(
+#if _CCCL_CUDA_COMPILATION()
+[[nodiscard]] _CCCL_DEVICE_API inline bool __ptr_ranges_overlap_device(
   const void* __lhs_begin, const void* __lhs_end, const void* __rhs_begin, const void* __rhs_end) noexcept
 {
   using uintptr_t            = ::cuda::std::uintptr_t;
@@ -49,20 +47,18 @@ _CCCL_DEVICE_API inline bool __ptr_ranges_overlap_device(
   _CCCL_ASSERT(__rhs_start_ptr <= __rhs_end_ptr, "rhs range is invalid");
   return __lhs_start_ptr < __rhs_end_ptr && __rhs_start_ptr < __lhs_end_ptr;
 }
+#endif // _CCCL_CUDA_COMPILATION()
 
-#else // ^^^^ _CCCL_DEVICE_COMPILATION() ^^^^ / vvvv _CCCL_HOST_COMPILATION() vvvv
-
+#if !_CCCL_COMPILER(NVRTC)
 template <typename _Tp>
-[[nodiscard]]
-_CCCL_HOST_API bool
+[[nodiscard]] _CCCL_HOST_API bool
 __ptr_ranges_overlap_host(_Tp* __lhs_begin, _Tp* __lhs_end, _Tp* __rhs_begin, _Tp* __rhs_end) noexcept
 {
   _CCCL_ASSERT(::std::less_equal<>{}(__lhs_begin, __lhs_end), "lhs range is invalid");
   _CCCL_ASSERT(::std::less_equal<>{}(__rhs_begin, __rhs_end), "rhs range is invalid");
   return ::std::less<>{}(__lhs_begin, __rhs_end) && ::std::less<>{}(__rhs_begin, __lhs_end);
 }
-
-#endif // ^^^^ _CCCL_HOST_COMPILATION() ^^^^
+#endif // !_CCCL_COMPILER(NVRTC)
 
 _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(::cuda::std::forward_iterator<_Tp>)
