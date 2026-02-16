@@ -36,7 +36,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::warpspeed
 {
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL size_t max_native_atomic_size() noexcept
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL ::cuda::std::size_t max_native_atomic_size() noexcept
 {
 #if _CCCL_CUDA_COMPILER(NVHPC)
   return 8;
