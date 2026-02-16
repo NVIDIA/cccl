@@ -213,7 +213,7 @@ C2H_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
 
   // Ensure that we did not overwrite other elements
   const auto boundary = out.begin() + num_selected_out[0];
-  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::__equal_to_value{}));
+  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::__equal_to_default{}));
 
   out.resize(num_selected_out[0]);
   REQUIRE(reference_out == out);

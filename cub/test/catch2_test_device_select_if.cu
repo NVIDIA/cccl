@@ -178,7 +178,7 @@ C2H_TEST("DeviceSelect::If is stable", "[device][select_if]")
 
   // Ensure that we did not overwrite other elements
   const auto boundary = out.begin() + num_selected_out[0];
-  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::__equal_to_value{}));
+  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::__equal_to_default{}));
 
   out.resize(num_selected_out[0]);
   reference.resize(num_selected_out[0]);
@@ -205,7 +205,7 @@ C2H_TEST("DeviceSelect::If works with iterators", "[device][select_if]", all_typ
 
   const auto boundary = out.begin() + num_selected_out[0];
   REQUIRE(thrust::all_of(c2h::device_policy, out.begin(), boundary, le));
-  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::__equal_to_value{}));
+  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::__equal_to_default{}));
 }
 
 C2H_TEST("DeviceSelect::If works with pointers", "[device][select_if]", types)
@@ -229,7 +229,7 @@ C2H_TEST("DeviceSelect::If works with pointers", "[device][select_if]", types)
 
   const auto boundary = out.begin() + num_selected_out[0];
   REQUIRE(thrust::all_of(c2h::device_policy, out.begin(), boundary, le));
-  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::__equal_to_value{}));
+  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::__equal_to_default{}));
 }
 
 C2H_TEST("DeviceSelect::If works in place", "[device][select_if]", types)
@@ -298,7 +298,7 @@ C2H_TEST("DeviceSelect::If works with a different output type", "[device][select
 
   const auto boundary = out.begin() + num_selected_out[0];
   REQUIRE(thrust::all_of(c2h::device_policy, out.begin(), boundary, le));
-  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::__equal_to_value{}));
+  REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), cuda::__equal_to_default{}));
 }
 
 C2H_TEST("DeviceSelect::If works for very large number of items",
