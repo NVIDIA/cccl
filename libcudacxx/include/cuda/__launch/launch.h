@@ -117,31 +117,23 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void __assume_known_info() noexcept
   if constexpr (_BlockExts::static_extent(0) != __dext)
   {
     _CCCL_ASSUME(_CCCL_BLOCK_DIM_X == _BlockExts::static_extent(0));
-    if constexpr (_BlockExts::static_extent(0) == 1)
-    {
-      _CCCL_ASSUME(_CCCL_THREAD_IDX_X == 0);
-    }
+    _CCCL_ASSUME(_CCCL_THREAD_IDX_X < _CCCL_BLOCK_DIM_X);
   }
   if constexpr (_BlockExts::static_extent(1) != __dext)
   {
     _CCCL_ASSUME(_CCCL_BLOCK_DIM_Y == _BlockExts::static_extent(1));
-    if constexpr (_BlockExts::static_extent(1) == 1)
-    {
-      _CCCL_ASSUME(_CCCL_THREAD_IDX_Y == 0);
-    }
+    _CCCL_ASSUME(_CCCL_THREAD_IDX_Y < _CCCL_BLOCK_DIM_Y);
   }
   if constexpr (_BlockExts::static_extent(2) != __dext)
   {
     _CCCL_ASSUME(_CCCL_BLOCK_DIM_Z == _BlockExts::static_extent(2));
-    if constexpr (_BlockExts::static_extent(2) == 1)
-    {
-      _CCCL_ASSUME(_CCCL_THREAD_IDX_Z == 0);
-    }
+    _CCCL_ASSUME(_CCCL_THREAD_IDX_Z < 0);
   }
 
   using _GridDesc = typename _Hierarchy::template level_desc_type<grid_level>;
   using _GridExts = typename _GridDesc::extents_type;
 
+  // Assumptions have no effect with nvc++ in CUDA mode, so we can just use _CCCL_PTX_ARCH here to simplify the code.
 #      if _CCCL_PTX_ARCH >= 900
   if constexpr (_Hierarchy::has_level(cluster))
   {
@@ -151,87 +143,56 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void __assume_known_info() noexcept
     if constexpr (_ClusterExts::static_extent(0) != __dext)
     {
       _CCCL_ASSUME(_CCCL_CLUSTER_DIM_X == _ClusterExts::static_extent(0));
-      if constexpr (_ClusterExts::static_extent(0) == 1)
-      {
-        _CCCL_ASSUME(_CCCL_CLUSTER_RELATIVE_BLOCK_IDX_X == 0);
-      }
+      _CCCL_ASSUME(_CCCL_CLUSTER_RELATIVE_BLOCK_IDX_X < _CCCL_CLUSTER_DIM_X);
     }
     if constexpr (_ClusterExts::static_extent(1) != __dext)
     {
       _CCCL_ASSUME(_CCCL_CLUSTER_DIM_Y == _ClusterExts::static_extent(1));
-      if constexpr (_ClusterExts::static_extent(1) == 1)
-      {
-        _CCCL_ASSUME(_CCCL_CLUSTER_RELATIVE_BLOCK_IDX_Y == 0);
-      }
+      _CCCL_ASSUME(_CCCL_CLUSTER_RELATIVE_BLOCK_IDX_Y < _CCCL_CLUSTER_DIM_Y);
     }
     if constexpr (_ClusterExts::static_extent(2) != __dext)
     {
       _CCCL_ASSUME(_CCCL_CLUSTER_DIM_Z == _ClusterExts::static_extent(2));
-      if constexpr (_ClusterExts::static_extent(2) == 1)
-      {
-        _CCCL_ASSUME(_CCCL_CLUSTER_RELATIVE_BLOCK_IDX_Z == 0);
-      }
+      _CCCL_ASSUME(_CCCL_CLUSTER_RELATIVE_BLOCK_IDX_Z < _CCCL_CLUSTER_DIM_Z);
     }
     if constexpr (_ClusterExts::static_extent(0) != __dext && _ClusterExts::static_extent(1) != __dext
                   && _ClusterExts::static_extent(2) != __dext)
     {
       _CCCL_ASSUME(_CCCL_CLUSTER_SIZE_IN_BLOCKS
                    == _ClusterExts::static_extent(0) * _ClusterExts::static_extent(1) * _ClusterExts::static_extent(2));
-      if constexpr (_ClusterExts::static_extent(0) * _ClusterExts::static_extent(1) * _ClusterExts::static_extent(2)
-                    == 1)
-      {
-        _CCCL_ASSUME(_CCCL_CLUSTER_RELATIVE_BLOCK_RANK == 0);
-      }
+      _CCCL_ASSUME(_CCCL_CLUSTER_RELATIVE_BLOCK_RANK < _CCCL_CLUSTER_SIZE_IN_BLOCKS);
     }
 
     if constexpr (_GridExts::static_extent(0) != __dext)
     {
       _CCCL_ASSUME(_CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_X == _GridExts::static_extent(0));
-      if constexpr (_GridExts::static_extent(0) == 1)
-      {
-        _CCCL_ASSUME(_CCCL_CLUSTER_IDX_X == 0);
-      }
+      _CCCL_ASSUME(_CCCL_CLUSTER_IDX_X < _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_X);
     }
     if constexpr (_GridExts::static_extent(1) != __dext)
     {
       _CCCL_ASSUME(_CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Y == _GridExts::static_extent(1));
-      if constexpr (_GridExts::static_extent(1) == 1)
-      {
-        _CCCL_ASSUME(_CCCL_CLUSTER_IDX_Y == 0);
-      }
+      _CCCL_ASSUME(_CCCL_CLUSTER_IDX_Y < _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Y);
     }
     if constexpr (__dext && _GridExts::static_extent(2) != __dext)
     {
       _CCCL_ASSUME(_CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Z == _GridExts::static_extent(2));
-      if constexpr (_GridExts::static_extent(2) == 1)
-      {
-        _CCCL_ASSUME(_CCCL_CLUSTER_IDX_Z == 0);
-      }
+      _CCCL_ASSUME(_CCCL_CLUSTER_IDX_Z < _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Z);
     }
 
     if constexpr (_ClusterExts::static_extent(0) != __dext && _GridExts::static_extent(0) != __dext)
     {
       _CCCL_ASSUME(_CCCL_GRID_DIM_X == _ClusterExts::static_extent(0) * _GridExts::static_extent(0));
-      if constexpr (_ClusterExts::static_extent(0) * _GridExts::static_extent(0) == 1)
-      {
-        _CCCL_ASSUME(_CCCL_BLOCK_IDX_X == 0);
-      }
+      _CCCL_ASSUME(_CCCL_BLOCK_IDX_X < _CCCL_GRID_DIM_X);
     }
     if constexpr (_ClusterExts::static_extent(1) != __dext && _GridExts::static_extent(1) != __dext)
     {
       _CCCL_ASSUME(_CCCL_GRID_DIM_Y == _ClusterExts::static_extent(1) * _GridExts::static_extent(1));
-      if constexpr (_ClusterExts::static_extent(1) * _GridExts::static_extent(1) == 1)
-      {
-        _CCCL_ASSUME(_CCCL_BLOCK_IDX_Y == 0);
-      }
+      _CCCL_ASSUME(_CCCL_BLOCK_IDX_Y < _CCCL_GRID_DIM_Y);
     }
     if constexpr (_ClusterExts::static_extent(2) != __dext && _GridExts::static_extent(2) != __dext)
     {
       _CCCL_ASSUME(_CCCL_GRID_DIM_Z == _ClusterExts::static_extent(2) * _GridExts::static_extent(2));
-      if constexpr (_ClusterExts::static_extent(2) * _GridExts::static_extent(2) == 1)
-      {
-        _CCCL_ASSUME(_CCCL_BLOCK_IDX_Z == 0);
-      }
+      _CCCL_ASSUME(_CCCL_BLOCK_IDX_Z < _CCCL_GRID_DIM_Z);
     }
   }
   else
@@ -240,26 +201,17 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void __assume_known_info() noexcept
     if constexpr (_GridExts::static_extent(0) != __dext)
     {
       _CCCL_ASSUME(_CCCL_GRID_DIM_X == _GridExts::static_extent(0));
-      if constexpr (_GridExts::static_extent(0) == 1)
-      {
-        _CCCL_ASSUME(_CCCL_BLOCK_IDX_X == 0);
-      }
+      _CCCL_ASSUME(_CCCL_BLOCK_IDX_X < _CCCL_GRID_DIM_X);
     }
     if constexpr (_GridExts::static_extent(1) != __dext)
     {
       _CCCL_ASSUME(_CCCL_GRID_DIM_Y == _GridExts::static_extent(1));
-      if constexpr (_GridExts::static_extent(1) == 1)
-      {
-        _CCCL_ASSUME(_CCCL_BLOCK_IDX_Y == 0);
-      }
+      _CCCL_ASSUME(_CCCL_BLOCK_IDX_Y < _CCCL_GRID_DIM_Y);
     }
     if constexpr (_GridExts::static_extent(2) != __dext)
     {
       _CCCL_ASSUME(_CCCL_GRID_DIM_Z == _GridExts::static_extent(2));
-      if constexpr (_GridExts::static_extent(2) == 1)
-      {
-        _CCCL_ASSUME(_CCCL_BLOCK_IDX_Z == 0);
-      }
+      _CCCL_ASSUME(_CCCL_BLOCK_IDX_Z < _CCCL_GRID_DIM_Z);
     }
   }
 }
@@ -331,7 +283,7 @@ __global__ static void __launch_bounds__(::cuda::__max_nthreads_per_block<_Confi
   }
   else
   {
-    return __kernel_fn(__args...);
+    __kernel_fn(__args...);
   }
 }
 
@@ -350,7 +302,7 @@ __global__ static void __kernel_launcher(const _CCCL_GRID_CONSTANT _Config __con
   }
   else
   {
-    return __kernel_fn(__args...);
+    __kernel_fn(__args...);
   }
 }
 
