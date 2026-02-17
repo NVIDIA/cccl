@@ -81,12 +81,6 @@ using itp_list =
                  std::integral_constant<int, 3>,
                  std::integral_constant<int, 8>>;
 
-using num_segments_ct =
-  c2h::type_list<std::integral_constant<unsigned int, 7>,
-                 std::integral_constant<unsigned int, 11>,
-                 std::integral_constant<unsigned int, 13>,
-                 std::integral_constant<unsigned int, 129>>;
-
 template <int BlockThreads, int ItemsPerThread, int MaxSegmentsPerBlock, int MaxSegmentsPerWarp, typename AccumT>
 struct policy_hub_t
 {
@@ -234,10 +228,11 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
   using pair_t   = typename op_t::pair_t;
   using offset_t = unsigned int;
 
-  constexpr int block_size             = 128;
   constexpr int items_per_thread       = 4;
+  constexpr int block_size             = 128;
+  constexpr int warps_in_block         = block_size / 32;
   constexpr int max_segments_per_block = 256;
-  constexpr int max_segments_per_warp  = 64;
+  constexpr int max_segments_per_warp  = max_segments_per_block / (warps_in_block);
   using policy_t = policy_hub_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp, pair_t>;
 
   unsigned num_items = block_size * items_per_thread * 101 + 1;
@@ -345,10 +340,7 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
   }
 }
 
-C2H_TEST("segmented exclusive scan works for integer types",
-         "[multi_segment][segmented][scan]",
-         integral_types,
-         num_segments_ct)
+C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][segmented][scan]", integral_types)
 {
   using value_t  = c2h::get<0, TestType>;
   using op_t     = numeric_op<value_t>;
@@ -356,9 +348,10 @@ C2H_TEST("segmented exclusive scan works for integer types",
 
   constexpr auto max_nelems = get_max_elems<value_t>();
 
-  constexpr unsigned int num_segments      = c2h::get<1, TestType>{};
-  constexpr unsigned int items_per_segment = cuda::ceil_div(max_nelems, num_segments);
-  constexpr unsigned int num_items         = num_segments * items_per_segment;
+  // repeat the test for multiple values of num_segments
+  const unsigned int num_segments      = GENERATE(7, 9, 13, 129);
+  const unsigned int items_per_segment = cuda::ceil_div(max_nelems, num_segments);
+  const unsigned int num_items         = num_segments * items_per_segment;
 
   CAPTURE(num_segments, num_items, items_per_segment, cuda::std::is_signed_v<value_t>);
 
@@ -373,10 +366,12 @@ C2H_TEST("segmented exclusive scan works for integer types",
   thrust::tabulate(input.begin(), input.end(), init_op<value_t>{});
   c2h::device_vector<value_t> output(input.size());
 
-  constexpr int block_size             = 128;
   constexpr int items_per_thread       = 11;
-  constexpr int max_segments_per_block = 256;
-  constexpr int max_segments_per_warp  = 64;
+  constexpr int block_size             = 128;
+  constexpr int warps_in_block         = block_size / 32;
+  constexpr int max_segments_per_block = 16;
+  constexpr int max_segments_per_warp  = max_segments_per_block / warps_in_block;
+
   using policy_t = policy_hub_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp, value_t>;
 
   using d_init_t                  = cub::detail::InputValue<value_t>;
@@ -449,10 +444,11 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
   using op_t     = numeric_op<value_t>;
   using offset_t = unsigned int;
 
-  constexpr int block_size             = 128;
   constexpr int items_per_thread       = 4;
+  constexpr int block_size             = 128;
+  constexpr int warps_in_block         = block_size / 32;
   constexpr int max_segments_per_block = 256;
-  constexpr int max_segments_per_warp  = 64;
+  constexpr int max_segments_per_warp  = max_segments_per_block / warps_in_block;
   using policy_t = policy_hub_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp, value_t>;
 
   unsigned num_items = block_size * items_per_thread * 132;
@@ -527,8 +523,7 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
 
 C2H_TEST("Segmented inclusive scan with init works for integer types",
          "[multi_segment][segmented][scan]",
-         integral_types,
-         num_segments_ct)
+         integral_types)
 {
   using value_t  = c2h::get<0, TestType>;
   using op_t     = numeric_op<value_t>;
@@ -536,9 +531,9 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
 
   constexpr auto max_nelems = get_max_elems<value_t>();
 
-  constexpr unsigned int num_segments      = c2h::get<1, TestType>{};
-  constexpr unsigned int items_per_segment = cuda::ceil_div(max_nelems, num_segments);
-  constexpr unsigned int num_items         = num_segments * items_per_segment;
+  const unsigned int num_segments      = GENERATE(7, 11, 13, 129);
+  const unsigned int items_per_segment = cuda::ceil_div(max_nelems, num_segments);
+  const unsigned int num_items         = num_segments * items_per_segment;
 
   c2h::host_vector<offset_t> h_offsets(num_segments + 1);
   for (unsigned i = 0; i <= num_segments; ++i)
@@ -553,10 +548,11 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
   thrust::tabulate(input.begin(), input.end(), init_op<value_t>{});
   c2h::device_vector<value_t> output(input.size());
 
-  constexpr int block_size             = 128;
   constexpr int items_per_thread       = 4;
+  constexpr int block_size             = 128;
+  constexpr int warps_in_block         = block_size / 32;
   constexpr int max_segments_per_block = 256;
-  constexpr int max_segments_per_warp  = 64;
+  constexpr int max_segments_per_warp  = max_segments_per_block / warps_in_block;
   using policy_t = policy_hub_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp, value_t>;
 
   using d_init_t                       = cub::detail::InputValue<value_t>;
@@ -629,10 +625,11 @@ C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
   using value_t  = unsigned int;
   using offset_t = unsigned int;
 
-  constexpr int block_size             = 128;
   constexpr int items_per_thread       = c2h::get<0, TestType>{};
+  constexpr int block_size             = 128;
+  constexpr int warps_in_block         = block_size / 32;
   constexpr int max_segments_per_block = 256;
-  constexpr int max_segments_per_warp  = 64;
+  constexpr int max_segments_per_warp  = max_segments_per_block / warps_in_block;
   using policy_t = policy_hub_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp, value_t>;
 
   const auto canary = value_t{0xDEADBEEF};
