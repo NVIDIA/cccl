@@ -1,10 +1,10 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:26.02-cpp-nvhpc25.7",
+  "image": "rapidsai/devcontainers:latest-cpp-nvhpc25.11",
   "runArgs": [
     "--init",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda12.9-nvhpc25.7"
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda13.0-nvhpc25.11"
   ],
   "hostRequirements": {
     "gpu": "optional"
@@ -26,21 +26,23 @@
     "SCCACHE_S3_PREPROCESSOR_CACHE_KEY_PREFIX": "cccl-preprocessor-cache",
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
-    "DEVCONTAINER_NAME": "cuda12.9-nvhpc25.7",
+    "DEVCONTAINER_NAME": "cuda13.0-nvhpc25.11",
     "DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST": "1",
-    "CCCL_CUDA_VERSION": "12.9",
+    "CCCL_CUDA_VERSION": "13.0",
     "CCCL_HOST_COMPILER": "nvhpc",
-    "CCCL_HOST_COMPILER_VERSION": "25.7",
-    "CCCL_BUILD_INFIX": "cuda12.9-nvhpc25.7",
+    "CCCL_HOST_COMPILER_VERSION": "25.11",
+    "CCCL_BUILD_INFIX": "cuda13.0-nvhpc25.11",
     "CCCL_CUDA_EXTENDED": "false",
     "HOST_WORKSPACE": "${localWorkspaceFolder}"
   },
   "workspaceFolder": "/home/coder/cccl",
-  "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/cccl,type=bind,consistency=consistent",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/cccl,type=bind",
   "mounts": [
-    "source=${localWorkspaceFolder}/.aws,target=/home/coder/.aws,type=bind,consistency=consistent",
-    "source=${localWorkspaceFolder}/.cache,target=/home/coder/.cache,type=bind,consistency=consistent",
-    "source=${localWorkspaceFolder}/.config,target=/home/coder/.config,type=bind,consistency=consistent",
+    "source=/etc/timezone,target=/etc/timezone,type=bind",
+    "source=/etc/localtime,target=/etc/localtime,type=bind",
+    "source=${localWorkspaceFolder}/.aws,target=/home/coder/.aws,type=bind",
+    "source=${localWorkspaceFolder}/.cache,target=/home/coder/.cache,type=bind",
+    "source=${localWorkspaceFolder}/.config,target=/home/coder/.config,type=bind",
     "source=cccl-build,target=/home/coder/cccl/build",
     "source=cccl-wheelhouse,target=/home/coder/cccl/wheelhouse"
   ],
@@ -65,5 +67,5 @@
       }
     }
   },
-  "name": "cuda12.9-nvhpc25.7"
+  "name": "cuda13.0-nvhpc25.11"
 }
