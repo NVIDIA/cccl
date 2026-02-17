@@ -45,6 +45,7 @@ Examples:
 """
 
 import argparse
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -107,7 +108,7 @@ CPP_TO_PY_AXIS_MAP = {
     "KeyT{ct}": "KeyT",
     "ValueT{ct}": "ValueT",
     # Histogram uses different name
-    "SampleT{ct}": "T",
+    "SampleT{ct}": "SampleT",
 }
 
 
@@ -226,6 +227,24 @@ def get_result_path(benchmark: str, suffix: str) -> Path:
     return RESULTS_DIR / bench_path.parent / f"{bench_path.name}_{suffix}.json"
 
 
+def get_log_path(benchmark: str, suffix: str) -> Path:
+    """Get log file path under results/logs.
+
+    e.g., "transform/fill", "cpp" -> "results/logs/transform/fill_cpp.log"
+    """
+    bench_path = Path(benchmark)
+    return RESULTS_DIR / "logs" / bench_path.parent / f"{bench_path.name}_{suffix}.log"
+
+
+def run_and_log(cmd: list, log_path: Path) -> None:
+    """Run command and write stdout/stderr to log file."""
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(log_path, "w", encoding="utf-8") as log_file:
+        log_file.write(f"Command: {shlex.join(cmd)}\n\n")
+        log_file.flush()
+        subprocess.run(cmd, check=True, stdout=log_file, stderr=log_file)
+
+
 # ============================================================================
 # Benchmark Runner
 # ============================================================================
@@ -247,6 +266,8 @@ def run_benchmark(
     py_script = get_py_script(benchmark)
     cpp_result = get_result_path(benchmark, "cpp")
     py_result = get_result_path(benchmark, "py")
+    cpp_log = get_log_path(benchmark, "cpp")
+    py_log = get_log_path(benchmark, "py")
 
     # Ensure results subdirectory exists
     cpp_result.parent.mkdir(parents=True, exist_ok=True)
@@ -297,8 +318,9 @@ def run_benchmark(
 
         cmd = [str(cpp_bin), "--json", str(cpp_result), "--devices", device]
         cmd.extend(cpp_axis_args)
-        subprocess.run(cmd, check=True)
+        run_and_log(cmd, cpp_log)
         print(f"  Results: {cpp_result}")
+        print(f"  Log: {cpp_log}")
         results["cpp"] = cpp_result
 
     # Run Python benchmark
@@ -318,8 +340,9 @@ def run_benchmark(
             device,
         ]
         cmd.extend(py_axis_args)
-        subprocess.run(cmd, check=True)
+        run_and_log(cmd, py_log)
         print(f"  Results: {py_result}")
+        print(f"  Log: {py_log}")
         results["py"] = py_result
 
     return results
@@ -423,11 +446,17 @@ Supported benchmarks:
     for bench in benchmarks_to_run:
         cpp_result = get_result_path(bench, "cpp")
         py_result = get_result_path(bench, "py")
+        cpp_log = get_log_path(bench, "cpp")
+        py_log = get_log_path(bench, "py")
         print(f"  {bench}:")
         if cpp_result.exists():
             print(f"    C++ results:    {cpp_result}")
+        if cpp_log.exists():
+            print(f"    C++ log:        {cpp_log}")
         if py_result.exists():
             print(f"    Python results: {py_result}")
+        if py_log.exists():
+            print(f"    Python log:     {py_log}")
 
     print()
     print("To compare results, run:")
