@@ -118,7 +118,7 @@ python analysis/python_vs_cpp_summary.py \
   --device 0
 ```
 
-## AI commmands
+## AI commands
 
 These are using the .opencode folder but can be moved to other Agents.
 
