@@ -193,7 +193,7 @@ fi
 # Build Sphinx HTML documentation
 echo "Building documentation with Sphinx..."
 # Use the virtual environment's Python
-python -m sphinx.cmd.build -b html -j auto . ${BUILDDIR}/html ${SPHINXOPTS}
+python -m sphinx.cmd.build -b html -d ${BUILDDIR}/doctrees -j auto . ${BUILDDIR}/html ${SPHINXOPTS}
 
 # Reorganize output to include versioned directory and root assets
 VERSION="${SPHINX_CCCL_VER:-unstable}"
