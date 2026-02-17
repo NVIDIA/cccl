@@ -33,6 +33,8 @@
 #include <cuda/std/__pstl/generate_n.h>
 #include <cuda/std/__pstl/reduce.h>
 #include <cuda/std/__pstl/remove.h>
+#include <cuda/std/__pstl/remove_copy.h>
+#include <cuda/std/__pstl/remove_copy_if.h>
 #include <cuda/std/__pstl/remove_if.h>
 #include <cuda/std/__pstl/replace.h>
 #include <cuda/std/__pstl/replace_copy.h>
