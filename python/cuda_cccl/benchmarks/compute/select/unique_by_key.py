@@ -13,6 +13,7 @@ Notes:
 - Generates key segments with sizes between 1 and MaxSegSize
 - Both keys and values are processed
 - Migration: Python fixes offsets and generates key segments on CPU to mirror C++.
+- OffsetT axis is omitted because the Python API does not expose offset type.
 """
 
 import sys

@@ -12,6 +12,7 @@ Notes:
 - Uses less_t comparison operator (ascending sort)
 - Keys only (no values) - see pairs.cu for key-value sorting
 - Migration: Python fixes offsets and approximates entropy generation.
+- OffsetT axis is omitted because the Python API does not expose offset type.
 """
 
 import sys

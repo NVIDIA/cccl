@@ -45,7 +45,7 @@ python run_benchmarks.py --help
 To run the benchmarks using the "quick" configuration, run:
 
 ```bash
-python run_benchmarks.py --config quick
+python run_benchmarks.py --quick
 ```
 
 ## Compare Results
@@ -117,3 +117,11 @@ python analysis/python_vs_cpp_summary.py \
   results/transform/fill_cpp.json \
   --device 0
 ```
+
+## AI commmands
+
+These are using the .opencode folder but can be moved to other Agents.
+
+### /migration-status
+
+Generates a report of the migration status for each benchmark in CUB.

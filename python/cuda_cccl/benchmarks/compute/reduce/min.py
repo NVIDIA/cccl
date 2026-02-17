@@ -11,7 +11,6 @@ Notes:
 - Uses OpKind.MINIMUM for minimum reduction
 - C++ uses cuda::minimum<> which CUB recognizes for optimized code paths (DPX on Hopper+)
 - int128 and complex32 are not supported by cupy
-- Migration: Python uses manual init with max value and cache-clear workaround.
 """
 
 import sys
@@ -25,7 +24,7 @@ import numpy as np
 from utils import as_cupy_stream
 
 import cuda.bench as bench
-from cuda.compute import OpKind, clear_all_caches, make_reduce_into
+from cuda.compute import OpKind, make_reduce_into
 
 # Type mapping: match C++ fundamental_types
 TYPE_MAP = {
@@ -42,9 +41,6 @@ def bench_reduce_min(state: bench.State):
     """
     Benchmark reduce min operation using OpKind.MINIMUM.
     """
-    # WORKAROUND: Clear caches to avoid caching bug
-    # See BUG_REPORT_CACHING.md for details
-    clear_all_caches()
 
     # Get parameters from axes
     type_str = state.get_string("T")

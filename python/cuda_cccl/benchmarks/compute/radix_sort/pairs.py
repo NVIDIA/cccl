@@ -14,6 +14,7 @@ Notes:
 - begin_bit=0, end_bit=sizeof(KeyT)*8 (full key comparison)
 - C++ uses integral_types for keys and int8/16/32/64 for values
 - Migration: Python omits int128 values and OffsetT axis.
+- OffsetT axis is omitted because the Python API does not expose offset type.
 """
 
 import sys

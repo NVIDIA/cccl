@@ -10,6 +10,7 @@ Notes:
 - Uses TransformIterator with a square operation
 - OffsetT axis from C++ is fixed to Python default (int64)
 - Migration: Python fixes offsets and omits int128/complex types.
+- OffsetT axis is omitted because the Python API does not expose offset type.
 """
 
 import sys

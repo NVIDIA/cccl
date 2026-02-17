@@ -11,6 +11,7 @@ Notes:
 - Uses Determinism.NOT_GUARANTEED
 - C++ tests int32, int64, float, double
 - Migration: Python fixes offsets; C++ exposes an OffsetT axis.
+- OffsetT axis is omitted because the Python API does not expose offset type.
 """
 
 import sys

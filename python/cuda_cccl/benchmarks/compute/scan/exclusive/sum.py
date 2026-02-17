@@ -10,6 +10,7 @@ C++ equivalent: cub/benchmarks/bench/scan/exclusive/sum.cu
 Notes:
 - int128 and complex32 are not supported by cupy
 - Migration: Python fixes offsets; C++ exposes an OffsetT axis.
+- OffsetT axis is omitted because the Python API does not expose offset type.
 """
 
 import sys

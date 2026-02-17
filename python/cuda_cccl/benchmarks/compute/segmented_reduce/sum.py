@@ -16,6 +16,7 @@ Notes:
   - large: SegmentSize 2^9 to 2^16 (512, 1024, ..., 65536)
 - Uses OpKind.PLUS for sum reduction
 - Migration: Python builds explicit offsets and clamps input range; C++ uses fixed-size segments.
+- OffsetT axis is omitted because the Python API does not expose offset type.
 """
 
 import sys

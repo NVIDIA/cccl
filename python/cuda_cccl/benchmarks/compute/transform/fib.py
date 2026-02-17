@@ -12,6 +12,7 @@ Notes:
 - Output values are uint32
 - Benchmark name is "fibonacci" to match C++
 - Migration: Python fixes offsets to int64; input generation uses CuPy random.
+- OffsetT axis is omitted because the Python API does not expose offset type.
 """
 
 import sys

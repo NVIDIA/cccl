@@ -11,6 +11,7 @@ Notes:
 - Uses Determinism.RUN_TO_RUN
 - C++ only tests float and double
 - Migration: Python uses int64 offsets; C++ uses int offsets.
+- OffsetT axis is omitted because the Python API does not expose offset type.
 """
 
 import sys

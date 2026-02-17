@@ -11,6 +11,7 @@ Notes:
 - Uses Entropy axis to control key distribution
 - Keys and values are sorted together
 - Migration: Python omits int128 values and OffsetT axis.
+- OffsetT axis is omitted because the Python API does not expose offset type.
 """
 
 import sys

@@ -9,6 +9,7 @@ C++ equivalent: cub/benchmarks/bench/transform/babelstream.cu
 
 Notes:
 - Migration: Python omits OffsetT axis and int128 types.
+- OffsetT axis is omitted because the Python API does not expose offset type.
 """
 
 import sys
