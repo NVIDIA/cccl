@@ -12,7 +12,7 @@
 
     // If the branch is not versioned, we redirect to a versioned branch keeping the URI.
     if (!isBranchVersioned) {
-        window.location.href = localUri.replace(/^cccl\//g, "cccl/unstable");
+        window.location.href = hostUrl + '/' + localUri.replace(/^cccl\//g, "cccl/unstable");
     }
 
     fetch(pagelistUrl)
