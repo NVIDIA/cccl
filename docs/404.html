@@ -20,7 +20,8 @@
         var searchPathMatch = localUri.replace(/^\/cccl(?:\/unstable|\/branch\/\d+\.\d+\.\d+)?/, "")
 
         // Project default root leads to unstable
-        var rootPath = "cccl/unstable"
+        var rootPath = "/cccl/unstable"
+
         // If a root path was found, use it instead
         if (rootPathMatch !== null) {
             rootPath = rootPathMatch[0]
@@ -28,10 +29,9 @@
 
         // User was trying to reach a path, forward to appropriate 404 helper
         if (searchPathMatch !== null) {
-            searchPath = searchPathmatch[0]
             // Redirect to the helper page, including the query
             window.location.href =
-                hostUrl + rootPath + "404_helper.html?path=" + searchPath
+                hostUrl + rootPath + "/404_helper.html?path=" + searchPathMatch[0]
         }
         // Redirect to index otherwise
         else {
