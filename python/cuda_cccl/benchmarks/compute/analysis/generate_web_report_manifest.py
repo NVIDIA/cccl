@@ -136,7 +136,7 @@ def main() -> None:
             json.dump(manifest, handle, indent=2)
             handle.write("\n")
 
-    print("Wrote manifest with " f"{len(manifest['benchmarks'])} benchmarks")
+    print(f"Wrote manifest with {len(manifest['benchmarks'])} benchmarks")
 
 
 if __name__ == "__main__":
