@@ -130,9 +130,20 @@ def bench_unique_by_key(state: bench.State):
     with alloc_stream:
         if np.issubdtype(value_dtype, np.integer):
             info = np.iinfo(value_dtype)
-            d_in_values = cp.random.randint(
-                int(info.min), int(info.max) + 1, size=num_elements, dtype=np.int64
-            ).astype(value_dtype)
+            if value_dtype == np.int64:
+                d_in_values = cp.random.randint(
+                    int(info.min),
+                    int(info.max),
+                    size=num_elements,
+                    dtype=np.int64,
+                )
+            else:
+                d_in_values = cp.random.randint(
+                    int(info.min),
+                    int(info.max) + 1,
+                    size=num_elements,
+                    dtype=np.int64,
+                ).astype(value_dtype)
         else:
             d_in_values = cp.random.uniform(-1, 1, size=num_elements).astype(
                 value_dtype

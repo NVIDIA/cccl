@@ -40,6 +40,11 @@ START_SCALAR = -2
 assert START_A == START_A + START_B + START_SCALAR * START_C
 
 
+def _reset_pools():
+    cp.get_default_memory_pool().free_all_blocks()
+    cp.get_default_pinned_memory_pool().free_all_blocks()
+
+
 def bench_mul(state: bench.State):
     """
     Benchmark: b[i] = c[i] * scalar
@@ -48,6 +53,8 @@ def bench_mul(state: bench.State):
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_items = int(state.get_int64("Elements"))
+
+    _reset_pools()
 
     alloc_stream = as_cupy_stream(state.get_stream())
     with alloc_stream:
@@ -81,6 +88,8 @@ def bench_add(state: bench.State):
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_items = int(state.get_int64("Elements"))
+
+    _reset_pools()
 
     alloc_stream = as_cupy_stream(state.get_stream())
     with alloc_stream:
@@ -118,6 +127,8 @@ def bench_triad(state: bench.State):
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_items = int(state.get_int64("Elements"))
+
+    _reset_pools()
 
     alloc_stream = as_cupy_stream(state.get_stream())
     with alloc_stream:
@@ -159,6 +170,8 @@ def bench_nstream(state: bench.State):
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_items = int(state.get_int64("Elements"))
+
+    _reset_pools()
 
     alloc_stream = as_cupy_stream(state.get_stream())
     with alloc_stream:

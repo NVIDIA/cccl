@@ -36,10 +36,6 @@ TYPE_MAP = {
     "I16": np.int16,
     "I32": np.int32,
     "I64": np.int64,
-    "U8": np.uint8,
-    "U16": np.uint16,
-    "U32": np.uint32,
-    "U64": np.uint64,
     "F32": np.float32,
     "F64": np.float64,
 }

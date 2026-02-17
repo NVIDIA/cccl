@@ -27,7 +27,7 @@ from utils import as_cupy_stream
 import cuda.bench as bench
 from cuda.compute import SortOrder, clear_all_caches, make_radix_sort
 
-# Type mapping: match C++ fundamental_types (excluding int128 and complex)
+# Type mapping: match C++ fundamental_types (excluding int128)
 TYPE_MAP = {
     "I8": np.int8,
     "I16": np.int16,
@@ -67,16 +67,30 @@ def generate_data_with_entropy(num_elements, dtype, entropy_str, stream):
             info = np.iinfo(dtype)
             if probability == 1.0:
                 # Full random across entire range
-                # Use int64 for intermediate to avoid overflow
-                data = cp.random.randint(
-                    int(info.min), int(info.max) + 1, size=num_elements, dtype=np.int64
-                ).astype(dtype)
+                if dtype == np.int64:
+                    data = cp.random.randint(
+                        int(info.min),
+                        int(info.max),
+                        size=num_elements,
+                        dtype=np.int64,
+                    )
+                else:
+                    data = cp.random.randint(
+                        int(info.min),
+                        int(info.max) + 1,
+                        size=num_elements,
+                        dtype=np.int64,
+                    ).astype(dtype)
             else:
                 # Reduced entropy: limit the range of values
                 # Scale the range based on probability
                 range_size = int((int(info.max) - int(info.min)) * probability)
                 if range_size < 1:
                     range_size = 1
+                if dtype == np.int64:
+                    max_high = int(info.max)
+                    if range_size > max_high:
+                        range_size = max_high
                 data = cp.random.randint(
                     0, range_size, size=num_elements, dtype=np.int64
                 ).astype(dtype)

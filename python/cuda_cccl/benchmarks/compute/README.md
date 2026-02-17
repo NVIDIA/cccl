@@ -48,6 +48,37 @@ python run_benchmarks.py --help
 python analysis/python_vs_cpp_summary.py -b transform/fill
 ```
 
+## Web Report
+
+A sinple page used to visualize a ser of results.
+
+- Requires `results/` to be populated with benchmark results.
+
+First generate a manifest:
+
+```bash
+python analysis/generate_web_report_manifest.py \
+  --results-dir results \
+  --output results/manifest.json
+```
+
+Build the web report single file app:
+
+```bash
+cd analysis/web-report
+npm install
+npm run build
+```
+
+This will output a single file app to `analysis/web-report/dist/` copy it to the `results/` directory and:
+
+```bash
+cd results/
+python3 -m http.server
+```
+
+Now its possible to share the results directory as a zip/tar file.
+
 ## Manual Usage
 
 ### List benchmark configurations
