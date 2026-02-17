@@ -46,9 +46,10 @@ ptr_alignment(const void* __ptr, ::cuda::std::size_t __max_alignment = 0) noexce
   return static_cast<::cuda::std::size_t>(__addr & (~__addr + 1));
 }
 
-[[nodiscard]] _CCCL_API inline ::cuda::std::size_t ptr_alignment(const volatile void* __ptr) noexcept
+[[nodiscard]] _CCCL_API inline ::cuda::std::size_t
+ptr_alignment(const volatile void* __ptr, ::cuda::std::size_t __max_alignment = 0) noexcept
 {
-  return ::cuda::ptr_alignment(const_cast<const void*>(__ptr));
+  return ::cuda::ptr_alignment(const_cast<const void*>(__ptr), __max_alignment);
 }
 
 _CCCL_END_NAMESPACE_CUDA
