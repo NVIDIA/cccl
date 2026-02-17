@@ -30,99 +30,96 @@ struct ComparisonObject
 };
 
 // Test suit for numeric types
-__host__ __device__ constexpr bool test_numeric_types()
+__host__ __device__ constexpr void test_numeric_types()
 {
   // integral values
   {
-    constexpr cuda::equal_to_value<int> eq(1);
-    static_assert(eq(1) == true, "");
-    static_assert(eq(2) == false, "");
+    const cuda::equal_to_value<int> eq(1);
+    assert(eq(1) == true);
+    assert(eq(2) == false);
   }
 
   // floating point values
   {
-    constexpr cuda::equal_to_value<double> eq(3.14);
-    static_assert(eq(3.14) == true, "");
-    static_assert(eq(2.71) == false, "");
+    const cuda::equal_to_value<double> eq(3.14);
+    assert(eq(3.14) == true);
+    assert(eq(2.71) == false);
   }
-
-  return true;
 }
 
 // Test suit for heterogeneous comparisons
-__host__ __device__ constexpr bool test_heterogeneous_comparisons()
+__host__ __device__ constexpr void test_heterogeneous_comparisons()
 {
-  constexpr cuda::equal_to_value<int> eq(42);
-  static_assert(eq(42.0) == true, "");
-  static_assert(eq(43.0) == false, "");
+  const cuda::equal_to_value<int> eq(42);
+  assert(eq(42.0) == true);
+  assert(eq(43.0) == false);
 
-  constexpr cuda::equal_to_value<double> eqd(42.0);
-  static_assert(eqd(42) == true, "");
-  static_assert(eqd(43) == false, "");
-
-  return true;
+  const cuda::equal_to_value<double> eqd(42.0);
+  assert(eqd(42) == true);
+  assert(eqd(43) == false);
 }
 
 // Test suit for user-defined types
-__host__ __device__ constexpr bool test_user_defined_types()
+__host__ __device__ constexpr void test_user_defined_types()
 {
-  constexpr ComparisonObject a{42};
-  constexpr ComparisonObject b{42};
-  constexpr ComparisonObject c{43};
+  const ComparisonObject a{42};
+  const ComparisonObject b{42};
+  const ComparisonObject c{43};
 
-  constexpr cuda::equal_to_value<ComparisonObject> eq(a);
-  static_assert(eq(b) == true, "");
-  static_assert(eq(c) == false, "");
-
-  return true;
+  const cuda::equal_to_value<ComparisonObject> eq(a);
+  assert(eq(b) == true);
+  assert(eq(c) == false);
 }
 
 // Test suit for CTAD
-__host__ __device__ constexpr bool test_ctad()
+__host__ __device__ constexpr void test_ctad()
 {
   // built-in types
-  constexpr cuda::equal_to_value eq(42);
-  static_assert(cuda::std::is_same_v<decltype(eq), const cuda::equal_to_value<int>>, "");
-  static_assert(eq(42) == true, "");
-  static_assert(eq(43) == false, "");
+  const cuda::equal_to_value eq(42);
+  auto is_same = ::cuda::std::is_same_v<decltype(eq), const cuda::equal_to_value<int>>;
+  assert(is_same);
+  assert(eq(42) == true);
+  assert(eq(43) == false);
 
   // user-defined types
-  constexpr ComparisonObject obj{42};
-  constexpr cuda::equal_to_value eq_obj(obj);
-  static_assert(cuda::std::is_same_v<decltype(eq_obj), const cuda::equal_to_value<ComparisonObject>>, "");
-  static_assert(eq_obj(obj) == true, "");
-  static_assert(eq_obj(ComparisonObject{43}) == false, "");
-
-  return true;
+  const ComparisonObject obj{42};
+  const cuda::equal_to_value eq_obj(obj);
+  auto is_same_obj = ::cuda::std::is_same_v<decltype(eq_obj), const cuda::equal_to_value<ComparisonObject>>;
+  assert(is_same_obj);
+  assert(eq_obj(obj) == true);
+  assert(eq_obj(ComparisonObject{43}) == false);
 }
 
 // Test suit for noexcept
-__host__ __device__ constexpr bool test_noexcept()
+__host__ __device__ constexpr void test_noexcept()
 {
   // built-in types
-  constexpr cuda::equal_to_value<int> eq(42);
-  static_assert(noexcept(eq(42)) == true, "");
-  static_assert(eq(42) == true, "");
+  const cuda::equal_to_value<int> eq(42);
+  assert(noexcept(eq(42)) == true);
+  assert(eq(42) == true);
 
   // user-defined types
-  constexpr ComparisonObject obj{42};
-  constexpr cuda::equal_to_value<ComparisonObject> eq_obj(obj);
-  static_assert(noexcept(eq_obj(obj)) == true, "");
-  static_assert(eq_obj(obj) == true, "");
-
-  return true;
+  const ComparisonObject obj{42};
+  const cuda::equal_to_value<ComparisonObject> eq_obj(obj);
+  assert(noexcept(eq_obj(obj)) == true);
+  assert(eq_obj(obj) == true);
 }
 
 // Run all test suits
 __host__ __device__ constexpr bool test()
 {
-  return test_numeric_types() && test_heterogeneous_comparisons() && test_user_defined_types() && test_ctad()
-      && test_noexcept();
+  test_numeric_types();
+  test_heterogeneous_comparisons();
+  test_user_defined_types();
+  test_ctad();
+  test_noexcept();
+
+  return true;
 }
 
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  assert(test());
   return 0;
 }
