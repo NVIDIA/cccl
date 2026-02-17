@@ -259,7 +259,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     _CCCL_API void __complete() noexcept
     {
       // Stop callback is no longer needed. Destroy it.
-      __on_stop_.destroy();
+      __on_stop_.__destroy();
       // All child operations have completed and arrived at the barrier.
       switch (__state_.load(::cuda::std::memory_order_relaxed))
       {
@@ -272,7 +272,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
           break;
         case __error:
           // One or more child operations completed with an error:
-          __errors_.__visit(execution::set_error, static_cast<__errors_t&&>(__errors_), static_cast<_Rcvr&&>(__rcvr_));
+          __visit(execution::set_error, static_cast<__errors_t&&>(__errors_), static_cast<_Rcvr&&>(__rcvr_));
           break;
         case __stopped:
           execution::set_stopped(static_cast<_Rcvr&&>(__rcvr_));
@@ -359,14 +359,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
     _CCCL_API constexpr void start() noexcept
     {
       // register stop callback:
-      __state_.__on_stop_.construct(
+      __state_.__on_stop_.__construct(
         get_stop_token(execution::get_env(__state_.__rcvr_)), __on_stop_request{__state_.__stop_source_});
 
       if (__state_.__stop_source_.stop_requested())
       {
         // Manually clean up the stop callback. We won't be starting the
         // sub-operations, so they won't complete and clean up for us.
-        __state_.__on_stop_.destroy();
+        __state_.__on_stop_.__destroy();
 
         // Stop has already been requested. Don't bother starting the child
         // operations.
@@ -559,7 +559,7 @@ _CCCL_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
 }
 
 template <class... _Sndrs>
-inline constexpr size_t structured_binding_size<when_all_t::__sndr_t<_Sndrs...>> = sizeof...(_Sndrs) + 2;
+inline constexpr int structured_binding_size<when_all_t::__sndr_t<_Sndrs...>> = sizeof...(_Sndrs) + 2;
 
 _CCCL_GLOBAL_CONSTANT when_all_t when_all{};
 } // namespace cuda::experimental::execution

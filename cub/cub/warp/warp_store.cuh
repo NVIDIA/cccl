@@ -367,12 +367,15 @@ public:
           IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS))
   {}
 
-  //! @}  end member group
+  //! @}
   //! @name Data movement
   //! @{
 
   //! @rst
   //! Store items into a linear segment of memory.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! @smemwarpreuse
   //!
@@ -431,6 +434,9 @@ public:
 
   //! @rst
   //! Store items into a linear segment of memory, guarded by range.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! @smemwarpreuse
   //!
@@ -492,7 +498,7 @@ public:
     InternalStore(temp_storage, linear_tid).Store(block_itr, items, valid_items);
   }
 
-  //! @}  end member group
+  //! @}
 };
 
 CUB_NAMESPACE_END

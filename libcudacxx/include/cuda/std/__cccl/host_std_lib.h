@@ -28,11 +28,11 @@
 #define _CCCL_HOST_STD_LIB_STL()       _CCCL_VERSION_INVALID()
 
 // include a minimal header
-#if _CCCL_HAS_INCLUDE(<version>)
+#if __has_include(<version>)
 #  include <version>
-#elif _CCCL_HAS_INCLUDE(<ciso646>)
+#elif __has_include(<ciso646>)
 #  include <ciso646>
-#endif // ^^^ _CCCL_HAS_INCLUDE(<ciso646>) ^^^
+#endif // ^^^ __has_include(<ciso646>) ^^^
 
 #define _CCCL_HOST_STD_LIB_MAKE_VERSION(_MAJOR, _MINOR) ((_MAJOR) * 100 + (_MINOR))
 #define _CCCL_HOST_STD_LIB(...)                         _CCCL_VERSION_COMPARE(_CCCL_HOST_STD_LIB_, _CCCL_HOST_STD_LIB_##__VA_ARGS__)

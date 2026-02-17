@@ -61,6 +61,8 @@ struct DeviceSegmentedScan
   //!   shall not overlap in any other way.
   //! - @devicestorage
   //!
+  //! .. versionadded:: 3.3.0
+  //!
   //! Preconditions
   //! +++++++++++++
   //!
@@ -216,13 +218,15 @@ struct DeviceSegmentedScan
   //!   shall not overlap in any other way.
   //! - @devicestorage
   //!
+  //! .. versionadded:: 3.3.0
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the exclusive segmented prefix sum of an ``int``
   //! device vector.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_segmented_scan_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-segmented-sum-three-offsets
@@ -355,13 +359,15 @@ struct DeviceSegmentedScan
   //!   shall not overlap in any other way.
   //! - @devicestorage
   //!
+  //! .. versionadded:: 3.3.0
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the exclusive segmented prefix scan of an ``int``
   //! device vector.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_segmented_scan_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-segmented-scan-two-offsets
@@ -490,6 +496,7 @@ struct DeviceSegmentedScan
   //!   shall not overlap in any other way.
   //! - @devicestorage
   //!
+  //! .. versionadded:: 3.3.0
   //! @endrst
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segmented scan inputs @iterator
@@ -623,13 +630,15 @@ struct DeviceSegmentedScan
   //!   shall not overlap in any other way.
   //! - @devicestorage
   //!
+  //! .. versionadded:: 3.3.0
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the inclusive segmented prefix sum of an ``int``
   //! device vector.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_segmented_scan_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-segmented-sum-two-offsets
@@ -742,13 +751,15 @@ struct DeviceSegmentedScan
   //!   shall not overlap in any other way.
   //! - @devicestorage
   //!
+  //! .. versionadded:: 3.3.0
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the inclusive segmented prefix sum of an ``int``
   //! device vector.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_segmented_scan_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-segmented-sum-three-offsets
@@ -877,6 +888,7 @@ struct DeviceSegmentedScan
   //!   shall not overlap in any other way.
   //! - @devicestorage
   //!
+  //! .. versionadded:: 3.3.0
   //! @endrst
   //! @tparam InputIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segmented scan inputs @iterator
@@ -988,13 +1000,15 @@ struct DeviceSegmentedScan
   //!   shall not overlap in any other way.
   //! - @devicestorage
   //!
+  //! .. versionadded:: 3.3.0
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the exclusive segmented prefix sum of an ``int``
   //! device vector.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_segmented_scan_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-segmented-scan-three-offsets
@@ -1127,13 +1141,15 @@ struct DeviceSegmentedScan
   //!   shall not overlap in any other way.
   //! - @devicestorage
   //!
+  //! .. versionadded:: 3.3.0
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the exclusive segmented prefix scan of an ``int``
   //! device vector.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_segmented_scan_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-segmented-scan-init-two-offsets
@@ -1266,6 +1282,7 @@ struct DeviceSegmentedScan
   //!   shall not overlap in any other way.
   //! - @devicestorage
   //!
+  //! .. versionadded:: 3.3.0
   //! @endrst
   //!
   //! @tparam InputIteratorT

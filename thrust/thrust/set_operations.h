@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2013 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file set_operations.h
  *  \brief Set theoretic operations for sorted ranges
@@ -109,6 +96,10 @@ THRUST_NAMESPACE_BEGIN
  *  \see \p set_symmetric_difference
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator set_difference(
@@ -182,6 +173,10 @@ _CCCL_HOST_DEVICE OutputIterator set_difference(
  *  \see \p set_symmetric_difference
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator set_difference(
@@ -252,6 +247,10 @@ OutputIterator set_difference(
  *  \see \p set_symmetric_difference
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -326,6 +325,10 @@ _CCCL_HOST_DEVICE OutputIterator set_difference(
  *  \see \p set_symmetric_difference
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename StrictWeakCompare>
 OutputIterator set_difference(
@@ -412,6 +415,10 @@ OutputIterator set_difference(
  *  \see \p set_symmetric_difference
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator set_intersection(
@@ -492,6 +499,10 @@ _CCCL_HOST_DEVICE OutputIterator set_intersection(
  *  \see \p set_symmetric_difference
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator set_intersection(
@@ -574,6 +585,10 @@ OutputIterator set_intersection(
  *  \see \p set_symmetric_difference
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -659,6 +674,10 @@ _CCCL_HOST_DEVICE OutputIterator set_intersection(
  *  \see \p set_symmetric_difference
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename StrictWeakCompare>
 OutputIterator set_intersection(
@@ -742,6 +761,10 @@ OutputIterator set_intersection(
  *  \see \p set_intersection
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
@@ -819,6 +842,10 @@ _CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
  *  \see \p set_intersection
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator set_symmetric_difference(
@@ -898,6 +925,10 @@ OutputIterator set_symmetric_difference(
  *  \see \p set_intersection
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -981,6 +1012,10 @@ _CCCL_HOST_DEVICE OutputIterator set_symmetric_difference(
  *  \see \p set_intersection
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename StrictWeakCompare>
 OutputIterator set_symmetric_difference(
@@ -1062,6 +1097,10 @@ OutputIterator set_symmetric_difference(
  *  \see \p set_symmetric_difference
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator>
 _CCCL_HOST_DEVICE OutputIterator set_union(
@@ -1137,6 +1176,10 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
  *  \see \p set_symmetric_difference
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator set_union(
@@ -1209,6 +1252,10 @@ OutputIterator set_union(
  *  \see \p set_symmetric_difference
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -1285,6 +1332,10 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
  *  \see \p set_symmetric_difference
  *  \see \p sort
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename StrictWeakCompare>
 OutputIterator set_union(
@@ -1384,6 +1435,10 @@ OutputIterator set_union(
  *  \see \p set_symmetric_difference_by_key
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -1486,6 +1541,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_differ
  *  \see \p set_symmetric_difference_by_key
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,
@@ -1596,6 +1655,10 @@ template <typename InputIterator1,
  *  \see \p set_symmetric_difference_by_key
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -1704,6 +1767,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_differ
  *  \see \p set_symmetric_difference_by_key
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,
@@ -1813,6 +1880,10 @@ template <typename InputIterator1,
  *  \see \p set_symmetric_difference_by_key
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -1914,6 +1985,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_inters
  *  \see \p set_symmetric_difference_by_key
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,
@@ -2023,6 +2098,10 @@ template <typename InputIterator1,
  *  \see \p set_symmetric_difference_by_key
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -2130,6 +2209,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_inters
  *  \see \p set_symmetric_difference_by_key
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,
@@ -2239,6 +2322,10 @@ template <typename InputIterator1,
  *  \see \p set_difference_by_key
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -2344,6 +2431,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmet
  *  \see \p set_difference_by_key
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,
@@ -2457,6 +2548,10 @@ template <typename InputIterator1,
  *  \see \p set_difference_by_key
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -2568,6 +2663,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_symmet
  *  \see \p set_difference_by_key
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,
@@ -2677,6 +2776,10 @@ template <typename InputIterator1,
  *  \see \p set_difference_by_key
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -2780,6 +2883,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_
  *  \see \p set_difference_by_key
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,
@@ -2891,6 +2998,10 @@ template <typename InputIterator1,
  *  \see \p set_difference_by_key
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename DerivedPolicy,
           typename InputIterator1,
@@ -3000,6 +3111,10 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> set_union_
  *  \see \p set_difference_by_key
  *  \see \p sort_by_key
  *  \see \p is_sorted
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 2.2.0
+ *  \endverbatim
  */
 template <typename InputIterator1,
           typename InputIterator2,

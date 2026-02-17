@@ -51,7 +51,7 @@ projects:
   libcudacxx_internal:
     name: "libcu++ Tests/Infra"
     matrix_project: "libcudacxx"
-    lite_dependencies: []
+    lite_dependencies: [c2h]
     full_dependencies: [libcudacxx_public]
     include_regexes: ["libcudacxx/"]
     exclude_project_files: [libcudacxx_public]
@@ -173,9 +173,17 @@ projects:
       # CCCLBenchmarkRegistry.cmake is effectively part of nvbench_helper:
       - "benchmarks/cmake/"
 
+  nvrtcc:
+    name: "nvrtcc"
+    matrix_project: "nvrtcc"
+    lite_dependencies: []
+    full_dependencies: []
+    include_regexes: ["nvrtcc/"]
+
 # Files matching any of these regexes will be ignored globally.
 ignore_regexes:
   - '.+\.md$'
+  - '\.branch_notes/'
   - '\.clang-format'
   - '\.clangd'
   - '\.devcontainer/img'

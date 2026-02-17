@@ -13,7 +13,7 @@
 
 #include <cuda/hierarchy>
 
-#include "utility.cuh"
+#include "testing.cuh"
 
 template <typename Dims, typename Lambda>
 void __global__ lambda_launcher(const Dims dims, const Lambda lambda)
@@ -69,12 +69,12 @@ void test_host_dev(const Dims& dims, const Lambda& lambda, const Filters&... fil
     cudaLaunchAttribute attrs[1];
     config.attrs = &attrs[0];
 
-    config.blockDim = dims.extents(cuda::thread, cuda::block);
-    config.gridDim  = dims.extents(cuda::block, cuda::grid);
+    config.blockDim = dim3{cuda::gpu_thread.dims(cuda::block, dims)};
+    config.gridDim  = dim3{cuda::block.dims(cuda::grid, dims)};
 
-    if constexpr (cuda::has_level<cuda::cluster_level, decltype(dims)>)
+    if constexpr (Dims::has_level(cuda::cluster))
     {
-      dim3 cluster_dims                            = dims.extents(cuda::block, cuda::cluster);
+      dim3 cluster_dims{cuda::block.dims(cuda::cluster, dims)};
       config.attrs[config.numAttrs].id             = cudaLaunchAttributeClusterDimension;
       config.attrs[config.numAttrs].val.clusterDim = {cluster_dims.x, cluster_dims.y, cluster_dims.z};
       config.numAttrs                              = 1;

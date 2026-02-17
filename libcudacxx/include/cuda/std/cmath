@@ -20,9 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <math.h>
-#endif // !_CCCL_COMPILER(NVRTC)
+#include <cuda/std/__host_stdlib/math.h>
 
 #if _CCCL_COMPILER(NVHPC)
 #  include <cmath>

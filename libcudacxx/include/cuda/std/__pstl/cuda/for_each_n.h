@@ -23,14 +23,23 @@
 
 #if _CCCL_HAS_BACKEND_CUDA()
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
+
 #  include <cub/device/device_for.cuh>
 
+_CCCL_DIAG_POP
+
 #  include <cuda/__execution/policy.h>
+#  include <cuda/__functional/call_or.h>
 #  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__algorithm/for_each_n.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/terminate.h>
+#  include <cuda/std/__execution/env.h>
 #  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__pstl/dispatch.h>
@@ -51,10 +60,11 @@ struct __pstl_dispatch<__pstl_algorithm::__for_each_n, __execution_backend::__cu
 {
   template <class _Policy, class _Iter, class _Size, class _Fn>
   [[nodiscard]] _CCCL_HOST_API static _Iter
-  __par_impl([[maybe_unused]] _Policy __policy, _Iter __first, _Size __orig_n, _Fn __func) noexcept
+  __par_impl([[maybe_unused]] const _Policy& __policy, _Iter __first, _Size __orig_n, _Fn __func) noexcept
   {
     const auto __count = ::cuda::std::__convert_to_integral(__orig_n);
-    ::cuda::stream_ref __stream{cudaStreamPerThread};
+
+    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
 
     _CCCL_TRY_CUDA_API(
       ::cub::DeviceFor::ForEachN,
@@ -65,17 +75,16 @@ struct __pstl_dispatch<__pstl_algorithm::__for_each_n, __execution_backend::__cu
       __stream.get());
 
     __stream.sync();
-
     return __first + __count;
   }
 
   template <class _Policy, class _Iter, class _Size, class _Fn>
   [[nodiscard]] _CCCL_HOST_API _CCCL_FORCEINLINE _Iter
-  operator()(_Policy __policy, _Iter __first, _Size __orig_n, _Fn __func) const noexcept
+  operator()(const _Policy& __policy, _Iter __first, _Size __orig_n, _Fn __func) const noexcept
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_Iter>)
     {
-      return __par_impl(::cuda::std::move(__policy), ::cuda::std::move(__first), __orig_n, ::cuda::std::move(__func));
+      return __par_impl(__policy, ::cuda::std::move(__first), __orig_n, ::cuda::std::move(__func));
     }
     else
     {

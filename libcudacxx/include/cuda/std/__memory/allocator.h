@@ -34,12 +34,16 @@
 #include <cuda/std/cstddef>
 
 #ifdef _CCCL_HAS_CONSTEXPR_ALLOCATION
-#  include <cuda/std/__cccl/memory_wrapper.h>
+#  include <cuda/std/__host_stdlib/memory>
 #endif // _CCCL_HAS_CONSTEXPR_ALLOCATION
 
 #include <cuda/std/__cccl/prologue.h>
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 
 #if _CCCL_STD_VER <= 2017
 // These specializations shouldn't be marked CCCL_DEPRECATED.
@@ -312,7 +316,11 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 bool operator!=(const allocator<_Tp>&, co
   return false;
 }
 
+_CCCL_SUPPRESS_DEPRECATED_POP
+
 _CCCL_END_NAMESPACE_CUDA_STD
+
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 

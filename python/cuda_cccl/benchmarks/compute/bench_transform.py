@@ -18,7 +18,7 @@ def unary_transform_pointer(inp, out, build_only):
 
     transform = cuda.compute.make_unary_transform(inp, out, op)
     if not build_only:
-        transform(inp, out, size)
+        transform(inp, out, op, size)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -31,7 +31,7 @@ def unary_transform_iterator(size, out, build_only):
 
     transform = cuda.compute.make_unary_transform(d_in, out, op)
     if not build_only:
-        transform(d_in, out, size)
+        transform(d_in, out, op, size)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -51,7 +51,7 @@ def unary_transform_struct(inp, out, build_only):
     transform = cuda.compute.make_unary_transform(inp, out, op)
 
     if not build_only:
-        transform(inp, out, size)
+        transform(inp, out, op, size)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -61,7 +61,7 @@ def binary_transform_pointer(inp1, inp2, out, build_only):
 
     transform = cuda.compute.make_binary_transform(inp1, inp2, out, OpKind.PLUS)
     if not build_only:
-        transform(inp1, inp2, out, size)
+        transform(inp1, inp2, out, OpKind.PLUS, size)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -75,7 +75,7 @@ def binary_transform_pointer_custom_op(inp1, inp2, out, build_only):
     transform = cuda.compute.make_binary_transform(inp1, inp2, out, op)
 
     if not build_only:
-        transform(inp1, inp2, out, size)
+        transform(inp1, inp2, out, op, size)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -86,7 +86,7 @@ def binary_transform_iterator(size, out, build_only):
 
     transform = cuda.compute.make_binary_transform(d_in1, d_in2, out, OpKind.PLUS)
     if not build_only:
-        transform(d_in1, d_in2, out, size)
+        transform(d_in1, d_in2, out, OpKind.PLUS, size)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -99,7 +99,7 @@ def binary_transform_struct(inp1, inp2, out, build_only):
 
     transform = cuda.compute.make_binary_transform(inp1, inp2, out, op)
     if not build_only:
-        transform(inp1, inp2, out, size)
+        transform(inp1, inp2, out, op, size)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -117,10 +117,7 @@ def bench_unary_transform_pointer(bench_fixture, request, size):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_unary_transform, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -135,10 +132,7 @@ def bench_unary_transform_iterator(bench_fixture, request, size):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_unary_transform, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -154,10 +148,7 @@ def bench_unary_transform_struct(bench_fixture, request, size):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_unary_transform, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -174,10 +165,7 @@ def bench_binary_transform_pointer(bench_fixture, request, size):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_binary_transform, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -192,10 +180,7 @@ def bench_binary_transform_iterator(bench_fixture, request, size):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_binary_transform, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -212,10 +197,7 @@ def bench_binary_transform_struct(bench_fixture, request, size):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_binary_transform, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
@@ -231,7 +213,4 @@ def bench_binary_transform_pointer_custom_op(bench_fixture, request, size):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        fixture(cuda.compute.make_binary_transform, run)
-    else:
-        fixture(run)
+    fixture(run)

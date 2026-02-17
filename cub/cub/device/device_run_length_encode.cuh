@@ -60,6 +60,9 @@ struct DeviceRunLengthEncode
   //! @rst
   //! Computes a run-length encoding of the sequence ``d_in``.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - For the *i*\ :sup:`th` run encountered, the first key of the run and
   //!   its length are written to ``d_unique_out[i]`` and ``d_counts_out[i]``, respectively.
   //! - The total number of runs encountered is written to ``d_num_runs_out``.
@@ -211,6 +214,9 @@ struct DeviceRunLengthEncode
   //! @rst
   //! Enumerates the starting offsets and lengths of all non-trivial runs
   //! (of ``length > 1``) of same-valued keys in the sequence ``d_in``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - For the *i*\ :sup:`th` non-trivial run, the run's starting offset and
   //!   its length are written to ``d_offsets_out[i]`` and ``d_lengths_out[i]``, respectively.

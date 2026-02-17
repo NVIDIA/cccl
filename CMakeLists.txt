@@ -1,6 +1,6 @@
-# 3.15 is the minimum for including the project with add_subdirectory.
+# 3.18 is the minimum for including the project with add_subdirectory.
 # 3.21 is the minimum for the developer build.
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.18)
 
 # sccache cannot handle the -Fd option generating pdb files:
 if (POLICY CMP0141)
@@ -9,8 +9,15 @@ endif()
 
 # Determine whether CCCL is the top-level project or included into
 # another project via add_subdirectory()
-if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
-  set(CCCL_TOPLEVEL_PROJECT ON)
+
+if (NOT DEFINED CCCL_TOPLEVEL_PROJECT)
+  # DO NOT REMOVE THE FOLLOWING LINE
+  set(CCCL_TOPLEVEL_PROJECT OFF)
+  # REQUIRED FOR CCCL TO WORK VIA CPM WITH INSTALL RULES
+
+  if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
+    set(CCCL_TOPLEVEL_PROJECT ON)
+  endif()
 endif()
 
 # Enable CXX so CMake can configure install paths
@@ -24,7 +31,7 @@ if (NOT CCCL_TOPLEVEL_PROJECT)
   include(cmake/CCCLAddSubdir.cmake)
 endif()
 
-if (CCCL_TOPLEVEL_PROJECT)
+if (CCCL_TOPLEVEL_PROJECT AND NOT CCCL_SKIP_BUILD_CHECKS)
   # We require a higher cmake version for dev builds
   cmake_minimum_required(VERSION 3.21)
 

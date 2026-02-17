@@ -147,7 +147,6 @@ template <class _IndexType, size_t _Index, class... _Slices>
       return 0;
     }
   }
-  _CCCL_UNREACHABLE();
 }
 
 template <size_t _Index, class _Extents, class... _Slices>
@@ -179,7 +178,6 @@ __last_extent_from_slice(const _Extents& __src, _Slices... __slices) noexcept
       return ::cuda::std::__index_cast<_IndexType>(__src.extent(_Index));
     }
   }
-  _CCCL_UNREACHABLE();
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

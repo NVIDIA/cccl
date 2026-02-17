@@ -412,7 +412,6 @@ public:
     {
       return __zip_apply(__zip_op_eq{}, __n.__current_, __y.__current_);
     }
-    _CCCL_UNREACHABLE();
   }
 
 #if _CCCL_STD_VER <= 2017
@@ -429,7 +428,6 @@ public:
     {
       return !__zip_apply(__zip_op_eq{}, __n.__current_, __y.__current_);
     }
-    _CCCL_UNREACHABLE();
   }
 #endif // _CCCL_STD_VER <= 2017
 
@@ -526,6 +524,7 @@ _CCCL_HOST_DEVICE zip_iterator(_Iterators...) -> zip_iterator<_Iterators...>;
 
 //! @brief Creates a @c zip_iterator from a tuple of iterators.
 //! @param __t The tuple of iterators to wrap
+//! @relates zip_iterator
 template <typename... Iterators>
 _CCCL_API constexpr zip_iterator<Iterators...> make_zip_iterator(::cuda::std::tuple<Iterators...> __t)
 {
@@ -534,6 +533,7 @@ _CCCL_API constexpr zip_iterator<Iterators...> make_zip_iterator(::cuda::std::tu
 
 //! @brief Creates a @c zip_iterator from a variadic number of iterators.
 //! @param __iters The iterators to wrap
+//! @relates zip_iterator
 template <typename... Iterators>
 _CCCL_API constexpr zip_iterator<Iterators...> make_zip_iterator(Iterators... __iters)
 {

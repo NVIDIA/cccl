@@ -20,6 +20,7 @@
 //               and acc_ for the values of map_ and acc_ after the invocation of this constructor.
 //
 // Effects: Value-initializes ptr_, map_, and acc_.
+#define _CCCL_DISABLE_MDSPAN_ACCESSOR_DETECT_INVALIDITY
 
 #include <cuda/mdspan>
 #include <cuda/std/cassert>

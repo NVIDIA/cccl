@@ -13,10 +13,13 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <memory>
 #include <string_view>
+#include <unordered_map>
 #include <variant>
+#include <vector>
 
 #include <nvrtc.h>
 
@@ -164,6 +167,16 @@ struct nvrtc2_post_build
     return {std::move(context)};
   }
 
+  // Conditionally get name - only queries if condition is true
+  inline nvrtc2_post_build_nl get_name_if(bool condition, nvrtc_get_name gn)
+  {
+    if (condition)
+    {
+      return get_name(std::move(gn));
+    }
+    return {std::move(context)};
+  }
+
   inline nvrtc_ptx get_program_ptx()
   {
     nvrtc_ptx ret;
@@ -221,6 +234,17 @@ struct nvrtc2_pre_build
     check(nvrtcAddNameExpression(context.program, arg.expression.data()));
     return nvrtc2_pre_build_nl{std::move(context)};
   }
+
+  // Conditionally add expression - only adds if condition is true
+  inline nvrtc2_pre_build_nl add_expression_if(bool condition, nvrtc_expression arg)
+  {
+    if (condition)
+    {
+      return add_expression(arg);
+    }
+    return nvrtc2_pre_build_nl{std::move(context)};
+  }
+
   // Compile program
   inline nvrtc2_post_build_nl compile_program(nvrtc_compile compile_args)
   {
@@ -305,11 +329,29 @@ struct nvrtc2_top_level
       }
     }
 
-    // Add all LTO-IR items to the linker
+    // Add all LTO-IR items to the linker (deduplicate identical blobs)
+    std::unordered_map<std::size_t, std::vector<std::pair<const char*, std::size_t>>> seen_ltoirs;
+    std::hash<std::string_view> hasher;
+
+    auto is_duplicate_ltoir = [&](const nvrtc_ltoir& ltoir) {
+      std::string_view ltoir_view(ltoir.ltoir, ltoir.size);
+      auto hash     = hasher(ltoir_view);
+      auto& entries = seen_ltoirs[hash];
+      for (const auto& entry : entries)
+      {
+        if (entry.second == ltoir.size && std::memcmp(entry.first, ltoir.ltoir, ltoir.size) == 0)
+        {
+          return true;
+        }
+      }
+      entries.emplace_back(ltoir.ltoir, ltoir.size);
+      return false;
+    };
+
     for (auto it = list.begin(); it != ltoir_end; ++it)
     {
       const auto& ltoir = std::get<nvrtc_ltoir>(*it);
-      if (ltoir.size)
+      if (ltoir.size && !is_duplicate_ltoir(ltoir))
       {
         check(nvJitLinkAddData(
           context.jit.handle,

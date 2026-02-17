@@ -82,14 +82,15 @@ See the :ref:`Extended API <libcudacxx-extended-api>` section for more informati
 Fundamental CUDA-specific Abstractions
 --------------------------------------
 
-Some abstractions that libcu++ provide have no equivalent in the C++ Standard Library, but are otherwise abstractions
-fundamental to the CUDA C++ programming model.
+Some abstractions that libcu++ provides have no equivalent in the C++ Standard Library, but are fundamental to the CUDA
+C++ programming model. They include CUDA-specific vocabulary types, device-side APIs for certain hardware features, and
+abstractions for the CUDA Runtime APIs.
 
 For example, :ref:`cuda::memcpy_async <libcudacxx-extended-api-asynchronous-operations-memcpy-async>` is a vital abstraction
 for asynchronous data movement between global and shared memory. This abstracts hardware features such as ``LDGSTS`` on
 Ampere, and the Tensor Memory Accelerator (TMA) on Hopper.
 
-See the :ref:`Extended API <libcudacxx-extended-api>` section for more information.
+See the :ref:`Extended API <libcudacxx-extended-api>` and :ref:`Runtime API <libcudacxx-runtime-api>` sections for more information.
 
 Summary: ``std::``, ``cuda::`` and ``cuda::std::``
 --------------------------------------------------
@@ -134,16 +135,3 @@ Conformance
 
 libcu++ aims to be a conforming implementation of the C++ Standard, `ISO/IEC IS 14882 <https://eel.is/c++draft>`_,
 Clause 16 through 32.
-
-ABI Evolution
--------------
-
-libcu++ does not maintain long-term ABI stability. Promising long-term ABI stability would prevent us from fixing
-mistakes and providing best in class performance. So, we make no such promises.
-
-Every major CUDA Toolkit release, the ABI will be broken. The life cycle of an ABI version is approximately one year.
-Long-term support for an ABI version ends after approximately two years. Please see the
-:ref:`versioning section <libcudacxx-releases-versioning>` for more details.
-
-We recommend that you always recompile your code and dependencies with the latest NVIDIA SDKs and use the latest
-NVIDIA C++ Standard Library ABI. `Live at head <https://www.youtube.com/watch?v=tISy7EJQPzI&t=1032s>`_.

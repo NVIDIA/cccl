@@ -11,10 +11,10 @@
 #ifndef COMPARED_AND_SWAP_H
 #define COMPARED_AND_SWAP_H
 
+#include <format>
 #include <string>
 
 #include "definitions.h"
-#include <fmt/format.h>
 
 inline void FormatCompareAndSwap(std::ostream& out)
 {
@@ -31,7 +31,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_swap_memory_order_dispatch
         case __ATOMIC_ACQ_REL: __res = __cuda_cas(__atomic_cuda_acq_rel{}); break;
         case __ATOMIC_RELEASE: __res = __cuda_cas(__atomic_cuda_release{}); break;
         case __ATOMIC_RELAXED: __res = __cuda_cas(__atomic_cuda_relaxed{}); break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     ),
     NV_IS_DEVICE, (
@@ -42,7 +42,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_swap_memory_order_dispatch
         case __ATOMIC_ACQUIRE: __res = __cuda_cas(__atomic_cuda_volatile{}); __cuda_atomic_membar(_Sco{}); break;
         case __ATOMIC_RELEASE: __cuda_atomic_membar(_Sco{}); __res = __cuda_cas(__atomic_cuda_volatile{}); break;
         case __ATOMIC_RELAXED: __res = __cuda_cas(__atomic_cuda_volatile{}); break;
-        default: assert(0);
+        default: _CCCL_ASSERT(false, "invalid memory order");
       }
     )
   )
@@ -58,7 +58,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_swap_memory_order_dispatch
   // 4 - Memory Order function tag
   // 5 - Scope Constraint
   // 6 - Scope function tag
-  const std::string asm_intrinsic_format_128 = R"XXX(
+  constexpr auto asm_intrinsic_format_128 = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, {4}, __atomic_cuda_operand_{0}{1}, {6})
@@ -79,7 +79,7 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
     }}
   )YYY" : "=l"(__dst.__x),"=l"(__dst.__y) : "l"(__ptr), "l"(__cmp.__x),"l"(__cmp.__y), "l"(__op.__x),"l"(__op.__y) : "memory"); return __dst.__x == __cmp.__x && __dst.__y == __cmp.__y; }})XXX";
 
-  const std::string asm_intrinsic_format = R"XXX(
+  constexpr auto asm_intrinsic_format = R"XXX(
 template <class _Type>
 static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   _Type* __ptr, _Type& __dst, _Type __cmp, _Type __op, {4}, __atomic_cuda_operand_{0}{1}, {6})
@@ -126,15 +126,31 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
           {
             continue;
           }
-          out << fmt::format(
-            (size == 128) ? asm_intrinsic_format_128 : asm_intrinsic_format,
-            operand(type),
-            size,
-            constraints(type, size),
-            semantic(sem),
-            semantic_tag(sem),
-            scope(sco),
-            scope_tag(sco));
+
+          if (size == 128)
+          {
+            out << std::format(
+              asm_intrinsic_format_128,
+              operand(type),
+              size,
+              constraints(type, size),
+              semantic(sem),
+              semantic_tag(sem),
+              scope(sco),
+              scope_tag(sco));
+          }
+          else
+          {
+            out << std::format(
+              asm_intrinsic_format,
+              operand(type),
+              size,
+              constraints(type, size),
+              semantic(sem),
+              semantic_tag(sem),
+              scope(sco),
+              scope_tag(sco));
+          }
         }
       }
     }

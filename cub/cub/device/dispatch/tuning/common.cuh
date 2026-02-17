@@ -13,6 +13,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/util_type.cuh>
+
+#include <thrust/type_traits/is_contiguous_iterator.h>
+#include <thrust/type_traits/is_trivially_relocatable.h>
+
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/is_signed.h>
 
@@ -85,6 +90,8 @@ inline constexpr auto classify_type<double> = type_t::float64;
 enum class op_kind_t
 {
   plus,
+  min,
+  max,
   other
 };
 
@@ -93,5 +100,24 @@ inline constexpr auto classify_op = op_kind_t::other;
 
 template <typename T>
 inline constexpr auto classify_op<::cuda::std::plus<T>> = op_kind_t::plus;
+
+struct iterator_info
+{
+  int value_type_size;
+  int value_type_alignment;
+  bool value_type_is_trivially_relocatable;
+  bool is_contiguous;
+};
+
+template <typename It>
+[[nodiscard]] _CCCL_API constexpr auto make_iterator_info() -> iterator_info
+{
+  using vt = it_value_t<It>;
+  return iterator_info{
+    static_cast<int>(size_of<vt>),
+    static_cast<int>(align_of<vt>),
+    THRUST_NS_QUALIFIER::is_trivially_relocatable_v<vt>,
+    THRUST_NS_QUALIFIER::is_contiguous_iterator_v<It>};
+}
 } // namespace detail
 CUB_NAMESPACE_END

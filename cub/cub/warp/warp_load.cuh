@@ -424,12 +424,15 @@ public:
           IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : (::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS))
   {}
 
-  //! @} end member group
+  //! @}
   //! @name Data movement
   //! @{
 
   //! @rst
   //! Load a linear segment of items from memory.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! @smemwarpreuse
   //!
@@ -479,6 +482,9 @@ public:
 
   //! @rst
   //! Load a linear segment of items from memory, guarded by range.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! @smemwarpreuse
   //!
@@ -531,6 +537,9 @@ public:
 
   //! @rst
   //! Load a linear segment of items from memory, guarded by range.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! @smemwarpreuse
   //!
@@ -585,7 +594,7 @@ public:
     InternalLoad(temp_storage, linear_tid).Load(block_itr, items, valid_items, oob_default);
   }
 
-  //! @} end member group
+  //! @}
 };
 
 CUB_NAMESPACE_END

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -28,7 +15,6 @@
 
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/detail/reference_forward_declaration.h>
-#include <thrust/tuple.h>
 
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__utility/move.h>
@@ -52,24 +38,24 @@ struct maybe_unwrap_nested
 };
 
 template <class... Us, class... Ts>
-struct maybe_unwrap_nested<tuple<Us...>, tuple_of_iterator_references<Ts...>>
+struct maybe_unwrap_nested<::cuda::std::tuple<Us...>, tuple_of_iterator_references<Ts...>>
 {
-  _CCCL_HOST_DEVICE tuple<Us...> operator()(const tuple_of_iterator_references<Ts...>& t) const
+  _CCCL_HOST_DEVICE ::cuda::std::tuple<Us...> operator()(const tuple_of_iterator_references<Ts...>& t) const
   {
     return t.template __to_tuple<Us...>(typename ::cuda::std::__make_tuple_indices<sizeof...(Ts)>::type{});
   }
 };
 
 template <typename... Ts>
-class tuple_of_iterator_references : public tuple<Ts...>
+class tuple_of_iterator_references : public ::cuda::std::tuple<Ts...>
 {
 public:
-  using super_t = tuple<Ts...>;
+  using super_t = ::cuda::std::tuple<Ts...>;
   using super_t::super_t;
 
   tuple_of_iterator_references() = default;
 
-  // allow implicit construction from tuple<refs>
+  // allow implicit construction from cuda::std::tuple<refs>
   _CCCL_HOST_DEVICE tuple_of_iterator_references(const super_t& other)
       : super_t(other)
   {}
@@ -82,7 +68,7 @@ public:
   // XXX might be worthwhile to guard this with an enable_if is_assignable
   _CCCL_EXEC_CHECK_DISABLE
   template <typename... Us>
-  _CCCL_HOST_DEVICE tuple_of_iterator_references& operator=(const tuple<Us...>& other)
+  _CCCL_HOST_DEVICE tuple_of_iterator_references& operator=(const ::cuda::std::tuple<Us...>& other)
   {
     super_t::operator=(other);
     return *this;
@@ -102,9 +88,10 @@ public:
   // XXX perhaps we should generalize to reference<T> we could captures reference<pair> this way
   _CCCL_EXEC_CHECK_DISABLE
   template <typename Pointer, typename Derived, typename... Us>
-  _CCCL_HOST_DEVICE tuple_of_iterator_references& operator=(const reference<tuple<Us...>, Pointer, Derived>& other)
+  _CCCL_HOST_DEVICE tuple_of_iterator_references&
+  operator=(const reference<::cuda::std::tuple<Us...>, Pointer, Derived>& other)
   {
-    using tuple_type = tuple<Us...>;
+    using tuple_type = ::cuda::std::tuple<Us...>;
 
     // XXX perhaps this could be accelerated
     super_t::operator=(tuple_type{other});
@@ -112,7 +99,7 @@ public:
   }
 
   template <class... Us, ::cuda::std::enable_if_t<sizeof...(Us) == sizeof...(Ts), int> = 0>
-  _CCCL_HOST_DEVICE constexpr operator tuple<Us...>() const
+  _CCCL_HOST_DEVICE constexpr operator ::cuda::std::tuple<Us...>() const
   {
     return __to_tuple<Us...>(typename ::cuda::std::__make_tuple_indices<sizeof...(Ts)>::type{});
   }
@@ -126,9 +113,9 @@ public:
   }
 
   template <class... Us, size_t... Id>
-  _CCCL_HOST_DEVICE constexpr tuple<Us...> __to_tuple(::cuda::std::__tuple_indices<Id...>) const
+  _CCCL_HOST_DEVICE constexpr ::cuda::std::tuple<Us...> __to_tuple(::cuda::std::__tuple_indices<Id...>) const
   {
-    return {maybe_unwrap_nested<Us, Ts>{}(get<Id>(*this))...};
+    return {maybe_unwrap_nested<Us, Ts>{}(::cuda::std::get<Id>(*this))...};
   }
 };
 } // namespace detail

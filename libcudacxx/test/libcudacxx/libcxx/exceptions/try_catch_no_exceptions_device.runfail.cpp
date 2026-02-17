@@ -23,6 +23,11 @@ __host__ __device__ constexpr int exception_value()
 struct ExceptionBase
 {
   int value = exception_value();
+
+  [[nodiscard]] __host__ __device__ static const char* what() noexcept
+  {
+    return "ExceptionBase";
+  }
 };
 
 struct Exception : ExceptionBase
@@ -32,7 +37,7 @@ __host__ __device__ void test()
 {
   _CCCL_TRY
   {
-    _CCCL_THROW(Exception());
+    _CCCL_THROW(Exception);
   }
   _CCCL_CATCH ([[maybe_unused]] Exception e)
   {

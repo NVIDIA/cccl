@@ -1,4 +1,4 @@
-# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -9,14 +9,16 @@ import functools
 import os
 import subprocess
 import tempfile
-import textwrap
 import warnings
-from typing import TYPE_CHECKING, Callable, List
+from typing import Callable, List
 
-import numba
+try:
+    from cuda.core import Device as CudaDevice
+except ImportError:
+    from cuda.core.experimental import Device as CudaDevice
+
+
 import numpy as np
-from numba import cuda, types
-from numba.core.extending import as_numba_type, intrinsic
 
 # TODO: adding a type-ignore here because `cuda` being a
 # namespace package confuses mypy when `cuda.<something_else>`
@@ -29,12 +31,14 @@ from numba.core.extending import as_numba_type, intrinsic
 # We need to find a better solution for this.
 from cuda.cccl import get_include_paths  # type: ignore
 
+from . import types
 from ._bindings import (
     CommonData,
     Iterator,
     IteratorKind,
     IteratorState,
     Op,
+    OpKind,
     Pointer,
     TypeEnum,
     TypeInfo,
@@ -42,61 +46,57 @@ from ._bindings import (
     make_pointer_object,
 )
 from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
-from .iterators._iterators import IteratorBase
-from .op import OpKind
+from .iterators._base import IteratorBase
 from .typing import DeviceArrayLike, GpuStruct
 
-_TYPE_TO_ENUM = {
-    types.int8: TypeEnum.INT8,
-    types.int16: TypeEnum.INT16,
-    types.int32: TypeEnum.INT32,
-    types.int64: TypeEnum.INT64,
-    types.uint8: TypeEnum.UINT8,
-    types.uint16: TypeEnum.UINT16,
-    types.uint32: TypeEnum.UINT32,
-    types.uint64: TypeEnum.UINT64,
-    types.float16: TypeEnum.FLOAT16,
-    types.float32: TypeEnum.FLOAT32,
-    types.float64: TypeEnum.FLOAT64,
+# Mapping from numpy dtype to TypeEnum for creating TypeInfo
+_NUMPY_DTYPE_TO_ENUM = {
+    np.dtype("int8"): TypeEnum.INT8,
+    np.dtype("int16"): TypeEnum.INT16,
+    np.dtype("int32"): TypeEnum.INT32,
+    np.dtype("int64"): TypeEnum.INT64,
+    np.dtype("uint8"): TypeEnum.UINT8,
+    np.dtype("uint16"): TypeEnum.UINT16,
+    np.dtype("uint32"): TypeEnum.UINT32,
+    np.dtype("uint64"): TypeEnum.UINT64,
+    np.dtype("float16"): TypeEnum.FLOAT16,
+    np.dtype("float32"): TypeEnum.FLOAT32,
+    np.dtype("float64"): TypeEnum.FLOAT64,
+    np.dtype("bool"): TypeEnum.BOOLEAN,
 }
 
 
-if TYPE_CHECKING:
-    from numba.core.typing import Signature
+@functools.lru_cache(maxsize=256)
+def _type_info_from_dtype(dtype: np.dtype) -> TypeInfo:
+    """
+    Create a TypeInfo from a numpy dtype.
+    Handles both primitive types and structured dtypes.
+    """
+    dtype = np.dtype(dtype)
+
+    # Handle structured dtypes
+    if dtype.type == np.void and dtype.fields is not None:
+        return TypeInfo(dtype.itemsize, dtype.alignment, TypeEnum.STORAGE)
+
+    if dtype.kind == "c":
+        return TypeInfo(dtype.itemsize, dtype.alignment, TypeEnum.STORAGE)
+
+    # Fallback for any other type
+    type_enum = _NUMPY_DTYPE_TO_ENUM.get(dtype, TypeEnum.STORAGE)
+    return TypeInfo(dtype.itemsize, dtype.alignment, type_enum)
 
 
-def _type_to_enum(numba_type: types.Type) -> TypeEnum:
-    if numba_type in _TYPE_TO_ENUM:
-        return _TYPE_TO_ENUM[numba_type]
-    return TypeEnum.STORAGE
-
-
-# TODO: replace with functools.cache once our docs build environment
-# is upgraded to at least Python 3.9
-@functools.lru_cache(maxsize=None)
-def _numba_type_to_info(numba_type: types.Type) -> TypeInfo:
-    context = cuda.descriptor.cuda_target.target_context
-    value_type = context.get_value_type(numba_type)
-    if isinstance(numba_type, types.Record):
-        # then `value_type` is a pointer and we need the
-        # alignment of the pointee.
-        value_type = value_type.pointee
-    size = value_type.get_abi_size(context.target_data)
-    alignment = value_type.get_abi_alignment(context.target_data)
-    return TypeInfo(size, alignment, _type_to_enum(numba_type))
-
-
-@functools.lru_cache(maxsize=None)
-def _numpy_type_to_info(numpy_type: np.dtype) -> TypeInfo:
-    numba_type = numba.from_dtype(numpy_type)
-    return _numba_type_to_info(numba_type)
+def _is_well_known_op(op: OpKind) -> bool:
+    return isinstance(op, OpKind) and op not in (OpKind.STATELESS, OpKind.STATEFUL)
 
 
 def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
     if not is_contiguous(array):
         raise ValueError("Non-contiguous arrays are not supported.")
-    info = _numpy_type_to_info(get_dtype(array))
-    state_info = _numpy_type_to_info(np.intp)
+    dtype = get_dtype(array)
+
+    info = _type_info_from_dtype(dtype)
+    state_info = _type_info_from_dtype(np.intp)
     return Iterator(
         state_info.alignment,
         IteratorKind.POINTER,
@@ -112,24 +112,8 @@ def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
 
 def _none_to_cccl_iter() -> Iterator:
     # Any type could be used here, we just need to pass NULL.
-    info = _numpy_type_to_info(np.uint8)
+    info = _type_info_from_dtype(np.uint8)
     return Iterator(info.alignment, IteratorKind.POINTER, Op(), Op(), info, state=None)
-
-
-def type_enum_as_name(enum_value: int) -> str:
-    return (
-        "int8",
-        "int16",
-        "int32",
-        "int64",
-        "uint8",
-        "uint16",
-        "uint32",
-        "uint64",
-        "float32",
-        "float64",
-        "STORAGE",
-    )[enum_value]
 
 
 class _IteratorIO(enum.Enum):
@@ -137,57 +121,13 @@ class _IteratorIO(enum.Enum):
     OUTPUT = 1
 
 
-def _iterator_to_cccl_iter(it: IteratorBase, io_kind: _IteratorIO) -> Iterator:
-    context = cuda.descriptor.cuda_target.target_context
-    state_ptr_type = it.state_ptr_type
-    state_type = it.state_type
-    size = context.get_value_type(state_type).get_abi_size(context.target_data)
-    iterator_state = memoryview(it.state)
-    if not iterator_state.nbytes == size:
-        raise ValueError(
-            f"Iterator state size, {iterator_state.nbytes} bytes, for iterator type {type(it)} "
-            f"does not match size of numba type, {size} bytes"
-        )
-    alignment = context.get_value_type(state_ptr_type).get_abi_alignment(
-        context.target_data
-    )
-
-    advance_abi_name, advance_ltoir = it.get_advance_ltoir()
-    match io_kind:
-        case _IteratorIO.INPUT:
-            deref_abi_name, deref_ltoir = it.get_input_dereference_ltoir()
-        case _IteratorIO.OUTPUT:
-            deref_abi_name, deref_ltoir = it.get_output_dereference_ltoir()
-        case _:
-            raise ValueError(f"Invalid io_kind: {io_kind}")
-
-    advance_op = Op(
-        operator_type=OpKind.STATELESS,
-        name=advance_abi_name,
-        ltoir=advance_ltoir,
-    )
-    deref_op = Op(
-        operator_type=OpKind.STATELESS,
-        name=deref_abi_name,
-        ltoir=deref_ltoir,
-    )
-    return Iterator(
-        alignment,
-        IteratorKind.ITERATOR,
-        advance_op,
-        deref_op,
-        _numba_type_to_info(it.value_type),
-        state=it.state,
-    )
-
-
 def _to_cccl_iter(
-    it: IteratorBase | DeviceArrayLike | None, io_kind: _IteratorIO
+    it: DeviceArrayLike | IteratorBase | None, io_kind: _IteratorIO
 ) -> Iterator:
     if it is None:
         return _none_to_cccl_iter()
     if isinstance(it, IteratorBase):
-        return _iterator_to_cccl_iter(it, io_kind)
+        return it.to_cccl_iter(io_kind == _IteratorIO.OUTPUT)
     return _device_array_to_cccl_iter(it)
 
 
@@ -211,262 +151,41 @@ def to_cccl_value_state(array_or_struct: np.ndarray | GpuStruct) -> memoryview:
 
 def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
     if isinstance(array_or_struct, np.ndarray):
-        info = _numpy_type_to_info(array_or_struct.dtype)
+        info = _type_info_from_dtype(array_or_struct.dtype)
         return Value(info, array_or_struct.data.cast("B"))
     else:
         # it's a GpuStruct, use the array underlying it
         return to_cccl_value(array_or_struct._data)
 
 
-def _create_void_ptr_wrapper(op, sig):
-    """Creates a wrapper function that takes all void* arguments and calls the original operator.
-
-    The wrapper takes N+1 arguments where N is the number of input arguments to `op`, the last
-    argument is a pointer to the result.
+def set_cccl_value_state(cccl_value: Value, array_or_struct: np.ndarray | GpuStruct):
     """
-    # Generate argument names for both inputs and output
-    input_args = [f"arg_{i}" for i in range(len(sig.args))]
-    all_args = input_args + ["ret"]  # ret is the output pointer
-    arg_str = ", ".join(all_args)
-    void_sig = types.void(*(types.voidptr for _ in all_args))
+    Set the state of a CCCL Value object from a numpy array or GpuStruct.
 
-    # Create the wrapper function source code
-    wrapper_src = textwrap.dedent(f"""
-    @intrinsic
-    def impl(typingctx, {arg_str}):
-        def codegen(context, builder, impl_sig, args):
-            # Get LLVM types for all arguments
-            arg_types = [context.get_value_type(t) for t in sig.args]
-            ret_type = context.get_value_type(sig.return_type)
-
-            # Bitcast from void* to the appropriate pointer types
-            input_ptrs = [builder.bitcast(p, t.as_pointer())
-                                          for p, t in zip(args[:-1], arg_types)]
-            ret_ptr = builder.bitcast(args[-1], ret_type.as_pointer())
-
-            # Load input values from pointers
-            input_vals = [builder.load(p) for p in input_ptrs]
-
-            # Call the original operator
-            # See NVIDIA/numba-cuda#590 for why we need compile_subroutine
-            # vs compile_internal here:
-            cres = context.compile_subroutine(builder, op, sig, caching=False)
-            result = context.call_internal(builder, cres.fndesc, sig, input_vals)
-
-            # Store the result
-            builder.store(result, ret_ptr)
-
-            return context.get_dummy_value()
-        return void_sig, codegen
-
-    # intrinsics cannot directly be compiled by numba, so we make a trivial wrapper:
-    def wrapped_{op.__name__}({arg_str}):
-        return impl({arg_str})
-    """)
-
-    # Create namespace and compile the wrapper
-    local_dict = {
-        "types": types,
-        "sig": sig,
-        "op": op,
-        "intrinsic": intrinsic,
-        "void_sig": void_sig,
-    }
-    exec(wrapper_src, globals(), local_dict)
-
-    wrapper_func = local_dict[f"wrapped_{op.__name__}"]
-    wrapper_func.__globals__.update(local_dict)
-
-    return wrapper_func, void_sig
-
-
-def _create_advance_wrapper(advance_fn, state_ptr_type):
-    """Creates a wrapper function for iterator advance that takes void* arguments.
-
-    The wrapper takes 2 void* arguments:
-    - state pointer
-    - offset pointer (points to uint64 value)
+    Args:
+        cccl_value: The CCCL Value binding object
+        array_or_struct: The numpy array or GpuStruct to get the state from
     """
-    void_sig = types.void(types.voidptr, types.voidptr)
-
-    wrapper_src = textwrap.dedent(f"""
-    @intrinsic
-    def impl(typingctx, state_arg, offset_arg):
-        def codegen(context, builder, impl_sig, args):
-            state_type_llvm = context.get_value_type(state_ptr_type.dtype)
-            offset_type_llvm = context.get_value_type(types.uint64)
-
-            state_ptr = builder.bitcast(args[0], state_type_llvm.as_pointer())
-            offset_ptr = builder.bitcast(args[1], offset_type_llvm.as_pointer())
-            offset_val = builder.load(offset_ptr)
-
-            sig = types.void(state_ptr_type, types.uint64)
-            cres = context.compile_subroutine(builder, advance_fn, sig, caching=False)
-            result = context.call_internal(builder, cres.fndesc, sig, [state_ptr, offset_val])
-
-            return context.get_dummy_value()
-        return void_sig, codegen
-
-    def wrapped_{advance_fn.__name__}(state_arg, offset_arg):
-        return impl(state_arg, offset_arg)
-    """)
-
-    local_dict = {
-        "types": types,
-        "state_ptr_type": state_ptr_type,
-        "advance_fn": advance_fn,
-        "intrinsic": intrinsic,
-        "void_sig": void_sig,
-    }
-    exec(wrapper_src, globals(), local_dict)
-
-    wrapper_func = local_dict[f"wrapped_{advance_fn.__name__}"]
-    wrapper_func.__globals__.update(local_dict)
-
-    return wrapper_func, void_sig
+    cccl_value.state = to_cccl_value_state(array_or_struct)
 
 
-def _create_input_dereference_wrapper(deref_fn, state_ptr_type, value_type):
-    """Creates a wrapper function for input iterator dereference that takes void* arguments.
-
-    The wrapper takes 2 void* arguments:
-    - state pointer
-    - result pointer
-    """
-    void_sig = types.void(types.voidptr, types.voidptr)
-
-    wrapper_src = textwrap.dedent(f"""
-    @intrinsic
-    def impl(typingctx, state_arg, result_arg):
-        def codegen(context, builder, impl_sig, args):
-            state_type_llvm = context.get_value_type(state_ptr_type.dtype)
-            value_type_llvm = context.get_value_type(value_type)
-
-            state_ptr = builder.bitcast(args[0], state_type_llvm.as_pointer())
-            result_ptr = builder.bitcast(args[1], value_type_llvm.as_pointer())
-
-            sig = types.void(state_ptr_type, types.CPointer(value_type))
-            cres = context.compile_subroutine(builder, deref_fn, sig, caching=False)
-            result = context.call_internal(builder, cres.fndesc, sig, [state_ptr, result_ptr])
-
-            return context.get_dummy_value()
-        return void_sig, codegen
-
-    def wrapped_{deref_fn.__name__}(state_arg, result_arg):
-        return impl(state_arg, result_arg)
-    """)
-
-    local_dict = {
-        "types": types,
-        "state_ptr_type": state_ptr_type,
-        "value_type": value_type,
-        "deref_fn": deref_fn,
-        "intrinsic": intrinsic,
-        "void_sig": void_sig,
-    }
-    exec(wrapper_src, globals(), local_dict)
-
-    wrapper_func = local_dict[f"wrapped_{deref_fn.__name__}"]
-    wrapper_func.__globals__.update(local_dict)
-
-    return wrapper_func, void_sig
-
-
-def _create_output_dereference_wrapper(deref_fn, state_ptr_type, value_type):
-    """Creates a wrapper function for output iterator dereference that takes void* arguments.
-
-    The wrapper takes 2 void* arguments:
-    - state pointer
-    - value pointer (points to value)
-    """
-    void_sig = types.void(types.voidptr, types.voidptr)
-
-    wrapper_src = textwrap.dedent(f"""
-    @intrinsic
-    def impl(typingctx, state_arg, value_arg):
-        def codegen(context, builder, impl_sig, args):
-            state_type_llvm = context.get_value_type(state_ptr_type.dtype)
-            value_type_llvm = context.get_value_type(value_type)
-
-            state_ptr = builder.bitcast(args[0], state_type_llvm.as_pointer())
-            value_ptr = builder.bitcast(args[1], value_type_llvm.as_pointer())
-            value_val = builder.load(value_ptr)
-
-            sig = types.void(state_ptr_type, value_type)
-            cres = context.compile_subroutine(builder, deref_fn, sig, caching=False)
-            result = context.call_internal(builder, cres.fndesc, sig, [state_ptr, value_val])
-
-            return context.get_dummy_value()
-        return void_sig, codegen
-
-    def wrapped_{deref_fn.__name__}(state_arg, value_arg):
-        return impl(state_arg, value_arg)
-    """)
-
-    local_dict = {
-        "types": types,
-        "state_ptr_type": state_ptr_type,
-        "value_type": value_type,
-        "deref_fn": deref_fn,
-        "intrinsic": intrinsic,
-        "void_sig": void_sig,
-    }
-    exec(wrapper_src, globals(), local_dict)
-
-    wrapper_func = local_dict[f"wrapped_{deref_fn.__name__}"]
-    wrapper_func.__globals__.update(local_dict)
-
-    return wrapper_func, void_sig
-
-
-def to_cccl_op(op: Callable | OpKind, sig: Signature | None) -> Op:
-    """Return an `Op` object corresponding to the given callable or well-known operation.
-
-    For well-known operations (Ops), returns an Op with the appropriate
-    kind and empty ltoir/state.
-
-    For callables, wraps the callable in a device function that takes void* arguments
-    and a void* return value. This is the only way to match the corresponding "extern"
-    declaration of the device function in the C code, which knows nothing about the types
-    of the arguments and return value. The two functions must have the same signature in
-    order to link correctly without violating ODR.
-    """
-    # Check if op is a well-known operation
-    if isinstance(op, OpKind):
-        return Op(
-            operator_type=op,
-            name="",
-            ltoir=b"",
-            state_alignment=1,
-            state=b"",
-        )
-
-    # op is a callable:
-    wrapped_op, wrapper_sig = _create_void_ptr_wrapper(op, sig)
-
-    ltoir, _ = cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
-    return Op(
-        operator_type=OpKind.STATELESS,
-        name=wrapped_op.__name__,
-        ltoir=ltoir,
-        state_alignment=1,
-        state=None,
-    )
-
-
-def get_value_type(d_in: IteratorBase | DeviceArrayLike):
-    from .struct import gpu_struct
+def get_value_type(
+    d_in: DeviceArrayLike | IteratorBase | GpuStruct | np.ndarray,
+):
+    from .struct import _Struct
 
     if isinstance(d_in, IteratorBase):
         return d_in.value_type
+
+    if isinstance(d_in, _Struct):
+        return type(d_in)._type_descriptor  # type: ignore[union-attr]
+
     dtype = get_dtype(d_in)
+
     if dtype.type == np.void:
-        # we can't use the numba type corresponding to numpy struct
-        # types directly, as those are passed by pointer to device
-        # functions. Instead, we create an anonymous struct type
-        # which has the appropriate pass-by-value semantics.
-        return as_numba_type(gpu_struct(dtype))
-    return numba.from_dtype(dtype)
+        return types.from_numpy_dtype(dtype)
+
+    return types.from_numpy_dtype(dtype)
 
 
 def set_cccl_iterator_state(cccl_it: Iterator, input_it):
@@ -526,7 +245,7 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
     """
     global _check_sass
 
-    cc_major, cc_minor = cuda.get_current_device().compute_capability
+    cc_major, cc_minor = CudaDevice().compute_capability
     cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_includes()
     common_data = CommonData(
         cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, cuda_include_path
@@ -543,22 +262,3 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
         os.unlink(temp_cubin_file_name)
 
     return result
-
-
-def _make_host_cfunc(state_ptr_ty, fn):
-    sig = numba.void(state_ptr_ty, numba.int64)
-    c_advance_fn = numba.cfunc(sig)(fn)
-
-    return c_advance_fn.ctypes
-
-
-def cccl_iterator_set_host_advance(cccl_it: Iterator, array_or_iterator):
-    if cccl_it.is_kind_iterator():
-        it = array_or_iterator
-        fn_impl = it.host_advance
-        if fn_impl is not None:
-            cccl_it.host_advance_fn = _make_host_cfunc(it.state_ptr_type, fn_impl)
-        else:
-            raise ValueError(
-                f"Iterator of type {type(it)} does not provide definition of host_advance function"
-            )

@@ -171,13 +171,16 @@ public:
       : temp_storage{temp_storage.Alias()}
   {}
 
-  //! @}  end member group
+  //! @}
   //! @name Summation reductions
   //! @{
 
   //! @rst
   //! Computes a warp-wide sum in the calling warp.
   //! The output is valid in warp *lane*\ :sub:`0`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! @smemwarpreuse
   //!
@@ -258,6 +261,9 @@ public:
   //! All threads across the calling warp must agree on the same value for ``valid_items``.
   //! Otherwise the result is undefined.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -321,6 +327,9 @@ public:
   //! The sum of each segment is returned to the first lane in that segment
   //! (which always includes *lane*\ :sub:`0`).
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -376,6 +385,9 @@ public:
   //! The sum of each segment is returned to the first lane in that segment
   //! (which always includes *lane*\ :sub:`0`).
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -425,7 +437,7 @@ public:
     return TailSegmentedReduce(input, tail_flag, ::cuda::std::plus<>{});
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Generic reductions
   //! @{
 
@@ -434,6 +446,9 @@ public:
   //! functor. The output is valid in warp *lane*\ :sub:`0`.
   //!
   //! Supports non-commutative reduction operators
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! @smemwarpreuse
   //!
@@ -500,6 +515,9 @@ public:
   //!
   //! Supports non-commutative reduction operators
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -560,6 +578,9 @@ public:
   //!
   //! Supports non-commutative reduction operators
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -619,6 +640,9 @@ public:
   //!
   //! Supports non-commutative reduction operators
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! @smemwarpreuse
   //!
   //! Snippet
@@ -671,7 +695,7 @@ public:
     return InternalWarpReduce{temp_storage}.template SegmentedReduce<false>(input, tail_flag, reduction_op);
   }
 
-  //! @}  end member group
+  //! @}
 };
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -706,7 +730,7 @@ public:
 
   using TempStorage = typename InternalWarpReduce::TempStorage;
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage& /*temp_storage */) {}
+  _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage& /*temp_storage */) {}
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
   {

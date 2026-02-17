@@ -74,11 +74,7 @@ __host__ __device__ constexpr bool test()
     }) == 0);
     opt = 1;
     opt.or_else([] {
-#if TEST_COMPILER(GCC, <, 9)
-      _CCCL_UNREACHABLE();
-#else
       assert(false);
-#endif
       return cuda::std::optional<int>{};
     });
   }
@@ -91,11 +87,7 @@ __host__ __device__ constexpr bool test()
     }) == 42);
     opt = val;
     opt.or_else([] {
-#if TEST_COMPILER(GCC, <, 9)
-      _CCCL_UNREACHABLE();
-#else
       assert(false);
-#endif
       return cuda::std::optional<int&>{};
     });
   }

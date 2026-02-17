@@ -131,16 +131,39 @@ struct start_t
   }
 };
 
+template <class _Sndr, class _Rcvr>
+_CCCL_CONCEPT __has_connect_mbr = //
+  _CCCL_REQUIRES_EXPR((_Sndr, _Rcvr), _Sndr& __sndr, _Rcvr& __rcvr) //
+  ( //
+    static_cast<_Sndr&&>(__sndr).connect(static_cast<_Rcvr&&>(__rcvr)) //
+  );
+
 // connect
 struct connect_t
 {
-  _CCCL_EXEC_CHECK_DISABLE
+private:
   template <class _Sndr, class _Rcvr>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
-    noexcept(noexcept(transform_sender(declval<_Sndr>(), get_env(declval<_Rcvr>())).connect(declval<_Rcvr>())))
-      -> decltype(transform_sender(declval<_Sndr>(), get_env(declval<_Rcvr>())).connect(declval<_Rcvr>()))
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __get_declfn() noexcept
   {
-    return transform_sender(static_cast<_Sndr&&>(__sndr), get_env(__rcvr)).connect(static_cast<_Rcvr&&>(__rcvr));
+    using __new_sender_t = transform_sender_result_t<_Sndr, env_of_t<_Rcvr>>;
+    if constexpr (__has_connect_mbr<__new_sender_t, _Rcvr>)
+    {
+      constexpr auto __sndr       = __declfn<_Sndr>;
+      constexpr auto __rcvr       = __declfn<_Rcvr>;
+      using __result_t            = decltype(transform_sender(__sndr(), get_env(__rcvr())).connect(__rcvr()));
+      constexpr bool __is_nothrow = noexcept(transform_sender(__sndr(), get_env(__rcvr())).connect(__rcvr()));
+      return __declfn<__result_t, __is_nothrow>;
+    }
+  }
+
+public:
+  template <class _Sndr, class _Rcvr, auto _DeclFn = __get_declfn<_Sndr, _Rcvr>()>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const noexcept(noexcept(_DeclFn()))
+    -> decltype(_DeclFn())
+  {
+    auto&& __env = get_env(__rcvr);
+    return transform_sender(static_cast<_Sndr&&>(__sndr), static_cast<decltype(__env)>(__env))
+      .connect(static_cast<_Rcvr&&>(__rcvr));
   }
 };
 

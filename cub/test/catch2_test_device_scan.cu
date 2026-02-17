@@ -76,15 +76,23 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
   using offset_t = int32_t;
 
   constexpr offset_t min_items = 1;
-  constexpr offset_t max_items = 1000000;
+  constexpr offset_t max_items = 10'000'000;
 
   // Generate the input sizes to test for
   const offset_t num_items = GENERATE_COPY(
+    1, // hits small copy path for bulk copies (below 16 bytes)
+    10,
+    1337,
+    3000,
+    1 * 31 * 128, // tile size for int64s for lookahead
+    10'000, // a handful of tiles for lookahead
     take(3, random(min_items, max_items)),
     values({
       min_items,
       max_items,
     }));
+
+  CAPTURE(num_items, c2h::type_name<input_t>(), c2h::type_name<output_t>());
 
   // Input data generation to test
   const gen_data_t data_gen_mode = GENERATE_COPY(gen_data_t::GEN_TYPE_RANDOM, gen_data_t::GEN_TYPE_CONST);
@@ -103,14 +111,15 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
   }
   auto d_in_it = thrust::raw_pointer_cast(in_items.data());
 
-// Skip DeviceScan::InclusiveSum and DeviceScan::ExclusiveSum tests for extended floating-point
-// types because of unbounded epsilon due to pseudo associativity of the addition operation over
-// floating point numbers
+  // Skip DeviceScan::InclusiveSum and DeviceScan::ExclusiveSum tests for extended floating-point
+  // types because of unbounded epsilon due to pseudo associativity of the addition operation over
+  // floating point numbers
 #if TEST_TYPES != 3
   SECTION("inclusive sum")
   {
     using op_t    = cuda::std::plus<>;
     using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    CAPTURE(c2h::type_name<op_t>(), c2h::type_name<accum_t>());
 
     // Prepare verification data
     c2h::host_vector<input_t> host_items(in_items);
@@ -123,7 +132,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     device_inclusive_sum(d_in_it, d_out_it, num_items);
 
     // Verify result
-    REQUIRE(expected_result == out_result);
+    REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
     if constexpr (std::is_same<input_t, output_t>::value)
@@ -131,7 +140,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
       device_inclusive_sum(d_in_it, d_in_it, num_items);
 
       // Verify result
-      REQUIRE(expected_result == in_items);
+      REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
     }
   }
 
@@ -139,6 +148,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
   {
     using op_t    = cuda::std::plus<>;
     using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    CAPTURE(c2h::type_name<op_t>(), c2h::type_name<accum_t>());
 
     // Prepare verification data
     c2h::host_vector<input_t> host_items(in_items);
@@ -151,7 +161,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     device_exclusive_sum(d_in_it, d_out_it, num_items);
 
     // Verify result
-    REQUIRE(expected_result == out_result);
+    REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
     if constexpr (std::is_same<input_t, output_t>::value)
@@ -159,7 +169,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
       device_exclusive_sum(d_in_it, d_in_it, num_items);
 
       // Verify result
-      REQUIRE(expected_result == in_items);
+      REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
     }
   }
 #endif
@@ -168,6 +178,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
   {
     using op_t    = cuda::minimum<>;
     using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    CAPTURE(c2h::type_name<op_t>(), c2h::type_name<accum_t>());
 
     // Prepare verification data
     c2h::host_vector<input_t> host_items(in_items);
@@ -185,7 +196,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), op_t{}, num_items);
 
     // Verify result
-    REQUIRE(expected_result == out_result);
+    REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
     if constexpr (std::is_same<input_t, output_t>::value)
@@ -193,7 +204,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
       device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), op_t{}, num_items);
 
       // Verify result
-      REQUIRE(expected_result == in_items);
+      REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
     }
   }
 
@@ -201,6 +212,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
   {
     using op_t    = cuda::std::plus<>;
     using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    CAPTURE(c2h::type_name<op_t>(), c2h::type_name<accum_t>());
 
     // Scan operator
     auto scan_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
@@ -220,7 +232,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     device_inclusive_scan_with_init(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_value, num_items);
 
     // Verify result
-    REQUIRE(expected_result == out_result);
+    REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
     if constexpr (std::is_same<input_t, output_t>::value)
@@ -228,7 +240,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
       device_inclusive_scan_with_init(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_value, num_items);
 
       // Verify result
-      REQUIRE(expected_result == in_items);
+      REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
     }
   }
 
@@ -236,6 +248,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
   {
     using op_t    = cuda::std::plus<>;
     using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    CAPTURE(c2h::type_name<op_t>(), c2h::type_name<accum_t>());
 
     // Scan operator
     auto scan_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
@@ -253,7 +266,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_t{}, num_items);
 
     // Verify result
-    REQUIRE(expected_result == out_result);
+    REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
     if constexpr (std::is_same<input_t, output_t>::value)
@@ -261,7 +274,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
       device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_t{}, num_items);
 
       // Verify result
-      REQUIRE(expected_result == in_items);
+      REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
     }
   }
 
@@ -269,6 +282,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
   {
     using op_t    = cuda::std::plus<>;
     using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    CAPTURE(c2h::type_name<op_t>(), c2h::type_name<accum_t>());
 
     // Scan operator
     auto scan_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
@@ -291,7 +305,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, future_init_value, num_items);
 
     // Verify result
-    REQUIRE(expected_result == out_result);
+    REQUIRE_THAT_QUIET(expected_result, Equals(out_result));
 
     // Run test in-place
     if constexpr (std::is_same<input_t, output_t>::value)
@@ -299,7 +313,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
       device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, future_init_value, num_items);
 
       // Verify result
-      REQUIRE(expected_result == in_items);
+      REQUIRE_THAT_QUIET(expected_result, Equals(in_items));
     }
   }
 }

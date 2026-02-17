@@ -1,4 +1,4 @@
-# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 import cupy as cp
@@ -44,12 +44,7 @@ def test_zip_iterator_basic(num_items):
 
 @pytest.mark.parametrize("num_items", [10, 1_000, 100_000])
 def test_zip_iterator_with_counting_iterator(num_items):
-    """Test ZipIterator with two counting iterators."""
-
-    @gpu_struct
-    class IndexValuePair:
-        index: np.int32
-        value: np.int32
+    """Test ZipIterator with counting iterator and numpy struct dtype as initial value."""
 
     def max_by_value(p1, p2):
         # Return the pair with the larger value
@@ -60,8 +55,10 @@ def test_zip_iterator_with_counting_iterator(num_items):
 
     zip_it = ZipIterator(counting_it, arr)
 
-    d_output = cp.empty(1, dtype=IndexValuePair.dtype)
-    h_init = IndexValuePair(-1, -1)
+    dtype = np.dtype([("index", np.int32), ("value", np.int32)], align=True)
+    h_init = np.asarray([(-1, -1)], dtype=dtype)
+
+    d_output = cp.empty(1, dtype=dtype)
 
     cuda.compute.reduce_into(zip_it, d_output, max_by_value, num_items, h_init)
 
@@ -462,55 +459,231 @@ def test_zip_iterator_of_transform_iterator_kind():
 
 
 def test_caching_zip_iterator():
-    # counting iterators with the same value type:
-    z1 = ZipIterator(
-        CountingIterator(np.int32(0)),
-    )
-    z2 = ZipIterator(
-        CountingIterator(np.int32(0)),
-    )
-    assert z1.advance is z2.advance
-    assert z1.input_dereference is z2.input_dereference
+    """Test that iterator compilation is cached across instances with the same structure."""
+    from cuda.compute._cpp_compile import compile_cpp_to_ltoir
 
-    # counting iterators with different value types:
+    # Test 1: Iterators with same structure should have same kind
     z1 = ZipIterator(CountingIterator(np.int32(0)))
-    z2 = ZipIterator(CountingIterator(np.int64(0)))
-    assert z1.advance is not z2.advance
-    assert z1.input_dereference is not z2.input_dereference
+    z2 = ZipIterator(CountingIterator(np.int32(100)))  # Different value, same type
+    assert z1.kind == z2.kind, "Same structure should have same kind"
 
-    # arrays with the same dtype:
-    z1 = ZipIterator(cp.arange(10, dtype=np.int32))
-    z2 = ZipIterator(cp.arange(10, dtype=np.int32))
-    assert z1.advance is z2.advance
-    assert z1.input_dereference is z2.input_dereference
-    assert z1.output_dereference is z2.output_dereference
+    # Test 2: Different types should have different kind
+    z3 = ZipIterator(CountingIterator(np.int64(0)))
+    assert z1.kind != z3.kind, "Different types should have different kind"
 
-    # arrays with different dtypes:
-    z1 = ZipIterator(cp.arange(10, dtype=np.int32))
-    z2 = ZipIterator(cp.arange(10, dtype=np.int64))
-    assert z1.advance is not z2.advance
-    assert z1.input_dereference is not z2.input_dereference
-    assert z1.output_dereference is not z2.output_dereference
+    # Test 3: Verify compilation caching with cache statistics
+    # Clear cache to get clean measurements
+    compile_cpp_to_ltoir.cache_clear()
 
-    # zip of transform iterator with the same op:
-    def op(x):
-        return x
+    # Create multiple instances with same structure
+    iterators = []
+    for i in range(5):
+        arr = cp.arange(i * 10, (i + 1) * 10, dtype=np.float32)
+        z = ZipIterator(arr)
+        # Trigger compilation by accessing LTOIR
+        z.get_advance_op()
+        z.get_input_deref_op()
+        iterators.append(z)
 
-    z1 = ZipIterator(TransformIterator(cp.arange(10, dtype=np.int32), op))
-    z2 = ZipIterator(TransformIterator(cp.arange(10, dtype=np.int32), op))
-    assert z1.advance is z2.advance
-    assert z1.input_dereference is z2.input_dereference
-    # zip of transform iterator with different op:
+    # Check cache statistics
+    cache_info = compile_cpp_to_ltoir.cache_info()
 
-    def op2(x):
-        return x + 1
+    # With deterministic symbols: only first instance misses, rest hit the cache
+    # With random UUIDs: all instances would miss
+    assert cache_info.hits >= 3, (
+        f"Expected multiple cache hits for same structure, got {cache_info.hits} hits, "
+        f"{cache_info.misses} misses"
+    )
 
-    z1 = ZipIterator(TransformIterator(cp.arange(10, dtype=np.int32), op))
-    z2 = ZipIterator(TransformIterator(cp.arange(10, dtype=np.int32), op2))
-    assert z1.advance is not z2.advance
-    assert z1.input_dereference is not z2.input_dereference
-    # zip of transform iterator with different input iterator:
-    z1 = ZipIterator(TransformIterator(cp.arange(10, dtype=np.int32), op))
-    z2 = ZipIterator(TransformIterator(cp.arange(10, dtype=np.int64), op))
-    assert z1.advance is not z2.advance
-    assert z1.input_dereference is not z2.input_dereference
+    # Test 4: Arrays with different dtypes should not share cache
+    compile_cpp_to_ltoir.cache_clear()
+
+    z_int32 = ZipIterator(cp.arange(10, dtype=np.int32))
+    z_int32.get_advance_op()
+    z_int32.get_input_deref_op()
+    misses_after_first = compile_cpp_to_ltoir.cache_info().misses
+
+    z_int64 = ZipIterator(cp.arange(10, dtype=np.int64))
+    z_int64.get_advance_op()
+    z_int64.get_input_deref_op()
+    misses_after_second = compile_cpp_to_ltoir.cache_info().misses
+
+    # Different dtypes should not share cache
+    assert misses_after_second > misses_after_first, (
+        "Different dtypes should cause cache miss"
+    )
+    assert z_int32.kind != z_int64.kind
+
+    # Test 5: Verify basic iterator types share compilation cache
+    compile_cpp_to_ltoir.cache_clear()
+
+    # CountingIterators with same type
+    count_iters = [ZipIterator(CountingIterator(np.int32(i * 10))) for i in range(3)]
+    for z in count_iters:
+        z.get_advance_op()
+        z.get_input_deref_op()
+
+    cache_info = compile_cpp_to_ltoir.cache_info()
+    assert cache_info.hits >= 2, (
+        f"CountingIterators with same type should share cache, got {cache_info}"
+    )
+
+    # All should have same kind
+    kinds = [z.kind for z in count_iters]
+    assert len(set(kinds)) == 1, "Same CountingIterator types should have same kind"
+
+
+def test_compilation_caching_across_iterator_types():
+    """Test that compilation caching works across different iterator types."""
+    from cuda.compute import ConstantIterator
+    from cuda.compute._cpp_compile import compile_cpp_to_ltoir
+
+    # Test ConstantIterator caching
+    compile_cpp_to_ltoir.cache_clear()
+
+    const_iterators = [ConstantIterator(np.int32(i)) for i in range(5)]
+    for it in const_iterators:
+        it.get_advance_op()
+        it.get_input_deref_op()
+
+    cache_info = compile_cpp_to_ltoir.cache_info()
+    assert cache_info.hits >= 3, (
+        f"ConstantIterator: Expected cache hits across instances, "
+        f"got {cache_info.hits} hits, {cache_info.misses} misses"
+    )
+
+    # All should have same kind
+    kinds = [it.kind for it in const_iterators]
+    assert len(set(kinds)) == 1, (
+        "All ConstantIterators with same type should have same kind"
+    )
+
+    # Test CountingIterator caching
+    compile_cpp_to_ltoir.cache_clear()
+
+    counting_iterators = [CountingIterator(np.int64(i * 100)) for i in range(5)]
+    for it in counting_iterators:
+        it.get_advance_op()
+        it.get_input_deref_op()
+
+    cache_info = compile_cpp_to_ltoir.cache_info()
+    assert cache_info.hits >= 3, (
+        f"CountingIterator: Expected cache hits across instances, "
+        f"got {cache_info.hits} hits, {cache_info.misses} misses"
+    )
+
+    # All should have same kind
+    kinds = [it.kind for it in counting_iterators]
+    assert len(set(kinds)) == 1, (
+        "All CountingIterators with same type should have same kind"
+    )
+
+    # Test that different types don't incorrectly share cache
+    const_int32 = ConstantIterator(np.int32(5))
+    const_float32 = ConstantIterator(np.float32(5.0))
+    assert const_int32.kind != const_float32.kind, (
+        "Different types should have different kind"
+    )
+
+    count_int32 = CountingIterator(np.int32(0))
+    count_int64 = CountingIterator(np.int64(0))
+    assert count_int32.kind != count_int64.kind, (
+        "Different types should have different kind"
+    )
+
+
+def test_zip_iterator_advance():
+    """Test ZipIterator.__add__ advances all child iterators."""
+
+    @gpu_struct
+    class Pair:
+        first: np.int32
+        second: np.int32
+
+    num_items = 100
+    offset = 10
+
+    d_input1 = cp.arange(num_items, dtype=np.int32)
+    d_input2 = cp.arange(num_items, dtype=np.int32) * 2
+
+    # Create base zip iterator
+    zip_it = ZipIterator(d_input1, d_input2)
+
+    # Advance by offset
+    advanced_zip_it = zip_it + offset
+
+    # Reduce starting from the advanced position
+    def sum_pairs(p1, p2):
+        return Pair(p1[0] + p2[0], p1[1] + p2[1])
+
+    h_init = Pair(0, 0)
+    d_output = cp.empty(1, dtype=Pair.dtype)
+
+    remaining_items = num_items - offset
+    cuda.compute.reduce_into(
+        advanced_zip_it, d_output, sum_pairs, remaining_items, h_init
+    )
+
+    result = d_output.get()[0]
+
+    # Expected values should be sum from offset onwards
+    expected_first = d_input1[offset:].sum().get()
+    expected_second = d_input2[offset:].sum().get()
+
+    assert result["first"] == expected_first
+    assert result["second"] == expected_second
+
+
+def test_nested_zip_iterator_advance():
+    """Test that advancing a nested ZipIterator advances all child iterators."""
+    InnerPair = gpu_struct({"first": np.int32, "second": np.int64})
+    OuterTriple = gpu_struct({"inner": InnerPair, "third": np.float32})
+
+    def sum_nested_zips(v1, v2):
+        return OuterTriple(
+            InnerPair(
+                v1.inner.first + v2.inner.first, v1.inner.second + v2.inner.second
+            ),
+            v1.third + v2.third,
+        )
+
+    num_items = 100
+    offset = 15
+
+    # Create three input arrays
+    d_input_a = cp.arange(num_items, dtype=np.int32)
+    d_input_b = cp.arange(num_items, dtype=np.int64) * 2
+    d_input_c = cp.arange(num_items, dtype=np.float32) * 3.0
+
+    # Create nested zip: ZipIterator(ZipIterator(a, b), c)
+    inner_zip = ZipIterator(d_input_a, d_input_b)
+    outer_zip = ZipIterator(inner_zip, d_input_c)
+
+    # Advance the nested zip by offset
+    advanced_outer_zip = outer_zip + offset
+
+    # Perform reduction from the advanced position
+    d_output = cp.empty(1, dtype=OuterTriple.dtype)
+    h_init = OuterTriple(InnerPair(0, 0), 0.0)
+
+    remaining_items = num_items - offset
+    cuda.compute.reduce_into(
+        advanced_outer_zip, d_output, sum_nested_zips, remaining_items, h_init
+    )
+
+    result = d_output.get()[0]
+
+    # Calculate expected values from offset onwards
+    expected_first = d_input_a[offset:].sum().get()
+    expected_second = d_input_b[offset:].sum().get()
+    expected_third = d_input_c[offset:].sum().get()
+
+    assert result["inner"]["first"] == expected_first, (
+        f"Expected inner.first={expected_first}, got {result['inner']['first']}"
+    )
+    assert result["inner"]["second"] == expected_second, (
+        f"Expected inner.second={expected_second}, got {result['inner']['second']}"
+    )
+    assert np.isclose(result["third"], expected_third, rtol=1e-5), (
+        f"Expected third={expected_third}, got {result['third']}"
+    )

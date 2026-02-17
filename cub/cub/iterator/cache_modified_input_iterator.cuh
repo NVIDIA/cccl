@@ -78,6 +78,11 @@ CUB_NAMESPACE_BEGIN
  *
  * @tparam OffsetT
  *   The difference type of this iterator (Default: @p ptrdiff_t)
+ *
+ * @rst
+ * .. versionadded:: 2.2.0
+ *    First appears in CUDA Toolkit 12.3.
+ * @endrst
  */
 template <CacheLoadModifier MODIFIER, typename ValueType, typename OffsetT = ptrdiff_t>
 class CacheModifiedInputIterator

@@ -74,7 +74,7 @@ enum RadixRankAlgorithm
   RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR
 };
 
-#if !_CCCL_COMPILER(NVRTC)
+#if !_CCCL_COMPILER(NVRTC) && !defined(_CCCL_DOXYGEN_INVOKED)
 inline ::std::ostream& operator<<(::std::ostream& os, RadixRankAlgorithm algo)
 {
   switch (algo)
@@ -93,7 +93,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, RadixRankAlgorithm algo)
       return os << "<unknown RadixRankAlgorithm: " << static_cast<int>(algo) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
 
 /** Empty callback implementation */
 template <int BINS_PER_THREAD>
@@ -417,7 +417,7 @@ public:
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  //! @} end member group
+  //! @}
   //! @name Raking
   //! @{
 
@@ -628,7 +628,7 @@ public:
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  //! @}  end member group
+  //! @}
   //! @name Raking
   //! @{
 
@@ -709,8 +709,8 @@ public:
     // Each warp will strip-mine its section of input, one strip at a time
 
     volatile DigitCounterT* digit_counters[KEYS_PER_THREAD];
-    uint32_t warp_id      = linear_tid >> LOG_WARP_THREADS;
-    uint32_t lane_mask_lt = ::cuda::ptx::get_sreg_lanemask_lt();
+    ::cuda::std::uint32_t warp_id      = linear_tid >> LOG_WARP_THREADS;
+    ::cuda::std::uint32_t lane_mask_lt = ::cuda::ptx::get_sreg_lanemask_lt();
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < KEYS_PER_THREAD; ++ITEM)
@@ -724,7 +724,7 @@ public:
       }
 
       // Mask of peers who have same digit as me
-      uint32_t peer_mask =
+      ::cuda::std::uint32_t peer_mask =
         detail::warp_in_block_matcher_t<RadixBits, PARTIAL_WARP_THREADS, WARPS - 1>::match_any(digit, warp_id);
 
       // Pointer to smem digit counter for this key
@@ -916,7 +916,7 @@ struct BlockRadixRankMatchEarlyCounts
       int warp_histograms[BLOCK_WARPS][RADIX_DIGITS][NUM_PARTS];
     };
 
-    int match_masks[MATCH_MASKS_ALLOC_SIZE][RADIX_DIGITS];
+    ::cuda::std::uint32_t match_masks[MATCH_MASKS_ALLOC_SIZE][RADIX_DIGITS];
 
     typename BlockScan::TempStorage prefix_tmp;
   };
@@ -962,7 +962,7 @@ struct BlockRadixRankMatchEarlyCounts
       }
       if constexpr (MATCH_ALGORITHM == WARP_MATCH_ATOMIC_OR)
       {
-        int* match_masks = &s.match_masks[warp][0];
+        ::cuda::std::uint32_t* match_masks = &s.match_masks[warp][0];
 
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int bin = lane; bin < RADIX_DIGITS; bin += WARP_THREADS)
@@ -1053,21 +1053,21 @@ struct BlockRadixRankMatchEarlyCounts
       UnsignedBits (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD], detail::constant_t<WARP_MATCH_ATOMIC_OR>)
     {
       // compute key ranks
-      int lane_mask     = 1 << lane;
-      int* warp_offsets = &s.warp_offsets[warp][0];
-      int* match_masks  = &s.match_masks[warp][0];
+      ::cuda::std::uint32_t lane_mask    = 1u << lane;
+      int* warp_offsets                  = &s.warp_offsets[warp][0];
+      ::cuda::std::uint32_t* match_masks = &s.match_masks[warp][0];
 
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int u = 0; u < KEYS_PER_THREAD; ++u)
       {
-        ::cuda::std::uint32_t bin = Digit(keys[u]);
-        int* p_match_mask         = &match_masks[bin];
+        ::cuda::std::uint32_t bin           = Digit(keys[u]);
+        ::cuda::std::uint32_t* p_match_mask = &match_masks[bin];
         atomicOr(p_match_mask, lane_mask);
         __syncwarp(WARP_MASK);
-        int bin_mask = *p_match_mask;
+        ::cuda::std::uint32_t bin_mask = *p_match_mask;
         // TODO(bgruber): __bit_log2 regresses cub.bench.radix_sort.keys.base up to 30% on H200, see cccl_private/#586
-        // int leader      = ::cuda::std::__bit_log2(static_cast<unsigned>(bin_mask));
-        int leader      = (WARP_THREADS - 1) - ::cuda::std::countl_zero(static_cast<unsigned>(bin_mask));
+        // int leader      = ::cuda::std::__bit_log2(bin_mask);
+        int leader      = (WARP_THREADS - 1) - ::cuda::std::countl_zero(bin_mask);
         int warp_offset = 0;
         int popc        = ::cuda::std::popcount(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
         if (lane == leader)
@@ -1095,11 +1095,11 @@ struct BlockRadixRankMatchEarlyCounts
       for (int u = 0; u < KEYS_PER_THREAD; ++u)
       {
         ::cuda::std::uint32_t bin = Digit(keys[u]);
-        int bin_mask =
+        ::cuda::std::uint32_t bin_mask =
           detail::warp_in_block_matcher_t<RadixBits, PARTIAL_WARP_THREADS, BLOCK_WARPS - 1>::match_any(bin, warp);
         // TODO(bgruber): __bit_log2 regresses cub.bench.radix_sort.keys.base up to 30% on H200, see cccl_private/#586
-        // int leader      = ::cuda::std::__bit_log2(static_cast<unsigned>(bin_mask));
-        int leader      = (WARP_THREADS - 1) - ::cuda::std::countl_zero(static_cast<unsigned>(bin_mask));
+        // int leader      = ::cuda::std::__bit_log2(bin_mask);
+        int leader      = (WARP_THREADS - 1) - ::cuda::std::countl_zero(bin_mask);
         int warp_offset = 0;
         int popc        = ::cuda::std::popcount(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
         if (lane == leader)

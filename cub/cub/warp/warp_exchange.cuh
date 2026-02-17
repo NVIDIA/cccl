@@ -136,13 +136,18 @@ public:
       : InternalWarpExchange(temp_storage)
   {}
 
-  //! @}  end member group
+  //! @}
   //! @name Data movement
   //! @{
 
   /**
    * @brief Transposes data items from <em>blocked</em> arrangement to
    *        <em>striped</em> arrangement.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * @par
    * @smemwarpreuse
@@ -201,6 +206,11 @@ public:
    * @brief Transposes data items from <em>striped</em> arrangement to
    *        <em>blocked</em> arrangement.
    *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
+   *
    * @par
    * @smemwarpreuse
    *
@@ -255,6 +265,11 @@ public:
   /**
    * @brief Exchanges valid data items annotated by rank
    *        into <em>striped</em> arrangement.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * @par
    * @smemwarpreuse
@@ -312,6 +327,11 @@ public:
   /**
    * @brief Exchanges valid data items annotated by rank
    *        into <em>striped</em> arrangement.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * @par
    * @smemwarpreuse
@@ -375,7 +395,7 @@ public:
     InternalWarpExchange::ScatterToStriped(input_items, output_items, ranks);
   }
 
-  //@}  end member group
+  //@}
 };
 
 CUB_NAMESPACE_END

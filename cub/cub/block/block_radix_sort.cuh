@@ -524,6 +524,11 @@ public:
   //! @{
 
   //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixSort()
       : temp_storage(PrivateStorage())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
@@ -531,6 +536,11 @@ public:
 
   /**
    * @brief Collective constructor using the specified memory allocation as temporary storage.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
@@ -540,13 +550,16 @@ public:
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  //! @} end member group
+  //! @}
   //! @name Sorting (blocked arrangements)
   //! @{
 
   //! @rst
   //! Performs an ascending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @granularity
   //! - @smemreuse
@@ -602,6 +615,9 @@ public:
   //! @rst
   //! Performs an ascending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @granularity
   //! * @smemreuse
@@ -671,6 +687,9 @@ public:
   //! Performs an ascending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @granularity
   //! * @smemreuse
   //!
@@ -727,6 +746,9 @@ public:
   //! @rst
   //! Performs an ascending block-wide radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>`
   //! of keys and values.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
@@ -792,6 +814,9 @@ public:
   //! @rst
   //! Performs an ascending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
@@ -868,6 +893,9 @@ public:
   //! Performs an ascending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
   //!   with a temporary value array that enumerates the key indices. The reordered indices
@@ -933,6 +961,9 @@ public:
   //! Performs a descending block-wide radix sort over a :ref:`blocked arrangement <flexible-data-arrangement>`
   //! of keys.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - @granularity
   //! - @smemreuse
   //!
@@ -988,6 +1019,9 @@ public:
   //! @rst
   //! Performs a descending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @granularity
   //! * @smemreuse
@@ -1057,6 +1091,9 @@ public:
   //! Performs a descending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @granularity
   //! * @smemreuse
   //!
@@ -1123,6 +1160,9 @@ public:
   //! Performs a descending block-wide radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>`
   //! of keys and values.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
   //!   with a temporary value array that enumerates the key indices.  The reordered indices
@@ -1185,6 +1225,9 @@ public:
   //! @rst
   //! Performs a descending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
@@ -1261,6 +1304,9 @@ public:
   //! Performs a descending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
   //!   with a temporary value array that enumerates the key indices. The reordered indices
@@ -1329,13 +1375,16 @@ public:
       decomposer);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Sorting (blocked arrangement -> striped arrangement)
   //! @{
 
   //! @rst
   //! Performs an ascending radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>` of keys,
   //! leaving them in a :ref:`striped arrangement <flexible-data-arrangement>`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @granularity
   //! - @smemreuse
@@ -1394,6 +1443,9 @@ public:
   //! Performs an ascending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @granularity
   //! * @smemreuse
@@ -1464,6 +1516,9 @@ public:
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @granularity
   //! * @smemreuse
   //!
@@ -1530,6 +1585,9 @@ public:
   //! Performs an ascending radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>` of keys and
   //! values, leaving them in a :ref:`striped arrangement <flexible-data-arrangement>`.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
   //!   with a temporary value array that enumerates the key indices.  The reordered indices
@@ -1594,6 +1652,9 @@ public:
   //! Performs an ascending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @granularity
   //! * @smemreuse
@@ -1666,6 +1727,9 @@ public:
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @granularity
   //! * @smemreuse
   //!
@@ -1733,6 +1797,9 @@ public:
   //! Performs a descending radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>`
   //! of keys, leaving them in a :ref:`striped arrangement <flexible-data-arrangement>`.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - @granularity
   //! - @smemreuse
   //!
@@ -1789,6 +1856,9 @@ public:
   //! Performs a descending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @granularity
   //! * @smemreuse
@@ -1859,6 +1929,9 @@ public:
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @granularity
   //! * @smemreuse
   //!
@@ -1925,6 +1998,9 @@ public:
   //! Performs a descending radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>`
   //! of keys and values, leaving them in a :ref:`striped arrangement <flexible-data-arrangement>`
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - BlockRadixSort can only accommodate one associated tile of values. To "truck along"
   //!   more than one tile of values, simply perform a key-value sort of the keys paired
   //!   with a temporary value array that enumerates the key indices.  The reordered indices
@@ -1988,6 +2064,9 @@ public:
   //! Performs a descending block-wide radix sort over a
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! * @granularity
   //! * @smemreuse
@@ -2060,6 +2139,9 @@ public:
   //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a
   //! :ref:`striped arrangement <flexible-data-arrangement>`.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * @granularity
   //! * @smemreuse
   //!
@@ -2123,7 +2205,7 @@ public:
       decomposer);
   }
 
-  //@}  end member group
+  //@}
 };
 
 CUB_NAMESPACE_END

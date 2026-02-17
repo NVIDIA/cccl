@@ -103,7 +103,7 @@ enum BlockScanAlgorithm
   BLOCK_SCAN_WARP_SCANS,
 };
 
-#if !_CCCL_COMPILER(NVRTC)
+#if !_CCCL_COMPILER(NVRTC) && !defined(_CCCL_DOXYGEN_INVOKED)
 inline ::std::ostream& operator<<(::std::ostream& os, BlockScanAlgorithm algo)
 {
   switch (algo)
@@ -118,7 +118,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockScanAlgorithm algo)
       return os << "<unknown BlockScanAlgorithm: " << static_cast<int>(algo) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
 
 //! @rst
 //! The BlockScan class provides :ref:`collective <collective-primitives>` methods for computing a parallel prefix
@@ -169,7 +169,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockScanAlgorithm algo)
 //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
 //! where each thread owns 4 consecutive items.
 //!
-//! .. literalinclude:: ../../examples/block/example_block_scan.cu
+//! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
 //!     :language: c++
 //!     :dedent:
 //!     :start-after: example-begin exclusive-sum-array
@@ -256,6 +256,11 @@ public:
   //! @{
 
   //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockScan()
       : temp_storage(PrivateStorage())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
@@ -263,6 +268,11 @@ public:
 
   /**
    * @brief Collective constructor using the specified memory allocation as temporary storage.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
@@ -272,7 +282,7 @@ public:
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  //! @}  end member group
+  //! @}
   //! @name Exclusive prefix sum operations
   //! @{
 
@@ -280,6 +290,9 @@ public:
   //! Computes an exclusive block-wide prefix scan using addition (+) as the scan operator.
   //! Each thread contributes one input element. The value of 0 is applied as the initial value, and is assigned
   //! to ``output`` in *thread*\ :sub:`0`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @identityzero
   //! - @rowmajor
@@ -291,7 +304,7 @@ public:
   //! The code snippet below illustrates an exclusive prefix sum of 128 integer items that
   //! are partitioned across 128 threads.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-sum-single
@@ -320,6 +333,9 @@ public:
   //! The value of 0 is applied as the initial value, and is assigned to ``output`` in *thread*\ :sub:`0`.
   //! Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - @identityzero
   //! - @rowmajor
   //! - @smemreuse
@@ -330,7 +346,7 @@ public:
   //! The code snippet below illustrates an exclusive prefix sum of 128 integer items that
   //! are partitioned across 128 threads.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-sum-aggregate
@@ -364,6 +380,9 @@ public:
   //! *lane*\ :sub:`0` in that warp is used as the "seed" value that logically prefixes the thread block's
   //! scan inputs.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - @identityzero
   //! - The ``block_prefix_callback_op`` functor must implement a member function
   //!   ``T operator()(T block_aggregate)``. The functor will be invoked by the first warp of threads in the block,
@@ -379,13 +398,13 @@ public:
   //! prefix functor to maintain a running total between block-wide scans.  Each tile consists
   //! of 128 integer items that are partitioned across 128 threads.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin block-prefix-callback-op
   //!     :end-before: example-end block-prefix-callback-op
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-sum-single-prefix-callback
@@ -417,7 +436,7 @@ public:
     ExclusiveScan(input, output, ::cuda::std::plus<>{}, block_prefix_callback_op);
   }
 
-  //! @} end member group
+  //! @}
   //! @name Exclusive prefix sum operations (multiple data per thread)
   //! @{
 
@@ -425,6 +444,9 @@ public:
   //! Computes an exclusive block-wide prefix scan using addition (+) as the scan operator.
   //! Each thread contributes an array of consecutive input elements.
   //! The value of 0 is applied as the initial value, and is assigned to ``output[0]`` in *thread*\ :sub:`0`.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @identityzero
   //! - @blocked
@@ -438,7 +460,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-sum-array
@@ -473,6 +495,9 @@ public:
   //! The value of 0 is applied as the initial value, and is assigned to ``output[0]`` in *thread*\ :sub:`0`.
   //! Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - @identityzero
   //! - @blocked
   //! - @granularity
@@ -485,7 +510,7 @@ public:
   //! a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads where each thread owns
   //! 4 consecutive items.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-sum-array-aggregate
@@ -527,6 +552,9 @@ public:
   //! the first warp in the block, and the value returned by *lane*\ :sub:`0` in that warp is used as the "seed"
   //! value that logically prefixes the thread block's scan inputs.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - @identityzero
   //! - The ``block_prefix_callback_op`` functor must implement a member function ``T operator()(T block_aggregate)``.
   //!   The functor will be invoked by the first warp of threads in the block, however only the return value from
@@ -545,13 +573,13 @@ public:
   //! of 512 integer items that are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>`
   //! across 128 threads where each thread owns 4 consecutive items.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin block-prefix-callback-op
   //!     :end-before: example-end block-prefix-callback-op
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-sum-prefix-callback
@@ -588,13 +616,16 @@ public:
     ExclusiveScan(input, output, ::cuda::std::plus<>{}, block_prefix_callback_op);
   }
 
-  //! @} end member group // Exclusive prefix sums (multiple data per thread)
+  //! @}
   //! @name Exclusive prefix scan operations
   //! @{
 
   //! @rst
   //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes one input element.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - @rowmajor
@@ -606,7 +637,7 @@ public:
   //! The code snippet below illustrates an exclusive prefix max scan of 128 integer items that
   //! are partitioned across 128 threads.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-scan-single
@@ -644,6 +675,9 @@ public:
   //! Each thread contributes one input element.
   //! Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Supports non-commutative scan operators.
   //! - @rowmajor
   //! - @smemreuse
@@ -654,7 +688,7 @@ public:
   //! The code snippet below illustrates an exclusive prefix max scan of 128 integer items that
   //! are partitioned across 128 threads.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-scan-aggregate
@@ -703,6 +737,9 @@ public:
   //! Each thread contributes one input element. The call-back functor ``block_prefix_callback_op`` is invoked by
   //! the first warp in the block, and the value returned by *lane*\ :sub:`0` in that warp is used as
   //! the "seed" value that logically prefixes the thread block's scan inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The ``block_prefix_callback_op`` functor must implement a member function ``T operator()(T block_aggregate)``.
   //!   The functor will be invoked by the first warp of threads in the block, however only the return value from
@@ -803,13 +840,16 @@ public:
     InternalBlockScan(temp_storage).ExclusiveScan(input, output, scan_op, block_prefix_callback_op);
   }
 
-  //! @} end member group // Inclusive prefix sums
+  //! @}
   //! @name Exclusive prefix scan operations (multiple data per thread)
   //! @{
 
   //! @rst
   //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes an array of consecutive input elements.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - @blocked
@@ -823,7 +863,7 @@ public:
   //! items that are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3)
   //! across 128 threads where each thread owns 4 consecutive items.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-scan-array
@@ -874,6 +914,9 @@ public:
   //! Computes an exclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes an array of consecutive input elements.
   //! Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - @blocked
@@ -964,6 +1007,9 @@ public:
   //! returned by *lane*\ :sub:`0` in that warp is used as the "seed" value that logically prefixes the thread
   //! block's scan inputs.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The ``block_prefix_callback_op`` functor must implement a member function
   //!   ``T operator()(T block_aggregate)``. The functor will be invoked by the
   //!   first warp of threads in the block, however only the return value from
@@ -981,13 +1027,13 @@ public:
   //! prefix functor to maintain a running total between block-wide scans. Each tile consists
   //! of 128 integer items that are partitioned across 128 threads.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin block-prefix-callback-max-op
   //!     :end-before: example-end block-prefix-callback-max-op
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin exclusive-scan-prefix-callback
@@ -1041,7 +1087,7 @@ public:
     detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
   }
 
-  //! @}  end member group
+  //! @}
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document no-initial-value scans
 
   //! @name Exclusive prefix scan operations (no initial value, single datum per thread)
@@ -1107,7 +1153,7 @@ public:
     InternalBlockScan(temp_storage).ExclusiveScan(input, output, scan_op, block_aggregate);
   }
 
-  //! @} end member group // Exclusive prefix scans (no initial value, single datum per thread)
+  //! @}
   //! @name Exclusive prefix scan operations (no initial value, multiple data per thread)
   //! @{
 
@@ -1195,7 +1241,7 @@ public:
     detail::ThreadScanExclusive(input, output, scan_op, thread_partial, (linear_tid != 0));
   }
 
-  //! @} end member group // Exclusive prefix scans (no initial value, multiple data per thread)
+  //! @}
 #endif // _CCCL_DOXYGEN_INVOKED  // Do not document no-initial-value scans
 
   //! @name Inclusive prefix sum operations
@@ -1204,6 +1250,9 @@ public:
   //! @rst
   //! Computes an inclusive block-wide prefix scan using addition (+)
   //! as the scan operator. Each thread contributes one input element.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @rowmajor
   //! - @smemreuse
@@ -1214,7 +1263,7 @@ public:
   //! The code snippet below illustrates an inclusive prefix sum of 128 integer items that
   //! are partitioned across 128 threads.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-sum-single
@@ -1240,6 +1289,9 @@ public:
   //! Each thread contributes one input element.
   //! Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - @rowmajor
   //! - @smemreuse
   //!
@@ -1249,7 +1301,7 @@ public:
   //! The code snippet below illustrates an inclusive prefix sum of 128 integer items that
   //! are partitioned across 128 threads.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-sum-single-aggregate
@@ -1280,6 +1332,9 @@ public:
   //! ``block_prefix_callback_op`` is invoked by the first warp in the block, and the value returned by
   //! *lane*\ :sub:`0` in that warp is used as the "seed" value that logically prefixes the thread block's
   //! scan inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The ``block_prefix_callback_op`` functor must implement a member function
   //!   ``T operator()(T block_aggregate)``. The functor will be invoked by the first warp of threads in the block,
@@ -1371,13 +1426,16 @@ public:
     InclusiveScan(input, output, ::cuda::std::plus<>{}, block_prefix_callback_op);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Inclusive prefix sum operations (multiple data per thread)
   //! @{
 
   //! @rst
   //! Computes an inclusive block-wide prefix scan using addition (+) as the scan operator.
   //! Each thread contributes an array of consecutive input elements.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @blocked
   //! - @granularity
@@ -1390,7 +1448,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-sum-array
@@ -1436,6 +1494,9 @@ public:
   //! Each thread contributes an array of consecutive input elements.
   //! Also provides every thread with the block-wide ``block_aggregate`` of all inputs.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - @blocked
   //! - @granularity
   //! - @smemreuse
@@ -1447,7 +1508,7 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-sum-array-aggregate
@@ -1501,6 +1562,9 @@ public:
   //! the first warp in the block, and the value returned by *lane*\ :sub:`0` in that warp is used as the "seed"
   //! value that logically prefixes the thread block's scan inputs.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The ``block_prefix_callback_op`` functor must implement a member function
   //!   ``T operator()(T block_aggregate)``. The functor will be invoked by the first warp of threads in the block,
   //!   however only the return value from *lane*\ :sub:`0` is applied as the block-wide prefix. Can be stateful.
@@ -1517,13 +1581,13 @@ public:
   //! of 512 integer items that are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>`
   //! across 128 threads where each thread owns 4 consecutive items.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin block-prefix-callback-op
   //!     :end-before: example-end block-prefix-callback-op
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-scan-prefix-callback
@@ -1575,13 +1639,16 @@ public:
     }
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Inclusive prefix scan operations
   //! @{
 
   //! @rst
   //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes one input element.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - @rowmajor
@@ -1593,7 +1660,7 @@ public:
   //! The code snippet below illustrates an inclusive prefix max scan of 128 integer items that
   //! are partitioned across 128 threads.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-scan-single
@@ -1626,6 +1693,9 @@ public:
   //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes one input element. Also provides every thread with the block-wide
   //! ``block_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - @rowmajor
@@ -1690,6 +1760,9 @@ public:
   //! is invoked by the first warp in the block, and the value returned by *lane*\ :sub:`0` in that warp is used as
   //! the "seed" value that logically prefixes the thread block's scan inputs.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The ``block_prefix_callback_op`` functor must implement a member function
   //!   ``T operator()(T block_aggregate)``. The functor's input parameter
   //!   The functor will be invoked by the first warp of threads in the block,
@@ -1707,13 +1780,13 @@ public:
   //! prefix functor to maintain a running total between block-wide scans.  Each tile consists
   //! of 128 integer items that are partitioned across 128 threads.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin block-prefix-callback-max-op
   //!     :end-before: example-end block-prefix-callback-max-op
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-scan-prefix-callback-max
@@ -1753,13 +1826,16 @@ public:
     InternalBlockScan(temp_storage).InclusiveScan(input, output, scan_op, block_prefix_callback_op);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Inclusive prefix scan operations (multiple data per thread)
   //! @{
 
   //! @rst
   //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes an array of consecutive input elements.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - @blocked
@@ -1773,7 +1849,7 @@ public:
   //! are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
-  //! .. literalinclude:: ../../examples/block/example_block_scan.cu
+  //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin inclusive-scan-array
@@ -1825,6 +1901,9 @@ public:
   //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes an array of consecutive input elements.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Supports non-commutative scan operators.
   //! - @blocked
   //! - @granularity
@@ -1842,7 +1921,6 @@ public:
   //!     :dedent:
   //!     :start-after: example-begin inclusive-scan-array-init-value
   //!     :end-before: example-end inclusive-scan-array-init-value
-  //!
   //!
   //! @endrst
   //!
@@ -1881,6 +1959,9 @@ public:
   //! Computes an inclusive block-wide prefix scan using the specified binary ``scan_op`` functor.
   //! Each thread contributes an array of consecutive input elements. Also provides every thread
   //! with the block-wide ``block_aggregate`` of all inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Supports non-commutative scan operators.
   //! - @blocked
@@ -1965,6 +2046,9 @@ public:
   //! Each thread contributes an array of consecutive input elements. Also provides every thread
   //! with the block-wide ``block_aggregate`` of all inputs.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Supports non-commutative scan operators.
   //! - @blocked
   //! - @granularity
@@ -2032,6 +2116,9 @@ public:
   //! The call-back functor ``block_prefix_callback_op`` is invoked by the first warp in the block,
   //! and the value returned by *lane*\ :sub:`0` in that warp is used as the "seed" value that logically prefixes the
   //! thread block's scan inputs.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The ``block_prefix_callback_op`` functor must implement a member function ``T operator()(T block_aggregate)``.
   //!   The functor will be invoked by the first warp of threads in the block, however only the return value
@@ -2162,7 +2249,7 @@ public:
     }
   }
 
-  //! @}  end member group
+  //! @}
 };
 
 CUB_NAMESPACE_END

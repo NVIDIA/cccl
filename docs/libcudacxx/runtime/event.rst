@@ -3,6 +3,8 @@
 Events
 ======
 
+Event is a snapshot of execution state of a stream. It can be used to synchronize work submitted to a stream up to a certain point, establish dependency between streams or measure time passed between two events.
+
 ``cuda::event_ref``
 --------------------------------------------------
 .. _cccl-runtime-event-event-ref:
@@ -21,7 +23,6 @@ Example:
 
 .. code:: cpp
 
-   #include <cuda/event>
    #include <cuda/stream>
 
    void record_on_stream(cuda::stream_ref stream, cudaEvent_t raw_handle) {
@@ -29,9 +30,9 @@ Example:
      e.record(stream);
    }
 
-.. _cccl-runtime-event-event:
 ``cuda::event``
 --------------------------------------------
+.. _cccl-runtime-event-event:
 
 ``cuda::event`` is an owning wrapper around a ``cudaEvent_t`` (with timing disabled). It inherits from ``event_ref`` and provides all of its functionality.
 It also creates and destroys the native event, can be moved (but not copied), and can release ownership via ``release()``. Construction can target a specific
@@ -41,20 +42,20 @@ Availability: CCCL 3.1.0 / CUDA 13.1
 
 .. code:: cpp
 
-   #include <cuda/event>
    #include <cuda/stream>
    #include <cuda/devices>
+   #include <cuda/std/optional>
 
    cuda::std::optional<cuda::event> query_and_record_on_stream(cuda::stream_ref stream) {
      if (stream.is_done()) {
-      return std::nullopt;
-     }
-     else {
-      return cuda::event{stream};
+       return cuda::std::nullopt;
+     } else {
+       return cuda::event{stream};
      }
    }
 
 .. _cccl-runtime-event-timed-event:
+
 ``cuda::timed_event``
 -----------------------------------------------------
 
@@ -65,7 +66,6 @@ Availability: CCCL 3.1.0 / CUDA 13.1
 
 .. code:: cpp
 
-   #include <cuda/event>
    #include <cuda/stream>
    #include <cuda/std/chrono>
 

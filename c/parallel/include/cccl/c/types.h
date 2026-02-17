@@ -103,6 +103,9 @@ typedef struct cccl_op_t
   size_t size;
   size_t alignment;
   void* state;
+  const char** extra_ltoirs;
+  size_t* extra_ltoir_sizes;
+  size_t num_extra_ltoirs;
 } cccl_op_t;
 
 typedef struct cccl_build_config
@@ -157,5 +160,18 @@ typedef enum cccl_init_kind_t
   CCCL_FUTURE_VALUE_INIT = 1,
   CCCL_NO_INIT           = 2,
 } cccl_init_kind_t;
+
+typedef enum cccl_determinism_t
+{
+  CCCL_NOT_GUARANTEED = 0,
+  CCCL_RUN_TO_RUN     = 1,
+  CCCL_GPU_TO_GPU     = 2,
+} cccl_determinism_t;
+
+typedef enum cccl_binary_search_mode_t
+{
+  CCCL_BINARY_SEARCH_LOWER_BOUND = 0,
+  CCCL_BINARY_SEARCH_UPPER_BOUND = 1,
+} cccl_binary_search_mode_t;
 
 CCCL_C_EXTERN_C_END

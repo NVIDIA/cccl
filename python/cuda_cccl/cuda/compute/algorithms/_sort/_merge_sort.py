@@ -1,65 +1,22 @@
-# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Callable, Union
 
-import numba
+from __future__ import annotations
 
-from ... import _bindings
+from ... import _bindings, types
 from ... import _cccl_interop as cccl
-from ..._caching import CachableFunction, cache_with_key
+from ..._caching import cache_with_registered_key_functions
 from ..._cccl_interop import call_build, set_cccl_iterator_state
-from ..._utils import protocols
 from ..._utils.protocols import (
     get_data_pointer,
     validate_and_get_stream,
 )
 from ..._utils.temp_storage_buffer import TempStorageBuffer
-from ...iterators._iterators import IteratorBase
-from ...op import OpKind
-from ...typing import DeviceArrayLike
-
-
-def make_cache_key(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase | None,
-    d_out_keys: DeviceArrayLike,
-    d_out_items: DeviceArrayLike | None,
-    op: Callable | OpKind,
-):
-    d_in_keys_key = (
-        d_in_keys.kind
-        if isinstance(d_in_keys, IteratorBase)
-        else protocols.get_dtype(d_in_keys)
-    )
-    if d_in_items is None:
-        d_in_items_key = None
-    else:
-        d_in_items_key = (
-            d_in_items.kind
-            if isinstance(d_in_items, IteratorBase)
-            else protocols.get_dtype(d_in_items)
-        )
-    d_out_keys_key = protocols.get_dtype(d_out_keys)
-    if d_out_items is None:
-        d_out_items_key = None
-    else:
-        d_out_items_key = (
-            d_out_items.kind
-            if isinstance(d_out_items, IteratorBase)
-            else protocols.get_dtype(d_out_items)
-        )
-
-    # Handle well-known operations differently
-    op_key: Union[tuple[str, int], CachableFunction]
-    if isinstance(op, OpKind):
-        op_key = (op.name, op.value)
-    else:
-        op_key = CachableFunction(op)
-
-    return (d_in_keys_key, d_in_items_key, d_out_keys_key, d_out_items_key, op_key)
+from ...op import OpAdapter, make_op_adapter
+from ...typing import DeviceArrayLike, IteratorT, Operator
 
 
 class _MergeSort:
@@ -68,17 +25,18 @@ class _MergeSort:
         "d_in_items_cccl",
         "d_out_keys_cccl",
         "d_out_items_cccl",
-        "op_wrapper",
+        "op_adapter",
+        "op_cccl",
         "build_result",
     ]
 
     def __init__(
         self,
-        d_in_keys: DeviceArrayLike | IteratorBase,
-        d_in_items: DeviceArrayLike | IteratorBase | None,
+        d_in_keys: DeviceArrayLike | IteratorT,
+        d_in_items: DeviceArrayLike | IteratorT | None,
         d_out_keys: DeviceArrayLike,
         d_out_items: DeviceArrayLike | None,
-        op: Callable | OpKind,
+        op: OpAdapter,
     ):
         present_in_values = d_in_items is not None
         present_out_values = d_out_items is not None
@@ -88,15 +46,11 @@ class _MergeSort:
         self.d_in_items_cccl = cccl.to_cccl_input_iter(d_in_items)
         self.d_out_keys_cccl = cccl.to_cccl_output_iter(d_out_keys)
         self.d_out_items_cccl = cccl.to_cccl_output_iter(d_out_items)
+        self.op_adapter = op
 
+        # Compile the op - merge_sort expects int8 return (comparison)
         value_type = cccl.get_value_type(d_in_keys)
-
-        # For well-known operations, we don't need a signature
-        if isinstance(op, OpKind):
-            self.op_wrapper = cccl.to_cccl_op(op, None)
-        else:
-            sig = numba.types.int8(value_type, value_type)
-            self.op_wrapper = cccl.to_cccl_op(op, sig)
+        self.op_cccl = op.compile((value_type, value_type), types.int8)
 
         self.build_result = call_build(
             _bindings.DeviceMergeSortBuildResult,
@@ -104,16 +58,17 @@ class _MergeSort:
             self.d_in_items_cccl,
             self.d_out_keys_cccl,
             self.d_out_items_cccl,
-            self.op_wrapper,
+            self.op_cccl,
         )
 
     def __call__(
         self,
         temp_storage,
-        d_in_keys: DeviceArrayLike | IteratorBase,
-        d_in_items: DeviceArrayLike | IteratorBase | None,
+        d_in_keys: DeviceArrayLike | IteratorT,
+        d_in_items: DeviceArrayLike | IteratorT | None,
         d_out_keys: DeviceArrayLike,
         d_out_items: DeviceArrayLike | None,
+        op: Operator,
         num_items: int,
         stream=None,
     ):
@@ -127,6 +82,9 @@ class _MergeSort:
         set_cccl_iterator_state(self.d_out_keys_cccl, d_out_keys)
         if present_out_values:
             set_cccl_iterator_state(self.d_out_items_cccl, d_out_items)
+
+        op_adapter = make_op_adapter(op)
+        self.op_cccl.state = op_adapter.get_state()
 
         stream_handle = validate_and_get_stream(stream)
         if temp_storage is None:
@@ -146,20 +104,20 @@ class _MergeSort:
             self.d_out_keys_cccl,
             self.d_out_items_cccl,
             num_items,
-            self.op_wrapper,
+            self.op_cccl,
             stream_handle,
         )
 
         return temp_storage_bytes
 
 
-@cache_with_key(make_cache_key)
+@cache_with_registered_key_functions
 def make_merge_sort(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase | None,
+    d_in_keys: DeviceArrayLike | IteratorT,
+    d_in_items: DeviceArrayLike | IteratorT | None,
     d_out_keys: DeviceArrayLike,
     d_out_items: DeviceArrayLike | None,
-    op: Callable | OpKind,
+    op: Operator,
 ):
     """Implements a device-wide merge sort using ``d_in_keys`` and the comparison operator ``op``.
 
@@ -176,20 +134,21 @@ def make_merge_sort(
         d_in_items: Optional device array or iterator that contains each key's corresponding item
         d_out_keys: Device array to store the sorted keys
         d_out_items: Device array to store the sorted items
-        op: Callable or OpKind representing the comparison operator
+        op: The comparison operator for sorting. The signature is  ``(T, T) -> int8``, where ``T`` is the input data type.
 
     Returns:
         A callable object that can be used to perform the merge sort
     """
-    return _MergeSort(d_in_keys, d_in_items, d_out_keys, d_out_items, op)
+    op_adapter = make_op_adapter(op)
+    return _MergeSort(d_in_keys, d_in_items, d_out_keys, d_out_items, op_adapter)
 
 
 def merge_sort(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase | None,
+    d_in_keys: DeviceArrayLike | IteratorT,
+    d_in_items: DeviceArrayLike | IteratorT | None,
     d_out_keys: DeviceArrayLike,
     d_out_items: DeviceArrayLike | None,
-    op: Callable | OpKind,
+    op: Operator,
     num_items: int,
     stream=None,
 ):
@@ -211,15 +170,22 @@ def merge_sort(
         d_in_items: Device array or iterator containing the input sequence of items (optional)
         d_out_keys: Device array to store the sorted keys
         d_out_items: Device array to store the sorted items (optional)
-        op: Comparison operator for sorting
+        op: The comparison operator for sorting. The signature is  ``(T, T) -> int8``, where ``T`` is the input data type.
         num_items: Number of items to sort
         stream: CUDA stream for the operation (optional)
     """
     sorter = make_merge_sort(d_in_keys, d_in_items, d_out_keys, d_out_items, op)
     tmp_storage_bytes = sorter(
-        None, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items, stream
+        None, d_in_keys, d_in_items, d_out_keys, d_out_items, op, num_items, stream
     )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     sorter(
-        tmp_storage, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items, stream
+        tmp_storage,
+        d_in_keys,
+        d_in_items,
+        d_out_keys,
+        d_out_items,
+        op,
+        num_items,
+        stream,
     )

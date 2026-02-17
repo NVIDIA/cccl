@@ -1,8 +1,15 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 import cupy as cp
 import numba.cuda
 import numpy as np
 import pytest
 
+import cuda.compute
+from cuda.compute import OpKind
 from cuda.compute._utils.protocols import (
     compute_c_contiguous_strides_in_bytes,
 )
@@ -120,21 +127,6 @@ def reverse_iterator_array(request):
     return array
 
 
-def test_reverse_iterator(reverse_iterator_array):
-    it = ReverseIterator(reverse_iterator_array)
-
-    # Create array of size 1 from memory pointer of last element
-    arr = cp.ndarray(
-        shape=(1,),
-        dtype=reverse_iterator_array.dtype,
-        memptr=cp.cuda.MemoryPointer(
-            cp.cuda.UnownedMemory(it.cvalue.value, 0, None), 0
-        ),
-    )
-
-    assert -999 == arr[0]
-
-
 def test_reverse_input_iterator_equality():
     ary1 = cp.asarray([0, 1, 2], dtype="int32")
     ary2 = cp.asarray([3, 4, 5], dtype="int32")
@@ -201,3 +193,54 @@ def test_matches_numpy_strides_for_c_contiguous_arrays(shape, dtype):
     expected = arr.strides
     result = compute_c_contiguous_strides_in_bytes(shape, dtype().itemsize)
     assert result == expected
+
+
+def test_transform_iterator_with_lambda():
+    """Test TransformIterator with a lambda function."""
+    first_item = 10
+    num_items = 100
+
+    # Use a lambda function directly with TransformIterator
+    transform_it = TransformIterator(
+        CountingIterator(np.int32(first_item)), lambda x: x * 2
+    )
+    h_init = np.array([0], dtype=np.int32)
+    d_output = cp.empty(1, dtype=np.int32)
+
+    # Perform reduction on the transformed iterator
+    cuda.compute.reduce_into(transform_it, d_output, OpKind.PLUS, num_items, h_init)
+
+    # Expected: sum of (10*2, 11*2, ..., 109*2) = 2 * sum(10..109)
+    expected = 2 * sum(range(first_item, first_item + num_items))
+    assert d_output.get()[0] == expected
+
+
+def test_transform_iterator_with_zip_iterator():
+    """Test TransformIterator wrapping ZipIterator (struct types)."""
+    from cuda.compute.iterators import ZipIterator
+
+    # Create a ZipIterator with two int32 arrays
+    d_a = cp.arange(10, dtype=np.int32)
+    d_b = cp.arange(100, 110, dtype=np.int32)
+
+    zip_it = ZipIterator(d_a, d_b)
+
+    # Create a transform that sums the two fields
+    # Input is a struct with two int32 fields, output is a single int32
+    def sum_fields(pair):
+        return pair[0] + pair[1]
+
+    # Create TransformIterator wrapping ZipIterator
+    # This tests that cpp_type_from_descriptor handles struct types correctly
+    transform_it = TransformIterator(zip_it, sum_fields)
+
+    # Use it in a reduction
+    h_init = np.array([0], dtype=np.int32)
+    d_output = cp.empty(1, dtype=np.int32)
+
+    cuda.compute.reduce_into(transform_it, d_output, OpKind.PLUS, len(d_a), h_init)
+
+    result = d_output.get()[0]
+    expected = (d_a + d_b).sum().get()
+
+    assert result == expected, f"Expected {expected}, got {result}"

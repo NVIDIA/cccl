@@ -813,22 +813,36 @@ public:
   //! @{
 
   //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockExchange()
       : temp_storage(PrivateStorage())
   {}
 
   //! @brief Collective constructor using the specified memory allocation as temporary storage.
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
+  //!
   //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockExchange(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
   {}
 
-  //! @} end member group
+  //! @}
   //! @name Structured exchanges
   //! @{
 
   //! @rst
   //! Transposes data items from **striped** arrangement to **blocked** arrangement.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @smemreuse
   //!
@@ -877,6 +891,9 @@ public:
 
   //! @rst
   //! Transposes data items from **blocked** arrangement to **striped** arrangement.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @smemreuse
   //!
@@ -930,6 +947,9 @@ public:
   //! @rst
   //! Transposes data items from **warp-striped** arrangement to **blocked** arrangement.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - @smemreuse
   //!
   //!
@@ -981,6 +1001,9 @@ public:
 
   //! @rst
   //! Transposes data items from **blocked** arrangement to **warp-striped** arrangement.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @smemreuse
   //!
@@ -1034,12 +1057,15 @@ public:
     BlockedToWarpStriped(input_items, output_items, detail::bool_constant_v<WarpTimeSlicing>);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Scatter exchanges
   //! @{
 
   //! @rst
   //! Exchanges data items annotated by rank into **blocked** arrangement.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @smemreuse
   //! @endrst
@@ -1065,6 +1091,9 @@ public:
   //! @rst
   //! Exchanges data items annotated by rank into **striped** arrangement.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - @smemreuse
   //!
   //! @endrst
@@ -1089,6 +1118,9 @@ public:
 
   //! @rst
   //! Exchanges data items annotated by rank into **striped** arrangement. Items with rank -1 are not exchanged.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @smemreuse
   //!
@@ -1139,6 +1171,9 @@ public:
 
   //! @rst
   //! Exchanges valid data items annotated by rank into **striped** arrangement.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @smemreuse
   //!
@@ -1196,7 +1231,7 @@ public:
     }
   }
 
-  //! @}  end member group
+  //! @}
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 

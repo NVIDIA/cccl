@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -203,10 +180,9 @@ struct ReduceByKeyAgent
   static constexpr int ITEMS_PER_TILE     = ptx_plan::ITEMS_PER_TILE;
   static constexpr bool TWO_PHASE_SCATTER = (ITEMS_PER_THREAD > 1);
 
-  // Whether or not the scan operation has a zero-valued identity value
-  // (true if we're performing addition on a primitive type)
-  static constexpr bool HAS_IDENTITY_ZERO =
-    ::cuda::std::is_same_v<ReductionOp, ::cuda::std::plus<value_type>> && ::cuda::std::is_arithmetic_v<value_type>;
+  // Whether or not the scan operation has a zero-valued identity value (true
+  // if we're performing addition on a primitive type)
+  static constexpr int HAS_IDENTITY_ZERO = ::cuda::identity_element<ReductionOp, value_type>() == 0;
 
   struct impl
   {
@@ -227,49 +203,30 @@ struct ReduceByKeyAgent
     // Block scan utility methods
     //---------------------------------------------------------------------
 
-    // Scan with identity (first tile)
-    //
+    // Scan first tile
+    // Without an identity, the first output item is undefined.
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+    scan_first_tile(size_value_pair_t (&scan_items)[ITEMS_PER_THREAD], size_value_pair_t& tile_aggregate)
+    {
+      if constexpr (HAS_IDENTITY_ZERO)
+      {
+        size_value_pair_t identity;
+        identity.value = 0;
+        identity.key   = 0;
+        BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, identity, scan_op, tile_aggregate);
+      }
+      else
+      {
+        BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, tile_aggregate);
+      }
+    }
+
+    // Scan subsequent tile
+    // Without an identity, the first output item is undefined.
     _CCCL_DEVICE_API _CCCL_FORCEINLINE void
     scan_tile(size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
               size_value_pair_t& tile_aggregate,
-              thrust::detail::true_type /* has_identity */)
-    {
-      size_value_pair_t identity;
-      identity.value = 0;
-      identity.key   = 0;
-      BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, identity, scan_op, tile_aggregate);
-    }
-
-    // Scan without identity (first tile).
-    // Without an identity, the first output item is undefined.
-    //
-    _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-    scan_tile(size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
-              size_value_pair_t& tile_aggregate,
-              thrust::detail::false_type /* has_identity */)
-    {
-      BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, tile_aggregate);
-    }
-
-    // Scan with identity (subsequent tile)
-    //
-    _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_tile(
-      size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
-      size_value_pair_t& tile_aggregate,
-      TilePrefixCallback& prefix_op,
-      thrust::detail::true_type /*  has_identity */)
-    {
-      BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, prefix_op);
-      tile_aggregate = prefix_op.GetBlockAggregate();
-    }
-
-    // Scan without identity (subsequent tile).
-    // Without an identity, the first output item is undefined.
-    _CCCL_DEVICE_API _CCCL_FORCEINLINE void scan_tile(
-      size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
-      size_value_pair_t& tile_aggregate,
-      TilePrefixCallback& prefix_op,
-      thrust::detail::false_type /* has_identity */)
+              TilePrefixCallback& prefix_op)
     {
       BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, prefix_op);
       tile_aggregate = prefix_op.GetBlockAggregate();
@@ -492,7 +449,7 @@ struct ReduceByKeyAgent
 
       // Exclusive scan of values and segment_flags
       size_value_pair_t tile_aggregate;
-      scan_tile(scan_items, tile_aggregate, is_true<HAS_IDENTITY_ZERO>());
+      scan_first_tile(scan_items, tile_aggregate);
 
       if (threadIdx.x == 0)
       {
@@ -577,7 +534,7 @@ struct ReduceByKeyAgent
       // Exclusive scan of values and segment_flags
       size_value_pair_t tile_aggregate;
       TilePrefixCallback prefix_op(tile_state, storage.scan_storage.prefix, scan_op, tile_idx);
-      scan_tile(scan_items, tile_aggregate, prefix_op, is_true<HAS_IDENTITY_ZERO>());
+      scan_tile(scan_items, tile_aggregate, prefix_op);
       size_value_pair_t tile_inclusive_prefix = prefix_op.GetInclusivePrefix();
 
       // Unzip values and segment indices

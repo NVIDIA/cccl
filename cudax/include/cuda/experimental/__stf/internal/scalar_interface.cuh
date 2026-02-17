@@ -77,12 +77,12 @@ class shape_of<scalar_view<T>>
 {
 public:
   shape_of() = default;
-  shape_of(const scalar_view<T>&)
-      : shape_of<scalar_view<T>>()
+  _CCCL_HOST_DEVICE shape_of(const scalar_view<T>&)
+      : shape_of()
   {}
 
   /// Mandatory method : defined the total number of elements in the shape
-  size_t size() const
+  _CCCL_HOST_DEVICE size_t size() const
   {
     return sizeof(T);
   }

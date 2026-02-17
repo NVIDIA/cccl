@@ -35,9 +35,13 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
 /**
  * @brief A random-access input wrapper for dereferencing array values through texture cache.
  *        Uses newer Kepler-style texture objects.
+ *
+ * Deprecated [Since 3.3]
  *
  * @par Overview
  * - TexObjInputIterator wraps a native device pointer of type <tt>ValueType*</tt>. References
@@ -81,6 +85,11 @@ CUB_NAMESPACE_BEGIN
  *
  * @tparam OffsetT
  *   The difference type of this iterator (Default: @p ptrdiff_t)
+ *
+ * @rst
+ * .. versionadded:: 2.2.0
+ *    First appears in CUDA Toolkit 12.3.
+ * @endrst
  */
 template <typename T, typename OffsetT = ptrdiff_t>
 class TexObjInputIterator
@@ -289,5 +298,9 @@ private:
     return *reinterpret_cast<T*>(words);
   }
 };
+} // namespace detail
+
+template <typename T, typename OffsetT = ptrdiff_t>
+using TexObjInputIterator CCCL_DEPRECATED = detail::TexObjInputIterator<T, OffsetT>;
 
 CUB_NAMESPACE_END

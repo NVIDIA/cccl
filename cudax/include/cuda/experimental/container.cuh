@@ -20,9 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__container/buffer.h>
 #include <cuda/__container/uninitialized_async_buffer.h>
 
-#include <cuda/experimental/__container/async_buffer.cuh>
 #include <cuda/experimental/__container/uninitialized_buffer.cuh>
 
 #endif //__CUDAX_CONTAINER__

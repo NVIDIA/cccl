@@ -21,19 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__execution/env.h>
-#include <cuda/std/__functional/compose.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
-#include <cuda/std/__type_traits/type_list.h>
+#include <cuda/std/__utility/undefined.h>
 
 #include <cuda/experimental/__detail/type_traits.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
@@ -306,7 +303,7 @@ private:
   }
 
   template <class _Attrs, class... _Env, class _Domain>
-  [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL auto __check_domain(_Domain) noexcept -> _Domain
+  [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL auto __check_domain(_Domain) noexcept
   {
     // Sanity check: if a completion scheduler can be determined, then its domain must match
     // the domain returned by the attributes.
@@ -318,11 +315,11 @@ private:
         get_completion_domain_t::__check_scheduler_domain<__sch_t, _Domain, _Env...>();
       }
     }
-    return {};
+    return __declfn<_Domain>;
   }
 
   template <class _Attrs, class... _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto __get_domain() noexcept
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __get_declfn() noexcept
   {
     // If __attrs has a completion domain, then return it:
     if constexpr (__callable<__read_query_t, const _Attrs&, const _Env&...>)
@@ -342,42 +339,41 @@ private:
       {
         using __domain_t = __call_result_t<__read_query_t, __sch_t, const _Env&...>;
         static_assert(__domain_like<__domain_t>, "Domain types are required to be empty class types");
-        return __domain_t{};
+        return __declfn<__domain_t>;
       }
       // Otherwise, if the scheduler's sender indicates that it completes inline, we can ask
       // the environment for its domain.
       else if constexpr (__completes_inline<env_of_t<schedule_result_t<__sch_t>>, _Env...>
                          && __callable<get_domain_t, const _Env&...>)
       {
-        return __call_result_t<get_domain_t, const _Env&...>{};
+        using __domain_t = __call_result_t<get_domain_t, const _Env&...>;
+        return __declfn<__domain_t>;
       }
       // Otherwise, if we are asking "late" (with an environment), return the default_domain
       else if constexpr (sizeof...(_Env) != 0)
       {
-        return default_domain{};
+        return __declfn<default_domain>;
       }
     }
     // Otherwise, if the attributes indicates that the sender completes inline, we can ask
     // the environment for its domain.
     else if constexpr (__completes_inline<_Attrs, _Env...> && __callable<get_domain_t, const _Env&...>)
     {
-      return __call_result_t<get_domain_t, const _Env&...>{};
+      using __domain_t = __call_result_t<get_domain_t, const _Env&...>;
+      return __declfn<__domain_t>;
     }
     // Otherwise, if we are asking "late" (with an environment), return the default_domain
     else if constexpr (sizeof...(_Env) != 0)
     {
-      return default_domain{};
+      return __declfn<default_domain>;
     }
     // Otherwise, no completion domain can be determined. Return void.
   }
 
-  template <class _Attrs, class... _Env>
-  using __result_t = __unless_one_of_t<decltype(__get_domain<_Attrs, _Env...>()), void>;
-
 public:
-  template <class _Attrs, class... _Env>
+  template <class _Attrs, class... _Env, auto _DeclFn = __get_declfn<_Attrs, _Env...>()>
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Attrs&, const _Env&...) const noexcept
-    -> __result_t<_Attrs, _Env...>
+    -> decltype(_DeclFn())
   {
     return {};
   }

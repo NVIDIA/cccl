@@ -200,6 +200,11 @@ public:
   //! @{
 
   //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
+  //!
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogram()
       : temp_storage(PrivateStorage())
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
@@ -207,6 +212,11 @@ public:
 
   /**
    * @brief Collective constructor using the specified memory allocation as temporary storage.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
@@ -216,12 +226,15 @@ public:
       , linear_tid(RowMajorTid(BlockDimX, BlockDimY, BlockDimZ))
   {}
 
-  //! @}  end member group
+  //! @}
   //! @name Histogram operations
   //! @{
 
   //! @rst
   //! Initialize the shared histogram counters to zero.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! Snippet
   //! +++++++
@@ -255,7 +268,6 @@ public:
   //!      // Update the block-wide histogram
   //!      BlockHistogram(temp_storage).Composite(thread_samples, smem_histogram);
   //!    }
-  //!
   //! @endrst
   //!
   //! @tparam CounterT
@@ -281,6 +293,9 @@ public:
   //! @rst
   //! Constructs a block-wide histogram in shared/device-accessible memory.
   //! Each thread contributes an array of input elements.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @granularity
   //! - @smemreuse
@@ -313,7 +328,6 @@ public:
   //!        // Compute the block-wide histogram
   //!        BlockHistogram(temp_storage).Histogram(thread_samples, smem_histogram);
   //!    }
-  //!
   //! @endrst
   //!
   //! @tparam CounterT
@@ -339,6 +353,9 @@ public:
   //! @rst
   //! Updates an existing block-wide histogram in shared/device-accessible memory.
   //! Each thread composites an array of input elements.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - @granularity
   //! - @smemreuse
@@ -375,7 +392,6 @@ public:
   //!        // Update the block-wide histogram
   //!        BlockHistogram(temp_storage).Composite(thread_samples, smem_histogram);
   //!    }
-  //!
   //! @endrst
   //!
   //! @tparam CounterT

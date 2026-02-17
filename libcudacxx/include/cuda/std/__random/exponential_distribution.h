@@ -37,7 +37,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _RealType = double>
 class exponential_distribution
 {
-  static_assert(__libcpp_random_is_valid_realtype<_RealType>, "RealType must be a supported floating-point type");
+  static_assert(__cccl_random_is_valid_realtype<_RealType>, "RealType must be a supported floating-point type");
 
 public:
   // types
@@ -149,7 +149,7 @@ public:
     using ios_base                            = typename ostream_type::ios_base;
     const typename ios_base::fmtflags __flags = __os.flags();
     const _CharT __fill                       = __os.fill();
-    const ::std::streamsize __precision       = __os.precision();
+    const auto __precision                    = __os.precision();
     __os.flags(ios_base::dec | ios_base::left | ios_base::scientific);
     __os.precision(numeric_limits<result_type>::max_digits10);
     __os << __x.lambda();

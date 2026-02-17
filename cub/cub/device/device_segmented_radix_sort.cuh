@@ -70,6 +70,9 @@ public:
   //! @rst
   //! Sorts segments of key-value pairs into ascending order. (``~2N`` auxiliary storage required)
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The contents of the input data are not altered by the sorting operation
   //! - When input a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
@@ -245,6 +248,9 @@ public:
 
   //! @rst
   //! Sorts segments of key-value pairs into ascending order. (``~N`` auxiliary storage required)
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers. Each pair is managed by a DoubleBuffer
@@ -427,6 +433,9 @@ public:
   //! @rst
   //! Sorts segments of key-value pairs into descending order. (``~2N`` auxiliary storage required).
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The contents of the input data are not altered by the sorting operation
   //! - When input a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased for both
@@ -607,6 +616,9 @@ public:
 
   //! @rst
   //! Sorts segments of key-value pairs into descending order. (``~N`` auxiliary storage required).
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers.  Each pair is managed by a DoubleBuffer
@@ -790,12 +802,15 @@ public:
                               stream);
   }
 
-  //! @}  end member group
+  //! @}
   //! @name Keys-only
   //! @{
 
   //! @rst
   //! Sorts segments of keys into ascending order. (``~2N`` auxiliary storage required)
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The contents of the input data are not altered by the sorting operation
   //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
@@ -960,6 +975,9 @@ public:
 
   //! @rst
   //! Sorts segments of keys into ascending order. (``~N`` auxiliary storage required).
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
@@ -1134,6 +1152,9 @@ public:
   //! @rst
   //! Sorts segments of keys into descending order. (``~2N`` auxiliary storage required).
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The contents of the input data are not altered by the sorting operation
   //! - When input a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased for both
@@ -1297,6 +1318,9 @@ public:
 
   //! @rst
   //! Sorts segments of keys into descending order. (``~N`` auxiliary storage required).
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
@@ -1466,7 +1490,7 @@ public:
                               stream);
   }
 
-  //! @}  end member group
+  //! @}
 };
 
 CUB_NAMESPACE_END

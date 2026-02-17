@@ -47,6 +47,9 @@ set(
   local_stf/legacy_to_stf.cu
   local_stf/threads_multiple_graphs.cu
   places/affinity_gc.cu
+  places/data_place_alloc.cu
+  places/data_place_vmm.cu
+  places/exec_place_guard.cu
   places/managed.cu
   places/managed_from_user.cu
   places/non_current_device.cu
@@ -203,7 +206,7 @@ set(
   cuda/experimental/__stf/utility/unstable_unique.cuh
 )
 
-find_package(CUDAToolkit REQUIRED)
+cccl_get_cudatoolkit()
 
 ## cudax_add_stf_test
 #

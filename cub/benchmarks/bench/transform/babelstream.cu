@@ -1,11 +1,17 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
-// Because CUB cannot inspect the transformation function, we cannot add any tunings based on the results of this
-// benchmark. Its main use is to detect regressions.
-
+// %RANGE% TUNE_BIF_BIAS bif -16:16:4
+// %RANGE% TUNE_ALGORITHM alg 0:4:1
 // %RANGE% TUNE_THREADS tpb 128:1024:128
-// %RANGE% TUNE_ALGORITHM alg 0:2:1
+
+// those parameters only apply if TUNE_ALGORITHM == 1 (vectorized)
+// %RANGE% TUNE_VEC_SIZE_POW2 vsp2 1:6:1
+// %RANGE% TUNE_VECTORS_PER_THREAD vpt 1:4:1
+
+#if !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1 || TUNE_VECTORS_PER_THREAD != 1)
+#  error "Non-vectorized algorithms require vector size and vectors per thread to be 1 since they ignore the parameters"
+#endif // !TUNE_BASE && TUNE_ALGORITHM != 1 && (TUNE_VEC_SIZE_POW2 != 1 || TUNE_VECTORS_PER_THREAD != 1)
 
 #include "common.h"
 
@@ -25,11 +31,11 @@ using element_types =
 #endif
 
 // BabelStream uses 2^25, H200 can fit 2^31 int128s
-// 2^20 chars / 2^16 int128 saturate V100 (min_bif =12 * SM count =80)
-// 2^21 chars / 2^17 int128 saturate A100 (min_bif =16 * SM count =108)
-// 2^23 chars / 2^19 int128 saturate H100/H200 HBM3 (min_bif =32or48 * SM count =132)
+// 2^20 chars / 2^16 int128 saturate V100 (min_bytes_in_flight =12 * SM count =80)
+// 2^21 chars / 2^17 int128 saturate A100 (min_bytes_in_flight =16 * SM count =108)
+// 2^23 chars / 2^19 int128 saturate H100/H200 HBM3 (min_bytes_in_flight =32or48 * SM count =132)
 // inline auto array_size_powers = std::vector<nvbench::int64_t>{28};
-inline auto array_size_powers = nvbench::range(16, 28, 4);
+inline auto array_size_powers = nvbench::range(16, 32, 4);
 
 // Modified from BabelStream to also work for integers and to make nstream maintain a consistent workload since it
 // overwrites one input array. If the data changed at each iteration, the performance would be unstable.
@@ -42,8 +48,15 @@ static_assert(startA == (startA + startB + startScalar * startC), "nstream must 
 
 template <typename T, typename OffsetT>
 static void mul(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+try
 {
-  const auto n = cuda::narrow<OffsetT>(state.get_int64("Elements{io}"));
+  const auto n = state.get_int64("Elements{io}");
+  if (sizeof(OffsetT) == 4 && n > std::numeric_limits<OffsetT>::max())
+  {
+    state.skip("Skipping: input size exceeds 32-bit offset type capacity.");
+    return;
+  }
+
   thrust::device_vector<T> b(n, startB);
   thrust::device_vector<T> c(n, startC);
 
@@ -52,9 +65,14 @@ static void mul(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_writes<T>(n);
 
   const T scalar = startScalar;
-  bench_transform(state, ::cuda::std::tuple{c.begin()}, b.begin(), n, [=] _CCCL_DEVICE(const T& ci) {
-    return ci * scalar;
-  });
+  bench_transform(
+    state, ::cuda::std::tuple{c.begin()}, b.begin(), static_cast<OffsetT>(n), [=] _CCCL_DEVICE(const T& ci) {
+      return ci * scalar;
+    });
+}
+catch (const std::bad_alloc&)
+{
+  state.skip("Skipping: out of memory.");
 }
 
 NVBENCH_BENCH_TYPES(mul, NVBENCH_TYPE_AXES(element_types, offset_types))
@@ -64,8 +82,15 @@ NVBENCH_BENCH_TYPES(mul, NVBENCH_TYPE_AXES(element_types, offset_types))
 
 template <typename T, typename OffsetT>
 static void add(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+try
 {
-  const auto n = cuda::narrow<OffsetT>(state.get_int64("Elements{io}"));
+  const auto n = state.get_int64("Elements{io}");
+  if (sizeof(OffsetT) == 4 && n > std::numeric_limits<OffsetT>::max())
+  {
+    state.skip("Skipping: input size exceeds 32-bit offset type capacity.");
+    return;
+  }
+
   thrust::device_vector<T> a(n, startA);
   thrust::device_vector<T> b(n, startB);
   thrust::device_vector<T> c(n, startC);
@@ -74,9 +99,17 @@ static void add(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_reads<T>(2 * n);
   state.add_global_memory_writes<T>(n);
   bench_transform(
-    state, ::cuda::std::tuple{a.begin(), b.begin()}, c.begin(), n, [] _CCCL_DEVICE(const T& ai, const T& bi) -> T {
+    state,
+    ::cuda::std::tuple{a.begin(), b.begin()},
+    c.begin(),
+    static_cast<OffsetT>(n),
+    [] _CCCL_DEVICE(const T& ai, const T& bi) -> T {
       return ai + bi;
     });
+}
+catch (const std::bad_alloc&)
+{
+  state.skip("Skipping: out of memory.");
 }
 
 NVBENCH_BENCH_TYPES(add, NVBENCH_TYPE_AXES(element_types, offset_types))
@@ -86,8 +119,15 @@ NVBENCH_BENCH_TYPES(add, NVBENCH_TYPE_AXES(element_types, offset_types))
 
 template <typename T, typename OffsetT>
 static void triad(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+try
 {
-  const auto n = cuda::narrow<OffsetT>(state.get_int64("Elements{io}"));
+  const auto n = state.get_int64("Elements{io}");
+  if (sizeof(OffsetT) == 4 && n > std::numeric_limits<OffsetT>::max())
+  {
+    state.skip("Skipping: input size exceeds 32-bit offset type capacity.");
+    return;
+  }
+
   thrust::device_vector<T> a(n, startA);
   thrust::device_vector<T> b(n, startB);
   thrust::device_vector<T> c(n, startC);
@@ -97,9 +137,17 @@ static void triad(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_writes<T>(n);
   const T scalar = startScalar;
   bench_transform(
-    state, ::cuda::std::tuple{b.begin(), c.begin()}, a.begin(), n, [=] _CCCL_DEVICE(const T& bi, const T& ci) {
+    state,
+    ::cuda::std::tuple{b.begin(), c.begin()},
+    a.begin(),
+    static_cast<OffsetT>(n),
+    [=] _CCCL_DEVICE(const T& bi, const T& ci) {
       return bi + scalar * ci;
     });
+}
+catch (const std::bad_alloc&)
+{
+  state.skip("Skipping: out of memory.");
 }
 
 NVBENCH_BENCH_TYPES(triad, NVBENCH_TYPE_AXES(element_types, offset_types))
@@ -109,8 +157,15 @@ NVBENCH_BENCH_TYPES(triad, NVBENCH_TYPE_AXES(element_types, offset_types))
 
 template <typename T, typename OffsetT>
 static void nstream(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+try
 {
-  const auto n = cuda::narrow<OffsetT>(state.get_int64("Elements{io}"));
+  const auto n = state.get_int64("Elements{io}");
+  if (sizeof(OffsetT) == 4 && n > std::numeric_limits<OffsetT>::max())
+  {
+    state.skip("Skipping: input size exceeds 32-bit offset type capacity.");
+    return;
+  }
+
   thrust::device_vector<T> a(n, startA);
   thrust::device_vector<T> b(n, startB);
   thrust::device_vector<T> c(n, startC);
@@ -123,10 +178,14 @@ static void nstream(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     state,
     ::cuda::std::tuple{a.begin(), b.begin(), c.begin()},
     a.begin(),
-    n,
+    static_cast<OffsetT>(n),
     [=] _CCCL_DEVICE(const T& ai, const T& bi, const T& ci) {
       return ai + bi + scalar * ci;
     });
+}
+catch (const std::bad_alloc&)
+{
+  state.skip("Skipping: out of memory.");
 }
 
 NVBENCH_BENCH_TYPES(nstream, NVBENCH_TYPE_AXES(element_types, offset_types))

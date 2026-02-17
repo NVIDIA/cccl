@@ -21,9 +21,9 @@ def scan_pointer(input_array, build_only, scan_type):
         alg = cuda.compute.make_inclusive_scan(input_array, res, OpKind.PLUS, h_init)
 
     if not build_only:
-        temp_storage_bytes = alg(None, input_array, res, size, h_init)
+        temp_storage_bytes = alg(None, input_array, res, OpKind.PLUS, size, h_init)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, input_array, res, size, h_init)
+        alg(temp_storage, input_array, res, OpKind.PLUS, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -42,9 +42,9 @@ def scan_pointer_custom_op(input_array, build_only, scan_type):
         alg = cuda.compute.make_inclusive_scan(input_array, res, my_add, h_init)
 
     if not build_only:
-        temp_storage_bytes = alg(None, input_array, res, size, h_init)
+        temp_storage_bytes = alg(None, input_array, res, my_add, size, h_init)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, input_array, res, size, h_init)
+        alg(temp_storage, input_array, res, my_add, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -63,9 +63,9 @@ def scan_struct(input_array, build_only, scan_type):
         alg = cuda.compute.make_inclusive_scan(input_array, res, my_add, h_init)
 
     if not build_only:
-        temp_storage_bytes = alg(None, input_array, res, size, h_init)
+        temp_storage_bytes = alg(None, input_array, res, my_add, size, h_init)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, input_array, res, size, h_init)
+        alg(temp_storage, input_array, res, my_add, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -80,9 +80,9 @@ def scan_iterator(inp, size, build_only, scan_type):
         alg = cuda.compute.make_inclusive_scan(inp, res, OpKind.PLUS, h_init)
 
     if not build_only:
-        temp_storage_bytes = alg(None, inp, res, size, h_init)
+        temp_storage_bytes = alg(None, inp, res, OpKind.PLUS, size, h_init)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, inp, res, size, h_init)
+        alg(temp_storage, inp, res, OpKind.PLUS, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -108,13 +108,7 @@ def bench_scan_pointer(bench_fixture, request, size, scan_type):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        if scan_type == "exclusive":
-            fixture(cuda.compute.make_exclusive_scan, run)
-        else:
-            fixture(cuda.compute.make_inclusive_scan, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("scan_type", ["exclusive", "inclusive"])
@@ -145,13 +139,7 @@ def bench_scan_iterator(bench_fixture, request, size, scan_type):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        if scan_type == "exclusive":
-            fixture(cuda.compute.make_exclusive_scan, run)
-        else:
-            fixture(cuda.compute.make_inclusive_scan, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 @pytest.mark.parametrize("scan_type", ["exclusive", "inclusive"])
@@ -171,13 +159,7 @@ def bench_scan_struct(bench_fixture, request, size, scan_type):
         )
 
     fixture = request.getfixturevalue(bench_fixture)
-    if bench_fixture == "compile_benchmark":
-        if scan_type == "exclusive":
-            fixture(cuda.compute.make_exclusive_scan, run)
-        else:
-            fixture(cuda.compute.make_inclusive_scan, run)
-    else:
-        fixture(run)
+    fixture(run)
 
 
 def scan_pointer_single_phase(input_array, build_only, scan_type):
