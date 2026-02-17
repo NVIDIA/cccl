@@ -243,6 +243,9 @@ function(
     endif()
   endif() # Not catch2 test
 
+  # Disable build caching for compile tests
+  set_tests_properties(${test_target} PROPERTIES ENVIRONMENT SCCACHE_NO_CACHE=1)
+
   # Ensure that we test with assertions enabled
   target_compile_definitions(${test_target} PRIVATE CCCL_ENABLE_ASSERTIONS)
 endfunction()
