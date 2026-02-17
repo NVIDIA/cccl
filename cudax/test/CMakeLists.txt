@@ -102,7 +102,7 @@ cudax_add_catch2_test(test_target library_ref
 )
 target_link_libraries(
   ${test_target}
-  PRIVATE CUDA::nvptxcompiler_static CUDA::nvJitLink_static
+  PRIVATE CUDA::nvptxcompiler_static CUDA::nvJitLink
 )
 
 cudax_add_catch2_test(test_target library
@@ -110,7 +110,7 @@ cudax_add_catch2_test(test_target library
 )
 target_link_libraries(
   ${test_target}
-  PRIVATE CUDA::nvptxcompiler_static CUDA::nvJitLink_static
+  PRIVATE CUDA::nvptxcompiler_static CUDA::nvJitLink
 )
 
 cudax_add_catch2_test(test_target algorithm
