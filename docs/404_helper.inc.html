@@ -10,12 +10,7 @@
 
     let params = new URLSearchParams(document.location.search);
 
-    var rootPathMatch = localUri.match(/^\/cccl\/(unstable|branch\/\d+\.\d+\.\d+)/)
-
-    if (rootPathMatch === null) {
-        rootPathMatch = "/cccl/unstable"
-        console.log("Unexpected location:" + localUri)
-    }
+    var rootPath = localUri.replace(/\/404_helper\.html/, "")
 
     var rootUrl = hostUrl + rootPath
     var pagelistUrl = rootUrl + "/pagelist.txt"
@@ -29,6 +24,10 @@
     // }
 
     var searchString = params.get("path");
+
+    if (searchString === "/" || searchString === null) {
+      window.location.href = rootUrl + "/index.html"
+    }
 
     if (searchString !== null) {
         fetch(pagelistUrl)
@@ -44,15 +43,18 @@
                 }
 
                 // cccl/device_vector.html => 'cccl 'device 'vector
-                const query = searchString.replace(/\/|-|_/gi," '").replace(".html","")
-                console.log("query:" + query)
+                console.log("query:" + searchString)
                 const fuse = new Fuse(pagelist, options)
-                const result = fuse.search(query, {limit: 10})
+                const result = fuse.search(searchString, {limit: 10})
 
-                const listItem = '<li><a href=\"{2}{0}\">{0}</a> - Score: {1}</li>'.replace(/\{2\}/g, rootUrl + "/")
+                const listItem = '<li><a href=\"{2}{0}\">{0}</a> - Score: {1}</li>'.replace(/\{2\}/g, rootUrl)
                 document.getElementById('linkGen').innerHTML = ""
                 result.forEach(element => {
-                document.getElementById('linkGen').innerHTML += listItem.replace(/\{0\}/g, element.item).replace(/\{1\}/g, element.score.toFixed(2))
+                  document.getElementById('linkGen').innerHTML += listItem.replace(/\{0\}/g, element.item).replace(/\{1\}/g, element.score.toFixed(2))
+                  // The match is near perfect, just link directly to it.
+                  if (element.score <= 0.02 ) {
+                    window.location.href = rootUrl + element.item
+                  }
                 });
             })
     }

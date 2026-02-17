@@ -15,7 +15,7 @@
         var hostUrl = window.location.protocol + "//" + window.location.host
 
         // Check if user query is missing a branch prefix, e.g. cccl/thrust/vector.h
-        var rootPathMatch = localUri.match(/^\/cccl(?:\/unstable|\/branch\/\d+\.\d+\.\d+)?/)
+        var rootPathMatch = localUri.match(/^\/cccl(?:\/unstable|\/branch\/\d+\.\d+\.\d+)/)
         // Remove leading prefix, this is fed as a URI search argument to the appropriate 404 handler.
         var searchPathMatch = localUri.replace(/^\/cccl(?:\/unstable|\/branch\/\d+\.\d+\.\d+)?/, "")
 
@@ -28,10 +28,10 @@
         }
 
         // User was trying to reach a path, forward to appropriate 404 helper
-        if (searchPathMatch !== null) {
+        if (searchPathMatch) {
             // Redirect to the helper page, including the query
             window.location.href =
-                hostUrl + rootPath + "/404_helper.html?path=" + searchPathMatch[0]
+                hostUrl + rootPath + "/404_helper.html?path=" + searchPathMatch
         }
         // Redirect to index otherwise
         else {
