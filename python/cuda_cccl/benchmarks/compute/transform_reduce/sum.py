@@ -9,6 +9,7 @@ C++ equivalent: cub/benchmarks/bench/transform_reduce/sum.cu
 Notes:
 - Uses TransformIterator with a square operation
 - OffsetT axis from C++ is fixed to Python default (int64)
+- Migration: Python fixes offsets and omits int128/complex types.
 """
 
 import sys

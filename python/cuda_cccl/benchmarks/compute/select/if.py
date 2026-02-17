@@ -14,6 +14,7 @@ Notes:
   - 0.544 → selects ~54.4% (threshold at 54.4% of range)
   - 0.000 → selects ~0% (threshold = min value)
 - InPlace axis controls whether output can alias input (not exposed in Python API)
+- Migration: Python cannot expose InPlace axis; output is sized to num_elements but metrics use actual selected count.
 """
 
 import sys

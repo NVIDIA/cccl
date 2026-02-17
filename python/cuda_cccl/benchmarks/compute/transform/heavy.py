@@ -5,6 +5,9 @@
 """Python benchmark for heavy transform using cuda.compute.
 
 C++ equivalent: cub/benchmarks/bench/transform/heavy.cu
+
+Notes:
+- Migration: Python uses Numba local arrays to emulate register pressure.
 """
 
 import sys

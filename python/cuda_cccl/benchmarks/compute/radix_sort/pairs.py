@@ -13,6 +13,7 @@ Notes:
 - Keys and values are sorted together (values rearranged by key order)
 - begin_bit=0, end_bit=sizeof(KeyT)*8 (full key comparison)
 - C++ uses integral_types for keys and int8/16/32/64 for values
+- Migration: Python omits int128 values and OffsetT axis.
 """
 
 import sys

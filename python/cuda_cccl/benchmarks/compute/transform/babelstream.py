@@ -6,6 +6,9 @@
 Python benchmark for BabelStream operations using cuda.compute transforms.
 
 C++ equivalent: cub/benchmarks/bench/transform/babelstream.cu
+
+Notes:
+- Migration: Python omits OffsetT axis and int128 types.
 """
 
 import sys

@@ -10,6 +10,7 @@ C++ equivalent: cub/benchmarks/bench/reduce/custom.cu
 Notes:
 - Uses a custom max operator (not OpKind) to exercise generic path
 - int128 and complex32 are not supported by cupy
+- Migration: Python limits to basic numeric types; C++ includes int128/complex.
 """
 
 import sys

@@ -10,6 +10,7 @@ C++ equivalent: cub/benchmarks/bench/scan/exclusive/custom.cu
 Notes:
 - Uses a custom max operator (not OpKind)
 - int128 and complex32 are not supported by cupy
+- Migration: Python fixes offsets; C++ exposes an OffsetT axis.
 """
 
 import sys

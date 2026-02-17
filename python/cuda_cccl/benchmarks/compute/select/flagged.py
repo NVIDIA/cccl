@@ -10,6 +10,7 @@ C++ equivalent: cub/benchmarks/bench/select/flagged.cu
 Notes:
 - Uses a boolean flag array to select elements
 - Entropy controls the selection probability
+- Migration: Python samples flags independently; C++ uses the same generator for input/flags.
 """
 
 import sys

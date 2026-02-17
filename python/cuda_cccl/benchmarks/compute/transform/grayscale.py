@@ -11,6 +11,7 @@ Notes:
 - Input is an RGB struct with three channels
 - Output is grayscale value of the same type
 - Benchmark name is "grayscale" to match C++
+- Migration: Python builds RGB data on host and copies to device.
 """
 
 import sys

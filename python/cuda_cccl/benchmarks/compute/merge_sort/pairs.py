@@ -10,6 +10,7 @@ C++ equivalent: cub/benchmarks/bench/merge_sort/pairs.cu
 Notes:
 - Uses Entropy axis to control key distribution
 - Keys and values are sorted together
+- Migration: Python omits int128 values and OffsetT axis.
 """
 
 import sys

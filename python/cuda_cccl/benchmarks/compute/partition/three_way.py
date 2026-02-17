@@ -14,6 +14,7 @@ Notes:
   - Second partition: items < right_border (max*2/3)
   - Third partition (unselected): items >= right_border
 - T axis covers fundamental types
+- Migration: Python mirrors min/max borders but omits OffsetT axis.
 """
 
 import sys

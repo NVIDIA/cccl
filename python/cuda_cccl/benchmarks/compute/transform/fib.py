@@ -11,6 +11,7 @@ Notes:
 - Input values are int64 in [0, 42]
 - Output values are uint32
 - Benchmark name is "fibonacci" to match C++
+- Migration: Python fixes offsets to int64; input generation uses CuPy random.
 """
 
 import sys

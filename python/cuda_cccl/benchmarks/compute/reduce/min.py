@@ -11,6 +11,7 @@ Notes:
 - Uses OpKind.MINIMUM for minimum reduction
 - C++ uses cuda::minimum<> which CUB recognizes for optimized code paths (DPX on Hopper+)
 - int128 and complex32 are not supported by cupy
+- Migration: Python uses manual init with max value and cache-clear workaround.
 """
 
 import sys

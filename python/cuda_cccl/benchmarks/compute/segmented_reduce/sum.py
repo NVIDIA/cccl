@@ -15,6 +15,7 @@ Notes:
   - medium: SegmentSize 2^5 to 2^8 (32, 64, 128, 256)
   - large: SegmentSize 2^9 to 2^16 (512, 1024, ..., 65536)
 - Uses OpKind.PLUS for sum reduction
+- Migration: Python builds explicit offsets and clamps input range; C++ uses fixed-size segments.
 """
 
 import sys

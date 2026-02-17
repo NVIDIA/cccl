@@ -6,6 +6,9 @@
 Python benchmark for fill operation using cuda.compute.ConstantIterator.
 
 C++ equivalent: cub/benchmarks/bench/transform/fill.cu
+
+Notes:
+- Migration: Python matches signed integer coverage (I8-I64); no tune parameters.
 """
 
 import sys

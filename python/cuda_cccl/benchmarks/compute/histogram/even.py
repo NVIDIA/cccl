@@ -11,6 +11,7 @@ Notes:
 - The C++ benchmark uses Entropy axis to generate data with different bit distributions
 - For Python, we approximate this with random data in the appropriate range
 - Entropy 1.0 = uniform random, 0.201 = skewed towards lower values
+- Migration: Python approximates entropy distributions and skips some I8/I16 large-bin cases due to CUDA errors.
 """
 
 import sys

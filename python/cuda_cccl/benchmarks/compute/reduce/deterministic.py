@@ -10,6 +10,7 @@ C++ equivalent: cub/benchmarks/bench/reduce/deterministic.cu
 Notes:
 - Uses Determinism.RUN_TO_RUN
 - C++ only tests float and double
+- Migration: Python uses int64 offsets; C++ uses int offsets.
 """
 
 import sys

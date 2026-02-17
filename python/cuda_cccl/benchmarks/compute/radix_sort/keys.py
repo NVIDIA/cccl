@@ -12,6 +12,7 @@ Notes:
 - Sort order is always ascending (C++ benchmark hardcodes this)
 - Keys only (no values) - see radix_sort/pairs.cu for key-value sorting
 - begin_bit=0, end_bit=sizeof(T)*8 (full key comparison)
+- Migration: Python fixes offsets, excludes int128, and approximates entropy generation.
 """
 
 import sys

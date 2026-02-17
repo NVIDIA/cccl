@@ -10,6 +10,7 @@ C++ equivalent: cub/benchmarks/bench/reduce/nondeterministic.cu
 Notes:
 - Uses Determinism.NOT_GUARANTEED
 - C++ tests int32, int64, float, double
+- Migration: Python fixes offsets; C++ exposes an OffsetT axis.
 """
 
 import sys

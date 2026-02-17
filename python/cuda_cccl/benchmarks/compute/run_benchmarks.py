@@ -21,19 +21,7 @@ Options:
   -h, --help            Show this help message
 
 Benchmark names follow CUB structure:
-  transform/fill, transform/babelstream, transform/heavy, transform/fib
-  transform/grayscale, transform/complex_cmp
-  transform_reduce/sum
-  reduce/sum, reduce/min, reduce/custom
-  reduce/deterministic, reduce/nondeterministic
-  scan/exclusive/sum, scan/exclusive/custom
-  histogram/even
-  select/if, select/flagged, select/unique_by_key
-  radix_sort/keys, radix_sort/pairs
-  merge_sort/keys, merge_sort/pairs
-  segmented_sort/keys
-  segmented_reduce/sum, segmented_reduce/custom
-  partition/three_way
+  e.g. transform/fill, transform/babelstream
 
 Examples:
   python run_benchmarks.py                              # Run all benchmarks

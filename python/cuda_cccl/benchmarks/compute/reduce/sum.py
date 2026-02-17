@@ -9,6 +9,7 @@ C++ equivalent: cub/benchmarks/bench/reduce/sum.cu
 
 Notes:
 - int128 and complex32 are not supported by cupy
+- Migration: Python excludes int128/complex; C++ supports more types/tuning.
 """
 
 import sys

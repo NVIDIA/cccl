@@ -10,6 +10,7 @@ C++ equivalent: cub/benchmarks/bench/segmented_reduce/custom.cu
 Notes:
 - Uses a custom max operator
 - Segment size ranges match segmented_reduce/sum
+- Migration: Python builds explicit offsets and clamps input range; C++ uses fixed-size segments.
 """
 
 import sys

@@ -11,6 +11,7 @@ Notes:
 - Uses two overlapping input ranges (in[0:n-1], in[1:n])
 - Output is boolean array of size n-1
 - Benchmark name is "compare_complex" to match C++
+- Migration: Python uses explicit lexicographic compare for complex64.
 """
 
 import sys

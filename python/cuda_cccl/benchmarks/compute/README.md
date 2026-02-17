@@ -42,6 +42,12 @@ python run_benchmarks.py -b transform/fill --py
 python run_benchmarks.py --help
 ```
 
+To run the benchmarks using the "quick" configuration, run:
+
+```bash
+python run_benchmarks.py --config quick
+```
+
 ## Compare Results
 
 ```bash

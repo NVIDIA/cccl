@@ -11,6 +11,7 @@ Notes:
 - The C++ benchmark uses Entropy axis to control data distribution
 - Uses less_t comparison operator (ascending sort)
 - Keys only (no values) - see pairs.cu for key-value sorting
+- Migration: Python fixes offsets and approximates entropy generation.
 """
 
 import sys
