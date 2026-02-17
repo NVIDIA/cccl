@@ -64,7 +64,7 @@ SUPPORTED_BENCHMARKS = [
 # - Elements: always shown as table rows
 # - T: grouped by type, shown as section headers
 # - OffsetT: filtered to I64 for Python compatibility
-STANDARD_AXES = {"Elements", "T", "OffsetT"}
+STANDARD_AXES = {"Elements", "T", "SampleT", "OffsetT"}
 
 # Axes to filter (Python doesn't have these, prefer specific values for fair comparison)
 FILTER_AXES = {
@@ -240,6 +240,16 @@ def get_axis_values(measurements, axis_name):
         if axis_name in m["axes"]:
             values.add(m["axes"][axis_name])
     return sorted(values)
+
+
+def get_type_axis_name(measurements):
+    """Return the type axis name used by a benchmark."""
+    axes = set()
+    for m in measurements:
+        axes.update(m["axes"].keys())
+    if "SampleT" in axes:
+        return "SampleT"
+    return "T"
 
 
 def filter_by_axes(measurements, axis_values):
@@ -524,16 +534,17 @@ def compare_benchmark(py_path, cpp_path, device=None, output_file=None):
                     output(f"{header_level} {combo_str}")
                     output()
 
-                # Now group by Type (T axis)
-                py_types = get_axis_values(py_combo, "T")
-                cpp_types = get_axis_values(cpp_combo, "T")
+                # Now group by Type axis (T or SampleT)
+                type_axis = get_type_axis_name(py_combo + cpp_combo)
+                py_types = get_axis_values(py_combo, type_axis)
+                cpp_types = get_axis_values(cpp_combo, type_axis)
                 common_types = [t for t in py_types if t in cpp_types]
 
                 if common_types:
                     # Multi-type: show separate table per type
                     for type_str in common_types:
-                        py_type = filter_by_axes(py_combo, {"T": type_str})
-                        cpp_type = filter_by_axes(cpp_combo, {"T": type_str})
+                        py_type = filter_by_axes(py_combo, {type_axis: type_str})
+                        cpp_type = filter_by_axes(cpp_combo, {type_axis: type_str})
 
                         if not py_type or not cpp_type:
                             continue
