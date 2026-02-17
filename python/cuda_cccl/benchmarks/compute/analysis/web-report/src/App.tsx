@@ -64,6 +64,10 @@ type Measurement = {
   axes: Record<string, string>;
   gpu_time: number;
   cpu_time: number | null;
+  gpu_time_min: number | null;
+  gpu_time_max: number | null;
+  gpu_time_stddev: number | null;
+  sample_count: number | null;
 };
 
 type BenchmarkData = {
@@ -85,6 +89,7 @@ type NvbenchSummaryData = {
 
 type NvbenchSummary = {
   name?: string;
+  tag?: string;
   data?: NvbenchSummaryData[];
 };
 
@@ -101,6 +106,20 @@ type NvbenchBenchmark = {
 };
 
 type NvbenchRoot = {
+  meta?: {
+    argv?: string[];
+    version?: {
+      json?: {
+        string?: string;
+      };
+      nvbench?: {
+        string?: string;
+        git_branch?: string;
+        git_sha?: string;
+        git_version?: string;
+      };
+    };
+  };
   benchmarks?: NvbenchBenchmark[];
 };
 
@@ -141,9 +160,14 @@ function parseMeasurements(results: NvbenchRoot): Measurement[] {
 
       let gpuTime: number | null = null;
       let cpuTime: number | null = null;
+      let gpuTimeMin: number | null = null;
+      let gpuTimeMax: number | null = null;
+      let gpuTimeStddev: number | null = null;
+      let sampleCount: number | null = null;
       const summaries = state.summaries ?? [];
       for (const summary of summaries) {
         const summaryName = String(summary.name ?? "");
+        const summaryTag = String(summary.tag ?? "");
         const data = summary.data ?? [];
 
         if (
@@ -163,6 +187,34 @@ function parseMeasurements(results: NvbenchRoot): Measurement[] {
             cpuTime = Number(value.value);
           }
         }
+
+        if (summaryTag === "nv/cold/time/gpu/min") {
+          const value = data.find((entry) => entry.name === "value");
+          if (value?.value !== undefined) {
+            gpuTimeMin = Number(value.value);
+          }
+        }
+
+        if (summaryTag === "nv/cold/time/gpu/max") {
+          const value = data.find((entry) => entry.name === "value");
+          if (value?.value !== undefined) {
+            gpuTimeMax = Number(value.value);
+          }
+        }
+
+        if (summaryTag === "nv/cold/time/gpu/stdev/absolute") {
+          const value = data.find((entry) => entry.name === "value");
+          if (value?.value !== undefined) {
+            gpuTimeStddev = Number(value.value);
+          }
+        }
+
+        if (summaryTag === "nv/cold/sample_size") {
+          const value = data.find((entry) => entry.name === "value");
+          if (value?.value !== undefined) {
+            sampleCount = Number(value.value);
+          }
+        }
       }
 
       if (gpuTime !== null) {
@@ -172,6 +224,10 @@ function parseMeasurements(results: NvbenchRoot): Measurement[] {
           axes,
           gpu_time: gpuTime,
           cpu_time: cpuTime,
+          gpu_time_min: gpuTimeMin,
+          gpu_time_max: gpuTimeMax,
+          gpu_time_stddev: gpuTimeStddev,
+          sample_count: sampleCount,
         });
       }
     }
@@ -202,6 +258,13 @@ function formatPercentage(value: number) {
     return "-";
   }
   return `${(value * 100).toFixed(2)}%`;
+}
+
+function formatSamples(value: number | null) {
+  if (value === null || !Number.isFinite(value)) {
+    return "-";
+  }
+  return Math.round(value).toString();
 }
 
 function isPowerOfTwo(value: number) {
@@ -310,7 +373,7 @@ function buildMeasurementMap(
 
 function buildTypeElementMap(measurements: Measurement[]) {
   const typeAxis = getTypeAxisName(measurements);
-  const map = new Map<string, Map<number, number[]>>();
+  const map = new Map<string, Map<number, Measurement[]>>();
   for (const measurement of measurements) {
     const typeValue = measurement.axes[typeAxis] ?? "All";
     const elements = measurement.axes.Elements
@@ -319,9 +382,9 @@ function buildTypeElementMap(measurements: Measurement[]) {
     if (elements === null || Number.isNaN(elements)) {
       continue;
     }
-    const typeMap = map.get(typeValue) ?? new Map<number, number[]>();
+    const typeMap = map.get(typeValue) ?? new Map<number, Measurement[]>();
     const values = typeMap.get(elements) ?? [];
-    values.push(measurement.gpu_time);
+    values.push(measurement);
     typeMap.set(elements, values);
     map.set(typeValue, typeMap);
   }
@@ -652,10 +715,50 @@ export function App() {
       );
       const rows = elements.map((size) => {
         const key = `${size}`;
-        const pyValues = (pyMap.get(key) ?? []).map((item) => item.gpu_time);
-        const cppValues = (cppMap.get(key) ?? []).map((item) => item.gpu_time);
-        const pyAvg = average(pyValues);
-        const cppAvg = average(cppValues);
+        const pyMeasurements = pyMap.get(key) ?? [];
+        const cppMeasurements = cppMap.get(key) ?? [];
+        const pyAvg = average(pyMeasurements.map((item) => item.gpu_time));
+        const cppAvg = average(cppMeasurements.map((item) => item.gpu_time));
+        const pyMin = average(
+          pyMeasurements
+            .map((item) => item.gpu_time_min)
+            .filter((value): value is number => value !== null),
+        );
+        const pyMax = average(
+          pyMeasurements
+            .map((item) => item.gpu_time_max)
+            .filter((value): value is number => value !== null),
+        );
+        const pyStddev = average(
+          pyMeasurements
+            .map((item) => item.gpu_time_stddev)
+            .filter((value): value is number => value !== null),
+        );
+        const pySamples = average(
+          pyMeasurements
+            .map((item) => item.sample_count)
+            .filter((value): value is number => value !== null),
+        );
+        const cppMin = average(
+          cppMeasurements
+            .map((item) => item.gpu_time_min)
+            .filter((value): value is number => value !== null),
+        );
+        const cppMax = average(
+          cppMeasurements
+            .map((item) => item.gpu_time_max)
+            .filter((value): value is number => value !== null),
+        );
+        const cppStddev = average(
+          cppMeasurements
+            .map((item) => item.gpu_time_stddev)
+            .filter((value): value is number => value !== null),
+        );
+        const cppSamples = average(
+          cppMeasurements
+            .map((item) => item.sample_count)
+            .filter((value): value is number => value !== null),
+        );
         if (pyAvg === null || cppAvg === null) {
           return null;
         }
@@ -667,6 +770,14 @@ export function App() {
           elements: size,
           py: pyAvg,
           cpp: cppAvg,
+          pyMin,
+          pyMax,
+          pyStddev,
+          pySamples,
+          cppMin,
+          cppMax,
+          cppStddev,
+          cppSamples,
           ratio,
           speedup,
           pctSlower,
@@ -698,8 +809,20 @@ export function App() {
       return [] as {
         typeValue: string;
         elements: number[];
-        cpp?: Map<number, number>;
-        py?: Map<number, number>;
+        cpp?: Map<number, {
+          gpu: number;
+          min: number | null;
+          max: number | null;
+          stddev: number | null;
+          samples: number | null;
+        }>;
+        py?: Map<number, {
+          gpu: number;
+          min: number | null;
+          max: number | null;
+          stddev: number | null;
+          samples: number | null;
+        }>;
       }[];
     }
 
@@ -717,13 +840,27 @@ export function App() {
     const sections: {
       typeValue: string;
       elements: number[];
-      cpp?: Map<number, number>;
-      py?: Map<number, number>;
+      cpp?: Map<number, {
+        gpu: number;
+        min: number | null;
+        max: number | null;
+        stddev: number | null;
+        samples: number | null;
+      }>;
+      py?: Map<number, {
+        gpu: number;
+        min: number | null;
+        max: number | null;
+        stddev: number | null;
+        samples: number | null;
+      }>;
     }[] = [];
 
     for (const typeValue of Array.from(typeValues).sort()) {
-      const cppMap = cppData.map.get(typeValue) ?? new Map();
-      const pyMap = pyData.map.get(typeValue) ?? new Map();
+      const cppMap =
+        cppData.map.get(typeValue) ?? new Map<number, Measurement[]>();
+      const pyMap =
+        pyData.map.get(typeValue) ?? new Map<number, Measurement[]>();
 
       const elementSet = new Set<number>();
       for (const key of cppMap.keys()) {
@@ -735,18 +872,74 @@ export function App() {
 
       const elements = Array.from(elementSet).sort((a, b) => a - b);
 
-      const cppAverages = new Map<number, number>();
+      const cppAverages = new Map<number, {
+        gpu: number;
+        min: number | null;
+        max: number | null;
+        stddev: number | null;
+        samples: number | null;
+      }>();
       for (const [key, values] of cppMap.entries()) {
-        const avg = average(values);
+        const avg = average(values.map((item) => item.gpu_time));
         if (avg !== null) {
-          cppAverages.set(key, avg);
+          cppAverages.set(key, {
+            gpu: avg,
+            min: average(
+              values
+                .map((item) => item.gpu_time_min)
+                .filter((value): value is number => value !== null),
+            ),
+            max: average(
+              values
+                .map((item) => item.gpu_time_max)
+                .filter((value): value is number => value !== null),
+            ),
+            stddev: average(
+              values
+                .map((item) => item.gpu_time_stddev)
+                .filter((value): value is number => value !== null),
+            ),
+            samples: average(
+              values
+                .map((item) => item.sample_count)
+                .filter((value): value is number => value !== null),
+            ),
+          });
         }
       }
-      const pyAverages = new Map<number, number>();
+      const pyAverages = new Map<number, {
+        gpu: number;
+        min: number | null;
+        max: number | null;
+        stddev: number | null;
+        samples: number | null;
+      }>();
       for (const [key, values] of pyMap.entries()) {
-        const avg = average(values);
+        const avg = average(values.map((item) => item.gpu_time));
         if (avg !== null) {
-          pyAverages.set(key, avg);
+          pyAverages.set(key, {
+            gpu: avg,
+            min: average(
+              values
+                .map((item) => item.gpu_time_min)
+                .filter((value): value is number => value !== null),
+            ),
+            max: average(
+              values
+                .map((item) => item.gpu_time_max)
+                .filter((value): value is number => value !== null),
+            ),
+            stddev: average(
+              values
+                .map((item) => item.gpu_time_stddev)
+                .filter((value): value is number => value !== null),
+            ),
+            samples: average(
+              values
+                .map((item) => item.sample_count)
+                .filter((value): value is number => value !== null),
+            ),
+          });
         }
       }
 
@@ -861,9 +1054,12 @@ export function App() {
                         <TableRow>
                           <TableHead className="w-[160px]">Elements</TableHead>
                           <TableHead className="text-right">C++ GPU</TableHead>
+                          <TableHead className="text-right">C++ min/max/sd</TableHead>
                           <TableHead className="text-right">
                             Python GPU
                           </TableHead>
+                          <TableHead className="text-right">Python min/max/sd</TableHead>
+                          <TableHead className="text-right">Samples</TableHead>
                           <TableHead className="text-right">Speedup</TableHead>
                           <TableHead className="text-right">% Slower</TableHead>
                         </TableRow>
@@ -887,7 +1083,22 @@ export function App() {
                                 {formatDuration(row.cpp)}
                               </TableCell>
                               <TableCell className="text-right">
+                                {row.cppMin !== null && row.cppMax !== null && row.cppStddev !== null
+                                  ? `${formatDuration(row.cppMin)} / ${formatDuration(row.cppMax)} / ${formatDuration(row.cppStddev)}`
+                                  : "-"}
+                              </TableCell>
+                              <TableCell className="text-right">
                                 {formatDuration(row.py)}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {row.pyMin !== null && row.pyMax !== null && row.pyStddev !== null
+                                  ? `${formatDuration(row.pyMin)} / ${formatDuration(row.pyMax)} / ${formatDuration(row.pyStddev)}`
+                                  : "-"}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {row.cppSamples !== null || row.pySamples !== null
+                                  ? `${formatSamples(row.cppSamples)} / ${formatSamples(row.pySamples)}`
+                                  : "-"}
                               </TableCell>
                               <TableCell className="text-right">
                                 {formatRatio(row.speedup)}x
@@ -1022,23 +1233,36 @@ export function App() {
                                 <TableHead className="text-right">
                                   GPU Time
                                 </TableHead>
+                                <TableHead className="text-right">
+                                  Min / Max / SD
+                                </TableHead>
+                                <TableHead className="text-right">
+                                  Samples
+                                </TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {section.elements.map((elements) => (
-                                <TableRow key={`cpp-${elements}`}>
-                                  <TableCell className="font-medium">
+                              {section.elements.map((elements) => {
+                                const value = section.cpp?.get(elements);
+                                return (
+                                  <TableRow key={`cpp-${elements}`}>
+                                    <TableCell className="font-medium">
                                     {formatElements(elements)}
                                   </TableCell>
                                   <TableCell className="text-right">
-                                    {section.cpp?.has(elements)
-                                      ? formatDuration(
-                                        section.cpp.get(elements) ?? 0,
-                                      )
-                                      : "-"}
+                                      {value ? formatDuration(value.gpu) : "-"}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                      {value && value.min !== null && value.max !== null && value.stddev !== null
+                                        ? `${formatDuration(value.min)} / ${formatDuration(value.max)} / ${formatDuration(value.stddev)}`
+                                        : "-"}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                      {value ? formatSamples(value.samples) : "-"}
                                   </TableCell>
                                 </TableRow>
-                              ))}
+                              );
+                              })}
                             </TableBody>
                           </Table>
                         </div>
@@ -1054,23 +1278,36 @@ export function App() {
                                 <TableHead className="text-right">
                                   GPU Time
                                 </TableHead>
+                                <TableHead className="text-right">
+                                  Min / Max / SD
+                                </TableHead>
+                                <TableHead className="text-right">
+                                  Samples
+                                </TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {section.elements.map((elements) => (
-                                <TableRow key={`py-${elements}`}>
-                                  <TableCell className="font-medium">
+                              {section.elements.map((elements) => {
+                                const value = section.py?.get(elements);
+                                return (
+                                  <TableRow key={`py-${elements}`}>
+                                    <TableCell className="font-medium">
                                     {formatElements(elements)}
                                   </TableCell>
                                   <TableCell className="text-right">
-                                    {section.py?.has(elements)
-                                      ? formatDuration(
-                                        section.py.get(elements) ?? 0,
-                                      )
-                                      : "-"}
+                                      {value ? formatDuration(value.gpu) : "-"}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                      {value && value.min !== null && value.max !== null && value.stddev !== null
+                                        ? `${formatDuration(value.min)} / ${formatDuration(value.max)} / ${formatDuration(value.stddev)}`
+                                        : "-"}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                      {value ? formatSamples(value.samples) : "-"}
                                   </TableCell>
                                 </TableRow>
-                              ))}
+                              );
+                              })}
                             </TableBody>
                           </Table>
                         </div>
