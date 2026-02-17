@@ -1,6 +1,6 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:26.04-cpp-nvhpc26.1",
+  "image": "rapidsai/devcontainers:latest-cpp-nvhpc26.1",
   "runArgs": [
     "--init",
     "--name",
