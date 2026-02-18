@@ -106,9 +106,9 @@ int main(int argc, char** argv)
   thrust::host_vector<float> h_keys_vector(num_items);
   thrust::host_vector<float> h_reference_keys_vector(k);
   thrust::host_vector<float> h_res_keys_vector(k);
-  thrust::host_vector<int> h_values_vector(num_items);
-  thrust::host_vector<int> h_reference_values_vector(k);
-  thrust::host_vector<int> h_res_values_vector(k);
+  thrust::host_vector<int>   h_values_vector(num_items);
+  thrust::host_vector<int>   h_reference_values_vector(k);
+  thrust::host_vector<int>   h_res_values_vector(k);
 
   // Initialize problem and solution on host
   initialize(h_keys_vector.data(),
@@ -120,9 +120,9 @@ int main(int argc, char** argv)
 
   // Allocate device arrays
   thrust::device_vector<float> d_keys_in{h_keys_vector};
-  thrust::device_vector<int> d_values_in{h_values_vector};
+  thrust::device_vector<int>   d_values_in{h_values_vector};
   thrust::device_vector<float> d_keys_out(k);
-  thrust::device_vector<int> d_values_out(k);
+  thrust::device_vector<int>   d_values_out(k);
 
   // Allocate temporary storage
   size_t temp_storage_bytes = 0;
@@ -153,7 +153,7 @@ int main(int argc, char** argv)
 
   // Allocate temporary storage
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
-  void* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+  void*                               d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run the top-k algorithm
   CubDebugExit(DeviceTopK::MinPairs(

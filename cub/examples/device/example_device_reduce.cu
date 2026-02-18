@@ -28,7 +28,7 @@ using namespace cub;
 // Globals, constants and aliases
 //---------------------------------------------------------------------
 
-bool g_verbose = false; // Whether to display input/output to console
+bool                   g_verbose = false; // Whether to display input/output to console
 CachingDeviceAllocator g_allocator(true); // Caching allocator for device memory
 
 //---------------------------------------------------------------------
@@ -107,7 +107,7 @@ int main(int argc, char** argv)
 
   // Allocate host arrays
   int* h_in = new int[num_items];
-  int h_reference{};
+  int  h_reference{};
 
   // Initialize problem and solution
   Initialize(h_in, num_items);
@@ -126,7 +126,7 @@ int main(int argc, char** argv)
 
   // example-begin temp-storage-query
   // Request and allocate temporary storage
-  void* d_temp_storage      = nullptr;
+  void*  d_temp_storage     = nullptr;
   size_t temp_storage_bytes = 0;
   CubDebugExit(DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items));
   CubDebugExit(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));

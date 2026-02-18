@@ -45,11 +45,11 @@ int g_grid_size = 1;
 /**
  * Simple kernel for performing a block-wide reduction.
  */
-template <int BLOCK_THREADS,
-          int ITEMS_PER_THREAD,
+template <int                  BLOCK_THREADS,
+          int                  ITEMS_PER_THREAD,
           BlockReduceAlgorithm ALGORITHM>
-__global__ void BlockReduceKernel(int* d_in, // Tile of input
-                                  int* d_out, // Tile aggregate
+__global__ void BlockReduceKernel(int*     d_in, // Tile of input
+                                  int*     d_out, // Tile aggregate
                                   clock_t* d_elapsed) // Elapsed cycle count of block reduction
 {
   // Specialize BlockReduce type for our thread block
@@ -93,7 +93,7 @@ int Initialize(int* h_in, int num_items)
 
   for (int i = 0; i < num_items; ++i)
   {
-    h_in[i] = i % 17;
+    h_in[i]    = i % 17;
     inclusive += h_in[i];
   }
 
@@ -116,8 +116,8 @@ void Test()
   int h_aggregate = Initialize(h_in, TILE_SIZE);
 
   // Initialize device arrays
-  int* d_in          = nullptr;
-  int* d_out         = nullptr;
+  int*     d_in      = nullptr;
+  int*     d_out     = nullptr;
   clock_t* d_elapsed = nullptr;
   cudaMalloc((void**) &d_in, sizeof(int) * TILE_SIZE);
   cudaMalloc((void**) &d_out, sizeof(int) * 1);
@@ -163,8 +163,8 @@ void Test()
 
   // Run this several times and average the performance results
   GpuTimer timer;
-  float elapsed_millis   = 0.0;
-  clock_t elapsed_clocks = 0;
+  float    elapsed_millis = 0.0;
+  clock_t  elapsed_clocks = 0;
 
   for (int i = 0; i < g_timing_iterations; ++i)
   {

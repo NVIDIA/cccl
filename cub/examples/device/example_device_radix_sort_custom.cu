@@ -20,7 +20,7 @@
 struct custom_t
 {
   std::uint16_t i;
-  float f;
+  float         f;
 };
 
 struct decomposer_t
@@ -181,8 +181,8 @@ int main()
 
   std::cout << "All of these operations are used behind the scenes by CUB to sort custom types:\n\n";
 
-  constexpr int num_items            = 6;
-  thrust::device_vector<custom_t> in = {{4, +2.5f}, {0, -2.5f}, {3, +1.1f}, {1, +0.0f}, {2, -0.0f}, {5, +3.7f}};
+  constexpr int                   num_items = 6;
+  thrust::device_vector<custom_t> in        = {{4, +2.5f}, {0, -2.5f}, {3, +1.1f}, {1, +0.0f}, {2, -0.0f}, {5, +3.7f}};
 
   std::cout << "in:\n";
   for (custom_t key : in)
@@ -192,12 +192,12 @@ int main()
 
   thrust::device_vector<custom_t> out(num_items);
 
-  const custom_t* d_in = thrust::raw_pointer_cast(in.data());
-  custom_t* d_out      = thrust::raw_pointer_cast(out.data());
+  const custom_t* d_in  = thrust::raw_pointer_cast(in.data());
+  custom_t*       d_out = thrust::raw_pointer_cast(out.data());
 
   // 1) Get temp storage size
   std::uint8_t* d_temp_storage{};
-  std::size_t temp_storage_bytes{};
+  std::size_t   temp_storage_bytes{};
 
   cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, decomposer_t{});
 
