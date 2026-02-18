@@ -1,6 +1,5 @@
 include(${CMAKE_SOURCE_DIR}/benchmarks/cmake/CCCLBenchmarkRegistry.cmake)
 
-
 cccl_get_nvbench()
 cccl_get_nvbench_helper()
 
