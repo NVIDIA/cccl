@@ -20,6 +20,7 @@
 #include <thrust/execution_policy.h>
 #include <thrust/logical.h>
 
+#include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/memory_pool>
 #include <cuda/std/__pstl_algorithm>
@@ -31,14 +32,6 @@
 #include <utility.cuh>
 
 inline constexpr int size = 1000;
-
-struct equal_to_one
-{
-  __device__ constexpr bool operator()(const int val) const noexcept
-  {
-    return val == 1;
-  }
-};
 
 C2H_TEST("cuda::std::transform", "[parallel algorithm]")
 {
@@ -54,7 +47,7 @@ C2H_TEST("cuda::std::transform", "[parallel algorithm]")
       cuda::counting_iterator{0ull},
       output.begin(),
       cuda::std::minus<>{});
-    CHECK(thrust::all_of(output.begin(), output.end(), equal_to_one{}));
+    CHECK(thrust::all_of(output.begin(), output.end(), cuda::equal_to_value{1}));
   }
 
   SECTION("with provided stream")
@@ -68,7 +61,7 @@ C2H_TEST("cuda::std::transform", "[parallel algorithm]")
       cuda::counting_iterator{0ull},
       output.begin(),
       cuda::std::minus<>{});
-    CHECK(thrust::all_of(output.begin(), output.end(), equal_to_one{}));
+    CHECK(thrust::all_of(output.begin(), output.end(), cuda::equal_to_value{1}));
   }
 
   SECTION("with provided memory_resource")
@@ -82,7 +75,7 @@ C2H_TEST("cuda::std::transform", "[parallel algorithm]")
       cuda::counting_iterator{0ull},
       output.begin(),
       cuda::std::minus<>{});
-    CHECK(thrust::all_of(output.begin(), output.end(), equal_to_one{}));
+    CHECK(thrust::all_of(output.begin(), output.end(), cuda::equal_to_value{1}));
   }
 
   SECTION("with provided stream and memory_resource")
@@ -97,6 +90,6 @@ C2H_TEST("cuda::std::transform", "[parallel algorithm]")
       cuda::counting_iterator{0ull},
       output.begin(),
       cuda::std::minus<>{});
-    CHECK(thrust::all_of(output.begin(), output.end(), equal_to_one{}));
+    CHECK(thrust::all_of(output.begin(), output.end(), cuda::equal_to_value{1}));
   }
 }

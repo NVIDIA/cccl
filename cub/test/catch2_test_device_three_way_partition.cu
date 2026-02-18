@@ -11,6 +11,7 @@
 #include <thrust/shuffle.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/std/utility>
 
@@ -28,21 +29,6 @@ using types = c2h::type_list<std::int32_t, std::int64_t>;
 
 // List of offset types to be used for testing large number of items
 using offset_types = c2h::type_list<std::int32_t, std::uint32_t, std::uint64_t>;
-
-template <typename T>
-struct equal_to_t
-{
-  T compare;
-
-  explicit __host__ equal_to_t(T compare)
-      : compare(compare)
-  {}
-
-  __device__ bool operator()(const T& a) const
-  {
-    return a == compare;
-  }
-};
 
 template <typename T>
 struct greater_or_equal_t
@@ -341,8 +327,8 @@ C2H_TEST("Device three-way partition handles reverse iterator", "[partition][dev
 
   c2h::device_vector<type> first_and_unselected_part(num_items);
 
-  equal_to_t<type> first_selector{first_part_val};
-  equal_to_t<type> second_selector{second_part_val};
+  cuda::equal_to_value<type> first_selector{first_part_val};
+  cuda::equal_to_value<type> second_selector{second_part_val};
 
   c2h::device_vector<int> num_selected_out(2);
 
@@ -398,8 +384,8 @@ C2H_TEST("Device three-way partition handles single output", "[partition][device
 
   c2h::device_vector<type> output(num_items);
 
-  equal_to_t<type> first_selector{first_part_val};
-  equal_to_t<type> second_selector{second_part_val};
+  cuda::equal_to_value<type> first_selector{first_part_val};
+  cuda::equal_to_value<type> second_selector{second_part_val};
 
   c2h::device_vector<int> num_selected_out(2);
 

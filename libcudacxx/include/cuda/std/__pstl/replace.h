@@ -23,6 +23,7 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__functional/equal_to_value.h>
 #  include <cuda/std/__algorithm/replace.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__execution/policy.h>
@@ -43,23 +44,6 @@
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-template <class _Tp>
-struct __replace_compare_eq
-{
-  _Tp __old_value_;
-
-  _CCCL_HOST_API constexpr __replace_compare_eq(const _Tp& __old_value) noexcept(is_nothrow_copy_constructible_v<_Tp>)
-      : __old_value_(__old_value)
-  {}
-
-  template <class _Up>
-  [[nodiscard]] _CCCL_DEVICE_API constexpr bool operator()(const _Up& __value) const
-    noexcept(__is_cpp17_nothrow_equality_comparable_v<_Tp, _Up>)
-  {
-    return static_cast<bool>(__old_value_ == __value);
-  }
-};
 
 template <class _Tp>
 struct __replace_return_value
@@ -107,7 +91,7 @@ _CCCL_HOST_API void replace(
       ::cuda::std::move(__last),
       ::cuda::std::move(__first),
       __replace_return_value{__new_value},
-      __replace_compare_eq{__old_value});
+      ::cuda::equal_to_value{__old_value});
   }
   else
   {
