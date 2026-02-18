@@ -267,8 +267,10 @@ inline constexpr bool __invoke_kernel_functor_with_config_v =
 // We create 2 overloads, with/without the __launch_bounds__ attribute. We must use enable_if because of
 // "Pack template parameter must be the last template parameter for a variadic __global__ function template" error when
 // we try to use _CCCL_REQUIRES expression.
+//
+//
 template <class _Config, class _Kernel, class... _Args>
-__global__ static void __launch_bounds__(::cuda::__max_nthreads_per_block<_Config>())
+__global__ static void _CCCL_LAUNCH_BOUNDS(::cuda::__max_nthreads_per_block<_Config>())
   __kernel_launcher_with_launch_bounds(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
 {
   // Assumptions have no effect with nvc++ in CUDA mode. clang-cuda ignores the assumptions (with a warning) due to side
