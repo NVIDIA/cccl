@@ -17,7 +17,7 @@ from .._types import (
 )
 
 
-def reduce(dtype, binary_op, threads_in_warp=32, methods=None):
+def make_reduce(dtype, binary_op, threads_in_warp=32, methods=None):
     """Computes a warp-wide reduction for lane\ :sub:`0` using the specified binary reduction functor.
     Each thread contributes one input element.
 
@@ -34,7 +34,7 @@ def reduce(dtype, binary_op, threads_in_warp=32, methods=None):
             :start-after: example-begin imports
             :end-before: example-end imports
 
-        Below is the code snippet that demonstrates the usage of the ``reduce`` API:
+        Below is the code snippet that demonstrates the usage of the ``make_sum`` API:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
             :language: python
@@ -89,7 +89,7 @@ def reduce(dtype, binary_op, threads_in_warp=32, methods=None):
     )
 
 
-def sum(dtype, threads_in_warp=32):
+def make_sum(dtype, threads_in_warp=32):
     """Computes a warp-wide reduction for lane\ :sub:`0` using addition (+) as the reduction operator.
     Each thread contributes one input element.
 
@@ -106,7 +106,7 @@ def sum(dtype, threads_in_warp=32):
             :start-after: example-begin imports
             :end-before: example-end imports
 
-        Below is the code snippet that demonstrates the usage of the ``reduce`` API:
+        Below is the code snippet that demonstrates the usage of the ``make_reduce`` API:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
             :language: python

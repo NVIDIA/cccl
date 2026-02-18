@@ -101,7 +101,7 @@ from .._typing import (
 )
 
 
-def scan(
+def make_scan(
     dtype: DtypeType,
     threads_per_block: DimType,
     items_per_thread: int,
@@ -117,8 +117,8 @@ def scan(
     BlockScan functionality.
 
     This function is the low-level implementation used by the higher-level
-    APIs such as ``exclusive_sum``, ``inclusive_sum``, ``exclusive_scan``,
-    and ``inclusive_scan``.
+    APIs such as ``make_exclusive_sum``, ``make_inclusive_sum``, ``make_exclusive_scan``,
+    and ``make_inclusive_scan``.
 
     :param dtype: Supplies the data type of the input and output arrays.
     :type  dtype: DtypeType
@@ -650,7 +650,7 @@ def scan(
     )
 
 
-def exclusive_sum(
+def make_exclusive_sum(
     dtype: DtypeType,
     threads_per_block: DimType,
     items_per_thread: int,
@@ -676,7 +676,7 @@ def exclusive_sum(
             :end-before: example-end imports
 
         Below is the code snippet that demonstrates the usage of the
-        ``exclusive_sum`` API:
+        ``make_exclusive_sum`` API:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_scan_api.py
             :language: python
@@ -732,7 +732,7 @@ def exclusive_sum(
         the block-wide exclusive prefix scan.
     :rtype: Callable
     """
-    return scan(
+    return make_scan(
         dtype=dtype,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
@@ -744,7 +744,7 @@ def exclusive_sum(
     )
 
 
-def inclusive_sum(
+def make_inclusive_sum(
     dtype: DtypeType,
     threads_per_block: DimType,
     items_per_thread: int,
@@ -795,7 +795,7 @@ def inclusive_sum(
         the block-wide inclusive prefix scan.
     :rtype: Callable
     """
-    return scan(
+    return make_scan(
         dtype=dtype,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
@@ -807,7 +807,7 @@ def inclusive_sum(
     )
 
 
-def exclusive_scan(
+def make_exclusive_scan(
     dtype: DtypeType,
     threads_per_block: DimType,
     scan_op: ScanOpType,
@@ -886,7 +886,7 @@ def exclusive_scan(
         perform the block-wide exclusive prefix scan.
     :rtype: Callable
     """
-    return scan(
+    return make_scan(
         dtype=dtype,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
@@ -899,7 +899,7 @@ def exclusive_scan(
     )
 
 
-def inclusive_scan(
+def make_inclusive_scan(
     dtype: DtypeType,
     threads_per_block: DimType,
     scan_op: ScanOpType,
@@ -970,7 +970,7 @@ def inclusive_scan(
         perform the block-wide inclusive prefix scan.
     :rtype: Callable
     """
-    return scan(
+    return make_scan(
         dtype=dtype,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,

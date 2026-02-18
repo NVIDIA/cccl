@@ -39,7 +39,7 @@ CUB_BLOCK_STORE_ALGOS = {
 }
 
 
-def load(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
+def make_load(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
     """Creates an operation that performs a block-wide load.
 
     Returns a callable object that can be linked to and invoked from device code. It can be
@@ -127,7 +127,7 @@ def load(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
     )
 
 
-def store(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
+def make_store(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
     """Creates an operation that performs a block-wide store.
 
     Returns a callable object that can be linked to and invoked from device code. It can be

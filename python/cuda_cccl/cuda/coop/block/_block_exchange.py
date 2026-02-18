@@ -89,7 +89,7 @@ class BlockExchangeType(IntEnum):
     StripedToBlocked = auto()
 
 
-def exchange(
+def make_exchange(
     block_exchange_type: BlockExchangeType,
     dtype: DtypeType,
     threads_per_block: DimType,

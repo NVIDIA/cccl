@@ -18,7 +18,7 @@ from .._types import (
 )
 
 
-def merge_sort_keys(
+def make_merge_sort_keys(
     dtype, items_per_thread, compare_op, threads_in_warp=32, methods=None
 ):
     """Performs a warp-wide merge sort over a :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
@@ -28,7 +28,7 @@ def merge_sort_keys(
         are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across a warp of 32 threads
         where each thread owns 4 consecutive keys. We start by importing necessary modules:
 
-        Below is the code snippet that demonstrates the usage of the ``merge_sort_keys`` API:
+        Below is the code snippet that demonstrates the usage of the ``make_merge_sort_keys`` API:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_merge_sort_api.py
             :language: python

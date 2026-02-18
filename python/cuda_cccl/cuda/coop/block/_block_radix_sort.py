@@ -132,7 +132,7 @@ def _radix_sort(
     )
 
 
-def radix_sort_keys(dtype, threads_per_block, items_per_thread):
+def make_radix_sort_keys(dtype, threads_per_block, items_per_thread):
     """Performs an ascending block-wide radix sort over a :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
 
     Example:
@@ -146,7 +146,8 @@ def radix_sort_keys(dtype, threads_per_block, items_per_thread):
             :start-after: example-begin imports
             :end-before: example-end imports
 
-        Below is the code snippet that demonstrates the usage of the ``radix_sort_keys`` API:
+        Below is the code snippet that demonstrates the usage of the
+        ``make_radix_sort_keys_descending`` API:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_api.py
             :language: python
@@ -173,7 +174,7 @@ def radix_sort_keys(dtype, threads_per_block, items_per_thread):
     return _radix_sort(dtype, threads_per_block, items_per_thread, descending=False)
 
 
-def radix_sort_keys_descending(dtype, threads_per_block, items_per_thread):
+def make_radix_sort_keys_descending(dtype, threads_per_block, items_per_thread):
     """Performs an descending block-wide radix sort over a :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
 
     Example:
@@ -187,7 +188,7 @@ def radix_sort_keys_descending(dtype, threads_per_block, items_per_thread):
             :start-after: example-begin imports
             :end-before: example-end imports
 
-        Below is the code snippet that demonstrates the usage of the ``radix_sort_keys`` API:
+        Below is the code snippet that demonstrates the usage of the ``make_radix_sort_keys`` API:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_api.py
             :language: python

@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     import numpy as np
 
 
-def merge_sort_keys(
+def make_merge_sort_keys(
     dtype: Union[str, type, "np.dtype", "numba.types.Type"],
     threads_per_block: int,
     items_per_thread: int,
@@ -47,7 +47,7 @@ def merge_sort_keys(
             :start-after: example-begin imports
             :end-before: example-end imports
 
-        Below is the code snippet that demonstrates the usage of the ``merge_sort_keys`` API:
+        Below is the code snippet that demonstrates the usage of the ``make_merge_sort_keys`` API:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_merge_sort_api.py
             :language: python

@@ -170,7 +170,7 @@ def _reduce(
     )
 
 
-def reduce(
+def make_reduce(
     dtype,
     threads_per_block,
     binary_op,
@@ -233,7 +233,7 @@ def reduce(
     )
 
 
-def sum(
+def make_sum(
     dtype,
     threads_per_block,
     items_per_thread=1,

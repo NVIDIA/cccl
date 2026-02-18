@@ -16,7 +16,7 @@ from .._types import (
 )
 
 
-def exclusive_sum(dtype, threads_in_warp=32):
+def make_exclusive_sum(dtype, threads_in_warp=32):
     """Computes an exclusive warp-wide prefix sum using addition (+) as the scan operator.
     The value of 0 is applied as the initial value, and is assigned to the output in *lane*\ :sub:`0`.
 
@@ -29,7 +29,7 @@ def exclusive_sum(dtype, threads_in_warp=32):
             :start-after: example-begin imports
             :end-before: example-end imports
 
-        Below is the code snippet that demonstrates the usage of the ``exclusive_sum`` API:
+        Below is the code snippet that demonstrates the usage of the ``make_exclusive_sum`` API:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_scan_api.py
             :language: python
