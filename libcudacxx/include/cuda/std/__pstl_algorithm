@@ -23,6 +23,7 @@
 
 #include <cuda/std/__pstl/count.h>
 #include <cuda/std/__pstl/count_if.h>
+#include <cuda/std/__pstl/equal.h>
 #include <cuda/std/__pstl/find.h>
 #include <cuda/std/__pstl/find_if.h>
 #include <cuda/std/__pstl/find_if_not.h>
@@ -30,6 +31,7 @@
 #include <cuda/std/__pstl/for_each_n.h>
 #include <cuda/std/__pstl/generate.h>
 #include <cuda/std/__pstl/generate_n.h>
+#include <cuda/std/__pstl/mismatch.h>
 #include <cuda/std/__pstl/reduce.h>
 #include <cuda/std/__pstl/replace.h>
 #include <cuda/std/__pstl/replace_copy.h>
