@@ -32,6 +32,8 @@ Looking for ideas for your first contribution? Check out: ![GitHub Issues or Pul
 
    ```bash
    ./ci/build_[thrust|cub|libcudacxx].sh -cxx <HOST_COMPILER> -std <CXX_STANDARD> -arch <GPU_ARCHS>
+
+   // test implies build
    ./ci/test_[thrust|cub|libcudacxx].sh  -cxx <HOST_COMPILER> -std <CXX_STANDARD> -arch <GPU_ARCHS>
    ```
 
