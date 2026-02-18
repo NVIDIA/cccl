@@ -305,7 +305,7 @@ public:
     return ctxs[partition];
   }
 
-  green_ctx_view get_view(size_t id)
+  green_ctx_view get_view(size_t id) const
   {
     return green_ctx_view(ctxs[id], pools[id], devid);
   }
@@ -320,6 +320,26 @@ public:
   size_t get_count() const
   {
     return ctxs.size();
+  }
+
+  /** @brief Build a grid of exec places from this helper's green contexts.
+   *
+   * The green contexts are already created by the helper; this only chooses how
+   * each exec place's affine data place is represented.
+   *
+   * @param use_green_ctx_data_place If true, each place's affine data place is the
+   *        green context extension; if false, the default device data place.
+   * @return exec_place_grid of green context places.
+   */
+  exec_place_grid get_grid(bool use_green_ctx_data_place = false) const
+  {
+    ::std::vector<exec_place> places;
+    places.reserve(ctxs.size());
+    for (size_t i = 0; i < ctxs.size(); i++)
+    {
+      places.push_back(exec_place::green_ctx(get_view(i), use_green_ctx_data_place));
+    }
+    return make_grid(mv(places));
   }
 
 private:

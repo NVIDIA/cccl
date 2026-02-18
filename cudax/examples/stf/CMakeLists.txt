@@ -10,6 +10,7 @@ set(
   08-cub-reduce.cu
   axpy-annotated.cu
   void_data_interface.cu
+  thrust_device_data_place_allocator.cu
   explicit_data_places.cu
   thrust_zip_iterator.cu
   1f1b.cu

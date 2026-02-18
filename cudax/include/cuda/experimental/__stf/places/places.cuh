@@ -63,6 +63,14 @@ class exec_place_green_ctx;
 //! Function type for computing executor placement from data coordinates
 using get_executor_func_t = pos4 (*)(pos4, dim4, dim4);
 
+class data_place;
+
+namespace reserved
+{
+void* allocate_composite_data_place(const data_place& p, ::std::ptrdiff_t size);
+void deallocate_composite_data_place(void* ptr);
+} // namespace reserved
+
 /**
  * @brief Designates where data will be stored (CPU memory vs. on device 0 (first GPU), device 1 (second GPU), ...)
  *
@@ -482,10 +490,13 @@ public:
     {
       cuda_safe_call(cudaMallocManaged(&result, size));
     }
+    else if (is_composite())
+    {
+      return reserved::allocate_composite_data_place(*this, size);
+    }
     else
     {
       // Device allocation
-      EXPECT(!is_composite(), "Composite places don't support direct allocation");
       const int prev_dev   = cuda_try<cudaGetDevice>();
       const int target_dev = devid;
 
@@ -525,6 +536,12 @@ public:
     if (extension)
     {
       extension->deallocate(ptr, size, stream);
+      return;
+    }
+
+    if (is_composite())
+    {
+      reserved::deallocate_composite_data_place(ptr);
       return;
     }
 
@@ -575,6 +592,11 @@ public:
     if (extension)
     {
       return extension->allocation_is_stream_ordered();
+    }
+    // Composite uses immediate VMM path, not stream-ordered APIs
+    if (is_composite())
+    {
+      return false;
     }
     // Host and managed are immediate (stream ignored), device is stream-ordered
     return !is_host() && !is_managed();
@@ -2406,3 +2428,5 @@ UNITTEST("Exec place as std::map key")
 };
 #endif // UNITTESTED_FILE
 } // end namespace cuda::experimental::stf
+
+#include <cuda/experimental/__stf/localization/composite_slice.cuh>

@@ -31,6 +31,7 @@
 #include <cuda/experimental/__stf/utility/memory.cuh>
 #include <cuda/experimental/__stf/utility/traits.cuh>
 
+#include <array>
 #include <list>
 #include <random>
 #include <unordered_map>
@@ -87,23 +88,24 @@ public:
       , data_dims(data_dims)
       , elemsize(elemsize)
   {
+    // Ensure a current CUDA context exists so cuCtxGetDevice() and other driver
+    // APIs succeed (e.g. when no stream_ctx was used or after primary ctx release).
+    cuda_safe_call(cudaFree(nullptr));
+
     // Regardless of the grid, we allow all devices to access that localized array
     const int ndevs = cuda_try<cudaGetDeviceCount>();
     CUdevice dev    = cuda_try<cuCtxGetDevice>();
 
     /* Check whether the current device supports UVA */
     int supportsVMM = cuda_try<cuDeviceGetAttribute>(CU_DEVICE_ATTRIBUTE_VIRTUAL_ADDRESS_MANAGEMENT_SUPPORTED, dev);
-    //        fprintf(stderr, "VIRTUAL_ADDRESS_MANAGEMENT_SUPPORTED ? %d\n", supportsVMM);
     EXPECT(supportsVMM == 1, "Cannot create a localized_array object on this machine because it does not support VMM.");
 
     /* Get allocation granularity */
-
     CUmemAllocationProp prop = {};
     prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
     prop.location            = {.type = CU_MEM_LOCATION_TYPE_DEVICE, .id = dev};
 
     size_t alloc_granularity_bytes = cuda_try<cuMemGetAllocationGranularity>(&prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM);
-    //        fprintf(stderr, "GRANULARITY = %ld KB\n", alloc_granularity_bytes / 1024);
 
     // To make our life simpler for now: we assume that we only allocate full blocks
     block_size_bytes = alloc_granularity_bytes;
@@ -116,9 +118,6 @@ public:
 
     // Reserve a range of virtual addresses, round up size to accommodate granularity requirements
     cuda_try(cuMemAddressReserve(&base_ptr, vm_total_size_bytes, 0ULL, 0ULL, 0ULL));
-
-    // fprintf(stderr, "cuMemAddressReserve => %p + %ld (%ld KB)\n", (void *)base_ptr, vm_total_size_bytes,
-    //                 vm_total_size_bytes / 1024);
 
     ::std::vector<CUmemAccessDesc> accessDesc(ndevs);
     for (int d = 0; d < ndevs; d++)
@@ -219,7 +218,6 @@ public:
 
       // Print visual block map (compact representation)
       fprintf(stderr, "\nBlock ownership map (each char = 1 block, 0-9/a-z = place index):\n  ");
-      // Build a map of place names to single-char indices
       ::std::unordered_map<::std::string, char> place_to_char;
       char next_char = '0';
       for (size_t i = 0; i < nblocks; i++)
@@ -245,7 +243,6 @@ public:
       }
       fprintf(stderr, "\n");
 
-      // Print legend
       fprintf(stderr, "\n  Legend:\n");
       for (const auto& entry : place_to_char)
       {
@@ -255,10 +252,7 @@ public:
       fprintf(stderr, "==============================================\n\n");
     }
 
-    // fprintf(stderr, "GOT %ld effective blocks (%ld blocks)\n", nblocks_effective, nblocks);
-
-    // Create a physical allocation per block, this is not mapped in
-    // virtual memory yet.
+    // Create a physical allocation per block, this is not mapped in virtual memory yet.
     for (auto& item : meta)
     {
       int item_dev = device_ordinal(item.place);
@@ -289,7 +283,6 @@ public:
         }
       }
     }
-    // fprintf(stderr, "localized_array (this = %p) : nblocks_effective %ld\n", this, nblocks_effective);
   }
 
   localized_array()                                  = delete;
@@ -300,8 +293,6 @@ public:
 
   ~localized_array()
   {
-    // fprintf(stderr, "~localized_array (this = %p) ... base ptr %p vm_total_size_bytes %ld - nblocks_effective
-    // %ld\n", this, (void *)base_ptr, vm_total_size_bytes, nblocks_effective);
     for (auto& item : meta)
     {
       size_t offset = item.offset;
@@ -404,8 +395,6 @@ private:
     stats.total_samples += nsamples;
     stats.matching_samples += max_cnt;
 
-    // ::std::cout << "GOT BEST POS for offset " << linearized_index << " -> " << max_pos.string() << ::std::endl;
-
     return max_pos;
 #endif
   }
@@ -486,4 +475,34 @@ public:
 private:
   reserved::linear_pool<localized_array> cache;
 };
+
+// Registry for composite data_place::allocate/deallocate (ownership of localized_array by base pointer)
+// This is how we can retrieve the localized_array descriptor when calling
+// deallocate with the device address returned by allocate.
+inline ::std::unordered_map<void*, ::std::unique_ptr<localized_array>>& get_composite_alloc_registry()
+{
+  static ::std::unordered_map<void*, ::std::unique_ptr<localized_array>> reg;
+  return reg;
+}
+
+inline void* allocate_composite_data_place(const data_place& p, ::std::ptrdiff_t size)
+{
+  EXPECT(p.is_composite());
+  const size_t size_u               = static_cast<size_t>(size);
+  const exec_place_grid& grid       = p.get_grid();
+  const get_executor_func_t& mapper = p.get_partitioner();
+  auto delinearize_1d               = [](size_t i) {
+    return pos4(static_cast<ssize_t>(i), 0, 0, 0);
+  };
+  auto arr  = ::std::make_unique<localized_array>(grid, mapper, delinearize_1d, size_u, 1, dim4(size_u));
+  void* ptr = arr->get_base_ptr();
+  get_composite_alloc_registry()[ptr] = ::std::move(arr);
+  return ptr;
+}
+
+inline void deallocate_composite_data_place(void* ptr)
+{
+  // Cleanup of the actual array resources (VMM resources) is handled in the destructor of localized_array.
+  get_composite_alloc_registry().erase(ptr);
+}
 } // end namespace cuda::experimental::stf::reserved
