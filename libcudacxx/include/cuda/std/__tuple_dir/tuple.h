@@ -428,15 +428,15 @@ public:
 };
 
 template <class... _Tp>
-_CCCL_HOST_DEVICE tuple(_Tp...) -> tuple<_Tp...>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE tuple(_Tp...) -> tuple<_Tp...>;
 template <class _Tp1, class _Tp2>
-_CCCL_HOST_DEVICE tuple(pair<_Tp1, _Tp2>) -> tuple<_Tp1, _Tp2>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE tuple(pair<_Tp1, _Tp2>) -> tuple<_Tp1, _Tp2>;
 template <class _Alloc, class... _Tp>
-_CCCL_HOST_DEVICE tuple(allocator_arg_t, _Alloc, _Tp...) -> tuple<_Tp...>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE tuple(allocator_arg_t, _Alloc, _Tp...) -> tuple<_Tp...>;
 template <class _Alloc, class _Tp1, class _Tp2>
-_CCCL_HOST_DEVICE tuple(allocator_arg_t, _Alloc, pair<_Tp1, _Tp2>) -> tuple<_Tp1, _Tp2>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE tuple(allocator_arg_t, _Alloc, pair<_Tp1, _Tp2>) -> tuple<_Tp1, _Tp2>;
 template <class _Alloc, class... _Tp>
-_CCCL_HOST_DEVICE tuple(allocator_arg_t, _Alloc, tuple<_Tp...>) -> tuple<_Tp...>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE tuple(allocator_arg_t, _Alloc, tuple<_Tp...>) -> tuple<_Tp...>;
 
 template <class _T1, class _T2, bool _IsRef>
 template <class... _Args1, class... _Args2, size_t... _I1, size_t... _I2>

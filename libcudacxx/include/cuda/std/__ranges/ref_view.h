@@ -109,7 +109,7 @@ public:
 };
 
 template <class _Range>
-_CCCL_HOST_DEVICE ref_view(_Range&) -> ref_view<_Range>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE ref_view(_Range&) -> ref_view<_Range>;
 
 template <class _Tp>
 inline constexpr bool enable_borrowed_range<ref_view<_Tp>> = true;

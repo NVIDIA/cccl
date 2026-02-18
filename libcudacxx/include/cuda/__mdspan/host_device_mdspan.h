@@ -58,41 +58,42 @@ public:
 _CCCL_TEMPLATE(class _ElementType, class... _OtherIndexTypes)
 _CCCL_REQUIRES((sizeof...(_OtherIndexTypes) > 0)
                  _CCCL_AND(::cuda::std::is_convertible_v<_OtherIndexTypes, size_t>&&...))
-_CCCL_HOST_DEVICE explicit host_mdspan(_ElementType*, _OtherIndexTypes...)
+_CCCL_DEDUCTION_GUIDE_EXSPACE explicit host_mdspan(_ElementType*, _OtherIndexTypes...)
   -> host_mdspan<_ElementType, ::cuda::std::extents<size_t, ::cuda::std::__maybe_static_ext<_OtherIndexTypes>...>>;
 
 _CCCL_TEMPLATE(class _Pointer)
 _CCCL_REQUIRES(::cuda::std::is_pointer_v<::cuda::std::remove_reference_t<_Pointer>>)
-_CCCL_HOST_DEVICE host_mdspan(_Pointer&&)
+_CCCL_DEDUCTION_GUIDE_EXSPACE host_mdspan(_Pointer&&)
   -> host_mdspan<::cuda::std::remove_pointer_t<::cuda::std::remove_reference_t<_Pointer>>, ::cuda::std::extents<size_t>>;
 
 _CCCL_TEMPLATE(class _CArray)
 _CCCL_REQUIRES(::cuda::std::is_array_v<_CArray> _CCCL_AND(::cuda::std::rank_v<_CArray> == 1))
-_CCCL_HOST_DEVICE host_mdspan(_CArray&)
+_CCCL_DEDUCTION_GUIDE_EXSPACE host_mdspan(_CArray&)
   -> host_mdspan<::cuda::std::remove_all_extents_t<_CArray>,
                  ::cuda::std::extents<size_t, ::cuda::std::extent_v<_CArray, 0>>>;
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
-_CCCL_HOST_DEVICE host_mdspan(_ElementType*, const ::cuda::std::array<_OtherIndexType, _Size>&)
+_CCCL_DEDUCTION_GUIDE_EXSPACE host_mdspan(_ElementType*, const ::cuda::std::array<_OtherIndexType, _Size>&)
   -> host_mdspan<_ElementType, ::cuda::std::dextents<size_t, _Size>>;
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
-_CCCL_HOST_DEVICE host_mdspan(_ElementType*, ::cuda::std::span<_OtherIndexType, _Size>)
+_CCCL_DEDUCTION_GUIDE_EXSPACE host_mdspan(_ElementType*, ::cuda::std::span<_OtherIndexType, _Size>)
   -> host_mdspan<_ElementType, ::cuda::std::dextents<size_t, _Size>>;
 
 // This one is necessary because all the constructors take `data_handle_type`s, not
 // `_ElementType*`s, and `data_handle_type` is taken from `accessor_type::data_handle_type`, which
 // seems to throw off automatic deduction guides.
 template <class _ElementType, class _OtherIndexType, size_t... _ExtentsPack>
-_CCCL_HOST_DEVICE host_mdspan(_ElementType*, const ::cuda::std::extents<_OtherIndexType, _ExtentsPack...>&)
+_CCCL_DEDUCTION_GUIDE_EXSPACE host_mdspan(_ElementType*, const ::cuda::std::extents<_OtherIndexType, _ExtentsPack...>&)
   -> host_mdspan<_ElementType, ::cuda::std::extents<_OtherIndexType, _ExtentsPack...>>;
 
 template <class _ElementType, class _MappingType>
-_CCCL_HOST_DEVICE host_mdspan(_ElementType*, const _MappingType&)
+_CCCL_DEDUCTION_GUIDE_EXSPACE host_mdspan(_ElementType*, const _MappingType&)
   -> host_mdspan<_ElementType, typename _MappingType::extents_type, typename _MappingType::layout_type>;
 
 template <class _MappingType, class _AccessorType>
-_CCCL_HOST_DEVICE host_mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
+_CCCL_DEDUCTION_GUIDE_EXSPACE
+host_mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
   -> host_mdspan<typename _AccessorType::element_type,
                  typename _MappingType::extents_type,
                  typename _MappingType::layout_type,
@@ -118,42 +119,42 @@ public:
 _CCCL_TEMPLATE(class _ElementType, class... _OtherIndexTypes)
 _CCCL_REQUIRES((sizeof...(_OtherIndexTypes) > 0)
                  _CCCL_AND(::cuda::std::is_convertible_v<_OtherIndexTypes, size_t>&&... && true))
-_CCCL_HOST_DEVICE explicit device_mdspan(_ElementType*, _OtherIndexTypes...)
+_CCCL_DEDUCTION_GUIDE_EXSPACE explicit device_mdspan(_ElementType*, _OtherIndexTypes...)
   -> device_mdspan<_ElementType, ::cuda::std::extents<size_t, ::cuda::std::__maybe_static_ext<_OtherIndexTypes>...>>;
 
 _CCCL_TEMPLATE(class _Pointer)
 _CCCL_REQUIRES(::cuda::std::is_pointer_v<::cuda::std::remove_reference_t<_Pointer>>)
-_CCCL_HOST_DEVICE device_mdspan(_Pointer&&)
+_CCCL_DEDUCTION_GUIDE_EXSPACE device_mdspan(_Pointer&&)
   -> device_mdspan<::cuda::std::remove_pointer_t<::cuda::std::remove_reference_t<_Pointer>>,
                    ::cuda::std::extents<size_t>>;
 
 _CCCL_TEMPLATE(class _CArray)
 _CCCL_REQUIRES(::cuda::std::is_array_v<_CArray> _CCCL_AND(::cuda::std::rank_v<_CArray> == 1))
-_CCCL_HOST_DEVICE device_mdspan(_CArray&)
+_CCCL_DEDUCTION_GUIDE_EXSPACE device_mdspan(_CArray&)
   -> device_mdspan<::cuda::std::remove_all_extents_t<_CArray>,
                    ::cuda::std::extents<size_t, ::cuda::std::extent_v<_CArray, 0>>>;
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
-_CCCL_HOST_DEVICE device_mdspan(_ElementType*, const ::cuda::std::array<_OtherIndexType, _Size>&)
+_CCCL_DEDUCTION_GUIDE_EXSPACE device_mdspan(_ElementType*, const ::cuda::std::array<_OtherIndexType, _Size>&)
   -> device_mdspan<_ElementType, ::cuda::std::dextents<size_t, _Size>>;
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
-_CCCL_HOST_DEVICE device_mdspan(_ElementType*, ::cuda::std::span<_OtherIndexType, _Size>)
+_CCCL_DEDUCTION_GUIDE_EXSPACE device_mdspan(_ElementType*, ::cuda::std::span<_OtherIndexType, _Size>)
   -> device_mdspan<_ElementType, ::cuda::std::dextents<size_t, _Size>>;
 
 // This one is necessary because all the constructors take `data_handle_type`s, not
 // `_ElementType*`s, and `data_handle_type` is taken from `accessor_type::data_handle_type`, which
 // seems to throw off automatic deduction guides.
 template <class _ElementType, class _OtherIndexType, size_t... _ExtentsPack>
-_CCCL_HOST_DEVICE device_mdspan(_ElementType*, const ::cuda::std::extents<_OtherIndexType, _ExtentsPack...>&)
+_CCCL_DEDUCTION_GUIDE_EXSPACE device_mdspan(_ElementType*, const ::cuda::std::extents<_OtherIndexType, _ExtentsPack...>&)
   -> device_mdspan<_ElementType, ::cuda::std::extents<_OtherIndexType, _ExtentsPack...>>;
 
 template <class _ElementType, class _MappingType>
-_CCCL_HOST_DEVICE device_mdspan(_ElementType*, const _MappingType&)
+_CCCL_DEDUCTION_GUIDE_EXSPACE device_mdspan(_ElementType*, const _MappingType&)
   -> device_mdspan<_ElementType, typename _MappingType::extents_type, typename _MappingType::layout_type>;
 
 template <class _MappingType, class _AccessorType>
-_CCCL_HOST_DEVICE
+_CCCL_DEDUCTION_GUIDE_EXSPACE
 device_mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
   -> device_mdspan<typename _AccessorType::element_type,
                    typename _MappingType::extents_type,
@@ -180,42 +181,43 @@ public:
 _CCCL_TEMPLATE(class _ElementType, class... _OtherIndexTypes)
 _CCCL_REQUIRES((sizeof...(_OtherIndexTypes) > 0)
                  _CCCL_AND(::cuda::std::is_convertible_v<_OtherIndexTypes, size_t>&&... && true))
-_CCCL_HOST_DEVICE explicit managed_mdspan(_ElementType*, _OtherIndexTypes...)
+_CCCL_DEDUCTION_GUIDE_EXSPACE explicit managed_mdspan(_ElementType*, _OtherIndexTypes...)
   -> managed_mdspan<_ElementType, ::cuda::std::extents<size_t, ::cuda::std::__maybe_static_ext<_OtherIndexTypes>...>>;
 
 _CCCL_TEMPLATE(class _Pointer)
 _CCCL_REQUIRES(::cuda::std::is_pointer_v<::cuda::std::remove_reference_t<_Pointer>>)
-_CCCL_HOST_DEVICE managed_mdspan(_Pointer&&)
+_CCCL_DEDUCTION_GUIDE_EXSPACE managed_mdspan(_Pointer&&)
   -> managed_mdspan<::cuda::std::remove_pointer_t<::cuda::std::remove_reference_t<_Pointer>>,
                     ::cuda::std::extents<size_t>>;
 
 _CCCL_TEMPLATE(class _CArray)
 _CCCL_REQUIRES(::cuda::std::is_array_v<_CArray> _CCCL_AND(::cuda::std::rank_v<_CArray> == 1))
-_CCCL_HOST_DEVICE managed_mdspan(_CArray&)
+_CCCL_DEDUCTION_GUIDE_EXSPACE managed_mdspan(_CArray&)
   -> managed_mdspan<::cuda::std::remove_all_extents_t<_CArray>,
                     ::cuda::std::extents<size_t, ::cuda::std::extent_v<_CArray, 0>>>;
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
-_CCCL_HOST_DEVICE managed_mdspan(_ElementType*, const ::cuda::std::array<_OtherIndexType, _Size>&)
+_CCCL_DEDUCTION_GUIDE_EXSPACE managed_mdspan(_ElementType*, const ::cuda::std::array<_OtherIndexType, _Size>&)
   -> managed_mdspan<_ElementType, ::cuda::std::dextents<size_t, _Size>>;
 
 template <class _ElementType, class _OtherIndexType, size_t _Size>
-_CCCL_HOST_DEVICE managed_mdspan(_ElementType*, ::cuda::std::span<_OtherIndexType, _Size>)
+_CCCL_DEDUCTION_GUIDE_EXSPACE managed_mdspan(_ElementType*, ::cuda::std::span<_OtherIndexType, _Size>)
   -> managed_mdspan<_ElementType, ::cuda::std::dextents<size_t, _Size>>;
 
 // This one is necessary because all the constructors take `data_handle_type`s, not
 // `_ElementType*`s, and `data_handle_type` is taken from `accessor_type::data_handle_type`, which
 // seems to throw off automatic deduction guides.
 template <class _ElementType, class _OtherIndexType, size_t... _ExtentsPack>
-_CCCL_HOST_DEVICE managed_mdspan(_ElementType*, const ::cuda::std::extents<_OtherIndexType, _ExtentsPack...>&)
+_CCCL_DEDUCTION_GUIDE_EXSPACE
+managed_mdspan(_ElementType*, const ::cuda::std::extents<_OtherIndexType, _ExtentsPack...>&)
   -> managed_mdspan<_ElementType, ::cuda::std::extents<_OtherIndexType, _ExtentsPack...>>;
 
 template <class _ElementType, class _MappingType>
-_CCCL_HOST_DEVICE managed_mdspan(_ElementType*, const _MappingType&)
+_CCCL_DEDUCTION_GUIDE_EXSPACE managed_mdspan(_ElementType*, const _MappingType&)
   -> managed_mdspan<_ElementType, typename _MappingType::extents_type, typename _MappingType::layout_type>;
 
 template <class _MappingType, class _AccessorType>
-_CCCL_HOST_DEVICE
+_CCCL_DEDUCTION_GUIDE_EXSPACE
 managed_mdspan(const typename _AccessorType::data_handle_type, const _MappingType&, const _AccessorType&)
   -> managed_mdspan<typename _AccessorType::element_type,
                     typename _MappingType::extents_type,

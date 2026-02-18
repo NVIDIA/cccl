@@ -37,7 +37,7 @@ struct __fmt_parse_number_result
 };
 
 template <class _It>
-_CCCL_HOST_DEVICE __fmt_parse_number_result(_It, uint32_t) -> __fmt_parse_number_result<_It>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE __fmt_parse_number_result(_It, uint32_t) -> __fmt_parse_number_result<_It>;
 
 //! The maximum value of a numeric argument.
 //!

@@ -92,7 +92,7 @@ struct checked_value_receiver
 };
 
 template <class... Values>
-_CCCL_HOST_DEVICE checked_value_receiver(Values...) -> checked_value_receiver<Values...>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE checked_value_receiver(Values...) -> checked_value_receiver<Values...>;
 
 template <class Error = cudax::execution::exception_ptr>
 struct checked_error_receiver
@@ -163,7 +163,7 @@ struct checked_error_receiver
 };
 
 template <class Error>
-_CCCL_HOST_DEVICE checked_error_receiver(Error) -> checked_error_receiver<Error>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE checked_error_receiver(Error) -> checked_error_receiver<Error>;
 
 struct checked_stopped_receiver
 {

@@ -94,7 +94,7 @@ private:
 };
 
 template <class _Fn>
-_CCCL_HOST_DEVICE scope_exit(_Fn) -> scope_exit<_Fn>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE scope_exit(_Fn) -> scope_exit<_Fn>;
 } // namespace cuda::experimental
 
 #endif // _CUDAX__EXPERIMENTAL_UTILITY_SCOPE_EXIT

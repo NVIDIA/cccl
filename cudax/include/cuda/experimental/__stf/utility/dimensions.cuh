@@ -510,11 +510,11 @@ private:
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 // Deduction guides
 template <typename... Int>
-box(Int...) -> box<sizeof...(Int)>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE box(Int...) -> box<sizeof...(Int)>;
 template <typename... E>
-box(::std::initializer_list<E>...) -> box<sizeof...(E)>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE box(::std::initializer_list<E>...) -> box<sizeof...(E)>;
 template <typename E, size_t dimensions>
-box(::std::array<E, dimensions>) -> box<dimensions>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE box(::std::array<E, dimensions>) -> box<dimensions>;
 #endif // !_CCCL_DOXYGEN_INVOKED
 
 #ifdef UNITTESTED_FILE

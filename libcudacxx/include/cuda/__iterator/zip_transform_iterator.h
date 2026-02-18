@@ -545,11 +545,11 @@ public:
 };
 
 template <class _Fn, class... _Iterators>
-_CCCL_HOST_DEVICE zip_transform_iterator(_Fn, ::cuda::std::tuple<_Iterators...>)
+_CCCL_DEDUCTION_GUIDE_EXSPACE zip_transform_iterator(_Fn, ::cuda::std::tuple<_Iterators...>)
   -> zip_transform_iterator<_Fn, _Iterators...>;
 
 template <class _Fn, class... _Iterators>
-_CCCL_HOST_DEVICE zip_transform_iterator(_Fn, _Iterators...) -> zip_transform_iterator<_Fn, _Iterators...>;
+_CCCL_DEDUCTION_GUIDE_EXSPACE zip_transform_iterator(_Fn, _Iterators...) -> zip_transform_iterator<_Fn, _Iterators...>;
 
 //! @brief Creates a @c zip_transform_iterator from a tuple of iterators.
 //! @param __fun The functor used to transform the input ranges
