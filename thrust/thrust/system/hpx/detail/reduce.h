@@ -57,8 +57,8 @@ OutputType reduce(execution_policy<DerivedPolicy>& exec,
   {
       return ::hpx::reduce(
         hpx::detail::to_hpx_execution_policy(exec),
-        detail::try_unwrap_contiguous_iterator(first),
-        detail::try_unwrap_contiguous_iterator(last),
+        ::thrust::try_unwrap_contiguous_iterator(first),
+        ::thrust::try_unwrap_contiguous_iterator(last),
         init,
         wrapped_binary_op);
   }

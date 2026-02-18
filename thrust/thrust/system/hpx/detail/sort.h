@@ -51,8 +51,8 @@ void stable_sort(
   {
       return ::hpx::stable_sort(
         hpx::detail::to_hpx_execution_policy(exec),
-        detail::try_unwrap_contiguous_iterator(first),
-        detail::try_unwrap_contiguous_iterator(last),
+        ::thrust::try_unwrap_contiguous_iterator(first),
+        ::thrust::try_unwrap_contiguous_iterator(last),
         wrapped_comp);
   }
   else

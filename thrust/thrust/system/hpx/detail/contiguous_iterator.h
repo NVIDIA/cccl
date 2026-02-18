@@ -36,20 +36,14 @@ namespace hpx
 namespace detail
 {
 
-using thrust::is_contiguous_iterator;
-using thrust::is_contiguous_iterator_v;
-
-using thrust::try_unwrap_contiguous_iterator;
-using thrust::unwrap_contiguous_iterator;
-
 template <typename Pointer, typename Iterator>
-constexpr Iterator rewrap_contiguous_iterator(Pointer it, Iterator base)
+[[nodiscard]] constexpr Iterator rewrap_contiguous_iterator(Pointer it, Iterator base)
 {
-  return base + (it - detail::unwrap_contiguous_iterator(base));
+  return base + (it - ::thrust::unwrap_contiguous_iterator(base));
 }
 
 template <typename Iterator>
-constexpr Iterator rewrap_contiguous_iterator(Iterator it, Iterator /*base*/)
+[[nodiscard]] constexpr Iterator rewrap_contiguous_iterator(Iterator it, Iterator /*base*/)
 {
   return it;
 }

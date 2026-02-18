@@ -58,9 +58,9 @@ OutputIterator transform(
   {
       auto res = ::hpx::transform(
         hpx::detail::to_hpx_execution_policy(exec),
-        detail::try_unwrap_contiguous_iterator(first),
-        detail::try_unwrap_contiguous_iterator(last),
-        detail::try_unwrap_contiguous_iterator(result),
+        ::thrust::try_unwrap_contiguous_iterator(first),
+        ::thrust::try_unwrap_contiguous_iterator(last),
+        ::thrust::try_unwrap_contiguous_iterator(result),
         wrapped_op);
       return detail::rewrap_contiguous_iterator(res, result);
   }
@@ -92,10 +92,10 @@ OutputIterator transform(
   {
       auto res = ::hpx::transform(
         hpx::detail::to_hpx_execution_policy(exec),
-        detail::try_unwrap_contiguous_iterator(first1),
-        detail::try_unwrap_contiguous_iterator(last1),
-        detail::try_unwrap_contiguous_iterator(first2),
-        detail::try_unwrap_contiguous_iterator(result),
+        ::thrust::try_unwrap_contiguous_iterator(first1),
+        ::thrust::try_unwrap_contiguous_iterator(last1),
+        ::thrust::try_unwrap_contiguous_iterator(first2),
+        ::thrust::try_unwrap_contiguous_iterator(result),
         wrapped_op);
       return detail::rewrap_contiguous_iterator(res, result);
   }

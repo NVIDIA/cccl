@@ -51,8 +51,8 @@ InputIterator find(execution_policy<DerivedPolicy>& exec, InputIterator first, I
   {
       auto res = ::hpx::find(
         hpx::detail::to_hpx_execution_policy(exec),
-        detail::try_unwrap_contiguous_iterator(first),
-        detail::try_unwrap_contiguous_iterator(last),
+        ::thrust::try_unwrap_contiguous_iterator(first),
+        ::thrust::try_unwrap_contiguous_iterator(last),
         value);
       return detail::rewrap_contiguous_iterator(res, first);
   }
@@ -73,8 +73,8 @@ InputIterator find_if(execution_policy<DerivedPolicy>& exec, InputIterator first
   {
       auto res = ::hpx::find_if(
         hpx::detail::to_hpx_execution_policy(exec),
-        detail::try_unwrap_contiguous_iterator(first),
-        detail::try_unwrap_contiguous_iterator(last),
+        ::thrust::try_unwrap_contiguous_iterator(first),
+        ::thrust::try_unwrap_contiguous_iterator(last),
         wrapped_pred);
       return detail::rewrap_contiguous_iterator(res, first);
   }
@@ -95,8 +95,8 @@ InputIterator find_if_not(execution_policy<DerivedPolicy>& exec, InputIterator f
   {
       auto res = ::hpx::find_if_not(
         hpx::detail::to_hpx_execution_policy(exec),
-        detail::try_unwrap_contiguous_iterator(first),
-        detail::try_unwrap_contiguous_iterator(last),
+        ::thrust::try_unwrap_contiguous_iterator(first),
+        ::thrust::try_unwrap_contiguous_iterator(last),
         wrapped_pred);
       return detail::rewrap_contiguous_iterator(res, first);
   }
