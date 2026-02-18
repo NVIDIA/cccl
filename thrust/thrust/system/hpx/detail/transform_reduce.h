@@ -64,8 +64,8 @@ OutputType transform_reduce(
   {
       return ::hpx::transform_reduce(
         hpx::detail::to_hpx_execution_policy(exec),
-        detail::try_unwrap_contiguous_iterator(first),
-        detail::try_unwrap_contiguous_iterator(last),
+        ::thrust::try_unwrap_contiguous_iterator(first),
+        ::thrust::try_unwrap_contiguous_iterator(last),
         init,
         wrapped_binary_op,
         wrapped_unary_op);

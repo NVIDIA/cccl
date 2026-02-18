@@ -50,9 +50,9 @@ copy(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator l
   {
       auto res = ::hpx::copy(
         hpx::detail::to_hpx_execution_policy(exec),
-        detail::try_unwrap_contiguous_iterator(first),
-        detail::try_unwrap_contiguous_iterator(last),
-        detail::try_unwrap_contiguous_iterator(result));
+        ::thrust::try_unwrap_contiguous_iterator(first),
+        ::thrust::try_unwrap_contiguous_iterator(last),
+        ::thrust::try_unwrap_contiguous_iterator(result));
       return detail::rewrap_contiguous_iterator(res, result);
   }
   else
@@ -69,9 +69,9 @@ OutputIterator copy_n(execution_policy<DerivedPolicy>& exec, InputIterator first
   {
       auto res = ::hpx::copy_n(
         hpx::detail::to_hpx_execution_policy(exec),
-        detail::try_unwrap_contiguous_iterator(first),
+        ::thrust::try_unwrap_contiguous_iterator(first),
         n,
-        detail::try_unwrap_contiguous_iterator(result));
+        ::thrust::try_unwrap_contiguous_iterator(result));
       return detail::rewrap_contiguous_iterator(res, result);
   }
   else
