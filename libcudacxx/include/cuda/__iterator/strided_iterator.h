@@ -386,8 +386,10 @@ public:
 #endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 };
 
+#ifndef _CCCL_DOXYGEN_INVOKED
 template <class _Iter, typename _Stride>
 _CCCL_HOST_DEVICE strided_iterator(_Iter, _Stride) -> strided_iterator<_Iter, _Stride>;
+#endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a @c strided_iterator from a random access iterator
 //! @param __iter The random_access iterator

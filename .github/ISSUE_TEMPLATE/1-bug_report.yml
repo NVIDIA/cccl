@@ -1,7 +1,8 @@
 name: Bug Report
 description: Create a report to help us improve
 title: '[BUG]: '
-labels: ['bug']
+type: bug
+projects: ['NVIDIA/6']
 body:
   - type: checkboxes
     id: check-duplicates

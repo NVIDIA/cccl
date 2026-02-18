@@ -87,7 +87,7 @@ public:
   //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
   _CCCL_HOST_API void deallocate_sync(
     void* __ptr,
-    const size_t,
+    [[maybe_unused]] const size_t __bytes,
     [[maybe_unused]] const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
