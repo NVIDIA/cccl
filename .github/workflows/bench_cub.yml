@@ -1,0 +1,338 @@
+name: CUB Benchmark Compare
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+on:
+  workflow_dispatch:
+    inputs:
+      gpu:
+        description: "GPU selector. Ex: 'rtxa6000'. See ci/bench.yaml for all options."
+        required: true
+        default: "rtxa6000"
+        type: string
+      launch_args:
+        description: "'.devcontainer/launch.sh -d' additional args. Ex: '--cuda 13.1 --host gcc14'"
+        required: false
+        default: "--cuda 13.1 --host gcc14"
+        type: string
+      arch:
+        description: "CMAKE_CUDA_ARCHITECTURES value passed as ci/bench/cub.sh --arch"
+        required: false
+        default: "native"
+        type: string
+      base_ref:
+        description: "Base Ref/SHA"
+        required: false
+        default: "origin/main"
+        type: string
+      test_ref:
+        description: "Test Ref/SHA"
+        required: false
+        default: ""
+        type: string
+      filters:
+        description: "Filters, space-separated if multiple (ex: '^cub.bench.copy.memcpy.base$' '.*foo.bar.*')"
+        required: false
+        default: ""
+        type: string
+      nvbench_args:
+        description: "NVBench extra args"
+        required: false
+        default: ""
+        type: string
+      nvbench_compare_args:
+        description: "nvbench_compare.py extra args"
+        required: false
+        default: ""
+        type: string
+      raw_args:
+        description: "Raw Args (advanced, bypasses all other inputs)"
+        required: false
+        default: ""
+        type: string
+  workflow_call:
+    inputs:
+      gpu:
+        description: "GPU selector. Ex: 'rtxa6000'. See ci/bench.yaml for all options."
+        required: true
+        default: "rtxa6000"
+        type: string
+      launch_args:
+        description: "'.devcontainer/launch.sh -d' additional args. Ex: '--cuda 13.1 --host gcc14'"
+        required: false
+        default: "--cuda 13.1 --host gcc14"
+        type: string
+      arch:
+        description: "CMAKE_CUDA_ARCHITECTURES value passed as ci/bench/cub.sh --arch"
+        required: false
+        default: "native"
+        type: string
+      base_ref:
+        description: "Base Ref/SHA"
+        required: false
+        default: "origin/main"
+        type: string
+      test_ref:
+        description: "Test Ref/SHA"
+        required: false
+        default: ""
+        type: string
+      filters:
+        description: "Filters, space-separated if multiple (ex: '^cub.bench.copy.memcpy.base$' '.*foo.bar.*')"
+        required: false
+        default: ""
+        type: string
+      nvbench_args:
+        description: "NVBench extra args"
+        required: false
+        default: ""
+        type: string
+      nvbench_compare_args:
+        description: "nvbench_compare.py extra args"
+        required: false
+        default: ""
+        type: string
+      raw_args:
+        description: "Raw Args (advanced, bypasses all other inputs)"
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  run:
+    name: "Bench: ${{inputs.gpu}} ${{inputs.arch}} ${{inputs.launch_args}}"
+    runs-on: linux-amd64-gpu-${{ inputs.gpu }}-latest-1
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Get AWS credentials for sccache bucket
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+          aws-region: us-east-2
+          role-duration-seconds: 43200 # 12 hours
+
+      - name: Prepare AWS config for devcontainer
+        run: |
+          # The devcontainer mounts this path to /home/coder/.aws.
+          aws_dir="${{ github.workspace }}/.aws"
+          mkdir -p "${aws_dir}"
+          cat > "${aws_dir}/config" <<EOF
+          [default]
+          bucket=rapids-sccache-devs
+          region=us-east-2
+          EOF
+          cat > "${aws_dir}/credentials" <<EOF
+          [default]
+          aws_access_key_id=${AWS_ACCESS_KEY_ID:-}
+          aws_session_token=${AWS_SESSION_TOKEN:-}
+          aws_secret_access_key=${AWS_SECRET_ACCESS_KEY:-}
+          EOF
+          chmod 0600 "${aws_dir}/credentials"
+          chmod 0664 "${aws_dir}/config"
+
+      - name: Resolve benchmark args
+        id: resolve-args
+        env:
+          INPUT_ARCH: ${{ inputs.arch }}
+          INPUT_BASE_REF: ${{ inputs.base_ref }}
+          INPUT_TEST_REF: ${{ inputs.test_ref }}
+          INPUT_FILTERS: ${{ inputs.filters }}
+          INPUT_RAW_ARGS: ${{ inputs.raw_args }}
+          INPUT_NVBENCH_ARGS: ${{ inputs.nvbench_args }}
+          INPUT_NVBENCH_COMPARE_ARGS: ${{ inputs.nvbench_compare_args }}
+        run: |
+          parse_quoted_args() {
+            local quoted_args="$1"
+            # xargs handles shell-style quoting without eval.
+            # Ignore empty / whitespace-only inputs to avoid emitting a spurious empty arg.
+            if [[ -z "${quoted_args}" || "${quoted_args}" =~ ^[[:space:]]*$ ]]; then
+              return 0
+            fi
+            if ! printf '%s' "${quoted_args}" | xargs printf '%s\0' \
+              2> >(while IFS= read -r line; do
+                     echo "::error::Failed to parse quoted args: ${line}" >&2
+                   done); then
+              return 2
+            fi
+          }
+
+          declare -a bench_args
+          bench_args=()
+
+          if [[ -n "${INPUT_RAW_ARGS}" ]]; then
+            parsed_raw_args_file="$(mktemp "${RUNNER_TEMP}/bench-raw-args-XXXXXX")"
+            if ! parse_quoted_args "${INPUT_RAW_ARGS}" > "${parsed_raw_args_file}"; then
+              rm -f "${parsed_raw_args_file}"
+              exit 2
+            fi
+            mapfile -d '' -t bench_args < "${parsed_raw_args_file}"
+            rm -f "${parsed_raw_args_file}"
+          else
+            if [[ -z "${INPUT_BASE_REF}" || -z "${INPUT_TEST_REF}" || -z "${INPUT_FILTERS}" ]]; then
+              echo "::error::When Raw Args is empty, Base Ref, Test Ref, and Filters must all be set."
+              exit 2
+            fi
+
+            bench_args+=("${INPUT_BASE_REF}")
+            bench_args+=("${INPUT_TEST_REF}")
+
+            if [[ -n "${INPUT_ARCH}" ]]; then
+              bench_args+=(--arch "${INPUT_ARCH}")
+            fi
+
+            declare -a parsed_filters
+            parsed_filters=()
+            parsed_filters_file="$(mktemp "${RUNNER_TEMP}/bench-filters-XXXXXX")"
+            if ! parse_quoted_args "${INPUT_FILTERS}" > "${parsed_filters_file}"; then
+              rm -f "${parsed_filters_file}"
+              exit 2
+            fi
+            mapfile -d '' -t parsed_filters < "${parsed_filters_file}"
+            rm -f "${parsed_filters_file}"
+
+            if [[ "${#parsed_filters[@]}" -eq 0 ]]; then
+              echo "::error::Filters must parse to at least one argument."
+              exit 2
+            fi
+
+            bench_args+=("${parsed_filters[@]}")
+
+            if [[ -n "${INPUT_NVBENCH_ARGS}" ]]; then
+              bench_args+=(--nvbench-args "${INPUT_NVBENCH_ARGS}")
+            fi
+            if [[ -n "${INPUT_NVBENCH_COMPARE_ARGS}" ]]; then
+              bench_args+=(--nvbench-compare-args "${INPUT_NVBENCH_COMPARE_ARGS}")
+            fi
+          fi
+
+          if [[ "${#bench_args[@]}" -lt 2 ]]; then
+            echo "::error::Resolved argument list must include at least <base-ref> and <test-ref>."
+            exit 2
+          fi
+
+          args_file="${RUNNER_TEMP}/bench_args.txt"
+          printf '%s\0' "${bench_args[@]}" > "${args_file}"
+
+          {
+            echo "args_file=${args_file}"
+            echo "resolved_args<<EOF"
+            for arg in "${bench_args[@]}"; do
+              printf '%q\n' "${arg}"
+            done
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Show resolved benchmark args
+        run: |
+          echo "Resolved args passed to ci/bench/cub.sh:"
+          while IFS= read -r arg; do
+            echo "  ${arg}"
+          done <<< "${{ steps.resolve-args.outputs.resolved_args }}"
+
+      - name: Run benchmark compare
+        id: run-benchmark-compare
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
+          GPU_NAME: ${{ inputs.gpu }}
+          LAUNCH_ARGS: ${{ inputs.launch_args }}
+        run: |
+          args_file="${{ steps.resolve-args.outputs.args_file }}"
+          ci_script="${RUNNER_TEMP}/ci.sh"
+          timestamp_utc="$(date -u +'%Y%m%dT%H%M%SZ')"
+
+          mapfile -d '' -t bench_args < "${args_file}"
+          base_ref="${bench_args[0]:-}"
+          test_ref="${bench_args[1]:-}"
+
+          base_sha_full="$(git rev-parse --verify "${base_ref}^{commit}")"
+          test_sha_full="$(git rev-parse --verify "${test_ref}^{commit}")"
+
+          base_sha_short="${base_sha_full:0:8}"
+          test_sha_short="${test_sha_full:0:8}"
+          artifact_name="bench-cub-${GPU_NAME}-${timestamp_utc}-${base_sha_short}-${test_sha_short}"
+
+          mkdir -p "bench-artifacts"
+
+          GPU_ARGS=""
+          if [[ ! "${LAUNCH_ARGS}" =~ "--gpus" ]]; then
+            echo "Selected GPU '${GPU_NAME}'; enabling '--gpus all'"
+            GPU_ARGS="--gpus all"
+          else
+            echo "GPU selected ('${GPU_NAME}'), but '--gpus' already present in LAUNCH_ARGS"
+          fi
+
+          cat <<"EOF" > "${ci_script}"
+          #! /usr/bin/env bash
+          set -euo pipefail
+
+          # bench_args.txt contains NUL-delimited argv entries resolved by the workflow.
+          # This adds them to a bench_args array while preserving any quotes, whitespace, etc
+          mapfile -d '' -t bench_args < "/bench_args.txt"
+
+          # NVBench deps:
+          ./ci/util/retry.sh 5 30 python3 -m pip install \
+            colorama \
+            jsondiff \
+            tabulate
+
+          ./ci/bench/cub.sh "${bench_args[@]}"
+          EOF
+          chmod +x "${ci_script}"
+
+          rc=0
+          .devcontainer/launch.sh \
+            -d ${LAUNCH_ARGS} ${GPU_ARGS} \
+            --env "AWS_ROLE_ARN=" \
+            --env "AWS_REGION=${AWS_REGION:-}" \
+            --env "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}" \
+            --env "AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}" \
+            --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}" \
+            --env "CCCL_BENCH_ARTIFACT_ROOT=bench-artifacts" \
+            --env "GH_TOKEN=${GH_TOKEN:-}" \
+            --env "LAUNCH_ARGS=${LAUNCH_ARGS} ${GPU_ARGS}" \
+            --env "SCCACHE_REGION=${AWS_REGION:-}" \
+            --volume "${ci_script}:/ci.sh" \
+            --volume "${args_file}:/bench_args.txt" \
+            -- /ci.sh \
+            || rc=$?
+
+          echo "artifact_name=${artifact_name}" >> "${GITHUB_OUTPUT}"
+          exit "${rc}"
+
+      - name: Append benchmark summaries
+        if: ${{ always() }}
+        run: |
+          shopt -s nullglob # in case no summary files are found, avoid a literal '*.md' entry
+          summaries=(bench-artifacts/*/summary.md)
+          if [[ "${#summaries[@]}" -eq 0 ]]; then
+            echo "No benchmark summary files found." >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
+          for summary in "${summaries[@]}"; do
+            echo "## ${summary}" >> "${GITHUB_STEP_SUMMARY}"
+            cat "${summary}" >> "${GITHUB_STEP_SUMMARY}"
+            echo >> "${GITHUB_STEP_SUMMARY}"
+          done
+
+      - name: Upload benchmark artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.run-benchmark-compare.outputs.artifact_name }}
+          path: bench-artifacts/*
+          if-no-files-found: warn
+          retention-days: 14
