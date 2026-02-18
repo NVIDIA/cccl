@@ -24,6 +24,7 @@
 
 #include <cub/agent/agent_scan.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/warpspeed/warpspeed.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
@@ -33,21 +34,29 @@
 #include <cub/util_math.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/move.h>
+
+#include <cuda_runtime_api.h>
+#include <cudaTypedefs.h>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
 template <typename PolicySelector,
-          typename InputIteratorT,
-          typename OutputIteratorT,
+          typename UnwrappedInputIteratorT,
+          typename UnwrappedOutputIteratorT,
           typename ScanOpT,
           typename InitValueT,
           typename OffsetT,
@@ -55,15 +64,17 @@ template <typename PolicySelector,
           ForceInclusive EnforceInclusive>
 struct DeviceScanKernelSource
 {
-  using ScanTileStateT = typename cub::ScanTileState<AccumT>;
+  using ScanTileStateT = ScanTileState<AccumT>;
 
-  CUB_DEFINE_KERNEL_GETTER(InitKernel, DeviceScanInitKernel<ScanTileStateT>)
+  CUB_DEFINE_KERNEL_GETTER(
+    InitKernel,
+    DeviceScanInitKernel<PolicySelector, UnwrappedInputIteratorT, UnwrappedOutputIteratorT, ScanTileStateT, AccumT>)
 
   CUB_DEFINE_KERNEL_GETTER(
     ScanKernel,
     DeviceScanKernel<PolicySelector,
-                     InputIteratorT,
-                     OutputIteratorT,
+                     UnwrappedInputIteratorT,
+                     UnwrappedOutputIteratorT,
                      ScanTileStateT,
                      ScanOpT,
                      InitValueT,
@@ -71,16 +82,74 @@ struct DeviceScanKernelSource
                      AccumT,
                      EnforceInclusive == ForceInclusive::Yes>)
 
-  CUB_RUNTIME_FUNCTION static constexpr size_t AccumSize()
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t AccumSize()
   {
     return sizeof(AccumT);
   }
 
-  CUB_RUNTIME_FUNCTION ScanTileStateT TileState()
+  CUB_RUNTIME_FUNCTION static ScanTileStateT TileState()
   {
-    return ScanTileStateT();
+    return {};
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t look_ahead_tile_state_size()
+  {
+    return sizeof(warpspeed::tile_state_t<AccumT>);
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t look_ahead_tile_state_alignment()
+  {
+    return alignof(warpspeed::tile_state_t<AccumT>);
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr auto make_tile_state_kernel_arg(ScanTileStateT ts)
+  {
+    tile_state_kernel_arg_t<ScanTileStateT, AccumT> arg;
+    ::cuda::std::__construct_at(&arg.lookback, ::cuda::std::move(ts));
+    return arg;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr auto look_ahead_make_tile_state_kernel_arg(void* ts)
+  {
+    tile_state_kernel_arg_t<ScanTileStateT, AccumT> arg;
+    ::cuda::std::__construct_at(&arg.lookahead, static_cast<warpspeed::tile_state_t<AccumT>*>(ts));
+    return arg;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr bool use_warpspeed(const scan_policy& policy)
+  {
+#if _CCCL_CUDACC_AT_LEAST(12, 8)
+    if (policy.warpspeed)
+    {
+      return detail::scan::use_warpspeed<UnwrappedInputIteratorT, UnwrappedOutputIteratorT, AccumT>(*policy.warpspeed);
+    }
+#else
+    (void) policy;
+#endif
+    return false;
   }
 };
+
+// TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
+template <typename T, typename = void>
+struct has_warpspeed_policy : ::cuda::std::false_type
+{};
+
+template <typename T>
+struct has_warpspeed_policy<T, ::cuda::std::void_t<typename T::WarpspeedPolicy>> : ::cuda::std::true_type
+{};
+
+template <typename LegacyActivePolicy>
+_CCCL_API constexpr auto convert_warpspeed_policy() -> ::cuda::std::optional<scan_warpspeed_policy>
+{
+#if _CCCL_CUDACC_AT_LEAST(12, 8)
+  if constexpr (has_warpspeed_policy<LegacyActivePolicy>::value)
+  {
+    return make_scan_warpspeed_policy<typename LegacyActivePolicy::WarpspeedPolicy>();
+  }
+#endif // _CCCL_CUDACC_AT_LEAST(12, 8)
+  return ::cuda::std::nullopt;
+}
 
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
 template <typename LegacyActivePolicy>
@@ -94,7 +163,8 @@ _CCCL_API constexpr auto convert_policy() -> scan_policy
     scan_policy_t::LOAD_MODIFIER,
     scan_policy_t::STORE_ALGORITHM,
     scan_policy_t::SCAN_ALGORITHM,
-    detail::delay_constructor_policy_from_type<typename scan_policy_t::detail::delay_constructor_t>};
+    detail::delay_constructor_policy_from_type<typename scan_policy_t::detail::delay_constructor_t>,
+    convert_warpspeed_policy<LegacyActivePolicy>()};
 }
 
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
@@ -154,8 +224,8 @@ template <
     policy_hub<detail::it_value_t<InputIteratorT>, detail::it_value_t<OutputIteratorT>, AccumT, OffsetT, ScanOpT>,
   typename KernelSource = detail::scan::DeviceScanKernelSource<
     detail::scan::policy_selector_from_hub<PolicyHub>,
-    InputIteratorT,
-    OutputIteratorT,
+    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
+    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
     ScanOpT,
     InitValueT,
     OffsetT,
@@ -319,8 +389,9 @@ struct DispatchScan
 #endif // CUB_DEBUG_LOG
 
     // Invoke init_kernel to initialize tile descriptors
-    if (const auto error = CubDebug(launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream, /* use_pdl */ true)
-                                      .doit(init_kernel, tile_state, num_tiles)))
+    if (const auto error = CubDebug(
+          launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream, /* use_pdl */ true)
+            .doit(init_kernel, kernel_source.make_tile_state_kernel_arg(tile_state), num_tiles)))
     {
       return error;
     }
@@ -371,7 +442,15 @@ struct DispatchScan
       // Invoke scan_kernel
       if (const auto error = CubDebug(
             launcher_factory(scan_grid_size, policy.Scan().BlockThreads(), 0, stream, /* use_pdl */ true)
-              .doit(scan_kernel, d_in, d_out, tile_state, start_tile, scan_op, init_value, num_items)))
+              .doit(scan_kernel,
+                    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
+                    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
+                    kernel_source.make_tile_state_kernel_arg(tile_state),
+                    start_tile,
+                    scan_op,
+                    init_value,
+                    num_items,
+                    /* num_stages, unused */ 1)))
       {
         return error;
       }
@@ -392,12 +471,167 @@ struct DispatchScan
     return cudaSuccess;
   }
 
+#if __cccl_ptx_isa >= 860
+  template <typename ActivePolicyT>
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(ActivePolicyT)
+  {
+    using InputT          = ::cuda::std::iter_value_t<InputIteratorT>;
+    using OutputT         = ::cuda::std::iter_value_t<OutputIteratorT>;
+    using WarpspeedPolicy = typename ActivePolicyT::WarpspeedPolicy;
+
+    const int grid_dim =
+      static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(WarpspeedPolicy::tile_size)));
+
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = grid_dim * kernel_source.look_ahead_tile_state_size();
+      return cudaSuccess;
+    }
+
+    int sm_count = 0;
+    if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
+    {
+      return error;
+    }
+    // number of stages to have an even workload across all SMs (improves small problem sizes), assuming 1 CTA per SM
+    // +1 since it tends to improve performance
+    // TODO(bgruber): make the +1 a tuning parameter
+    [[maybe_unused]] const int max_stages_for_even_workload =
+      static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * WarpspeedPolicy::tile_size)) + 1);
+
+    // Maximum dynamic shared memory size that we can use for temporary storage.
+    int max_dynamic_smem_size{};
+    if (const auto error =
+          CubDebug(launcher_factory.max_dynamic_smem_size_for(max_dynamic_smem_size, kernel_source.ScanKernel())))
+    {
+      return error;
+    }
+
+    // TODO(bgruber): we probably need to ensure alignment of d_temp_storage
+    _CCCL_ASSERT(::cuda::is_aligned(d_temp_storage, kernel_source.look_ahead_tile_state_alignment()), "");
+
+    constexpr scan_warpspeed_policy warpspeed_policy = detail::scan::make_scan_warpspeed_policy<WarpspeedPolicy>();
+    constexpr int smem_size_1_stage = detail::scan::smem_for_stages<InputT, OutputT, AccumT>(warpspeed_policy, 1);
+    static_assert(smem_size_1_stage <= detail::max_smem_per_block); // this is ensured by scan_use_warpspeed
+
+    auto scan_kernel = kernel_source.ScanKernel();
+    int num_stages   = 1;
+    int smem_size    = smem_size_1_stage;
+
+    // When launched from the host, maximize the number of stages that we can fit inside the shared memory.
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   while (num_stages <= max_stages_for_even_workload)
+                   {
+                     const auto next_smem_size =
+                       detail::scan::smem_for_stages<InputT, OutputT, AccumT>(warpspeed_policy, num_stages + 1);
+                     if (next_smem_size > max_dynamic_smem_size)
+                     {
+                       // This number of stages failed, so stay at the current settings
+                       break;
+                     }
+
+                     smem_size = next_smem_size;
+                     ++num_stages;
+                   }
+
+                   if (const auto error = launcher_factory.set_max_dynamic_smem_size_for(scan_kernel, smem_size))
+                   {
+                     return error;
+                   }
+                 }))
+
+    // Invoke init kernel
+    {
+      constexpr auto init_kernel_threads = 128;
+      const auto init_grid_size          = ::cuda::ceil_div(grid_dim, init_kernel_threads);
+
+#  ifdef CUB_DEBUG_LOG
+      _CubLog("Invoking DeviceScanInitKernel<<<%d, %d, 0, , %lld>>>()\n",
+              init_grid_size,
+              init_kernel_threads,
+              (long long) stream);
+#  endif // CUB_DEBUG_LOG
+
+      if (const auto error = CubDebug(
+            launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
+              .doit(kernel_source.InitKernel(),
+                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
+                    grid_dim)))
+      {
+        return error;
+      }
+
+      // Check for failure to launch
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      {
+        return error;
+      }
+
+      // Sync the stream if specified to flush runtime errors
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      {
+        return error;
+      }
+    }
+
+    // Invoke scan kernel
+    {
+      constexpr int block_dim = WarpspeedPolicy::num_total_threads;
+
+#  ifdef CUB_DEBUG_LOG
+      _CubLog("Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
+#  endif // CUB_DEBUG_LOG
+
+      if (const auto error = CubDebug(
+            launcher_factory(grid_dim, block_dim, smem_size, stream, /* use_pdl */ true)
+              .doit(scan_kernel,
+                    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
+                    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
+                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
+                    /* start_tile, unused */ 0,
+                    ::cuda::std::move(scan_op),
+                    init_value,
+                    num_items,
+                    num_stages)))
+      {
+        return error;
+      }
+
+      // Check for failure to launch
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      {
+        return error;
+      }
+
+      // Sync the stream if specified to flush runtime errors
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      {
+        return error;
+      }
+    }
+
+    return cudaSuccess;
+  }
+#endif // __cccl_ptx_isa >= 860
+
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
-    auto wrapped_policy = detail::scan::MakeScanPolicyWrapper(active_policy);
-    // Ensure kernels are instantiated.
-    return Invoke(kernel_source.InitKernel(), kernel_source.ScanKernel(), wrapped_policy);
+#if __cccl_ptx_isa >= 860
+    if constexpr (detail::scan::scan_use_warpspeed<
+                    ActivePolicyT,
+                    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
+                    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
+                    AccumT>)
+    {
+      return __invoke_lookahead_algorithm(active_policy);
+    }
+    else
+#endif // __cccl_ptx_isa >= 860
+    {
+      return Invoke(
+        kernel_source.InitKernel(), kernel_source.ScanKernel(), detail::scan::MakeScanPolicyWrapper(active_policy));
+    }
   }
 
   /**
@@ -534,6 +768,150 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                 _CubLog("Dispatching DeviceScan to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
+#if _CCCL_CUDACC_AT_LEAST(12, 8)
+  if (kernel_source.use_warpspeed(active_policy))
+  {
+    const int grid_dim =
+      static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(active_policy.warpspeed->tile_size)));
+
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = static_cast<size_t>(grid_dim) * kernel_source.look_ahead_tile_state_size();
+      return cudaSuccess;
+    }
+
+    if (num_items == 0)
+    {
+      return cudaSuccess;
+    }
+
+    int sm_count = 0;
+    if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
+    {
+      return error;
+    }
+
+    const int max_stages_for_even_workload = static_cast<int>(
+      ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * active_policy.warpspeed->tile_size)) + 1);
+
+    int max_dynamic_smem_size{};
+    if (const auto error =
+          CubDebug(launcher_factory.max_dynamic_smem_size_for(max_dynamic_smem_size, kernel_source.ScanKernel())))
+    {
+      return error;
+    }
+
+    _CCCL_ASSERT(::cuda::is_aligned(d_temp_storage, kernel_source.look_ahead_tile_state_alignment()), "");
+
+    auto scan_kernel = kernel_source.ScanKernel();
+    int num_stages   = 1;
+    int smem_size    = detail::scan::smem_for_stages(
+      *active_policy.warpspeed,
+      num_stages,
+      policy_selector.input_value_size,
+      policy_selector.input_value_alignment,
+      policy_selector.output_value_size,
+      policy_selector.output_value_alignment,
+      policy_selector.accum_size,
+      policy_selector.accum_alignment);
+
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   while (num_stages <= max_stages_for_even_workload)
+                   {
+                     const auto next_smem_size = detail::scan::smem_for_stages(
+                       *active_policy.warpspeed,
+                       num_stages + 1,
+                       policy_selector.input_value_size,
+                       policy_selector.input_value_alignment,
+                       policy_selector.output_value_size,
+                       policy_selector.output_value_alignment,
+                       policy_selector.accum_size,
+                       policy_selector.accum_alignment);
+                     if (next_smem_size > max_dynamic_smem_size)
+                     {
+                       break;
+                     }
+
+                     smem_size = next_smem_size;
+                     ++num_stages;
+                   }
+
+                   if (const auto error = launcher_factory.set_max_dynamic_smem_size_for(scan_kernel, smem_size))
+                   {
+                     return error;
+                   }
+                 }))
+
+    // Invoke init kernel
+    {
+      constexpr auto init_kernel_threads = 128;
+      const auto init_grid_size          = ::cuda::ceil_div(grid_dim, init_kernel_threads);
+
+#  ifdef CUB_DEBUG_LOG
+      _CubLog("Invoking DeviceScanInitKernel<<<%d, %d, 0, , %lld>>>()\n",
+              init_grid_size,
+              init_kernel_threads,
+              (long long) stream);
+#  endif // CUB_DEBUG_LOG
+
+      if (const auto error = CubDebug(
+            launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
+              .doit(kernel_source.InitKernel(),
+                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
+                    grid_dim)))
+      {
+        return error;
+      }
+
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      {
+        return error;
+      }
+
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      {
+        return error;
+      }
+    }
+
+    // Invoke scan kernel
+    {
+      const int block_dim = active_policy.warpspeed->num_total_threads;
+
+#  ifdef CUB_DEBUG_LOG
+      _CubLog("Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
+#  endif // CUB_DEBUG_LOG
+
+      if (const auto error = CubDebug(
+            launcher_factory(grid_dim, block_dim, smem_size, stream, /* use_pdl */ true)
+              .doit(scan_kernel,
+                    d_in,
+                    d_out,
+                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
+                    /* start_tile, unused */ 0,
+                    ::cuda::std::move(scan_op),
+                    init_value,
+                    num_items,
+                    num_stages)))
+      {
+        return error;
+      }
+
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      {
+        return error;
+      }
+
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      {
+        return error;
+      }
+    }
+
+    return cudaSuccess;
+  }
+#endif // _CCCL_CUDACC_AT_LEAST(12, 8)
+
   // Number of input tiles
   const int tile_size = active_policy.block_threads * active_policy.items_per_thread;
   const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
@@ -577,8 +955,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 #endif // CUB_DEBUG_LOG
 
   // Invoke init_kernel to initialize tile descriptors
-  if (const auto error = CubDebug(launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
-                                    .doit(kernel_source.InitKernel(), tile_state, num_tiles)))
+  if (const auto error = CubDebug(
+        launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
+          .doit(kernel_source.InitKernel(), kernel_source.make_tile_state_kernel_arg(tile_state), num_tiles)))
   {
     return error;
   }
@@ -629,7 +1008,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     // Invoke scan_kernel
     if (const auto error = CubDebug(
           launcher_factory(scan_grid_size, active_policy.block_threads, 0, stream, /* use_pdl */ true)
-            .doit(kernel_source.ScanKernel(), d_in, d_out, tile_state, start_tile, scan_op, init_value, num_items)))
+            .doit(kernel_source.ScanKernel(),
+                  d_in,
+                  d_out,
+                  kernel_source.make_tile_state_kernel_arg(tile_state),
+                  start_tile,
+                  scan_op,
+                  init_value,
+                  num_items,
+                  /* num_stages, unused */ 1)))
     {
       return error;
     }

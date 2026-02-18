@@ -77,12 +77,27 @@ std::string get_output_iterator_name()
   return iterator_t;
 }
 
-std::string
-get_init_kernel_name(cccl_iterator_t input_it, cccl_iterator_t /*output_it*/, cccl_op_t op, cccl_type_info init)
+std::string get_init_kernel_name(cccl_iterator_t input_it, cccl_iterator_t output_it, cccl_op_t op, cccl_type_info init)
 {
+  std::string chained_policy_t;
+  check(cccl_type_name_from_nvrtc<device_scan_policy>(&chained_policy_t));
+
   const cccl_type_info accum_t  = scan::get_accumulator_type(op, input_it, init);
   const std::string accum_cpp_t = cccl_type_enum_to_name(accum_t.type);
-  return std::format("cub::detail::scan::DeviceScanInitKernel<cub::ScanTileState<{0}>>", accum_cpp_t);
+  const std::string input_iterator_t =
+    (input_it.type == cccl_iterator_kind_t::CCCL_POINTER //
+       ? cccl_type_enum_to_name(input_it.value_type.type, true) //
+       : scan::get_input_iterator_name());
+  const std::string output_iterator_t =
+    output_it.type == cccl_iterator_kind_t::CCCL_POINTER //
+      ? cccl_type_enum_to_name(output_it.value_type.type, true) //
+      : scan::get_output_iterator_name();
+  return std::format(
+    "cub::detail::scan::DeviceScanInitKernel<{0}, {1}, {2}, cub::ScanTileState<{3}>, {3}>",
+    chained_policy_t,
+    input_iterator_t,
+    output_iterator_t,
+    accum_cpp_t);
 }
 
 std::string get_scan_kernel_name(
@@ -163,9 +178,41 @@ struct scan_kernel_source
   {
     return build.scan_kernel;
   }
-  scan_tile_state TileState()
+  scan_tile_state TileState() const
   {
     return {build.description_bytes_per_tile, build.payload_bytes_per_tile};
+  }
+
+  bool use_warpspeed(const cub::detail::scan::scan_policy& /*policy*/) const
+  {
+    return build.use_warpspeed;
+  }
+
+  std::size_t look_ahead_tile_state_size() const
+  {
+    return look_ahead_tile_state_alignment();
+  }
+
+  std::size_t look_ahead_tile_state_alignment() const
+  {
+    constexpr int state_size = alignof(cub::detail::warpspeed::scan_state);
+    return ::cuda::next_power_of_two(
+      ::cuda::round_up(state_size, build.accumulator_type.alignment) + build.accumulator_type.size);
+  }
+
+  static auto make_tile_state_kernel_arg(scan_tile_state ts)
+  {
+    cub::detail::scan::tile_state_kernel_arg_t<scan_tile_state, char> arg;
+    ::cuda::std::__construct_at(&arg.lookback, ::cuda::std::move(ts));
+    return arg;
+  }
+
+  static auto look_ahead_make_tile_state_kernel_arg(void* ts)
+  {
+    // we can ignore passing a wrong AccumT, since we only store a pointer, and the kernel will have the right type
+    cub::detail::scan::tile_state_kernel_arg_t<scan_tile_state, char> arg;
+    ::cuda::std::__construct_at(&arg.lookahead, static_cast<cub::detail::warpspeed::tile_state_t<char>*>(ts));
+    return arg;
   }
 };
 } // namespace scan
@@ -212,8 +259,31 @@ try
     const auto accum_type  = cccl_type_enum_to_cub_type(accum_t.type);
     const auto operation_t = cccl_op_kind_to_cub_op(op.type);
 
-    auto primitive_accum_t = primitive_accum::no;
-    switch (accum_t.type)
+    const auto input_type  = input_it.value_type.type;
+    const auto output_type = output_it.value_type.type;
+    const bool types_match = input_type == output_type && input_type == accum_t.type;
+    const bool benchmark_match =
+      operation_t != cub::detail::op_kind_t::other && types_match && input_type != CCCL_STORAGE;
+
+    return policy_selector{
+      static_cast<int>(input_it.value_type.size),
+      static_cast<int>(input_it.value_type.alignment),
+      static_cast<int>(output_it.value_type.size),
+      static_cast<int>(output_it.value_type.alignment),
+      static_cast<int>(accum_t.size),
+      static_cast<int>(accum_t.alignment),
+      int{sizeof(OffsetT)},
+      accum_type,
+      operation_t,
+      benchmark_match};
+  }();
+
+  const auto arch_id       = cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor});
+  const auto active_policy = policy_sel(arch_id);
+
+#if _CCCL_CUDACC_AT_LEAST(12, 8)
+  const auto is_trivial_type = [](cccl_type_enum type) {
+    switch (type)
     {
       case CCCL_INT8:
       case CCCL_INT16:
@@ -227,34 +297,40 @@ try
       case CCCL_FLOAT32:
       case CCCL_FLOAT64:
       case CCCL_BOOLEAN:
-        primitive_accum_t = primitive_accum::yes;
-        break;
+        return true;
       default:
-        break;
+        return false;
     }
+  };
 
-    const auto primitive_op_t = (operation_t == cub::detail::op_kind_t::other) ? primitive_op::no : primitive_op::yes;
+  const bool input_contiguous             = input_it.type == cccl_iterator_kind_t::CCCL_POINTER;
+  const bool output_contiguous            = output_it.type == cccl_iterator_kind_t::CCCL_POINTER;
+  const bool input_trivially_copyable     = is_trivial_type(input_it.value_type.type);
+  const bool output_trivially_copyable    = is_trivial_type(output_it.value_type.type);
+  const bool output_default_constructible = output_trivially_copyable;
 
-    const auto input_type      = input_it.value_type.type;
-    const auto output_type     = output_it.value_type.type;
-    const bool types_match     = input_type == output_type && input_type == accum_t.type;
-    const bool benchmark_match = primitive_op_t == primitive_op::yes && types_match && input_type != CCCL_STORAGE;
-
-    return policy_selector{
+  const bool use_warpspeed =
+    active_policy.warpspeed
+    && cub::detail::scan::use_warpspeed(
+      *active_policy.warpspeed,
       static_cast<int>(input_it.value_type.size),
+      static_cast<int>(input_it.value_type.alignment),
       static_cast<int>(output_it.value_type.size),
+      static_cast<int>(output_it.value_type.alignment),
       static_cast<int>(accum_t.size),
-      int{sizeof(OffsetT)},
-      accum_type,
-      operation_t,
-      primitive_accum_t,
-      primitive_op_t,
-      benchmark_match};
-  }();
+      static_cast<int>(accum_t.alignment),
+      input_contiguous,
+      output_contiguous,
+      input_trivially_copyable,
+      output_trivially_copyable,
+      output_default_constructible);
+#else
+  const bool use_warpspeed = false;
+#endif
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream policy_sel_str;
-  policy_sel_str << policy_sel(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
+  policy_sel_str << active_policy;
 
   std::string policy_selector_expr = std::format(
     "cub::detail::scan::policy_selector_from_types<{}, {}, {}, {}, {}>",
@@ -356,6 +432,7 @@ static_assert(device_scan_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {6},
   build_ptr->description_bytes_per_tile = description_bytes_per_tile;
   build_ptr->payload_bytes_per_tile     = payload_bytes_per_tile;
   build_ptr->runtime_policy             = new cub::detail::scan::policy_selector{policy_sel};
+  build_ptr->use_warpspeed              = use_warpspeed;
 
   return CUDA_SUCCESS;
 }

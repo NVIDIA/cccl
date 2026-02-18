@@ -141,6 +141,60 @@ struct CudaDriverLauncherFactory
       cuDeviceGetAttribute(&max_shared_memory, CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK, device));
   }
 
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t
+  max_dynamic_smem_size_for(int& max_dynamic_smem_size, ::CUkernel kernel_ptr) const
+  {
+    max_dynamic_smem_size = -1;
+
+    ::CUfunction kernel_fn;
+    auto status = static_cast<::cudaError_t>(::cuKernelGetFunction(&kernel_fn, kernel_ptr));
+    if (status != cudaSuccess)
+    {
+      return status;
+    }
+
+    int static_smem_size = 0;
+    status               = static_cast<::cudaError_t>(
+      ::cuFuncGetAttribute(&static_smem_size, CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES, kernel_fn));
+    if (status != cudaSuccess)
+    {
+      return status;
+    }
+
+    int reserved_smem_size = 0;
+    status                 = static_cast<::cudaError_t>(
+      ::cuDeviceGetAttribute(&reserved_smem_size, CU_DEVICE_ATTRIBUTE_RESERVED_SHARED_MEMORY_PER_BLOCK, device));
+    if (status != cudaSuccess)
+    {
+      return status;
+    }
+
+    int max_smem_size_optin = 0;
+    status                  = static_cast<::cudaError_t>(
+      ::cuDeviceGetAttribute(&max_smem_size_optin, CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN, device));
+    if (status != cudaSuccess)
+    {
+      return status;
+    }
+
+    max_dynamic_smem_size = max_smem_size_optin - reserved_smem_size - static_smem_size;
+    return cudaSuccess;
+  }
+
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t
+  set_max_dynamic_smem_size_for(::CUkernel kernel_ptr, int smem_size) const
+  {
+    ::CUfunction kernel_fn;
+    auto status = static_cast<::cudaError_t>(::cuKernelGetFunction(&kernel_fn, kernel_ptr));
+    if (status != cudaSuccess)
+    {
+      return status;
+    }
+
+    return static_cast<::cudaError_t>(
+      ::cuFuncSetAttribute(kernel_fn, CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, smem_size));
+  }
+
   CUdevice device;
   int cc;
 };
