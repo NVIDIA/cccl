@@ -334,7 +334,8 @@ public:
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>,
             typename ::cuda::std::enable_if_t<
-              !::cuda::std::is_same_v<InputIteratorT, void*> && !::cuda::std::is_same_v<FlagIterator, size_t&>,
+              ::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>
+                && !::cuda::std::is_same_v<FlagIterator, size_t&>,
               int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
     InputIteratorT d_in,
@@ -457,19 +458,11 @@ public:
     // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
-      return select_impl<tuning_t,
-                         SelectImpl::Select,
-                         InputIteratorT,
-                         NullType*,
-                         OutputIteratorT,
-                         NumSelectedIteratorT,
-                         SelectOp,
-                         NullType,
-                         offset_t>(
+      return select_impl<tuning_t, SelectImpl::Select>(
         storage,
         bytes,
         d_in,
-        nullptr,
+        static_cast<NullType*>(nullptr),
         d_out,
         d_num_selected_out,
         static_cast<offset_t>(num_items),
