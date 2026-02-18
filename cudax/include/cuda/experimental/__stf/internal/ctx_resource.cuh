@@ -152,7 +152,7 @@ public:
   void release(cudaStream_t stream)
   {
     // Separate resources into stream-dependent and callback-batched
-    resources_t* callback_resources = nullptr;
+    std::unique_ptr<resources_t> callback_resources;
 
     for (auto& r : resources)
     {
@@ -193,7 +193,7 @@ public:
         }
       };
 
-      cuda_safe_call(cudaStreamAddCallback(stream, release_lambda, callback_resources, 0));
+      cuda_safe_call(cudaStreamAddCallback(stream, release_lambda, callback_resources.release(), 0));
     }
   }
 

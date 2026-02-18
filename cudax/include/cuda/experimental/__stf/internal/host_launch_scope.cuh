@@ -165,13 +165,13 @@ public:
 
       // For stream contexts, delete immediately (no replay risk)
       // For graph contexts, resource system handles cleanup (avoid use-after-free on replay)
-      if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
+      SCOPE(exit)
       {
-        SCOPE(exit)
+        if constexpr (!::std::is_same_v<Ctx, graph_ctx>)
         {
           delete w;
-        };
-      }
+        }
+      };
 
       constexpr bool fun_invocable_task_deps = reserved::is_applicable_v<Fun, decltype(payload)>;
       constexpr bool fun_invocable_task_non_void_deps =

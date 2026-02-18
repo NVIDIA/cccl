@@ -980,13 +980,13 @@ public:
 
       // For stream contexts, delete immediately (no replay risk)
       // For graph contexts, resource system handles cleanup (avoid use-after-free on replay)
-      if constexpr (!::std::is_same_v<context, graph_ctx>)
+      SCOPE(exit)
       {
-        SCOPE(exit)
+        if constexpr (!::std::is_same_v<context, graph_ctx>)
         {
           delete p;
-        };
-      }
+        }
+      };
 
       auto& data               = ::std::get<0>(*p);
       const size_t n           = ::std::get<1>(*p);
