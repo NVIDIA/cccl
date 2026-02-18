@@ -34,7 +34,7 @@ __host__ __device__ constexpr void test_numeric_types()
 {
   // integral values
   {
-    const cuda::equal_to_value<int> eq(1);
+    const cuda::equal_to_value<int> eq{1};
     assert(eq(1) == true);
     assert(eq(2) == false);
     static_assert(noexcept(eq(1)));
@@ -42,7 +42,7 @@ __host__ __device__ constexpr void test_numeric_types()
 
   // floating point values
   {
-    const cuda::equal_to_value<double> eq(3.14);
+    const cuda::equal_to_value<double> eq{3.14};
     assert(eq(3.14) == true);
     assert(eq(2.71) == false);
     static_assert(noexcept(eq(3.14)));
@@ -57,7 +57,7 @@ __host__ __device__ constexpr void test_heterogeneous_comparisons()
   assert(eq(43.0) == false);
   static_assert(noexcept(eq(42.0)));
 
-  const cuda::equal_to_value<double> eqd(42.0);
+  const cuda::equal_to_value<double> eqd{42.0};
   assert(eqd(42) == true);
   assert(eqd(43) == false);
   static_assert(noexcept(eq(42)));
