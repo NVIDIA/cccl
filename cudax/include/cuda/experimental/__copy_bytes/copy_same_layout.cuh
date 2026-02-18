@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,16 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__stream/stream_ref.h>
-#include <cuda/std/__exception/cuda_error.h>
-
-#include <cute/layout.hpp>
 #include <cute/numeric/int.hpp>
 #include <cute/tensor.hpp>
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/launch>
+
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental::detail
+namespace cuda::experimental
 {
 
 //! @brief Vectorized same-layout copy kernel using CuTe recast.
@@ -39,14 +38,14 @@ namespace cuda::experimental::detail
 //! Instead, recast both tensors to a wider VecType for vectorized loads/stores and
 //! use a grid-stride loop over the recast elements.
 //!
-//! @tparam VecBytes Vectorization width in bytes (1, 2, 4, 8, or 16)
 //! @tparam SrcTensor CuTe tensor type for source (already recast to VecType)
 //! @tparam DstTensor CuTe tensor type for destination (already recast to VecType)
-template <typename SrcTensor, typename DstTensor>
-__global__ void copy_same_layout_kernel(SrcTensor src, DstTensor dst, int n)
+template <typename Config, typename SrcTensor, typename DstTensor>
+__global__ void copy_same_layout_kernel(Config config, SrcTensor src, DstTensor dst, int n)
 {
-  int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  for (int i = idx; i < n; i += blockDim.x * gridDim.x)
+  int idx    = ::cuda::gpu_thread.rank(::cuda::grid, config);
+  int stride = ::cuda::gpu_thread.count(::cuda::grid, config);
+  for (int i = idx; i < n; i += stride)
   {
     dst(i) = src(i);
   }
@@ -63,20 +62,22 @@ __global__ void copy_same_layout_kernel(SrcTensor src, DstTensor dst, int n)
 template <int VecBytes, typename T, typename Layout>
 void launch_copy_same_layout(::cuda::stream_ref stream, T* dst_ptr, const T* src_ptr, const Layout& layout)
 {
-  using namespace cute;
-  using VecType = uint_bit_t<VecBytes * 8>;
+  using VecType = ::cute::uint_bit_t<VecBytes * 8>;
 
-  auto src_tensor = recast<VecType>(make_tensor(make_gmem_ptr(src_ptr), layout));
-  auto dst_tensor = recast<VecType>(make_tensor(make_gmem_ptr(dst_ptr), layout));
+  auto src_tensor = ::cute::recast<VecType>(::cute::make_tensor(::cute::make_gmem_ptr(src_ptr), layout));
+  auto dst_tensor = ::cute::recast<VecType>(::cute::make_tensor(::cute::make_gmem_ptr(dst_ptr), layout));
 
-  int n                    = size(src_tensor);
+  int n                    = ::cute::size(src_tensor);
   constexpr int block_size = 256;
-  int grid_size            = (n + block_size - 1) / block_size;
+  int grid_size            = ::cuda::ceil_div(n, block_size);
 
-  copy_same_layout_kernel<<<grid_size, block_size, 0, stream.get()>>>(src_tensor, dst_tensor, n);
+  auto config = ::cuda::make_config(::cuda::block_dims<block_size>(), ::cuda::grid_dims(grid_size));
+  ::cuda::launch(
+    stream, config, copy_same_layout_kernel<decltype(config), decltype(src_tensor), decltype(dst_tensor)>,
+    src_tensor, dst_tensor, n);
 }
 
-} // namespace cuda::experimental::detail
+} // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
 

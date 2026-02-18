@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,8 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__stream/stream_ref.h>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/launch>
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/array>
 
 #include <cute/layout.hpp>
 #include <cute/tensor.hpp>
@@ -40,32 +42,32 @@ namespace cuda::experimental
 //!
 //! Each thread processes elements in a grid-stride loop. CuTe handles the mapping from
 //! a linear index to multi-dimensional coordinates according to each tensor's layout.
-template <typename SrcTensor, typename DstTensor>
-__global__ void copy_bytes_kernel(SrcTensor src, DstTensor dst, int n)
+template <typename Config, typename SrcTensor, typename DstTensor>
+__global__ void copy_bytes_kernel(Config config, SrcTensor src, DstTensor dst, int n)
 {
-  int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  for (int i = idx; i < n; i += blockDim.x * gridDim.x)
+  int idx    = ::cuda::gpu_thread.rank(::cuda::grid, config);
+  int stride = ::cuda::gpu_thread.count(::cuda::grid, config);
+  for (int i = idx; i < n; i += stride)
   {
     dst(i) = src(i);
   }
 }
-
-namespace detail
-{
 
 //! @brief Launch the naive fallback kernel.
 template <typename T, typename SrcLayout, typename DstLayout>
 void launch_naive_copy(
   ::cuda::stream_ref stream, T* dst, const T* src, const SrcLayout& src_layout, const DstLayout& dst_layout)
 {
-  using namespace cute;
-  auto src_tensor          = make_tensor(make_gmem_ptr(src), src_layout);
-  auto dst_tensor          = make_tensor(make_gmem_ptr(dst), dst_layout);
-  int n                    = size(src_layout);
+  auto src_tensor          = ::cute::make_tensor(::cute::make_gmem_ptr(src), src_layout);
+  auto dst_tensor          = ::cute::make_tensor(::cute::make_gmem_ptr(dst), dst_layout);
+  int n                    = ::cute::size(src_layout);
   constexpr int block_size = 256;
-  int grid_size            = (n + block_size - 1) / block_size;
+  int grid_size            = ::cuda::ceil_div(n, block_size);
 
-  copy_bytes_kernel<<<grid_size, block_size, 0, stream.get()>>>(src_tensor, dst_tensor, n);
+  auto config = ::cuda::make_config(::cuda::block_dims<block_size>(), ::cuda::grid_dims(grid_size));
+  ::cuda::launch(
+    stream, config, copy_bytes_kernel<decltype(config), decltype(src_tensor), decltype(dst_tensor)>,
+    src_tensor, dst_tensor, n);
 }
 
 //! @brief Dispatch same-layout copy with the appropriate vectorization width.
@@ -94,8 +96,6 @@ void dispatch_same_layout(::cuda::stream_ref stream, T* dst, const T* src, const
       break;
   }
 }
-
-} // namespace detail
 
 //! @brief Copy elements between two device-memory tensors described by CuTe layouts.
 //!
@@ -133,34 +133,35 @@ void dispatch_same_layout(::cuda::stream_ref stream, T* dst, const T* src, const
 //! @param src         Pointer to the source tensor in device memory
 //! @param src_layout  CuTe layout describing the shape and strides of @p src
 template <typename T, typename SrcLayout, typename DstLayout>
-void copy_bytes(
-  ::cuda::stream_ref stream, T* dst, DstLayout dst_layout, const T* src, SrcLayout src_layout)
+void copy_bytes(::cuda::stream_ref stream, T* dst, DstLayout dst_layout, const T* src, SrcLayout src_layout)
 {
-  using namespace cute;
-
-  _CCCL_ASSERT(
-    size(src_layout) == size(dst_layout), "Source and destination layouts must have the same number of elements");
+  _CCCL_ASSERT(::cute::size(src_layout) == ::cute::size(dst_layout),
+               "Source and destination layouts must have the same number of elements");
 
   constexpr int MaxRank = 8;
-  constexpr int R       = decltype(rank(src_layout))::value;
+  constexpr int R       = decltype(::cute::rank(src_layout))::value;
   static_assert(R <= MaxRank, "Layout rank exceeds maximum supported rank");
 
   // Step 1: Extract original shapes/strides and compare BEFORE preprocessing.
   // Sorting and coalescing independently can make different layouts appear identical.
-  int src_s[MaxRank], src_st[MaxRank], dst_s[MaxRank], dst_st[MaxRank];
-  detail::extract_layout(src_layout, src_s, src_st);
-  detail::extract_layout(dst_layout, dst_s, dst_st);
+  ::cuda::std::array<int, MaxRank> src_s{};
+  ::cuda::std::array<int, MaxRank> src_st{};
+  ::cuda::std::array<int, MaxRank> dst_s{};
+  ::cuda::std::array<int, MaxRank> dst_st{};
+  extract_layout(src_layout, src_s, src_st);
+  extract_layout(dst_layout, dst_s, dst_st);
 
-  bool same_layout = detail::layouts_match(src_s, src_st, dst_s, dst_st, R);
+  bool same_layout = layouts_match(src_s, src_st, dst_s, dst_st, R);
 
   if (same_layout)
   {
     // Same-layout path: sort + coalesce for vectorization optimization
-    detail::sort_modes_by_stride(src_s, src_st, R);
-    detail::runtime_coalesce(src_s, src_st, R);
+    sort_modes_by_stride(src_s, src_st, R);
+    runtime_coalesce(src_s, src_st, R);
 
     // Collect effective (non-trivial) modes
-    int eff_s[MaxRank], eff_st[MaxRank];
+    ::cuda::std::array<int, MaxRank> eff_s{};
+    ::cuda::std::array<int, MaxRank> eff_st{};
     int eff_rank = 0;
     for (int i = 0; i < R; ++i)
     {
@@ -174,34 +175,37 @@ void copy_bytes(
 
     if (eff_rank == 0)
     {
-      auto one_layout = make_layout(make_shape(Int<1>{}), make_stride(Int<1>{}));
-      detail::launch_naive_copy(stream, dst, src, one_layout, one_layout);
+      auto one_layout =
+        ::cute::make_layout(::cute::make_shape(::cute::Int<1>{}), ::cute::make_stride(::cute::Int<1>{}));
+      launch_naive_copy(stream, dst, src, one_layout, one_layout);
     }
     else
     {
-      int vec_bytes = detail::compute_vec_bytes(src, dst, eff_s, eff_st, eff_rank, sizeof(T));
+      int vec_bytes = compute_vec_bytes(src, dst, eff_s, eff_st, eff_rank, sizeof(T));
 
       // Reconstruct layout with Int<1> for the stride-1 mode (required for correct recast).
       // After sorting, mode 0 has the smallest stride.
       if (eff_rank == 1 && eff_st[0] == 1)
       {
-        auto opt = make_layout(make_shape(eff_s[0]), make_stride(Int<1>{}));
-        detail::dispatch_same_layout(stream, dst, src, opt, vec_bytes);
+        auto opt = ::cute::make_layout(::cute::make_shape(eff_s[0]), ::cute::make_stride(::cute::Int<1>{}));
+        dispatch_same_layout(stream, dst, src, opt, vec_bytes);
       }
       else if (eff_rank == 2 && eff_st[0] == 1)
       {
-        auto opt = make_layout(make_shape(eff_s[0], eff_s[1]), make_stride(Int<1>{}, eff_st[1]));
-        detail::dispatch_same_layout(stream, dst, src, opt, vec_bytes);
+        auto opt =
+          ::cute::make_layout(::cute::make_shape(eff_s[0], eff_s[1]), ::cute::make_stride(::cute::Int<1>{}, eff_st[1]));
+        dispatch_same_layout(stream, dst, src, opt, vec_bytes);
       }
       else if (eff_rank == 3 && eff_st[0] == 1)
       {
-        auto opt = make_layout(
-          make_shape(eff_s[0], eff_s[1], eff_s[2]), make_stride(Int<1>{}, eff_st[1], eff_st[2]));
-        detail::dispatch_same_layout(stream, dst, src, opt, vec_bytes);
+        auto opt = ::cute::make_layout(
+          ::cute::make_shape(eff_s[0], eff_s[1], eff_s[2]),
+          ::cute::make_stride(::cute::Int<1>{}, eff_st[1], eff_st[2]));
+        dispatch_same_layout(stream, dst, src, opt, vec_bytes);
       }
       else
       {
-        detail::launch_naive_copy(stream, dst, src, src_layout, dst_layout);
+        launch_naive_copy(stream, dst, src, src_layout, dst_layout);
       }
     }
   }
@@ -211,14 +215,14 @@ void copy_bytes(
     // Use the original shapes/strides (not coalesced) to preserve 2D structure
     int M        = src_s[0];
     int N        = src_s[1];
-    auto src_opt = make_layout(make_shape(M, N), make_stride(src_st[0], src_st[1]));
-    auto dst_opt = make_layout(make_shape(M, N), make_stride(dst_st[0], dst_st[1]));
-    detail::launch_copy_diff_layout(stream, dst, src, src_opt, dst_opt, M, N);
+    auto src_opt = ::cute::make_layout(::cute::make_shape(M, N), ::cute::make_stride(src_st[0], src_st[1]));
+    auto dst_opt = ::cute::make_layout(::cute::make_shape(M, N), ::cute::make_stride(dst_st[0], dst_st[1]));
+    launch_copy_diff_layout(stream, dst, src, src_opt, dst_opt);
   }
   else
   {
     // Unsupported configuration: fall back to naive kernel
-    detail::launch_naive_copy(stream, dst, src, src_layout, dst_layout);
+    launch_naive_copy(stream, dst, src, src_layout, dst_layout);
   }
 
   cudaError_t err = cudaGetLastError();

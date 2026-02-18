@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,24 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__numeric/gcd_lcm.h>
+#include <cuda/std/array>
+
 #include <cute/layout.hpp>
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental::detail
+namespace cuda::experimental
 {
-
-//! @brief Compute GCD of two non-negative integers.
-_CCCL_HOST inline int gcd(int a, int b)
-{
-  while (b != 0)
-  {
-    int t = b;
-    b     = a % b;
-    a     = t;
-  }
-  return a;
-}
 
 //! @brief Merge adjacent contiguous modes in-place.
 //!
@@ -50,7 +41,8 @@ _CCCL_HOST inline int gcd(int a, int b)
 //! @param rank   Number of modes
 //!
 //! @pre Modes must be sorted by ascending absolute stride before calling.
-_CCCL_HOST inline void runtime_coalesce(int* shape, int* stride, int rank)
+template <size_t N>
+_CCCL_HOST void runtime_coalesce(::cuda::std::array<int, N>& shape, ::cuda::std::array<int, N>& stride, int rank)
 {
   for (int i = 0; i < rank - 1; ++i)
   {
@@ -76,7 +68,8 @@ _CCCL_HOST inline void runtime_coalesce(int* shape, int* stride, int rank)
 //! @param shape  Array of mode shapes (reordered in-place)
 //! @param stride Array of mode strides (reordered in-place)
 //! @param rank   Number of modes
-_CCCL_HOST inline void sort_modes_by_stride(int* shape, int* stride, int rank)
+template <size_t N>
+_CCCL_HOST void sort_modes_by_stride(::cuda::std::array<int, N>& shape, ::cuda::std::array<int, N>& stride, int rank)
 {
   for (int i = 1; i < rank; ++i)
   {
@@ -100,8 +93,13 @@ _CCCL_HOST inline void sort_modes_by_stride(int* shape, int* stride, int rank)
 //! Modes with shape==1 are skipped (they carry no data).
 //!
 //! @return true if both layouts have the same effective shapes and strides
-_CCCL_HOST inline bool
-layouts_match(const int* src_shape, const int* src_stride, const int* dst_shape, const int* dst_stride, int rank)
+template <size_t N>
+_CCCL_HOST bool layouts_match(
+  const ::cuda::std::array<int, N>& src_shape,
+  const ::cuda::std::array<int, N>& src_stride,
+  const ::cuda::std::array<int, N>& dst_shape,
+  const ::cuda::std::array<int, N>& dst_stride,
+  int rank)
 {
   int si = 0;
   int di = 0;
@@ -141,6 +139,23 @@ layouts_match(const int* src_shape, const int* src_stride, const int* dst_shape,
   return si >= rank && di >= rank;
 }
 
+//! @brief Compute the alignment of a pointer in bytes.
+//!
+//! Returns the largest power-of-two that divides the pointer address.
+//! For a null pointer, returns 16 (maximum vectorization width).
+//!
+//! @param p Pointer to check
+//! @return Alignment in bytes (always a power of two, at most the true alignment)
+_CCCL_HOST inline int ptr_alignment(const void* p)
+{
+  auto addr = reinterpret_cast<uintptr_t>(p);
+  if (addr == 0)
+  {
+    return 16;
+  }
+  return static_cast<int>(addr & (~addr + 1));
+}
+
 //! @brief Compute the maximum vectorization width in bytes.
 //!
 //! Considers pointer alignment, all stride alignments, and shape divisibility.
@@ -154,20 +169,16 @@ layouts_match(const int* src_shape, const int* src_stride, const int* dst_shape,
 //! @param rank       Number of modes
 //! @param elem_bytes sizeof(T) for the element type
 //! @return Maximum safe vectorization width in bytes
-template <typename T>
-_CCCL_HOST inline int
-compute_vec_bytes(const T* src_ptr, const T* dst_ptr, const int* shape, const int* stride, int rank, int elem_bytes)
+template <typename T, size_t N>
+_CCCL_HOST int compute_vec_bytes(
+  const T* src_ptr,
+  const T* dst_ptr,
+  const ::cuda::std::array<int, N>& shape,
+  const ::cuda::std::array<int, N>& stride,
+  int rank,
+  int elem_bytes)
 {
-  auto ptr_align = [](const void* p) -> int {
-    auto addr = reinterpret_cast<uintptr_t>(p);
-    if (addr == 0)
-    {
-      return 16;
-    }
-    return static_cast<int>(addr & (~addr + 1));
-  };
-
-  int vec_bytes = gcd(ptr_align(src_ptr), ptr_align(dst_ptr));
+  int vec_bytes = ::cuda::std::gcd(ptr_alignment(src_ptr), ptr_alignment(dst_ptr));
 
   for (int i = 0; i < rank; ++i)
   {
@@ -176,7 +187,7 @@ compute_vec_bytes(const T* src_ptr, const T* dst_ptr, const int* shape, const in
       continue;
     }
     int stride_bytes = (stride[i] < 0 ? -stride[i] : stride[i]) * elem_bytes;
-    vec_bytes        = gcd(vec_bytes, stride_bytes);
+    vec_bytes        = ::cuda::std::gcd(vec_bytes, stride_bytes);
   }
 
   if (vec_bytes > 16)
@@ -210,18 +221,18 @@ compute_vec_bytes(const T* src_ptr, const T* dst_ptr, const int* shape, const in
 //! @param layout  The CuTe layout to extract from
 //! @param shape   Output array for shapes (must have at least rank elements)
 //! @param stride  Output array for strides (must have at least rank elements)
-template <typename Layout>
-_CCCL_HOST inline void extract_layout(const Layout& layout, int* out_shape, int* out_stride)
+template <typename Layout, size_t N>
+_CCCL_HOST void
+extract_layout(const Layout& layout, ::cuda::std::array<int, N>& out_shape, ::cuda::std::array<int, N>& out_stride)
 {
-  using namespace cute;
-  constexpr int R = decltype(rank(layout))::value;
-  for_each(make_seq<R>{}, [&](auto i) {
-    out_shape[i]  = static_cast<int>(get<i>(shape(layout)));
-    out_stride[i] = static_cast<int>(get<i>(stride(layout)));
+  constexpr int R = decltype(::cute::rank(layout))::value;
+  ::cute::for_each(::cute::make_seq<R>{}, [&](auto i) {
+    out_shape[i]  = static_cast<int>(::cute::get<i>(::cute::shape(layout)));
+    out_stride[i] = static_cast<int>(::cute::get<i>(::cute::stride(layout)));
   });
 }
 
-} // namespace cuda::experimental::detail
+} // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
 
