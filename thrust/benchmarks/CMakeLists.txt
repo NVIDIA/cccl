@@ -80,7 +80,6 @@ function(add_bench_dir bench_dir)
 	      AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))
 	    # Wrap main so HPX's __wrap_main runs before nvbench main.
 	    target_link_libraries(${bench_name} PRIVATE HPX::hpx HPX::auto_wrap_main)
-
       endif()
 
       if ("CUDA" STREQUAL "${config_device}")
