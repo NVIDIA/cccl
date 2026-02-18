@@ -211,7 +211,10 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   OffsetT segment_size,
   int num_segments,
   ReductionOpT reduction_op,
-  InitT init)
+  InitT init,
+  AccumT* d_partial_out,
+  int full_chunk_size,
+  int blocks_per_segment)
 {
   using ActivePolicyT = typename ChainedPolicyT::ActivePolicy;
 
@@ -297,66 +300,42 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   }
   else
   {
-    const auto segment_begin = static_cast<::cuda::std::int64_t>(bid) * segment_size;
-
-    // Consume input tiles
-    AccumT block_aggregate = AgentReduceT(temp_storage.large_storage, d_in + segment_begin, reduction_op)
-                               .ConsumeRange({}, static_cast<int>(segment_size));
-
-    if (tid == 0)
+    if (d_partial_out != nullptr) // two-phase reduction with partial aggregates
     {
-      reduce::finalize_and_store_aggregate(d_out + bid, reduction_op, init, block_aggregate);
+      const auto chunk_id             = bid % blocks_per_segment;
+      const bool is_last_chunk        = chunk_id == (blocks_per_segment - 1);
+      const bool has_incomplete_chunk = (segment_size % full_chunk_size != 0);
+
+      // If the last chunk is incomplete, only process the valid portion of the segment
+      const auto chunk_size =
+        (has_incomplete_chunk && is_last_chunk) ? (segment_size % full_chunk_size) : full_chunk_size;
+
+      const auto segment_id    = bid / blocks_per_segment;
+      const auto segment_begin = static_cast<::cuda::std::int64_t>(segment_id) * segment_size;
+
+      const auto chunk_offset = chunk_id * full_chunk_size;
+      const auto chunk_begin  = segment_begin + chunk_offset;
+
+      AccumT block_aggregate =
+        AgentReduceT(temp_storage.large_storage, d_in + chunk_begin, reduction_op).ConsumeRange({}, chunk_size);
+      if (tid == 0)
+      {
+        *(d_partial_out + bid) = block_aggregate;
+      }
     }
-  }
-}
+    else // single-phase reduction with direct write-out of final aggregate
+    {
+      const auto segment_begin = static_cast<::cuda::std::int64_t>(bid) * segment_size;
 
-template <typename ChainedPolicyT,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename OffsetT,
-          typename ReductionOpT,
-          typename InitT,
-          typename AccumT>
-CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
-  ChainedPolicyT::ActivePolicy::ReducePolicy::
-    BLOCK_THREADS)) void DeviceFixedSizeSegmentedReducePartialKernel(InputIteratorT d_in,
-                                                                     OutputIteratorT d_out,
-                                                                     OffsetT segment_size,
-                                                                     int full_chunk_size,
-                                                                     int blocks_per_segment,
-                                                                     int num_segments,
-                                                                     ReductionOpT reduction_op,
-                                                                     InitT init)
-{
-  using ActivePolicyT = typename ChainedPolicyT::ActivePolicy;
+      // Consume input tiles
+      AccumT block_aggregate = AgentReduceT(temp_storage.large_storage, d_in + segment_begin, reduction_op)
+                                 .ConsumeRange({}, static_cast<int>(segment_size));
 
-  // Thread block type for reducing input tiles
-  using AgentReduceT =
-    reduce::AgentReduce<typename ActivePolicyT::ReducePolicy, InputIteratorT, int, ReductionOpT, AccumT>;
-
-  // Shared memory storage
-  __shared__ typename AgentReduceT::TempStorage temp_storage;
-
-  const int bid = blockIdx.x;
-  const int tid = threadIdx.x;
-
-  const auto chunk_id             = bid % blocks_per_segment;
-  const bool is_last_chunk        = chunk_id == (blocks_per_segment - 1);
-  const bool has_incomplete_chunk = (segment_size % full_chunk_size != 0);
-
-  // If the last chunk is incomplete, only process the valid portion of the segment
-  const auto chunk_size = (has_incomplete_chunk && is_last_chunk) ? (segment_size % full_chunk_size) : full_chunk_size;
-
-  const auto segment_id            = bid / blocks_per_segment;
-  const auto segment_begin         = static_cast<::cuda::std::int64_t>(segment_id) * segment_size;
-  const auto chunk_offset          = chunk_id * full_chunk_size;
-  const auto partial_segment_begin = segment_begin + chunk_offset;
-
-  AccumT block_aggregate =
-    AgentReduceT(temp_storage, d_in + partial_segment_begin, reduction_op).ConsumeRange({}, chunk_size);
-  if (tid == 0)
-  {
-    finalize_and_store_aggregate(d_out + bid, reduction_op, reduce::empty_problem_init_t<InitT>{init}, block_aggregate);
+      if (tid == 0)
+      {
+        reduce::finalize_and_store_aggregate(d_out + bid, reduction_op, init, block_aggregate);
+      }
+    }
   }
 }
 } // namespace detail::segmented_reduce

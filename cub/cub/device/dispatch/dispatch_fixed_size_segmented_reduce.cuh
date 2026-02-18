@@ -65,11 +65,6 @@ struct DeviceFixedSizeSegmentedReduceKernelSource
       DeviceFixedSizeSegmentedReduceKernel<MaxPolicyT, InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT>)
 
   CUB_DEFINE_KERNEL_GETTER(
-    FixedSizeSegmentedReduceKernelPartial,
-    segmented_reduce::
-      DeviceFixedSizeSegmentedReducePartialKernel<MaxPolicyT, InputIteratorT, AccumT*, OffsetT, ReductionOpT, InitT, AccumT>)
-
-  CUB_DEFINE_KERNEL_GETTER(
     FixedSizeSegmentedReduceKernelFinal,
     segmented_reduce::
       DeviceFixedSizeSegmentedReduceKernel<MaxPolicyT, AccumT*, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT>)
@@ -238,7 +233,10 @@ struct DispatchFixedSizeSegmentedReduce
               segment_size,
               static_cast<::cuda::std::int32_t>(num_current_segments),
               reduction_op,
-              init);
+              init,
+              static_cast<AccumT*>(nullptr),
+              0,
+              0);
 
       d_in += num_segments_per_invocation * segment_size;
       d_out += num_segments_per_invocation;
@@ -322,13 +320,14 @@ struct DispatchFixedSizeSegmentedReduce
             launcher_factory(num_current_blocks, ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
               .doit(fixed_size_segmented_reduce_kernel_partial,
                     d_in,
-                    d_block_reductions,
+                    d_out,
                     segment_size,
-                    seg_chunk_size,
-                    tiles_per_segment,
                     num_current_blocks,
                     reduction_op,
-                    init)))
+                    init,
+                    d_block_reductions,
+                    seg_chunk_size,
+                    tiles_per_segment)))
       {
         return error;
       }
@@ -369,7 +368,10 @@ struct DispatchFixedSizeSegmentedReduce
                     final_segment_size,
                     static_cast<::cuda::std::int32_t>(num_current_segments),
                     reduction_op,
-                    init)))
+                    init,
+                    static_cast<AccumT*>(nullptr),
+                    0,
+                    0)))
       {
         return error;
       }
@@ -406,7 +408,7 @@ struct DispatchFixedSizeSegmentedReduce
     // if multiple chunks, use two-phase reduction by reducing large segments in chunks, by assigning each chunk to a
     // block
     return InvokeTwoPhase<ActivePolicyT>(
-      kernel_source.FixedSizeSegmentedReduceKernelPartial(), kernel_source.FixedSizeSegmentedReduceKernelFinal());
+      kernel_source.FixedSizeSegmentedReduceKernel(), kernel_source.FixedSizeSegmentedReduceKernelFinal());
   }
 
   //---------------------------------------------------------------------------
