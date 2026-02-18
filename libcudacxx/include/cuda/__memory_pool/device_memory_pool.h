@@ -114,7 +114,7 @@ struct device_memory_pool : device_memory_pool_ref
   //! ``cudaMallocAsync``.
   //! @param __device_id The device id of the device the stream pool is
   //! constructed on.
-  //! @param __pool_properties Optional, additional properties of the pool to be
+  //! @param __properties Optional, additional properties of the pool to be
   //! created.
   _CCCL_HOST_API device_memory_pool(::cuda::device_ref __device_id, memory_pool_properties __properties = {})
       : device_memory_pool_ref(__create_cuda_mempool(
