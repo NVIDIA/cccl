@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/hierarchy.h>
+#include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__numeric/gcd_lcm.h>
 #include <cuda/std/array>
 
@@ -30,6 +32,24 @@
 
 namespace cuda::experimental
 {
+
+//! @brief Compute the product of static extents from a cuda::std::extents type.
+template <typename>
+struct __extents_product;
+
+template <typename IndexType, ::cuda::std::size_t... Es>
+struct __extents_product<::cuda::std::extents<IndexType, Es...>>
+{
+  static constexpr int value = static_cast<int>((Es * ...));
+};
+
+//! @brief Extract the compile-time block thread count from a kernel_config type.
+//!
+//! Uses the hierarchy type embedded in Config to find the block-level descriptor,
+//! then computes the product of its static extents.
+template <typename Config>
+inline constexpr int __config_block_threads = __extents_product<
+  typename Config::hierarchy_type::template level_desc_type<::cuda::block_level>::extents_type>::value;
 
 //! @brief Merge adjacent contiguous modes in-place.
 //!
