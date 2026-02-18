@@ -61,3 +61,35 @@ C2H_TEST("cub::DeviceRadixSort::SortPairsDescending env-based API", "[radix_sort
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
 }
+
+C2H_TEST("cub::DeviceRadixSort::SortKeys env-based API", "[radix_sort][env]")
+{
+  // example-begin radix-sort-keys-env
+  auto keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out = thrust::device_vector<int>(7);
+
+  auto error = cub::DeviceRadixSort::SortKeys(
+    keys_in.data().get(), keys_out.data().get(), static_cast<int>(keys_in.size()), 0, sizeof(int) * 8);
+
+  thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  // example-end radix-sort-keys-env
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(keys_out == expected_keys);
+}
+
+C2H_TEST("cub::DeviceRadixSort::SortKeysDescending env-based API", "[radix_sort][env]")
+{
+  // example-begin radix-sort-keys-descending-env
+  auto keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out = thrust::device_vector<int>(7);
+
+  auto error = cub::DeviceRadixSort::SortKeysDescending(
+    keys_in.data().get(), keys_out.data().get(), static_cast<int>(keys_in.size()), 0, sizeof(int) * 8);
+
+  thrust::device_vector<int> expected_keys{9, 8, 7, 6, 5, 3, 0};
+  // example-end radix-sort-keys-descending-env
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(keys_out == expected_keys);
+}
