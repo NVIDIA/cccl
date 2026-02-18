@@ -22,7 +22,6 @@
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
 
-#include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -197,12 +196,7 @@ private:
       decomposer);
   }
 
-  template <typename TuningEnvT,
-            SortOrder Order,
-            typename KeyT,
-            typename ValueT,
-            typename OffsetT,
-            ::cuda::execution::determinism::__determinism_t Determinism>
+  template <typename TuningEnvT, SortOrder Order, typename KeyT, typename ValueT, typename OffsetT>
   CUB_RUNTIME_FUNCTION static cudaError_t sort_pairs_impl(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -213,11 +207,8 @@ private:
     OffsetT num_items,
     int begin_bit,
     int end_bit,
-    ::cuda::execution::determinism::__determinism_holder_t<Determinism> determinism_holder_arg,
     cudaStream_t stream)
   {
-    (void) determinism_holder_arg; // determinism is of no use in DeviceRadixSort at the moment
-
     // We cast away const-ness, but will *not* write to these arrays.
     // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
     // create a new double-buffer internally when the ``is_overwrite_ok`` flag
@@ -418,25 +409,6 @@ public:
   //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
   //!
-  //! Determinism
-  //! --------------------------------------------------
-  //!
-  //! DeviceRadixSort is inherently ``gpu_to_gpu`` deterministic because it uses a
-  //! counting-based sorting algorithm that processes each digit position systematically.
-  //! The algorithm is stable: elements with equal keys maintain their original relative order.
-  //!
-  //! Snippet
-  //! --------------------------------------------------
-  //!
-  //! The code snippet below illustrates the sorting of key-value pairs using
-  //! determinism requirements:
-  //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
-  //!     :language: c++
-  //!     :dedent:
-  //!     :start-after: example-begin radix-sort-pairs-env-determinism
-  //!     :end-before: example-end radix-sort-pairs-env-determinism
-  //!
   //! @endrst
   //!
   //! @tparam KeyT
@@ -481,7 +453,7 @@ public:
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>,
             typename ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairs(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairs(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     const ValueT* d_values_in,
@@ -493,25 +465,12 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
-                  "Determinism should be used inside requires to have an effect.");
-
     using offset_t = detail::choose_offset_t<NumItemsT>;
-
-    // Extract determinism from environment, defaulting to gpu_to_gpu (RadixSort is inherently deterministic)
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using requested_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t, //
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::gpu_to_gpu_t>;
-
-    using determinism_t = ::cuda::execution::determinism::gpu_to_gpu_t;
 
     // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
-      return sort_pairs_impl<tuning_t, SortOrder::Ascending, KeyT, ValueT, offset_t, determinism_t::value>(
+      return sort_pairs_impl<tuning_t, SortOrder::Ascending>(
         storage,
         bytes,
         d_keys_in,
@@ -521,7 +480,6 @@ public:
         static_cast<offset_t>(num_items),
         begin_bit,
         end_bit,
-        determinism_t{},
         stream);
     });
   }
