@@ -105,6 +105,22 @@ CCCL_IGNORE_MSVC_TRADITIONAL_PREPROCESSOR_WARNING to suppress this warning.
   _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6) _Mp(_7) _Mp(_8)
 #define _CCCL_PP_FOR_EACH_9(_Mp, _1, _2, _3, _4, _5, _6, _7, _8, _9) \
   _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6) _Mp(_7) _Mp(_8) _Mp(_9)
+#define _CCCL_PP_FOR_EACH_10(_Mp, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10) \
+  _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6) _Mp(_7) _Mp(_8) _Mp(_9) _Mp(_10)
+#define _CCCL_PP_FOR_EACH_11(_Mp, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11) \
+  _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6) _Mp(_7) _Mp(_8) _Mp(_9) _Mp(_10) _Mp(_11)
+#define _CCCL_PP_FOR_EACH_12(_Mp, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12) \
+  _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6) _Mp(_7) _Mp(_8) _Mp(_9) _Mp(_10) _Mp(_11) _Mp(_12)
+#define _CCCL_PP_FOR_EACH_13(_Mp, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13) \
+  _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6) _Mp(_7) _Mp(_8) _Mp(_9) _Mp(_10) _Mp(_11) _Mp(_12) _Mp(_13)
+#define _CCCL_PP_FOR_EACH_14(_Mp, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14) \
+  _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6) _Mp(_7) _Mp(_8) _Mp(_9) _Mp(_10) _Mp(_11) _Mp(_12) _Mp(_13) _Mp(_14)
+#define _CCCL_PP_FOR_EACH_15(_Mp, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15)                    \
+  _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6) _Mp(_7) _Mp(_8) _Mp(_9) _Mp(_10) _Mp(_11) _Mp(_12) _Mp(_13) _Mp(_14) \
+    _Mp(_15)
+#define _CCCL_PP_FOR_EACH_16(_Mp, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16)               \
+  _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6) _Mp(_7) _Mp(_8) _Mp(_9) _Mp(_10) _Mp(_11) _Mp(_12) _Mp(_13) _Mp(_14) \
+    _Mp(_15) _Mp(_16)
 
 #define _CCCL_PP_PROBE_EMPTY_PROBE__CCCL_PP_PROBE_EMPTY _CCCL_PP_PROBE(~)
 
