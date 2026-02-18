@@ -1,7 +1,8 @@
 name: Documentation Request
 description: Suggest an idea to improve CCCL
 title: '[DOC]: '
-labels: ['doc']
+type: documentation
+projects: ['NVIDIA/6']
 
 body:
   - type: checkboxes

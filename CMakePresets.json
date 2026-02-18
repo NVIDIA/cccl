@@ -198,6 +198,122 @@
       }
     },
     {
+      "name": "cub-nolid",
+      "displayName": "CUB: No Launcher",
+      "inherits": "cub",
+      "cacheVariables": {
+        "CUB_ENABLE_LAUNCH_NO_LAUNCHER": true,
+        "CUB_ENABLE_LAUNCH_HOST_LAUNCHER": false,
+        "CUB_ENABLE_LAUNCH_DEVICE_LAUNCHER": false,
+        "CUB_ENABLE_LAUNCH_GRAPH_LAUNCHER": false
+      }
+    },
+    {
+      "name": "cub-nolid-cpp17",
+      "displayName": "CUB: No Launcher C++17",
+      "inherits": "cub-nolid",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "17",
+        "CMAKE_CUDA_STANDARD": "17"
+      }
+    },
+    {
+      "name": "cub-nolid-cpp20",
+      "displayName": "CUB: No Launcher C++20",
+      "inherits": "cub-nolid",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CUDA_STANDARD": "20"
+      }
+    },
+    {
+      "name": "cub-lid0",
+      "displayName": "CUB: Host Launch",
+      "inherits": "cub",
+      "cacheVariables": {
+        "CUB_ENABLE_LAUNCH_NO_LAUNCHER": false,
+        "CUB_ENABLE_LAUNCH_HOST_LAUNCHER": true,
+        "CUB_ENABLE_LAUNCH_DEVICE_LAUNCHER": false,
+        "CUB_ENABLE_LAUNCH_GRAPH_LAUNCHER": false
+      }
+    },
+    {
+      "name": "cub-lid0-cpp17",
+      "displayName": "CUB: Host Launch C++17",
+      "inherits": "cub-lid0",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "17",
+        "CMAKE_CUDA_STANDARD": "17"
+      }
+    },
+    {
+      "name": "cub-lid0-cpp20",
+      "displayName": "CUB: Host Launch C++20",
+      "inherits": "cub-lid0",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CUDA_STANDARD": "20"
+      }
+    },
+    {
+      "name": "cub-lid1",
+      "displayName": "CUB: Device Launch",
+      "inherits": "cub",
+      "cacheVariables": {
+        "CUB_ENABLE_LAUNCH_NO_LAUNCHER": false,
+        "CUB_ENABLE_LAUNCH_HOST_LAUNCHER": false,
+        "CUB_ENABLE_LAUNCH_DEVICE_LAUNCHER": true,
+        "CUB_ENABLE_LAUNCH_GRAPH_LAUNCHER": false
+      }
+    },
+    {
+      "name": "cub-lid1-cpp17",
+      "displayName": "CUB: Device Launch C++17",
+      "inherits": "cub-lid1",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "17",
+        "CMAKE_CUDA_STANDARD": "17"
+      }
+    },
+    {
+      "name": "cub-lid1-cpp20",
+      "displayName": "CUB: Device Launch C++20",
+      "inherits": "cub-lid1",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CUDA_STANDARD": "20"
+      }
+    },
+    {
+      "name": "cub-lid2",
+      "displayName": "CUB: Graph Launch",
+      "inherits": "cub",
+      "cacheVariables": {
+        "CUB_ENABLE_LAUNCH_NO_LAUNCHER": false,
+        "CUB_ENABLE_LAUNCH_HOST_LAUNCHER": false,
+        "CUB_ENABLE_LAUNCH_DEVICE_LAUNCHER": false,
+        "CUB_ENABLE_LAUNCH_GRAPH_LAUNCHER": true
+      }
+    },
+    {
+      "name": "cub-lid2-cpp17",
+      "displayName": "CUB: Graph Launch C++17",
+      "inherits": "cub-lid2",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "17",
+        "CMAKE_CUDA_STANDARD": "17"
+      }
+    },
+    {
+      "name": "cub-lid2-cpp20",
+      "displayName": "CUB: Graph Launch C++20",
+      "inherits": "cub-lid2",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CUDA_STANDARD": "20"
+      }
+    },
+    {
       "name": "thrust",
       "displayName": "Thrust",
       "inherits": "base",
@@ -420,6 +536,54 @@
       "configurePreset": "cub-cpp20"
     },
     {
+      "name": "cub-nolid",
+      "configurePreset": "cub-nolid"
+    },
+    {
+      "name": "cub-nolid-cpp17",
+      "configurePreset": "cub-nolid-cpp17"
+    },
+    {
+      "name": "cub-nolid-cpp20",
+      "configurePreset": "cub-nolid-cpp20"
+    },
+    {
+      "name": "cub-lid0",
+      "configurePreset": "cub-lid0"
+    },
+    {
+      "name": "cub-lid0-cpp17",
+      "configurePreset": "cub-lid0-cpp17"
+    },
+    {
+      "name": "cub-lid0-cpp20",
+      "configurePreset": "cub-lid0-cpp20"
+    },
+    {
+      "name": "cub-lid1",
+      "configurePreset": "cub-lid1"
+    },
+    {
+      "name": "cub-lid1-cpp17",
+      "configurePreset": "cub-lid1-cpp17"
+    },
+    {
+      "name": "cub-lid1-cpp20",
+      "configurePreset": "cub-lid1-cpp20"
+    },
+    {
+      "name": "cub-lid2",
+      "configurePreset": "cub-lid2"
+    },
+    {
+      "name": "cub-lid2-cpp17",
+      "configurePreset": "cub-lid2-cpp17"
+    },
+    {
+      "name": "cub-lid2-cpp20",
+      "configurePreset": "cub-lid2-cpp20"
+    },
+    {
       "name": "thrust",
       "configurePreset": "thrust"
     },
@@ -569,6 +733,7 @@
     },
     {
       "name": "cub-nolid",
+      "configurePreset": "cub-nolid",
       "inherits": "cub",
       "filter": {
         "exclude": {
@@ -578,16 +743,17 @@
     },
     {
       "name": "cub-nolid-cpp17",
-      "configurePreset": "cub-cpp17",
+      "configurePreset": "cub-nolid-cpp17",
       "inherits": "cub-nolid"
     },
     {
       "name": "cub-nolid-cpp20",
-      "configurePreset": "cub-cpp20",
+      "configurePreset": "cub-nolid-cpp20",
       "inherits": "cub-nolid"
     },
     {
       "name": "cub-lid0",
+      "configurePreset": "cub-lid0",
       "inherits": "cub",
       "filter": {
         "include": {
@@ -597,16 +763,17 @@
     },
     {
       "name": "cub-lid0-cpp17",
-      "configurePreset": "cub-cpp17",
+      "configurePreset": "cub-lid0-cpp17",
       "inherits": "cub-lid0"
     },
     {
       "name": "cub-lid0-cpp20",
-      "configurePreset": "cub-cpp20",
+      "configurePreset": "cub-lid0-cpp20",
       "inherits": "cub-lid0"
     },
     {
       "name": "cub-lid1",
+      "configurePreset": "cub-lid1",
       "inherits": "cub",
       "filter": {
         "include": {
@@ -616,16 +783,17 @@
     },
     {
       "name": "cub-lid1-cpp17",
-      "configurePreset": "cub-cpp17",
+      "configurePreset": "cub-lid1-cpp17",
       "inherits": "cub-lid1"
     },
     {
       "name": "cub-lid1-cpp20",
-      "configurePreset": "cub-cpp20",
+      "configurePreset": "cub-lid1-cpp20",
       "inherits": "cub-lid1"
     },
     {
       "name": "cub-lid2",
+      "configurePreset": "cub-lid2",
       "inherits": "cub",
       "filter": {
         "include": {
@@ -635,12 +803,12 @@
     },
     {
       "name": "cub-lid2-cpp17",
-      "configurePreset": "cub-cpp17",
+      "configurePreset": "cub-lid2-cpp17",
       "inherits": "cub-lid2"
     },
     {
       "name": "cub-lid2-cpp20",
-      "configurePreset": "cub-cpp20",
+      "configurePreset": "cub-lid2-cpp20",
       "inherits": "cub-lid2"
     },
     {

@@ -35,12 +35,7 @@
 #include <hpx/parallel/algorithms/fill.hpp>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace hpx
-{
-namespace detail
-{
+namespace system::hpx::detail {
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
 void fill(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, const T& value)
