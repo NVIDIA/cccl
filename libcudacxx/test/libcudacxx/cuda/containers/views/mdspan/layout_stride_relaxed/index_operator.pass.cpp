@@ -35,19 +35,18 @@ template <class Mapping, class... Indices>
 _CCCL_CONCEPT operator_constraints = _CCCL_REQUIRES_EXPR((Mapping, variadic Indices), Mapping m, Indices... idxs)(
   _Same_as(typename Mapping::index_type) m(idxs...));
 
-_CCCL_TEMPLATE(class Mapping, class... Indices)
-_CCCL_REQUIRES(operator_constraints<Mapping, Indices...>)
+template <class Mapping, class... Indices>
 __host__ __device__ constexpr bool check_operator_constraints(Mapping m, Indices... idxs)
 {
-  (void) m(idxs...);
-  return true;
-}
-
-_CCCL_TEMPLATE(class Mapping, class... Indices)
-_CCCL_REQUIRES((!operator_constraints<Mapping, Indices...>) )
-__host__ __device__ constexpr bool check_operator_constraints(Mapping, Indices...)
-{
-  return false;
+  if constexpr (operator_constraints<Mapping, Indices...>)
+  {
+    (void) m(idxs...);
+    return true;
+  }
+  else
+  {
+    return false;
+  }
 }
 
 template <class M, class... Args, size_t... Pos>

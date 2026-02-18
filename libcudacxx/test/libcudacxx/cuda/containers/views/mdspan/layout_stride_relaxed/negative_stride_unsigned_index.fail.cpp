@@ -43,7 +43,7 @@ __host__ __device__ constexpr bool test()
 
 int main(int, char**)
 {
-  assert(test());
+  test();
   static_assert(test());
   return 0;
 }

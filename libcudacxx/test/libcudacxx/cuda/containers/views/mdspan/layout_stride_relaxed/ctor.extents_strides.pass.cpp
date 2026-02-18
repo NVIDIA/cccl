@@ -44,12 +44,15 @@ test_construction(E e, cuda::std::array<intptr_t, E::rank()> s, intptr_t input_o
   assert(m.offset() == offset);
 
   // check strides
-  auto strides_obj = m.strides();
   static_assert(noexcept(m.strides()));
-  for (typename E::rank_type r = 0; r < E::rank(); r++)
-  {
-    assert(cuda::std::cmp_equal(m.stride(r), s[r]));
-    assert(cuda::std::cmp_equal(strides_obj.stride(r), s[r]));
+  
+  if constexpr (E::rank() != 0) {
+    auto strides_obj = m.strides();
+    for (typename E::rank_type r = 0; r < E::rank(); r++)
+    {
+      assert(cuda::std::cmp_equal(m.stride(r), s[r]));
+      assert(cuda::std::cmp_equal(strides_obj.stride(r), s[r]));
+    }
   }
 }
 

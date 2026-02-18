@@ -37,59 +37,30 @@
 
 using cuda::std::intptr_t;
 
-template <class FromL,
-          class FromExt,
-          cuda::std::enable_if_t<cuda::std::is_same<FromL, cuda::std::layout_stride>::value, int> = 0>
+template <class FromL, class FromExt>
 __host__ __device__ constexpr auto get_strides(FromExt src_exts)
 {
   using From = typename FromL::template mapping<FromExt>;
 
-  // just construct some strides which aren't layout_left/layout_right
-  cuda::std::array<size_t, FromExt::rank()> strides{};
-  size_t stride = 2;
-  for (size_t r = 0; r < FromExt::rank(); r++)
+  if constexpr (cuda::std::is_same_v<FromL, cuda::std::layout_stride>)
   {
-    strides[r] = stride;
-    stride *= src_exts.extent(r);
-  }
-  return From(src_exts, strides);
-}
-
-template <class FromL,
-          class FromExt,
-          cuda::std::enable_if_t<!cuda::std::is_same<FromL, cuda::std::layout_stride>::value, int> = 0>
-__host__ __device__ constexpr auto get_strides(FromExt src_exts)
-{
-  using From = typename FromL::template mapping<FromExt>;
-  return From(src_exts);
-}
-
-template <bool implicit, class FromL, class ToExt, class FromExt, cuda::std::enable_if_t<implicit, int> = 0>
-__host__ __device__ constexpr void test_conversion(FromExt src_exts)
-{
-  using To   = cuda::layout_stride_relaxed::mapping<ToExt>;
-  using From = typename FromL::template mapping<FromExt>;
-
-  From src(get_strides<FromL>(src_exts));
-  static_assert(noexcept(To(src)));
-  To dest(src);
-
-  assert(dest.extents() == src.extents());
-  assert(dest.offset() == 0); // Standard layouts have zero offset
-
-  if constexpr (ToExt::rank() > 0)
-  {
-    for (typename ToExt::rank_type r = 0; r < ToExt::rank(); r++)
+    // just construct some strides which aren't layout_left/layout_right
+    cuda::std::array<size_t, FromExt::rank()> strides{};
+    size_t stride = 2;
+    for (size_t r = 0; r < FromExt::rank(); r++)
     {
-      assert(cuda::std::cmp_equal(dest.stride(r), src.stride(r)));
+      strides[r] = stride;
+      stride *= src_exts.extent(r);
     }
+    return From(src_exts, strides);
   }
-
-  To dest_implicit = src;
-  assert(dest_implicit.extents() == src.extents());
+  else
+  {
+    return From(src_exts);
+  }
 }
 
-template <bool implicit, class FromL, class ToExt, class FromExt, cuda::std::enable_if_t<!implicit, int> = 0>
+template <bool implicit, class FromL, class ToExt, class FromExt>
 __host__ __device__ constexpr void test_conversion(FromExt src_exts)
 {
   using To   = cuda::layout_stride_relaxed::mapping<ToExt>;
@@ -101,6 +72,7 @@ __host__ __device__ constexpr void test_conversion(FromExt src_exts)
 
   assert(dest.extents() == src.extents());
   assert(dest.offset() == 0);
+
   if constexpr (ToExt::rank() > 0)
   {
     for (typename ToExt::rank_type r = 0; r < ToExt::rank(); r++)
@@ -108,7 +80,16 @@ __host__ __device__ constexpr void test_conversion(FromExt src_exts)
       assert(cuda::std::cmp_equal(dest.stride(r), src.stride(r)));
     }
   }
-  assert((!cuda::std::is_convertible_v<From, To>) );
+
+  if constexpr (implicit)
+  {
+    To dest_implicit = src;
+    assert(dest_implicit.extents() == src.extents());
+  }
+  else
+  {
+    assert((!cuda::std::is_convertible_v<From, To>) );
+  }
 }
 
 template <class FromL, class T1, class T2>

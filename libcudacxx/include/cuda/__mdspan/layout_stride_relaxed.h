@@ -13,8 +13,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/std/__type_traits/is_integer.h>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -30,12 +28,14 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__mdspan/concepts.h>
+#include <cuda/std/__mdspan/empty_base.h>
 #include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__mdspan/submdspan_helper.h>
 #include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/integral_constant_like.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/cmp.h>
@@ -95,7 +95,8 @@ _CCCL_CONCEPT __layout_stride_relaxed_converts_implicit_from_strided =
  **********************************************************************************************************************/
 
 template <class _Extents, class _Strides, class _OffsetType>
-class layout_stride_relaxed::mapping
+class _CCCL_DECLSPEC_EMPTY_BASES layout_stride_relaxed::mapping
+    : private ::cuda::std::__mdspan_ebco<_Extents, _Strides, _OffsetType>
 {
 public:
   static constexpr bool __is_constant_offset = ::cuda::std::__integral_constant_like<_OffsetType>;
@@ -115,28 +116,13 @@ public:
   using rank_type    = typename extents_type::rank_type;
   using offset_type  = _OffsetType;
   using layout_type  = layout_stride_relaxed;
+  using __base       = ::cuda::std::__mdspan_ebco<_Extents, _Strides, _OffsetType>;
 
 private:
-  [[nodiscard]] _CCCL_API static constexpr auto __get_offset_t() noexcept
-  {
-    if constexpr (__is_constant_offset)
-    {
-      return _OffsetType::value;
-    }
-    else
-    {
-      return _OffsetType{};
-    }
-  }
-
-  using __offset_t = decltype(__get_offset_t());
+  using __offset_t = decltype(::cuda::std::__de_ice(_OffsetType{}));
 
   static constexpr rank_type __rank_    = extents_type::rank();
   static constexpr auto __rank_sequence = ::cuda::std::make_index_sequence<extents_type::rank()>();
-
-  extents_type __extents_{};
-  strides_type __strides_{};
-  offset_type __offset_{};
 
   //! @brief Helper to construct strides from another mapping using stride(r) calls
   template <class _StridedLayoutMapping>
@@ -163,7 +149,7 @@ private:
   {
     for (rank_type __r = 0; __r != __rank_; ++__r)
     {
-      if (__strides_.stride(__r) <= 0)
+      if (strides().stride(__r) <= 0)
       {
         return false;
       }
@@ -182,11 +168,9 @@ public:
 
   _CCCL_API constexpr mapping(
     const extents_type& __ext, const strides_type& __strides, offset_type __offset = offset_type{}) noexcept
-      : __extents_(__ext)
-      , __strides_(__strides)
-      , __offset_(__offset)
+      : __base(__ext, __strides, __offset)
   {
-    _CCCL_ASSERT(::cuda::std::cmp_greater_equal(static_cast<__offset_t>(__offset_), __offset_t{0}),
+    _CCCL_ASSERT(::cuda::std::cmp_greater_equal(static_cast<__offset_t>(offset()), __offset_t{0}),
                  "layout_stride_relaxed::mapping: offset must be nonnegative");
     // not catching this could lead to out-of-bounds access later when used inside mdspan
     // using ext_t = dextents<char, 2>;
@@ -203,11 +187,9 @@ public:
                      _CCCL_AND ::cuda::std::is_same_v<typename _OtherMapping::layout_type, layout_stride_relaxed> //
                        _CCCL_AND(::cuda::std::is_convertible_v<typename _OtherMapping::extents_type, extents_type>))
   _CCCL_API constexpr mapping(const _OtherMapping& __other) noexcept
-      : __extents_(__other.extents())
-      , __strides_(__other.strides())
-      , __offset_(__other.offset())
+      : __base(__other.extents(), __other.strides(), __other.offset())
   {
-    _CCCL_ASSERT(::cuda::std::cmp_greater_equal(static_cast<__offset_t>(__offset_), __offset_t{0}),
+    _CCCL_ASSERT(::cuda::std::cmp_greater_equal(static_cast<__offset_t>(offset()), __offset_t{0}),
                  "layout_stride_relaxed::mapping: offset must be nonnegative");
     _CCCL_ASSERT((static_cast<void>(required_span_size()), true),
                  "layout_stride_relaxed::mapping converting ctor: required_span_size() is not representable");
@@ -220,11 +202,9 @@ public:
                      _CCCL_AND ::cuda::std::is_same_v<typename _OtherMapping::layout_type, layout_stride_relaxed> //
                        _CCCL_AND(!::cuda::std::is_convertible_v<typename _OtherMapping::extents_type, extents_type>))
   _CCCL_API explicit constexpr mapping(const _OtherMapping& __other) noexcept
-      : __extents_(__other.extents())
-      , __strides_(__other.strides())
-      , __offset_(__other.offset())
+      : __base(__other.extents(), __other.strides(), __other.offset())
   {
-    _CCCL_ASSERT(::cuda::std::cmp_greater_equal(static_cast<__offset_t>(__offset_), __offset_t{0}),
+    _CCCL_ASSERT(::cuda::std::cmp_greater_equal(static_cast<__offset_t>(offset()), __offset_t{0}),
                  "layout_stride_relaxed::mapping: offset must be nonnegative");
     _CCCL_ASSERT((static_cast<void>(required_span_size()), true),
                  "layout_stride_relaxed::mapping converting ctor: required_span_size() is not representable");
@@ -235,8 +215,7 @@ public:
   _CCCL_REQUIRES(__layout_stride_relaxed_can_convert_from_strided<_StridedLayoutMapping, extents_type> _CCCL_AND
                    __layout_stride_relaxed_converts_implicit_from_strided<_StridedLayoutMapping, extents_type>)
   _CCCL_API constexpr mapping(const _StridedLayoutMapping& __other) noexcept
-      : __extents_(__other.extents())
-      , __strides_(__make_strides(__other))
+      : __base(__other.extents(), __make_strides(__other))
   {
     _CCCL_ASSERT((static_cast<void>(required_span_size()), true),
                  "layout_stride_relaxed::mapping strided ctor: required_span_size() is not representable");
@@ -247,8 +226,7 @@ public:
   _CCCL_REQUIRES(__layout_stride_relaxed_can_convert_from_strided<_StridedLayoutMapping, extents_type> _CCCL_AND(
     !__layout_stride_relaxed_converts_implicit_from_strided<_StridedLayoutMapping, extents_type>))
   _CCCL_API explicit constexpr mapping(const _StridedLayoutMapping& __other) noexcept
-      : __extents_(__other.extents())
-      , __strides_(__make_strides(__other))
+      : __base(__other.extents(), __make_strides(__other))
   {
     _CCCL_ASSERT((static_cast<void>(required_span_size()), true),
                  "layout_stride_relaxed::mapping strided ctor: required_span_size() is not representable");
@@ -258,23 +236,23 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr const extents_type& extents() const noexcept
   {
-    return __extents_;
+    return this->template __get<0>();
   }
 
   [[nodiscard]] _CCCL_API constexpr const strides_type& strides() const noexcept
   {
-    return __strides_;
+    return this->template __get<1>();
   }
 
   [[nodiscard]] _CCCL_API constexpr offset_type offset() const noexcept
   {
-    return __offset_;
+    return this->template __get<2>();
   }
 
   //! @brief Returns the required span size to cover all valid indices
   [[nodiscard]] _CCCL_API constexpr index_type required_span_size() const noexcept
   {
-    const auto __offset_val = static_cast<__offset_t>(__offset_);
+    const auto __offset_val = static_cast<__offset_t>(offset());
     if constexpr (__rank_ == 0)
     {
       // For rank-0 mappings, there is exactly one valid index.
@@ -293,15 +271,15 @@ public:
       index_type __dot{1};
       for (rank_type __r = 0; __r < __rank_; ++__r)
       {
-        const auto __ext = __extents_.extent(__r);
+        const auto __ext = extents().extent(__r);
         if (__ext == index_type{0})
         {
           return index_type{0};
         }
-        _CCCL_ASSERT(!::cuda::overflow_cast<index_type>(::cuda::uabs(__strides_.stride(__r))),
+        _CCCL_ASSERT(!::cuda::overflow_cast<index_type>(::cuda::uabs(strides().stride(__r))),
                      "layout_stride_relaxed::mapping: stride is out of range");
-        const auto __max_index = __strides_.stride(__r) < 0 ? index_type{0} : static_cast<index_type>(__ext - 1);
-        const auto __stride    = static_cast<index_type>(__strides_.stride(__r));
+        const auto __max_index = strides().stride(__r) < 0 ? index_type{0} : static_cast<index_type>(__ext - 1);
+        const auto __stride    = static_cast<index_type>(strides().stride(__r));
         _CCCL_ASSERT(!::cuda::std::__mdspan_detail::__mul_overflow(__max_index, __stride)
                        && !::cuda::add_overflow(__max_index * __stride, __dot),
                      "layout_stride_relaxed::mapping: required_span_size is not representable as index_type");
@@ -332,10 +310,10 @@ public:
   {
     _CCCL_ASSERT((__is_valid_index(__indices) && ...),
                  "layout_stride_relaxed::mapping: index is not representable as index_type");
-    _CCCL_ASSERT(((static_cast<index_type>(__indices) < __extents_.extent(_Pos)) && ...),
+    _CCCL_ASSERT(((static_cast<index_type>(__indices) < extents().extent(_Pos)) && ...),
                  "layout_stride_relaxed::mapping: index is out of bounds");
-    return (static_cast<index_type>(__offset_) + ...
-            + (static_cast<index_type>(__indices) * static_cast<index_type>(__strides_.stride(_Pos))));
+    return (static_cast<index_type>(offset()) + ...
+            + (static_cast<index_type>(__indices) * static_cast<index_type>(strides().stride(_Pos))));
   }
 
   //! @brief Maps multidimensional indices to a linear index
@@ -398,13 +376,13 @@ public:
   //! @brief Returns true if offset is zero (standard strided behavior)
   [[nodiscard]] _CCCL_API constexpr bool is_strided() const noexcept
   {
-    return static_cast<__offset_t>(__offset_) == __offset_t{0};
+    return static_cast<__offset_t>(offset()) == __offset_t{0};
   }
 
   [[nodiscard]] _CCCL_API constexpr __offset_t stride(rank_type __r) const noexcept
   {
     _CCCL_ASSERT(__r < __rank_, "layout_stride_relaxed::mapping::stride(): invalid rank index");
-    return __strides_.stride(__r);
+    return strides().stride(__r);
   }
 
   // Conversion operators to layout_stride
@@ -413,16 +391,16 @@ public:
   //! @pre offset() == 0 and all strides are positive
   [[nodiscard]] _CCCL_API explicit constexpr operator ::cuda::std::layout_stride::mapping<extents_type>() const noexcept
   {
-    _CCCL_ASSERT(static_cast<__offset_t>(__offset_) == __offset_t{0},
+    _CCCL_ASSERT(static_cast<__offset_t>(offset()) == __offset_t{0},
                  "layout_stride_relaxed::mapping: cannot convert to layout_stride with non-zero offset");
     _CCCL_ASSERT(__has_positive_strides(),
                  "layout_stride_relaxed::mapping: cannot convert to layout_stride with non-positive strides");
     ::cuda::std::array<index_type, __rank_> __stride_array{};
     for (rank_type __r = 0; __r != __rank_; ++__r)
     {
-      __stride_array[__r] = static_cast<index_type>(__strides_.stride(__r));
+      __stride_array[__r] = static_cast<index_type>(strides().stride(__r));
     }
-    return ::cuda::std::layout_stride::mapping<extents_type>(__extents_, __stride_array);
+    return ::cuda::std::layout_stride::mapping<extents_type>(extents(), __stride_array);
   }
 
   // [mdspan.layout.stride.cmp], comparison

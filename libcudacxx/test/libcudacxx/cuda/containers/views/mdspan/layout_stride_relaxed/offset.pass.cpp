@@ -93,10 +93,6 @@ __host__ __device__ constexpr void test_2d_partial_reverse()
   // Layout: physical[offset - i*stride0 + j*stride1]
   //
   // With strides = {-4, 1} and offset = 8:
-  // (0,0) -> 8 - 0*4 + 0*1 = 8
-  // (1,0) -> 8 - 1*4 + 0*1 = 4
-  // (2,0) -> 8 - 2*4 + 0*1 = 0
-  // (0,1) -> 8 - 0*4 + 1*1 = 9
 
   using E            = cuda::std::extents<int, 3, 4>;
   using M            = cuda::layout_stride_relaxed::mapping<E>;
@@ -107,10 +103,10 @@ __host__ __device__ constexpr void test_2d_partial_reverse()
 
   M m(E{}, strides_type(-4, 1), static_cast<offset_type>(offset));
 
-  assert(m(0, 0) == 8);
-  assert(m(1, 0) == 4);
-  assert(m(2, 0) == 0);
-  assert(m(0, 1) == 9);
+  assert(m(0, 0) == 8); // 8 - 0*4 + 0*1 = 8
+  assert(m(1, 0) == 4); // 8 - 1*4 + 0*1 = 4
+  assert(m(2, 0) == 0); // 8 - 2*4 + 0*1 = 0
+  assert(m(0, 1) == 9); // 8 - 0*4 + 1*1 = 9
   assert(m(2, 3) == 3);
 }
 

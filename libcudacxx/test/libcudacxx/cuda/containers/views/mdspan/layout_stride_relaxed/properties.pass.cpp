@@ -28,22 +28,6 @@
 
 using cuda::std::intptr_t;
 
-template <class E, class M, cuda::std::enable_if_t<(E::rank() > 0), int> = 0>
-__host__ __device__ constexpr void test_strides(E ext, M& m, const M& c_m, cuda::std::array<intptr_t, E::rank()> strides)
-{
-  for (typename E::rank_type r = 0; r < E::rank(); r++)
-  {
-    assert(cuda::std::cmp_equal(m.stride(r), strides[r]));
-    assert(cuda::std::cmp_equal(c_m.stride(r), strides[r]));
-    static_assert(noexcept(m.stride(r)));
-    static_assert(noexcept(c_m.stride(r)));
-  }
-}
-
-template <class E, class M, cuda::std::enable_if_t<(E::rank() == 0), int> = 0>
-__host__ __device__ constexpr void test_strides(E, M&, const M&, cuda::std::array<intptr_t, E::rank()>)
-{}
-
 template <class E>
 __host__ __device__ constexpr void test_layout_mapping_stride_relaxed(
   E ext, [[maybe_unused]] cuda::std::array<intptr_t, E::rank()> input_strides, intptr_t offset, bool expected_is_strided)
@@ -92,7 +76,16 @@ __host__ __device__ constexpr void test_layout_mapping_stride_relaxed(
   static_assert(noexcept(m.is_strided()));
   static_assert(noexcept(c_m.is_strided()));
 
-  test_strides(ext, m, c_m, input_strides);
+  if constexpr (E::rank() > 0)
+  {
+    for (typename E::rank_type r = 0; r < E::rank(); r++)
+    {
+      assert(cuda::std::cmp_equal(m.stride(r), input_strides[r]));
+      assert(cuda::std::cmp_equal(c_m.stride(r), input_strides[r]));
+      static_assert(noexcept(m.stride(r)));
+      static_assert(noexcept(c_m.stride(r)));
+    }
+  }
 
   static_assert(cuda::std::is_trivially_copyable_v<M>);
 }

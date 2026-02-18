@@ -27,6 +27,7 @@
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -150,12 +151,37 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
   {}
 
   template <class _Arg1>
-  static constexpr bool __is_constructible_from_one_arg =
-    is_constructible_v<_Elem1, _Arg1> && is_default_constructible_v<_Elem2>;
+  _CCCL_API static constexpr bool __is_constructible_from_one_arg_fn() noexcept
+  {
+    if constexpr (is_same_v<__mdspan_ebco, remove_cvref_t<_Arg1>>)
+    {
+      return false;
+    }
+    else
+    {
+      return is_constructible_v<_Elem1, _Arg1> && is_default_constructible_v<_Elem2>;
+    }
+  }
+
+  template <class _Arg1>
+  static constexpr bool __is_constructible_from_one_arg = __is_constructible_from_one_arg_fn<_Arg1>();
+
+  template <class _Arg1>
+  _CCCL_API static constexpr bool __is_nothrow_constructible_from_one_arg_fn() noexcept
+  {
+    if constexpr (is_same_v<__mdspan_ebco, remove_cvref_t<_Arg1>>)
+    {
+      return false;
+    }
+    else
+    {
+      return is_nothrow_constructible_v<_Elem1, _Arg1> && is_nothrow_default_constructible_v<_Elem2>;
+    }
+  }
 
   template <class _Arg1>
   static constexpr bool __is_nothrow_constructible_from_one_arg =
-    is_nothrow_constructible_v<_Elem1, _Arg1> && is_nothrow_default_constructible_v<_Elem2>;
+    __is_nothrow_constructible_from_one_arg_fn<_Arg1>();
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
@@ -241,13 +267,39 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
   {}
 
   template <class _Arg1>
-  static constexpr bool __is_constructible_from_one_arg =
-    is_constructible_v<_Elem1, _Arg1> && is_default_constructible_v<_Elem2> && is_default_constructible_v<_Elem3>;
+  _CCCL_API static constexpr bool __is_constructible_from_one_arg_fn() noexcept
+  {
+    if constexpr (is_same_v<__mdspan_ebco, remove_cvref_t<_Arg1>>)
+    {
+      return false;
+    }
+    else
+    {
+      return is_constructible_v<_Elem1, _Arg1> && is_default_constructible_v<_Elem2>
+          && is_default_constructible_v<_Elem3>;
+    }
+  }
+
+  template <class _Arg1>
+  static constexpr bool __is_constructible_from_one_arg = __is_constructible_from_one_arg_fn<_Arg1>();
+
+  template <class _Arg1>
+  _CCCL_API static constexpr bool __is_nothrow_constructible_from_one_arg_fn() noexcept
+  {
+    if constexpr (is_same_v<__mdspan_ebco, remove_cvref_t<_Arg1>>)
+    {
+      return false;
+    }
+    else
+    {
+      return is_nothrow_constructible_v<_Elem1, _Arg1> && is_nothrow_default_constructible_v<_Elem2>
+          && is_nothrow_default_constructible_v<_Elem3>;
+    }
+  }
 
   template <class _Arg1>
   static constexpr bool __is_nothrow_constructible_from_one_arg =
-    is_nothrow_constructible_v<_Elem1, _Arg1> && is_nothrow_default_constructible_v<_Elem2>
-    && is_nothrow_default_constructible_v<_Elem3>;
+    __is_nothrow_constructible_from_one_arg_fn<_Arg1>();
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)

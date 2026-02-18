@@ -26,6 +26,7 @@ __host__ __device__ constexpr void test_conversion(E ext, cuda::std::array<intpt
   using RelaxedMapping = cuda::layout_stride_relaxed::template mapping<E>;
   using StrideMapping  = cuda::std::layout_stride::template mapping<E>;
   using strides_type   = typename RelaxedMapping::strides_type;
+
   RelaxedMapping src(ext, strides_type(input_strides), 0); // zero offset
   static_assert(!cuda::std::is_convertible_v<RelaxedMapping, StrideMapping>,
                 "conversion should be explicit, not implicit");
