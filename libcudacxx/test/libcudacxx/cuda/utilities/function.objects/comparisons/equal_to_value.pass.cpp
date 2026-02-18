@@ -23,7 +23,7 @@ struct ComparisonObject
 {
   int value;
 
-  __host__ __device__ constexpr friend bool operator==(const ComparisonObject& lhs, const ComparisonObject& rhs) noexcept
+  __host__ __device__ constexpr friend bool operator==(const ComparisonObject& lhs, const ComparisonObject& rhs)
   {
     return lhs.value == rhs.value;
   }
@@ -37,6 +37,7 @@ __host__ __device__ constexpr void test_numeric_types()
     const cuda::equal_to_value<int> eq(1);
     assert(eq(1) == true);
     assert(eq(2) == false);
+    static_assert(noexcept(eq(1)));
   }
 
   // floating point values
@@ -44,19 +45,22 @@ __host__ __device__ constexpr void test_numeric_types()
     const cuda::equal_to_value<double> eq(3.14);
     assert(eq(3.14) == true);
     assert(eq(2.71) == false);
+    static_assert(noexcept(eq(3.14)));
   }
 }
 
 // Test suit for heterogeneous comparisons
 __host__ __device__ constexpr void test_heterogeneous_comparisons()
 {
-  const cuda::equal_to_value<int> eq(42);
+  const cuda::equal_to_value<int> eq{42};
   assert(eq(42.0) == true);
   assert(eq(43.0) == false);
+  static_assert(noexcept(eq(42.0)));
 
   const cuda::equal_to_value<double> eqd(42.0);
   assert(eqd(42) == true);
   assert(eqd(43) == false);
+  static_assert(noexcept(eq(42)));
 }
 
 // Test suit for user-defined types
@@ -66,43 +70,27 @@ __host__ __device__ constexpr void test_user_defined_types()
   const ComparisonObject b{42};
   const ComparisonObject c{43};
 
-  const cuda::equal_to_value<ComparisonObject> eq(a);
+  const cuda::equal_to_value<ComparisonObject> eq{a};
   assert(eq(b) == true);
   assert(eq(c) == false);
+  static_assert(!noexcept(eq(b)));
 }
 
 // Test suit for CTAD
 __host__ __device__ constexpr void test_ctad()
 {
   // built-in types
-  const cuda::equal_to_value eq(42);
-  auto is_same = ::cuda::std::is_same_v<decltype(eq), const cuda::equal_to_value<int>>;
-  assert(is_same);
+  const cuda::equal_to_value eq{42};
+  static_assert(::cuda::std::is_same_v<decltype(eq), const cuda::equal_to_value<int>>);
   assert(eq(42) == true);
   assert(eq(43) == false);
 
   // user-defined types
   const ComparisonObject obj{42};
-  const cuda::equal_to_value eq_obj(obj);
-  auto is_same_obj = ::cuda::std::is_same_v<decltype(eq_obj), const cuda::equal_to_value<ComparisonObject>>;
-  assert(is_same_obj);
+  const cuda::equal_to_value eq_obj{obj};
+  static_assert(::cuda::std::is_same_v<decltype(eq_obj), const cuda::equal_to_value<ComparisonObject>>);
   assert(eq_obj(obj) == true);
   assert(eq_obj(ComparisonObject{43}) == false);
-}
-
-// Test suit for noexcept
-__host__ __device__ constexpr void test_noexcept()
-{
-  // built-in types
-  const cuda::equal_to_value<int> eq(42);
-  assert(noexcept(eq(42)) == true);
-  assert(eq(42) == true);
-
-  // user-defined types
-  const ComparisonObject obj{42};
-  const cuda::equal_to_value<ComparisonObject> eq_obj(obj);
-  assert(noexcept(eq_obj(obj)) == true);
-  assert(eq_obj(obj) == true);
 }
 
 // Run all test suits
@@ -112,7 +100,6 @@ __host__ __device__ constexpr bool test()
   test_heterogeneous_comparisons();
   test_user_defined_types();
   test_ctad();
-  test_noexcept();
 
   return true;
 }
@@ -120,6 +107,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  assert(test());
+  static_assert(test());
   return 0;
 }
