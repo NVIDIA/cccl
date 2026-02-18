@@ -87,8 +87,7 @@ template <class From, class To>
 __host__ __device__ constexpr void test_comparison_same_rank()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
-
-  // Rank-0 cases
+  // Rank-0: same extents, default offsets
   test_comparison(
     true,
     cuda::std::extents<From>(),
@@ -96,6 +95,7 @@ __host__ __device__ constexpr void test_comparison_same_rank()
     cuda::std::array<intptr_t, 0>{},
     cuda::std::array<intptr_t, 0>{});
 
+  // Rank-0: same extents, same non-zero offsets
   test_comparison(
     true,
     cuda::std::extents<From>(),
@@ -104,6 +104,8 @@ __host__ __device__ constexpr void test_comparison_same_rank()
     cuda::std::array<intptr_t, 0>{},
     5,
     5);
+
+  // Rank-0: same extents, different offsets
   test_comparison(
     false,
     cuda::std::extents<From>(),
@@ -113,19 +115,22 @@ __host__ __device__ constexpr void test_comparison_same_rank()
     5,
     10);
 
-  // Rank-1 cases
+  // Rank-1: same extents and strides
   test_comparison(
     true,
     cuda::std::extents<From, D>(5),
     cuda::std::extents<To, D>(5),
     cuda::std::array<intptr_t, 1>{1},
     cuda::std::array<intptr_t, 1>{1});
+  // Rank-1: same extents, different strides
   test_comparison(
     false,
     cuda::std::extents<From, D>(5),
     cuda::std::extents<To, D>(5),
     cuda::std::array<intptr_t, 1>{2},
     cuda::std::array<intptr_t, 1>{1});
+
+  // Rank-1: different extents, same strides
   test_comparison(
     false,
     cuda::std::extents<From, D>(5),
@@ -133,7 +138,7 @@ __host__ __device__ constexpr void test_comparison_same_rank()
     cuda::std::array<intptr_t, 1>{1},
     cuda::std::array<intptr_t, 1>{1});
 
-  // Cases with offset
+  // Rank-1: same extents and strides, same non-zero offsets
   test_comparison(
     true,
     cuda::std::extents<From, D>(5),
@@ -142,6 +147,8 @@ __host__ __device__ constexpr void test_comparison_same_rank()
     cuda::std::array<intptr_t, 1>{1},
     10,
     10);
+
+  // Rank-1: same extents and strides, different offsets
   test_comparison(
     false,
     cuda::std::extents<From, D>(5),
@@ -151,7 +158,7 @@ __host__ __device__ constexpr void test_comparison_same_rank()
     10,
     5);
 
-  // Cases with negative strides
+  // Rank-1: same negative strides and offsets
   test_comparison(
     true,
     cuda::std::extents<From, 5>(),
@@ -160,6 +167,8 @@ __host__ __device__ constexpr void test_comparison_same_rank()
     cuda::std::array<intptr_t, 1>{-1},
     4,
     4);
+
+  // Rank-1: different stride signs
   test_comparison(
     false,
     cuda::std::extents<From, 5>(),
@@ -169,13 +178,15 @@ __host__ __device__ constexpr void test_comparison_same_rank()
     4,
     0);
 
-  // Higher rank cases
+  // Rank-5: same extents and strides
   test_comparison(
     true,
     cuda::std::extents<From, D, D, D, D, D>(5, 6, 7, 8, 9),
     cuda::std::extents<To, D, D, D, D, D>(5, 6, 7, 8, 9),
     cuda::std::array<intptr_t, 5>{2, 20, 200, 2000, 20000},
     cuda::std::array<intptr_t, 5>{2, 20, 200, 2000, 20000});
+
+  // Rank-5: same extents, swapped strides in last two dimensions
   test_comparison(
     false,
     cuda::std::extents<From, D, D, D, D, D>(5, 6, 7, 8, 9),
@@ -210,27 +221,55 @@ __host__ __device__ constexpr void test_comparison_with()
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   constexpr bool is_left_based        = cuda::std::is_same_v<OtherLayout, cuda::std::layout_left>;
 
-  // layout_stride_relaxed with zero offset should match standard layouts
+  // Rank-0: zero offset matches standard layout
   test_comparison_with<OtherLayout>(
-    true, cuda::std::extents<int>(), cuda::std::array<intptr_t, 0>{}, 0, cuda::std::extents<unsigned>());
-  test_comparison_with<OtherLayout>(
-    true, cuda::std::extents<int, 5>(), cuda::std::array<intptr_t, 1>{1}, 0, cuda::std::extents<unsigned, 5>());
-  test_comparison_with<OtherLayout>(
-    true, cuda::std::extents<int, D>(5), cuda::std::array<intptr_t, 1>{1}, 0, cuda::std::extents<unsigned, 5>());
-  test_comparison_with<OtherLayout>(
-    false, cuda::std::extents<int, D>(5), cuda::std::array<intptr_t, 1>{2}, 0, cuda::std::extents<unsigned, 5>());
+    true, //
+    cuda::std::extents<int>(),
+    cuda::std::array<intptr_t, 0>{},
+    0,
+    cuda::std::extents<unsigned>());
 
-  // layout_stride_relaxed with non-zero offset should not match standard layouts
+  // Rank-1 static: unit stride, zero offset matches standard layout
   test_comparison_with<OtherLayout>(
-    false, cuda::std::extents<int, 5>(), cuda::std::array<intptr_t, 1>{1}, 5, cuda::std::extents<unsigned, 5>());
+    true, //
+    cuda::std::extents<int, 5>(),
+    cuda::std::array<intptr_t, 1>{1},
+    0,
+    cuda::std::extents<unsigned, 5>());
 
-  // 2D cases
+  // Rank-1 dynamic: unit stride, zero offset matches standard layout
+  test_comparison_with<OtherLayout>(
+    true, //
+    cuda::std::extents<int, D>(5),
+    cuda::std::array<intptr_t, 1>{1},
+    0,
+    cuda::std::extents<unsigned, 5>());
+
+  // Rank-1 dynamic: non-unit stride does not match standard layout
+  test_comparison_with<OtherLayout>(
+    false, //
+    cuda::std::extents<int, D>(5),
+    cuda::std::array<intptr_t, 1>{2},
+    0,
+    cuda::std::extents<unsigned, 5>());
+
+  // Rank-1 static: non-zero offset does not match standard layout
+  test_comparison_with<OtherLayout>(
+    false, //
+    cuda::std::extents<int, 5>(),
+    cuda::std::array<intptr_t, 1>{1},
+    5,
+    cuda::std::extents<unsigned, 5>());
+
+  // Rank-2: column-major strides match only layout_left
   test_comparison_with<OtherLayout>(
     is_left_based,
     cuda::std::extents<int, D, D>(5, 7),
     cuda::std::array<intptr_t, 2>{1, 5},
     0,
     cuda::std::extents<unsigned, D, D>(5, 7));
+
+  // Rank-2: row-major strides match only layout_right
   test_comparison_with<OtherLayout>(
     !is_left_based,
     cuda::std::extents<int, D, D>(5, 7),

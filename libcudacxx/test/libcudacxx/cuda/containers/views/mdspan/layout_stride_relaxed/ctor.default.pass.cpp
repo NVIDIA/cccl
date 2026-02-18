@@ -31,11 +31,10 @@ __host__ __device__ constexpr void test_construction()
   static_assert(noexcept(M{}));
   M m{};
   E e{};
-
   static_assert(noexcept(m.extents()));
+  static_assert(noexcept(m.strides()));
   assert(m.extents() == e);
   assert(m.offset() == 0);
-  static_assert(noexcept(m.strides()));
 
   if constexpr (E::rank() > 0)
   {
@@ -78,7 +77,6 @@ __host__ __device__ constexpr bool test()
   test_construction<cuda::std::extents<int, 3, 0, 4>>();
   test_construction<cuda::std::extents<int64_t, 0, D, 0, D>>();
   test_construction<cuda::std::extents<int64_t, D, 0, D, 0>>();
-
   return true;
 }
 

@@ -67,9 +67,9 @@ __host__ __device__ constexpr void test_conversion(FromExt src_exts)
   using From = typename FromL::template mapping<FromExt>;
 
   From src(get_strides<FromL>(src_exts));
-  static_assert(noexcept(To(src)));
   To dest(src);
 
+  static_assert(noexcept(To(src)));
   assert(dest.extents() == src.extents());
   assert(dest.offset() == 0);
 
@@ -80,7 +80,6 @@ __host__ __device__ constexpr void test_conversion(FromExt src_exts)
       assert(cuda::std::cmp_equal(dest.stride(r), src.stride(r)));
     }
   }
-
   if constexpr (implicit)
   {
     To dest_implicit = src;
@@ -95,29 +94,53 @@ __host__ __device__ constexpr void test_conversion(FromExt src_exts)
 template <class FromL, class T1, class T2>
 __host__ __device__ constexpr void test_conversion()
 {
+  using cuda::std::is_same_v;
   constexpr size_t D             = cuda::std::dynamic_extent;
   constexpr bool idx_convertible = static_cast<size_t>(cuda::std::numeric_limits<T1>::max())
                                 >= static_cast<size_t>(cuda::std::numeric_limits<T2>::max());
-  constexpr bool l_convertible =
-    cuda::std::is_same_v<FromL, cuda::std::layout_right> || cuda::std::is_same_v<FromL, cuda::std::layout_left>
-    || cuda::std::is_same_v<FromL, cuda::std::layout_stride>;
+  constexpr bool l_convertible = is_same_v<FromL, cuda::std::layout_right> || is_same_v<FromL, cuda::std::layout_left>
+                              || is_same_v<FromL, cuda::std::layout_stride>;
   constexpr bool idx_l_convertible = idx_convertible && l_convertible;
 
   // clang-format off
-  test_conversion<idx_l_convertible && true,  FromL, cuda::std::extents<T1>>(cuda::std::extents<T2>());
-  test_conversion<idx_l_convertible && true,  FromL, cuda::std::extents<T1, D>>(cuda::std::extents<T2, D>(0));
-  test_conversion<idx_l_convertible && true,  FromL, cuda::std::extents<T1, D>>(cuda::std::extents<T2, D>(5));
-  test_conversion<idx_l_convertible && false, FromL, cuda::std::extents<T1, 5>>(cuda::std::extents<T2, D>(5));
-  test_conversion<idx_l_convertible && true,  FromL, cuda::std::extents<T1, 5>>(cuda::std::extents<T2, 5>());
-  test_conversion<idx_l_convertible && false, FromL, cuda::std::extents<T1, 5, D>>(cuda::std::extents<T2, D, D>(5, 5));
-  test_conversion<idx_l_convertible && true,  FromL, cuda::std::extents<T1, D, D>>(cuda::std::extents<T2, D, D>(5, 5));
-  test_conversion<idx_l_convertible && true,  FromL, cuda::std::extents<T1, D, D>>(cuda::std::extents<T2, D, 7>(5));
-  test_conversion<idx_l_convertible && true,  FromL, cuda::std::extents<T1, 5, 7>>(cuda::std::extents<T2, 5, 7>());
-  test_conversion<idx_l_convertible && false, FromL, cuda::std::extents<T1, 5, D, 8, D, D>>(cuda::std::extents<T2, D, D, 8, 9, 1>(5, 7));
-  test_conversion<idx_l_convertible && true,  FromL, cuda::std::extents<T1, D, D, D, D, D>>(
-                                                     cuda::std::extents<T2, D, D, D, D, D>(5, 7, 8, 9, 1));
-  test_conversion<idx_l_convertible && true,  FromL, cuda::std::extents<T1, D, D, 8, 9, D>>(cuda::std::extents<T2, D, 7, 8, 9, 1>(5));
-  test_conversion<idx_l_convertible && true,  FromL, cuda::std::extents<T1, 5, 7, 8, 9, 1>>(cuda::std::extents<T2, 5, 7, 8, 9, 1>());
+  test_conversion<idx_l_convertible, FromL, cuda::std::extents<T1>>(
+                                            cuda::std::extents<T2>());
+
+  test_conversion<idx_l_convertible, FromL, cuda::std::extents<T1, D>>(
+                                            cuda::std::extents<T2, D>(0));
+
+  test_conversion<idx_l_convertible, FromL, cuda::std::extents<T1, D>>(
+                                            cuda::std::extents<T2, D>(5));
+
+  test_conversion<            false, FromL, cuda::std::extents<T1, 5>>(
+                                            cuda::std::extents<T2, D>(5));
+
+  test_conversion<idx_l_convertible, FromL, cuda::std::extents<T1, 5>>(
+                                            cuda::std::extents<T2, 5>());
+
+  test_conversion<            false, FromL, cuda::std::extents<T1, 5, D>>(
+                                            cuda::std::extents<T2, D, D>(5, 5));
+
+  test_conversion<idx_l_convertible, FromL, cuda::std::extents<T1, D, D>>(
+                                            cuda::std::extents<T2, D, D>(5, 5));
+
+  test_conversion<idx_l_convertible, FromL, cuda::std::extents<T1, D, D>>(
+                                            cuda::std::extents<T2, D, 7>(5));
+
+  test_conversion<idx_l_convertible, FromL, cuda::std::extents<T1, 5, 7>>(
+                                            cuda::std::extents<T2, 5, 7>());
+
+  test_conversion<            false, FromL, cuda::std::extents<T1, 5, D, 8, D, D>>(
+                                            cuda::std::extents<T2, D, D, 8, 9, 1>(5, 7));
+
+  test_conversion<idx_l_convertible, FromL, cuda::std::extents<T1, D, D, D, D, D>>(
+                                            cuda::std::extents<T2, D, D, D, D, D>(5, 7, 8, 9, 1));
+
+  test_conversion<idx_l_convertible, FromL, cuda::std::extents<T1, D, D, 8, 9, D>>(
+                                            cuda::std::extents<T2, D, 7, 8, 9, 1>(5));
+
+  test_conversion<            false, FromL, cuda::std::extents<T1, 5, 7, 8, 9, 1>>(
+                                            cuda::std::extents<T2, 5, 7, 8, 9, 1>());
   // clang-format on
 }
 

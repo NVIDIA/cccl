@@ -37,9 +37,9 @@ test_construction(E e, cuda::std::array<intptr_t, E::rank()> s, intptr_t input_o
   M m(e, strides, offset);
 
   static_assert(noexcept(m.extents()));
+  static_assert(noexcept(m.strides()));
   assert(m.extents() == e);
   assert(m.offset() == offset);
-  static_assert(noexcept(m.strides()));
 
   if constexpr (E::rank() > 0)
   {
