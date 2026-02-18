@@ -29,28 +29,12 @@
 #include <cute/swizzle.hpp>
 #include <cute/tensor.hpp>
 
+#include <cuda/experimental/__copy_bytes/layout_utils.cuh>
+
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
-
-//! @brief Compute the product of static extents from a cuda::std::extents type.
-template <typename>
-struct __extents_product;
-
-template <typename IndexType, ::cuda::std::size_t... Es>
-struct __extents_product<::cuda::std::extents<IndexType, Es...>>
-{
-  static constexpr int value = static_cast<int>((Es * ...));
-};
-
-//! @brief Extract the compile-time block thread count from a kernel_config type.
-//!
-//! Uses the hierarchy type embedded in Config to find the block-level descriptor,
-//! then computes the product of its static extents.
-template <typename Config>
-inline constexpr int __config_block_threads = __extents_product<
-  typename Config::hierarchy_type::template level_desc_type<::cuda::block_level>::extents_type>::value;
 
 //! @brief Shared-memory tiled copy kernel for tensors with different src/dst layouts.
 //!
