@@ -178,25 +178,30 @@ def make_reduce(
     algorithm="warp_reductions",
     methods=None,
 ):
-    """Creates an operation that computes a block-wide reduction for thread :sub:`0` using the
-    specified binary reduction functor.
+    """
+    Creates a block-wide reduction primitive for thread :sub:`0` using
+    the specified binary reduction functor.
 
-    Returns a callable object that can be linked to and invoked from device code. It can be
-    invoked with the following signatures:
+    Returns a callable object that can be linked to and invoked from
+    device code. It can be invoked with the following signatures:
 
-    - `(item: dtype) -> dtype)`: Each thread contributes a single item to the reduction.
-    - `(items: numba.types.Array) -> dtype`: Each thread contributes an array of items to the
-        reduction. The array must contain at least `items_per_thread` items; only the first
-        `items_per_thread` items will be included in the reduction.
-    - `(item: dtype, num_valid: int) -> dtype`: The first `num_valid` threads contribute a
-        single item to the reduction. The items contributed by all other threads are ignored.
+    - `(item: dtype) -> dtype)`: Each thread contributes a single item to
+      the reduction.
+    - `(items: numba.types.Array) -> dtype`: Each thread contributes an
+      array of items to the reduction. The array must contain at least
+      `items_per_thread` items; only the first `items_per_thread` items
+      are included in the reduction.
+    - `(item: dtype, num_valid: int) -> dtype`: The first `num_valid`
+      threads contribute a single item to the reduction. Items from all
+      other threads are ignored.
 
     Args:
         dtype: Data type being reduced
-        threads_per_block: The number of threads in a block, either an integer
-            or a tuple of 2 or 3 integers
+        threads_per_block: Number of threads in a block. Can be an
+            integer or a tuple of 2 or 3 integers.
         binary_op: Binary reduction function
-        items_per_thread: The number of items each thread contributes to the reduction
+        items_per_thread: The number of items each thread contributes to
+            the reduction
         algorithm: Algorithm to use for the reduction (one of "raking",
             "raking_commutative_only", "warp_reductions")
         methods: A dict of methods for user-defined types
@@ -205,8 +210,8 @@ def make_reduce(
         The return value is undefined in threads other than thread :sub:`0`.
 
     Example:
-        The code snippet below illustrates a max reduction of 128 integer items that are
-        partitioned across 128 threads.
+        The code snippet below illustrates a max reduction of 128
+        integer items that are partitioned across 128 threads.
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
             :language: python
@@ -214,14 +219,18 @@ def make_reduce(
             :start-after: example-begin imports
             :end-before: example-end imports
 
+        The following snippet shows how to invoke the returned
+        ``block_reduce`` primitive:
+
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin reduce
             :end-before: example-end reduce
 
-        Suppose the set of inputs across the block of threads is ``{ 0, 1, 2, 3, ..., 127 }``.
-        The corresponding output in the threads thread :sub:`0` will be ``{ 127 }``.
+        Suppose the set of inputs across the block of threads is
+        ``{ 0, 1, 2, 3, ..., 127 }``. The output in thread :sub:`0`
+        is ``{ 127 }``.
     """
     return _reduce(
         dtype=dtype,
@@ -240,23 +249,27 @@ def make_sum(
     algorithm="warp_reductions",
     methods=None,
 ):
-    """Creates an operation that computes a block-wide reduction for thread :sub:`0` using
+    """
+    Creates a block-wide reduction primitive for thread :sub:`0` using
     addition (+) as the reduction operator.
 
-    Returns a callable object that can be linked to and invoked from device code. It can be
-    invoked with the following signatures:
+    Returns a callable object that can be linked to and invoked from
+    device code. It can be invoked with the following signatures:
 
-    - `(item: dtype) -> dtype)`: Each thread contributes a single item to the reduction.
-    - `(items: numba.types.Array) -> dtype`: Each thread contributes an array of items to the
-        reduction. The array must contain at least `items_per_thread` items; only the
-        first `items_per_thread` items will be included in the reduction.
-    - `(item: dtype, num_valid: int) -> dtype`: The first `num_valid` threads contribute a
-        single item to the reduction. The items contributed by all other threads are ignored.
+    - `(item: dtype) -> dtype)`: Each thread contributes a single item to
+      the reduction.
+    - `(items: numba.types.Array) -> dtype`: Each thread contributes an
+      array of items to the reduction. The array must contain at least
+      `items_per_thread` items; only the first `items_per_thread` items
+      are included in the reduction.
+    - `(item: dtype, num_valid: int) -> dtype`: The first `num_valid`
+      threads contribute a single item to the reduction. Items from all
+      other threads are ignored.
 
     Args:
         dtype: Data type being reduced
-        threads_per_block: The number of threads in a block, either an integer
-            or a tuple of 2 or 3 integers
+        threads_per_block: Number of threads in a block. Can be an
+            integer or a tuple of 2 or 3 integers.
         items_per_thread: The number of items each thread owns
         algorithm: Algorithm to use for the reduction (one of "raking",
             "raking_commutative_only", "warp_reductions")
@@ -266,8 +279,8 @@ def make_sum(
         The return value is undefined in threads other than thread :sub:`0`.
 
     Example:
-        The code snippet below illustrates a sum of 128 integer items that are partitioned
-        across 128 threads.
+        The code snippet below illustrates a sum of 128 integer items
+        partitioned across 128 threads.
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
             :language: python
@@ -275,14 +288,18 @@ def make_sum(
             :start-after: example-begin imports
             :end-before: example-end imports
 
+        The following snippet shows how to invoke the returned
+        ``block_sum`` primitive:
+
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
             :language: python
             :dedent:
             :start-after: example-begin sum
             :end-before: example-end sum
 
-        Suppose the set of inputs across the block of threads is ``{ 1, 1, 1, 1, ..., 1 }``.
-        The corresponding output in the threads thread :sub:`0` will be ``{ 128 }``.
+        Suppose the set of inputs across the block of threads is
+        ``{ 1, 1, 1, 1, ..., 1 }``. The output in thread :sub:`0`
+        is ``{ 128 }``.
     """
     return _reduce(
         dtype=dtype,
