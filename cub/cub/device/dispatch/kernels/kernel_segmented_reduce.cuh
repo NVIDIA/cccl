@@ -196,6 +196,15 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).segme
  *
  * @param[in] init
  *   The initial value of the reduction
+ *
+ * @param[out] d_partial_out
+ *  Pointer to store partial aggregates in two-phase reduction
+ *
+ * @param[in] full_chunk_size
+ *   The full chunk size processed by each block in two-phase reduction
+ *
+ * @param[in] blocks_per_segment
+ *   The number of blocks to be used for reducing each segment in two-phase reduction
  */
 template <typename ChainedPolicyT,
           typename InputIteratorT,
