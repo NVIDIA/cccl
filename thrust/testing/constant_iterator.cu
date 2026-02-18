@@ -1,3 +1,5 @@
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include <thrust/copy.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/reduce.h>
