@@ -724,7 +724,7 @@ C2H_CCCLRT_TEST("pinned_memory_pool conversion to resource_ref", "[memory_resour
   int current_device = 0;
   cuda::__ensure_current_context guard{cuda::device_ref{current_device}};
 
-  cuda::pinned_memory_pool pool{};
+  cuda::pinned_memory_pool pool{0};
 
   { // host device accessible
     cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible> ref1 = pool.as_ref();
