@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
 import numpy as np
-from utils import as_cupy_stream
+from utils import ENTROPY_TO_PROB, as_cupy_stream
 
 import cuda.bench as bench
 from cuda.compute import (
@@ -42,15 +42,6 @@ TYPE_MAP = {
 }
 
 ENTROPY_VALUES = ["1.000", "0.544", "0.000"]
-
-ENTROPY_TO_PROB = {
-    "1.000": 1.0,
-    "0.811": 0.811,
-    "0.544": 0.544,
-    "0.337": 0.337,
-    "0.201": 0.201,
-    "0.000": 0.0,
-}
 
 
 def bench_select_flagged(state: bench.State):

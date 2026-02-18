@@ -224,13 +224,21 @@ def get_log_path(benchmark: str, suffix: str) -> Path:
     return RESULTS_DIR / "logs" / bench_path.parent / f"{bench_path.name}_{suffix}.log"
 
 
-def run_and_log(cmd: list, log_path: Path) -> None:
+def run_and_log(cmd: list, log_path: Path) -> dict:
     """Run command and write stdout/stderr to log file."""
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with open(log_path, "w", encoding="utf-8") as log_file:
         log_file.write(f"Command: {shlex.join(cmd)}\n\n")
         log_file.flush()
-        subprocess.run(cmd, check=True, stdout=log_file, stderr=log_file)
+        try:
+            result = subprocess.run(cmd, check=False, stdout=log_file, stderr=log_file)
+        except Exception as exc:  # noqa: BLE001
+            log_file.write("\nERROR: Runner failed to execute command.\n")
+            log_file.write(f"{exc}\n")
+            return {"status": "error", "returncode": None, "error": str(exc)}
+
+    status = "ok" if result.returncode == 0 else "failed"
+    return {"status": status, "returncode": result.returncode}
 
 
 # ============================================================================
@@ -306,10 +314,13 @@ def run_benchmark(
 
         cmd = [str(cpp_bin), "--json", str(cpp_result), "--devices", device]
         cmd.extend(cpp_axis_args)
-        run_and_log(cmd, cpp_log)
+        cpp_status = run_and_log(cmd, cpp_log)
         print(f"  Results: {cpp_result}")
         print(f"  Log: {cpp_log}")
+        if cpp_status["status"] != "ok":
+            print(f"  WARNING: C++ benchmark failed (exit {cpp_status['returncode']}).")
         results["cpp"] = cpp_result
+        results["cpp_status"] = cpp_status
 
     # Run Python benchmark
     if run_py:
@@ -328,10 +339,15 @@ def run_benchmark(
             device,
         ]
         cmd.extend(py_axis_args)
-        run_and_log(cmd, py_log)
+        py_status = run_and_log(cmd, py_log)
         print(f"  Results: {py_result}")
         print(f"  Log: {py_log}")
+        if py_status["status"] != "ok":
+            print(
+                f"  WARNING: Python benchmark failed (exit {py_status['returncode']})."
+            )
         results["py"] = py_result
+        results["py_status"] = py_status
 
     return results
 
@@ -445,6 +461,20 @@ Supported benchmarks:
             print(f"    Python results: {py_result}")
         if py_log.exists():
             print(f"    Python log:     {py_log}")
+
+        status = all_results.get(bench, {})
+        cpp_status = status.get("cpp_status")
+        py_status = status.get("py_status")
+        if cpp_status and cpp_status.get("status") != "ok":
+            print(
+                "    C++ status:     "
+                f"{cpp_status.get('status')} (exit {cpp_status.get('returncode')})"
+            )
+        if py_status and py_status.get("status") != "ok":
+            print(
+                "    Python status:  "
+                f"{py_status.get('status')} (exit {py_status.get('returncode')})"
+            )
 
     print()
     print("To compare results, run:")

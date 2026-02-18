@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
 import numpy as np
-from utils import as_cupy_stream
+from utils import as_cupy_stream, generate_fixed_segment_offsets
 
 import cuda.bench as bench
 from cuda.compute import clear_all_caches, make_segmented_reduce
@@ -46,19 +46,6 @@ def max_op(a, b):
     return a if a > b else b
 
 
-def generate_segment_offsets(num_elements, segment_size, stream):
-    num_segments = max(1, num_elements // segment_size)
-    actual_elements = num_segments * segment_size
-
-    with stream:
-        start_offsets = cp.arange(0, actual_elements, segment_size, dtype=np.int64)
-        end_offsets = cp.arange(
-            segment_size, actual_elements + 1, segment_size, dtype=np.int64
-        )
-
-    return start_offsets, end_offsets, num_segments, actual_elements
-
-
 def bench_segmented_reduce_custom(state: bench.State):
     # WORKAROUND: Clear caches to avoid caching bug
     # See BUG_REPORT_CACHING.md for details
@@ -72,7 +59,7 @@ def bench_segmented_reduce_custom(state: bench.State):
     alloc_stream = as_cupy_stream(state.get_stream())
 
     start_offsets, end_offsets, num_segments, actual_elements = (
-        generate_segment_offsets(num_elements, segment_size, alloc_stream)
+        generate_fixed_segment_offsets(num_elements, segment_size, alloc_stream)
     )
 
     with alloc_stream:

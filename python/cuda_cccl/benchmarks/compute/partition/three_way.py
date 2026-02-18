@@ -26,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
 import numpy as np
-from utils import as_cupy_stream
+from utils import ENTROPY_TO_PROB, as_cupy_stream
 
 import cuda.bench as bench
 from cuda.compute import clear_all_caches, make_three_way_partition
@@ -47,16 +47,6 @@ TYPE_MAP = {
 
 # Entropy values from C++ benchmark (three_way.cu line 131)
 ENTROPY_VALUES = ["1.000", "0.544", "0.000"]
-
-# Entropy to probability mapping (from nvbench_helper.cuh)
-ENTROPY_TO_PROB = {
-    "1.000": 1.0,
-    "0.811": 0.811,
-    "0.544": 0.544,
-    "0.337": 0.337,
-    "0.201": 0.201,
-    "0.000": 0.0,
-}
 
 
 def generate_data_with_entropy(

@@ -40,12 +40,16 @@ def less_complex(a, b):
 def bench_compare_complex(state: bench.State):
     num_elements = int(state.get_int64("Elements"))
 
-    alloc_stream = as_cupy_stream(state.get_stream())
-    with alloc_stream:
-        real = cp.random.random(num_elements, dtype=np.float32)
-        imag = cp.random.random(num_elements, dtype=np.float32)
-        d_in = (real + 1j * imag).astype(np.complex64)
-        d_out = cp.empty(num_elements - 1, dtype=np.bool_)
+    try:
+        alloc_stream = as_cupy_stream(state.get_stream())
+        with alloc_stream:
+            real = cp.random.random(num_elements, dtype=np.float32)
+            imag = cp.random.random(num_elements, dtype=np.float32)
+            d_in = (real + 1j * imag).astype(np.complex64)
+            d_out = cp.empty(num_elements - 1, dtype=np.bool_)
+    except (MemoryError, cp.cuda.memory.OutOfMemoryError):
+        state.skip("Skipping: out of memory.")
+        return
 
     num_items = num_elements - 1
     transformer = make_binary_transform(

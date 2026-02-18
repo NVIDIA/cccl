@@ -60,10 +60,14 @@ def bench_mul(state: bench.State):
 
     _reset_pools()
 
-    alloc_stream = as_cupy_stream(state.get_stream())
-    with alloc_stream:
-        c = cp.full(num_items, START_C, dtype=dtype)
-        b = cp.full(num_items, START_B, dtype=dtype)
+    try:
+        alloc_stream = as_cupy_stream(state.get_stream())
+        with alloc_stream:
+            c = cp.full(num_items, START_C, dtype=dtype)
+            b = cp.full(num_items, START_B, dtype=dtype)
+    except (MemoryError, cp.cuda.memory.OutOfMemoryError):
+        state.skip("Skipping: out of memory.")
+        return
 
     scalar = dtype(START_SCALAR)
 
@@ -95,11 +99,15 @@ def bench_add(state: bench.State):
 
     _reset_pools()
 
-    alloc_stream = as_cupy_stream(state.get_stream())
-    with alloc_stream:
-        a = cp.full(num_items, START_A, dtype=dtype)
-        b = cp.full(num_items, START_B, dtype=dtype)
-        c = cp.full(num_items, START_C, dtype=dtype)
+    try:
+        alloc_stream = as_cupy_stream(state.get_stream())
+        with alloc_stream:
+            a = cp.full(num_items, START_A, dtype=dtype)
+            b = cp.full(num_items, START_B, dtype=dtype)
+            c = cp.full(num_items, START_C, dtype=dtype)
+    except (MemoryError, cp.cuda.memory.OutOfMemoryError):
+        state.skip("Skipping: out of memory.")
+        return
 
     def add_op(ai, bi):
         return ai + bi
@@ -134,11 +142,15 @@ def bench_triad(state: bench.State):
 
     _reset_pools()
 
-    alloc_stream = as_cupy_stream(state.get_stream())
-    with alloc_stream:
-        a = cp.full(num_items, START_A, dtype=dtype)
-        b = cp.full(num_items, START_B, dtype=dtype)
-        c = cp.full(num_items, START_C, dtype=dtype)
+    try:
+        alloc_stream = as_cupy_stream(state.get_stream())
+        with alloc_stream:
+            a = cp.full(num_items, START_A, dtype=dtype)
+            b = cp.full(num_items, START_B, dtype=dtype)
+            c = cp.full(num_items, START_C, dtype=dtype)
+    except (MemoryError, cp.cuda.memory.OutOfMemoryError):
+        state.skip("Skipping: out of memory.")
+        return
 
     scalar = dtype(START_SCALAR)
 
@@ -177,11 +189,15 @@ def bench_nstream(state: bench.State):
 
     _reset_pools()
 
-    alloc_stream = as_cupy_stream(state.get_stream())
-    with alloc_stream:
-        a = cp.full(num_items, START_A, dtype=dtype)
-        b = cp.full(num_items, START_B, dtype=dtype)
-        c = cp.full(num_items, START_C, dtype=dtype)
+    try:
+        alloc_stream = as_cupy_stream(state.get_stream())
+        with alloc_stream:
+            a = cp.full(num_items, START_A, dtype=dtype)
+            b = cp.full(num_items, START_B, dtype=dtype)
+            c = cp.full(num_items, START_C, dtype=dtype)
+    except (MemoryError, cp.cuda.memory.OutOfMemoryError):
+        state.skip("Skipping: out of memory.")
+        return
 
     scalar = dtype(START_SCALAR)
 

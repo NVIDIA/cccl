@@ -12,7 +12,7 @@ Notes:
 - Uses equal_to comparison operator for key equality
 - Generates key segments with sizes between 1 and MaxSegSize
 - Both keys and values are processed
-- Migration: Python fixes offsets and generates key segments on CPU to mirror C++.
+- Migration: Python fixes offsets and generates key segments on GPU to mirror C++.
 - OffsetT axis is omitted because the Python API does not expose offset type.
 """
 
@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
 import numpy as np
-from utils import as_cupy_stream
+from utils import as_cupy_stream, generate_key_segments
 
 import cuda.bench as bench
 from cuda.compute import OpKind, clear_all_caches, make_unique_by_key
@@ -54,50 +54,6 @@ VALUE_TYPE_MAP = {
 # MaxSegSize values from C++ benchmark (unique_by_key.cu line 176)
 # These are powers of 2: 2^1=2, 2^4=16, 2^8=256
 MAX_SEG_SIZE_VALUES = [2, 16, 256]
-
-
-def generate_key_segments(
-    num_elements, key_dtype, min_segment_size, max_segment_size, stream
-):
-    """
-    Generate keys with uniform random segment sizes.
-
-    Each segment consists of consecutive identical keys.
-    Segment sizes are uniformly distributed between min_segment_size and max_segment_size.
-    This mimics the C++ generate.uniform.key_segments() function.
-    """
-    with stream:
-        # Generate segment sizes
-        keys = cp.empty(num_elements, dtype=key_dtype)
-
-        # CPU generation for segment structure, then copy to GPU
-        # This is simpler and matches the C++ logic
-        h_keys = np.empty(num_elements, dtype=key_dtype)
-
-        current_pos = 0
-        current_key = 0
-
-        while current_pos < num_elements:
-            # Random segment size between min and max
-            seg_size = np.random.randint(min_segment_size, max_segment_size + 1)
-            seg_size = min(seg_size, num_elements - current_pos)
-
-            # Fill segment with current key
-            h_keys[current_pos : current_pos + seg_size] = current_key
-
-            current_pos += seg_size
-            current_key += 1
-
-            # Wrap key value to avoid overflow
-            if np.issubdtype(key_dtype, np.integer):
-                info = np.iinfo(key_dtype)
-                if current_key > info.max:
-                    current_key = info.min
-
-        # Copy to GPU
-        keys = cp.asarray(h_keys)
-
-    return keys
 
 
 def bench_unique_by_key(state: bench.State):

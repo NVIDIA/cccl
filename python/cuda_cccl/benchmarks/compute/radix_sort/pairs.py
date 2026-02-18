@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
 import numpy as np
-from utils import as_cupy_stream
+from utils import as_cupy_stream, generate_data_with_entropy
 
 import cuda.bench as bench
 from cuda.compute import SortOrder, clear_all_caches, make_radix_sort
@@ -48,45 +48,6 @@ VALUE_TYPE_MAP = {
 
 # Entropy values from C++ benchmark (pairs uses fewer values than keys)
 ENTROPY_VALUES = ["1.000", "0.201"]
-
-# Entropy to probability mapping (from nvbench_helper.cuh)
-ENTROPY_TO_PROB = {
-    "1.000": 1.0,
-    "0.811": 0.811,
-    "0.544": 0.544,
-    "0.337": 0.337,
-    "0.201": 0.201,
-    "0.000": 0.0,
-}
-
-
-def generate_data_with_entropy(num_elements, dtype, entropy_str, stream):
-    """
-    Generate data with specified entropy level.
-
-    Entropy controls the bit-level randomness of the data:
-    - 1.000: Full random (all bits random)
-    - 0.201: Low entropy (more structure/patterns)
-    """
-    probability = ENTROPY_TO_PROB[entropy_str]
-
-    with stream:
-        info = np.iinfo(dtype)
-        if probability == 1.0:
-            # Full random across entire range
-            data = cp.random.randint(
-                int(info.min), int(info.max) + 1, size=num_elements, dtype=np.int64
-            ).astype(dtype)
-        else:
-            # Reduced entropy: limit the range of values
-            range_size = int((int(info.max) - int(info.min)) * probability)
-            if range_size < 1:
-                range_size = 1
-            data = cp.random.randint(
-                0, range_size, size=num_elements, dtype=np.int64
-            ).astype(dtype)
-
-    return data
 
 
 def generate_values(num_elements, dtype, stream):

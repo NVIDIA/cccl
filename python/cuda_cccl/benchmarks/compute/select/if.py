@@ -25,8 +25,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
 import numpy as np
-from numba import cuda as numba_cuda
-from utils import as_cupy_stream
+from utils import ENTROPY_TO_PROB, as_cupy_stream, lerp_min_max
 
 import cuda.bench as bench
 from cuda.compute import clear_all_caches, make_select
@@ -44,61 +43,6 @@ TYPE_MAP = {
 # Entropy values from C++ benchmark
 # These control the selection threshold and thus how many elements are selected
 ENTROPY_VALUES = ["1.000", "0.544", "0.000"]
-
-# Entropy to probability mapping (from nvbench_helper.cuh)
-ENTROPY_TO_PROB = {
-    "1.000": 1.0,
-    "0.811": 0.811,
-    "0.544": 0.544,
-    "0.337": 0.337,
-    "0.201": 0.201,
-    "0.000": 0.0,
-}
-
-
-def lerp_min_max(dtype, probability):
-    """
-    Compute threshold value by interpolating between min and max for dtype.
-    Mirrors C++ lerp_min_max() from nvbench_helper.cuh.
-
-    Args:
-        dtype: NumPy dtype
-        probability: Value between 0.0 and 1.0
-
-    Returns:
-        Threshold value of the given dtype
-    """
-    if probability == 1.0:
-        if np.issubdtype(dtype, np.integer):
-            return np.iinfo(dtype).max
-        else:
-            return np.finfo(dtype).max
-
-    if np.issubdtype(dtype, np.integer):
-        min_val = float(np.iinfo(dtype).min)
-        max_val = float(np.iinfo(dtype).max)
-    else:
-        min_val = float(np.finfo(dtype).min)
-        max_val = float(np.finfo(dtype).max)
-
-    # Linear interpolation
-    result = min_val + probability * (max_val - min_val)
-    return dtype(result)
-
-
-def make_less_than_predicate(threshold):
-    """
-    Create a less-than predicate function for the given threshold.
-    This mirrors C++ less_then_t<T>.
-    """
-    # Capture threshold in closure
-    thresh = threshold
-
-    @numba_cuda.jit(device=True)
-    def less_than(x):
-        return x < thresh
-
-    return less_than
 
 
 def bench_select_if(state: bench.State):

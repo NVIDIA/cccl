@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
 import numpy as np
-from utils import as_cupy_stream
+from utils import as_cupy_stream, generate_fixed_segment_offsets
 
 import cuda.bench as bench
 from cuda.compute import OpKind, clear_all_caches, make_segmented_reduce
@@ -51,33 +51,6 @@ SEGMENT_SIZES_MEDIUM = [2**i for i in range(5, 9)]  # 32, 64, 128, 256
 SEGMENT_SIZES_LARGE = [2**i for i in range(9, 17)]  # 512 to 65536
 
 
-def generate_segment_offsets(num_elements, segment_size, stream):
-    """
-    Generate uniform segment offsets for fixed-size segments.
-
-    Args:
-        num_elements: Total number of elements
-        segment_size: Size of each segment
-        stream: CuPy stream
-
-    Returns:
-        Tuple of (start_offsets, end_offsets, num_segments, actual_elements)
-    """
-    # Calculate number of complete segments
-    num_segments = max(1, num_elements // segment_size)
-    actual_elements = num_segments * segment_size
-
-    with stream:
-        # Generate start offsets: [0, segment_size, 2*segment_size, ...]
-        start_offsets = cp.arange(0, actual_elements, segment_size, dtype=np.int64)
-        # Generate end offsets: [segment_size, 2*segment_size, ...]
-        end_offsets = cp.arange(
-            segment_size, actual_elements + 1, segment_size, dtype=np.int64
-        )
-
-    return start_offsets, end_offsets, num_segments, actual_elements
-
-
 def bench_segmented_reduce_sum(state: bench.State):
     """
     Benchmark segmented_reduce sum operation.
@@ -97,7 +70,7 @@ def bench_segmented_reduce_sum(state: bench.State):
 
     # Generate segment offsets
     start_offsets, end_offsets, num_segments, actual_elements = (
-        generate_segment_offsets(num_elements, segment_size, alloc_stream)
+        generate_fixed_segment_offsets(num_elements, segment_size, alloc_stream)
     )
 
     # Generate input data
