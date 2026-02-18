@@ -208,7 +208,7 @@ template <class OtherLayout>
 __host__ __device__ constexpr void test_comparison_with()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
-  bool is_left_based                  = cuda::std::is_same_v<OtherLayout, cuda::std::layout_left>;
+  constexpr bool is_left_based        = cuda::std::is_same_v<OtherLayout, cuda::std::layout_left>;
 
   // layout_stride_relaxed with zero offset should match standard layouts
   test_comparison_with<OtherLayout>(

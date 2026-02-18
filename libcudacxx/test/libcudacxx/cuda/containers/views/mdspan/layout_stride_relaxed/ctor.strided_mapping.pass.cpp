@@ -121,12 +121,6 @@ __host__ __device__ constexpr void test_conversion()
   // clang-format on
 }
 
-template <class IdxT, size_t... Extents>
-using ToM = typename cuda::layout_stride_relaxed::template mapping<cuda::std::extents<IdxT, Extents...>>;
-
-template <class FromL, class IdxT, size_t... Extents>
-using FromM = typename FromL::template mapping<cuda::std::extents<IdxT, Extents...>>;
-
 template <class FromL>
 __host__ __device__ constexpr void test_layout()
 {

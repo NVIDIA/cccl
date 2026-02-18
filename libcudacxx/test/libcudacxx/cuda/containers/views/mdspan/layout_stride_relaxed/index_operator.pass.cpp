@@ -59,24 +59,24 @@ __host__ __device__ constexpr intptr_t get_expected_index(
   return offset + (static_cast<intptr_t>(0) + ... + (static_cast<intptr_t>(args) * strides[Pos]));
 }
 
-template <class M, class... Args, cuda::std::enable_if_t<(M::extents_type::rank() == sizeof...(Args)), int> = 0>
+template <class M, class... Args>
 __host__ __device__ constexpr void
 iterate_stride(M m, const cuda::std::array<intptr_t, M::extents_type::rank()>& strides, intptr_t offset, Args... args)
 {
-  static_assert(noexcept(m(args...)));
-  const intptr_t expected_val =
-    get_expected_index<M>(strides, offset, cuda::std::make_index_sequence<M::extents_type::rank()>(), args...);
-  assert(expected_val == static_cast<intptr_t>(m(args...)));
-}
-
-template <class M, class... Args, cuda::std::enable_if_t<(M::extents_type::rank() != sizeof...(Args)), int> = 0>
-__host__ __device__ constexpr void
-iterate_stride(M m, const cuda::std::array<intptr_t, M::extents_type::rank()>& strides, intptr_t offset, Args... args)
-{
-  constexpr size_t r = sizeof...(Args);
-  for (typename M::index_type i = 0; i < m.extents().extent(r); i++)
+  if constexpr (M::extents_type::rank() == sizeof...(Args))
   {
-    iterate_stride(m, strides, offset, args..., i); // append i after args to maintain dimension order
+    static_assert(noexcept(m(args...)));
+    const intptr_t expected_val =
+      get_expected_index<M>(strides, offset, cuda::std::make_index_sequence<M::extents_type::rank()>(), args...);
+    assert(expected_val == static_cast<intptr_t>(m(args...)));
+  }
+  else
+  {
+    constexpr size_t r = sizeof...(Args);
+    for (typename M::index_type i = 0; i < m.extents().extent(r); i++)
+    {
+      iterate_stride(m, strides, offset, args..., i);
+    }
   }
 }
 

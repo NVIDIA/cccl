@@ -23,7 +23,7 @@
 
 using cuda::std::intptr_t;
 
-template <class E, cuda::std::enable_if_t<E::rank() != 0, int> = 0>
+template <class E>
 __host__ __device__ constexpr void
 test_construction(E e, cuda::std::array<intptr_t, E::rank()> s, intptr_t input_offset = 0)
 {
@@ -36,17 +36,12 @@ test_construction(E e, cuda::std::array<intptr_t, E::rank()> s, intptr_t input_o
   static_assert(noexcept(M{e, strides, offset}));
   M m(e, strides, offset);
 
-  // check correct extents are returned
   static_assert(noexcept(m.extents()));
   assert(m.extents() == e);
-
-  // check offset
   assert(m.offset() == offset);
-
-  // check strides
   static_assert(noexcept(m.strides()));
 
-  if constexpr (E::rank() != 0)
+  if constexpr (E::rank() > 0)
   {
     auto strides_obj = m.strides();
     for (typename E::rank_type r = 0; r < E::rank(); r++)
@@ -55,30 +50,6 @@ test_construction(E e, cuda::std::array<intptr_t, E::rank()> s, intptr_t input_o
       assert(cuda::std::cmp_equal(strides_obj.stride(r), s[r]));
     }
   }
-}
-
-template <class E, cuda::std::enable_if_t<E::rank() == 0, int> = 0>
-__host__ __device__ constexpr void
-test_construction(E e, cuda::std::array<intptr_t, E::rank()> s, intptr_t input_offset = 0)
-{
-  using M            = cuda::layout_stride_relaxed::mapping<E>;
-  using strides_type = typename M::strides_type;
-  using offset_type  = typename M::offset_type;
-  strides_type strides(s);
-  offset_type offset = static_cast<offset_type>(input_offset);
-  static_assert(noexcept(M{e, strides}));
-  static_assert(noexcept(M{e, strides, offset}));
-  M m(e, strides, offset);
-
-  // check correct extents are returned
-  static_assert(noexcept(m.extents()));
-  assert(m.extents() == e);
-
-  // check offset
-  assert(m.offset() == offset);
-
-  // check strides
-  static_assert(noexcept(m.strides()));
 }
 
 __host__ __device__ constexpr bool test()

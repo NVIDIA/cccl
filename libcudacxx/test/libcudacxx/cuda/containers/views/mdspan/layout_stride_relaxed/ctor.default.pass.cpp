@@ -24,7 +24,7 @@
 
 #include "test_macros.h"
 
-template <class E, cuda::std::enable_if_t<E::rank() != 0, int> = 0>
+template <class E>
 __host__ __device__ constexpr void test_construction()
 {
   using M = cuda::layout_stride_relaxed::mapping<E>;
@@ -32,26 +32,20 @@ __host__ __device__ constexpr void test_construction()
   M m{};
   E e{};
 
-  // check correct extents are returned
   static_assert(noexcept(m.extents()));
   assert(m.extents() == e);
-
-  // check offset is zero
   assert(m.offset() == 0);
-
-  // check required_span_size()
-  typename E::index_type expected_size = 1;
-  for (typename E::rank_type r = 0; r < E::rank(); r++)
-  {
-    expected_size *= e.extent(r);
-  }
-  assert(m.required_span_size() == expected_size);
-
-  // check strides: uses layout_right strides by default
   static_assert(noexcept(m.strides()));
 
-  if constexpr (E::rank() != 0)
+  if constexpr (E::rank() > 0)
   {
+    typename E::index_type expected_size = 1;
+    for (typename E::rank_type r = 0; r < E::rank(); r++)
+    {
+      expected_size *= e.extent(r);
+    }
+    assert(m.required_span_size() == expected_size);
+
     auto strides_obj = m.strides();
     cuda::std::layout_right::mapping<E> m_right{};
     for (typename E::rank_type r = 0; r < E::rank(); r++)
@@ -60,29 +54,10 @@ __host__ __device__ constexpr void test_construction()
       assert(cuda::std::cmp_equal(strides_obj.stride(r), m_right.stride(r)));
     }
   }
-}
-
-template <class E, cuda::std::enable_if_t<E::rank() == 0, int> = 0>
-__host__ __device__ constexpr void test_construction()
-{
-  using M = cuda::layout_stride_relaxed::mapping<E>;
-  static_assert(noexcept(M{}));
-  M m{};
-  E e{};
-
-  // check correct extents are returned
-  static_assert(noexcept(m.extents()));
-  assert(m.extents() == e);
-
-  // check offset is zero
-  assert(m.offset() == 0);
-
-  // check required_span_size()
-  typename E::index_type expected_size = 1;
-  assert(m.required_span_size() == expected_size);
-
-  // check strides: node stride function is constrained on rank>0
-  static_assert(noexcept(m.strides()));
+  else
+  {
+    assert(m.required_span_size() == 1);
+  }
 }
 
 __host__ __device__ constexpr bool test()
