@@ -511,12 +511,12 @@ function(thrust_debug_internal_targets)
   _thrust_debug_backend_targets(TBB "${THRUST_TBB_VERSION}")
   thrust_debug_target(TBB::tbb "${THRUST_TBB_VERSION}")
 
+  _thrust_debug_backend_targets(HPX "${THRUST_HPX_VERSION}")
+  thrust_debug_target(HPX::hpx "${THRUST_HPX_VERSION}")
+
   _thrust_debug_backend_targets(CUDA "CUB ${THRUST_CUB_VERSION}")
   thrust_debug_target(CUB::CUB "${THRUST_CUB_VERSION}")
   thrust_debug_target(libcudacxx::libcudacxx "${THRUST_libcudacxx_VERSION}")
-
-  _thrust_debug_backend_targets(HPX "${THRUST_HPX_VERSION}")
-  thrust_debug_target(HPX::hpx "${THRUST_HPX_VERSION}")
 endfunction()
 
 ################################################################################

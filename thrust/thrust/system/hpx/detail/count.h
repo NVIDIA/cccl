@@ -50,8 +50,8 @@ count(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator 
   if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
   {
       return ::hpx::count(hpx::detail::to_hpx_execution_policy(exec),
-                          detail::try_unwrap_contiguous_iterator(first),
-                          detail::try_unwrap_contiguous_iterator(last),
+                          ::thrust::try_unwrap_contiguous_iterator(first),
+                          ::thrust::try_unwrap_contiguous_iterator(last),
                           value);
   }
   else
@@ -72,8 +72,8 @@ count_if(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterat
   {
       return ::hpx::count_if(
         hpx::detail::to_hpx_execution_policy(exec),
-        detail::try_unwrap_contiguous_iterator(first),
-        detail::try_unwrap_contiguous_iterator(last),
+        ::thrust::try_unwrap_contiguous_iterator(first),
+        ::thrust::try_unwrap_contiguous_iterator(last),
         wrapped_pred);
   }
   else

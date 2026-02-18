@@ -43,8 +43,8 @@ void fill(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardI
   if constexpr (::hpx::traits::is_forward_iterator_v<ForwardIterator>)
   {
       return ::hpx::fill(hpx::detail::to_hpx_execution_policy(exec),
-                         detail::try_unwrap_contiguous_iterator(first),
-                         detail::try_unwrap_contiguous_iterator(last),
+                         ::thrust::try_unwrap_contiguous_iterator(first),
+                         ::thrust::try_unwrap_contiguous_iterator(last),
                          value);
   }
   else
@@ -60,7 +60,7 @@ OutputIterator fill_n(execution_policy<DerivedPolicy>& exec, OutputIterator firs
   if constexpr (::hpx::traits::is_forward_iterator_v<OutputIterator>)
   {
       auto res = ::hpx::fill_n(
-        hpx::detail::to_hpx_execution_policy(exec), detail::try_unwrap_contiguous_iterator(first), n, value);
+        hpx::detail::to_hpx_execution_policy(exec), ::thrust::try_unwrap_contiguous_iterator(first), n, value);
       return detail::rewrap_contiguous_iterator(res, first);
   }
   else

@@ -164,22 +164,22 @@ merge(execution_policy<ExecutionPolicy>& exec,
       if (params.num_cores == 1) {
         auto res = ::hpx::merge(
           ::hpx::execution::seq,
-          detail::try_unwrap_contiguous_iterator(first1),
-          detail::try_unwrap_contiguous_iterator(last1),
-          detail::try_unwrap_contiguous_iterator(first2),
-          detail::try_unwrap_contiguous_iterator(last2),
-          detail::try_unwrap_contiguous_iterator(result),
+          ::thrust::try_unwrap_contiguous_iterator(first1),
+          ::thrust::try_unwrap_contiguous_iterator(last1),
+          ::thrust::try_unwrap_contiguous_iterator(first2),
+          ::thrust::try_unwrap_contiguous_iterator(last2),
+          ::thrust::try_unwrap_contiguous_iterator(result),
           wrapped_comp);
         return detail::rewrap_contiguous_iterator(res, result);
       }
       else {
         auto res = ::hpx::merge(
           hpx::detail::to_hpx_execution_policy(exec).with(lss),
-          detail::try_unwrap_contiguous_iterator(first1),
-          detail::try_unwrap_contiguous_iterator(last1),
-          detail::try_unwrap_contiguous_iterator(first2),
-          detail::try_unwrap_contiguous_iterator(last2),
-          detail::try_unwrap_contiguous_iterator(result),
+          ::thrust::try_unwrap_contiguous_iterator(first1),
+          ::thrust::try_unwrap_contiguous_iterator(last1),
+          ::thrust::try_unwrap_contiguous_iterator(first2),
+          ::thrust::try_unwrap_contiguous_iterator(last2),
+          ::thrust::try_unwrap_contiguous_iterator(result),
           wrapped_comp);
         return detail::rewrap_contiguous_iterator(res, result);
       }
