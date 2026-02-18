@@ -3,7 +3,6 @@ import numpy as np
 
 import cuda.bench as bench
 
-
 ENTROPY_TO_PROB = {
     "1.000": 1.0,
     "0.811": 0.811,
