@@ -314,8 +314,6 @@ struct DispatchFixedSizeSegmentedReduce
         ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
       const auto num_current_blocks = static_cast<::cuda::std::int32_t>(num_current_segments * tiles_per_segment);
 
-      constexpr int seg_chunk_size = tile_size;
-
       if (const auto error = CubDebug(
             launcher_factory(num_current_blocks, ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
               .doit(fixed_size_segmented_reduce_kernel_partial,
@@ -326,7 +324,7 @@ struct DispatchFixedSizeSegmentedReduce
                     reduction_op,
                     init,
                     d_block_reductions,
-                    seg_chunk_size,
+                    tile_size,
                     tiles_per_segment)))
       {
         return error;
