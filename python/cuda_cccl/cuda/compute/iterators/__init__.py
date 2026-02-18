@@ -3,6 +3,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from __future__ import annotations
+
+from ._base import IteratorBase
 from ._cache_modified import CacheModifiedInputIterator
 from ._constant import ConstantIterator
 from ._counting import CountingIterator
@@ -17,6 +20,7 @@ __all__ = [
     "ConstantIterator",
     "CountingIterator",
     "DiscardIterator",
+    "IteratorBase",
     "PermutationIterator",
     "ReverseIterator",
     "TransformIterator",

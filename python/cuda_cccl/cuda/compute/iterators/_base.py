@@ -20,7 +20,7 @@ class IteratorBase:
     """
     Iterators represent streams of data computed on the fly.
 
-    Iterators can be used as inputs (or sometimes outputs) to most algorithms.
+    See :py:mod:`cuda.compute.iterators` for available iterators.
     """
 
     # Subclassing
@@ -261,3 +261,5 @@ def compose_iterator_states(
 
 
 cache_with_registered_key_functions.register(IteratorBase, lambda it: it.kind)
+
+__all__ = ["IteratorBase"]
