@@ -99,6 +99,8 @@ class thread_group<_Hierarchy, __this_hierarchy_group_kind> : __this_hierarchy_g
   using __base_type = __this_hierarchy_group_base<thread_level, _Hierarchy>;
 
 public:
+  using level_type = thread_level;
+
   using __base_type::__base_type;
   using __base_type::count;
   using __base_type::count_as;
@@ -122,6 +124,8 @@ class warp_group<_Hierarchy, __this_hierarchy_group_kind> : __this_hierarchy_gro
   using __base_type = __this_hierarchy_group_base<warp_level, _Hierarchy>;
 
 public:
+  using level_type = warp_level;
+
   using __base_type::__base_type;
   using __base_type::count;
   using __base_type::count_as;
@@ -148,6 +152,8 @@ class block_group<_Hierarchy, __this_hierarchy_group_kind> : __this_hierarchy_gr
   using __base_type = __this_hierarchy_group_base<block_level, _Hierarchy>;
 
 public:
+  using level_type = block_level;
+
   using __base_type::__base_type;
   using __base_type::count;
   using __base_type::count_as;
@@ -175,6 +181,8 @@ class cluster_group<_Hierarchy, __this_hierarchy_group_kind> : __this_hierarchy_
   using __base_type = __this_hierarchy_group_base<cluster_level, _Hierarchy>;
 
 public:
+  using level_type = cluster_level;
+
   using __base_type::__base_type;
   using __base_type::count;
   using __base_type::count_as;
@@ -207,6 +215,8 @@ class grid_group<_Hierarchy, __this_hierarchy_group_kind> : __this_hierarchy_gro
   using __base_type = __this_hierarchy_group_base<grid_level, _Hierarchy>;
 
 public:
+  using level_type = grid_level;
+
   using __base_type::__base_type;
   using __base_type::hierarchy;
 
