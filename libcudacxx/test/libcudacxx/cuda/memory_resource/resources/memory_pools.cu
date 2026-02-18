@@ -670,3 +670,84 @@ C2H_CCCLRT_TEST("pinned_memory_pool with allocation handle", "[memory_resource]"
 
 // managed memory pool does not support allocation handles yet.
 #endif // !_CCCL_OS(WINDOWS)
+
+C2H_CCCLRT_TEST("device_memory_pool conversion to resource_ref", "[memory_resource]")
+{
+  int current_device = 0;
+  cuda::__ensure_current_context guard{cuda::device_ref{current_device}};
+
+  cuda::device_memory_pool pool{cuda::device_ref{0}};
+  cuda::mr::resource_ref<cuda::mr::device_accessible> ref1 = pool.as_ref();
+
+  cuda::device_memory_pool_ref pool_ref                    = pool.as_ref();
+  cuda::mr::resource_ref<cuda::mr::device_accessible> ref2 = pool_ref;
+  CHECK((ref1 == ref2));
+}
+
+#if _CCCL_CTK_AT_LEAST(13, 0) && !_CCCL_OS(WINDOWS)
+C2H_CCCLRT_TEST("managed_memory_pool conversion to resource_ref", "[memory_resource]")
+{
+  int current_device = 0;
+  cuda::__ensure_current_context guard{cuda::device_ref{current_device}};
+
+  cuda::managed_memory_pool pool{};
+
+  { // host device accessible
+    cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible> ref1 = pool.as_ref();
+
+    cuda::managed_memory_pool_ref pool_ref                                              = pool.as_ref();
+    cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible> ref2 = pool_ref;
+    CHECK((ref1 == ref2));
+  }
+
+  { // host  accessible
+    cuda::mr::resource_ref<cuda::mr::host_accessible> ref1 = pool.as_ref();
+
+    cuda::managed_memory_pool_ref pool_ref                 = pool.as_ref();
+    cuda::mr::resource_ref<cuda::mr::host_accessible> ref2 = pool_ref;
+    CHECK((ref1 == ref2));
+  }
+
+  { // device accessible
+    cuda::mr::resource_ref<cuda::mr::device_accessible> ref1 = pool.as_ref();
+
+    cuda::managed_memory_pool_ref pool_ref                   = pool.as_ref();
+    cuda::mr::resource_ref<cuda::mr::device_accessible> ref2 = pool_ref;
+    CHECK((ref1 == ref2));
+  }
+}
+#endif // _CCCL_CTK_AT_LEAST(13, 0) && !_CCCL_OS(WINDOWS)
+
+#if _CCCL_CTK_AT_LEAST(12, 6)
+C2H_CCCLRT_TEST("pinned_memory_pool conversion to resource_ref", "[memory_resource]")
+{
+  int current_device = 0;
+  cuda::__ensure_current_context guard{cuda::device_ref{current_device}};
+
+  cuda::pinned_memory_pool pool{0};
+
+  { // host device accessible
+    cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible> ref1 = pool.as_ref();
+
+    cuda::pinned_memory_pool_ref pool_ref                                               = pool.as_ref();
+    cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible> ref2 = pool_ref;
+    CHECK((ref1 == ref2));
+  }
+
+  { // host  accessible
+    cuda::mr::resource_ref<cuda::mr::host_accessible> ref1 = pool.as_ref();
+
+    cuda::pinned_memory_pool_ref pool_ref                  = pool.as_ref();
+    cuda::mr::resource_ref<cuda::mr::host_accessible> ref2 = pool_ref;
+    CHECK((ref1 == ref2));
+  }
+
+  { // device accessible
+    cuda::mr::resource_ref<cuda::mr::device_accessible> ref1 = pool.as_ref();
+
+    cuda::pinned_memory_pool_ref pool_ref                    = pool.as_ref();
+    cuda::mr::resource_ref<cuda::mr::device_accessible> ref2 = pool_ref;
+    CHECK((ref1 == ref2));
+  }
+}
+#endif // _CCCL_CTK_AT_LEAST(12, 6)
