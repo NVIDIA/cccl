@@ -45,8 +45,9 @@ test_construction(E e, cuda::std::array<intptr_t, E::rank()> s, intptr_t input_o
 
   // check strides
   static_assert(noexcept(m.strides()));
-  
-  if constexpr (E::rank() != 0) {
+
+  if constexpr (E::rank() != 0)
+  {
     auto strides_obj = m.strides();
     for (typename E::rank_type r = 0; r < E::rank(); r++)
     {

@@ -180,8 +180,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
   }
 
   template <class _Arg1>
-  static constexpr bool __is_nothrow_constructible_from_one_arg =
-    __is_nothrow_constructible_from_one_arg_fn<_Arg1>();
+  static constexpr bool __is_nothrow_constructible_from_one_arg = __is_nothrow_constructible_from_one_arg_fn<_Arg1>();
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)
@@ -298,8 +297,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
   }
 
   template <class _Arg1>
-  static constexpr bool __is_nothrow_constructible_from_one_arg =
-    __is_nothrow_constructible_from_one_arg_fn<_Arg1>();
+  static constexpr bool __is_nothrow_constructible_from_one_arg = __is_nothrow_constructible_from_one_arg_fn<_Arg1>();
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg1)

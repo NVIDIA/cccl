@@ -49,8 +49,9 @@ __host__ __device__ constexpr void test_construction()
 
   // check strides: uses layout_right strides by default
   static_assert(noexcept(m.strides()));
-  
-  if constexpr (E::rank() != 0) {
+
+  if constexpr (E::rank() != 0)
+  {
     auto strides_obj = m.strides();
     cuda::std::layout_right::mapping<E> m_right{};
     for (typename E::rank_type r = 0; r < E::rank(); r++)
