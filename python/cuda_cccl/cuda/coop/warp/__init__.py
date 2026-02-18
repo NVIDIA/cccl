@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from ._warp_merge_sort import merge_sort_keys
-from ._warp_reduce import reduce, sum
-from ._warp_scan import exclusive_sum
+from ._warp_merge_sort import make_merge_sort_keys
+from ._warp_reduce import make_reduce, make_sum
+from ._warp_scan import make_exclusive_sum
 
-__all__ = ["exclusive_sum", "reduce", "sum", "merge_sort_keys"]
+__all__ = ["make_exclusive_sum", "make_reduce", "make_sum", "make_merge_sort_keys"]
