@@ -8,10 +8,11 @@ Numeric
    :maxdepth: 1
 
    numeric/add_overflow
-   numeric/sub_overflow
    numeric/div_overflow
+   numeric/mul_overflow
    numeric/narrow
    numeric/overflow_result
+   numeric/sub_overflow
 
 .. list-table::
    :widths: 25 45 30 30
@@ -46,3 +47,8 @@ Numeric
      - Performs division with overflow checking
      - CCCL 3.2.0
      - CUDA 13.2
+
+   * - :ref:`cuda::mul_overflow <libcudacxx-extended-api-numeric-mul_overflow>`
+     - Performs multiplication with overflow checking
+     - CCCL 3.3.0
+     - CUDA 13.3
