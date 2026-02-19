@@ -116,3 +116,91 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts not_guaranteed determinism req
   REQUIRE(d_out == expected);
   REQUIRE(error == cudaSuccess);
 }
+
+C2H_TEST("cub::DeviceSegmentedReduce::Reduce accepts env with stream", "[segmented_reduce][env]")
+{
+  // example-begin segmented-reduce-reduce-env
+  int num_segments                     = 3;
+  thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
+  thrust::device_vector<int> d_out(3);
+
+  cudaStream_t legacy_stream = 0;
+  cuda::stream_ref stream_ref{legacy_stream};
+  auto env = ::cuda::std::execution::env{stream_ref};
+
+  auto error = cub::DeviceSegmentedReduce::Reduce(
+    d_in.begin(),
+    d_out.begin(),
+    num_segments,
+    d_offsets_it,
+    d_offsets_it + 1,
+    ::cuda::minimum<>{},
+    ::cuda::std::numeric_limits<int>::max(),
+    env);
+  thrust::device_vector<int> expected{6, ::cuda::std::numeric_limits<int>::max(), 0};
+
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Reduce failed with status: " << error << std::endl;
+  }
+  // example-end segmented-reduce-reduce-env
+
+  REQUIRE(d_out == expected);
+  REQUIRE(error == cudaSuccess);
+}
+
+C2H_TEST("cub::DeviceSegmentedReduce::Min accepts env with stream", "[segmented_reduce][env]")
+{
+  // example-begin segmented-reduce-min-env
+  int num_segments                     = 3;
+  thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
+  thrust::device_vector<int> d_out(3);
+
+  cudaStream_t legacy_stream = 0;
+  cuda::stream_ref stream_ref{legacy_stream};
+  auto env = ::cuda::std::execution::env{stream_ref};
+
+  auto error =
+    cub::DeviceSegmentedReduce::Min(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
+  thrust::device_vector<int> expected{6, ::cuda::std::numeric_limits<int>::max(), 0};
+
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Min failed with status: " << error << std::endl;
+  }
+  // example-end segmented-reduce-min-env
+
+  REQUIRE(d_out == expected);
+  REQUIRE(error == cudaSuccess);
+}
+
+C2H_TEST("cub::DeviceSegmentedReduce::Max accepts env with stream", "[segmented_reduce][env]")
+{
+  // example-begin segmented-reduce-max-env
+  int num_segments                     = 3;
+  thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
+  thrust::device_vector<int> d_out(3);
+
+  cudaStream_t legacy_stream = 0;
+  cuda::stream_ref stream_ref{legacy_stream};
+  auto env = ::cuda::std::execution::env{stream_ref};
+
+  auto error =
+    cub::DeviceSegmentedReduce::Max(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
+  thrust::device_vector<int> expected{8, ::cuda::std::numeric_limits<int>::lowest(), 9};
+
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Max failed with status: " << error << std::endl;
+  }
+  // example-end segmented-reduce-max-env
+
+  REQUIRE(d_out == expected);
+  REQUIRE(error == cudaSuccess);
+}
