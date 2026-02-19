@@ -37,8 +37,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 extern "C" _CCCL_DEVICE void __cuda__match_all_sync_is_not_supported_before_SM_70__();
 
 template <typename _Tp, typename _Up = ::cuda::std::remove_cv_t<_Tp>>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE bool
-warp_match_all(const _Tp& __data, lane_mask __lane_mask = lane_mask::all())
+[[nodiscard]] _CCCL_DEVICE_API bool warp_match_all(const _Tp& __data, lane_mask __lane_mask = lane_mask::all())
 {
   _CCCL_ASSERT(__lane_mask != lane_mask::none(), "lane_mask must be non-zero");
   constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(uint32_t));

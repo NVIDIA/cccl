@@ -66,7 +66,7 @@ enum class __l2_descriptor_mode_t : uint32_t
 
 #if !_CCCL_CUDA_COMPILER(NVRTC)
 
-[[nodiscard]] _CCCL_HIDE_FROM_ABI uint64_t __block_encoding_host(
+[[nodiscard]] _CCCL_HOST_API inline uint64_t __block_encoding_host(
   __l2_evict_t __primary, __l2_evict_t __secondary, const void* __ptr, uint32_t __primary_bytes, uint32_t __total_bytes)
 {
   _CCCL_ASSERT(__primary_bytes > 0, "primary_size must be greater than 0");
