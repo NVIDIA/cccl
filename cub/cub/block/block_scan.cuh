@@ -1424,7 +1424,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ExclusiveScanPartialTile(Input& input, Output& output, T initial_value, ScanOp scan_op, int valid_items)
   {
-    cub::detail::check_fixed_size_ranges_pair<Input, Output, T>{};
+    (void) cub::detail::check_fixed_size_ranges_pair<Input, Output, T>{};
     constexpr int items_per_thread = cub::detail::static_size_v<Input>;
 
     // Reduce consecutive thread items in registers
@@ -1527,7 +1527,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScanPartialTile(
     Input& input, Output& output, T initial_value, ScanOp scan_op, int valid_items, T& block_aggregate)
   {
-    cub::detail::check_fixed_size_ranges_pair<Input, Output, T>{};
+    (void) cub::detail::check_fixed_size_ranges_pair<Input, Output, T>{};
     constexpr int items_per_thread = cub::detail::static_size_v<Input>;
 
     // Reduce consecutive thread items in registers
@@ -1671,7 +1671,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScanPartialTile(
     Input& input, Output& output, ScanOp scan_op, int valid_items, BlockPrefixCallbackOp& block_prefix_callback_op)
   {
-    cub::detail::check_fixed_size_ranges_pair<Input, Output, T>{};
+    (void) cub::detail::check_fixed_size_ranges_pair<Input, Output, T>{};
     constexpr int items_per_thread = cub::detail::static_size_v<Input>;
 
     // Reduce consecutive thread items in registers
@@ -1947,7 +1947,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ExclusiveScanPartialTile(Input& input, Output& output, ScanOp scan_op, int valid_items)
   {
-    cub::detail::check_fixed_size_ranges_pair<Input, Output, T>{};
+    (void) cub::detail::check_fixed_size_ranges_pair<Input, Output, T>{};
     constexpr int items_per_thread = cub::detail::static_size_v<Input>;
 
     // Reduce consecutive thread items in registers
@@ -2006,7 +2006,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ExclusiveScanPartialTile(Input& input, Output& output, ScanOp scan_op, int valid_items, T& block_aggregate)
   {
-    cub::detail::check_fixed_size_ranges_pair<Input, Output, T>{};
+    (void) cub::detail::check_fixed_size_ranges_pair<Input, Output, T>{};
     constexpr int items_per_thread = cub::detail::static_size_v<Input>;
 
     // Reduce consecutive thread items in registers
@@ -3346,7 +3346,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   InclusiveScanPartialTile(Input& input, Output& output, ScanOp scan_op, int valid_items)
   {
-    cub::detail::check_fixed_size_ranges_pair<Input, Output, T>{};
+    (void) cub::detail::check_fixed_size_ranges_pair<Input, Output, T>{};
     constexpr int items_per_thread = cub::detail::static_size_v<Input>;
 
     if constexpr (items_per_thread == 1)
@@ -3425,7 +3425,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   InclusiveScanPartialTile(Input& input, Output& output, T initial_value, ScanOp scan_op, int valid_items)
   {
-    cub::detail::check_fixed_size_ranges_pair<Input, Output, T>{};
+    (void) cub::detail::check_fixed_size_ranges_pair<Input, Output, T>{};
     constexpr int items_per_thread = cub::detail::static_size_v<Input>;
 
     // Reduce consecutive thread items in registers
@@ -3518,7 +3518,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   InclusiveScanPartialTile(Input& input, Output& output, ScanOp scan_op, int valid_items, T& block_aggregate)
   {
-    cub::detail::check_fixed_size_ranges_pair<Input, Output, T>{};
+    (void) cub::detail::check_fixed_size_ranges_pair<Input, Output, T>{};
     constexpr int items_per_thread = cub::detail::static_size_v<Input>;
 
     if constexpr (items_per_thread == 1)
@@ -3606,7 +3606,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScanPartialTile(
     Input& input, Output& output, T initial_value, ScanOp scan_op, int valid_items, T& block_aggregate)
   {
-    cub::detail::check_fixed_size_ranges_pair<Input, Output, T>{};
+    (void) cub::detail::check_fixed_size_ranges_pair<Input, Output, T>{};
     constexpr int items_per_thread = cub::detail::static_size_v<Input>;
 
     // Reduce consecutive thread items in registers
@@ -3748,7 +3748,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScanPartialTile(
     Input& input, Output& output, ScanOp scan_op, int valid_items, BlockPrefixCallbackOp& block_prefix_callback_op)
   {
-    cub::detail::check_fixed_size_ranges_pair<Input, Output, T>{};
+    (void) cub::detail::check_fixed_size_ranges_pair<Input, Output, T>{};
     constexpr int items_per_thread = cub::detail::static_size_v<Input>;
 
     if constexpr (items_per_thread == 1)

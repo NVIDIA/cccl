@@ -206,12 +206,12 @@ struct min_mixed_init_value_aggregate_op_t
     if constexpr (Mode == scan_mode::exclusive)
     {
       scan.ExclusiveScanPartialTile(
-        thread_data, thread_data, initial_value, ::custom_mixed_min<T, OpValT>{}, valid_items, block_aggregate);
+        thread_data, thread_data, initial_value, custom_mixed_min<T, OpValT>{}, valid_items, block_aggregate);
     }
     else
     {
       scan.InclusiveScanPartialTile(
-        thread_data, thread_data, initial_value, ::custom_mixed_min<T, OpValT>{}, valid_items, block_aggregate);
+        thread_data, thread_data, initial_value, custom_mixed_min<T, OpValT>{}, valid_items, block_aggregate);
     }
 
     const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
