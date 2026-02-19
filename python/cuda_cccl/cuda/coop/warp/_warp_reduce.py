@@ -4,160 +4,201 @@
 
 import numba
 
-from .._common import make_binary_tempfile
+from .._common import normalize_dtype_param
 from .._types import (
     Algorithm,
+    BasePrimitive,
     Dependency,
     DependentPythonOperator,
     DependentReference,
     Invocable,
-    Pointer,
     TemplateParameter,
+    TempStoragePointer,
+    Value,
     numba_type_to_wrapper,
 )
 
 
-def make_reduce(dtype, binary_op, threads_in_warp=32, methods=None):
-    """
-    Creates a warp-wide reduction primitive for lane :sub:`0` using the
-    specified binary reduction functor. Each thread contributes one input
-    element.
+class reduce(BasePrimitive):
+    is_one_shot = True
 
-    Warning:
-        The return value is undefined in threads other than thread
-        :sub:`0`.
+    def __init__(
+        self,
+        dtype,
+        binary_op,
+        threads_in_warp=32,
+        valid_items=None,
+        methods=None,
+        unique_id=None,
+        temp_storage=None,
+        node=None,
+    ):
+        """
+        Computes a warp-wide reduction for lane :sub:`0` using the specified
+        binary reduction functor.
 
-    Example:
-        The code snippet below illustrates a max reduction of 32 integer
-        items that are partitioned across a warp of threads.
+        Example:
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
-            :language: python
-            :dedent:
-            :start-after: example-begin imports
-            :end-before: example-end imports
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin reduce
+                :end-before: example-end reduce
+        """
+        self.node = node
+        self.temp_storage = temp_storage
+        self.dtype = normalize_dtype_param(dtype)
+        self.binary_op = binary_op
+        self.threads_in_warp = threads_in_warp
+        self.valid_items = valid_items
+        self.methods = methods
 
-        The following snippet shows how to invoke the returned
-        ``warp_reduce`` primitive:
-
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
-            :language: python
-            :dedent:
-            :start-after: example-begin reduce
-            :end-before: example-end reduce
-
-        Suppose the set of inputs across the warp of threads is
-        ``{ 0, 1, 2, 3, ..., 31 }``.
-        The corresponding output in lane :sub:`0` will be ``{ 31 }``.
-
-    Args:
-        dtype: Data type being reduced
-        threads_in_warp: The number of threads in a warp
-        binary_op: Binary reduction function
-
-    Returns:
-        A callable object that can be linked to and invoked from a CUDA
-        kernel
-    """
-    template = Algorithm(
-        "WarpReduce",
-        "Reduce",
-        "warp_reduce",
-        ["cub/warp/warp_reduce.cuh"],
-        [TemplateParameter("T"), TemplateParameter("VIRTUAL_WARP_THREADS")],
-        [
+        parameters = [
             [
-                Pointer(numba.uint8),
                 DependentReference(Dependency("T")),
                 DependentPythonOperator(
                     Dependency("T"),
                     [Dependency("T"), Dependency("T")],
                     Dependency("Op"),
+                    name="binary_op",
                 ),
                 DependentReference(Dependency("T"), True),
             ]
-        ],
-        type_definitions=[numba_type_to_wrapper(dtype, methods=methods)],
-    )
-    specialization = template.specialize(
-        {"T": dtype, "VIRTUAL_WARP_THREADS": threads_in_warp, "Op": binary_op}
-    )
+        ]
+        if valid_items is not None:
+            parameters[0].append(Value(numba.types.int32, name="valid_items"))
+        if temp_storage is not None:
+            parameters[0].insert(
+                0,
+                TempStoragePointer(
+                    numba.types.uint8, is_array_pointer=True, name="temp_storage"
+                ),
+            )
 
-    return Invocable(
-        temp_files=[
-            make_binary_tempfile(ltoir, ".ltoir")
-            for ltoir in specialization.get_lto_ir(threads=threads_in_warp)
-        ],
-        temp_storage_bytes=specialization.temp_storage_bytes,
-        temp_storage_alignment=specialization.temp_storage_alignment,
-        algorithm=specialization,
-    )
+        template = Algorithm(
+            "WarpReduce",
+            "Reduce",
+            "warp_reduce",
+            ["cub/warp/warp_reduce.cuh"],
+            [TemplateParameter("T"), TemplateParameter("VIRTUAL_WARP_THREADS")],
+            parameters,
+            self,
+            type_definitions=[numba_type_to_wrapper(self.dtype, methods=methods)]
+            if methods is not None
+            else None,
+            threads=threads_in_warp,
+            unique_id=unique_id,
+        )
+        self.algorithm = template
+        self.specialization = template.specialize(
+            {
+                "T": self.dtype,
+                "VIRTUAL_WARP_THREADS": threads_in_warp,
+                "Op": binary_op,
+            }
+        )
+
+    @classmethod
+    def create(
+        cls, dtype, binary_op, threads_in_warp=32, valid_items=None, methods=None
+    ):
+        algo = cls(
+            dtype=dtype,
+            binary_op=binary_op,
+            threads_in_warp=threads_in_warp,
+            valid_items=valid_items,
+            methods=methods,
+        )
+        specialization = algo.specialization
+        return Invocable(
+            ltoir_files=specialization.get_lto_ir(threads=threads_in_warp),
+            temp_storage_bytes=specialization.temp_storage_bytes,
+            temp_storage_alignment=specialization.temp_storage_alignment,
+            algorithm=specialization,
+        )
 
 
-def make_sum(dtype, threads_in_warp=32):
-    """
-    Creates a warp-wide reduction primitive for lane :sub:`0` using
-    addition (+) as the reduction operator. Each thread contributes one
-    input element.
+class sum(BasePrimitive):
+    is_one_shot = True
 
-    Warning:
-        The return value is undefined in threads other than thread
-        :sub:`0`.
+    def __init__(
+        self,
+        dtype,
+        threads_in_warp=32,
+        valid_items=None,
+        unique_id=None,
+        temp_storage=None,
+    ):
+        """
+        Computes a warp-wide sum for lane :sub:`0` using addition (+).
 
-    Example:
-        The code snippet below illustrates a reduction of 32 integer
-        items that are partitioned across a warp of threads.
+        Example:
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
-            :language: python
-            :dedent:
-            :start-after: example-begin imports
-            :end-before: example-end imports
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin sum
+                :end-before: example-end sum
+        """
+        self.temp_storage = temp_storage
+        self.dtype = normalize_dtype_param(dtype)
+        self.binary_op = None
+        self.threads_in_warp = threads_in_warp
+        self.valid_items = valid_items
 
-        The following snippet shows how to invoke the returned
-        ``warp_sum`` primitive:
-
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
-            :language: python
-            :dedent:
-            :start-after: example-begin sum
-            :end-before: example-end sum
-
-        Suppose the set of inputs across the warp of threads is
-        ``{ 1, 1, 1, 1, ..., 1 }``.
-        The corresponding output in lane :sub:`0` will be ``{ 32 }``.
-
-    Args:
-        dtype: Data type being reduced
-        threads_in_warp: The number of threads in a warp
-
-    Returns:
-        A callable object that can be linked to and invoked from a CUDA
-        kernel
-    """
-    template = Algorithm(
-        "WarpReduce",
-        "Sum",
-        "warp_reduce",
-        ["cub/warp/warp_reduce.cuh"],
-        [TemplateParameter("T"), TemplateParameter("VIRTUAL_WARP_THREADS")],
-        [
+        parameters = [
             [
-                Pointer(numba.uint8),
                 DependentReference(Dependency("T")),
                 DependentReference(Dependency("T"), True),
             ]
-        ],
-    )
-    specialization = template.specialize(
-        {"T": dtype, "VIRTUAL_WARP_THREADS": threads_in_warp}
-    )
-    return Invocable(
-        temp_files=[
-            make_binary_tempfile(ltoir, ".ltoir")
-            for ltoir in specialization.get_lto_ir(threads=threads_in_warp)
-        ],
-        temp_storage_bytes=specialization.temp_storage_bytes,
-        temp_storage_alignment=specialization.temp_storage_alignment,
-        algorithm=specialization,
-    )
+        ]
+        if valid_items is not None:
+            parameters[0].append(Value(numba.types.int32, name="valid_items"))
+        if temp_storage is not None:
+            parameters[0].insert(
+                0,
+                TempStoragePointer(
+                    numba.types.uint8, is_array_pointer=True, name="temp_storage"
+                ),
+            )
+
+        template = Algorithm(
+            "WarpReduce",
+            "Sum",
+            "warp_reduce",
+            ["cub/warp/warp_reduce.cuh"],
+            [TemplateParameter("T"), TemplateParameter("VIRTUAL_WARP_THREADS")],
+            parameters,
+            self,
+            threads=threads_in_warp,
+            unique_id=unique_id,
+        )
+        self.algorithm = template
+        self.specialization = template.specialize(
+            {"T": self.dtype, "VIRTUAL_WARP_THREADS": threads_in_warp}
+        )
+
+    @classmethod
+    def create(cls, dtype, threads_in_warp=32, valid_items=None):
+        algo = cls(
+            dtype=dtype,
+            threads_in_warp=threads_in_warp,
+            valid_items=valid_items,
+        )
+        specialization = algo.specialization
+        return Invocable(
+            ltoir_files=specialization.get_lto_ir(threads=threads_in_warp),
+            temp_storage_bytes=specialization.temp_storage_bytes,
+            temp_storage_alignment=specialization.temp_storage_alignment,
+            algorithm=specialization,
+        )
