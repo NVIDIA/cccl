@@ -510,7 +510,7 @@ struct DispatchScan
     // TODO(bgruber): we probably need to ensure alignment of d_temp_storage
     _CCCL_ASSERT(::cuda::is_aligned(d_temp_storage, kernel_source.look_ahead_tile_state_alignment()), "");
 
-    constexpr scan_warpspeed_policy warpspeed_policy = detail::scan::make_scan_warpspeed_policy<WarpspeedPolicy>();
+    constexpr auto warpspeed_policy = detail::scan::make_scan_warpspeed_policy<WarpspeedPolicy>();
     constexpr int smem_size_1_stage = detail::scan::smem_for_stages<InputT, OutputT, AccumT>(warpspeed_policy, 1);
     static_assert(smem_size_1_stage <= detail::max_smem_per_block); // this is ensured by scan_use_warpspeed
 

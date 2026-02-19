@@ -82,6 +82,12 @@ struct warpspeedKernelPolicy
   static constexpr int num_total_threads    = NumTotalThreads;
   static constexpr int items_per_thread     = ItemsPerThread;
   static constexpr int tile_size            = TileSize;
+
+  static constexpr int num_reduce_warps     = NumReduceWarps;
+  static constexpr int num_scan_stor_warps  = NumScanStorWarps;
+  static constexpr int num_load_warps       = NumLoadWarps;
+  static constexpr int num_sched_warps      = NumSchedWarps;
+  static constexpr int num_look_ahead_warps = NumLookAheadWarps;
 };
 
 template <typename InputT, typename OutputT, typename AccumT>
@@ -854,7 +860,7 @@ _CCCL_API constexpr auto smem_for_stages(
   (void) output_size;
   const auto counts = make_scan_stage_counts(num_stages);
 
-  const int align_inout     = ::cuda::std::max(16, input_align, output_align);
+  const int align_inout     = ::cuda::std::max({16, input_align, output_align});
   const int inout_bytes     = policy.tile_size * input_size + 16;
   const auto reduce_squad   = policy.squadReduce();
   const int sum_thread_warp = (reduce_squad.threadCount() + reduce_squad.warpCount()) * accum_size;
