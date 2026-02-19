@@ -16,31 +16,21 @@
 
 #include "nvbench_helper.cuh"
 
-struct equal_to_42
-{
-  template <class T>
-  __device__ constexpr bool operator()(const T& val) const noexcept
-  {
-    return val == static_cast<T>(42);
-  }
-};
-
 template <typename T>
 static void basic(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
-  thrust::device_vector<T> in = generate(elements, bit_entropy::_1_000, T{0}, T{42});
+  thrust::device_vector<T> output(elements);
 
   state.add_element_count(elements);
-  state.add_global_memory_reads<T>(elements);
   state.add_global_memory_writes<T>(elements);
 
   caching_allocator_t alloc{};
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               cuda::std::replace_if(cuda_policy(alloc, launch), in.begin(), in.end(), equal_to_42{}, 1337);
+               cuda::std::fill(cuda_policy(alloc, launch), output.begin(), output.end(), T{42});
              });
 }
 

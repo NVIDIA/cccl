@@ -79,7 +79,7 @@ public:
   //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
   _CCCL_HOST_API void deallocate_sync(
     void* __ptr,
-    const size_t,
+    [[maybe_unused]] const size_t __bytes,
     [[maybe_unused]] const size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
@@ -90,7 +90,6 @@ public:
   }
 
   //! @brief Equality comparison with another \c legacy_pinned_memory_resource.
-  //! @param __other The other \c legacy_pinned_memory_resource.
   //! @return Whether both \c legacy_pinned_memory_resource were constructed with the same flags.
   [[nodiscard]] _CCCL_HOST_API constexpr bool operator==(legacy_pinned_memory_resource const&) const noexcept
   {
@@ -98,7 +97,6 @@ public:
   }
 #  if _CCCL_STD_VER <= 2017
   //! @brief Equality comparison with another \c legacy_pinned_memory_resource.
-  //! @param __other The other \c legacy_pinned_memory_resource.
   //! @return Whether both \c legacy_pinned_memory_resource were constructed with different flags.
   [[nodiscard]] _CCCL_HOST_API constexpr bool operator!=(legacy_pinned_memory_resource const&) const noexcept
   {
