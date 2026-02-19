@@ -17,6 +17,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/equal.h>
 #include <thrust/execution_policy.h>
+#include <thrust/fill.h>
 
 #include <cuda/iterator>
 #include <cuda/memory_pool>
@@ -30,14 +31,40 @@
 
 inline constexpr int size = 1000;
 
+template <class T = int>
 struct gen_val
 {
   int val_;
-  __device__ constexpr int operator()() const noexcept
+
+  constexpr gen_val(const int val) noexcept
+      : val_(val)
+  {}
+
+  __device__ constexpr T operator()() const noexcept
   {
-    return val_;
+    return static_cast<T>(val_);
   }
 };
+
+template <class Policy>
+void test_generate(const Policy& policy, thrust::device_vector<int>& output)
+{
+  { // empty should not access anything
+    cuda::std::generate(policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), gen_val{42});
+  }
+
+  { // same type
+    thrust::fill(output.begin(), output.end(), 0);
+    cuda::std::generate(policy, output.begin(), output.end(), gen_val{42});
+    CHECK(thrust::equal(output.begin(), output.end(), cuda::constant_iterator{42}));
+  }
+
+  { // convertible type
+    thrust::fill(output.begin(), output.end(), 0);
+    cuda::std::generate(policy, output.begin(), output.end(), gen_val<short>{42});
+    CHECK(thrust::equal(output.begin(), output.end(), cuda::constant_iterator{42}));
+  }
+}
 
 C2H_TEST("cuda::std::generate", "[parallel algorithm]")
 {
@@ -46,24 +73,21 @@ C2H_TEST("cuda::std::generate", "[parallel algorithm]")
   SECTION("with default stream")
   {
     const auto policy = cuda::execution::__cub_par_unseq;
-    cuda::std::generate(policy, output.begin(), output.end(), gen_val{42});
-    CHECK(thrust::equal(output.begin(), output.end(), cuda::constant_iterator{42}));
+    test_generate(policy, output);
   }
 
   SECTION("with provided stream")
   {
     cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::__cub_par_unseq.with_stream(stream);
-    cuda::std::generate(policy, output.begin(), output.end(), gen_val{42});
-    CHECK(thrust::equal(output.begin(), output.end(), cuda::constant_iterator{42}));
+    test_generate(policy, output);
   }
 
   SECTION("with provided memory_resource")
   {
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
     const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource);
-    cuda::std::generate(policy, output.begin(), output.end(), gen_val{1337});
-    CHECK(thrust::equal(output.begin(), output.end(), cuda::constant_iterator{1337}));
+    test_generate(policy, output);
   }
 
   SECTION("with provided stream and memory_resource")
@@ -71,7 +95,6 @@ C2H_TEST("cuda::std::generate", "[parallel algorithm]")
     cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource).with_stream(stream);
-    cuda::std::generate(policy, output.begin(), output.end(), gen_val{42});
-    CHECK(thrust::equal(output.begin(), output.end(), cuda::constant_iterator{42}));
+    test_generate(policy, output);
   }
 }

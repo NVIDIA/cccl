@@ -33,56 +33,63 @@ struct mark_present_for_each
 {
   bool* ptr_;
 
-  template <typename T>
-  __host__ __device__ void operator()(T val) const noexcept
+  __host__ __device__ void operator()(int val) const noexcept
   {
     ptr_[val] = true;
   }
 };
 
-C2H_TEST("cuda::std::for_each", "[parallel algorithm]")
+template <class Policy>
+void test_for_each(const Policy& policy, thrust::device_vector<bool>& res)
 {
-  SECTION("with default stream")
-  {
-    thrust::device_vector<bool> res(size, false);
-    mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
+  mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
 
-    const auto policy = cuda::execution::__cub_par_unseq;
+  { // empty should not access anything
+    cuda::std::for_each(policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), fn);
+  }
+
+  { // same type
+    thrust::fill(res.begin(), res.end(), false);
     cuda::std::for_each(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, fn);
     CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
+  }
+
+  { // convertible type
+    thrust::fill(res.begin(), res.end(), false);
+    cuda::std::for_each(policy, cuda::counting_iterator<short>{0}, cuda::counting_iterator<short>{size}, fn);
+    CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
+  }
+}
+
+C2H_TEST("cuda::std::for_each", "[parallel algorithm]")
+{
+  thrust::device_vector<bool> res(size, thrust::no_init);
+
+  SECTION("with default stream")
+  {
+    const auto policy = cuda::execution::__cub_par_unseq;
+    test_for_each(policy, res);
   }
 
   SECTION("with provided stream")
   {
     cuda::stream stream{cuda::device_ref{0}};
-    thrust::device_vector<bool> res(size, false);
-    mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
-
     const auto policy = cuda::execution::__cub_par_unseq.with_stream(stream);
-    cuda::std::for_each(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, fn);
-    CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
+    test_for_each(policy, res);
   }
 
   SECTION("with provided memory_resource")
   {
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
-    thrust::device_vector<bool> res(size, false);
-    mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
-
     const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource);
-    cuda::std::for_each(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, fn);
-    CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
+    test_for_each(policy, res);
   }
 
   SECTION("with provided stream and memory_resource")
   {
     cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
-    thrust::device_vector<bool> res(size, false);
-    mark_present_for_each fn{thrust::raw_pointer_cast(res.data())};
-
     const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource).with_stream(stream);
-    cuda::std::for_each(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, fn);
-    CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
+    test_for_each(policy, res);
   }
 }
