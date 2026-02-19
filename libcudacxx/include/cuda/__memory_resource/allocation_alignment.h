@@ -33,6 +33,8 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__concepts/convertible_to.h>
 #  include <cuda/std/__exception/throw_error.h>
 #  include <cuda/std/__execution/env.h>
 #  include <cuda/std/cstddef>
@@ -41,7 +43,12 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-//! @brief Execution property type for querying allocation alignment from an environment.
+//! @brief True for types that expose allocation alignment via a member \c alignment().
+template <class _Tp>
+_CCCL_CONCEPT __has_member_alignment = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __t)(
+  requires(::cuda::std::convertible_to<decltype(__t.alignment()), ::cuda::std::size_t>));
+
+//! @brief Execution property type for querying allocation alignment from an environment or a buffer.
 struct allocation_alignment_t
 {
   _CCCL_EXEC_CHECK_DISABLE
@@ -51,6 +58,16 @@ struct allocation_alignment_t
   {
     static_assert(noexcept(__env.query(*this)));
     return __env.query(*this);
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__has_member_alignment<_Tp> _CCCL_AND(
+    !::cuda::std::execution::__queryable_with<const _Tp&, allocation_alignment_t>))
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Tp& __t) const noexcept(noexcept(__t.alignment()))
+    -> ::cuda::std::size_t
+  {
+    return __t.alignment();
   }
 
   [[nodiscard]]
