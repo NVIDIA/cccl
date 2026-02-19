@@ -41,6 +41,7 @@
 #include <cuda/std/__chrono/high_resolution_clock.h>
 #include <cuda/std/__chrono/time_point.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/new>
 #include <cuda/std/__new/device_new.h>
 #include <cuda/std/cstdint>
 
