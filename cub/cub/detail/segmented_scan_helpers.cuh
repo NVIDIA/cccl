@@ -117,9 +117,108 @@ struct projector_iv
   }
 };
 
+// Given a sequence of segments, specified by cumulative sum of its sizes
+// and iterator of offsets to beginning of each segment in some allocation
+// the bag_of_segments struct maps a logical identifier of an element,
+// 0 <= elem_id < m_offsets[m_offsets.size()-1], to segment id and relative
+// offset within the segment and produces offset of the corresponding element
+// in the underlying allocation.
+template <typename SpanT, unsigned int LinearBinarySearchThreshold = 20>
+struct bag_of_segments
+{
+private:
+  SpanT m_offsets;
+
+public:
+  using logical_offset_t = typename SpanT::value_type;
+  using segment_id_t     = typename SpanT::size_type;
+  using search_data_t    = ::cuda::std::tuple<segment_id_t, logical_offset_t>;
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE bag_of_segments(SpanT cum_sizes)
+      : m_offsets(cum_sizes)
+  {}
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE search_data_t find(logical_offset_t elem_id) const
+  {
+    const bool is_small = (m_offsets.size() < LinearBinarySearchThreshold);
+    const auto pos      = (is_small) ? locate_linear_search(elem_id) : locate_binary_search(elem_id);
+    return pos;
+  }
+
+private:
+  // Given ordinal logical position in the sequence of input segments comprising several segments,
+  // searcher returns the segment the element is a part of, and its relative position within that segment.
+
+  // This comment applies to both linear_search and binary search functions below:
+  //    m_offsets views into array of non-negative non-decreasing values, obtained as
+  //    prefix sum of segment sizes. Expectation: 0 <= pos < last element of m_offsets
+
+  // Linear search
+  _CCCL_DEVICE _CCCL_FORCEINLINE search_data_t locate_linear_search(logical_offset_t pos) const
+  {
+    const auto offset_size = m_offsets.size();
+
+    segment_id_t segment_id = 0;
+    logical_offset_t offset_c{0};
+
+    logical_offset_t shifted_offset = pos;
+
+    _CCCL_PRAGMA_UNROLL(4)
+    for (segment_id_t i = 0; i < offset_size; ++i)
+    {
+      const auto offset_n = m_offsets[i];
+      const bool cond     = ((offset_c <= pos) && (pos < offset_n));
+      segment_id          = (cond) ? i : segment_id;
+      shifted_offset      = (cond) ? pos - offset_c : shifted_offset;
+      offset_c            = offset_n;
+    }
+    return {segment_id, shifted_offset};
+  }
+
+  // Binary search
+  _CCCL_DEVICE _CCCL_FORCEINLINE search_data_t locate_binary_search(logical_offset_t pos) const
+  {
+    const auto offset_size = m_offsets.size();
+    const auto beg_it      = m_offsets.data();
+    const auto end_it      = beg_it + offset_size;
+
+    const auto ub = ::cuda::std::upper_bound(beg_it, end_it, pos);
+
+    const segment_id_t segment_id = ::cuda::std::distance(beg_it, ub);
+
+    const logical_offset_t shifted_offset = (segment_id == 0) ? pos : pos - m_offsets[segment_id - 1];
+
+    return {segment_id, shifted_offset};
+  }
+};
+
+template <typename SizeT>
+struct bag_of_fixed_size_segments
+{
+private:
+  SizeT m_segment_size;
+
+public:
+  using logical_offset_t = SizeT;
+  using segment_id_t     = SizeT;
+  using search_data_t    = ::cuda::std::tuple<SizeT, SizeT>;
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE bag_of_fixed_size_segments(SizeT segment_size)
+      : m_segment_size(segment_size)
+  {}
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE search_data_t find(logical_offset_t elem_id) const
+  {
+    const SizeT segment_id      = elem_id / m_segment_size;
+    const SizeT relative_offset = elem_id - segment_id * m_segment_size;
+
+    return {segment_id, relative_offset};
+  }
+};
+
 template <typename IterT,
           typename OffsetT,
-          typename SpanT,
+          typename SearcherT,
           typename BeginOffsetIterT,
           typename ReadTransformT,
           typename WriteTransformT,
@@ -128,7 +227,7 @@ struct multi_segmented_iterator
 {
   IterT m_it;
   OffsetT m_start;
-  SpanT m_offsets;
+  SearcherT m_searcher;
   BeginOffsetIterT m_it_idx_begin;
   ReadTransformT m_read_transform_fn;
   WriteTransformT m_write_transform_fn;
@@ -144,7 +243,8 @@ struct multi_segmented_iterator
   static_assert(::cuda::std::is_convertible_v<::cuda::std::invoke_result_t<WriteTransformT, underlying_value_type, bool>,
                                               underlying_value_type>,
                 "Write transform function return value must be convertible to underlying iterator value type");
-  static_assert(::cuda::std::is_same_v<difference_type, typename SpanT::value_type>, "types are inconsistent");
+  static_assert(::cuda::std::is_same_v<difference_type, typename SearcherT::logical_offset_t>,
+                "offset types are inconsistent");
 
   struct __mapping_proxy
   {
@@ -184,13 +284,13 @@ struct multi_segmented_iterator
   _CCCL_DEVICE _CCCL_FORCEINLINE multi_segmented_iterator(
     IterT it,
     OffsetT start,
-    SpanT cum_sizes,
+    SearcherT searcher,
     BeginOffsetIterT it_idx_begin,
     ReadTransformT read_fn,
     WriteTransformT write_fn)
       : m_it{it}
       , m_start{start}
-      , m_offsets{cum_sizes}
+      , m_searcher{searcher}
       , m_it_idx_begin{it_idx_begin}
       , m_read_transform_fn{::cuda::std::move(read_fn)}
       , m_write_transform_fn{::cuda::std::move(write_fn)}
@@ -211,65 +311,16 @@ struct multi_segmented_iterator
   {
     return {iter.m_it,
             iter.m_start + n,
-            iter.m_offsets,
+            iter.m_searcher,
             iter.m_it_idx_begin,
             iter.m_read_transform_fn,
             iter.m_write_transform_fn};
   }
 
 private:
-  // Given ordinal logical position in the sequence of input segments comprising several segments,
-  // return the segment the element is a part of, and its relative position within that segment.
-
-  // This comment applies to both linear_search and binary search functions below:
-  //    m_offsets views into array of non-negative non-decreasing values, obtained as
-  //    prefix sum of segment sizes. Expectation: 0 <= pos < last element of m_offsets
-
-  // Linear search
-  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::tuple<int, difference_type> locate_linear_search(difference_type n) const
-  {
-    const int offset_size     = static_cast<int>(m_offsets.size());
-    const difference_type pos = m_start + n;
-
-    int segment_id = 0;
-    auto offset_c  = static_cast<typename SpanT::value_type>(0);
-
-    difference_type shifted_offset = pos;
-
-    _CCCL_PRAGMA_UNROLL(4)
-    for (int i = 0; i < offset_size; ++i)
-    {
-      const auto offset_n = m_offsets[i];
-      const bool cond     = ((offset_c <= pos) && (pos < offset_n));
-      segment_id          = (cond) ? i : segment_id;
-      shifted_offset      = (cond) ? pos - offset_c : shifted_offset;
-      offset_c            = offset_n;
-    }
-    return {segment_id, shifted_offset};
-  }
-
-  // Binary search
-  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::tuple<int, difference_type> locate_binary_search(difference_type n) const
-  {
-    const int offset_size     = static_cast<int>(m_offsets.size());
-    const difference_type pos = m_start + n;
-
-    const auto beg_it    = m_offsets.data();
-    const auto end_it    = beg_it + offset_size;
-    const auto ub        = ::cuda::std::upper_bound(beg_it, end_it, pos);
-    const int segment_id = ::cuda::std::distance(beg_it, ub);
-
-    const difference_type shifted_offset = (segment_id == 0) ? pos : pos - m_offsets[segment_id - 1];
-
-    return {segment_id, shifted_offset};
-  }
-
   _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy make_proxy(difference_type n) const
   {
-    const bool is_small = (m_offsets.size() < LinearBinarySearchThreshold);
-
-    const auto pos                      = (is_small) ? locate_linear_search(n) : locate_binary_search(n);
-    const auto [segment_id, rel_offset] = pos;
+    const auto [segment_id, rel_offset] = m_searcher.find(m_start + n);
 
     const auto offset    = m_it_idx_begin[segment_id] + rel_offset;
     const bool head_flag = (rel_offset == 0);
