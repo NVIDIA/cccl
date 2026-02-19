@@ -105,10 +105,14 @@ struct policy_selector
   {
     // for now the segmented reduction uses the same tuning values as the normal reduction
     const auto base = reduce::policy_selector{accum_t, operation_t, offset_size, accum_size}(arch).reduce;
+    // Scale items_per_thread for small/medium agents based on accumulator size (nominal 16 for 4-byte types)
+    constexpr int nominal_items      = 16;
+    constexpr int items_per_vec_load = 4;
+    auto [scaled_items, _]           = scale_mem_bound(0, nominal_items, accum_size);
     return segmented_reduce_policy{
       base,
-      agent_warp_reduce_policy{base.block_threads, 1, 16, base.vector_load_length, base.load_modifier},
-      agent_warp_reduce_policy{base.block_threads, 32, 16, base.vector_load_length, base.load_modifier}};
+      agent_warp_reduce_policy{base.block_threads, 1, scaled_items, items_per_vec_load, base.load_modifier},
+      agent_warp_reduce_policy{base.block_threads, 32, scaled_items, items_per_vec_load, base.load_modifier}};
   }
 };
 
@@ -122,9 +126,19 @@ struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> segmented_reduce_policy
   {
-    constexpr auto policies =
-      policy_selector{classify_type<AccumT>, classify_op<ReductionOpT>, int{sizeof(OffsetT)}, int{sizeof(AccumT)}};
-    return policies(arch);
+    const auto base =
+      reduce::policy_selector{
+        classify_type<AccumT>, classify_op<ReductionOpT>, int{sizeof(OffsetT)}, int{sizeof(AccumT)}}(arch)
+        .reduce;
+    using fs = typename fixed_size_segmented_reduce::policy_hub<AccumT, OffsetT, ReductionOpT>::Policy500;
+    using sp = typename fs::SmallReducePolicy;
+    using mp = typename fs::MediumReducePolicy;
+    return segmented_reduce_policy{
+      base,
+      agent_warp_reduce_policy{
+        base.block_threads, sp::WARP_THREADS, sp::ITEMS_PER_THREAD, sp::VECTOR_LOAD_LENGTH, sp::LOAD_MODIFIER},
+      agent_warp_reduce_policy{
+        base.block_threads, mp::WARP_THREADS, mp::ITEMS_PER_THREAD, mp::VECTOR_LOAD_LENGTH, mp::LOAD_MODIFIER}};
   }
 };
 } // namespace detail::segmented_reduce

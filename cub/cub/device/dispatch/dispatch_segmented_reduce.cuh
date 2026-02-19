@@ -67,17 +67,20 @@ struct DeviceSegmentedReduceKernelSource
       AccumT>)
 };
 
-template <typename PolicyHub>
+template <typename PolicyHub, typename AccumT>
 struct policy_selector_from_hub
 {
   // this is only called in device code, so we can ignore the arch parameter
   _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> segmented_reduce_policy
   {
-    using p = typename PolicyHub::MaxPolicy::ActivePolicy::SegmentedReducePolicy;
+    using p  = typename PolicyHub::MaxPolicy::ActivePolicy::SegmentedReducePolicy;
+    using fs = typename fixed_size_segmented_reduce::policy_hub<AccumT, int, ::cuda::std::plus<>>::Policy500;
+    using sp = typename fs::SmallReducePolicy;
+    using mp = typename fs::MediumReducePolicy;
     return segmented_reduce_policy{
       {p::BLOCK_THREADS, p::ITEMS_PER_THREAD, p::VECTOR_LOAD_LENGTH, p::BLOCK_ALGORITHM, p::LOAD_MODIFIER},
-      {p::BLOCK_THREADS, 1, 16, p::VECTOR_LOAD_LENGTH, p::LOAD_MODIFIER},
-      {p::BLOCK_THREADS, 32, 16, p::VECTOR_LOAD_LENGTH, p::LOAD_MODIFIER}};
+      {p::BLOCK_THREADS, sp::WARP_THREADS, sp::ITEMS_PER_THREAD, sp::VECTOR_LOAD_LENGTH, sp::LOAD_MODIFIER},
+      {p::BLOCK_THREADS, mp::WARP_THREADS, mp::ITEMS_PER_THREAD, mp::VECTOR_LOAD_LENGTH, mp::LOAD_MODIFIER}};
   }
 };
 } // namespace detail::segmented_reduce
@@ -121,7 +124,7 @@ template <typename InputIteratorT,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, InitT>,
           typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
           typename KernelSource = detail::segmented_reduce::DeviceSegmentedReduceKernelSource<
-            detail::segmented_reduce::policy_selector_from_hub<PolicyHub>,
+            detail::segmented_reduce::policy_selector_from_hub<PolicyHub, AccumT>,
             InputIteratorT,
             OutputIteratorT,
             BeginOffsetIteratorT,
@@ -500,8 +503,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   ReductionOpT reduction_op,
   InitT init,
   cudaStream_t stream,
-  size_t max_segment_size                = 0,
   PolicySelector policy_selector         = {},
+  size_t max_segment_size                = 0,
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
