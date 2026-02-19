@@ -23,6 +23,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_scan.cuh>
+#include <cub/detail/arch_dispatch.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/warpspeed/warpspeed.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
@@ -471,20 +472,22 @@ struct DispatchScan
     return cudaSuccess;
   }
 
-#if __cccl_ptx_isa >= 860
-  template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(ActivePolicyT)
+#if _CCCL_CUDACC_AT_LEAST(12, 8)
+  template <typename PolicySelectorT>
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(
+    const detail::scan::scan_warpspeed_policy& warpspeed_policy, const PolicySelectorT& policy_selector)
   {
-    using InputT          = ::cuda::std::iter_value_t<InputIteratorT>;
-    using OutputT         = ::cuda::std::iter_value_t<OutputIteratorT>;
-    using WarpspeedPolicy = typename ActivePolicyT::WarpspeedPolicy;
-
     const int grid_dim =
-      static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(WarpspeedPolicy::tile_size)));
+      static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(warpspeed_policy.tile_size)));
 
     if (d_temp_storage == nullptr)
     {
-      temp_storage_bytes = grid_dim * kernel_source.look_ahead_tile_state_size();
+      temp_storage_bytes = static_cast<size_t>(grid_dim) * kernel_source.look_ahead_tile_state_size();
+      return cudaSuccess;
+    }
+
+    if (num_items == 0)
+    {
       return cudaSuccess;
     }
 
@@ -496,8 +499,8 @@ struct DispatchScan
     // number of stages to have an even workload across all SMs (improves small problem sizes), assuming 1 CTA per SM
     // +1 since it tends to improve performance
     // TODO(bgruber): make the +1 a tuning parameter
-    [[maybe_unused]] const int max_stages_for_even_workload =
-      static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * WarpspeedPolicy::tile_size)) + 1);
+    const int max_stages_for_even_workload =
+      static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * warpspeed_policy.tile_size)) + 1);
 
     // Maximum dynamic shared memory size that we can use for temporary storage.
     int max_dynamic_smem_size{};
@@ -510,20 +513,31 @@ struct DispatchScan
     // TODO(bgruber): we probably need to ensure alignment of d_temp_storage
     _CCCL_ASSERT(::cuda::is_aligned(d_temp_storage, kernel_source.look_ahead_tile_state_alignment()), "");
 
-    constexpr auto warpspeed_policy = detail::scan::make_scan_warpspeed_policy<WarpspeedPolicy>();
-    constexpr int smem_size_1_stage = detail::scan::smem_for_stages<InputT, OutputT, AccumT>(warpspeed_policy, 1);
-    static_assert(smem_size_1_stage <= detail::max_smem_per_block); // this is ensured by scan_use_warpspeed
-
     auto scan_kernel = kernel_source.ScanKernel();
     int num_stages   = 1;
-    int smem_size    = smem_size_1_stage;
+    int smem_size    = detail::scan::smem_for_stages(
+      warpspeed_policy,
+      num_stages,
+      policy_selector.input_value_size,
+      policy_selector.input_value_alignment,
+      policy_selector.output_value_size,
+      policy_selector.output_value_alignment,
+      policy_selector.accum_size,
+      policy_selector.accum_alignment);
 
     // When launched from the host, maximize the number of stages that we can fit inside the shared memory.
     NV_IF_TARGET(NV_IS_HOST, ({
                    while (num_stages <= max_stages_for_even_workload)
                    {
-                     const auto next_smem_size =
-                       detail::scan::smem_for_stages<InputT, OutputT, AccumT>(warpspeed_policy, num_stages + 1);
+                     const auto next_smem_size = detail::scan::smem_for_stages(
+                       warpspeed_policy,
+                       num_stages + 1,
+                       policy_selector.input_value_size,
+                       policy_selector.input_value_alignment,
+                       policy_selector.output_value_size,
+                       policy_selector.output_value_alignment,
+                       policy_selector.accum_size,
+                       policy_selector.accum_alignment);
                      if (next_smem_size > max_dynamic_smem_size)
                      {
                        // This number of stages failed, so stay at the current settings
@@ -576,7 +590,7 @@ struct DispatchScan
 
     // Invoke scan kernel
     {
-      constexpr int block_dim = WarpspeedPolicy::num_total_threads;
+      const int block_dim = warpspeed_policy.num_total_threads;
 
 #  ifdef CUB_DEBUG_LOG
       _CubLog("Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
@@ -612,26 +626,171 @@ struct DispatchScan
 
     return cudaSuccess;
   }
-#endif // __cccl_ptx_isa >= 860
+#endif // _CCCL_CUDACC_AT_LEAST(12, 8)
+
+  template <typename PolicyGetter, typename PolicySelectorT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
+  __invoke(PolicyGetter policy_getter, const PolicySelectorT& policy_selector)
+  {
+    CUB_DETAIL_CONSTEXPR_ISH auto active_policy = policy_getter();
+
+    CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.load_modifier != CacheLoadModifier::LOAD_LDG,
+                                 "The memory consistency model does not apply to texture accesses");
+
+#if !_CCCL_CUDACC_AT_LEAST(12, 8)
+    (void) policy_selector;
+#endif // !_CCCL_CUDACC_AT_LEAST(12, 8)
+
+#if _CCCL_CUDACC_AT_LEAST(12, 8)
+    if (kernel_source.use_warpspeed(active_policy))
+    {
+      return __invoke_lookahead_algorithm(*active_policy.warpspeed, policy_selector);
+    }
+#endif // _CCCL_CUDACC_AT_LEAST(12, 8)
+
+    // Number of input tiles
+    const int tile_size = active_policy.block_threads * active_policy.items_per_thread;
+    const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
+
+    auto tile_state = kernel_source.TileState();
+
+    // Specify temporary storage allocation requirements
+    size_t allocation_sizes[1];
+    if (const auto error = CubDebug(tile_state.AllocationSize(num_tiles, allocation_sizes[0])))
+    {
+      return error; // bytes needed for tile status descriptors
+    }
+
+    // Compute allocation pointers into the single storage blob (or compute
+    // the necessary size of the blob)
+    void* allocations[1] = {};
+    if (const auto error =
+          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+    {
+      return error;
+    }
+
+    // Return if the caller is simply requesting the size of the storage allocation, or the problem is empty
+    if (d_temp_storage == nullptr || num_items == 0)
+    {
+      return cudaSuccess;
+    }
+
+    // Construct the tile status interface
+    if (const auto error = CubDebug(tile_state.Init(num_tiles, allocations[0], allocation_sizes[0])))
+    {
+      return error;
+    }
+
+    // Log init_kernel configuration
+    constexpr int init_kernel_threads = 128;
+    const int init_grid_size          = ::cuda::ceil_div(num_tiles, init_kernel_threads);
+
+#ifdef CUB_DEBUG_LOG
+    _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
+#endif // CUB_DEBUG_LOG
+
+    // Invoke init_kernel to initialize tile descriptors
+    if (const auto error = CubDebug(
+          launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
+            .doit(kernel_source.InitKernel(), kernel_source.make_tile_state_kernel_arg(tile_state), num_tiles)))
+    {
+      return error;
+    }
+
+    // Check for failure to launch
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
+      return error;
+    }
+
+    // Sync the stream if specified to flush runtime errors
+    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    {
+      return error;
+    }
+
+    // Get SM occupancy for scan_kernel
+    int scan_sm_occupancy;
+    if (const auto error = CubDebug(
+          launcher_factory.MaxSmOccupancy(scan_sm_occupancy, kernel_source.ScanKernel(), active_policy.block_threads)))
+    {
+      return error;
+    }
+
+    // Get max x-dimension of grid
+    int max_dim_x;
+    if (const auto error = CubDebug(launcher_factory.MaxGridDimX(max_dim_x)))
+    {
+      return error;
+    }
+
+    // Run grids in epochs (in case number of tiles exceeds max x-dimension
+    const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
+    for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
+    {
+// Log scan_kernel configuration
+#ifdef CUB_DEBUG_LOG
+      _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
+              "per thread, %d SM occupancy\n",
+              start_tile,
+              scan_grid_size,
+              active_policy.block_threads,
+              (long long) stream,
+              active_policy.items_per_thread,
+              scan_sm_occupancy);
+#endif // CUB_DEBUG_LOG
+
+      // Invoke scan_kernel
+      if (const auto error = CubDebug(
+            launcher_factory(scan_grid_size, active_policy.block_threads, 0, stream, /* use_pdl */ true)
+              .doit(kernel_source.ScanKernel(),
+                    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in),
+                    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_out),
+                    kernel_source.make_tile_state_kernel_arg(tile_state),
+                    start_tile,
+                    scan_op,
+                    init_value,
+                    num_items,
+                    /* num_stages, unused */ 1)))
+      {
+        return error;
+      }
+
+      // Check for failure to launch
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      {
+        return error;
+      }
+
+      // Sync the stream if specified to flush runtime errors
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      {
+        return error;
+      }
+    }
+
+    return cudaSuccess;
+  }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT = {})
   {
-#if __cccl_ptx_isa >= 860
-    if constexpr (detail::scan::scan_use_warpspeed<
-                    ActivePolicyT,
-                    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
-                    THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
-                    AccumT>)
+    struct policy_getter
     {
-      return __invoke_lookahead_algorithm(active_policy);
-    }
-    else
-#endif // __cccl_ptx_isa >= 860
-    {
-      return Invoke(
-        kernel_source.InitKernel(), kernel_source.ScanKernel(), detail::scan::MakeScanPolicyWrapper(active_policy));
-    }
+      _CCCL_API _CCCL_FORCEINLINE constexpr auto operator()() const
+      {
+        return detail::scan::convert_policy<ActivePolicyT>();
+      }
+    };
+
+    using policy_selector_t = detail::scan::policy_selector_from_types<
+      detail::it_value_t<InputIteratorT>,
+      detail::it_value_t<OutputIteratorT>,
+      AccumT,
+      OffsetT,
+      ScanOpT>;
+    return __invoke(policy_getter{}, policy_selector_t{});
   }
 
   /**
@@ -761,280 +920,41 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  const scan_policy active_policy = policy_selector(arch_id);
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST,
-               (std::stringstream ss; ss << active_policy;
+               (std::stringstream ss; ss << policy_selector(arch_id);
                 _CubLog("Dispatching DeviceScan to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
-#if _CCCL_CUDACC_AT_LEAST(12, 8)
-  if (kernel_source.use_warpspeed(active_policy))
+  struct fake_policy
   {
-    const int grid_dim =
-      static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(active_policy.warpspeed->tile_size)));
+    using MaxPolicy = void;
+  };
 
-    if (d_temp_storage == nullptr)
-    {
-      temp_storage_bytes = static_cast<size_t>(grid_dim) * kernel_source.look_ahead_tile_state_size();
-      return cudaSuccess;
-    }
-
-    if (num_items == 0)
-    {
-      return cudaSuccess;
-    }
-
-    int sm_count = 0;
-    if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
-    {
-      return error;
-    }
-
-    const int max_stages_for_even_workload = static_cast<int>(
-      ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * active_policy.warpspeed->tile_size)) + 1);
-
-    int max_dynamic_smem_size{};
-    if (const auto error =
-          CubDebug(launcher_factory.max_dynamic_smem_size_for(max_dynamic_smem_size, kernel_source.ScanKernel())))
-    {
-      return error;
-    }
-
-    _CCCL_ASSERT(::cuda::is_aligned(d_temp_storage, kernel_source.look_ahead_tile_state_alignment()), "");
-
-    auto scan_kernel = kernel_source.ScanKernel();
-    int num_stages   = 1;
-    int smem_size    = detail::scan::smem_for_stages(
-      *active_policy.warpspeed,
-      num_stages,
-      policy_selector.input_value_size,
-      policy_selector.input_value_alignment,
-      policy_selector.output_value_size,
-      policy_selector.output_value_alignment,
-      policy_selector.accum_size,
-      policy_selector.accum_alignment);
-
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   while (num_stages <= max_stages_for_even_workload)
-                   {
-                     const auto next_smem_size = detail::scan::smem_for_stages(
-                       *active_policy.warpspeed,
-                       num_stages + 1,
-                       policy_selector.input_value_size,
-                       policy_selector.input_value_alignment,
-                       policy_selector.output_value_size,
-                       policy_selector.output_value_alignment,
-                       policy_selector.accum_size,
-                       policy_selector.accum_alignment);
-                     if (next_smem_size > max_dynamic_smem_size)
-                     {
-                       break;
-                     }
-
-                     smem_size = next_smem_size;
-                     ++num_stages;
-                   }
-
-                   if (const auto error = launcher_factory.set_max_dynamic_smem_size_for(scan_kernel, smem_size))
-                   {
-                     return error;
-                   }
-                 }))
-
-    // Invoke init kernel
-    {
-      constexpr auto init_kernel_threads = 128;
-      const auto init_grid_size          = ::cuda::ceil_div(grid_dim, init_kernel_threads);
-
-#  ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking DeviceScanInitKernel<<<%d, %d, 0, , %lld>>>()\n",
-              init_grid_size,
-              init_kernel_threads,
-              (long long) stream);
-#  endif // CUB_DEBUG_LOG
-
-      if (const auto error = CubDebug(
-            launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
-              .doit(kernel_source.InitKernel(),
-                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
-                    grid_dim)))
-      {
-        return error;
-      }
-
-      if (const auto error = CubDebug(cudaPeekAtLastError()))
-      {
-        return error;
-      }
-
-      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
-      {
-        return error;
-      }
-    }
-
-    // Invoke scan kernel
-    {
-      const int block_dim = active_policy.warpspeed->num_total_threads;
-
-#  ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
-#  endif // CUB_DEBUG_LOG
-
-      if (const auto error = CubDebug(
-            launcher_factory(grid_dim, block_dim, smem_size, stream, /* use_pdl */ true)
-              .doit(scan_kernel,
-                    d_in,
-                    d_out,
-                    kernel_source.look_ahead_make_tile_state_kernel_arg(d_temp_storage),
-                    /* start_tile, unused */ 0,
-                    ::cuda::std::move(scan_op),
-                    init_value,
-                    num_items,
-                    num_stages)))
-      {
-        return error;
-      }
-
-      if (const auto error = CubDebug(cudaPeekAtLastError()))
-      {
-        return error;
-      }
-
-      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
-      {
-        return error;
-      }
-    }
-
-    return cudaSuccess;
-  }
-#endif // _CCCL_CUDACC_AT_LEAST(12, 8)
-
-  // Number of input tiles
-  const int tile_size = active_policy.block_threads * active_policy.items_per_thread;
-  const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
-
-  auto tile_state = kernel_source.TileState();
-
-  // Specify temporary storage allocation requirements
-  size_t allocation_sizes[1];
-  if (const auto error = CubDebug(tile_state.AllocationSize(num_tiles, allocation_sizes[0])))
-  {
-    return error; // bytes needed for tile status descriptors
-  }
-
-  // Compute allocation pointers into the single storage blob (or compute
-  // the necessary size of the blob)
-  void* allocations[1] = {};
-  if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
-  {
-    return error;
-  }
-
-  // Return if the caller is simply requesting the size of the storage allocation, or the problem is empty
-  if (d_temp_storage == nullptr || num_items == 0)
-  {
-    return cudaSuccess;
-  }
-
-  // Construct the tile status interface
-  if (const auto error = CubDebug(tile_state.Init(num_tiles, allocations[0], allocation_sizes[0])))
-  {
-    return error;
-  }
-
-  // Log init_kernel configuration
-  constexpr int init_kernel_threads = 128;
-  const int init_grid_size          = ::cuda::ceil_div(num_tiles, init_kernel_threads);
-
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#endif // CUB_DEBUG_LOG
-
-  // Invoke init_kernel to initialize tile descriptors
-  if (const auto error = CubDebug(
-        launcher_factory(init_grid_size, init_kernel_threads, 0, stream, /* use_pdl */ true)
-          .doit(kernel_source.InitKernel(), kernel_source.make_tile_state_kernel_arg(tile_state), num_tiles)))
-  {
-    return error;
-  }
-
-  // Check for failure to launch
-  if (const auto error = CubDebug(cudaPeekAtLastError()))
-  {
-    return error;
-  }
-
-  // Sync the stream if specified to flush runtime errors
-  if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
-  {
-    return error;
-  }
-
-  // Get SM occupancy for scan_kernel
-  int scan_sm_occupancy;
-  if (const auto error = CubDebug(
-        launcher_factory.MaxSmOccupancy(scan_sm_occupancy, kernel_source.ScanKernel(), active_policy.block_threads)))
-  {
-    return error;
-  }
-
-  // Get max x-dimension of grid
-  int max_dim_x;
-  if (const auto error = CubDebug(launcher_factory.MaxGridDimX(max_dim_x)))
-  {
-    return error;
-  }
-
-  // Run grids in epochs (in case number of tiles exceeds max x-dimension
-  const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
-  for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
-  {
-// Log scan_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-            "per thread, %d SM occupancy\n",
-            start_tile,
-            scan_grid_size,
-            active_policy.block_threads,
-            (long long) stream,
-            active_policy.items_per_thread,
-            scan_sm_occupancy);
-#endif // CUB_DEBUG_LOG
-
-    // Invoke scan_kernel
-    if (const auto error = CubDebug(
-          launcher_factory(scan_grid_size, active_policy.block_threads, 0, stream, /* use_pdl */ true)
-            .doit(kernel_source.ScanKernel(),
-                  d_in,
-                  d_out,
-                  kernel_source.make_tile_state_kernel_arg(tile_state),
-                  start_tile,
-                  scan_op,
-                  init_value,
-                  num_items,
-                  /* num_stages, unused */ 1)))
-    {
-      return error;
-    }
-
-    // Check for failure to launch
-    if (const auto error = CubDebug(cudaPeekAtLastError()))
-    {
-      return error;
-    }
-
-    // Sync the stream if specified to flush runtime errors
-    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
-    {
-      return error;
-    }
-  }
-
-  return cudaSuccess;
+  return dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
+    return DispatchScan<InputIteratorT,
+                        OutputIteratorT,
+                        ScanOpT,
+                        InitValueT,
+                        OffsetT,
+                        AccumT,
+                        EnforceInclusive,
+                        fake_policy,
+                        KernelSource,
+                        KernelLauncherFactory>{
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_items,
+      scan_op,
+      init_value,
+      stream,
+      -1 /* ptx_version, not used actually */,
+      kernel_source,
+      launcher_factory}
+      .__invoke(policy_getter, policy_selector);
+  });
 }
 
 template <
