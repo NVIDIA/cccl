@@ -18,7 +18,7 @@ def test_block_radix_sort():
     # Specialize radix sort for a 1D block of 128 threads owning 4 integer items each
     items_per_thread = 4
     threads_per_block = 128
-    block_radix_sort = coop.block.radix_sort_keys(
+    block_radix_sort = coop.block.make_radix_sort_keys(
         numba.int32, threads_per_block, items_per_thread
     )
 
@@ -55,7 +55,7 @@ def test_block_radix_sort_descending():
     # Specialize radix sort for a 1D block of 128 threads owning 4 integer items each
     items_per_thread = 4
     threads_per_block = 128
-    block_radix_sort = coop.block.radix_sort_keys_descending(
+    block_radix_sort = coop.block.make_radix_sort_keys_descending(
         numba.int32, threads_per_block, items_per_thread
     )
 

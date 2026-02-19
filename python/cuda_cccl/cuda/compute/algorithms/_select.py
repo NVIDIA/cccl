@@ -1,26 +1,39 @@
-# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Callable
+from __future__ import annotations
+
+from functools import cache
 
 from .._caching import cache_with_registered_key_functions
+from .._cpp_compile import compile_cpp_to_ltoir
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..iterators._factories import DiscardIterator
-from ..iterators._iterators import IteratorBase
-from ..op import OpAdapter, make_op_adapter
-from ..typing import DeviceArrayLike
+from ..iterators import DiscardIterator
+from ..op import OpAdapter, RawOp, make_op_adapter
+from ..typing import DeviceArrayLike, IteratorT, Operator
 from ._three_way_partition import make_three_way_partition
 
 
+@cache
+def _always_false_op():
+    source = """
+extern "C" __device__ void always_false(void*, void* result) {{
+    *static_cast<bool*>(result) = false;
+}}
+"""
+    ltoir = compile_cpp_to_ltoir(source)
+    return RawOp(ltoir=ltoir, name="always_false")
+
+
 class _Select:
-    __slots__ = ["partitioner", "discard_second", "discard_unselected"]
+    __slots__ = ["partitioner", "discard_second", "discard_unselected", "false_op"]
 
     def __init__(
         self,
-        d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
+        d_in: DeviceArrayLike | IteratorT,
+        d_out: DeviceArrayLike | IteratorT,
         d_num_selected_out: DeviceArrayLike,
         cond: OpAdapter,
     ):
@@ -28,6 +41,9 @@ class _Select:
         # to match the input/output type
         self.discard_second = DiscardIterator(d_out)
         self.discard_unselected = DiscardIterator(d_out)
+
+        # Create adapter for the always-false second predicate
+        self.false_op = _always_false_op()
 
         # Use three_way_partition internally
         self.partitioner = make_three_way_partition(
@@ -37,7 +53,7 @@ class _Select:
             self.discard_unselected,  # unselected_out - discarded
             d_num_selected_out,
             cond,  # select_first_part_op - user's select condition
-            lambda x: False,  # select_second_part_op - always false
+            self.false_op,  # select_second_part_op - always false
         )
 
     def __call__(
@@ -46,6 +62,7 @@ class _Select:
         d_in,
         d_out,
         d_num_selected_out,
+        cond,
         num_items: int,
         stream=None,
     ):
@@ -56,6 +73,8 @@ class _Select:
             self.discard_second,
             self.discard_unselected,
             d_num_selected_out,
+            make_op_adapter(cond),
+            self.false_op,
             num_items,
             stream,
         )
@@ -63,10 +82,10 @@ class _Select:
 
 @cache_with_registered_key_functions
 def make_select(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
     d_num_selected_out: DeviceArrayLike,
-    cond: Callable,
+    cond: Operator,
 ):
     """
     Create a select object that can be called to select elements matching a condition.
@@ -86,8 +105,9 @@ def make_select(
         d_out: Device array or iterator to store the selected output items.
         d_num_selected_out: Device array to store the number of items that passed the selection.
             The count is stored in ``d_num_selected_out[0]``.
-        cond: Callable representing the selection condition (predicate). Should return a
-            boolean-like value (typically uint8) where non-zero means the item passes the selection.
+        cond: Selection condition (predicate).
+            The signature is ``(T) -> uint8``, where ``T`` is the input data type.
+            Returns 1 (selected) or 0 (not selected).
 
     Returns:
         A callable object that performs the selection operation.
@@ -100,10 +120,10 @@ def make_select(
 
 
 def select(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
     d_num_selected_out: DeviceArrayLike,
-    cond: Callable,
+    cond: Operator,
     num_items: int,
     stream=None,
 ):
@@ -137,19 +157,23 @@ def select(
         d_out: Device array or iterator to store the selected output items.
         d_num_selected_out: Device array to store the number of items that passed the selection.
             The count is stored in ``d_num_selected_out[0]``.
-        cond: Callable representing the selection condition (predicate). Should return a
-            boolean-like value (typically uint8) where non-zero means the item passes the selection.
+        cond: Selection condition (predicate).
+            The signature is ``(T) -> uint8``, where ``T`` is the input data type.
+            Returns 1 (selected) or 0 (not selected).
             Can reference device arrays as globals/closures - they will be automatically captured.
         num_items: Number of items in the input sequence.
         stream: CUDA stream to use for the operation (optional).
     """
-    selector = make_select(d_in, d_out, d_num_selected_out, cond)
+    # Create adapter to support stateful ops
+    cond_adapter = make_op_adapter(cond)
+    selector = make_select(d_in, d_out, d_num_selected_out, cond_adapter)
 
     tmp_storage_bytes = selector(
         None,
         d_in,
         d_out,
         d_num_selected_out,
+        cond_adapter,
         num_items,
         stream,
     )
@@ -159,6 +183,7 @@ def select(
         d_in,
         d_out,
         d_num_selected_out,
+        cond_adapter,
         num_items,
         stream,
     )

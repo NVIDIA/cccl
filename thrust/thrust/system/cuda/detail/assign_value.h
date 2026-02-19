@@ -22,6 +22,9 @@
 
 #  include <nv/target>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
+
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
@@ -107,5 +110,9 @@ _CCCL_HOST_DEVICE void assign_value(cross_system<System1, System2>& systems, Poi
                (*thrust::raw_pointer_cast(dst) = *thrust::raw_pointer_cast(src);));
 }
 } // namespace cuda_cub
+
 THRUST_NAMESPACE_END
+
+_CCCL_DIAG_POP
+
 #endif // _CCCL_CUDA_COMPILATION()

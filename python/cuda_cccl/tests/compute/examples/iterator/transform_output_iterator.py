@@ -1,4 +1,4 @@
-# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
@@ -23,6 +23,7 @@ d_output = cp.empty(shape=1, dtype=np.float32)
 
 # Define the transform operation to be applied
 # to the result of the sum reduction.
+# TransformOutputIterator requires type annotations:
 def sqrt(x: np.float32) -> np.float32:
     return x**0.5
 

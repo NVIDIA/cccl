@@ -1,7 +1,9 @@
-# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+from __future__ import annotations
 
 from typing import Callable
 
@@ -19,9 +21,8 @@ from .._cccl_interop import (
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..determinism import Determinism
-from ..iterators._iterators import IteratorBase
-from ..op import OpAdapter, OpKind, make_op_adapter
-from ..typing import DeviceArrayLike, GpuStruct
+from ..op import OpAdapter, make_op_adapter
+from ..typing import DeviceArrayLike, GpuStruct, IteratorT, Operator
 
 
 class _Reduce:
@@ -29,7 +30,6 @@ class _Reduce:
         "d_in_cccl",
         "d_out_cccl",
         "h_init_cccl",
-        "op",
         "op_cccl",
         "build_result",
         "device_reduce_fn",
@@ -38,8 +38,8 @@ class _Reduce:
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
     def __init__(
         self,
-        d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
+        d_in: DeviceArrayLike | IteratorT,
+        d_out: DeviceArrayLike | IteratorT,
         op: OpAdapter,
         h_init: np.ndarray | GpuStruct,
         determinism: Determinism,
@@ -74,12 +74,17 @@ class _Reduce:
         temp_storage,
         d_in,
         d_out,
+        op: Callable | OpAdapter,
         num_items: int,
         h_init: np.ndarray | GpuStruct,
         stream=None,
     ):
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
+
+        # Update op state for stateful ops
+        op_adapter = make_op_adapter(op)
+        self.op_cccl.state = op_adapter.get_state()
 
         self.h_init_cccl.state = to_cccl_value_state(h_init)
 
@@ -107,9 +112,9 @@ class _Reduce:
 
 @cache_with_registered_key_functions
 def make_reduce_into(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    op: Callable | OpKind,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
+    op: Operator,
     h_init: np.ndarray | GpuStruct,
     **kwargs,
 ):
@@ -126,7 +131,9 @@ def make_reduce_into(
     Args:
         d_in: Device array or iterator containing the input sequence of data items
         d_out: Device array (of size 1) that will store the result of the reduction
-        op: Callable or OpKind representing the binary operator to apply
+        op: Binary operator to apply.
+            The signature is ``(T, T) -> T``, where ``T`` is
+            the data type of the initial value ``h_init``.
         init: Numpy array storing initial value of the reduction
 
     Returns:
@@ -143,9 +150,9 @@ def make_reduce_into(
 
 
 def reduce_into(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    op: Callable | OpKind,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
+    op: Operator,
     num_items: int,
     h_init: np.ndarray | GpuStruct,
     stream=None,
@@ -166,12 +173,14 @@ def reduce_into(
     Args:
         d_in: Device array or iterator containing the input sequence of data items
         d_out: Device array to store the result of the reduction
-        op: Binary reduction operator
+        op: Binary operator to apply.
+            The signature is ``(T, T) -> T``, where ``T`` is
+            the data type of the initial value ``h_init``.
         num_items: Number of items to reduce
         h_init: Initial value for the reduction
         stream: CUDA stream for the operation (optional)
     """
     reducer = make_reduce_into(d_in, d_out, op, h_init, **kwargs)
-    tmp_storage_bytes = reducer(None, d_in, d_out, num_items, h_init, stream)
+    tmp_storage_bytes = reducer(None, d_in, d_out, op, num_items, h_init, stream)
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
-    reducer(tmp_storage, d_in, d_out, num_items, h_init, stream)
+    reducer(tmp_storage, d_in, d_out, op, num_items, h_init, stream)

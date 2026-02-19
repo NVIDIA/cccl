@@ -132,13 +132,16 @@ def _radix_sort(
     )
 
 
-def radix_sort_keys(dtype, threads_per_block, items_per_thread):
-    """Performs an ascending block-wide radix sort over a :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
+def make_radix_sort_keys(dtype, threads_per_block, items_per_thread):
+    """
+    Creates an ascending block-wide radix sort primitive over a
+    :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
 
     Example:
-        The code snippet below illustrates a sort of 512 integer keys that
-        are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
-        where each thread owns 4 consecutive keys. We start by importing necessary modules:
+        The code snippet below illustrates a sort of 512 integer keys
+        partitioned in a
+        :ref:`blocked arrangement <flexible-data-arrangement>` across
+        128 threads where each thread owns 4 consecutive keys.
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_api.py
             :language: python
@@ -146,7 +149,8 @@ def radix_sort_keys(dtype, threads_per_block, items_per_thread):
             :start-after: example-begin imports
             :end-before: example-end imports
 
-        Below is the code snippet that demonstrates the usage of the ``radix_sort_keys`` API:
+        The following snippet shows how to invoke the returned
+        ``block_radix_sort`` primitive:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_api.py
             :language: python
@@ -154,7 +158,8 @@ def radix_sort_keys(dtype, threads_per_block, items_per_thread):
             :start-after: example-begin radix-sort
             :end-before: example-end radix-sort
 
-        Suppose the set of input ``thread_keys`` across the block of threads is
+        Suppose the set of input ``thread_keys`` across the block of
+        threads is
         ``{ [511, 510, 509, 508], [507, 506, 505, 504], ..., [3, 2, 1, 0] }``.
         The corresponding output ``thread_keys`` in those threads will be
         ``{ [0, 1, 2, 3], [4, 5, 6, 7], ..., [508, 509, 510, 511] }``.
@@ -173,13 +178,16 @@ def radix_sort_keys(dtype, threads_per_block, items_per_thread):
     return _radix_sort(dtype, threads_per_block, items_per_thread, descending=False)
 
 
-def radix_sort_keys_descending(dtype, threads_per_block, items_per_thread):
-    """Performs an descending block-wide radix sort over a :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
+def make_radix_sort_keys_descending(dtype, threads_per_block, items_per_thread):
+    """
+    Creates a descending block-wide radix sort primitive over a
+    :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
 
     Example:
-        The code snippet below illustrates a sort of 512 integer keys that
-        are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
-        where each thread owns 4 consecutive keys. We start by importing necessary modules:
+        The code snippet below illustrates a sort of 512 integer keys
+        partitioned in a
+        :ref:`blocked arrangement <flexible-data-arrangement>` across
+        128 threads where each thread owns 4 consecutive keys.
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_api.py
             :language: python
@@ -187,7 +195,8 @@ def radix_sort_keys_descending(dtype, threads_per_block, items_per_thread):
             :start-after: example-begin imports
             :end-before: example-end imports
 
-        Below is the code snippet that demonstrates the usage of the ``radix_sort_keys`` API:
+        The following snippet shows how to invoke the returned
+        ``block_radix_sort`` primitive:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_api.py
             :language: python
@@ -195,7 +204,8 @@ def radix_sort_keys_descending(dtype, threads_per_block, items_per_thread):
             :start-after: example-begin radix-sort-descending
             :end-before: example-end radix-sort-descending
 
-        Suppose the set of input ``thread_keys`` across the block of threads is
+        Suppose the set of input ``thread_keys`` across the block of
+        threads is
         ``{ [0, 1, 2, 3], [4, 5, 6, 7], ..., [508, 509, 510, 511] }``.
         The corresponding output ``thread_keys`` in those threads will be
         ``{ [511, 510, 509, 508], [507, 506, 505, 504], ..., [3, 2, 1, 0] }``.

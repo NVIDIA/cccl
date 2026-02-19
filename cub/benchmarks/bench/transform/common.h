@@ -45,14 +45,7 @@ struct policy_selector
 #  elif TUNE_ALGORITHM == 1
     constexpr auto algorithm = cub::detail::transform::Algorithm::vectorized;
     constexpr auto policy    = cub::detail::transform::vectorized_policy{
-      TUNE_THREADS,
-      (1 << TUNE_VEC_SIZE_POW2) * TUNE_VECTORS_PER_THREAD,
-      (1 << TUNE_VEC_SIZE_POW2)
-#    ifdef TUNE_ITEMS_PER_THREAD_NO_INPUT
-        ,
-      TUNE_ITEMS_PER_THREAD_NO_INPUT
-#    endif // TUNE_ITEMS_PER_THREAD_NO_INPUT
-    };
+      TUNE_THREADS, (1 << TUNE_VEC_SIZE_POW2) * TUNE_VECTORS_PER_THREAD, (1 << TUNE_VEC_SIZE_POW2)};
     return {min_bytes_in_flight, algorithm, {}, policy, {}};
 #  elif TUNE_ALGORITHM == 2
     constexpr auto algorithm = cub::detail::transform::Algorithm::memcpy_async;
