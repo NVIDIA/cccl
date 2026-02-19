@@ -340,8 +340,8 @@ CUresult cccl_device_segmented_reduce(
       indirect_arg_t{op},
       indirect_arg_t{init},
       stream,
-      size_t{0},
       *static_cast<cub::detail::segmented_reduce::policy_selector*>(build.runtime_policy),
+      /* max_segment_size */ size_t{0},
       segmented_reduce::segmented_reduce_kernel_source{build},
       cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
 
