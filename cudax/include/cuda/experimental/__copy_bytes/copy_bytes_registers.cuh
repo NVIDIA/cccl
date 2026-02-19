@@ -131,7 +131,7 @@ void copy_bytes_registers(
   // After this, src has stride-1 in mode 0 (if any mode is stride-1).
   __sort_by_stride_paired(shapes_sorted, src_strides_sorted, dst_strides_sorted, __rank);
 
-  bool both_stride1 = (::cuda::std::abs(src_strides_sorted[0]) == 1) && (::cuda::std::abs(dst_strides_sorted[0]) == 1);
+  const bool both_stride1 = (src_strides_sorted[0] == 1) && (dst_strides_sorted[0] == 1);
 
   if (both_stride1)
   {

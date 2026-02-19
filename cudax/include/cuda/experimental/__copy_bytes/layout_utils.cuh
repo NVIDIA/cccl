@@ -218,6 +218,10 @@ template <class _Tp, class _ShapeIndex, class _StrideIndex, ::cuda::std::size_t 
   const ::cuda::std::array<_StrideIndex, _Np>& __strides) noexcept
 {
   using ::cuda::std::size_t;
+  if (__strides[0] != 1)
+  {
+    return sizeof(_Tp);
+  }
   size_t __ptr_alignment = ptr_alignment(__ptr);
   for (size_t __i = 0; __i < _Np; ++__i)
   {
@@ -229,12 +233,9 @@ template <class _Tp, class _ShapeIndex, class _StrideIndex, ::cuda::std::size_t 
   }
   _CCCL_ASSERT(__ptr_alignment % sizeof(_Tp) == 0, "Maximum vector size is not a multiple of the element size");
   size_t __items_per_vector = __ptr_alignment / sizeof(_Tp);
-  for (size_t __i = 0; __i < _Np; ++__i)
+  if (__shapes[0] > 1)
   {
-    if (__shapes[__i] > 1 && (::cuda::std::abs(__strides[__i]) == 1))
-    {
-      __items_per_vector = ::cuda::std::gcd(__items_per_vector, static_cast<size_t>(__shapes[__i]));
-    }
+    __items_per_vector = ::cuda::std::gcd(__items_per_vector, static_cast<size_t>(__shapes[0]));
   }
   const auto __vector_bytes           = __items_per_vector * sizeof(_Tp);
   constexpr size_t __max_vector_bytes = 16;
@@ -292,7 +293,7 @@ template <::cuda::std::size_t _Np>
 [[nodiscard]] _CCCL_HOST int __contiguous_extent(
   const ::cuda::std::array<int, _Np>& __shapes, const ::cuda::std::array<int, _Np>& __stride, int __rank) noexcept
 {
-  if (__rank == 0 || ::cuda::std::abs(__stride[0]) != 1)
+  if (__rank == 0 || __stride[0] != 1)
   {
     return 0;
   }
