@@ -17,6 +17,10 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
+#include <thrust/iterator/iterator_traits.h>
+
+#include <cuda/std/functional>
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -175,6 +179,129 @@ _CCCL_HOST_DEVICE OutputType transform_reduce(
 template <typename InputIterator, typename UnaryFunction, typename OutputType, typename BinaryFunction>
 OutputType transform_reduce(
   InputIterator first, InputIterator last, UnaryFunction unary_op, OutputType init, BinaryFunction binary_op);
+
+/*! \p transform_reduce fuses the \p transform and \p reduce operations on two input ranges
+ *  with custom binary operations. When the \p reduce and \p transform parameters are omitted,
+ *  this function defaults to computing the inner product (multiplication followed by addition).
+ *
+ *  This version computes the generalized sum
+ *  <tt>reduce(init, transform(*first1, *first2)), reduce(..., transform(*(first1+1), *(first2+1))), ...</tt>
+ *
+ *  The algorithm's execution is parallelized as determined by \p exec.
+ *
+ *  \param exec The execution policy to use for parallelization.
+ *  \param first1 The beginning of the first input sequence.
+ *  \param last1 The end of the first input sequence.
+ *  \param first2 The beginning of the second input sequence.
+ *  \param init The initial value of the reduction.
+ *  \param reduce The binary reduction operation (defaults to <tt>::cuda::std::plus<T></tt>).
+ *  \param transform The binary transformation operation (defaults to <tt>::cuda::std::multiplies<common_type></tt>).
+ *  \return The result of the transformed reduction.
+ *
+ *  \tparam DerivedPolicy The name of the derived execution policy.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>. \tparam InputIterator2 is a model of <a
+ * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>. \tparam T is convertible to \p
+ * BinaryOp1's first and second argument types. \tparam BinaryOp1 is a binary function whose return type is convertible
+ * to \p T (defaults to <tt>::cuda::std::plus<T></tt>). \tparam BinaryOp2 is a binary function whose return type is
+ * convertible to \p BinaryOp1's second argument type (defaults to <tt>::cuda::std::multiplies<common_type></tt>).
+ *
+ *  \code
+ *  #include <thrust/transform_reduce.h>
+ *  #include <thrust/functional.h>
+ *  #include <thrust/execution_policy.h>
+ *  ...
+ *  int data1[6] = {1, 0, 2, 2, 1, 3};
+ *  int data2[6] = {4, 1, 5, 3, 2, 1};
+ *
+ *  // Explicit operations:
+ *  int result1 = thrust::transform_reduce(thrust::host, data1, data1 + 6, data2, 0,
+ *                                         ::cuda::std::plus<int>(), ::cuda::std::multiplies<int>());
+ *  // result1 == 0 + 1*4 + 0*1 + 2*5 + 2*3 + 1*2 + 3*1 = 25
+ *
+ *  // Using defaults (inner product):
+ *  int result2 = thrust::transform_reduce(thrust::host, data1, data1 + 6, data2, 0);
+ *  // result2 == 0 + 1*4 + 0*1 + 2*5 + 2*3 + 1*2 + 3*1 = 25
+ *  \endcode
+ *
+ *  \see \c transform
+ *  \see \c reduce
+ *  \see \c inner_product
+ */
+template <
+  typename DerivedPolicy,
+  typename InputIterator1,
+  typename InputIterator2,
+  typename T,
+  typename BinaryOp1 = ::cuda::std::plus<T>,
+  typename BinaryOp2 = ::cuda::std::multiplies<
+    ::cuda::std::common_type_t<::cuda::std::iter_value_t<InputIterator1>, ::cuda::std::iter_value_t<InputIterator2>>>>
+_CCCL_HOST_DEVICE T transform_reduce(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  T init,
+  BinaryOp1 reduce    = BinaryOp1(),
+  BinaryOp2 transform = BinaryOp2());
+
+/*! \p transform_reduce fuses the \p transform and \p reduce operations on two input ranges
+ *  with custom binary operations. When the \p reduce and \p transform parameters are omitted,
+ *  this function defaults to computing the inner product (multiplication followed by addition).
+ *
+ *  This version computes the generalized sum
+ *  <tt>reduce(init, transform(*first1, *first2)), reduce(..., transform(*(first1+1), *(first2+1))), ...</tt>
+ *
+ *  \param first1 The beginning of the first input sequence.
+ *  \param last1 The end of the first input sequence.
+ *  \param first2 The beginning of the second input sequence.
+ *  \param init The initial value of the reduction.
+ *  \param reduce The binary reduction operation (defaults to <tt>::cuda::std::plus<T></tt>).
+ *  \param transform The binary transformation operation (defaults to <tt>::cuda::std::multiplies<common_type></tt>).
+ *  \return The result of the transformed reduction.
+ *
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>. \tparam InputIterator2 is a model of <a
+ * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>. \tparam T is convertible to \p
+ * BinaryOp1's first and second argument types. \tparam BinaryOp1 is a binary function whose return type is convertible
+ * to \p T (defaults to <tt>::cuda::std::plus<T></tt>). \tparam BinaryOp2 is a binary function whose return type is
+ * convertible to \p BinaryOp1's second argument type (defaults to <tt>::cuda::std::multiplies<common_type></tt>).
+ *
+ *  \code
+ *  #include <thrust/transform_reduce.h>
+ *  #include <thrust/functional.h>
+ *  ...
+ *  int data1[6] = {1, 0, 2, 2, 1, 3};
+ *  int data2[6] = {4, 1, 5, 3, 2, 1};
+ *
+ *  // Explicit operations:
+ *  int result1 = thrust::transform_reduce(data1, data1 + 6, data2, 0,
+ *                                         ::cuda::std::plus<int>(), ::cuda::std::multiplies<int>());
+ *  // result1 == 0 + 1*4 + 0*1 + 2*5 + 2*3 + 1*2 + 3*1 = 25
+ *
+ *  // Using defaults (inner product):
+ *  int result2 = thrust::transform_reduce(data1, data1 + 6, data2, 0);
+ *  // result2 == 0 + 1*4 + 0*1 + 2*5 + 2*3 + 1*2 + 3*1 = 25
+ *  \endcode
+ *
+ *  \see \c transform
+ *  \see \c reduce
+ *  \see \c inner_product
+ */
+template <
+  typename InputIterator1,
+  typename InputIterator2,
+  typename T,
+  typename BinaryOp1 = ::cuda::std::plus<T>,
+  typename BinaryOp2 = ::cuda::std::multiplies<
+    ::cuda::std::common_type_t<::cuda::std::iter_value_t<InputIterator1>, ::cuda::std::iter_value_t<InputIterator2>>>>
+T transform_reduce(
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  T init,
+  BinaryOp1 reduce    = BinaryOp1(),
+  BinaryOp2 transform = BinaryOp2());
 
 /*! \} // end transformed_reductions
  *  \} // end reductions
