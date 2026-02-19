@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL___HIERARCHY_GROUP_CUH
-#define _CUDA_EXPERIMENTAL___HIERARCHY_GROUP_CUH
+#ifndef _CUDA_EXPERIMENTAL___HIERARCHY_THIS_GROUP_CUH
+#define _CUDA_EXPERIMENTAL___HIERARCHY_THIS_GROUP_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -39,7 +39,7 @@ using __hierarchy_type_of =
 
 // todo: use __hier_ in queries
 template <class _Level, class _Hierarchy>
-class __hierarchy_group_base<_Level, _Hierarchy, __this_hierarchy_group_kind>
+class __this_group_base
 {
   static_assert(__is_hierarchy_level_v<_Level>);
   static_assert(__is_hierarchy_v<_Hierarchy>);
@@ -49,9 +49,13 @@ class __hierarchy_group_base<_Level, _Hierarchy, __this_hierarchy_group_kind>
 public:
   using hierarchy_type = _Hierarchy;
 
+  // todo: do we want to allow construction without hierarchy? Or some `cuda::no_hierarchy` tag? Or construction from
+  //       {level_type}_desc type? The reason is that it would be nice not to force the users to use the hierarchy type.
+  //       Maybe even storing the reference to hierarchy is an overkill and we would be fine with the level description.
+
   _CCCL_TEMPLATE(class _HierarchyLike)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Hierarchy, __hierarchy_type_of<_HierarchyLike>>)
-  _CCCL_DEVICE_API __hierarchy_group_base(const _HierarchyLike& __hier_like) noexcept
+  _CCCL_DEVICE_API __this_group_base(const _HierarchyLike& __hier_like) noexcept
       : __hier_{::cuda::__unpack_hierarchy_if_needed(__hier_like)}
   {}
 
@@ -94,9 +98,9 @@ public:
 };
 
 template <class _Hierarchy>
-class thread_group<_Hierarchy, __this_hierarchy_group_kind> : __this_hierarchy_group_base<thread_level, _Hierarchy>
+class this_thread : __this_group_base<thread_level, _Hierarchy>
 {
-  using __base_type = __this_hierarchy_group_base<thread_level, _Hierarchy>;
+  using __base_type = __this_group_base<thread_level, _Hierarchy>;
 
 public:
   using level_type = thread_level;
@@ -115,13 +119,12 @@ public:
 
 _CCCL_TEMPLATE(class _Hierarchy)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
-_CCCL_HOST_DEVICE thread_group(const _Hierarchy&)
-  -> thread_group<__hierarchy_type_of<_Hierarchy>, __this_hierarchy_group_kind>;
+_CCCL_HOST_DEVICE this_thread(const _Hierarchy&) -> this_thread<__hierarchy_type_of<_Hierarchy>>;
 
 template <class _Hierarchy>
-class warp_group<_Hierarchy, __this_hierarchy_group_kind> : __this_hierarchy_group_base<warp_level, _Hierarchy>
+class this_warp : __this_group_base<warp_level, _Hierarchy>
 {
-  using __base_type = __this_hierarchy_group_base<warp_level, _Hierarchy>;
+  using __base_type = __this_group_base<warp_level, _Hierarchy>;
 
 public:
   using level_type = warp_level;
@@ -143,13 +146,12 @@ public:
 
 _CCCL_TEMPLATE(class _Hierarchy)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
-_CCCL_HOST_DEVICE warp_group(const _Hierarchy&)
-  -> warp_group<__hierarchy_type_of<_Hierarchy>, __this_hierarchy_group_kind>;
+_CCCL_HOST_DEVICE this_warp(const _Hierarchy&) -> this_warp<__hierarchy_type_of<_Hierarchy>>;
 
 template <class _Hierarchy>
-class block_group<_Hierarchy, __this_hierarchy_group_kind> : __this_hierarchy_group_base<block_level, _Hierarchy>
+class this_block : __this_group_base<block_level, _Hierarchy>
 {
-  using __base_type = __this_hierarchy_group_base<block_level, _Hierarchy>;
+  using __base_type = __this_group_base<block_level, _Hierarchy>;
 
 public:
   using level_type = block_level;
@@ -172,13 +174,12 @@ public:
 
 _CCCL_TEMPLATE(class _Hierarchy)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
-_CCCL_HOST_DEVICE block_group(const _Hierarchy&)
-  -> block_group<__hierarchy_type_of<_Hierarchy>, __this_hierarchy_group_kind>;
+_CCCL_HOST_DEVICE this_block(const _Hierarchy&) -> this_block<__hierarchy_type_of<_Hierarchy>>;
 
 template <class _Hierarchy>
-class cluster_group<_Hierarchy, __this_hierarchy_group_kind> : __this_hierarchy_group_base<cluster_level, _Hierarchy>
+class this_cluster : __this_group_base<cluster_level, _Hierarchy>
 {
-  using __base_type = __this_hierarchy_group_base<cluster_level, _Hierarchy>;
+  using __base_type = __this_group_base<cluster_level, _Hierarchy>;
 
 public:
   using level_type = cluster_level;
@@ -206,13 +207,12 @@ public:
 
 _CCCL_TEMPLATE(class _Hierarchy)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
-_CCCL_HOST_DEVICE cluster_group(const _Hierarchy&)
-  -> cluster_group<__hierarchy_type_of<_Hierarchy>, __this_hierarchy_group_kind>;
+_CCCL_HOST_DEVICE this_cluster(const _Hierarchy&) -> this_cluster<__hierarchy_type_of<_Hierarchy>>;
 
 template <class _Hierarchy>
-class grid_group<_Hierarchy, __this_hierarchy_group_kind> : __this_hierarchy_group_base<grid_level, _Hierarchy>
+class this_grid : __this_group_base<grid_level, _Hierarchy>
 {
-  using __base_type = __this_hierarchy_group_base<grid_level, _Hierarchy>;
+  using __base_type = __this_group_base<grid_level, _Hierarchy>;
 
 public:
   using level_type = grid_level;
@@ -230,45 +230,9 @@ public:
 
 _CCCL_TEMPLATE(class _Hierarchy)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
-_CCCL_HOST_DEVICE grid_group(const _Hierarchy&)
-  -> grid_group<__hierarchy_type_of<_Hierarchy>, __this_hierarchy_group_kind>;
-
-_CCCL_TEMPLATE(class _HierarchyLike)
-_CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
-[[nodiscard]] _CCCL_DEVICE_API auto this_thread(const _HierarchyLike& __hier_like) noexcept
-{
-  return thread_group{__hier_like};
-}
-
-_CCCL_TEMPLATE(class _HierarchyLike)
-_CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
-[[nodiscard]] _CCCL_DEVICE_API auto this_warp(const _HierarchyLike& __hier_like) noexcept
-{
-  return warp_group{__hier_like};
-}
-
-_CCCL_TEMPLATE(class _HierarchyLike)
-_CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
-[[nodiscard]] _CCCL_DEVICE_API auto this_block(const _HierarchyLike& __hier_like) noexcept
-{
-  return block_group{__hier_like};
-}
-
-_CCCL_TEMPLATE(class _HierarchyLike)
-_CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
-[[nodiscard]] _CCCL_DEVICE_API auto this_cluster(const _HierarchyLike& __hier_like) noexcept
-{
-  return cluster_group{__hier_like};
-}
-
-_CCCL_TEMPLATE(class _HierarchyLike)
-_CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
-[[nodiscard]] _CCCL_DEVICE_API auto this_grid(const _HierarchyLike& __hier_like) noexcept
-{
-  return grid_group{__hier_like};
-}
+_CCCL_HOST_DEVICE this_grid(const _Hierarchy&) -> this_grid<__hierarchy_type_of<_Hierarchy>>;
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_EXPERIMENTAL___HIERARCHY_GROUP_CUH
+#endif // _CUDA_EXPERIMENTAL___HIERARCHY_THIS_GROUP_CUH
