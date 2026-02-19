@@ -67,7 +67,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
   constexpr scan_policy policy = PolicySelectorT{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
   if constexpr (policy.warpspeed
-                && detail::scan::use_warpspeed<InputIteratorT, OutputIteratorT, AccumT>(*policy.warpspeed))
+                && detail::scan::use_warpspeed<InputIteratorT, OutputIteratorT, AccumT>(policy.warpspeed))
   {
     device_scan_init_lookahead_body(tile_state.lookahead, num_tiles);
   }
@@ -204,19 +204,19 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
   if constexpr (policy.warpspeed
-                && detail::scan::use_warpspeed<InputIteratorT, OutputIteratorT, AccumT>(*policy.warpspeed))
+                && detail::scan::use_warpspeed<InputIteratorT, OutputIteratorT, AccumT>(policy.warpspeed))
   {
     using WarpspeedPolicyT = warpspeedKernelPolicy<
-      policy.warpspeed->num_squads,
-      policy.warpspeed->num_reduce_warps,
-      policy.warpspeed->num_scan_stor_warps,
-      policy.warpspeed->num_load_warps,
-      policy.warpspeed->num_sched_warps,
-      policy.warpspeed->num_look_ahead_warps,
-      policy.warpspeed->num_look_ahead_items,
-      policy.warpspeed->num_total_threads,
-      policy.warpspeed->items_per_thread,
-      policy.warpspeed->tile_size>;
+      scan_warpspeed_policy::num_squads,
+      policy.warpspeed.num_reduce_warps,
+      policy.warpspeed.num_scan_stor_warps,
+      policy.warpspeed.num_load_warps,
+      policy.warpspeed.num_sched_warps,
+      policy.warpspeed.num_look_ahead_warps,
+      policy.warpspeed.num_look_ahead_items,
+      policy.warpspeed.num_total_threads,
+      policy.warpspeed.items_per_thread,
+      policy.warpspeed.tile_size>;
     NV_IF_TARGET(
       NV_PROVIDES_SM_100, ({
         auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{

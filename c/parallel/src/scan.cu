@@ -312,7 +312,7 @@ try
   const bool use_warpspeed =
     active_policy.warpspeed
     && cub::detail::scan::use_warpspeed(
-      *active_policy.warpspeed,
+      active_policy.warpspeed,
       static_cast<int>(input_it.value_type.size),
       static_cast<int>(input_it.value_type.alignment),
       static_cast<int>(output_it.value_type.size),

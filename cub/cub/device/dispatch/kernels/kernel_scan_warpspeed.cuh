@@ -149,6 +149,7 @@ template <typename WarpspeedPolicy>
 _CCCL_API constexpr scan_warpspeed_policy make_scan_warpspeed_policy()
 {
   return scan_warpspeed_policy{
+    true,
     WarpspeedPolicy::num_reduce_warps,
     WarpspeedPolicy::num_scan_stor_warps,
     WarpspeedPolicy::num_load_warps,

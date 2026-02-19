@@ -122,7 +122,7 @@ struct DeviceScanKernelSource
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
     if (policy.warpspeed)
     {
-      return detail::scan::use_warpspeed<UnwrappedInputIteratorT, UnwrappedOutputIteratorT, AccumT>(*policy.warpspeed);
+      return detail::scan::use_warpspeed<UnwrappedInputIteratorT, UnwrappedOutputIteratorT, AccumT>(policy.warpspeed);
     }
 #else
     (void) policy;
@@ -141,7 +141,7 @@ struct has_warpspeed_policy<T, ::cuda::std::void_t<typename T::WarpspeedPolicy>>
 {};
 
 template <typename LegacyActivePolicy>
-_CCCL_API constexpr auto convert_warpspeed_policy() -> ::cuda::std::optional<scan_warpspeed_policy>
+_CCCL_API constexpr auto convert_warpspeed_policy() -> scan_warpspeed_policy
 {
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
   if constexpr (has_warpspeed_policy<LegacyActivePolicy>::value)
@@ -149,7 +149,7 @@ _CCCL_API constexpr auto convert_warpspeed_policy() -> ::cuda::std::optional<sca
     return make_scan_warpspeed_policy<typename LegacyActivePolicy::WarpspeedPolicy>();
   }
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
-  return ::cuda::std::nullopt;
+  return {};
 }
 
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
@@ -644,7 +644,7 @@ struct DispatchScan
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
     if (kernel_source.use_warpspeed(active_policy))
     {
-      return __invoke_lookahead_algorithm(*active_policy.warpspeed, policy_selector);
+      return __invoke_lookahead_algorithm(active_policy.warpspeed, policy_selector);
     }
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
 

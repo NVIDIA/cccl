@@ -31,7 +31,6 @@
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/void_t.h>
-#include <cuda/std/optional>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
@@ -127,6 +126,7 @@ struct scan_warpspeed_policy
 {
   static constexpr int num_squads = 5;
 
+  bool valid = false;
   int num_reduce_warps;
   int num_scan_stor_warps;
   int num_load_warps;
@@ -137,6 +137,11 @@ struct scan_warpspeed_policy
   int num_total_threads;
   int items_per_thread;
   int tile_size;
+
+  _CCCL_API constexpr explicit operator bool() const noexcept
+  {
+    return valid;
+  }
 
   _CCCL_API constexpr warpspeed::SquadDesc squadReduce() const
   {
@@ -161,11 +166,11 @@ struct scan_warpspeed_policy
 
   _CCCL_API constexpr friend bool operator==(const scan_warpspeed_policy& lhs, const scan_warpspeed_policy& rhs)
   {
-    return lhs.num_reduce_warps == rhs.num_reduce_warps && lhs.num_scan_stor_warps == rhs.num_scan_stor_warps
-        && lhs.num_load_warps == rhs.num_load_warps && lhs.num_sched_warps == rhs.num_sched_warps
-        && lhs.num_look_ahead_warps == rhs.num_look_ahead_warps && lhs.num_look_ahead_items == rhs.num_look_ahead_items
-        && lhs.num_total_threads == rhs.num_total_threads && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.tile_size == rhs.tile_size;
+    return lhs.valid == rhs.valid && lhs.num_reduce_warps == rhs.num_reduce_warps
+        && lhs.num_scan_stor_warps == rhs.num_scan_stor_warps && lhs.num_load_warps == rhs.num_load_warps
+        && lhs.num_sched_warps == rhs.num_sched_warps && lhs.num_look_ahead_warps == rhs.num_look_ahead_warps
+        && lhs.num_look_ahead_items == rhs.num_look_ahead_items && lhs.num_total_threads == rhs.num_total_threads
+        && lhs.items_per_thread == rhs.items_per_thread && lhs.tile_size == rhs.tile_size;
   }
 };
 
@@ -178,7 +183,7 @@ struct scan_policy
   BlockStoreAlgorithm store_algorithm;
   BlockScanAlgorithm scan_algorithm;
   delay_constructor_policy delay_constructor;
-  ::cuda::std::optional<scan_warpspeed_policy> warpspeed = ::cuda::std::nullopt;
+  scan_warpspeed_policy warpspeed = {};
 
   _CCCL_API constexpr friend bool operator==(const scan_policy& lhs, const scan_policy& rhs)
   {
@@ -202,13 +207,13 @@ struct scan_policy
        << ", .delay_constructor = " << p.delay_constructor;
     if (p.warpspeed)
     {
-      os << ", .warpspeed = scan_warpspeed_policy { .num_reduce_warps = " << p.warpspeed->num_reduce_warps
-         << ", .num_scan_stor_warps = " << p.warpspeed->num_scan_stor_warps << ", .num_load_warps = "
-         << p.warpspeed->num_load_warps << ", .num_sched_warps = " << p.warpspeed->num_sched_warps
-         << ", .num_look_ahead_warps = " << p.warpspeed->num_look_ahead_warps << ", .num_look_ahead_items = "
-         << p.warpspeed->num_look_ahead_items << ", .num_total_threads = " << p.warpspeed->num_total_threads
-         << ", .items_per_thread = " << p.warpspeed->items_per_thread << ", .tile_size = " << p.warpspeed->tile_size
-         << "}";
+      os << ", .warpspeed = scan_warpspeed_policy { .valid = " << p.warpspeed.valid << ", .num_reduce_warps = "
+         << p.warpspeed.num_reduce_warps << ", .num_scan_stor_warps = " << p.warpspeed.num_scan_stor_warps
+         << ", .num_load_warps = " << p.warpspeed.num_load_warps << ", .num_sched_warps = "
+         << p.warpspeed.num_sched_warps << ", .num_look_ahead_warps = " << p.warpspeed.num_look_ahead_warps
+         << ", .num_look_ahead_items = " << p.warpspeed.num_look_ahead_items << ", .num_total_threads = "
+         << p.warpspeed.num_total_threads << ", .items_per_thread = " << p.warpspeed.items_per_thread
+         << ", .tile_size = " << p.warpspeed.tile_size << "}";
     }
     return os << " }";
   }
@@ -223,8 +228,8 @@ _CCCL_API constexpr auto make_mem_scaled_scan_policy(
   CacheLoadModifier load_modifier,
   BlockStoreAlgorithm store_algorithm,
   BlockScanAlgorithm scan_algorithm,
-  delay_constructor_policy delay_constructor             = {delay_constructor_kind::fixed_delay, 350, 450},
-  ::cuda::std::optional<scan_warpspeed_policy> warpspeed = ::cuda::std::nullopt) -> scan_policy
+  delay_constructor_policy delay_constructor = {delay_constructor_kind::fixed_delay, 350, 450},
+  scan_warpspeed_policy warpspeed            = {}) -> scan_policy
 {
   const auto scaled = scale_mem_bound(nominal_4b_block_threads, nominal_4b_items_per_thread, compute_t_size);
   return scan_policy{
@@ -777,12 +782,13 @@ constexpr _CCCL_HOST_DEVICE delay_constructor_policy default_delay_constructor_p
          : delay_constructor_policy{delay_constructor_kind::no_delay, 0, 450};
 }
 
-constexpr _CCCL_HOST_DEVICE ::cuda::std::optional<scan_warpspeed_policy>
+constexpr _CCCL_HOST_DEVICE scan_warpspeed_policy
 get_warpspeed_policy(::cuda::arch_id arch, int input_value_size, int accum_size)
 {
   if (arch >= ::cuda::arch_id::sm_100)
   {
     scan_warpspeed_policy warpspeed_policy{};
+    warpspeed_policy.valid = true;
 
     warpspeed_policy.num_reduce_warps     = 4;
     warpspeed_policy.num_scan_stor_warps  = 4;
@@ -806,7 +812,7 @@ get_warpspeed_policy(::cuda::arch_id arch, int input_value_size, int accum_size)
     return warpspeed_policy;
   }
 
-  return ::cuda::std::nullopt;
+  return {};
 }
 
 struct policy_selector
