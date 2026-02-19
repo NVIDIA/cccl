@@ -64,6 +64,10 @@ class ComplexType(types.Type):
 
 
 complex_type = ComplexType()
+complex_type.methods = {
+    "construct": Complex.construct,
+    "assign": Complex.assign,
+}
 
 
 @typeof_impl.register(Complex)

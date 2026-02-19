@@ -18,16 +18,20 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 def custom_reduce_example():
     """Demonstrate block reduction with custom operator (maximum)."""
 
+    @cuda.jit(device=True)
     def max_op(a, b):
         return a if a > b else b
 
     threads_per_block = 128
-    block_reduce = coop.block.make_reduce(numba.int32, threads_per_block, max_op)
 
-    @cuda.jit(link=block_reduce.files)
+    @cuda.jit
     def kernel(input, output):
         # Each thread contributes one element
-        block_output = block_reduce(input[cuda.threadIdx.x])
+        block_output = coop.block.reduce(
+            input[cuda.threadIdx.x],
+            items_per_thread=1,
+            binary_op=max_op,
+        )
 
         # Only thread 0 writes the result
         if cuda.threadIdx.x == 0:
@@ -51,12 +55,14 @@ def custom_reduce_example():
 def sum_reduce_example():
     """Demonstrate block sum reduction using built-in sum operation."""
     threads_per_block = 128
-    block_sum = coop.block.make_sum(numba.int32, threads_per_block)
 
-    @cuda.jit(link=block_sum.files)
+    @cuda.jit
     def kernel(input, output):
         # Each thread contributes one element
-        block_output = block_sum(input[cuda.threadIdx.x])
+        block_output = coop.block.sum(
+            input[cuda.threadIdx.x],
+            items_per_thread=1,
+        )
 
         # Only thread 0 writes the result
         if cuda.threadIdx.x == 0:
@@ -79,16 +85,20 @@ def sum_reduce_example():
 def min_reduce_example():
     """Demonstrate block reduction with minimum operator."""
 
+    @cuda.jit(device=True)
     def min_op(a, b):
         return a if a < b else b
 
     threads_per_block = 64
-    block_reduce = coop.block.make_reduce(numba.int32, threads_per_block, min_op)
 
-    @cuda.jit(link=block_reduce.files)
+    @cuda.jit
     def kernel(input, output):
         # Each thread contributes one element
-        block_output = block_reduce(input[cuda.threadIdx.x])
+        block_output = coop.block.reduce(
+            input[cuda.threadIdx.x],
+            items_per_thread=1,
+            binary_op=min_op,
+        )
 
         # Only thread 0 writes the result
         if cuda.threadIdx.x == 0:
@@ -112,21 +122,25 @@ def min_reduce_example():
 def multi_block_example():
     """Demonstrate block reduction across multiple blocks."""
 
+    @cuda.jit(device=True)
     def add_op(a, b):
         return a + b
 
     threads_per_block = 128
     num_blocks = 4
-    block_reduce = coop.block.make_reduce(numba.int32, threads_per_block, add_op)
 
-    @cuda.jit(link=block_reduce.files)
+    @cuda.jit
     def kernel(input, output):
         # Each thread contributes one element
         block_idx = cuda.blockIdx.x
         thread_idx = cuda.threadIdx.x
         global_idx = block_idx * threads_per_block + thread_idx
 
-        block_output = block_reduce(input[global_idx])
+        block_output = coop.block.reduce(
+            input[global_idx],
+            items_per_thread=1,
+            binary_op=add_op,
+        )
 
         # Only thread 0 of each block writes the result
         if thread_idx == 0:

@@ -26,7 +26,7 @@ def exclusive_sum_multiple_items_example():
     )
 
     # Link the exclusive sum to a CUDA kernel
-    @cuda.jit(link=block_exclusive_sum.files)
+    @cuda.jit
     def kernel(data):
         # Obtain a segment of consecutive items that are blocked across threads
         thread_data = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
@@ -67,7 +67,7 @@ def exclusive_sum_single_item_example():
     )
 
     # Link the exclusive sum to a CUDA kernel
-    @cuda.jit(link=block_exclusive_sum.files)
+    @cuda.jit
     def kernel(data):
         thread_data = 1
 
@@ -101,7 +101,7 @@ def variable_input_scan_example():
         numba.int32, threads_per_block, items_per_thread
     )
 
-    @cuda.jit(link=block_exclusive_sum.files)
+    @cuda.jit
     def kernel(input_data, output_data):
         # Each thread loads its items
         thread_data = cuda.local.array(shape=items_per_thread, dtype=numba.int32)

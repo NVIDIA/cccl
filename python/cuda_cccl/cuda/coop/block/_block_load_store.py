@@ -1,24 +1,39 @@
-# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
+from typing import TYPE_CHECKING
+
 import numba
 
 from .._common import (
-    make_binary_tempfile,
     normalize_dim_param,
     normalize_dtype_param,
 )
+from .._enums import (
+    BlockLoadAlgorithm,
+    BlockStoreAlgorithm,
+)
 from .._types import (
     Algorithm,
+    BasePrimitive,
     Dependency,
     DependentArray,
     DependentPointer,
+    DependentReference,
     Invocable,
-    Pointer,
     TemplateParameter,
+    TempStoragePointer,
+    Value,
 )
+from .._typing import (
+    DimType,
+    DtypeType,
+)
+
+if TYPE_CHECKING:
+    from ._rewrite import CoopNode
 
 CUB_BLOCK_LOAD_ALGOS = {
     "direct": "::cub::BLOCK_LOAD_DIRECT",
@@ -39,204 +54,165 @@ CUB_BLOCK_STORE_ALGOS = {
 }
 
 
-def make_load(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
-    """
-    Creates a block-wide load primitive.
+class base_load_store(BasePrimitive):
+    is_one_shot = True
 
-    Returns a callable object that can be linked to and invoked from
-    device code. It can be invoked with the following signatures:
+    template_parameters = [
+        TemplateParameter("T"),
+        TemplateParameter("BLOCK_DIM_X"),
+        TemplateParameter("ITEMS_PER_THREAD"),
+        TemplateParameter("ALGORITHM"),
+        TemplateParameter("BLOCK_DIM_Y"),
+        TemplateParameter("BLOCK_DIM_Z"),
+    ]
 
-    - `(src: numba.types.Array, dest: numba.types.Array) -> None`:
-      Each thread loads `items_per_thread` items from `src` into `dest`.
-      `dest` must contain at least `items_per_thread` items.
+    def __init__(
+        self,
+        dtype: DtypeType,
+        dim: DimType,
+        items_per_thread: int,
+        algorithm=None,
+        num_valid_items=None,
+        oob_default=None,
+        unique_id: int = None,
+        node: "CoopNode" = None,
+        temp_storage=None,
+    ) -> None:
+        """
+        Loads or stores a blocked arrangement of items using the selected
+        BlockLoad/BlockStore algorithm.
 
-    Different data movement strategies can be selected via the
-    `algorithm` parameter:
+        Example:
+            The snippet below demonstrates using block load and store
+            invocables.
 
-    - `algorithm="direct"` (default): Reads blocked data directly.
-    - `algorithm="striped"`: Reads striped data directly.
-    - `algorithm="vectorize"`: Reads blocked data directly using
-      CUDA's built-in vectorized loads as a coalescing optimization.
-    - `algorithm="transpose"`: Reads striped data and then locally
-      transposes it into a blocked arrangement.
-    - `algorithm="warp_transpose"`: Reads warp-striped data and then
-      locally transposes it into a blocked arrangement.
-    - `algorithm="warp_transpose_timesliced"`: Reads warp-striped data
-      and then locally transposes it into a blocked arrangement one
-      warp at a time.
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
 
-    For more details, read the corresponding CUB C++ documentation:
-    https://nvidia.github.io/cccl/cub/api/classcub_1_1BlockLoad.html
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin load_store
+                :end-before: example-end load_store
+        """
+        self.node = node
+        self.dtype = normalize_dtype_param(dtype)
+        self.dim = normalize_dim_param(dim)
+        self.items_per_thread = items_per_thread
+        self.num_valid_items = num_valid_items
+        self.oob_default = oob_default
+        self.unique_id = unique_id
+        if algorithm is None:
+            algorithm_enum = self.default_algorithm
+        elif isinstance(algorithm, str):
+            enum_cls = self.default_algorithm.__class__
+            try:
+                algorithm_enum = enum_cls[algorithm.upper()]
+            except KeyError as exc:
+                raise ValueError(f"Invalid algorithm: {algorithm}") from exc
+        elif isinstance(algorithm, int):
+            algorithm_enum = self.default_algorithm.__class__(algorithm)
+        elif isinstance(algorithm, self.default_algorithm.__class__):
+            algorithm_enum = algorithm
+        else:
+            raise ValueError(f"Invalid algorithm: {algorithm}")
 
-    Args:
-        dtype: Data type being loaded
-        threads_per_block: Number of threads in a block. Can be an
-            integer or a tuple of 2 or 3 integers.
-        items_per_thread: The number of items each thread loads
-        algorithm: The data movement algorithm to use
+        self.algorithm_enum = algorithm_enum
+        (algorithm_cub, _) = self.resolve_cub_algorithm(algorithm_enum)
 
-    Example:
-        The code snippet below illustrates a striped load and store of
-        128 integer items by 32 threads, with each thread handling
-        4 integers.
+        input_is_array_pointer = True
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api.py
-            :language: python
-            :dedent:
-            :start-after: example-begin imports
-            :end-before: example-end imports
-
-        The following snippet shows how to invoke the returned
-        ``block_load`` and ``block_store`` primitives:
-
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api.py
-            :language: python
-            :dedent:
-            :start-after: example-begin load_store
-            :end-before: example-end load_store
-    """
-    dim = normalize_dim_param(threads_per_block)
-    dtype = normalize_dtype_param(dtype)
-
-    template = Algorithm(
-        "BlockLoad",
-        "Load",
-        "block_load",
-        ["cub/block/block_load.cuh"],
-        [
-            TemplateParameter("T"),
-            TemplateParameter("BLOCK_DIM_X"),
-            TemplateParameter("ITEMS_PER_THREAD"),
-            TemplateParameter("ALGORITHM"),
-            TemplateParameter("BLOCK_DIM_Y"),
-            TemplateParameter("BLOCK_DIM_Z"),
-        ],
-        [
+        parameters = [
             [
-                Pointer(numba.uint8),
-                DependentPointer(Dependency("T")),
-                DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
+                DependentPointer(
+                    value_dtype=Dependency("T"),
+                    restrict=True,
+                    is_array_pointer=input_is_array_pointer,
+                    name="src",
+                ),
+                DependentArray(
+                    value_dtype=Dependency("T"),
+                    size=Dependency("ITEMS_PER_THREAD"),
+                    name="dst",
+                ),
             ]
-        ],
-    )
-    specialization = template.specialize(
-        {
-            "T": dtype,
-            "BLOCK_DIM_X": dim[0],
-            "ITEMS_PER_THREAD": items_per_thread,
-            "ALGORITHM": CUB_BLOCK_LOAD_ALGOS[algorithm],
-            "BLOCK_DIM_Y": dim[1],
-            "BLOCK_DIM_Z": dim[2],
-        }
-    )
-    return Invocable(
-        temp_files=[
-            make_binary_tempfile(ltoir, ".ltoir")
-            for ltoir in specialization.get_lto_ir()
-        ],
-        temp_storage_bytes=specialization.temp_storage_bytes,
-        temp_storage_alignment=specialization.temp_storage_alignment,
-        algorithm=specialization,
-    )
+        ]
+        if num_valid_items is not None:
+            parameters[0].append(Value(numba.types.int32, name="num_valid_items"))
+        if oob_default is not None:
+            if self.method_name != "Load":
+                raise ValueError("oob_default is only valid for BlockLoad")
+            if num_valid_items is None:
+                raise ValueError("oob_default requires num_valid_items to be set")
+            parameters[0].append(
+                DependentReference(Dependency("T"), name="oob_default")
+            )
+        if temp_storage is not None:
+            parameters[0].insert(
+                0,
+                TempStoragePointer(
+                    numba.types.uint8, is_array_pointer=True, name="temp_storage"
+                ),
+            )
+        self.parameters = parameters
+
+        self.algorithm = Algorithm(
+            self.struct_name,
+            self.method_name,
+            self.c_name,
+            self.includes,
+            self.template_parameters,
+            self.parameters,
+            self,
+            unique_id=unique_id,
+        )
+        self.specialization = self.algorithm.specialize(
+            {
+                "T": self.dtype,
+                "BLOCK_DIM_X": self.dim[0],
+                "ITEMS_PER_THREAD": items_per_thread,
+                "ALGORITHM": algorithm_cub,
+                "BLOCK_DIM_Y": self.dim[1],
+                "BLOCK_DIM_Z": self.dim[2],
+            }
+        )
+        self.temp_storage = temp_storage
+
+    @classmethod
+    def create(
+        cls,
+        dtype: DtypeType,
+        threads_per_block: DimType,
+        items_per_thread: int,
+        algorithm=None,
+    ):
+        algo = cls(dtype, threads_per_block, items_per_thread, algorithm)
+        specialization = algo.specialization
+
+        return Invocable(
+            ltoir_files=specialization.get_lto_ir(),
+            temp_storage_bytes=specialization.temp_storage_bytes,
+            temp_storage_alignment=specialization.temp_storage_alignment,
+            algorithm=specialization,
+        )
 
 
-def make_store(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
-    """
-    Creates a block-wide store primitive.
+class load(base_load_store):
+    default_algorithm = BlockLoadAlgorithm.DIRECT
+    cub_algorithm_map = CUB_BLOCK_LOAD_ALGOS
+    struct_name = "BlockLoad"
+    method_name = "Load"
+    c_name = "block_load"
+    includes = ["cub/block/block_load.cuh"]
 
-    Returns a callable object that can be linked to and invoked from
-    device code. It can be invoked with the following signatures:
 
-    - `(dest: numba.types.Array, src: numba.types.Array) -> None`:
-      Each thread stores `items_per_thread` items from `src` into `dest`.
-      `src` must contain at least `items_per_thread` items.
-
-    Different data movement strategies can be selected via the
-    `algorithm` parameter:
-
-    - `algorithm="direct"` (default): Writes blocked data directly.
-    - `algorithm="striped"`: Writes striped data directly.
-    - `algorithm="vectorize"`: Writes blocked data directly using
-      CUDA's built-in vectorized stores as a coalescing optimization.
-    - `algorithm="transpose"`: Locally transposes blocked data into a
-      striped arrangement before writing to memory.
-    - `algorithm="warp_transpose"`: Locally transposes blocked data
-      into a warp-striped arrangement before writing to memory.
-    - `algorithm="warp_transpose_timesliced"`: Locally transposes
-      blocked data into a warp-striped arrangement before writing to
-      memory. To reduce shared memory requirements, only one warp's
-      worth of shared memory is provisioned and time-sliced across warps.
-
-    For more details, read the corresponding CUB C++ documentation:
-    https://nvidia.github.io/cccl/cub/api/classcub_1_1BlockStore.html
-
-    Args:
-        dtype: Data type being stored
-        threads_per_block: Number of threads in a block. Can be an
-            integer or a tuple of 2 or 3 integers.
-        items_per_thread: The number of items each thread stores
-        algorithm: The data movement algorithm to use
-
-    Example:
-        The code snippet below illustrates a striped load and store of
-        128 integer items by 32 threads, with each thread handling
-        4 integers.
-
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api.py
-            :language: python
-            :dedent:
-            :start-after: example-begin imports
-            :end-before: example-end imports
-
-        The following snippet shows how to invoke the returned
-        ``block_load`` and ``block_store`` primitives:
-
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api.py
-            :language: python
-            :dedent:
-            :start-after: example-begin load_store
-            :end-before: example-end load_store
-    """
-    dim = normalize_dim_param(threads_per_block)
-    dtype = normalize_dtype_param(dtype)
-
-    template = Algorithm(
-        "BlockStore",
-        "Store",
-        "block_store",
-        ["cub/block/block_store.cuh"],
-        [
-            TemplateParameter("T"),
-            TemplateParameter("BLOCK_DIM_X"),
-            TemplateParameter("ITEMS_PER_THREAD"),
-            TemplateParameter("ALGORITHM"),
-            TemplateParameter("BLOCK_DIM_Y"),
-            TemplateParameter("BLOCK_DIM_Z"),
-        ],
-        [
-            [
-                Pointer(numba.uint8),
-                DependentPointer(Dependency("T")),
-                DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-            ]
-        ],
-    )
-    specialization = template.specialize(
-        {
-            "T": dtype,
-            "BLOCK_DIM_X": dim[0],
-            "ITEMS_PER_THREAD": items_per_thread,
-            "ALGORITHM": CUB_BLOCK_STORE_ALGOS[algorithm],
-            "BLOCK_DIM_Y": dim[1],
-            "BLOCK_DIM_Z": dim[2],
-        }
-    )
-    return Invocable(
-        temp_files=[
-            make_binary_tempfile(ltoir, ".ltoir")
-            for ltoir in specialization.get_lto_ir()
-        ],
-        temp_storage_bytes=specialization.temp_storage_bytes,
-        temp_storage_alignment=specialization.temp_storage_alignment,
-        algorithm=specialization,
-    )
+class store(base_load_store):
+    default_algorithm = BlockStoreAlgorithm.DIRECT
+    cub_algorithm_map = CUB_BLOCK_STORE_ALGOS
+    struct_name = "BlockStore"
+    method_name = "Store"
+    c_name = "block_store"
+    includes = ["cub/block/block_store.cuh"]
