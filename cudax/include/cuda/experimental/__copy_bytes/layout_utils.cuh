@@ -39,14 +39,14 @@ namespace cuda::experimental
 {
 //! @brief Create a CuTe tensor backed by global memory.
 template <class _Tp, class _Layout>
-[[nodiscard]] _CCCL_HOST_DEVICE auto make_gmem_tensor(_Tp* __ptr, const _Layout& __layout)
+[[nodiscard]] _CCCL_HOST_DEVICE auto make_gmem_tensor(_Tp* __ptr, const _Layout& __layout) noexcept
 {
   return ::cute::make_tensor(::cute::make_gmem_ptr(__ptr), __layout);
 }
 
 //! @brief Create a compact row-major CuTe layout with all-static sizes.
 template <int... _Sizes>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto make_static_layout()
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto make_static_layout() noexcept
 {
   return ::cute::make_layout(::cute::make_shape(::cute::Int<_Sizes>{}...));
 }
@@ -74,9 +74,9 @@ inline constexpr int __config_block_threads =
 //! When shape[i] * stride[i] == stride[i+1], modes i and i+1 are contiguous
 //! and can be merged into a single mode. Consumed modes are set to shape=1, stride=0.
 //!
-//! @param __shapes  Array of mode shapes (modified in-place)
-//! @param __stride Array of mode strides (modified in-place)
-//! @param __rank   Number of modes
+//! @param[in,out] __shapes Array of mode shapes (modified in-place)
+//! @param[in,out] __stride Array of mode strides (modified in-place)
+//! @param[in]     __rank   Number of modes
 //!
 //! @pre Modes must be sorted by ascending absolute stride before calling.
 template <::cuda::std::size_t _Np>
@@ -104,18 +104,18 @@ runtime_coalesce(::cuda::std::array<int, _Np>& __shapes, ::cuda::std::array<int,
 //! After sorting, the stride-1 (fastest-changing) mode is first,
 //! ensuring threads accessing consecutive linear indices hit consecutive addresses.
 //!
-//! @param __shapes  Array of mode shapes (reordered in-place)
-//! @param __stride Array of mode strides (reordered in-place)
-//! @param __rank   Number of modes
+//! @param[in,out] __shapes Array of mode shapes (reordered in-place)
+//! @param[in,out] __stride Array of mode strides (reordered in-place)
+//! @param[in]     __rank   Number of modes
 template <::cuda::std::size_t _Np>
 _CCCL_HOST void sort_modes_by_stride(
   ::cuda::std::array<int, _Np>& __shapes, ::cuda::std::array<int, _Np>& __stride, int __rank) noexcept
 {
   for (int __i = 1; __i < __rank; ++__i)
   {
-    int __shape = __shapes[__i];
-    int __st    = __stride[__i];
-    int __j     = __i - 1;
+    const int __shape = __shapes[__i];
+    const int __st    = __stride[__i];
+    int __j           = __i - 1;
     while (__j >= 0 && ::cuda::std::abs(__stride[__j]) > ::cuda::std::abs(__st))
     {
       __shapes[__j + 1] = __shapes[__j];
@@ -132,6 +132,11 @@ _CCCL_HOST void sort_modes_by_stride(
 //! Both layouts must have been sorted before comparison.
 //! Modes with shape==1 are skipped (they carry no data).
 //!
+//! @param[in] __src_shape   Source shape array
+//! @param[in] __src_strides Source stride array
+//! @param[in] __dst_shape   Destination shape array
+//! @param[in] __dst_strides Destination stride array
+//! @param[in] __rank        Number of modes
 //! @return true if both layouts have the same effective shapes and strides
 template <::cuda::std::size_t _Np>
 [[nodiscard]] _CCCL_HOST bool layouts_match(
@@ -184,15 +189,12 @@ template <::cuda::std::size_t _Np>
 //! Returns the largest power-of-two that divides the pointer address.
 //! For a null pointer, returns 16 (maximum vectorization width).
 //!
-//! @param __ptr Pointer to check
+//! @param[in] __ptr Pointer to check
 //! @return Alignment in bytes (always a power of two, at most the true alignment)
 [[nodiscard]] _CCCL_HOST inline int ptr_alignment(const void* __ptr) noexcept
 {
+  _CCCL_ASSERT(__ptr != nullptr, "Pointer is null");
   const auto __addr = reinterpret_cast<::cuda::std::uintptr_t>(__ptr);
-  if (__addr == 0)
-  {
-    return 16;
-  }
   return static_cast<int>(__addr & (~__addr + 1));
 }
 
@@ -207,9 +209,9 @@ template <::cuda::std::size_t _Np>
 //! @tparam _ShapeIndex   Shape array element type
 //! @tparam _StrideIndex  Stride array element type
 //! @tparam _Np           Array capacity
-//! @param __ptr          Pointer to tensor data (used for alignment check)
-//! @param __shapes       Array of mode shapes (after sorting)
-//! @param __strides      Array of mode strides (after sorting)
+//! @param[in] __ptr     Pointer to tensor data (used for alignment check)
+//! @param[in] __shapes  Array of mode shapes (after sorting)
+//! @param[in] __strides Array of mode strides (after sorting)
 //! @return Maximum safe vectorization width in bytes
 template <class _Tp, class _ShapeIndex, class _StrideIndex, ::cuda::std::size_t _Np>
 [[nodiscard]] _CCCL_HOST ::cuda::std::size_t __max_vector_size_bytes(
@@ -218,11 +220,11 @@ template <class _Tp, class _ShapeIndex, class _StrideIndex, ::cuda::std::size_t 
   const ::cuda::std::array<_StrideIndex, _Np>& __strides) noexcept
 {
   using ::cuda::std::size_t;
-  if (__strides[0] != 1)
+  if (__strides[0] != 1) // the tensor is not contiguous
   {
     return sizeof(_Tp);
   }
-  size_t __ptr_alignment = ptr_alignment(__ptr);
+  size_t __ptr_alignment = ::cuda::experimental::ptr_alignment(__ptr);
   for (size_t __i = 0; __i < _Np; ++__i)
   {
     if (__shapes[__i] > 1 && (::cuda::std::abs(__strides[__i]) != 1))
@@ -248,10 +250,10 @@ template <class _Tp, class _ShapeIndex, class _StrideIndex, ::cuda::std::size_t 
 //! The dst strides are reordered by the same permutation so that corresponding
 //! modes stay paired.
 //!
-//! @param __shapes      Array of mode shapes (shared, reordered in-place)
-//! @param __src_strides Array of src strides (reordered in-place; used as sort key)
-//! @param __dst_strides Array of dst strides (reordered in-place by same permutation)
-//! @param __rank       Number of modes
+//! @param[in,out] __shapes      Array of mode shapes (shared, reordered in-place)
+//! @param[in,out] __src_strides Array of src strides (reordered in-place; used as sort key)
+//! @param[in,out] __dst_strides Array of dst strides (reordered in-place by same permutation)
+//! @param[in]     __rank        Number of modes
 template <::cuda::std::size_t _Np>
 _CCCL_HOST void __sort_by_stride_paired(
   ::cuda::std::array<int, _Np>& __shapes,
@@ -261,10 +263,10 @@ _CCCL_HOST void __sort_by_stride_paired(
 {
   for (int __i = 1; __i < __rank; ++__i)
   {
-    int __shape      = __shapes[__i];
-    int __src_stride = __src_strides[__i];
-    int __dst_stride = __dst_strides[__i];
-    int __j          = __i - 1;
+    const int __shape      = __shapes[__i];
+    const int __src_stride = __src_strides[__i];
+    const int __dst_stride = __dst_strides[__i];
+    int __j                = __i - 1;
     while (__j >= 0 && (::cuda::std::abs(__src_strides[__j]) > ::cuda::std::abs(__src_stride)))
     {
       __shapes[__j + 1]      = __shapes[__j];
@@ -280,14 +282,14 @@ _CCCL_HOST void __sort_by_stride_paired(
 
 //! @brief Compute the contiguous extent from mode 0 upward.
 //!
-//! Starting from mode 0 (which must have |stride| == 1), greedily merges
+//! Starting from mode 0 (which must have stride == 1), greedily merges
 //! adjacent modes as long as the accumulated extent equals the next stride.
 //! Returns the product of merged shapes, i.e. the number of logically
 //! consecutive elements that are physically contiguous.
 //!
-//! @param __shapes  Array of mode shapes (sorted by ascending stride)
-//! @param __stride Array of mode strides (sorted by ascending stride)
-//! @param __rank   Number of modes
+//! @param[in] __shapes Array of mode shapes (sorted by ascending stride)
+//! @param[in] __stride Array of mode strides (sorted by ascending stride)
+//! @param[in] __rank   Number of modes
 //! @return The contiguous extent in elements, or 0 if mode 0 is not stride-1
 template <::cuda::std::size_t _Np>
 [[nodiscard]] _CCCL_HOST int __contiguous_extent(
@@ -321,9 +323,9 @@ template <::cuda::std::size_t _Np>
 //! @tparam _ShapeIndex  Shape array element type
 //! @tparam _StrideIndex Stride array element type
 //! @tparam _Np          Array capacity
-//! @param __layout      The CuTe layout to extract from
-//! @param __out_shape   Output array for shapes (must have at least rank elements)
-//! @param __out_stride  Output array for strides (must have at least rank elements)
+//! @param[in]  __layout    The CuTe layout to extract from
+//! @param[out] __out_shape  Output array for shapes (must have at least rank elements)
+//! @param[out] __out_stride Output array for strides (must have at least rank elements)
 template <class _Layout, class _ShapeIndex, class _StrideIndex, ::cuda::std::size_t _Np>
 _CCCL_HOST void __extract_layout(const _Layout& __layout,
                                  ::cuda::std::array<_ShapeIndex, _Np>& __out_shape,
