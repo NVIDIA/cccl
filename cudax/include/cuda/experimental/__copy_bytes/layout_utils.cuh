@@ -358,11 +358,11 @@ template <class _Tp, class _ShapeIndex, class _StrideIndex, ::cuda::std::size_t 
   const ::cuda::std::array<_StrideIndex, _Np>& __strides) noexcept
 {
   using ::cuda::std::size_t;
-  if (__strides[0] != 1)
+  if (__strides[0] != 1) // the tensor is not contiguous
   {
     return sizeof(_Tp);
   }
-  size_t __ptr_alignment = ptr_alignment(__ptr);
+  size_t __ptr_alignment = ::cuda::experimental::ptr_alignment(__ptr);
   for (size_t __i = 0; __i < _Np; ++__i)
   {
     if (__shapes[__i] > 1 && (::cuda::std::abs(__strides[__i]) != 1))
@@ -388,10 +388,10 @@ template <class _Tp, class _ShapeIndex, class _StrideIndex, ::cuda::std::size_t 
 //! The dst strides are reordered by the same permutation so that corresponding
 //! modes stay paired.
 //!
-//! @param __shapes      Array of mode shapes (shared, reordered in-place)
-//! @param __src_strides Array of src strides (reordered in-place; used as sort key)
-//! @param __dst_strides Array of dst strides (reordered in-place by same permutation)
-//! @param __rank       Number of modes
+//! @param[in,out] __shapes      Array of mode shapes (shared, reordered in-place)
+//! @param[in,out] __src_strides Array of src strides (reordered in-place; used as sort key)
+//! @param[in,out] __dst_strides Array of dst strides (reordered in-place by same permutation)
+//! @param[in]     __rank        Number of modes
 template <::cuda::std::size_t _Np>
 _CCCL_HOST void __sort_by_stride_paired(
   ::cuda::std::array<int, _Np>& __shapes,
@@ -401,10 +401,10 @@ _CCCL_HOST void __sort_by_stride_paired(
 {
   for (int __i = 1; __i < __rank; ++__i)
   {
-    int __shape      = __shapes[__i];
-    int __src_stride = __src_strides[__i];
-    int __dst_stride = __dst_strides[__i];
-    int __j          = __i - 1;
+    const int __shape      = __shapes[__i];
+    const int __src_stride = __src_strides[__i];
+    const int __dst_stride = __dst_strides[__i];
+    int __j                = __i - 1;
     while (__j >= 0 && (::cuda::std::abs(__src_strides[__j]) > ::cuda::std::abs(__src_stride)))
     {
       __shapes[__j + 1]      = __shapes[__j];
@@ -420,14 +420,14 @@ _CCCL_HOST void __sort_by_stride_paired(
 
 //! @brief Compute the contiguous extent from mode 0 upward.
 //!
-//! Starting from mode 0 (which must have |stride| == 1), greedily merges
+//! Starting from mode 0 (which must have stride == 1), greedily merges
 //! adjacent modes as long as the accumulated extent equals the next stride.
 //! Returns the product of merged shapes, i.e. the number of logically
 //! consecutive elements that are physically contiguous.
 //!
-//! @param __shapes  Array of mode shapes (sorted by ascending stride)
-//! @param __stride Array of mode strides (sorted by ascending stride)
-//! @param __rank   Number of modes
+//! @param[in] __shapes Array of mode shapes (sorted by ascending stride)
+//! @param[in] __stride Array of mode strides (sorted by ascending stride)
+//! @param[in] __rank   Number of modes
 //! @return The contiguous extent in elements, or 0 if mode 0 is not stride-1
 template <::cuda::std::size_t _Np>
 [[nodiscard]] _CCCL_HOST int __contiguous_extent(
