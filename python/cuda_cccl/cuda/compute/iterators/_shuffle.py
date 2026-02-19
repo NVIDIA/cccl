@@ -102,12 +102,22 @@ class ShuffleIterator(IteratorBase):
 
             {_SHUFFLE_STATE_STRUCT}
 
+            // __noinline__ is required to prevent the compiler from merging
+            // this function's register usage into the calling kernel during LTO
+            // inlining. feistel_bijection constructs 24 round keys with
+            // UNROLL_FULL, which exhausts the kernel's register budget and
+            // causes spilling to local memory (LDL/STL instructions).
+            // Keeping it non-inlined gives it an isolated register frame.
+            __device__ __noinline__ int64_t __shuffle_apply(uint64_t num_items, uint64_t seed, uint64_t idx) {{
+                cuda::pcg64 rng(seed);
+                cuda::random_bijection<uint64_t> bijection(num_items, rng);
+                return static_cast<int64_t>(bijection(idx));
+            }}
+
             extern "C" __device__ void {symbol}(void* state, void* result) {{
                 const auto* s = static_cast<const ShuffleState*>(state);
-                cuda::pcg64 rng(s->seed);
-                cuda::random_bijection<uint64_t> bijection(s->num_items, rng);
-                auto idx = static_cast<uint64_t>(s->current_index);
-                *static_cast<int64_t*>(result) = static_cast<int64_t>(bijection(idx));
+                *static_cast<int64_t*>(result) = __shuffle_apply(
+                    s->num_items, s->seed, static_cast<uint64_t>(s->current_index));
             }}
         """).strip()
 
