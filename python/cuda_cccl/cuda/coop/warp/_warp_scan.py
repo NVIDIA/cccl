@@ -16,12 +16,15 @@ from .._types import (
 )
 
 
-def exclusive_sum(dtype, threads_in_warp=32):
-    """Computes an exclusive warp-wide prefix sum using addition (+) as the scan operator.
-    The value of 0 is applied as the initial value, and is assigned to the output in *lane*\ :sub:`0`.
+def make_exclusive_sum(dtype, threads_in_warp=32):
+    """
+    Creates an exclusive warp-wide prefix sum primitive using addition (+)
+    as the scan operator. The value of 0 is applied as the initial value
+    and is assigned to the output in lane :sub:`0`.
 
     Example:
-        The code snippet below illustrates an exclusive prefix sum of 32 integer items:
+        The code snippet below illustrates an exclusive prefix sum of
+        32 integer items:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_scan_api.py
             :language: python
@@ -29,7 +32,8 @@ def exclusive_sum(dtype, threads_in_warp=32):
             :start-after: example-begin imports
             :end-before: example-end imports
 
-        Below is the code snippet that demonstrates the usage of the ``exclusive_sum`` API:
+        The following snippet shows how to invoke the returned
+        ``warp_exclusive_sum`` primitive:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_scan_api.py
             :language: python
@@ -37,8 +41,8 @@ def exclusive_sum(dtype, threads_in_warp=32):
             :start-after: example-begin exclusive-sum
             :end-before: example-end exclusive-sum
 
-        Suppose the set of input ``thread_data`` across the warp of threads is
-        ``{ [1, 1, 1, 1], [1, 1, 1, 1], ..., [1, 1, 1, 1] }``.
+        Suppose the set of input ``thread_data`` across the warp of
+        threads is ``{ [1, 1, 1, 1], [1, 1, 1, 1], ..., [1, 1, 1, 1] }``.
         The corresponding output ``thread_data`` in those threads will be
         ``{ [0, 1, 2, 3], [4, 5, 6, 7], ..., [28, 29, 30, 31] }``.
 
@@ -47,7 +51,8 @@ def exclusive_sum(dtype, threads_in_warp=32):
         threads_in_warp: The number of threads in a warp
 
     Returns:
-        A callable object that can be linked to and invoked from a CUDA kernel
+        A callable object that can be linked to and invoked from a CUDA
+        kernel
     """
     template = Algorithm(
         "WarpScan",
