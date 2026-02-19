@@ -21,6 +21,7 @@
 #include <cub/detail/warpspeed/squad/load_store.cuh>
 #include <cub/detail/warpspeed/squad/squad.cuh>
 #include <cub/detail/warpspeed/values.cuh>
+#include <cub/device/dispatch/kernels/scan_warpspeed_policy.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/thread/thread_scan.cuh>
 #include <cub/warp/warp_reduce.cuh>

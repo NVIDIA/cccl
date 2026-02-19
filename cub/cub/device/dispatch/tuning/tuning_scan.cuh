@@ -19,7 +19,7 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/detail/delay_constructor.cuh>
-#include <cub/detail/warpspeed/squad/squad_desc.cuh>
+#include <cub/device/dispatch/kernels/scan_warpspeed_policy.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
@@ -121,58 +121,6 @@ constexpr _CCCL_HOST_DEVICE offset_size classify_offset_size()
 {
   return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
 }
-
-struct scan_warpspeed_policy
-{
-  static constexpr int num_squads = 5;
-
-  bool valid = false;
-  int num_reduce_warps;
-  int num_scan_stor_warps;
-  int num_load_warps;
-  int num_sched_warps;
-  int num_look_ahead_warps;
-
-  int num_look_ahead_items;
-  int num_total_threads;
-  int items_per_thread;
-  int tile_size;
-
-  _CCCL_API constexpr explicit operator bool() const noexcept
-  {
-    return valid;
-  }
-
-  _CCCL_API constexpr warpspeed::SquadDesc squadReduce() const
-  {
-    return warpspeed::SquadDesc{0, num_reduce_warps};
-  }
-  _CCCL_API constexpr warpspeed::SquadDesc squadScanStore() const
-  {
-    return warpspeed::SquadDesc{1, num_scan_stor_warps};
-  }
-  _CCCL_API constexpr warpspeed::SquadDesc squadLoad() const
-  {
-    return warpspeed::SquadDesc{2, num_load_warps};
-  }
-  _CCCL_API constexpr warpspeed::SquadDesc squadSched() const
-  {
-    return warpspeed::SquadDesc{3, num_sched_warps};
-  }
-  _CCCL_API constexpr warpspeed::SquadDesc squadLookback() const
-  {
-    return warpspeed::SquadDesc{4, num_look_ahead_warps};
-  }
-
-  _CCCL_API constexpr friend bool operator==(const scan_warpspeed_policy& lhs, const scan_warpspeed_policy& rhs)
-  {
-    return lhs.valid == rhs.valid && lhs.num_reduce_warps == rhs.num_reduce_warps
-        && lhs.num_scan_stor_warps == rhs.num_scan_stor_warps && lhs.num_load_warps == rhs.num_load_warps
-        && lhs.num_sched_warps == rhs.num_sched_warps && lhs.num_look_ahead_warps == rhs.num_look_ahead_warps
-        && lhs.num_look_ahead_items == rhs.num_look_ahead_items && lhs.num_total_threads == rhs.num_total_threads
-        && lhs.items_per_thread == rhs.items_per_thread && lhs.tile_size == rhs.tile_size;
-  }
-};
 
 struct scan_policy
 {
