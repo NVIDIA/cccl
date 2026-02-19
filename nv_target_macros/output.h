@@ -266,14 +266,11 @@ This tests a variety of conditions for determining what the incoming statement i
 #          define _NV_BITSET_ATTRIBUTE
 #        endif
 
-// This must be a nested namespace as <nv/target> works with older dialects.
-namespace nv
-{
-namespace target
+namespace nv::target
 {
 namespace detail
 {
-using base_int_t = unsigned long long;
+typedef unsigned long long base_int_t;
 
 // No host specialization
 constexpr base_int_t all_hosts = 1;
@@ -468,8 +465,7 @@ constexpr sm_selector sm_121 = sm_selector::sm_121;
 
 using detail::is_exactly;
 using detail::provides;
-} // namespace target
-} // namespace nv
+} // namespace nv::target
 
 #      endif // C++  && !defined(__CUDACC_RTC__)
 

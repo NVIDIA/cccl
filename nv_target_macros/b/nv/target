@@ -1,0 +1,67 @@
+
+// Identifies this header as versioned nv target header.
+#define __NV_TARGET_VERSIONED
+
+// This guard has 2 purposes - preventing multiple inclusions and allowing to detect whether the header is versioned or
+// or not without including the contents.
+#if !defined(__NV_TARGET_H)
+
+// Hardcoded version. We cannot use something like __NV_TARGET_VERSION_CURRENT, because there would be collisions.
+#  define __NV_TARGET_VERSION_03_02 302
+
+// Update the max version. If this is the first include, set it to the current version.
+#  if !defined(__NV_TARGET_VERSION_MAX)
+#    define __NV_TARGET_FIRST_INCLUDE
+#    define __NV_TARGET_VERSION_MAX __NV_TARGET_VERSION_03_02
+#  elif __NV_TARGET_VERSION_MAX <= __NV_TARGET_VERSION_03_02
+#    undef __NV_TARGET_VERSION_MAX
+#    define __NV_TARGET_VERSION_MAX __NV_TARGET_VERSION_03_02
+#  endif
+
+// Clear versioned header definition before including next header.
+#  undef __NV_TARGET_VERSIONED
+
+// Include the next <nv/target> header if available. We include the next header twice - once with __NV_TARGET_H defined
+// to determine if the next header is versioned and if so we continue the search. If it is not a versioned header, it
+// will be always older than this one and we stop the search.
+//
+// We use __has_include for the first timeto prevent cases when this file is prepended to a .cpp file. It would cause
+// errors, because #include_next can be only used inside an included header.
+#  if defined(__NV_TARGET_FIRST_INCLUDE)
+#    undef __NV_TARGET_FIRST_INCLUDE
+#    if __has_include(<nv/target>)
+#      define __NV_TARGET_H
+#      include <nv/target>
+#      undef __NV_TARGET_H
+#      if defined(__NV_TARGET_VERSIONED)
+#        include <nv/target>
+#      endif // __NV_TARGET_VERSIONED
+#    endif // __has_include(<nv/target>)
+#  elif __has_include_next(<nv/target>)
+#    define __NV_TARGET_H
+#    include_next <nv/target>
+#    undef __NV_TARGET_H
+#    if defined(__NV_TARGET_VERSIONED)
+#      include_next <nv/target>
+#    endif // __NV_TARGET_VERSIONED
+#  endif
+
+// If this header version and the max version don't match, skip this include.
+#  if __NV_TARGET_VERSION_MAX != __NV_TARGET_VERSION_03_01
+#    define __NV_SKIP_THIS_INCLUDE
+#  endif
+
+#  ifndef __NV_SKIP_THIS_INCLUDE
+
+#    ifndef __NV_TARGET_H
+#    define __NV_TARGET_H
+
+static_assert(true);
+
+#    endif // __NV_TARGET_H
+
+#  else
+#    undef __NV_SKIP_THIS_INCLUDE
+#  endif
+
+#endif // __NV_TARGET_H
