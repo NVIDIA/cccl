@@ -928,7 +928,7 @@ _CCCL_API constexpr bool use_warpspeed(
   bool output_trivially_copyable,
   bool output_default_constructible)
 {
-#if defined(__CUDA_ARCH__) && __cccl_ptx_isa < 860
+#if defined(__CUDA_ARCH__) && __cccl_ptx_isa < 860 || !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   (void) policy;
   (void) input_size;
   (void) input_align;
