@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__COPY_BYTES_COPY_DIFF_LAYOUT
-#define _CUDAX__COPY_BYTES_COPY_DIFF_LAYOUT
+#ifndef _CUDAX__COPY_BYTES_COPY_BYTES_SMEM
+#define _CUDAX__COPY_BYTES_COPY_BYTES_SMEM
 
 #include <cuda/std/detail/__config>
 
@@ -24,14 +24,14 @@
 #include <cuda/launch>
 #include <cuda/std/__exception/cuda_error.h>
 
+#include <cuda/experimental/__copy_bytes/layout_utils.cuh>
+
+#include <cuda/std/__cccl/prologue.h>
+
 #include <cute/layout.hpp>
 #include <cute/numeric/int.hpp>
 #include <cute/swizzle.hpp>
 #include <cute/tensor.hpp>
-
-#include <cuda/experimental/__copy_bytes/layout_utils.cuh>
-
-#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -54,7 +54,6 @@ namespace cuda::experimental
 template <typename Config, typename T, typename SrcTensor, typename DstTensor, int TileM, int TileN>
 __global__ void copy_diff_layout_kernel(Config config, SrcTensor src, DstTensor dst)
 {
-  // Extract compile-time thread count from Config's hierarchy type
   constexpr int NumThreads = __config_block_threads<Config>;
 
   uint32_t thread_idx = ::cuda::gpu_thread.rank(::cuda::block, config);
@@ -66,9 +65,7 @@ __global__ void copy_diff_layout_kernel(Config config, SrcTensor src, DstTensor 
   static __shared__ T smem_buf[TileM * TileN];
 
   // Swizzled shared memory layout for bank-conflict-free access
-  auto smem_base =
-    ::cute::make_layout(::cute::make_shape(::cute::Int<TileM>{}, ::cute::Int<TileN>{}),
-                        ::cute::make_stride(::cute::Int<TileN>{}, ::cute::Int<1>{}));
+  auto smem_base = make_static_layout<TileM, TileN>();
   auto smem_layout = ::cute::composition(::cute::Swizzle<3, 3, 3>{}, smem_base);
   auto smem        = ::cute::make_tensor(::cute::make_smem_ptr(smem_buf), smem_layout);
 
@@ -93,13 +90,13 @@ __global__ void copy_diff_layout_kernel(Config config, SrcTensor src, DstTensor 
   if (is_full_tile)
   {
     // Construct tile tensors with STATIC shapes and dynamic strides
-    auto src_tile = ::cute::make_tensor(
-      ::cute::make_gmem_ptr(&src(m_begin, n_begin)),
+    auto src_tile = make_gmem_tensor(
+      &src(m_begin, n_begin),
       ::cute::make_layout(
         ::cute::make_shape(::cute::Int<TileM>{}, ::cute::Int<TileN>{}),
         ::cute::make_stride(src_stride_m, src_stride_n)));
-    auto dst_tile = ::cute::make_tensor(
-      ::cute::make_gmem_ptr(&dst(m_begin, n_begin)),
+    auto dst_tile = make_gmem_tensor(
+      &dst(m_begin, n_begin),
       ::cute::make_layout(
         ::cute::make_shape(::cute::Int<TileM>{}, ::cute::Int<TileN>{}),
         ::cute::make_stride(dst_stride_m, dst_stride_n)));
@@ -142,17 +139,17 @@ __global__ void copy_diff_layout_kernel(Config config, SrcTensor src, DstTensor 
 template <typename T, typename SrcLayout, typename DstLayout>
 void launch_copy_diff_layout(
   ::cuda::stream_ref stream,
-  T* dst_ptr,
   const T* src_ptr,
   const SrcLayout& src_layout,
+  T* dst_ptr,
   const DstLayout& dst_layout)
 {
   constexpr int TileM      = 32;
   constexpr int TileN      = 32;
   constexpr int block_size = 256;
 
-  auto src_tensor = ::cute::make_tensor(::cute::make_gmem_ptr(src_ptr), src_layout);
-  auto dst_tensor = ::cute::make_tensor(::cute::make_gmem_ptr(dst_ptr), dst_layout);
+  auto src_tensor = make_gmem_tensor(src_ptr, src_layout);
+  auto dst_tensor = make_gmem_tensor(dst_ptr, dst_layout);
 
   int M         = ::cute::get<0>(::cute::shape(src_layout));
   int N         = ::cute::get<1>(::cute::shape(src_layout));
@@ -169,4 +166,4 @@ void launch_copy_diff_layout(
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__COPY_BYTES_COPY_DIFF_LAYOUT
+#endif // _CUDAX__COPY_BYTES_COPY_BYTES_SMEM

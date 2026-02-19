@@ -21,81 +21,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/ceil_div.h>
-#include <cuda/launch>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/array>
 
-#include <cute/layout.hpp>
-#include <cute/tensor.hpp>
-
-#include <cuda/experimental/__copy_bytes/copy_diff_layout.cuh>
-#include <cuda/experimental/__copy_bytes/copy_same_layout.cuh>
+#include <cuda/experimental/__copy_bytes/copy_bytes_naive.cuh>
+#include <cuda/experimental/__copy_bytes/copy_bytes_registers.cuh>
+#include <cuda/experimental/__copy_bytes/copy_bytes_smem.cuh>
 #include <cuda/experimental/__copy_bytes/layout_utils.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
+#include <cute/layout.hpp>
+#include <cute/tensor.hpp>
 
 namespace cuda::experimental
 {
-
-//! @brief Device kernel that copies elements between two tensors with potentially different layouts.
-//!
-//! Each thread processes elements in a grid-stride loop. CuTe handles the mapping from
-//! a linear index to multi-dimensional coordinates according to each tensor's layout.
-template <typename Config, typename SrcTensor, typename DstTensor>
-__global__ void copy_bytes_kernel(Config config, SrcTensor src, DstTensor dst, int n)
-{
-  int idx    = ::cuda::gpu_thread.rank(::cuda::grid, config);
-  int stride = ::cuda::gpu_thread.count(::cuda::grid, config);
-  for (int i = idx; i < n; i += stride)
-  {
-    dst(i) = src(i);
-  }
-}
-
-//! @brief Launch the naive fallback kernel.
-template <typename T, typename SrcLayout, typename DstLayout>
-void launch_naive_copy(
-  ::cuda::stream_ref stream, T* dst, const T* src, const SrcLayout& src_layout, const DstLayout& dst_layout)
-{
-  auto src_tensor          = ::cute::make_tensor(::cute::make_gmem_ptr(src), src_layout);
-  auto dst_tensor          = ::cute::make_tensor(::cute::make_gmem_ptr(dst), dst_layout);
-  int n                    = ::cute::size(src_layout);
-  constexpr int block_size = 256;
-  int grid_size            = ::cuda::ceil_div(n, block_size);
-
-  auto config = ::cuda::make_config(::cuda::block_dims<block_size>(), ::cuda::grid_dims(grid_size));
-  ::cuda::launch(
-    stream, config, copy_bytes_kernel<decltype(config), decltype(src_tensor), decltype(dst_tensor)>,
-    src_tensor, dst_tensor, n);
-}
-
-//! @brief Dispatch same-layout copy with the appropriate vectorization width.
-//!
-//! Constructs an optimized layout with Int<1> for the stride-1 mode
-//! (required for correct recast behavior) and dispatches based on vec_bytes.
-template <typename T, typename Layout>
-void dispatch_same_layout(::cuda::stream_ref stream, T* dst, const T* src, const Layout& layout, int vec_bytes)
-{
-  switch (vec_bytes)
-  {
-    case 16:
-      launch_copy_same_layout<16>(stream, dst, src, layout);
-      break;
-    case 8:
-      launch_copy_same_layout<8>(stream, dst, src, layout);
-      break;
-    case 4:
-      launch_copy_same_layout<4>(stream, dst, src, layout);
-      break;
-    case 2:
-      launch_copy_same_layout<2>(stream, dst, src, layout);
-      break;
-    default:
-      launch_copy_same_layout<1>(stream, dst, src, layout);
-      break;
-  }
-}
 
 //! @brief Copy elements between two device-memory tensors described by CuTe layouts.
 //!
@@ -120,7 +59,7 @@ void dispatch_same_layout(::cuda::stream_ref stream, T* dst, const T* src, const
 //! auto src_layout = make_layout(shape, make_stride(256, 1));  // row-major
 //! auto dst_layout = make_layout(shape, make_stride(1, 128));  // col-major
 //!
-//! cuda::experimental::copy_bytes(stream, dst_ptr, dst_layout, src_ptr, src_layout);
+//! cuda::experimental::copy_bytes(stream, src_ptr, src_layout, dst_ptr, dst_layout);
 //! @endcode
 //!
 //! @tparam T          Element type of the tensors
@@ -128,12 +67,12 @@ void dispatch_same_layout(::cuda::stream_ref stream, T* dst, const T* src, const
 //! @tparam DstLayout  CuTe layout type for the destination tensor
 //!
 //! @param stream      CUDA stream on which to launch the copy kernel
-//! @param dst         Pointer to the destination tensor in device memory
-//! @param dst_layout  CuTe layout describing the shape and strides of @p dst
 //! @param src         Pointer to the source tensor in device memory
 //! @param src_layout  CuTe layout describing the shape and strides of @p src
+//! @param dst         Pointer to the destination tensor in device memory
+//! @param dst_layout  CuTe layout describing the shape and strides of @p dst
 template <typename T, typename SrcLayout, typename DstLayout>
-void copy_bytes(::cuda::stream_ref stream, T* dst, DstLayout dst_layout, const T* src, SrcLayout src_layout)
+void copy_bytes(::cuda::stream_ref stream, const T* src, SrcLayout src_layout, T* dst, DstLayout dst_layout)
 {
   _CCCL_ASSERT(::cute::size(src_layout) == ::cute::size(dst_layout),
                "Source and destination layouts must have the same number of elements");
@@ -175,9 +114,8 @@ void copy_bytes(::cuda::stream_ref stream, T* dst, DstLayout dst_layout, const T
 
     if (eff_rank == 0)
     {
-      auto one_layout =
-        ::cute::make_layout(::cute::make_shape(::cute::Int<1>{}), ::cute::make_stride(::cute::Int<1>{}));
-      launch_naive_copy(stream, dst, src, one_layout, one_layout);
+      auto one_layout = make_static_layout<1>();
+      launch_naive_copy(stream, src, one_layout, dst, one_layout);
     }
     else
     {
@@ -188,24 +126,23 @@ void copy_bytes(::cuda::stream_ref stream, T* dst, DstLayout dst_layout, const T
       if (eff_rank == 1 && eff_st[0] == 1)
       {
         auto opt = ::cute::make_layout(::cute::make_shape(eff_s[0]), ::cute::make_stride(::cute::Int<1>{}));
-        dispatch_same_layout(stream, dst, src, opt, vec_bytes);
+        dispatch_same_layout(stream, src, dst, opt, vec_bytes);
       }
       else if (eff_rank == 2 && eff_st[0] == 1)
       {
         auto opt =
           ::cute::make_layout(::cute::make_shape(eff_s[0], eff_s[1]), ::cute::make_stride(::cute::Int<1>{}, eff_st[1]));
-        dispatch_same_layout(stream, dst, src, opt, vec_bytes);
+        dispatch_same_layout(stream, src, dst, opt, vec_bytes);
       }
       else if (eff_rank == 3 && eff_st[0] == 1)
       {
-        auto opt = ::cute::make_layout(
-          ::cute::make_shape(eff_s[0], eff_s[1], eff_s[2]),
-          ::cute::make_stride(::cute::Int<1>{}, eff_st[1], eff_st[2]));
-        dispatch_same_layout(stream, dst, src, opt, vec_bytes);
+        auto opt = ::cute::make_layout(::cute::make_shape(eff_s[0], eff_s[1], eff_s[2]),
+                                       ::cute::make_stride(::cute::Int<1>{}, eff_st[1], eff_st[2]));
+        dispatch_same_layout(stream, src, dst, opt, vec_bytes);
       }
       else
       {
-        launch_naive_copy(stream, dst, src, src_layout, dst_layout);
+        launch_naive_copy(stream, src, src_layout, dst, dst_layout);
       }
     }
   }
@@ -217,12 +154,12 @@ void copy_bytes(::cuda::stream_ref stream, T* dst, DstLayout dst_layout, const T
     int N        = src_s[1];
     auto src_opt = ::cute::make_layout(::cute::make_shape(M, N), ::cute::make_stride(src_st[0], src_st[1]));
     auto dst_opt = ::cute::make_layout(::cute::make_shape(M, N), ::cute::make_stride(dst_st[0], dst_st[1]));
-    launch_copy_diff_layout(stream, dst, src, src_opt, dst_opt);
+    launch_copy_diff_layout(stream, src, src_opt, dst, dst_opt);
   }
   else
   {
     // Unsupported configuration: fall back to naive kernel
-    launch_naive_copy(stream, dst, src, src_layout, dst_layout);
+    launch_naive_copy(stream, src, src_layout, dst, dst_layout);
   }
 
   cudaError_t err = cudaGetLastError();
@@ -231,7 +168,6 @@ void copy_bytes(::cuda::stream_ref stream, T* dst, DstLayout dst_layout, const T
     ::cuda::__throw_cuda_error(err, "copy_bytes kernel launch failed");
   }
 }
-
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
