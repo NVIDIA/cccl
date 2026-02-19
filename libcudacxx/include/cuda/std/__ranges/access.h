@@ -49,21 +49,20 @@ void begin(const _Tp&) = delete;
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
 concept __member_begin = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
-  { _LIBCUDACXX_AUTO_CAST(__t.begin()) } -> input_or_output_iterator;
+  { _CCCL_AUTO_CAST(__t.begin()) } -> input_or_output_iterator;
 };
 
 template <class _Tp>
 concept __unqualified_begin =
   !__member_begin<_Tp> && __can_borrow<_Tp> && __class_or_enum<remove_cvref_t<_Tp>> && requires(_Tp&& __t) {
-    { _LIBCUDACXX_AUTO_CAST(begin(__t)) } -> input_or_output_iterator;
+    { _CCCL_AUTO_CAST(begin(__t)) } -> input_or_output_iterator;
   };
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp>
-_CCCL_CONCEPT_FRAGMENT(
-  __member_begin_,
-  requires(_Tp&& __t)(requires(__can_borrow<_Tp>),
-                      requires(__workaround_52970<_Tp>),
-                      requires(input_or_output_iterator<decltype(_LIBCUDACXX_AUTO_CAST(__t.begin()))>)));
+_CCCL_CONCEPT_FRAGMENT(__member_begin_,
+                       requires(_Tp&& __t)(requires(__can_borrow<_Tp>),
+                                           requires(__workaround_52970<_Tp>),
+                                           requires(input_or_output_iterator<decltype(_CCCL_AUTO_CAST(__t.begin()))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __member_begin = _CCCL_FRAGMENT(__member_begin_, _Tp);
@@ -74,7 +73,7 @@ _CCCL_CONCEPT_FRAGMENT(
   requires(_Tp&& __t)(requires(!__member_begin<_Tp>),
                       requires(__can_borrow<_Tp>),
                       requires(__class_or_enum<remove_cvref_t<_Tp>>),
-                      requires(input_or_output_iterator<decltype(_LIBCUDACXX_AUTO_CAST(begin(__t)))>)));
+                      requires(input_or_output_iterator<decltype(_CCCL_AUTO_CAST(begin(__t)))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __unqualified_begin = _CCCL_FRAGMENT(__unqualified_begin_, _Tp);
@@ -102,19 +101,17 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__member_begin<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.begin())))
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(_CCCL_AUTO_CAST(__t.begin())))
   {
-    return _LIBCUDACXX_AUTO_CAST(__t.begin());
+    return _CCCL_AUTO_CAST(__t.begin());
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__unqualified_begin<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(begin(__t))))
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(_CCCL_AUTO_CAST(begin(__t))))
   {
-    return _LIBCUDACXX_AUTO_CAST(begin(__t));
+    return _CCCL_AUTO_CAST(begin(__t));
   }
 
   _CCCL_TEMPLATE(class _Tp)
@@ -153,14 +150,14 @@ void end(const _Tp&) = delete;
 template <class _Tp>
 concept __member_end = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
   typename iterator_t<_Tp>;
-  { _LIBCUDACXX_AUTO_CAST(__t.end()) } -> sentinel_for<iterator_t<_Tp>>;
+  { _CCCL_AUTO_CAST(__t.end()) } -> sentinel_for<iterator_t<_Tp>>;
 };
 
 template <class _Tp>
 concept __unqualified_end =
   !__member_end<_Tp> && __can_borrow<_Tp> && __class_or_enum<remove_cvref_t<_Tp>> && requires(_Tp&& __t) {
     typename iterator_t<_Tp>;
-    { _LIBCUDACXX_AUTO_CAST(end(__t)) } -> sentinel_for<iterator_t<_Tp>>;
+    { _CCCL_AUTO_CAST(end(__t)) } -> sentinel_for<iterator_t<_Tp>>;
   };
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Tp>
@@ -169,7 +166,7 @@ _CCCL_CONCEPT_FRAGMENT(
   requires(_Tp&& __t)(requires(__can_borrow<_Tp>),
                       requires(__workaround_52970<_Tp>),
                       typename(iterator_t<_Tp>),
-                      requires(sentinel_for<decltype(_LIBCUDACXX_AUTO_CAST(__t.end())), iterator_t<_Tp>>)));
+                      requires(sentinel_for<decltype(_CCCL_AUTO_CAST(__t.end())), iterator_t<_Tp>>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __member_end = _CCCL_FRAGMENT(__member_end_, _Tp);
@@ -181,7 +178,7 @@ _CCCL_CONCEPT_FRAGMENT(
                       requires(__can_borrow<_Tp>),
                       requires(__class_or_enum<remove_cvref_t<_Tp>>),
                       typename(iterator_t<_Tp>),
-                      requires(sentinel_for<decltype(_LIBCUDACXX_AUTO_CAST(end(__t))), iterator_t<_Tp>>)));
+                      requires(sentinel_for<decltype(_CCCL_AUTO_CAST(end(__t))), iterator_t<_Tp>>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __unqualified_end = _CCCL_FRAGMENT(__unqualified_end_, _Tp);
@@ -199,18 +196,17 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__member_end<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.end())))
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(_CCCL_AUTO_CAST(__t.end())))
   {
-    return _LIBCUDACXX_AUTO_CAST(__t.end());
+    return _CCCL_AUTO_CAST(__t.end());
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__unqualified_end<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(end(__t))))
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(_CCCL_AUTO_CAST(end(__t))))
   {
-    return _LIBCUDACXX_AUTO_CAST(end(__t));
+    return _CCCL_AUTO_CAST(end(__t));
   }
 
   _CCCL_TEMPLATE(class _Tp)
