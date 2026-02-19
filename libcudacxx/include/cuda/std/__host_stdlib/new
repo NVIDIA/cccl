@@ -4,12 +4,12 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD_NEW
-#define _CUDA_STD_NEW
+#ifndef _CUDA_STD___HOST_STDLIB_NEW
+#define _CUDA_STD___HOST_STDLIB_NEW
 
 #include <cuda/std/detail/__config>
 
@@ -21,9 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__new/allocate.h>
-#include <cuda/std/__new/device_new.h>
-#include <cuda/std/__new/launder.h>
-#include <cuda/std/version>
+#if !_CCCL_COMPILER(NVRTC)
+#  include <new>
+#endif // !_CCCL_COMPILER(NVRTC)
 
-#endif // _CUDA_STD_NEW
+#endif // _CUDA_STD___HOST_STDLIB_NEW
