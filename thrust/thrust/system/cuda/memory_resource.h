@@ -56,7 +56,7 @@ public:
   {
     // We skip error checking here, we shouldn't throw in deallocate in case this is called in a destructor or after
     // main exits and CUDA calls can start returning errors about CUDA being cleaned up.
-    [[maybe_unused]] auto status = Dealloc(thrust::detail::pointer_traits<Pointer>::get(p));
+    [[maybe_unused]] auto status = Dealloc(::cuda::std::to_address(p));
   }
 };
 

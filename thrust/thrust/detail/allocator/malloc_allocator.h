@@ -17,9 +17,10 @@
 #include <thrust/detail/allocator/tagged_allocator.h>
 #include <thrust/detail/malloc_and_free.h>
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/system/detail/bad_alloc.h>
 #include <thrust/system/detail/generic/select_system.h>
+
+#include <cuda/std/__memory/pointer_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail

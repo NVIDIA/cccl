@@ -4,6 +4,8 @@
 #include <thrust/mr/pool.h>
 #include <thrust/mr/sync_pool.h>
 
+#include <cuda/std/memory>
+
 #include <unittest/unittest.h>
 
 template <typename T>
@@ -97,6 +99,25 @@ struct tracked_pointer
   {
     return id == other.id && size == other.size && alignment == other.alignment && offset == other.offset
         && ptr == other.ptr;
+  }
+};
+
+template <typename T>
+struct cuda::std::pointer_traits<tracked_pointer<T>>
+{
+  using pointer         = tracked_pointer<T>;
+  using element_type    = T;
+  using difference_type = cuda::std::ptrdiff_t;
+
+  template <typename U>
+  struct rebind
+  {
+    using other = typename THRUST_NS_QUALIFIER::detail::rebind_pointer<pointer, U>::type;
+  };
+
+  [[nodiscard]] _CCCL_API static constexpr element_type* to_address(const pointer iter) noexcept
+  {
+    return iter.get();
   }
 };
 

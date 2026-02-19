@@ -13,7 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/system/cuda/detail/execution_policy.h>
 #include <thrust/system/detail/bad_alloc.h>
 

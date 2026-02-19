@@ -21,7 +21,8 @@
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/detail/reference.h>
 #include <thrust/detail/temporary_buffer.h>
-#include <thrust/detail/type_traits/pointer_traits.h>
+
+#include <cuda/std/__memory/pointer_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -274,7 +275,7 @@ _CCCL_HOST_DEVICE void return_temporary_buffer(
  *  \endverbatim
  */
 template <typename Pointer>
-_CCCL_HOST_DEVICE typename thrust::detail::pointer_traits<Pointer>::raw_pointer raw_pointer_cast(Pointer ptr);
+_CCCL_HOST_DEVICE auto raw_pointer_cast(Pointer ptr);
 
 /*! \p raw_reference_cast creates a "raw" reference from a wrapped reference type,
  *  simply returning the underlying reference, should it exist.

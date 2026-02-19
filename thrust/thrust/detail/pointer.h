@@ -24,12 +24,17 @@
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traversal_tags.h>
 
+#include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/add_lvalue_reference.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstddef>
 
@@ -197,7 +202,7 @@ public:
    */
   template <typename OtherPointer, detail::enable_if_pointer_is_convertible_t<OtherPointer, pointer>* = nullptr>
   _CCCL_HOST_DEVICE pointer(const OtherPointer& other)
-      : super_t(detail::pointer_traits<OtherPointer>::get(other))
+      : super_t(static_cast<Element*>(::cuda::std::to_address(other)))
   {}
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Doxygen cannot handle this constructor and creates a duplicate ID with the ctor above
@@ -206,7 +211,7 @@ public:
   template <typename OtherPointer,
             detail::enable_if_void_pointer_is_system_convertible_t<OtherPointer, pointer>* = nullptr>
   _CCCL_HOST_DEVICE explicit pointer(const OtherPointer& other)
-      : super_t(static_cast<Element*>(detail::pointer_traits<OtherPointer>::get(other)))
+      : super_t(static_cast<Element*>(::cuda::std::to_address(other)))
   {}
 #endif
 
@@ -232,7 +237,7 @@ public:
   _CCCL_HOST_DEVICE detail::enable_if_pointer_is_convertible_t<OtherPointer, pointer, derived_type&>
   operator=(const OtherPointer& other)
   {
-    super_t::base_reference() = detail::pointer_traits<OtherPointer>::get(other);
+    super_t::base_reference() = ::cuda::std::to_address(other);
     return static_cast<derived_type&>(*this);
   }
 
@@ -257,10 +262,11 @@ public:
     return bool(get());
   }
 
-  _CCCL_HOST_DEVICE static derived_type
-  pointer_to(typename detail::pointer_traits_detail::pointer_to_param<Element>::type r)
+  template <class T,
+            ::cuda::std::enable_if_t<(::cuda::std::is_void_v<Element> || ::cuda::std::is_same_v<T, Element>), int> = 0>
+  _CCCL_HOST_DEVICE static derived_type pointer_to(T& r)
   {
-    return detail::pointer_traits<derived_type>::pointer_to(r);
+    return static_cast<derived_type>(::cuda::std::addressof(r));
   }
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -384,7 +390,126 @@ public:
   operator<=(pointer const& lhs, pointer<OtherElement, OtherTag, OtherReference, OtherDerived> const& rhs) = delete;
 };
 
+namespace detail
+{
+template <typename Ptr, typename T>
+struct thrust_pointer_rebind;
+
+template <typename T, typename U>
+struct thrust_pointer_rebind<T*, U>
+{
+  using type = U*;
+};
+
+// Rebind generic fancy pointers.
+template <template <typename, typename...> class Ptr, typename OldT, typename... Tail, typename T>
+struct thrust_pointer_rebind<Ptr<OldT, Tail...>, T>
+{
+  using type = Ptr<T, Tail...>;
+};
+
+// Rebind `thrust::pointer`-like things with `thrust::reference`-like references.
+template <template <typename, typename, typename, typename...> class Ptr,
+          typename OldT,
+          typename Tag,
+          template <typename...> class Ref,
+          typename... RefTail,
+          typename... PtrTail,
+          typename T>
+struct thrust_pointer_rebind<Ptr<OldT, Tag, Ref<OldT, RefTail...>, PtrTail...>, T>
+{
+  //  static_assert(is_same<OldT, Tag>::value, "0");
+  using type = Ptr<T, Tag, Ref<T, RefTail...>, PtrTail...>;
+};
+
+// Rebind `thrust::pointer`-like things with `thrust::reference`-like references
+// and templated derived types.
+template <template <typename, typename, typename, typename...> class Ptr,
+          typename OldT,
+          typename Tag,
+          template <typename...> class Ref,
+          typename... RefTail,
+          template <typename...> class DerivedPtr,
+          typename... DerivedPtrTail,
+          typename T>
+struct thrust_pointer_rebind<Ptr<OldT, Tag, Ref<OldT, RefTail...>, DerivedPtr<OldT, DerivedPtrTail...>>, T>
+{
+  //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "1");
+  using type = Ptr<T, Tag, Ref<T, RefTail...>, DerivedPtr<T, DerivedPtrTail...>>;
+};
+
+// Rebind `thrust::pointer`-like things with native reference types.
+template <template <typename, typename, typename, typename...> class Ptr,
+          typename OldT,
+          typename Tag,
+          typename... PtrTail,
+          typename T>
+struct thrust_pointer_rebind<Ptr<OldT, Tag, ::cuda::std::add_lvalue_reference_t<OldT>, PtrTail...>, T>
+{
+  //  static_assert(::cuda::std::is_same<OldT, Tag>::value, "2");
+  using type = Ptr<T, Tag, ::cuda::std::add_lvalue_reference_t<T>, PtrTail...>;
+};
+
+// Rebind `thrust::pointer`-like things with native reference types and templated
+// derived types.
+template <template <typename, typename, typename, typename...> class Ptr,
+          typename OldT,
+          typename Tag,
+          template <typename...> class DerivedPtr,
+          typename... DerivedPtrTail,
+          typename T>
+struct thrust_pointer_rebind<
+  Ptr<OldT, Tag, ::cuda::std::add_lvalue_reference_t<OldT>, DerivedPtr<OldT, DerivedPtrTail...>>,
+  T>
+{
+  //  static_assert(is_same<OldT, Tag>::value, "3");
+  using type = Ptr<T, Tag, ::cuda::std::add_lvalue_reference_t<T>, DerivedPtr<T, DerivedPtrTail...>>;
+};
+} // namespace detail
+
 /*! \} // memory_management
  */
 
 THRUST_NAMESPACE_END
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+// Specialize pointer traits for everything that has the raw_pointer alias
+template <typename Pointer>
+struct pointer_traits<Pointer, void_t<typename Pointer::raw_pointer>>
+{
+  using pointer         = Pointer;
+  using element_type    = remove_pointer_t<typename Pointer::raw_pointer>;
+  using difference_type = ptrdiff_t;
+
+  template <typename U>
+  struct rebind
+  {
+    using other = typename THRUST_NS_QUALIFIER::detail::thrust_pointer_rebind<pointer, U>::type;
+  };
+
+  // Backwards compatability with thrust::detail::pointer_traits
+  using raw_pointer = typename pointer::raw_pointer;
+
+  // Thrust historically provided a non-standard pointer_to for pointer<void>
+  template <class T, enable_if_t<(is_void_v<element_type> || is_same_v<T, element_type>), int> = 0>
+  [[nodiscard]] _CCCL_API inline static pointer pointer_to(T& r) noexcept(noexcept(::cuda::std::addressof(r)))
+  {
+    return static_cast<element_type*>(::cuda::std::addressof(r));
+  }
+
+  //! @brief Retrieve the address of the element pointed at by an thrust pointer
+  //! @param iter A thrust::pointer
+  //! @return A pointer to the element pointed to by the thrust pointer
+  [[nodiscard]] _CCCL_API static constexpr raw_pointer to_address(const pointer iter) noexcept
+  {
+    return iter.get();
+  }
+
+  //! For backwards compatability with old pointer traits
+  [[nodiscard]] _CCCL_API static constexpr raw_pointer get(const pointer iter) noexcept
+  {
+    return iter.get();
+  }
+};
+_CCCL_END_NAMESPACE_CUDA_STD
