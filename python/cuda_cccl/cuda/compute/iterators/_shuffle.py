@@ -131,10 +131,6 @@ class ShuffleIterator(IteratorBase):
     def _make_output_deref_op(self) -> Op | None:
         return None
 
-    @property
-    def kind(self):
-        return ("ShuffleIterator",)
-
     def __add__(self, offset: int) -> "ShuffleIterator":
         return ShuffleIterator(
             self._num_items,
