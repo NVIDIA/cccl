@@ -168,7 +168,7 @@ struct TestKernel
   }
 };
 
-C2H_TEST("Hierarchy groups", "[hierarchy]")
+C2H_TEST("This hierarchy groups", "[hierarchy][this_group]")
 {
   const auto device = cuda::devices[0];
 
@@ -207,3 +207,57 @@ static_assert(!cudax::hierarchy_group<InvalidGroup1>);
 static_assert(!cudax::hierarchy_group<InvalidGroup2>);
 static_assert(!cudax::hierarchy_group<InvalidGroup3>);
 static_assert(cudax::hierarchy_group<ValidGroup>);
+
+struct TestKernel2
+{
+  template <class Config>
+  __device__ void operator()(const Config& config)
+  {
+    cudax::thread_group even_or_odd_threads_in_warp{
+      cuda::warp,
+      [](auto rank) {
+        return rank % 2 == 0;
+      },
+      config};
+    even_or_odd_threads_in_warp.sync();
+
+    CUDAX_REQUIRE(even_or_odd_threads_in_warp.is_part_of(cuda::gpu_thread));
+    CUDAX_REQUIRE(even_or_odd_threads_in_warp.count(cuda::warp) == 2);
+    CUDAX_REQUIRE(even_or_odd_threads_in_warp.rank(cuda::warp) == (cuda::gpu_thread.rank(cuda::warp) % 2 == 0));
+
+    cudax::thread_group even_threads_in_warp{
+      cuda::warp,
+      [](auto rank) {
+        return (rank % 2 == 0) ? cuda::std::optional{0} : cuda::std::nullopt;
+      },
+      config};
+    even_threads_in_warp.sync();
+
+    CUDAX_REQUIRE(even_threads_in_warp.is_part_of(cuda::gpu_thread) == (cuda::gpu_thread.rank(cuda::warp) % 2 == 0));
+    CUDAX_REQUIRE(even_threads_in_warp.count(cuda::warp) == 1);
+    if (even_threads_in_warp.is_part_of(cuda::gpu_thread))
+    {
+      CUDAX_REQUIRE(even_threads_in_warp.rank(cuda::warp) == 0);
+    }
+
+    cudax::thread_group grouped_threads_in_warp{cuda::warp, cudax::group_by<4>, config};
+    grouped_threads_in_warp.sync();
+
+    CUDAX_REQUIRE(grouped_threads_in_warp.is_part_of(cuda::gpu_thread));
+    CUDAX_REQUIRE(grouped_threads_in_warp.count(cuda::warp) == 8);
+    CUDAX_REQUIRE(grouped_threads_in_warp.rank(cuda::warp) == cuda::gpu_thread.rank(cuda::warp) / 4);
+  }
+};
+
+C2H_TEST("Generic hierarchy groups", "[hierarchy][generic_group]")
+{
+  const auto device = cuda::devices[0];
+
+  const cuda::stream stream{device};
+
+  const auto config = cuda::make_config(cuda::grid_dims<2>(), cuda::block_dims<32>(), cuda::cooperative_launch{});
+
+  cuda::launch(stream, config, TestKernel2{});
+
+  stream.sync();
+}
