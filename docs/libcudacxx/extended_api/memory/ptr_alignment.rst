@@ -10,7 +10,10 @@ Defined in the header ``<cuda/memory>``.
    namespace cuda {
 
    [[nodiscard]] __host__ __device__ inline
-   size_t ptr_alignment(const void* ptr, size_t max_alignment = 0) noexcept;
+   size_t ptr_alignment(const void* ptr) noexcept;
+
+   [[nodiscard]] __host__ __device__ inline
+   size_t ptr_alignment(const void* ptr, size_t max_alignment) noexcept;
 
    } // namespace cuda
 
@@ -20,7 +23,7 @@ optionally capped by ``max_alignment``.
 **Parameters**
 
 - ``ptr``: The pointer.
-- ``max_alignment``: The maximum alignment to consider. A value of ``0`` (default) means no cap is applied.
+- ``max_alignment``: The maximum alignment to consider.
 
 **Return value**
 
@@ -29,7 +32,7 @@ optionally capped by ``max_alignment``.
 **Constraints**
 
 - ``ptr`` must not be null.
-- ``max_alignment`` must be ``0`` or a power of two.
+- ``max_alignment`` must be a power of two.
 
 Example
 -------
