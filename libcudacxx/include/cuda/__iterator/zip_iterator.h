@@ -65,9 +65,6 @@ using __zv_iter_category_base =
                              __zv_iter_category_base_tag,
                              __zv_iter_category_base_none>;
 
-//! @addtogroup iterators
-//! @{
-
 //! @brief @c zip_iterator is an iterator which represents a @c tuple of iterators. This iterator is useful for creating
 //! a virtual array of structures while achieving the same performance and bandwidth as the structure of arrays idiom.
 //! @c zip_iterator also facilitates kernel fusion by providing a convenient means of amortizing the execution of the
@@ -516,14 +513,17 @@ public:
   }
 };
 
+#ifndef _CCCL_DOXYGEN_INVOKED
 template <class... _Iterators>
 _CCCL_HOST_DEVICE zip_iterator(::cuda::std::tuple<_Iterators...>) -> zip_iterator<_Iterators...>;
 
 template <class... _Iterators>
 _CCCL_HOST_DEVICE zip_iterator(_Iterators...) -> zip_iterator<_Iterators...>;
+#endif // _CCCL_DOXYGEN_INVOKED
 
 //! @brief Creates a @c zip_iterator from a tuple of iterators.
 //! @param __t The tuple of iterators to wrap
+//! @relates zip_iterator
 template <typename... Iterators>
 _CCCL_API constexpr zip_iterator<Iterators...> make_zip_iterator(::cuda::std::tuple<Iterators...> __t)
 {
@@ -532,6 +532,7 @@ _CCCL_API constexpr zip_iterator<Iterators...> make_zip_iterator(::cuda::std::tu
 
 //! @brief Creates a @c zip_iterator from a variadic number of iterators.
 //! @param __iters The iterators to wrap
+//! @relates zip_iterator
 template <typename... Iterators>
 _CCCL_API constexpr zip_iterator<Iterators...> make_zip_iterator(Iterators... __iters)
 {

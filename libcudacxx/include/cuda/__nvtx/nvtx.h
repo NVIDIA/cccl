@@ -75,18 +75,40 @@
        // (!_CCCL_COMPILER(NVHPC)) && !_CCCL_COMPILER(NVRTC)
 
 #if _CCCL_HAS_NVTX3()
-#  include <cuda/std/optional>
-
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-namespace detail
-{
-struct NVTXCCCLDomain
+struct __nvtx_cccl_domain
 {
   static constexpr const char* name{"CCCL"};
 };
-} // namespace detail
+
+using __nvtx_cccl_range = ::nvtx3::v1::scoped_range_in<__nvtx_cccl_domain>;
+
+// this type ensures that no NVTX range code is emitted in device code
+struct __nvtx_cccl_optional_range_host_only
+{
+  bool __engaged = false;
+  alignas(__nvtx_cccl_range) unsigned char __storage[sizeof(__nvtx_cccl_range)];
+
+  __nvtx_cccl_optional_range_host_only() = default;
+
+  _CCCL_HOST_API void __start(const ::nvtx3::v1::event_attributes& __attributes)
+  {
+    ::new (__storage) __nvtx_cccl_range(__attributes);
+    __engaged = true;
+  }
+
+  _CCCL_API ~__nvtx_cccl_optional_range_host_only()
+  {
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   if (__engaged)
+                   {
+                     reinterpret_cast<__nvtx_cccl_range*>(__storage)->~__nvtx_cccl_range();
+                   }
+                 }));
+  }
+};
 _CCCL_END_NAMESPACE_CUDA
 
 // Hook for the NestedNVTXRangeGuard from the unit tests
@@ -97,19 +119,20 @@ _CCCL_END_NAMESPACE_CUDA
 #  if _CCCL_HOST_COMPILATION()
 // Conditionally inserts a NVTX range starting here until the end of the current function scope in host code. Does
 // nothing in device code.
-// The optional is needed to defer the construction of an NVTX range (host-only code) and message string registration
-// into a dispatch region running only on the host, while preserving the semantic scope where the range is declared.
-#    define _CCCL_NVTX_RANGE_SCOPE_IF(condition, name)                                                                 \
-      _CCCL_BEFORE_NVTX_RANGE_SCOPE(name)                                                                              \
-      ::cuda::std::optional<::nvtx3::v1::scoped_range_in<::cuda::detail::NVTXCCCLDomain>> __cuda_nvtx3_range;          \
-      NV_IF_TARGET(                                                                                                    \
-        NV_IS_HOST, ({                                                                                                 \
-          static const ::nvtx3::v1::registered_string_in<::cuda::detail::NVTXCCCLDomain> __cuda_nvtx3_func_name{name}; \
-          static const ::nvtx3::v1::event_attributes __cuda_nvtx3_func_attr{__cuda_nvtx3_func_name};                   \
-          if (condition)                                                                                               \
-          {                                                                                                            \
-            __cuda_nvtx3_range.emplace(__cuda_nvtx3_func_attr);                                                        \
-          }                                                                                                            \
+// The __nvtx_cccl_optional_range_host_only type (a simplified optional<T>) is needed to defer the construction of the
+// NVTX range and message string registration (static variables) into a region running only on the host, while
+// preserving the semantic scope where the range is declared.
+#    define _CCCL_NVTX_RANGE_SCOPE_IF(condition, name)                                                             \
+      _CCCL_BEFORE_NVTX_RANGE_SCOPE(name)                                                                          \
+      ::cuda::__nvtx_cccl_optional_range_host_only __cuda_nvtx3_range;                                             \
+      NV_IF_TARGET(                                                                                                \
+        NV_IS_HOST, ({                                                                                             \
+          static const ::nvtx3::v1::registered_string_in<::cuda::__nvtx_cccl_domain> __cuda_nvtx3_func_name{name}; \
+          static const ::nvtx3::v1::event_attributes __cuda_nvtx3_func_attr{__cuda_nvtx3_func_name};               \
+          if (condition)                                                                                           \
+          {                                                                                                        \
+            __cuda_nvtx3_range.__start(__cuda_nvtx3_func_attr);                                                    \
+          }                                                                                                        \
         }))
 #  else // ^^^ _CCCL_HOST_COMPILATION() ^^^ / vvv !_CCCL_HOST_COMPILATION() vvv
 #    define _CCCL_NVTX_RANGE_SCOPE_IF(condition, name)
