@@ -79,11 +79,11 @@ class ShuffleIterator(IteratorBase):
             {_SHUFFLE_STATE_STRUCT}
 
             extern "C" __device__ void {symbol}(void* state, void* offset) {{
-                auto* s = static_cast<ShuffleState*>(state);
-                auto dist = *static_cast<uint64_t*>(offset);
-                s->current_index += static_cast<int64_t>(dist);
+                auto s = static_cast<ShuffleState*>(state);
+                auto dist = *static_cast<int64_t*>(offset);
+                s->current_index += dist;
             }}
-        """).strip()
+        """)
 
         return Op(
             operator_type=OpKind.STATELESS,
@@ -119,7 +119,7 @@ class ShuffleIterator(IteratorBase):
                 *static_cast<int64_t*>(result) = __shuffle_apply(
                     s->num_items, s->seed, static_cast<uint64_t>(s->current_index));
             }}
-        """).strip()
+        """)
 
         return Op(
             operator_type=OpKind.STATELESS,
