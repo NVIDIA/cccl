@@ -9,7 +9,6 @@
 #include <thrust/for_each.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/scan.h>
@@ -399,14 +398,14 @@ void generator_t::generate(
     case bit_entropy::_1_000: {
       const double* uniform_distribution = dist.new_uniform_distribution(seed, span.size());
       thrust::for_each_n(exec,
-                         thrust::make_counting_iterator(std::size_t{0}),
+                         cuda::make_counting_iterator(std::size_t{0}),
                          span.size(),
                          set_real_t{min, max, span.data(), uniform_distribution});
       ++seed;
 
       uniform_distribution = dist.new_uniform_distribution(seed, span.size());
       thrust::for_each_n(exec,
-                         thrust::make_counting_iterator(std::size_t{0}),
+                         cuda::make_counting_iterator(std::size_t{0}),
                          span.size(),
                          set_imag_t{min, max, span.data(), uniform_distribution});
       ++seed;
@@ -424,14 +423,14 @@ void generator_t::generate(
     default: {
       const double* uniform_distribution = dist.new_uniform_distribution(seed, span.size());
       thrust::for_each_n(exec,
-                         thrust::make_counting_iterator(std::size_t{0}),
+                         cuda::make_counting_iterator(std::size_t{0}),
                          span.size(),
                          set_real_t{min, max, span.data(), uniform_distribution});
       ++seed;
 
       uniform_distribution = dist.new_uniform_distribution(seed, span.size());
       thrust::for_each_n(exec,
-                         thrust::make_counting_iterator(std::size_t{0}),
+                         cuda::make_counting_iterator(std::size_t{0}),
                          span.size(),
                          set_imag_t{min, max, span.data(), uniform_distribution});
       ++seed;
@@ -608,7 +607,7 @@ struct offset_to_size_t
 template <typename T>
 void gen_key_segments(executor exec, seed_t, cuda::std::span<T> keys, cuda::std::span<std::size_t> segment_offsets)
 {
-  thrust::counting_iterator<int> iota(0);
+  cuda::counting_iterator<int> iota(0);
   offset_to_iterator_t<T> dst_transform_op{keys.data()};
 
   const std::size_t total_segments = segment_offsets.size() - 1;

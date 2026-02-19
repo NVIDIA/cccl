@@ -23,10 +23,10 @@
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__iterator/counting_iterator.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__iterator/reverse_iterator.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -293,11 +293,11 @@ template <
     EndOffsetIteratorT,
     OffsetT>,
   typename PartitionPolicyHub = detail::three_way_partition::policy_hub<
-    cub::detail::it_value_t<THRUST_NS_QUALIFIER::counting_iterator<cub::detail::segmented_sort::local_segment_index_t>>,
+    cub::detail::it_value_t<::cuda::counting_iterator<cub::detail::segmented_sort::local_segment_index_t>>,
     detail::three_way_partition::per_partition_offset_t>,
   typename PartitionKernelSource = detail::three_way_partition::DeviceThreeWayPartitionKernelSource<
     typename PartitionPolicyHub::MaxPolicy,
-    THRUST_NS_QUALIFIER::counting_iterator<cub::detail::segmented_sort::local_segment_index_t>,
+    ::cuda::counting_iterator<cub::detail::segmented_sort::local_segment_index_t>,
     cub::detail::segmented_sort::local_segment_index_t*,
     cub::detail::segmented_sort::local_segment_index_t*,
     ::cuda::std::reverse_iterator<cub::detail::segmented_sort::local_segment_index_t*>,
@@ -455,7 +455,7 @@ struct DispatchSegmentedSort
       using ChooseOffsetT                = detail::choose_signed_offset<global_segment_offset_t>;
       using PartitionOffsetT             = typename ChooseOffsetT::type;
       using DispatchThreeWayPartitionIfT = cub::DispatchThreeWayPartitionIf<
-        THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>,
+        ::cuda::counting_iterator<local_segment_index_t>,
         decltype(large_and_medium_segments_indices.get()),
         decltype(small_segments_indices.get()),
         decltype(medium_indices_iterator),
@@ -477,7 +477,7 @@ struct DispatchSegmentedSort
       DispatchThreeWayPartitionIfT::Dispatch(
         nullptr,
         three_way_partition_temp_storage_bytes,
-        THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>(0),
+        ::cuda::counting_iterator<local_segment_index_t>(0),
         large_and_medium_segments_indices.get(),
         small_segments_indices.get(),
         medium_indices_iterator,
@@ -730,7 +730,7 @@ private:
       using ChooseOffsetT                = detail::choose_signed_offset<global_segment_offset_t>;
       using PartitionOffsetT             = typename ChooseOffsetT::type;
       using DispatchThreeWayPartitionIfT = cub::DispatchThreeWayPartitionIf<
-        THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>,
+        ::cuda::counting_iterator<local_segment_index_t>,
         decltype(large_and_medium_segments_indices.get()),
         decltype(small_segments_indices.get()),
         decltype(medium_indices_iterator),
@@ -752,7 +752,7 @@ private:
       if (const auto error = DispatchThreeWayPartitionIfT::Dispatch(
             device_partition_temp_storage.get(),
             three_way_partition_temp_storage_bytes,
-            THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>(0),
+            ::cuda::counting_iterator<local_segment_index_t>(0),
             large_and_medium_segments_indices.get(),
             small_segments_indices.get(),
             medium_indices_iterator,

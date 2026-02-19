@@ -5,6 +5,8 @@
 #include <thrust/inner_product.h>
 #include <thrust/iterator/retag.h>
 
+#include <cuda/iterator>
+
 #include <unittest/unittest.h>
 
 template <class Vector>
@@ -109,10 +111,19 @@ struct only_set_when_both_expected
   }
 };
 
+#if _CCCL_HAS_INT128()
+// gcc does not implement streaming operator for __int128, but we never use it anyhow
+inline std::ostream& operator<<(std::ostream& out, __int128_t x)
+{
+  out << static_cast<ptrdiff_t>(x);
+  return out;
+}
+#endif // _CCCL_HAS_INT128()
+
 void TestInnerProductWithBigIndexesHelper(int magnitude)
 {
-  thrust::counting_iterator<long long> begin(1);
-  thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
+  cuda::counting_iterator<long long> begin(1);
+  cuda::counting_iterator<long long> end = begin + (1ll << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
