@@ -126,7 +126,7 @@ _CCCL_HOST void sort_modes_by_stride(::cuda::std::array<int, _Np>& shape, ::cuda
 
 //! @brief Check whether two preprocessed layouts are effectively identical.
 //!
-//! Both layouts must have been coalesced and sorted before comparison.
+//! Both layouts must have been sorted before comparison.
 //! Modes with shape==1 are skipped (they carry no data).
 //!
 //! @return true if both layouts have the same effective __shapes and __strides

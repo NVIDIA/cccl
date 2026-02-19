@@ -118,16 +118,7 @@ C2H_TEST("copy_bytes 2D layout transposition", "[copy_bytes]")
   auto src_layout = make_layout(shape, make_stride(cols, 1));
   auto dst_layout = make_layout(shape, make_stride(1, rows));
 
-  SECTION("naive")
-  {
-    cudax::copy_bytes_naive(
-      thrust::raw_pointer_cast(d_src.data()),
-      src_layout,
-      thrust::raw_pointer_cast(d_dst.data()),
-      dst_layout,
-      stream);
-    stream.sync();
-
+  auto verify = [&]() {
     thrust::host_vector<T> h_expected(n);
     for (int r = 0; r < rows; ++r)
     {
@@ -137,6 +128,29 @@ C2H_TEST("copy_bytes 2D layout transposition", "[copy_bytes]")
       }
     }
     CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == h_expected);
+  };
+
+  SECTION("naive")
+  {
+    cudax::copy_bytes_naive(
+      thrust::raw_pointer_cast(d_src.data()),
+      src_layout,
+      thrust::raw_pointer_cast(d_dst.data()),
+      dst_layout,
+      stream);
+    stream.sync();
+    verify();
+  }
+  SECTION("registers")
+  {
+    cudax::copy_bytes_registers(
+      thrust::raw_pointer_cast(d_src.data()),
+      src_layout,
+      thrust::raw_pointer_cast(d_dst.data()),
+      dst_layout,
+      stream);
+    stream.sync();
+    verify();
   }
 }
 
@@ -247,16 +261,7 @@ C2H_TEST("copy_bytes 2D transposition non-tile-divisible", "[copy_bytes]")
   auto src_layout = make_layout(shape, make_stride(cols, 1));
   auto dst_layout = make_layout(shape, make_stride(1, rows));
 
-  SECTION("naive")
-  {
-    cudax::copy_bytes_naive(
-      thrust::raw_pointer_cast(d_src.data()),
-      src_layout,
-      thrust::raw_pointer_cast(d_dst.data()),
-      dst_layout,
-      stream);
-    stream.sync();
-
+  auto verify = [&]() {
     thrust::host_vector<T> h_expected(n);
     for (int r = 0; r < rows; ++r)
     {
@@ -266,6 +271,29 @@ C2H_TEST("copy_bytes 2D transposition non-tile-divisible", "[copy_bytes]")
       }
     }
     CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == h_expected);
+  };
+
+  SECTION("naive")
+  {
+    cudax::copy_bytes_naive(
+      thrust::raw_pointer_cast(d_src.data()),
+      src_layout,
+      thrust::raw_pointer_cast(d_dst.data()),
+      dst_layout,
+      stream);
+    stream.sync();
+    verify();
+  }
+  SECTION("registers")
+  {
+    cudax::copy_bytes_registers(
+      thrust::raw_pointer_cast(d_src.data()),
+      src_layout,
+      thrust::raw_pointer_cast(d_dst.data()),
+      dst_layout,
+      stream);
+    stream.sync();
+    verify();
   }
 }
 
@@ -296,16 +324,7 @@ C2H_TEST("copy_bytes 2D large transposition", "[copy_bytes]")
   auto src_layout = make_layout(shape, make_stride(cols, 1));
   auto dst_layout = make_layout(shape, make_stride(1, rows));
 
-  SECTION("naive")
-  {
-    cudax::copy_bytes_naive(
-      thrust::raw_pointer_cast(d_src.data()),
-      src_layout,
-      thrust::raw_pointer_cast(d_dst.data()),
-      dst_layout,
-      stream);
-    stream.sync();
-
+  auto verify = [&]() {
     thrust::host_vector<T> h_expected(n);
     for (int r = 0; r < rows; ++r)
     {
@@ -315,6 +334,29 @@ C2H_TEST("copy_bytes 2D large transposition", "[copy_bytes]")
       }
     }
     CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == h_expected);
+  };
+
+  SECTION("naive")
+  {
+    cudax::copy_bytes_naive(
+      thrust::raw_pointer_cast(d_src.data()),
+      src_layout,
+      thrust::raw_pointer_cast(d_dst.data()),
+      dst_layout,
+      stream);
+    stream.sync();
+    verify();
+  }
+  SECTION("registers")
+  {
+    cudax::copy_bytes_registers(
+      thrust::raw_pointer_cast(d_src.data()),
+      src_layout,
+      thrust::raw_pointer_cast(d_dst.data()),
+      dst_layout,
+      stream);
+    stream.sync();
+    verify();
   }
 }
 
