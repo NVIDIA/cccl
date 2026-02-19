@@ -7,13 +7,21 @@
   ``cuda.coop`` is in public beta.
   The API is subject to change without notice.
 
-.. automodule:: cuda.coop.warp
+For conceptual guides and best practices, see :doc:`coop`.
+
+Block Primitives
+----------------
+
+.. automodule:: cuda.coop.block
   :members:
   :undoc-members:
   :imported-members:
 
 
-.. automodule:: cuda.coop.block
+Warp Primitives
+---------------
+
+.. automodule:: cuda.coop.warp
   :members:
   :undoc-members:
   :imported-members:

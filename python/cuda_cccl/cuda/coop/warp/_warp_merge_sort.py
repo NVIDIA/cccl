@@ -4,95 +4,192 @@
 
 import numba
 
-from .._common import make_binary_tempfile
+from .._common import normalize_dtype_param
 from .._types import (
     Algorithm,
+    BasePrimitive,
     Constant,
     Dependency,
     DependentArray,
     DependentPythonOperator,
     Invocable,
-    Pointer,
     TemplateParameter,
+    TempStoragePointer,
     numba_type_to_wrapper,
 )
 
 
-def make_merge_sort_keys(
-    dtype, items_per_thread, compare_op, threads_in_warp=32, methods=None
-):
-    """
-    Creates a warp-wide merge sort primitive over a
-    :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
+class merge_sort_keys(BasePrimitive):
+    is_one_shot = True
 
-    Example:
-        The code snippet below illustrates a sort of 128 integer keys that
-        are partitioned in a
-        :ref:`blocked arrangement <flexible-data-arrangement>` across a
-        warp of 32 threads where each thread owns 4 consecutive keys.
+    def __init__(
+        self,
+        dtype,
+        items_per_thread,
+        compare_op,
+        value_dtype=None,
+        threads_in_warp=32,
+        methods=None,
+        unique_id=None,
+        temp_storage=None,
+        node=None,
+    ):
+        """
+        Performs a warp-wide merge sort over blocked keys.
 
-        The following snippet shows how to invoke the returned
-        ``warp_merge_sort`` primitive:
+        Example:
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_merge_sort_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_merge_sort_api.py
-            :language: python
-            :dedent:
-            :start-after: example-begin merge-sort
-            :end-before: example-end merge-sort
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_merge_sort_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin merge-sort
+                :end-before: example-end merge-sort
+        """
+        self.node = node
+        self.temp_storage = temp_storage
+        self.dtype = normalize_dtype_param(dtype)
+        self.value_dtype = (
+            normalize_dtype_param(value_dtype) if value_dtype is not None else None
+        )
+        self.items_per_thread = items_per_thread
+        self.compare_op = compare_op
+        self.threads_in_warp = threads_in_warp
+        self.methods = methods
 
-        Suppose the set of input ``thread_keys`` across the warp of
-        threads is ``{ [0, 1, 2, 3], [4, 5, 6, 7], ..., [124, 125, 126, 127] }``.
-        The corresponding output ``thread_keys`` in those threads will be
-        ``{ [127, 126, 125, 124], [123, 122, 121, 120], ..., [3, 2, 1, 0] }``.
-
-    Args:
-        dtype: Numba data type of the keys to be sorted
-        threads_in_warp: The number of threads in a warp
-        items_per_thread: The number of items each thread owns
-        compare_op: Comparison function object. Returns true if the first
-            argument is ordered before the second.
-
-    Returns:
-        A callable object that can be linked to and invoked from a CUDA
-        kernel
-    """
-    template = Algorithm(
-        "WarpMergeSort",
-        "Sort",
-        "warp_merge_sort",
-        ["cub/warp/warp_merge_sort.cuh"],
-        [
-            TemplateParameter("KeyT"),
-            TemplateParameter("ITEMS_PER_THREAD"),
-            TemplateParameter("VIRTUAL_WARP_THREADS"),
-        ],
-        [
-            [
-                Pointer(numba.uint8),
-                DependentArray(Dependency("KeyT"), Dependency("ITEMS_PER_THREAD")),
-                DependentPythonOperator(
-                    Constant(numba.int8),
-                    [Dependency("KeyT"), Dependency("KeyT")],
-                    Dependency("Op"),
+        method = [
+            DependentArray(Dependency("KeyT"), Dependency("ITEMS_PER_THREAD")),
+        ]
+        if temp_storage is not None:
+            method.insert(
+                0,
+                TempStoragePointer(
+                    numba.types.uint8,
+                    is_array_pointer=True,
+                    name="temp_storage",
                 ),
-            ]
-        ],
-        type_definitions=[numba_type_to_wrapper(dtype, methods=methods)],
-    )
-    specialization = template.specialize(
-        {
-            "KeyT": dtype,
-            "VIRTUAL_WARP_THREADS": threads_in_warp,
-            "ITEMS_PER_THREAD": items_per_thread,
-            "Op": compare_op,
-        }
-    )
-    return Invocable(
-        temp_files=[
-            make_binary_tempfile(ltoir, ".ltoir")
-            for ltoir in specialization.get_lto_ir(threads=threads_in_warp)
-        ],
-        temp_storage_bytes=specialization.temp_storage_bytes,
-        temp_storage_alignment=specialization.temp_storage_alignment,
-        algorithm=specialization,
-    )
+            )
+        if self.value_dtype is not None:
+            method.append(
+                DependentArray(Dependency("ValueT"), Dependency("ITEMS_PER_THREAD"))
+            )
+        method.append(
+            DependentPythonOperator(
+                Constant(numba.int8),
+                [Dependency("KeyT"), Dependency("KeyT")],
+                Dependency("Op"),
+                name="compare_op",
+            )
+        )
+
+        template = Algorithm(
+            "WarpMergeSort",
+            "Sort",
+            "warp_merge_sort",
+            ["cub/warp/warp_merge_sort.cuh"],
+            [
+                TemplateParameter("KeyT"),
+                TemplateParameter("ITEMS_PER_THREAD"),
+                TemplateParameter("VIRTUAL_WARP_THREADS"),
+                TemplateParameter("ValueT"),
+            ],
+            [method],
+            self,
+            type_definitions=[numba_type_to_wrapper(self.dtype, methods=methods)]
+            if methods is not None
+            else None,
+            threads=threads_in_warp,
+            unique_id=unique_id,
+        )
+        self.algorithm = template
+        self.specialization = template.specialize(
+            {
+                "KeyT": self.dtype,
+                "VIRTUAL_WARP_THREADS": threads_in_warp,
+                "ITEMS_PER_THREAD": items_per_thread,
+                "ValueT": self.value_dtype or "::cub::NullType",
+                "Op": compare_op,
+            }
+        )
+
+    @classmethod
+    def create(
+        cls,
+        dtype,
+        items_per_thread,
+        compare_op,
+        value_dtype=None,
+        threads_in_warp=32,
+        methods=None,
+    ):
+        algo = cls(
+            dtype=dtype,
+            items_per_thread=items_per_thread,
+            compare_op=compare_op,
+            value_dtype=value_dtype,
+            threads_in_warp=threads_in_warp,
+            methods=methods,
+        )
+        specialization = algo.specialization
+        return Invocable(
+            ltoir_files=specialization.get_lto_ir(threads=threads_in_warp),
+            temp_storage_bytes=specialization.temp_storage_bytes,
+            temp_storage_alignment=specialization.temp_storage_alignment,
+            algorithm=specialization,
+        )
+
+
+class merge_sort_pairs(merge_sort_keys):
+    def __init__(
+        self,
+        keys,
+        values,
+        items_per_thread,
+        compare_op,
+        threads_in_warp=32,
+        methods=None,
+        unique_id=None,
+        temp_storage=None,
+        node=None,
+    ):
+        super().__init__(
+            dtype=keys,
+            items_per_thread=items_per_thread,
+            compare_op=compare_op,
+            value_dtype=values,
+            threads_in_warp=threads_in_warp,
+            methods=methods,
+            unique_id=unique_id,
+            temp_storage=temp_storage,
+            node=node,
+        )
+
+    @classmethod
+    def create(
+        cls,
+        keys,
+        values,
+        items_per_thread,
+        compare_op,
+        threads_in_warp=32,
+        methods=None,
+    ):
+        algo = cls(
+            keys=keys,
+            values=values,
+            items_per_thread=items_per_thread,
+            compare_op=compare_op,
+            threads_in_warp=threads_in_warp,
+            methods=methods,
+        )
+        specialization = algo.specialization
+        return Invocable(
+            ltoir_files=specialization.get_lto_ir(threads=threads_in_warp),
+            temp_storage_bytes=specialization.temp_storage_bytes,
+            temp_storage_alignment=specialization.temp_storage_alignment,
+            algorithm=specialization,
+        )
