@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/pow2.h>
 #include <cuda/__fwd/hierarchy.h>
 #include <cuda/__utility/static_for.h>
 #include <cuda/std/__algorithm/min.h>
@@ -37,6 +36,8 @@
 #include <cuda/std/__cccl/prologue.h>
 #include <cute/layout.hpp>
 #include <cute/tensor.hpp>
+//
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -76,23 +77,23 @@ inline constexpr int __config_block_threads =
 template <typename>
 struct __extents_product;
 
-template <typename IndexType, ::cuda::std::size_t... Es>
-struct __extents_product<::cuda::std::extents<IndexType, Es...>>
+template <class _IndexType, ::cuda::std::size_t... _Es>
+struct __extents_product<::cuda::std::extents<_IndexType, _Es...>>
 {
-  static constexpr int value = static_cast<int>((Es * ...));
+  static constexpr int value = static_cast<int>((_Es * ...));
 };
 
 //! @brief Extract the compile-time block thread count from a kernel_config type.
 //!
-//! Uses the hierarchy type embedded in Config to find the block-level descriptor,
+//! Uses the hierarchy type embedded in _Config to find the block-level descriptor,
 //! then computes the product of its static extents.
-template <typename Config>
+template <class _Config>
 inline constexpr int __config_block_threads =
-  __extents_product<typename Config::hierarchy_type::template level_desc_type<::cuda::block_level>::extents_type>::value;
+  __extents_product<typename _Config::hierarchy_type::template level_desc_type<::cuda::block_level>::extents_type>::value;
 
 //! @brief Merge adjacent contiguous modes in-place.
 //!
-//! When shape[__i] * stride[__i] == stride[__i+1], modes __i and __i+1 are contiguous
+//! When shape[i] * stride[i] == stride[i+1], modes i and i+1 are contiguous
 //! and can be merged into a single mode. Consumed modes are set to shape=1, stride=0.
 //!
 //! @param[in,out] __shapes Array of mode shapes (modified in-place)
@@ -337,48 +338,120 @@ template <::cuda::std::size_t _Np>
 
 //! @brief Compute the maximum vectorization width in bytes for a single tensor.
 //!
-//! Considers pointer alignment, all stride alignments, and shape divisibility.
-//! The result is the largest power-of-two byte width (up to 16) that is safe
-//! for recast<VecType>.
+//! For recast<VecType> to be valid:
+//! - Non-contiguous strides (|stride| > 1) must be divisible by vec_elems.
+//! - The stride-1 (contiguous) mode's shape must be divisible by vec_elems.
+//! - The pointer must be aligned to vec_bytes.
 //!
-//! @tparam _Tp Element type (sizeof(_Tp) determines the element width)
-//! @tparam _Np Array capacity (rank is deduced as _Np)
-//! @param __ptr       Pointer to tensor data (used for alignment check)
-//! @param shape     Array of mode __shapes (after coalescing/sorting)
-//! @param stride    Array of mode __strides (after coalescing/sorting)
+//! @tparam _Tp           Element type (sizeof(_Tp) determines the element width)
+//! @tparam _ShapeIndex   Shape array element type
+//! @tparam _StrideIndex  Stride array element type
+//! @tparam _Np           Array capacity
+//! @param __ptr          Pointer to tensor data (used for alignment check)
+//! @param __shapes       Array of mode shapes (after sorting)
+//! @param __strides      Array of mode strides (after sorting)
 //! @return Maximum safe vectorization width in bytes
-template <typename _Tp, typename _ShapeIndex, typename _StrideIndex, ::cuda::std::size_t _Np>
-[[nodiscard]] _CCCL_HOST ::cuda::std::size_t __max_vector_size(
+template <class _Tp, class _ShapeIndex, class _StrideIndex, ::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_HOST ::cuda::std::size_t __max_vector_size_bytes(
   const _Tp* __ptr,
   const ::cuda::std::array<_ShapeIndex, _Np>& __shapes,
   const ::cuda::std::array<_StrideIndex, _Np>& __strides) noexcept
 {
   using ::cuda::std::size_t;
-  size_t __vector_bytes = ptr_alignment(__ptr);
+  size_t __ptr_alignment = ptr_alignment(__ptr);
   for (size_t __i = 0; __i < _Np; ++__i)
   {
-    if (__shapes[__i] > 1)
+    if (__shapes[__i] > 1 && (::cuda::std::abs(__strides[__i]) != 1))
     {
       const auto __stride_bytes = static_cast<size_t>(::cuda::std::abs(__strides[__i])) * sizeof(_Tp);
-      __vector_bytes            = ::cuda::std::gcd(__vector_bytes, __stride_bytes);
+      __ptr_alignment           = ::cuda::std::gcd(__ptr_alignment, __stride_bytes);
     }
   }
-  _CCCL_ASSERT(__vector_bytes % sizeof(_Tp) == 0, "Maximum vector size is not a multiple of the element size");
-  size_t __items_per_vector = __vector_bytes / sizeof(_Tp);
-  for (const auto __shape : __shapes)
+  _CCCL_ASSERT(__ptr_alignment % sizeof(_Tp) == 0, "Maximum vector size is not a multiple of the element size");
+  size_t __items_per_vector = __ptr_alignment / sizeof(_Tp);
+  for (size_t __i = 0; __i < _Np; ++__i)
   {
-    if (__shape > 1)
+    if (__shapes[__i] > 1 && (::cuda::std::abs(__strides[__i]) == 1))
     {
-      __items_per_vector = ::cuda::std::gcd(__items_per_vector, __shape);
+      __items_per_vector = ::cuda::std::gcd(__items_per_vector, static_cast<size_t>(__shapes[__i]));
     }
   }
-  const auto __result_bytes = __items_per_vector * sizeof(_Tp);
-  _CCCL_ASSERT(::cuda::is_power_of_two(__result_bytes), "Maximum vector size is 16 bytes");
+  const auto __vector_bytes           = __items_per_vector * sizeof(_Tp);
   constexpr size_t __max_vector_bytes = 16;
-  return ::cuda::std::min(__result_bytes, __max_vector_bytes);
+  return ::cuda::std::min(__vector_bytes, __max_vector_bytes);
 }
 
-//! @brief Extract __shapes and __strides from a CuTe layout into plain arrays.
+//! @brief Sort modes by src's ascending absolute stride, applying the same permutation to dst strides.
+//!
+//! After sorting, src's stride-1 (fastest-changing) mode is in position 0.
+//! The dst strides are reordered by the same permutation so that corresponding
+//! modes stay paired.
+//!
+//! @param __shapes      Array of mode shapes (shared, reordered in-place)
+//! @param __src_strides Array of src strides (reordered in-place; used as sort key)
+//! @param __dst_strides Array of dst strides (reordered in-place by same permutation)
+//! @param __rank       Number of modes
+template <::cuda::std::size_t _Np>
+_CCCL_HOST void __sort_by_stride_paired(
+  ::cuda::std::array<int, _Np>& __shapes,
+  ::cuda::std::array<int, _Np>& __src_strides,
+  ::cuda::std::array<int, _Np>& __dst_strides,
+  int __rank) noexcept
+{
+  for (int __i = 1; __i < __rank; ++__i)
+  {
+    int __shape      = __shapes[__i];
+    int __src_stride = __src_strides[__i];
+    int __dst_stride = __dst_strides[__i];
+    int __j          = __i - 1;
+    while (__j >= 0 && (::cuda::std::abs(__src_strides[__j]) > ::cuda::std::abs(__src_stride)))
+    {
+      __shapes[__j + 1]      = __shapes[__j];
+      __src_strides[__j + 1] = __src_strides[__j];
+      __dst_strides[__j + 1] = __dst_strides[__j];
+      --__j;
+    }
+    __shapes[__j + 1]      = __shape;
+    __src_strides[__j + 1] = __src_stride;
+    __dst_strides[__j + 1] = __dst_stride;
+  }
+}
+
+//! @brief Compute the contiguous extent from mode 0 upward.
+//!
+//! Starting from mode 0 (which must have |stride| == 1), greedily merges
+//! adjacent modes as long as the accumulated extent equals the next stride.
+//! Returns the product of merged shapes, i.e. the number of logically
+//! consecutive elements that are physically contiguous.
+//!
+//! @param __shapes  Array of mode shapes (sorted by ascending stride)
+//! @param __stride Array of mode strides (sorted by ascending stride)
+//! @param __rank   Number of modes
+//! @return The contiguous extent in elements, or 0 if mode 0 is not stride-1
+template <::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_HOST int __contiguous_extent(
+  const ::cuda::std::array<int, _Np>& __shapes, const ::cuda::std::array<int, _Np>& __stride, int __rank) noexcept
+{
+  if (__rank == 0 || ::cuda::std::abs(__stride[0]) != 1)
+  {
+    return 0;
+  }
+  int __extent = __shapes[0];
+  for (int __i = 1; __i < __rank; ++__i)
+  {
+    if (__extent == __stride[__i])
+    {
+      __extent *= __shapes[__i];
+    }
+    else
+    {
+      break;
+    }
+  }
+  return __extent;
+}
+
+//! @brief Extract shapes and strides from a CuTe layout into plain arrays.
 //!
 //! For dynamic layouts, this extracts runtime values. For static layouts,
 //! it converts compile-time values to runtime integers.
