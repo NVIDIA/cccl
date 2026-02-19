@@ -149,7 +149,7 @@ template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
 _CCCL_API constexpr _SizeT
 __cccl_str_rfind(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos, _SizeT __n) noexcept
 {
-  __pos = ::cuda::std::min(__pos, __sz);
+  __pos = ::cuda::std::__min(__pos, __sz);
   if (__n < __sz - __pos)
   {
     __pos += __n;

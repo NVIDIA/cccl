@@ -254,7 +254,7 @@ public:
   _CCCL_API constexpr void discard(unsigned long long __z) noexcept
   {
     // Advance __j_ until we are at n - 1
-    auto __advance = ::cuda::std::min(__z, static_cast<unsigned long long>(word_count - 1 - __j_));
+    auto __advance = ::cuda::std::__min(__z, static_cast<unsigned long long>(word_count - 1 - __j_));
     __j_ += static_cast<::cuda::std::size_t>(__advance);
     __z -= __advance;
 

@@ -76,7 +76,7 @@ enum class __l2_descriptor_mode_t : uint32_t
   auto __raw_ptr         = ::cuda::std::bit_cast<uintptr_t>(__ptr);
   auto __log2_total_size = ::cuda::ceil_ilog2(__total_bytes);
   // replace with ::cuda::std::add_sat when available PR #3449
-  auto __block_size_enum = static_cast<uint32_t>(::cuda::std::max(__log2_total_size - 19, 0)); // min block size = 4K
+  auto __block_size_enum = static_cast<uint32_t>(::cuda::std::__max(__log2_total_size - 19, 0)); // min block size = 4K
   auto __log2_block_size = 12u + __block_size_enum;
   auto __block_size      = 1u << __log2_block_size;
   auto __block_start     = static_cast<uint32_t>(__raw_ptr >> __log2_block_size); // ptr / block_size
@@ -87,8 +87,8 @@ enum class __l2_descriptor_mode_t : uint32_t
   //       following code:
   // auto __block_count        = (__block_size_enum == 13)
   //                            ? ((__block_end - __block_start <= 127u) ? (__block_end - __block_start) : 1)
-  //                            : ::cuda::std::clamp(__block_end - __block_start, 1u, 127u);
-  auto __block_count        = ::cuda::std::clamp(__block_end - __block_start, 1u, 127u);
+  //                            : ::cuda::std::__clamp(__block_end - __block_start, 1u, 127u);
+  auto __block_count        = ::cuda::std::__clamp(__block_end - __block_start, 1u, 127u);
   auto __l2_cop_off         = ::cuda::std::to_underlying(__secondary);
   auto __l2_cop_on          = ::cuda::std::to_underlying(__primary);
   auto __l2_descriptor_mode = ::cuda::std::to_underlying(__l2_descriptor_mode_t::_Desc_Block_Type);
