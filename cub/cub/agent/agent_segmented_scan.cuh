@@ -322,7 +322,7 @@ public:
             typename InputEndOffsetIteratorT,
             typename OutputBeginOffsetIteratorT,
             ::cuda::std::size_t NumSegments = max_segments_per_block,
-            class = ::cuda::std::enable_if_t<(NumSegments > 1) && (NumSegments != ::cuda::std::dynamic_extent)>>
+            class                           = ::cuda::std::enable_if_t<(NumSegments > 1)>>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_ranges(
     InputBeginOffsetIteratorT inp_idx_begin_it,
     InputEndOffsetIteratorT inp_idx_end_it,
@@ -365,16 +365,14 @@ public:
 
         OffsetT prefix;
         offset_scanner.InclusiveSum(segment_size, prefix, prefix_callback_op);
-        __syncthreads();
 
         if (work_id < n_segments)
         {
           temp_storage.logical_segment_offsets[work_id] = prefix;
         }
+        __syncthreads();
       }
     }
-
-    __syncthreads();
 
     const ::cuda::std::span<OffsetT> cum_sizes{
       temp_storage.logical_segment_offsets, static_cast<::cuda::std::size_t>(n_segments)};
@@ -386,6 +384,7 @@ public:
     using augmented_init_value_t =
       ::cuda::std::conditional_t<has_init, augmented_accum_t, multi_segment_helpers::augmented_value_t<InitValueT, bool>>;
 
+    const multi_segment_helpers::bag_of_segments searcher{cum_sizes};
     augmented_scan_op_t augmented_scan_op{scan_op};
 
     augmented_accum_t exclusive_prefix{};
@@ -415,7 +414,7 @@ public:
         if constexpr (has_init)
         {
           const packer_iv<AccumT, bool, ScanOpT> packer_op{static_cast<AccumT>(initial_value), scan_op};
-          multi_segmented_iterator it_in{d_in, chunk_begin, cum_sizes, inp_idx_begin_it, packer_op, projection_op};
+          multi_segmented_iterator it_in{d_in, chunk_begin, searcher, inp_idx_begin_it, packer_op, projection_op};
 
           if (chunk_size == tile_items)
           {
@@ -429,7 +428,7 @@ public:
         else
         {
           constexpr packer<AccumT, bool> packer_op{};
-          multi_segmented_iterator it_in{d_in, chunk_begin, cum_sizes, inp_idx_begin_it, packer_op, projection_op};
+          multi_segmented_iterator it_in{d_in, chunk_begin, searcher, inp_idx_begin_it, packer_op, projection_op};
 
           if (chunk_size == tile_items)
           {
@@ -467,7 +466,7 @@ public:
         if constexpr (is_inclusive)
         {
           constexpr projector<AccumT, bool> projector_op{};
-          multi_segmented_iterator it_out{d_out, out_offset, cum_sizes, out_idx_begin_it, packer_op, projector_op};
+          multi_segmented_iterator it_out{d_out, out_offset, searcher, out_idx_begin_it, packer_op, projector_op};
 
           if (chunk_size == tile_items)
           {
@@ -481,7 +480,7 @@ public:
         else
         {
           const projector_iv<AccumT, bool> projector_op{static_cast<AccumT>(initial_value)};
-          multi_segmented_iterator it_out{d_out, out_offset, cum_sizes, out_idx_begin_it, packer_op, projector_op};
+          multi_segmented_iterator it_out{d_out, out_offset, searcher, out_idx_begin_it, packer_op, projector_op};
           if (chunk_size == tile_items)
           {
             storer.Store(it_out, thread_flag_values);

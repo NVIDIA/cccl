@@ -301,7 +301,6 @@ public:
         OffsetT prefix;
         OffsetT warp_aggregate;
         offset_scanner.InclusiveSum(segment_size, prefix, warp_aggregate);
-        __syncwarp();
         OffsetT warp_prefix = prefix_callback_op(warp_aggregate);
 
         if (work_id < n_segments)
@@ -310,14 +309,12 @@ public:
           _CCCL_ASSERT(warp_id < warps_in_block, "Access violation in warp_id index");
           temp_storage.logical_segment_offsets[warp_id][work_id] = warp_prefix + prefix;
         }
+        __syncwarp();
       }
     }
 
     // All accesses of logical_segment_offsets from now on are read-only. Elements of
-    // logical_segment_offsets[warp_id] is only accessed by threads with the same warp_id.
-    // Warp-synchronization ensure that all threads in respective warps finished
-    // writing to shared memory, and subsequent reads are safe.
-    __syncwarp();
+    // logical_segment_offsets[warp_id] are only accessed by threads with the same warp_id.
 
     const ::cuda::std::span<OffsetT> cum_sizes{
       temp_storage.logical_segment_offsets[warp_id], static_cast<::cuda::std::size_t>(n_segments)};
@@ -328,6 +325,7 @@ public:
     using augmented_init_value_t =
       ::cuda::std::conditional_t<has_init, augmented_accum_t, multi_segment_helpers::augmented_value_t<InitValueT, bool>>;
 
+    const multi_segment_helpers::bag_of_segments searcher{cum_sizes};
     augmented_scan_op_t augmented_scan_op{scan_op};
 
     augmented_accum_t exclusive_prefix{};
@@ -357,7 +355,7 @@ public:
         {
           // If initial value is provided, it should be applied to segment's head value
           const packer_iv<AccumT, bool, ScanOpT> packer_op{static_cast<AccumT>(initial_value), scan_op};
-          multi_segmented_iterator it_in{d_in, chunk_begin, cum_sizes, inp_idx_begin_it, packer_op, projection_op};
+          multi_segmented_iterator it_in{d_in, chunk_begin, searcher, inp_idx_begin_it, packer_op, projection_op};
 
           if (chunk_size == tile_items)
           {
@@ -371,7 +369,7 @@ public:
         else
         {
           constexpr packer<AccumT, bool> packer_op{};
-          multi_segmented_iterator it_in{d_in, chunk_begin, cum_sizes, inp_idx_begin_it, packer_op, projection_op};
+          multi_segmented_iterator it_in{d_in, chunk_begin, searcher, inp_idx_begin_it, packer_op, projection_op};
 
           if (chunk_size == tile_items)
           {
@@ -409,7 +407,7 @@ public:
         if constexpr (is_inclusive)
         {
           constexpr projector<AccumT, bool> projector_op{};
-          multi_segmented_iterator it_out{d_out, out_offset, cum_sizes, out_idx_begin_it, packer_op, projector_op};
+          multi_segmented_iterator it_out{d_out, out_offset, searcher, out_idx_begin_it, packer_op, projector_op};
 
           if (chunk_size == tile_items)
           {
@@ -423,7 +421,7 @@ public:
         else
         {
           const projector_iv<AccumT, bool> projector_op{static_cast<AccumT>(initial_value)};
-          multi_segmented_iterator it_out{d_out, out_offset, cum_sizes, out_idx_begin_it, packer_op, projector_op};
+          multi_segmented_iterator it_out{d_out, out_offset, searcher, out_idx_begin_it, packer_op, projector_op};
           if (chunk_size == tile_items)
           {
             storer.Store(it_out, thread_flag_values);
