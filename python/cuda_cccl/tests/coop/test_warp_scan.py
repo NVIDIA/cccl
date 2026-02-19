@@ -15,14 +15,12 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 def test_warp_exclusive_sum(T):
-    warp_exclusive_sum = coop.warp.make_exclusive_sum(dtype=T)
-    temp_storage_bytes = warp_exclusive_sum.temp_storage_bytes
+    warp_exclusive_sum = coop.warp.exclusive_sum(dtype=T)
 
-    @cuda.jit(link=warp_exclusive_sum.files)
+    @cuda.jit
     def kernel(input, output):
         tid = cuda.threadIdx.x
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
-        output[tid] = warp_exclusive_sum(temp_storage, input[tid])
+        output[tid] = warp_exclusive_sum(input[tid])
 
     dtype = NUMBA_TYPES_TO_NP[T]
     h_input = random_int(32, dtype)
@@ -41,3 +39,464 @@ def test_warp_exclusive_sum(T):
 
     assert "LDL" not in sass
     assert "STL" not in sass
+
+
+@pytest.mark.parametrize("T", [types.uint32, types.uint64])
+def test_warp_inclusive_sum(T):
+    warp_inclusive_sum = coop.warp.inclusive_sum(dtype=T)
+
+    @cuda.jit
+    def kernel(input, output):
+        tid = cuda.threadIdx.x
+        output[tid] = warp_inclusive_sum(input[tid])
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    h_input = random_int(32, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(32, dtype=dtype)
+    kernel[1, 32](d_input, d_output)
+    cuda.synchronize()
+
+    output = d_output.copy_to_host()
+    reference = np.cumsum(h_input)
+    for i in range(32):
+        assert output[i] == reference[i]
+
+
+@pytest.mark.parametrize("T", [types.uint32])
+def test_warp_inclusive_sum_warp_aggregate(T):
+    warp_inclusive_sum = coop.warp.inclusive_sum(dtype=T)
+    dtype = NUMBA_TYPES_TO_NP[T]
+
+    @cuda.jit
+    def kernel(input, output, aggregate):
+        tid = cuda.threadIdx.x
+        warp_aggregate = cuda.local.array(1, dtype=dtype)
+        output[tid] = warp_inclusive_sum(input[tid], warp_aggregate=warp_aggregate)
+        aggregate[tid] = warp_aggregate[0]
+
+    h_input = random_int(32, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(32, dtype=dtype)
+    d_aggregate = cuda.device_array(32, dtype=dtype)
+    kernel[1, 32](d_input, d_output, d_aggregate)
+    cuda.synchronize()
+
+    output = d_output.copy_to_host()
+    aggregate = d_aggregate.copy_to_host()
+    reference = np.cumsum(h_input)
+    np.testing.assert_array_equal(output, reference)
+    expected_aggregate = np.sum(h_input)
+    np.testing.assert_array_equal(
+        aggregate, np.full_like(aggregate, expected_aggregate)
+    )
+
+
+@pytest.mark.parametrize("T", [types.int32])
+def test_warp_exclusive_scan_max(T):
+    warp_exclusive_scan = coop.warp.exclusive_scan(
+        dtype=T, scan_op="max", initial_value=0
+    )
+
+    @cuda.jit
+    def kernel(input, output):
+        tid = cuda.threadIdx.x
+        output[tid] = warp_exclusive_scan(input[tid], 0)
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    h_input = random_int(32, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(32, dtype=dtype)
+    kernel[1, 32](d_input, d_output)
+    cuda.synchronize()
+
+    output = d_output.copy_to_host()
+    reference = np.empty_like(h_input)
+    running = 0
+    for i in range(32):
+        reference[i] = running
+        running = max(running, int(h_input[i]))
+    np.testing.assert_array_equal(output, reference)
+
+
+@pytest.mark.parametrize("T", [types.int32])
+def test_warp_inclusive_scan_max(T):
+    warp_inclusive_scan = coop.warp.inclusive_scan(dtype=T, scan_op="max")
+
+    @cuda.jit
+    def kernel(input, output):
+        tid = cuda.threadIdx.x
+        output[tid] = warp_inclusive_scan(input[tid])
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    h_input = random_int(32, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(32, dtype=dtype)
+    kernel[1, 32](d_input, d_output)
+    cuda.synchronize()
+
+    output = d_output.copy_to_host()
+    reference = np.maximum.accumulate(h_input)
+    np.testing.assert_array_equal(output, reference)
+
+
+@pytest.mark.parametrize("T", [types.int32])
+def test_warp_inclusive_scan_valid_items_warp_aggregate(T):
+    warp_inclusive_scan = coop.warp.inclusive_scan(dtype=T, scan_op="max")
+    valid_items = 13
+    dtype = NUMBA_TYPES_TO_NP[T]
+
+    @cuda.jit
+    def kernel(input, output, aggregate):
+        tid = cuda.threadIdx.x
+        warp_aggregate = cuda.local.array(1, dtype=dtype)
+        output[tid] = warp_inclusive_scan(
+            input[tid],
+            valid_items=valid_items,
+            warp_aggregate=warp_aggregate,
+        )
+        aggregate[tid] = warp_aggregate[0]
+
+    h_input = random_int(32, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(32, dtype=dtype)
+    d_aggregate = cuda.device_array(32, dtype=dtype)
+    kernel[1, 32](d_input, d_output, d_aggregate)
+    cuda.synchronize()
+
+    output = d_output.copy_to_host()
+    aggregate = d_aggregate.copy_to_host()
+    reference = np.maximum.accumulate(h_input[:valid_items])
+    expected_aggregate = np.max(h_input[:valid_items])
+    np.testing.assert_array_equal(output[:valid_items], reference)
+    np.testing.assert_array_equal(
+        aggregate[:valid_items],
+        np.full(valid_items, expected_aggregate, dtype=dtype),
+    )
+
+
+@pytest.mark.parametrize("T", [types.int32])
+def test_warp_inclusive_scan_sum_valid_items(T):
+    warp_inclusive_scan = coop.warp.inclusive_scan(dtype=T, scan_op="+")
+    valid_items = 17
+
+    @cuda.jit
+    def kernel(input, output):
+        tid = cuda.threadIdx.x
+        output[tid] = warp_inclusive_scan(input[tid], valid_items=valid_items)
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    h_input = random_int(32, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(32, dtype=dtype)
+    kernel[1, 32](d_input, d_output)
+    cuda.synchronize()
+
+    output = d_output.copy_to_host()
+    reference = np.cumsum(h_input[:valid_items])
+    np.testing.assert_array_equal(output[:valid_items], reference)
+
+
+@pytest.mark.parametrize("T", [types.int32])
+def test_warp_exclusive_scan_sum_valid_items(T):
+    warp_exclusive_scan = coop.warp.exclusive_scan(
+        dtype=T, scan_op="+", initial_value=0
+    )
+    valid_items = 19
+
+    @cuda.jit
+    def kernel(input, output):
+        tid = cuda.threadIdx.x
+        output[tid] = warp_exclusive_scan(input[tid], 0, valid_items=valid_items)
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    h_input = random_int(32, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(32, dtype=dtype)
+    kernel[1, 32](d_input, d_output)
+    cuda.synchronize()
+
+    output = d_output.copy_to_host()
+    reference = np.empty(valid_items, dtype=dtype)
+    running = 0
+    for i in range(valid_items):
+        reference[i] = running
+        running += h_input[i]
+    np.testing.assert_array_equal(output[:valid_items], reference)
+
+
+@pytest.mark.parametrize("T", [types.int32])
+def test_warp_inclusive_scan_temp_storage_two_phase(T):
+    warp_inclusive_scan = coop.warp.inclusive_scan(dtype=T, scan_op="max")
+    temp_storage_bytes = warp_inclusive_scan.temp_storage_bytes
+    temp_storage_alignment = warp_inclusive_scan.temp_storage_alignment
+
+    @cuda.jit
+    def kernel(input, output):
+        tid = cuda.threadIdx.x
+        temp_storage = coop.TempStorage(
+            temp_storage_bytes,
+            temp_storage_alignment,
+        )
+        output[tid] = warp_inclusive_scan(input[tid], temp_storage=temp_storage)
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    h_input = random_int(32, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(32, dtype=dtype)
+    kernel[1, 32](d_input, d_output)
+    cuda.synchronize()
+
+    output = d_output.copy_to_host()
+    reference = np.maximum.accumulate(h_input)
+    np.testing.assert_array_equal(output, reference)
+
+
+@pytest.mark.parametrize("T", [types.int32, types.uint32, types.uint64])
+def test_warp_exclusive_sum_single_phase(T):
+    threads_in_warp = 32
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = cuda.threadIdx.x
+        val = d_in[tid]
+        d_out[tid] = coop.warp.exclusive_sum(val)
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    h_input = random_int(threads_in_warp, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(threads_in_warp, dtype=dtype)
+
+    kernel[1, threads_in_warp](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    reference = np.cumsum(h_input, dtype=h_input.dtype) - h_input
+    np.testing.assert_array_equal(h_output, reference)
+
+
+@pytest.mark.parametrize("T", [types.int32, types.uint32, types.uint64])
+def test_warp_inclusive_sum_single_phase(T):
+    threads_in_warp = 32
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = cuda.threadIdx.x
+        val = d_in[tid]
+        d_out[tid] = coop.warp.inclusive_sum(val)
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    h_input = random_int(threads_in_warp, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(threads_in_warp, dtype=dtype)
+
+    kernel[1, threads_in_warp](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    reference = np.cumsum(h_input, dtype=h_input.dtype)
+    np.testing.assert_array_equal(h_output, reference)
+
+
+@pytest.mark.parametrize("T", [types.int32, types.uint32, types.uint64])
+def test_warp_inclusive_sum_single_phase_warp_aggregate(T):
+    threads_in_warp = 32
+
+    @cuda.jit
+    def kernel(d_in, d_out, d_aggregate):
+        tid = cuda.threadIdx.x
+        warp_aggregate = cuda.local.array(1, dtype=dtype)
+        d_out[tid] = coop.warp.inclusive_sum(d_in[tid], warp_aggregate=warp_aggregate)
+        d_aggregate[tid] = warp_aggregate[0]
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    h_input = random_int(threads_in_warp, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(threads_in_warp, dtype=dtype)
+    d_aggregate = cuda.device_array(threads_in_warp, dtype=dtype)
+
+    kernel[1, threads_in_warp](d_input, d_output, d_aggregate)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    h_aggregate = d_aggregate.copy_to_host()
+    np.testing.assert_array_equal(h_output, np.cumsum(h_input, dtype=h_input.dtype))
+    expected_aggregate = np.sum(h_input)
+    np.testing.assert_array_equal(
+        h_aggregate, np.full_like(h_aggregate, expected_aggregate)
+    )
+
+
+@pytest.mark.parametrize("T", [types.int32])
+def test_warp_exclusive_scan_single_phase(T):
+    threads_in_warp = 32
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = cuda.threadIdx.x
+        val = d_in[tid]
+        d_out[tid] = coop.warp.exclusive_scan(val, "max", 0)
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    h_input = random_int(threads_in_warp, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(threads_in_warp, dtype=dtype)
+
+    kernel[1, threads_in_warp](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    reference = np.empty_like(h_input)
+    running = 0
+    for i in range(threads_in_warp):
+        reference[i] = running
+        running = max(running, int(h_input[i]))
+    np.testing.assert_array_equal(h_output, reference)
+
+
+@pytest.mark.parametrize("T", [types.int32])
+def test_warp_inclusive_scan_single_phase(T):
+    threads_in_warp = 32
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = cuda.threadIdx.x
+        val = d_in[tid]
+        d_out[tid] = coop.warp.inclusive_scan(val, "max")
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    h_input = random_int(threads_in_warp, dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(threads_in_warp, dtype=dtype)
+
+    kernel[1, threads_in_warp](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    reference = np.maximum.accumulate(h_input)
+    np.testing.assert_array_equal(h_output, reference)
+
+
+def test_warp_inclusive_scan_valid_items_single_phase():
+    threads_in_warp = 32
+    valid_items = 11
+
+    @cuda.jit
+    def kernel(d_in, d_out, d_aggregate):
+        tid = cuda.threadIdx.x
+        warp_aggregate = cuda.local.array(1, dtype=np.int32)
+        d_out[tid] = coop.warp.inclusive_scan(
+            d_in[tid],
+            "max",
+            valid_items=valid_items,
+            warp_aggregate=warp_aggregate,
+        )
+        d_aggregate[tid] = warp_aggregate[0]
+
+    h_input = random_int(threads_in_warp, np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(threads_in_warp, dtype=np.int32)
+    d_aggregate = cuda.device_array(threads_in_warp, dtype=np.int32)
+
+    kernel[1, threads_in_warp](d_input, d_output, d_aggregate)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    h_aggregate = d_aggregate.copy_to_host()
+    reference = np.maximum.accumulate(h_input[:valid_items])
+    expected_aggregate = np.max(h_input[:valid_items])
+    np.testing.assert_array_equal(h_output[:valid_items], reference)
+    np.testing.assert_array_equal(
+        h_aggregate[:valid_items],
+        np.full(valid_items, expected_aggregate, dtype=np.int32),
+    )
+
+
+def test_warp_inclusive_scan_sum_valid_items_single_phase():
+    threads_in_warp = 32
+    valid_items = 9
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = cuda.threadIdx.x
+        d_out[tid] = coop.warp.inclusive_scan(
+            d_in[tid],
+            "+",
+            valid_items=valid_items,
+        )
+
+    h_input = random_int(threads_in_warp, np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(threads_in_warp, dtype=np.int32)
+
+    kernel[1, threads_in_warp](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    reference = np.cumsum(h_input[:valid_items])
+    np.testing.assert_array_equal(h_output[:valid_items], reference)
+
+
+def test_warp_exclusive_scan_sum_valid_items_single_phase():
+    threads_in_warp = 32
+    valid_items = 12
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = cuda.threadIdx.x
+        d_out[tid] = coop.warp.exclusive_scan(
+            d_in[tid],
+            "+",
+            0,
+            valid_items=valid_items,
+        )
+
+    h_input = random_int(threads_in_warp, np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(threads_in_warp, dtype=np.int32)
+
+    kernel[1, threads_in_warp](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    reference = np.empty(valid_items, dtype=np.int32)
+    running = 0
+    for i in range(valid_items):
+        reference[i] = running
+        running += h_input[i]
+    np.testing.assert_array_equal(h_output[:valid_items], reference)
+
+
+def test_warp_inclusive_scan_temp_storage_single_phase():
+    threads_in_warp = 32
+    warp_inclusive_scan = coop.warp.inclusive_scan(dtype=types.int32, scan_op="max")
+    temp_storage_bytes = warp_inclusive_scan.temp_storage_bytes
+    temp_storage_alignment = warp_inclusive_scan.temp_storage_alignment
+
+    @cuda.jit
+    def kernel(d_in, d_out_single, d_out_two_phase):
+        tid = cuda.threadIdx.x
+        temp_storage = coop.TempStorage(
+            temp_storage_bytes,
+            temp_storage_alignment,
+        )
+        d_out_single[tid] = coop.warp.inclusive_scan(
+            d_in[tid],
+            "max",
+            temp_storage=temp_storage,
+        )
+        d_out_two_phase[tid] = warp_inclusive_scan(d_in[tid])
+
+    h_input = random_int(threads_in_warp, np.int32)
+    d_input = cuda.to_device(h_input)
+    d_out_single = cuda.device_array(threads_in_warp, dtype=np.int32)
+    d_out_two_phase = cuda.device_array(threads_in_warp, dtype=np.int32)
+
+    kernel[1, threads_in_warp](d_input, d_out_single, d_out_two_phase)
+    cuda.synchronize()
+
+    h_out_single = d_out_single.copy_to_host()
+    h_out_two_phase = d_out_two_phase.copy_to_host()
+    reference = np.maximum.accumulate(h_input)
+    np.testing.assert_array_equal(h_out_single, reference)
+    np.testing.assert_array_equal(h_out_two_phase, reference)
