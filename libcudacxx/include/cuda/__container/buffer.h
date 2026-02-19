@@ -139,15 +139,7 @@ private:
   template <class _Env>
   static size_t __alignment_from_env(const _Env& __env)
   {
-    ::cuda::std::size_t __a;
-    if constexpr (::cuda::std::execution::__queryable_with<const _Env&, allocation_alignment_t>)
-    {
-      __a = ::cuda::allocation_alignment(__env);
-    }
-    else
-    {
-      __a = alignof(_Tp);
-    }
+    const ::cuda::std::size_t __a = ::cuda::__call_or(::cuda::allocation_alignment, alignof(_Tp), __env);
     ::cuda::__validate_allocation_alignment(__a, alignof(_Tp));
     return __a;
   }

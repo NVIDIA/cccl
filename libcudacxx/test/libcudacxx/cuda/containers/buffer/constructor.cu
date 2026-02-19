@@ -21,7 +21,8 @@
 
 #include <stdexcept>
 
-#include "../test_resources.h"
+#include <test_resources.h>
+
 #include "helper.h"
 #include "types.h"
 
@@ -111,6 +112,8 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
       const auto env                      = ::cuda::std::execution::prop{::cuda::allocation_alignment, alignment};
       const Buffer buf{stream, resource, 5, cuda::no_init, env};
       CCCLRT_CHECK(check_offseted_pointer_with_alignment(buf.data(), alignment));
+      CCCLRT_CHECK(buf.alignment() == alignment);
+      CCCLRT_CHECK(cuda::allocation_alignment(buf) == alignment);
       CCCLRT_CHECK(buf.size() == 5);
     }
   }
@@ -228,6 +231,8 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
       Buffer buf(input);
       CCCLRT_CHECK(buf.alignment() == alignment);
       CCCLRT_CHECK(input.alignment() == alignment);
+      CCCLRT_CHECK(cuda::allocation_alignment(buf) == alignment);
+      CCCLRT_CHECK(cuda::allocation_alignment(input) == alignment);
       CCCLRT_CHECK(is_pointer_aligned(buf.data(), alignment));
       CCCLRT_CHECK(buf.size() == 5);
     }
@@ -269,6 +274,7 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
       const auto* allocation = input.data();
       Buffer buf(cuda::std::move(input));
       CCCLRT_CHECK(buf.alignment() == alignment);
+      CCCLRT_CHECK(cuda::allocation_alignment(buf) == alignment);
       CCCLRT_CHECK(buf.data() == allocation);
       CCCLRT_CHECK(is_pointer_aligned(buf.data(), alignment));
       CCCLRT_CHECK(buf.size() == 5);
@@ -329,6 +335,7 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
       const auto* allocation = input.data();
       buf                    = cuda::std::move(input);
       CCCLRT_CHECK(buf.alignment() == alignment);
+      CCCLRT_CHECK(cuda::allocation_alignment(buf) == alignment);
       CCCLRT_CHECK(buf.data() == allocation);
       CCCLRT_CHECK(is_pointer_aligned(buf.data(), alignment));
       CCCLRT_CHECK(buf.size() == 5);

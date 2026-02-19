@@ -17,7 +17,8 @@
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
-#include "../test_resources.h"
+#include <test_resources.h>
+
 #include "helper.h"
 #include "types.h"
 
