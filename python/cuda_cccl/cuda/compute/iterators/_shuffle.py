@@ -95,6 +95,13 @@ class ShuffleIterator(IteratorBase):
     def _make_input_deref_op(self) -> Op | None:
         symbol = self._make_input_deref_symbol()
 
+        # Note: a potential optimization is to avoid constructing
+        # `cuda::random_bijection` objects upon every dereference,
+        # instead constructing it once and using it as the state
+        # object. The tradeoff is that it would require a C++
+        # extension providing a constructor for
+        # `cuda::random_bijection` objects, since we would now be
+        # doing it on the host.  See discussion in #7721.
         source = dedent(f"""
             #include <cuda/__random/random_bijection.h>
             #include <cuda/__random/pcg_engine.h>
