@@ -63,6 +63,17 @@ struct twiddle_keys_out_op_t
   }
 };
 
+template <typename SortKeyT>
+struct compare_key_prefix_op
+{
+  SortKeyT prefix_mask;
+  SortKeyT key_prefix;
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(SortKeyT sort_key) const
+  {
+    return (sort_key & prefix_mask) == (key_prefix);
+  }
+};
+
 // TODO (elstehle): Add documentation
 template <typename KeyT, int BlockThreads, int ItemsPerThread, typename ValueT = NullType, int RadixBits = 11>
 class block_topk_air
@@ -137,20 +148,32 @@ private:
   }
 
   // Compute histogram over keys. digit_extractor is a function object that returns the bin for each key.
-  template <typename DigitExtractorT>
+  template <typename DigitExtractorT, typename FilterOpT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void compute_histograms(
-    const bit_ordered_type (&unsigned_keys)[items_per_thread],
-    DigitExtractorT digit_extractor,
-    bit_ordered_type prefix_mask,
-    bit_ordered_type kth_key_bits)
+    const bit_ordered_type (&unsigned_keys)[items_per_thread], DigitExtractorT digit_extractor, FilterOpT filter_op)
   {
-    const bit_ordered_type kth_prefix = kth_key_bits & prefix_mask;
-
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < items_per_thread; ++i)
     {
       const bit_ordered_type key = unsigned_keys[i];
-      if ((key & prefix_mask) == kth_prefix)
+      if (filter_op(key))
+      {
+        const auto digit = digit_extractor.Digit(key);
+        atomicAdd(&storage.stage.passes.histogram[digit], histo_counter_t{1});
+      }
+    }
+  }
+
+  // Compute histogram over keys. digit_extractor is a function object that returns the bin for each key.
+  template <typename DigitExtractorT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  compute_histograms(const bit_ordered_type (&unsigned_keys)[items_per_thread], DigitExtractorT digit_extractor)
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < items_per_thread; ++i)
+    {
+      const bit_ordered_type key = unsigned_keys[i];
+      if (filter_op(key))
       {
         const auto digit = digit_extractor.Digit(key);
         atomicAdd(&storage.stage.passes.histogram[digit], histo_counter_t{1});
@@ -215,8 +238,13 @@ private:
   }
 
   template <detail::topk::select SelectDirection, bool HasValues, typename ValuesT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void find_splitter_prefix(
+    KeyT (&keys)[items_per_thread], ValuesT (&values)[items_per_thread], int k, int begin_bit, int end_bit)
+  {}
+
+  template <detail::topk::select SelectDirection, bool HasValues, typename ValuesT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  select_impl(KeyT (&keys)[items_per_thread], ValuesT (&values)[items_per_thread], int k, int begin_bit, int end_bit)
+  select_topk(KeyT (&keys)[items_per_thread], ValuesT (&values)[items_per_thread], int k, int begin_bit, int end_bit)
   {
     // TODO (elstehle): Short-circuit if k is constrained to be positive
     if (k <= 0)
@@ -300,9 +328,10 @@ private:
       __syncthreads();
 
       // Compute histogram over the current pass's bits pre-filtered for keys matching the previous pass's prefix mask
+      auto filter_op = compare_key_prefix_op<bit_ordered_type>{prefix_mask, kth_key_bits};
       auto digit_extractor =
         traits::template digit_extractor<fundamental_digit_extractor_t>(pass_begin_bit, pass_bits, decomposer);
-      compute_histograms(unsigned_keys, digit_extractor, prefix_mask, kth_key_bits);
+      compute_histograms(unsigned_keys, digit_extractor, filter_op);
       __syncthreads();
 
       // Compute prefix sum over buckets
@@ -437,7 +466,7 @@ public:
   select_keys(KeyT (&keys)[items_per_thread], int k, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     NullType values[ItemsPerThread];
-    select_impl<SelectDirection, false>(keys, values, k, begin_bit, end_bit);
+    select_topk<SelectDirection, false>(keys, values, k, begin_bit, end_bit);
   }
 
   template <detail::topk::select SelectDirection>
@@ -448,7 +477,7 @@ public:
     int begin_bit = 0,
     int end_bit   = sizeof(KeyT) * 8)
   {
-    select_impl<SelectDirection, true>(keys, values, k, begin_bit, end_bit);
+    select_topk<SelectDirection, true>(keys, values, k, begin_bit, end_bit);
   }
 };
 } // namespace detail
