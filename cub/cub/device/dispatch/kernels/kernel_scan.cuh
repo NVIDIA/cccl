@@ -111,21 +111,25 @@ DeviceCompactInitKernel(ScanTileStateT tile_state, int num_tiles, NumSelectedIte
     *d_num_selected_out = 0;
   }
 }
-template <typename ChainedPolicyT, typename InputIteratorT, typename OutputIteratorT, typename AccumT>
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_CONSTEVAL int get_device_scan_launch_bounds() noexcept
+template <typename PolicySelector, typename InputIteratorT, typename OutputIteratorT, typename AccumT>
+_CCCL_API constexpr int get_device_scan_launch_bounds_helper() noexcept
 {
+  constexpr scan_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-  if constexpr (detail::scan::
-                  scan_use_warpspeed<typename ChainedPolicyT::ActivePolicy, InputIteratorT, OutputIteratorT, AccumT>)
+  if constexpr (policy.warpspeed
+                && detail::scan::use_warpspeed<InputIteratorT, OutputIteratorT, AccumT>(policy.warpspeed))
   {
-    return get_scan_block_threads<typename ChainedPolicyT::ActivePolicy>;
+    return policy.warpspeed.num_total_threads;
   }
-  else
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
-  {
-    return static_cast<int>(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS);
-  }
+  return policy.block_threads;
 }
+
+// need a variable template to force constant evaluation, otherwise nvcc may emit
+// "bad attribute argument substitution" errors for __launch_bounds__
+template <typename PolicySelector, typename InputIteratorT, typename OutputIteratorT, typename AccumT>
+inline constexpr int get_device_scan_launch_bounds =
+  get_device_scan_launch_bounds_helper<PolicySelector, InputIteratorT, OutputIteratorT, AccumT>();
 
 /**
  * @brief Scan kernel entry point (multi-block)
@@ -182,7 +186,7 @@ template <typename PolicySelector,
           typename AccumT,
           bool ForceInclusive,
           typename RealInitValueT = typename InitValueT::value_type>
-__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
+__launch_bounds__(get_device_scan_launch_bounds<PolicySelector, InputIteratorT, OutputIteratorT, AccumT>)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanKernel(
     _CCCL_GRID_CONSTANT const InputIteratorT d_in,
     _CCCL_GRID_CONSTANT const OutputIteratorT d_out,

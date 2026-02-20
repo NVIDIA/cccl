@@ -862,12 +862,14 @@ _CCCL_API constexpr auto smem_for_stages(
   (void) output_size;
   const auto counts = make_scan_stage_counts(num_stages);
 
-  const int align_inout     = ::cuda::std::max({16, input_align, output_align});
-  const int inout_bytes     = policy.tile_size * input_size + 16;
+  const int align_inout = ::cuda::std::max({16, input_align, output_align});
+  const int inout_bytes = policy.tile_size * input_size + 16;
+  // Match sizeof(InOutT): round up to the alignment so each stage matches SmemResource<InOutT>.
+  const int inout_stride    = (inout_bytes + align_inout - 1) & ~(align_inout - 1);
   const auto reduce_squad   = policy.squadReduce();
   const int sum_thread_warp = (reduce_squad.threadCount() + reduce_squad.warpCount()) * accum_size;
 
-  void* inout_base = smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(inout_bytes * num_stages), align_inout);
+  void* inout_base = smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(inout_stride * num_stages), align_inout);
   void* next_block_idx_base = smemAllocator.alloc(
     static_cast<::cuda::std::uint32_t>(sizeof(uint4) * counts.num_block_idx_stages), alignof(uint4));
   void* sum_exclusive_base = smemAllocator.alloc(
@@ -876,7 +878,7 @@ _CCCL_API constexpr auto smem_for_stages(
     smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(sum_thread_warp * num_stages), accum_align);
 
   ScanResourcesRaw res = {
-    warpspeed::SmemResourceRaw{syncHandler, inout_base, inout_bytes, inout_bytes, num_stages},
+    warpspeed::SmemResourceRaw{syncHandler, inout_base, inout_stride, inout_stride, num_stages},
     warpspeed::SmemResourceRaw{
       syncHandler,
       next_block_idx_base,

@@ -51,6 +51,10 @@
 #include <cuda_runtime_api.h>
 #include <cudaTypedefs.h>
 
+#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#  include <sstream>
+#endif
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
@@ -496,12 +500,6 @@ struct DispatchScan
     {
       return error;
     }
-    // number of stages to have an even workload across all SMs (improves small problem sizes), assuming 1 CTA per SM
-    // +1 since it tends to improve performance
-    // TODO(bgruber): make the +1 a tuning parameter
-    const int max_stages_for_even_workload =
-      static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * warpspeed_policy.tile_size)) + 1);
-
     // Maximum dynamic shared memory size that we can use for temporary storage.
     int max_dynamic_smem_size{};
     if (const auto error =
@@ -527,6 +525,12 @@ struct DispatchScan
 
     // When launched from the host, maximize the number of stages that we can fit inside the shared memory.
     NV_IF_TARGET(NV_IS_HOST, ({
+                   // number of stages to have an even workload across all SMs (improves small problem sizes), assuming
+                   // 1 CTA per SM +1 since it tends to improve performance
+                   // TODO(bgruber): make the +1 a tuning parameter
+                   const int max_stages_for_even_workload = static_cast<int>(
+                     ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * warpspeed_policy.tile_size)) + 1);
+
                    while (num_stages <= max_stages_for_even_workload)
                    {
                      const auto next_smem_size = detail::scan::smem_for_stages(
@@ -560,7 +564,7 @@ struct DispatchScan
       const auto init_grid_size          = ::cuda::ceil_div(grid_dim, init_kernel_threads);
 
 #  ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking DeviceScanInitKernel<<<%d, %d, 0, , %lld>>>()\n",
+      _CubLog("Invoking DeviceScanInitKernel<<<%d, %d, 0, %lld>>>()\n",
               init_grid_size,
               init_kernel_threads,
               (long long) stream);
