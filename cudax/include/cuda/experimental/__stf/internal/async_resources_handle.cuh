@@ -74,7 +74,9 @@ class async_resources_handle;
  * @brief A stream_pool object stores a set of streams associated to a specific CUDA context (device, green context,
  * ...)
  *
- * Stream pools are populated lazily.
+ * Workflow: pool = get_stream_pool(async_resources, place); stream = pool.next(place).
+ * When a slot is empty, next(place) activates the place (RAII guard) and calls place.create_stream().
+ * Place activation is the single mechanism for context; the pool does not store a context.
  */
 struct stream_pool
 {
@@ -82,84 +84,28 @@ struct stream_pool
   ~stream_pool() = default;
 
   /**
-   * @brief stream_pool constructor taking a number of slots, an optional CUDA context and a device id.
+   * @brief stream_pool constructor taking a number of slots.
    *
-   * Streams are initialized lazily when calling next().
+   * Streams are created lazily only via next(place), which activates the place and calls place.create_stream().
+   * Slot dev_id is set from the created stream; the pool does not store a device id.
    */
-  stream_pool(size_t n, int dev_id, CUcontext cuctx = nullptr)
-      : payload(n, decorated_stream(nullptr, -1, dev_id))
-      , dev_id(dev_id)
-      , primary_ctx(cuctx)
+  explicit stream_pool(size_t n)
+      : payload(n, decorated_stream(nullptr, -1, -1))
   {}
 
   stream_pool(stream_pool&& rhs)
   {
     ::std::lock_guard<::std::mutex> locker(rhs.mtx);
-    // ATTENTION: add to these whenever adding members
     payload = mv(rhs.payload);
     rhs.payload.clear();
-    index  = mv(rhs.index);
-    dev_id = mv(rhs.dev_id);
+    index = mv(rhs.index);
   }
 
   /**
-   * @brief Get the next stream in the pool
-   *
-   * The stream is wrapped into a decorated_stream class to embed information
-   * such as its position in the pool, or the device id.
+   * @brief Get the next stream in the pool; when a slot is empty, activate the place (RAII guard) and call
+   * place.create_stream(). Defined in places.cuh so the pool can use exec_place_guard and exec_place::create_stream().
    */
-  decorated_stream next()
-  {
-    ::std::lock_guard<::std::mutex> locker(mtx);
-    assert(index < payload.size());
-
-    auto& result = payload.at(index);
-
-    assert(result.dev_id != -1);
-
-    /* Note that we do not check if id is initialized to a unique id (!=
-     * -1) because we could create pools of unregistered streams. Such
-     * identifiers are useful to avoid some synchronizations, but are not
-     * mandatory. */
-
-    /* Streams are created lazily, so there may be no stream yet */
-    if (!result.stream)
-    {
-      if (primary_ctx)
-      {
-        cuda_safe_call(cuCtxPushCurrent(primary_ctx));
-
-        /* Create a CUDA stream on that context */
-        cuda_safe_call(cudaStreamCreate(&result.stream));
-
-        CUcontext dummy;
-        cuda_safe_call(cuCtxPopCurrent(&dummy));
-      }
-      else
-      {
-        const auto old_dev_id = cuda_try<cudaGetDevice>();
-        if (old_dev_id != dev_id)
-        {
-          cuda_safe_call(cudaSetDevice(dev_id));
-        }
-
-        /* Create a CUDA stream on that device */
-        cuda_safe_call(cudaStreamCreate(&result.stream));
-
-        if (old_dev_id != dev_id)
-        {
-          cuda_safe_call(cudaSetDevice(old_dev_id));
-        }
-      }
-    }
-
-    if (++index >= payload.size())
-    {
-      index = 0;
-    }
-
-    return result;
-  }
+  decorated_stream next(const exec_place& place);
 
   // To iterate over all entries of the pool
   using iterator = ::std::vector<decorated_stream>::iterator;
@@ -187,9 +133,7 @@ struct stream_pool
   // ATTENTION: see move ctor
   mutable ::std::mutex mtx;
   ::std::vector<decorated_stream> payload;
-  size_t index          = 0;
-  int dev_id            = 1;
-  CUcontext primary_ctx = nullptr;
+  size_t index = 0;
 };
 
 /**
@@ -352,7 +296,6 @@ private:
       }
 
       ::std::lock_guard<::std::mutex> locker(p.mtx);
-      p.dev_id  = dev_id;
       p.payload = std::move(new_payload);
     }
 
