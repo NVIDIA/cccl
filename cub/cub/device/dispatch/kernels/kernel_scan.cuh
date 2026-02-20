@@ -112,7 +112,7 @@ DeviceCompactInitKernel(ScanTileStateT tile_state, int num_tiles, NumSelectedIte
   }
 }
 template <typename PolicySelector, typename InputIteratorT, typename OutputIteratorT, typename AccumT>
-_CCCL_API constexpr int get_device_scan_launch_bounds_helper() noexcept
+_CCCL_DEVICE constexpr int get_device_scan_launch_bounds() noexcept
 {
   constexpr scan_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
@@ -124,12 +124,6 @@ _CCCL_API constexpr int get_device_scan_launch_bounds_helper() noexcept
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
   return policy.block_threads;
 }
-
-// need a variable template to force constant evaluation, otherwise nvcc may emit
-// "bad attribute argument substitution" errors for __launch_bounds__
-template <typename PolicySelector, typename InputIteratorT, typename OutputIteratorT, typename AccumT>
-inline constexpr int get_device_scan_launch_bounds =
-  get_device_scan_launch_bounds_helper<PolicySelector, InputIteratorT, OutputIteratorT, AccumT>();
 
 /**
  * @brief Scan kernel entry point (multi-block)
@@ -186,7 +180,7 @@ template <typename PolicySelector,
           typename AccumT,
           bool ForceInclusive,
           typename RealInitValueT = typename InitValueT::value_type>
-__launch_bounds__(get_device_scan_launch_bounds<PolicySelector, InputIteratorT, OutputIteratorT, AccumT>)
+__launch_bounds__(get_device_scan_launch_bounds<PolicySelector, InputIteratorT, OutputIteratorT, AccumT>())
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanKernel(
     _CCCL_GRID_CONSTANT const InputIteratorT d_in,
     _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
@@ -210,7 +204,7 @@ __launch_bounds__(get_device_scan_launch_bounds<PolicySelector, InputIteratorT, 
   if constexpr (policy.warpspeed
                 && detail::scan::use_warpspeed<InputIteratorT, OutputIteratorT, AccumT>(policy.warpspeed))
   {
-    using WarpspeedPolicyT = warpspeedKernelPolicy<
+    using WarpspeedPolicyT [[maybe_unused]] = warpspeedKernelPolicy<
       scan_warpspeed_policy::num_squads,
       policy.warpspeed.num_reduce_warps,
       policy.warpspeed.num_scan_stor_warps,
