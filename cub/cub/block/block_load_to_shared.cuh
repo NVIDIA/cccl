@@ -17,6 +17,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/util_device.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
@@ -46,7 +47,8 @@ namespace detail
 //! - Given one or more spans of input elements in global memory and buffers in shared memory, this primitive
 //!   asynchronously copies the elements to shared memory and takes care of synchronization.
 //! - @rowmajor
-//! - Shared memory buffers are assumed to be aligned according to `SharedBufferAlignBytes<T>()`.
+//! - Shared memory buffers are assumed to be sized according to `cub::detail::LoadToSharedBufferSize<T,
+//!   GmemAlign>(num_items)` and aligned according to `cub::detail::LoadToSharedBufferAlignBytes<T>()`.
 //! - Global memory spans are by default assumed to be aligned according to the value type. Higher alignment guarantees
 //!   can optionally be specified.
 //! - After one or more calls to `CopyAsync`, `Commit` needs to be called before optionally doing other work and then
@@ -64,13 +66,11 @@ struct BlockLoadToShared
 private:
   /// Constants
   static constexpr int block_threads = BlockDimX * BlockDimY * BlockDimZ;
-  // The alignment needed for cp.async.bulk and L1-skipping cp.async
-  static constexpr int minimum_align = 16;
 
   // Helper for fallback to gmem->reg->smem
-  struct alignas(minimum_align) vec_load_t
+  struct alignas(cub::detail::bulk_min_align) vec_load_t
   {
-    char c_array[minimum_align];
+    char c_array[cub::detail::bulk_min_align];
   };
 
   struct _TempStorage
@@ -159,7 +159,8 @@ private:
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void __copy_aligned_async(char* smem_dst, const char* gmem_src, int num_bytes)
   {
-    for (int offset = linear_tid * minimum_align; offset < num_bytes; offset += block_threads * minimum_align)
+    for (int offset = linear_tid * cub::detail::bulk_min_align; offset < num_bytes;
+         offset += block_threads * cub::detail::bulk_min_align)
     {
       [[maybe_unused]] const auto thread_src = gmem_src + offset;
       [[maybe_unused]] const auto thread_dst = smem_dst + offset;
@@ -174,7 +175,8 @@ private:
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void __copy_aligned_fallback(char* smem_dst, const char* gmem_src, int num_bytes)
   {
-    for (int offset = linear_tid * minimum_align; offset < num_bytes; offset += block_threads * minimum_align)
+    for (int offset = linear_tid * cub::detail::bulk_min_align; offset < num_bytes;
+         offset += block_threads * cub::detail::bulk_min_align)
     {
       const auto thread_src                       = gmem_src + offset;
       const auto thread_dst                       = smem_dst + offset;
@@ -291,7 +293,7 @@ public:
     static_assert(THRUST_NS_QUALIFIER::is_trivially_relocatable_v<T>);
     static_assert(::cuda::std::has_single_bit(unsigned{GmemAlign}));
     static_assert(GmemAlign >= int{alignof(T)});
-    constexpr bool bulk_aligned = GmemAlign >= minimum_align;
+    constexpr bool bulk_aligned = GmemAlign >= cub::detail::bulk_min_align;
     // Avoid 64b multiplication in span::size_bytes()
     const int num_bytes = static_cast<int>(sizeof(T)) * static_cast<int>(size(gmem_src));
     const auto dst_ptr  = data(smem_dst);
@@ -306,10 +308,11 @@ public:
                  "Begin of global memory range needs to be aligned according to GmemAlign.");
     _CCCL_ASSERT(::cuda::is_aligned(src_ptr + num_bytes, GmemAlign),
                  "End of global memory range needs to be aligned according to GmemAlign.");
-    _CCCL_ASSERT(::cuda::is_aligned(dst_ptr, SharedBufferAlignBytes<T>()),
+    _CCCL_ASSERT(::cuda::is_aligned(dst_ptr, cub::detail::LoadToSharedBufferAlignBytes<T>()),
                  "Shared memory needs to be 16 byte aligned.");
-    _CCCL_ASSERT((static_cast<int>(size(smem_dst)) >= SharedBufferSizeBytes<T, GmemAlign>(size(gmem_src))),
-                 "Shared memory destination buffer must have enough space");
+    _CCCL_ASSERT(
+      (static_cast<int>(size(smem_dst)) >= cub::detail::LoadToSharedBufferSizeBytes<T, GmemAlign>(size(gmem_src))),
+      "Shared memory destination buffer must have enough space");
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     _CCCL_ASSERT(state == State::ready_to_copy || state == State::ready_to_copy_or_commit,
                  "Wait() must be called before another CopyAsync()");
@@ -322,17 +325,17 @@ public:
     }
     else
     {
-      const auto src_ptr_aligned   = ::cuda::align_up(src_ptr, minimum_align);
+      const auto src_ptr_aligned   = ::cuda::align_up(src_ptr, cub::detail::bulk_min_align);
       const int align_diff         = static_cast<int>(src_ptr_aligned - src_ptr);
-      const int head_padding_bytes = (minimum_align - align_diff) % minimum_align;
+      const int head_padding_bytes = (cub::detail::bulk_min_align - align_diff) % cub::detail::bulk_min_align;
       const auto actual_dst_ptr    = dst_ptr + head_padding_bytes;
       const int head_peeling_bytes = ::cuda::std::min(align_diff, num_bytes);
-      const int num_bytes_bulk     = ::cuda::round_down(num_bytes - head_peeling_bytes, minimum_align);
+      const int num_bytes_bulk     = ::cuda::round_down(num_bytes - head_peeling_bytes, cub::detail::bulk_min_align);
       __copy_aligned(actual_dst_ptr + head_peeling_bytes, src_ptr_aligned, num_bytes_bulk);
 
       // Peel head and tail
-      // Make sure we have enough threads for the worst case of minimum_align bytes on each side.
-      static_assert(block_threads >= 2 * (minimum_align - 1));
+      // Make sure we have enough threads for the worst case of bulk_min_align bytes on each side.
+      static_assert(block_threads >= 2 * (cub::detail::bulk_min_align - 1));
       // |-------------head--------------|--------------------------tail--------------------------|
       // 0, 1, ... head_peeling_bytes - 1, head_peeling_bytes + num_bytes_bulk, ..., num_bytes - 1
       const int begin_offset = linear_tid < head_peeling_bytes ? 0 : num_bytes_bulk;
@@ -399,37 +402,6 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void CommitAndWait()
   {
     Wait(Commit());
-  }
-
-  // Having these as static members does require using "template" in user code which is kludgy.
-
-  //! @brief Returns the alignment needed for the shared memory destination buffer.
-  //! @tparam T
-  //!   Value type to be loaded.
-  template <typename T>
-  _CCCL_HOST_DEVICE static constexpr int SharedBufferAlignBytes()
-  {
-    return (::cuda::std::max) (int{alignof(T)}, minimum_align);
-  }
-
-  //! @brief Returns the size needed for the shared memory destination buffer.
-  //! @tparam T
-  //!   Value type to be loaded.
-  //! @tparam GmemAlign
-  //!   Guaranteed alignment in bytes of the source range (both begin and end) in global memory
-  //! @param[in] num_items
-  //!   Size of the source range in global memory
-  template <typename T, int GmemAlign = alignof(T)>
-  _CCCL_HOST_DEVICE static constexpr int SharedBufferSizeBytes(::cuda::std::size_t num_items)
-  {
-    static_assert(::cuda::std::has_single_bit(unsigned{GmemAlign}));
-    static_assert(GmemAlign >= int{alignof(T)});
-    _CCCL_ASSERT(num_items <= ::cuda::std::size_t{::cuda::std::numeric_limits<int>::max()},
-                 "num_items must fit into an int");
-    constexpr bool bulk_aligned = GmemAlign >= minimum_align;
-    const int num_bytes         = static_cast<int>(num_items) * int{sizeof(T)};
-    const int extra_space       = (bulk_aligned || num_bytes == 0) ? 0 : minimum_align;
-    return bulk_aligned ? num_bytes : (::cuda::round_up(num_bytes, minimum_align) + extra_space);
   }
 };
 } // namespace detail
