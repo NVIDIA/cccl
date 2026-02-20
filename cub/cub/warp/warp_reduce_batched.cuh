@@ -93,7 +93,7 @@ CUB_NAMESPACE_BEGIN
 //!
 //!        // Perform batched reduction (7 stages vs 24 for sequential)
 //!        int results[8];
-//!        WarpReduceBatched(temp_storage).ReduceBatched(thread_data, results, ::cuda::std::plus<>{});
+//!        WarpReduceBatched(temp_storage).Reduce(thread_data, results, ::cuda::std::plus<>{});
 //!
 //!        // Thread i now has the sum of array i in results[i]
 //!    }
@@ -130,6 +130,9 @@ private:
 
   static constexpr auto max_out_per_thread = ::cuda::ceil_div(Batches, LogicalWarpThreads);
 
+  /// Shared memory storage layout type (unused by current shuffle-based implementation)
+  using _TempStorage = NullType;
+
   //---------------------------------------------------------------------
   // Thread fields
   //---------------------------------------------------------------------
@@ -138,6 +141,10 @@ private:
   int lane_id;
 
 public:
+  /// \smemstorage{WarpReduceBatched}
+  struct TempStorage : Uninitialized<_TempStorage>
+  {};
+
   //! @name Collective constructors
   //! @{
 
@@ -145,7 +152,9 @@ public:
   //! Collective constructor using the specified memory allocation as temporary storage.
   //! Logical warp and lane identifiers are constructed from ``threadIdx.x``.
   //! @endrst
-  _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduceBatched()
+  //!
+  //! @param[in] temp_storage Reference to memory allocation having layout type ``TempStorage``
+  _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduceBatched(TempStorage& /*temp_storage*/)
       : lane_id(static_cast<int>(::cuda::ptx::get_sreg_laneid()))
   {
     if (!is_arch_warp)

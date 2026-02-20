@@ -41,9 +41,10 @@ __global__ void
 warp_reduce_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::span<T> output, ReductionOp reduction_op)
 {
   using warp_reduce_batched_t = cub::WarpReduceBatched<T, Batches, LogicalWarpThreads>;
-  const int tid               = threadIdx.x;
-  const int logical_warp_id   = tid / LogicalWarpThreads;
-  const int lane_id           = tid % LogicalWarpThreads;
+  __shared__ typename warp_reduce_batched_t::TempStorage temp_storage;
+  const int tid             = threadIdx.x;
+  const int logical_warp_id = tid / LogicalWarpThreads;
+  const int lane_id         = tid % LogicalWarpThreads;
 
   T inputs[Batches];
   for (int batch_idx = 0; batch_idx < Batches; ++batch_idx)
@@ -53,7 +54,7 @@ warp_reduce_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::span<T> out
 
   constexpr int out_per_thread = cuda::ceil_div(Batches, LogicalWarpThreads);
   T outputs[out_per_thread];
-  warp_reduce_batched_t{}.Reduce(inputs, outputs, reduction_op);
+  warp_reduce_batched_t{temp_storage}.Reduce(inputs, outputs, reduction_op);
 
   for (int idx = 0; idx < out_per_thread; ++idx)
   {
@@ -69,9 +70,10 @@ template <typename T, int Batches, int LogicalWarpThreads>
 __global__ void sum_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::span<T> output)
 {
   using warp_reduce_batched_t = cub::WarpReduceBatched<T, Batches, LogicalWarpThreads>;
-  const int tid               = threadIdx.x;
-  const int logical_warp_id   = tid / LogicalWarpThreads;
-  const int lane_id           = tid % LogicalWarpThreads;
+  __shared__ typename warp_reduce_batched_t::TempStorage temp_storage;
+  const int tid             = threadIdx.x;
+  const int logical_warp_id = tid / LogicalWarpThreads;
+  const int lane_id         = tid % LogicalWarpThreads;
 
   T inputs[Batches];
   for (int batch_idx = 0; batch_idx < Batches; ++batch_idx)
@@ -81,7 +83,7 @@ __global__ void sum_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::spa
 
   constexpr int out_per_thread = cuda::ceil_div(Batches, LogicalWarpThreads);
   T outputs[out_per_thread];
-  warp_reduce_batched_t{}.Sum(inputs, outputs);
+  warp_reduce_batched_t{temp_storage}.Sum(inputs, outputs);
 
   for (int idx = 0; idx < out_per_thread; ++idx)
   {
@@ -98,9 +100,10 @@ __global__ void
 warp_reduce_batched_lane_mask_kernel(input_2d_mdspan_t<T> input_md, cuda::std::span<T> output, ReductionOp reduction_op)
 {
   using warp_reduce_batched_t = cub::WarpReduceBatched<T, Batches, LogicalWarpThreads>;
-  const int tid               = threadIdx.x;
-  const int logical_warp_id   = tid / LogicalWarpThreads;
-  const int lane_id           = tid % LogicalWarpThreads;
+  __shared__ typename warp_reduce_batched_t::TempStorage temp_storage;
+  const int tid             = threadIdx.x;
+  const int logical_warp_id = tid / LogicalWarpThreads;
+  const int lane_id         = tid % LogicalWarpThreads;
 
   // Each logical warp uses a mask containing only its own lanes
   const cuda::std::uint32_t lane_mask = cuda::bitmask(logical_warp_id * LogicalWarpThreads, LogicalWarpThreads);
@@ -113,7 +116,7 @@ warp_reduce_batched_lane_mask_kernel(input_2d_mdspan_t<T> input_md, cuda::std::s
 
   constexpr int out_per_thread = cuda::ceil_div(Batches, LogicalWarpThreads);
   T outputs[out_per_thread];
-  warp_reduce_batched_t{}.Reduce(inputs, outputs, reduction_op, lane_mask);
+  warp_reduce_batched_t{temp_storage}.Reduce(inputs, outputs, reduction_op, lane_mask);
 
   for (int idx = 0; idx < out_per_thread; ++idx)
   {
@@ -130,7 +133,8 @@ __global__ void warp_reduce_batched_half_warps_kernel(
   input_2d_mdspan_t<T> input_md, cuda::std::span<T> output, ReductionOp reduction_op)
 {
   static_assert(LogicalWarpThreads < warp_size, "Need at least 2 logical warps for this test");
-  using warp_reduce_batched_t     = cub::WarpReduceBatched<T, Batches, LogicalWarpThreads>;
+  using warp_reduce_batched_t = cub::WarpReduceBatched<T, Batches, LogicalWarpThreads>;
+  __shared__ typename warp_reduce_batched_t::TempStorage temp_storage;
   constexpr int num_logical_warps = warp_size / LogicalWarpThreads;
 
   const int tid               = threadIdx.x;
@@ -158,7 +162,7 @@ __global__ void warp_reduce_batched_half_warps_kernel(
 
     constexpr int out_per_thread = cuda::ceil_div(Batches, LogicalWarpThreads);
     T outputs[out_per_thread];
-    warp_reduce_batched_t{}.Reduce(inputs, outputs, reduction_op, lane_mask);
+    warp_reduce_batched_t{temp_storage}.Reduce(inputs, outputs, reduction_op, lane_mask);
 
     for (int idx = 0; idx < out_per_thread; ++idx)
     {
