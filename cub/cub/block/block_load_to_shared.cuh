@@ -52,14 +52,15 @@ namespace detail
 //! - Global memory spans are by default assumed to be aligned according to the value type. Higher alignment guarantees
 //!   can optionally be specified.
 //! - After one or more calls to `CopyAsync`, `Commit` needs to be called before optionally doing other work and then
-//!   calling `Wait` which guarantees the data to be available in shared memory and resets the state and allows for the
-//!   next wave of `CopyAsync`.
+//!   calling `Wait` which guarantees the data to be available in shared memory, resets the state and allows for the
+//!   next call to `CopyAsync`.
 //!
 //! Performance Considerations
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
 //! - Uses special instructions/hardware acceleration when available (cp.async.bulk on Hopper+, copy.async on Ampere).
-//! - By guaranteeing 16 byte alignment and size multiple for the global span, a faster path is taken.
+//! - By guaranteeing 16 byte alignment and size multiple for the global span, a faster path is taken and less shared
+//!   memory is needed for the destination buffer.
 template <int BlockDimX, int BlockDimY = 1, int BlockDimZ = 1>
 struct BlockLoadToShared
 {
@@ -236,7 +237,7 @@ public:
   //!
   //! @param[in] temp_storage
   //!   Reference to memory allocation having layout type TempStorage
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockLoadToShared(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE BlockLoadToShared(TempStorage& temp_storage)
       : temp_storage(temp_storage.Alias())
   {
     _CCCL_ASSERT(::cuda::device::is_object_from(temp_storage, ::cuda::device::address_space::shared),
@@ -244,18 +245,18 @@ public:
     __init_mbarrier();
   }
 
-  _CCCL_DEVICE BlockLoadToShared(const BlockLoadToShared<BlockDimX, BlockDimY, BlockDimZ>&) = delete;
+  _CCCL_DEVICE_API BlockLoadToShared(const BlockLoadToShared<BlockDimX, BlockDimY, BlockDimZ>&) = delete;
 
   //! @}
 
-  _CCCL_DEVICE BlockLoadToShared& operator=(const BlockLoadToShared<BlockDimX, BlockDimY, BlockDimZ>&) = delete;
+  _CCCL_DEVICE_API BlockLoadToShared& operator=(const BlockLoadToShared<BlockDimX, BlockDimY, BlockDimZ>&) = delete;
 
   //! @brief Invalidates underlying @c mbarrier enabling reuse of its temporary storage.
   //! @note
   //! Block-synchronization is needed after calling `Invalidate()` to reuse the shared memory from the temporary
   //! storage.
   // This is not the destructor to avoid overhead when shared memory reuse is not needed.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Invalidate()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Invalidate()
   {
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     _CCCL_ASSERT(state == State::ready_to_copy, "Wait() must be called before Invalidate()");
@@ -284,12 +285,13 @@ public:
   //! @return
   //!   The range in shared memory (same size as `gmem_src`) which should be used to access the data after `Commit` and
   //!   `Wait`.
+  //!   Note: This range is aliasing the `smem_dst` buffer. So `smem_dst` should not be written to/reused while this
+  //!   range is still in use!
   // TODO Allow spans with static sizes?
   template <typename T, int GmemAlign = alignof(T)>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<T>
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::span<T>
   CopyAsync(::cuda::std::span<char> smem_dst, ::cuda::std::span<const T> gmem_src)
   {
-    // TODO Should this be weakened to thrust::is_trivially_relocatable?
     static_assert(THRUST_NS_QUALIFIER::is_trivially_relocatable_v<T>);
     static_assert(::cuda::std::has_single_bit(unsigned{GmemAlign}));
     static_assert(GmemAlign >= int{alignof(T)});
@@ -321,7 +323,7 @@ public:
     if constexpr (bulk_aligned)
     {
       __copy_aligned(dst_ptr, src_ptr, num_bytes);
-      return {::cuda::ptr_rebind<T>(data(smem_dst)), size(gmem_src)};
+      return {::cuda::ptr_rebind<T>(::cuda::std::data(smem_dst)), ::cuda::std::size(gmem_src)};
     }
     else
     {
@@ -343,7 +345,7 @@ public:
       {
         actual_dst_ptr[idx] = src_ptr[idx];
       }
-      return {::cuda::ptr_rebind<T>(actual_dst_ptr), size(gmem_src)};
+      return {::cuda::ptr_rebind<T>(actual_dst_ptr), ::cuda::std::size(gmem_src)};
     }
   }
 
