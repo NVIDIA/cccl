@@ -20,11 +20,9 @@
 #endif // no system header
 
 #include <cub/detail/type_traits.cuh>
-#include <cub/thread/thread_operators.cuh>
 #include <cub/util_type.cuh>
+#include <cub/warp/specializations/warp_reduce_batched_wspro.cuh>
 
-#include <cuda/__ptx/instructions/get_sreg.h>
-#include <cuda/bit>
 #include <cuda/cmath>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/iterator_traits.h>
@@ -120,25 +118,26 @@ class WarpReduceBatched
   // TODO: Should we restrict to Batches > 1?
   static_assert(Batches >= 1, "Batches must be >= 1");
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+
+public:
+  /// Internal specialization.
+  using InternalWarpReduceBatched = detail::WarpReduceBatchedWspro<T, Batches, LogicalWarpThreads>;
+
+#endif // _CCCL_DOXYGEN_INVOKED
+
 private:
   //---------------------------------------------------------------------
   // Constants and type definitions
   //---------------------------------------------------------------------
 
-  /// Whether the logical warp size and the PTX warp size coincide
-  static constexpr auto is_arch_warp = (LogicalWarpThreads == detail::warp_threads);
-
   static constexpr auto max_out_per_thread = ::cuda::ceil_div(Batches, LogicalWarpThreads);
 
-  /// Shared memory storage layout type (unused by current shuffle-based implementation)
-  using _TempStorage = NullType;
+  /// Shared memory storage layout type for WarpReduceBatched
+  using _TempStorage = typename InternalWarpReduceBatched::TempStorage;
 
-  //---------------------------------------------------------------------
-  // Thread fields
-  //---------------------------------------------------------------------
-
-  /// Lane index in logical warp
-  int lane_id;
+  /// Shared storage reference
+  _TempStorage& temp_storage;
 
 public:
   /// \smemstorage{WarpReduceBatched}
@@ -153,15 +152,10 @@ public:
   //! Logical warp and lane identifiers are constructed from ``threadIdx.x``.
   //! @endrst
   //!
-  //! @param[in] temp_storage Reference to memory allocation having layout type ``TempStorage``
-  _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduceBatched(TempStorage& /*temp_storage*/)
-      : lane_id(static_cast<int>(::cuda::ptx::get_sreg_laneid()))
-  {
-    if (!is_arch_warp)
-    {
-      lane_id = lane_id % LogicalWarpThreads;
-    }
-  }
+  //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
+  _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduceBatched(TempStorage& temp_storage)
+      : temp_storage{temp_storage.Alias()}
+  {}
 
   //! @}
   //! @name Batched reductions
@@ -246,25 +240,7 @@ public:
     static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<InputT>, T>, "Input element type must match T");
     static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<OutputT>, T>, "Output element type must match T");
 
-    // Need writeable array as scratch space
-    auto values = ::cuda::std::array<T, Batches>{};
-#pragma unroll
-    for (int i = 0; i < Batches; ++i)
-    {
-      values[i] = inputs[i];
-    }
-
-    ReduceInplace(values, reduction_op, lane_mask);
-
-#pragma unroll
-    for (int i = 0; i < max_out_per_thread; ++i)
-    {
-      const auto batch_idx = i * LogicalWarpThreads + lane_id;
-      if (batch_idx < Batches)
-      {
-        outputs[i] = values[i];
-      }
-    }
+    InternalWarpReduceBatched{temp_storage}.Reduce(inputs, outputs, reduction_op, lane_mask);
   }
 
   // TODO: Public for benchmarking purposes only.
@@ -276,57 +252,14 @@ public:
                   "InputT must support the subscript operator[] and have a compile-time size");
     static_assert(detail::static_size_v<InputT> == Batches, "Input size must match Batches");
     static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<InputT>, T>, "Input element type must match T");
-#if defined(_CCCL_ASSERT_DEVICE)
-    const auto logical_warp_leader =
-      ::cuda::round_down(static_cast<int>(::cuda::ptx::get_sreg_laneid()), LogicalWarpThreads);
-    const auto logical_warp_mask = ::cuda::bitmask(logical_warp_leader, LogicalWarpThreads);
-#endif // _CCCL_ASSERT_DEVICE
-    _CCCL_ASSERT((lane_mask & logical_warp_mask) == logical_warp_mask,
-                 "lane_mask must be consistent for each logical warp");
 
-#pragma unroll
-    for (int stride_intra_reduce = 1; stride_intra_reduce < LogicalWarpThreads; stride_intra_reduce *= 2)
-    {
-      const auto stride_inter_reduce = 2 * stride_intra_reduce;
-      const auto is_left_lane =
-        static_cast<int>(::cuda::ptx::get_sreg_laneid()) % (2 * stride_intra_reduce) < stride_intra_reduce;
-
-#pragma unroll
-      for (int i = 0; i < Batches; i += stride_inter_reduce)
-      {
-        auto left_value      = inputs[i];
-        const auto right_idx = i + stride_intra_reduce;
-        // Needed for Batches < LogicalWarpThreads case
-        // Chose to redundantly operate on the last batch to avoid relying on default construction of T
-        const auto safe_right_idx = right_idx < Batches ? right_idx : Batches - 1;
-        auto right_value          = inputs[safe_right_idx];
-        // Each left lane exchanges its right value against a right lane's left value
-        if (is_left_lane)
-        {
-          ::cuda::std::swap(left_value, right_value);
-        }
-        left_value = ::cuda::device::warp_shuffle_xor(left_value, stride_intra_reduce, lane_mask);
-        // While the current implementation is possibly faster, another conditional swap here would allow for
-        // non-commutative reductions which might be useful for (segmented) scan operations.
-        inputs[i] = reduction_op(left_value, right_value);
-      }
-    }
-    // Make sure results are in the beginning of the array instead of strided
-#pragma unroll
-    for (int i = 1; i < max_out_per_thread; ++i)
-    {
-      const auto batch_idx =
-        i * LogicalWarpThreads + static_cast<int>(::cuda::ptx::get_sreg_laneid()) % LogicalWarpThreads;
-      if (batch_idx < Batches)
-      {
-        inputs[i] = inputs[i * LogicalWarpThreads];
-      }
-    }
+    InternalWarpReduceBatched{temp_storage}.ReduceInplace(inputs, reduction_op, lane_mask);
   }
+
   //! @rst
   //! Performs batched sum reduction of Batches arrays.
   //!
-  //! Convenience wrapper for ``ReduceBatched`` with ``::cuda::std::plus<>`` operator.
+  //! Convenience wrapper for ``Reduce`` with ``::cuda::std::plus<>`` operator.
   //!
   //! @smemwarpreuse
   //!
