@@ -2,24 +2,31 @@ cmake_minimum_required(VERSION 3.21)
 
 project(C2H LANGUAGES CXX CUDA)
 
-cccl_get_catch2()
-
 # when CCCL is used from the CTK, C2H does not need to be rebuilt when making local changes to CCCL (faster iteration)
 option(C2H_USE_CCCL_FROM_CTK "Use CCCL from the CTK in c2h." OFF)
 
-if (C2H_USE_CCCL_FROM_CTK)
-  find_package(CUDAToolkit REQUIRED)
-else()
+# Get dependencies.
+cccl_get_catch2()
+if (NOT C2H_USE_CCCL_FROM_CTK)
   cccl_get_cccl()
-  find_package(CUDAToolkit)
+endif()
+cccl_get_cudatoolkit()
+
+set(has_curand OFF)
+if (TARGET CUDA::curand)
+  set(has_curand ON)
 endif()
 
-set(curand_default OFF)
-if (CUDA_curand_LIBRARY)
-  set(curand_default ON)
-endif()
+option(C2H_ENABLE_CURAND "Use CUDA CURAND library in c2h." ${has_curand})
 
-option(C2H_ENABLE_CURAND "Use CUDA CURAND library in c2h." ${curand_default})
+# Disable C2H_ENABLE_CURAND if cuRAND is unavailable.
+if (C2H_ENABLE_CURAND AND NOT has_curand)
+  message(
+    WARNING
+    "C2H_ENABLE_CURAND is requested, but CUDA::curand is unavailable. Disabling."
+  )
+  set(C2H_ENABLE_CURAND OFF)
+endif()
 
 add_library(
   cccl.c2h
