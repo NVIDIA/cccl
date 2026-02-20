@@ -23,6 +23,11 @@
 
 #include <cuda/std/__pstl/count.h>
 #include <cuda/std/__pstl/count_if.h>
+#include <cuda/std/__pstl/fill.h>
+#include <cuda/std/__pstl/fill_n.h>
+#include <cuda/std/__pstl/find.h>
+#include <cuda/std/__pstl/find_if.h>
+#include <cuda/std/__pstl/find_if_not.h>
 #include <cuda/std/__pstl/for_each.h>
 #include <cuda/std/__pstl/for_each_n.h>
 #include <cuda/std/__pstl/generate.h>

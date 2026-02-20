@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .._utils.protocols import is_device_array
 from ._base import IteratorBase
 

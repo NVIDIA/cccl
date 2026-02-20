@@ -37,18 +37,23 @@ namespace cuda::experimental::stf
  */
 inline int get_device_from_stream(cudaStream_t stream)
 {
-  // Convert the runtime API stream to a driver API structure
+#if _CCCL_CTK_AT_LEAST(12, 8)
+  int device = 0;
+  cuda_safe_call(cudaStreamGetDevice(stream, &device));
+  return device;
+#else
+  // Fallback for CUDA < 12.8: use driver API (cuStreamGetCtx + cuCtxGetDevice)
   auto stream_driver = CUstream(stream);
 
   CUcontext ctx;
   cuda_safe_call(cuStreamGetCtx(stream_driver, &ctx));
 
-  // Query the context associated with a stream by using the underlying driver API
   CUdevice stream_dev;
   cuda_safe_call(cuCtxPushCurrent(ctx));
   cuda_safe_call(cuCtxGetDevice(&stream_dev));
   cuda_safe_call(cuCtxPopCurrent(&ctx));
 
-  return int(stream_dev);
+  return static_cast<int>(stream_dev);
+#endif
 }
 } // end namespace cuda::experimental::stf

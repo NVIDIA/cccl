@@ -3,6 +3,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from __future__ import annotations
+
 from typing import Callable
 
 import numpy as np
@@ -21,8 +23,8 @@ from .._utils.protocols import (
     validate_and_get_stream,
 )
 from .._utils.temp_storage_buffer import TempStorageBuffer
-from ..op import OpAdapter, OpKind, make_op_adapter
-from ..typing import DeviceArrayLike, GpuStruct, IteratorBase
+from ..op import OpAdapter, make_op_adapter
+from ..typing import DeviceArrayLike, GpuStruct, IteratorT, Operator
 
 
 class _SegmentedReduce:
@@ -38,10 +40,10 @@ class _SegmentedReduce:
 
     def __init__(
         self,
-        d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
-        start_offsets_in: DeviceArrayLike | IteratorBase,
-        end_offsets_in: DeviceArrayLike | IteratorBase,
+        d_in: DeviceArrayLike | IteratorT,
+        d_out: DeviceArrayLike | IteratorT,
+        start_offsets_in: DeviceArrayLike | IteratorT,
+        end_offsets_in: DeviceArrayLike | IteratorT,
         op: OpAdapter,
         h_init: np.ndarray | GpuStruct,
     ):
@@ -87,9 +89,8 @@ class _SegmentedReduce:
         set_cccl_iterator_state(self.start_offsets_in_cccl, start_offsets_in)
         set_cccl_iterator_state(self.end_offsets_in_cccl, end_offsets_in)
 
-        # Update op state for stateful ops
         op_adapter = make_op_adapter(op)
-        op_adapter.update_op_state(self.op_cccl)
+        self.op_cccl.state = op_adapter.get_state()
 
         self.h_init_cccl.state = to_cccl_value_state(h_init)
 
@@ -119,11 +120,11 @@ class _SegmentedReduce:
 
 @cache_with_registered_key_functions
 def make_segmented_reduce(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    start_offsets_in: DeviceArrayLike | IteratorBase,
-    end_offsets_in: DeviceArrayLike | IteratorBase,
-    op: Callable | OpKind,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
+    start_offsets_in: DeviceArrayLike | IteratorT,
+    end_offsets_in: DeviceArrayLike | IteratorT,
+    op: Operator,
     h_init: np.ndarray | GpuStruct,
 ):
     """Computes a device-wide segmented reduction using the specified binary ``op`` and initial value ``init``.
@@ -141,7 +142,9 @@ def make_segmented_reduce(
         d_out: Device array that will store the result of the reduction
         start_offsets_in: Device array or iterator containing offsets to start of segments
         end_offsets_in: Device array or iterator containing offsets to end of segments
-        op: Callable or OpKind representing the binary operator to apply
+        op: Binary operator to apply.
+            The signature is ``(T, T) -> T``, where ``T`` is
+            the data type of the initial value ``h_init``.
         init: Numpy array storing initial value of the reduction
 
     Returns:
@@ -154,11 +157,11 @@ def make_segmented_reduce(
 
 
 def segmented_reduce(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
-    start_offsets_in: DeviceArrayLike | IteratorBase,
-    end_offsets_in: DeviceArrayLike | IteratorBase,
-    op: Callable | OpKind,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
+    start_offsets_in: DeviceArrayLike | IteratorT,
+    end_offsets_in: DeviceArrayLike | IteratorT,
+    op: Operator,
     h_init: np.ndarray | GpuStruct,
     num_segments: int,
     stream=None,
@@ -181,7 +184,9 @@ def segmented_reduce(
         d_out: Device array to store the result of the reduction for each segment
         start_offsets_in: Device array or iterator containing the sequence of beginning offsets
         end_offsets_in: Device array or iterator containing the sequence of ending offsets
-        op: Binary reduction operator
+        op: Binary operator to apply.
+            The signature is ``(T, T) -> T``, where ``T`` is
+            the data type of the initial value ``h_init``.
         h_init: Initial value for the reduction
         num_segments: Number of segments to reduce
         stream: CUDA stream for the operation (optional)

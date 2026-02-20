@@ -32,59 +32,91 @@
 
 inline constexpr int size = 1000;
 
+template <class T = int>
 struct is_power_of_2
 {
-  __device__ constexpr bool operator()(const int val) const noexcept
+  __device__ constexpr bool operator()(const T val) const noexcept
   {
     return cuda::is_power_of_two(val);
   }
 };
 
-C2H_TEST("cuda::std::replace_copy_if", "[parallel algorithm]")
+template <class Policy>
+void test_replace_copy_if(const Policy& policy, thrust::device_vector<int>& output)
 {
-  thrust::device_vector<int> output(size, thrust::no_init);
+  { // empty should not access anything
+    cuda::std::replace_copy_if(
+      policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), output.begin(), is_power_of_2{}, 1337);
+  }
 
-  SECTION("with default stream")
-  {
+  { // same type
     thrust::sequence(output.begin(), output.end(), 0);
-
-    const auto policy = cuda::execution::__cub_par_unseq;
     cuda::std::replace_copy_if(
       policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, output.begin(), is_power_of_2{}, 1337);
     CHECK(thrust::none_of(output.begin(), output.end(), is_power_of_2{}));
+  }
+
+  { // convertible type
+    thrust::sequence(output.begin(), output.end(), 0);
+    cuda::std::replace_copy_if(
+      policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, output.begin(), is_power_of_2<short>{}, 1337);
+    CHECK(thrust::none_of(output.begin(), output.end(), is_power_of_2{}));
+  }
+
+  { // convertible replacement
+    thrust::sequence(output.begin(), output.end(), 0);
+    cuda::std::replace_copy_if(
+      policy,
+      cuda::counting_iterator{0},
+      cuda::counting_iterator{size},
+      output.begin(),
+      is_power_of_2{},
+      static_cast<short>(1337));
+    CHECK(thrust::none_of(output.begin(), output.end(), is_power_of_2{}));
+  }
+
+  { // convertible output
+    thrust::sequence(output.begin(), output.end(), 0);
+    cuda::std::replace_copy_if(
+      policy,
+      cuda::counting_iterator<short>{0},
+      cuda::counting_iterator<short>{size},
+      output.begin(),
+      is_power_of_2{},
+      static_cast<short>(1337));
+    CHECK(thrust::none_of(output.begin(), output.end(), is_power_of_2{}));
+  }
+}
+
+C2H_TEST("cuda::std::replace_copy_if", "[parallel algorithm]")
+{
+  thrust::device_vector<int> input(size, thrust::no_init);
+
+  SECTION("with default stream")
+  {
+    const auto policy = cuda::execution::__cub_par_unseq;
+    test_replace_copy_if(policy, input);
   }
 
   SECTION("with provided stream")
   {
-    thrust::sequence(output.begin(), output.end(), 0);
-
     cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::__cub_par_unseq.with_stream(stream);
-    cuda::std::replace_copy_if(
-      policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, output.begin(), is_power_of_2{}, 1337);
-    CHECK(thrust::none_of(output.begin(), output.end(), is_power_of_2{}));
+    test_replace_copy_if(policy, input);
   }
 
   SECTION("with provided memory_resource")
   {
-    thrust::sequence(output.begin(), output.end(), 0);
-
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
     const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource);
-    cuda::std::replace_copy_if(
-      policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, output.begin(), is_power_of_2{}, 1337);
-    CHECK(thrust::none_of(output.begin(), output.end(), is_power_of_2{}));
+    test_replace_copy_if(policy, input);
   }
 
   SECTION("with provided stream and memory_resource")
   {
-    thrust::sequence(output.begin(), output.end(), 0);
-
     cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource).with_stream(stream);
-    cuda::std::replace_copy_if(
-      policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, output.begin(), is_power_of_2{}, 1337);
-    CHECK(thrust::none_of(output.begin(), output.end(), is_power_of_2{}));
+    test_replace_copy_if(policy, input);
   }
 }
