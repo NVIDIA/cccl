@@ -49,7 +49,6 @@
 
 namespace cuda::experimental::stf
 {
-class backend_ctx_untyped;
 class exec_place;
 class exec_place_host;
 class exec_place_grid;
