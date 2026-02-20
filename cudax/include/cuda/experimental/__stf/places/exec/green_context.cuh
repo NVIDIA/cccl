@@ -74,7 +74,7 @@ public:
         , view_ptr_(mv(view_ptr))
     {}
 
-    exec_place get_affine_exec_place() const override;
+    exec_place affine_exec_place() const override;
 
     int get_device_ordinal() const override
     {
@@ -498,7 +498,7 @@ inline ::std::shared_ptr<green_context_helper> async_resources_handle::get_gc_he
   return h;
 }
 
-inline exec_place green_ctx_data_place::extension::get_affine_exec_place() const
+inline exec_place green_ctx_data_place::extension::affine_exec_place() const
 {
   if (view_ptr_)
   {
