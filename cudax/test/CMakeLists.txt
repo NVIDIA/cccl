@@ -100,9 +100,17 @@ cudax_add_catch2_test(test_target kernel
 cudax_add_catch2_test(test_target library_ref
     library/library_ref.cu
 )
+target_link_libraries(
+  ${test_target}
+  PRIVATE CUDA::nvptxcompiler_static CUDA::nvJitLink
+)
 
 cudax_add_catch2_test(test_target library
     library/library.cu
+)
+target_link_libraries(
+  ${test_target}
+  PRIVATE CUDA::nvptxcompiler_static CUDA::nvJitLink
 )
 
 cudax_add_catch2_test(test_target algorithm
