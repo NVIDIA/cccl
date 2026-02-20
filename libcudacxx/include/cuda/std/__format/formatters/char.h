@@ -100,7 +100,6 @@ struct __fmt_formatter_char
   }
 #endif // _CCCL_HAS_WCHAR_T()
 
-private:
   __fmt_spec_parser<_CharT> __parser_; //!< The parser for format specifications.
 };
 
