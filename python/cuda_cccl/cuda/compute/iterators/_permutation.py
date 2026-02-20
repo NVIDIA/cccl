@@ -18,9 +18,16 @@ class PermutationIterator(IteratorBase):
     """
     Iterator that accesses values through an index mapping.
 
-    At position i, yields values[indices[i]]. The indices iterator is advanced
-    normally, and the values iterator is accessed via random access using the
-    index value.
+    At position i, yields values[indices[i]].
+
+    Similar to `thrust::permutation_iterator <https://nvidia.github.io/cccl/thrust/api/classthrust_1_1permutation__iterator.html>`_.
+
+    Example:
+        The code snippet below demonstrates accessing values through an index mapping.
+
+        .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/permutation_iterator_basic.py
+            :language: python
+            :start-after: # example-begin
     """
 
     __slots__ = [

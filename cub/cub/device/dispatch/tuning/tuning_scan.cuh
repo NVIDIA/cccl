@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 #pragma once
@@ -18,11 +18,13 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/warpspeed/squad/squad_desc.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -562,6 +564,77 @@ struct policy_hub
 
     using ScanPolicyT =
       decltype(select_agent_policy100<sm100_tuning<InputValueT, AccumT, OffsetT, classify_op<ScanOpT>>, InputValueT>(0));
+
+#if __cccl_ptx_isa >= 860
+    struct WarpspeedPolicy
+    {
+      // Squad definitions
+      static constexpr int num_squads           = 5;
+      static constexpr int num_threads_per_warp = 32;
+
+      // TODO(bgruber): tune this
+      static constexpr int num_reduce_warps     = 4;
+      static constexpr int num_scan_stor_warps  = 4;
+      static constexpr int num_load_warps       = 1;
+      static constexpr int num_sched_warps      = 1;
+      static constexpr int num_look_ahead_warps = 1;
+
+      // TODO(bgruber): 5 is a bit better for complex<float>
+      static constexpr int num_look_ahead_items = sizeof(AccumT) == 2 ? 3 : 4;
+
+      // Deduced definitions
+      static constexpr int num_total_warps =
+        num_reduce_warps + num_scan_stor_warps + num_load_warps + num_sched_warps + num_look_ahead_warps;
+      static constexpr int num_total_threads = num_total_warps * num_threads_per_warp;
+
+      static constexpr int squad_reduce_thread_count = num_reduce_warps * num_threads_per_warp;
+
+      // 256 / sizeof(InputValueT) - 1 should minimize bank conflicts (and fits into 48KiB SMEM)
+      // 2-byte types and double needed special handling
+      static constexpr int items_per_thread =
+        ::cuda::std::max(256 / (sizeof(InputValueT) == 2 ? 2 : int{sizeof(AccumT)}) - 1, 1);
+      // TODO(bgruber): the special handling of double below is a LOT faster, but exceeds 48KiB SMEM
+      // clang-format off
+      // |   F64   |      I32      |     72576      |  11.295 us |       2.44% |  11.917 us |       8.02% |     0.622 us |   5.50% |   SLOW   |
+      // |   F64   |      I32      |    1056384     |  16.162 us |       6.24% |  15.847 us |       5.57% |    -0.315 us |  -1.95% |   SAME   |
+      // |   F64   |      I32      |    16781184    |  65.696 us |       1.64% |  60.650 us |       3.37% |    -5.046 us |  -7.68% |   FAST   |
+      // |   F64   |      I32      |   268442496    | 863.896 us |       0.22% | 679.100 us |       0.93% |  -184.796 us | -21.39% |   FAST   |
+      // |   F64   |      I32      |   1073745792   |   3.418 ms |       0.12% |   2.662 ms |       0.46% |  -755.740 us | -22.11% |   FAST   |
+      // |   F64   |      I64      |     72576      |  12.301 us |       8.18% |  12.987 us |       5.75% |     0.686 us |   5.58% |   SAME   |
+      // |   F64   |      I64      |    1056384     |  16.775 us |       5.70% |  16.091 us |       6.14% |    -0.684 us |  -4.08% |   SAME   |
+      // |   F64   |      I64      |    16781184    |  66.970 us |       1.41% |  58.024 us |       3.17% |    -8.946 us | -13.36% |   FAST   |
+      // |   F64   |      I64      |   268442496    | 863.826 us |       0.23% | 676.465 us |       0.98% |  -187.360 us | -21.69% |   FAST   |
+      // |   F64   |      I64      |   1073745792   |   3.419 ms |       0.11% |   2.664 ms |       0.48% |  -755.409 us | -22.09% |   FAST   |
+      // |   F64   |      I64      |   4294975104   |  13.641 ms |       0.05% |  10.575 ms |       0.24% | -3065.815 us | -22.48% |   FAST   |
+      // clang-format on
+      // (256 / (sizeof(InputValueT) == 2 ? 2 : (::cuda::std::is_same_v<InputValueT, double> ? 4 : sizeof(AccumT))) -
+      // 1);
+
+      static constexpr int tile_size = items_per_thread * squad_reduce_thread_count;
+
+      // The squads cannot be static constexpr variables, as those are not device accessible
+      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr warpspeed::SquadDesc squadReduce() noexcept
+      {
+        return warpspeed::SquadDesc{0, num_reduce_warps};
+      }
+      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr warpspeed::SquadDesc squadScanStore() noexcept
+      {
+        return warpspeed::SquadDesc{1, num_scan_stor_warps};
+      }
+      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr warpspeed::SquadDesc squadLoad() noexcept
+      {
+        return warpspeed::SquadDesc{2, num_load_warps};
+      }
+      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr warpspeed::SquadDesc squadSched() noexcept
+      {
+        return warpspeed::SquadDesc{3, num_sched_warps};
+      }
+      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr warpspeed::SquadDesc squadLookback() noexcept
+      {
+        return warpspeed::SquadDesc{4, num_look_ahead_warps};
+      }
+    };
+#endif // __cccl_ptx_isa >= 860
   };
 
   using MaxPolicy = Policy1000;

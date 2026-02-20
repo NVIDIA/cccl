@@ -3,14 +3,28 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Callable
+from __future__ import annotations
+
+from functools import cache
 
 from .._caching import cache_with_registered_key_functions
+from .._cpp_compile import compile_cpp_to_ltoir
 from .._utils.temp_storage_buffer import TempStorageBuffer
 from ..iterators import DiscardIterator
-from ..op import OpAdapter, make_op_adapter
-from ..typing import DeviceArrayLike, IteratorBase
+from ..op import OpAdapter, RawOp, make_op_adapter
+from ..typing import DeviceArrayLike, IteratorT, Operator
 from ._three_way_partition import make_three_way_partition
+
+
+@cache
+def _always_false_op():
+    source = """
+extern "C" __device__ void always_false(void*, void* result) {{
+    *static_cast<bool*>(result) = false;
+}}
+"""
+    ltoir = compile_cpp_to_ltoir(source)
+    return RawOp(ltoir=ltoir, name="always_false")
 
 
 class _Select:
@@ -18,8 +32,8 @@ class _Select:
 
     def __init__(
         self,
-        d_in: DeviceArrayLike | IteratorBase,
-        d_out: DeviceArrayLike | IteratorBase,
+        d_in: DeviceArrayLike | IteratorT,
+        d_out: DeviceArrayLike | IteratorT,
         d_num_selected_out: DeviceArrayLike,
         cond: OpAdapter,
     ):
@@ -29,7 +43,7 @@ class _Select:
         self.discard_unselected = DiscardIterator(d_out)
 
         # Create adapter for the always-false second predicate
-        self.false_op = make_op_adapter(lambda x: False)
+        self.false_op = _always_false_op()
 
         # Use three_way_partition internally
         self.partitioner = make_three_way_partition(
@@ -68,10 +82,10 @@ class _Select:
 
 @cache_with_registered_key_functions
 def make_select(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
     d_num_selected_out: DeviceArrayLike,
-    cond: Callable,
+    cond: Operator,
 ):
     """
     Create a select object that can be called to select elements matching a condition.
@@ -91,8 +105,9 @@ def make_select(
         d_out: Device array or iterator to store the selected output items.
         d_num_selected_out: Device array to store the number of items that passed the selection.
             The count is stored in ``d_num_selected_out[0]``.
-        cond: Callable representing the selection condition (predicate). Should return a
-            boolean-like value (typically uint8) where non-zero means the item passes the selection.
+        cond: Selection condition (predicate).
+            The signature is ``(T) -> uint8``, where ``T`` is the input data type.
+            Returns 1 (selected) or 0 (not selected).
 
     Returns:
         A callable object that performs the selection operation.
@@ -105,10 +120,10 @@ def make_select(
 
 
 def select(
-    d_in: DeviceArrayLike | IteratorBase,
-    d_out: DeviceArrayLike | IteratorBase,
+    d_in: DeviceArrayLike | IteratorT,
+    d_out: DeviceArrayLike | IteratorT,
     d_num_selected_out: DeviceArrayLike,
-    cond: Callable,
+    cond: Operator,
     num_items: int,
     stream=None,
 ):
@@ -142,8 +157,9 @@ def select(
         d_out: Device array or iterator to store the selected output items.
         d_num_selected_out: Device array to store the number of items that passed the selection.
             The count is stored in ``d_num_selected_out[0]``.
-        cond: Callable representing the selection condition (predicate). Should return a
-            boolean-like value (typically uint8) where non-zero means the item passes the selection.
+        cond: Selection condition (predicate).
+            The signature is ``(T) -> uint8``, where ``T`` is the input data type.
+            Returns 1 (selected) or 0 (not selected).
             Can reference device arrays as globals/closures - they will be automatically captured.
         num_items: Number of items in the input sequence.
         stream: CUDA stream to use for the operation (optional).

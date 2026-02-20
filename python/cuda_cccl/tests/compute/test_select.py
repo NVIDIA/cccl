@@ -5,7 +5,6 @@
 import cupy as cp
 import numpy as np
 import pytest
-from numba.np.numpy_support import carray  # noqa: F401
 
 import cuda.compute
 from cuda.compute import CacheModifiedInputIterator, ZipIterator, gpu_struct

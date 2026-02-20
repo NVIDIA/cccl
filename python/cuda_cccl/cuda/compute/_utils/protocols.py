@@ -3,15 +3,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List, Optional, Tuple
+
+import numpy as np
+
 """
 Utilities for extracting information from protocols such as `__cuda_array_interface__` and `__cuda_stream__`.
 """
 
-from typing import List, Optional, Tuple
-
-import numpy as np
-
-from ..typing import DeviceArrayLike, GpuStruct
+if TYPE_CHECKING:
+    from ..typing import DeviceArrayLike, GpuStruct
 
 
 def is_device_array(obj: object) -> bool:

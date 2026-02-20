@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from __future__ import annotations
+
 from ._bindings import _BINDINGS_AVAILABLE  # type: ignore[attr-defined]
 
 if not _BINDINGS_AVAILABLE:
