@@ -25,7 +25,7 @@
 #include <cub/warp/warp_scan.cuh>
 #include <cub/warp/warp_store.cuh>
 
-#include <cuda/ptx>
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -175,8 +175,8 @@ public:
       , d_out(d_out)
       , scan_op(scan_op)
       , initial_value(initial_value)
-      , warp_id(::cuda::ptx::get_sreg_warpid())
-      , lane_id(::cuda::ptx::get_sreg_laneid())
+      , warp_id(threadIdx.x >> detail::log2_warp_threads)
+      , lane_id(threadIdx.x & (detail::warp_threads - 1))
   {}
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_range(OffsetT inp_idx_begin, OffsetT inp_idx_end, OffsetT out_idx_begin)
@@ -279,7 +279,7 @@ public:
       constexpr unsigned worker_thread_count = cub::detail::warp_threads;
 
       n_segments        = ::cuda::std::min(n_segments, static_cast<int>(MaxNumSegments));
-      unsigned n_chunks = ::cuda::ceil_div<unsigned>(n_segments, worker_thread_count);
+      unsigned n_chunks = ::cuda::ceil_div(n_segments, worker_thread_count);
 
       using plus_t = ::cuda::std::plus<>;
       const plus_t offsets_scan_op{};
@@ -316,8 +316,10 @@ public:
     // All accesses of logical_segment_offsets from now on are read-only. Elements of
     // logical_segment_offsets[warp_id] are only accessed by threads with the same warp_id.
 
-    const ::cuda::std::span<OffsetT> cum_sizes{
-      temp_storage.logical_segment_offsets[warp_id], static_cast<::cuda::std::size_t>(n_segments)};
+    const auto cum_sizes_count = static_cast<::cuda::std::size_t>(n_segments);
+    const ::cuda::std::span<OffsetT> cum_sizes{temp_storage.logical_segment_offsets[warp_id], cum_sizes_count};
+    const multi_segment_helpers::bag_of_segments searcher{cum_sizes};
+
     const OffsetT items_per_block = cum_sizes[n_segments - 1];
     const OffsetT n_chunks        = ::cuda::ceil_div(items_per_block, tile_items);
 
@@ -325,7 +327,6 @@ public:
     using augmented_init_value_t =
       ::cuda::std::conditional_t<has_init, augmented_accum_t, multi_segment_helpers::augmented_value_t<InitValueT, bool>>;
 
-    const multi_segment_helpers::bag_of_segments searcher{cum_sizes};
     augmented_scan_op_t augmented_scan_op{scan_op};
 
     augmented_accum_t exclusive_prefix{};
