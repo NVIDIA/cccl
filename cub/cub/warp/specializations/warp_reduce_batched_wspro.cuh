@@ -65,8 +65,8 @@ struct WarpReduceBatchedWspro
   // Thread fields
   //---------------------------------------------------------------------
 
-  /// Lane index in logical warp
-  int lane_id;
+  int physical_lane_id;
+  int logical_lane_id;
 
   //---------------------------------------------------------------------
   // Construction
@@ -74,13 +74,9 @@ struct WarpReduceBatchedWspro
 
   /// Constructor
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduceBatchedWspro(TempStorage& /*temp_storage*/)
-      : lane_id(static_cast<int>(::cuda::ptx::get_sreg_laneid()))
-  {
-    if (!is_arch_warp)
-    {
-      lane_id = lane_id % LogicalWarpThreads;
-    }
-  }
+      : physical_lane_id(static_cast<int>(::cuda::ptx::get_sreg_laneid()))
+      , logical_lane_id(is_arch_warp ? physical_lane_id : physical_lane_id % LogicalWarpThreads)
+  {}
 
   //---------------------------------------------------------------------
   // Batched reductions
@@ -106,7 +102,7 @@ struct WarpReduceBatchedWspro
 #pragma unroll
     for (int i = 0; i < max_out_per_thread; ++i)
     {
-      const auto batch_idx = i * LogicalWarpThreads + lane_id;
+      const auto batch_idx = i * LogicalWarpThreads + logical_lane_id;
       if (batch_idx < Batches)
       {
         outputs[i] = values[i];
@@ -119,9 +115,8 @@ struct WarpReduceBatchedWspro
     InputT& inputs, ReductionOp reduction_op, ::cuda::std::uint32_t lane_mask = ::cuda::device::lane_mask::all().value())
   {
 #if defined(_CCCL_ASSERT_DEVICE)
-    const auto logical_warp_leader =
-      ::cuda::round_down(static_cast<int>(::cuda::ptx::get_sreg_laneid()), LogicalWarpThreads);
-    const auto logical_warp_mask = ::cuda::bitmask(logical_warp_leader, LogicalWarpThreads);
+    const auto logical_warp_leader = ::cuda::round_down(physical_lane_id, LogicalWarpThreads);
+    const auto logical_warp_mask   = ::cuda::bitmask(logical_warp_leader, LogicalWarpThreads);
 #endif // _CCCL_ASSERT_DEVICE
     _CCCL_ASSERT((lane_mask & logical_warp_mask) == logical_warp_mask,
                  "lane_mask must be consistent for each logical warp");
@@ -130,9 +125,7 @@ struct WarpReduceBatchedWspro
     for (int stride_intra_reduce = 1; stride_intra_reduce < LogicalWarpThreads; stride_intra_reduce *= 2)
     {
       const auto stride_inter_reduce = 2 * stride_intra_reduce;
-      const auto is_left_lane =
-        static_cast<int>(::cuda::ptx::get_sreg_laneid()) % (2 * stride_intra_reduce) < stride_intra_reduce;
-
+      const auto is_left_lane        = logical_lane_id % stride_inter_reduce < stride_intra_reduce;
 #pragma unroll
       for (int i = 0; i < Batches; i += stride_inter_reduce)
       {
@@ -140,6 +133,7 @@ struct WarpReduceBatchedWspro
         const auto right_idx = i + stride_intra_reduce;
         // Needed for Batches < LogicalWarpThreads case
         // Chose to redundantly operate on the last batch to avoid relying on default construction of T
+        // Unrolling of the loops should make this a compile-time selection
         const auto safe_right_idx = right_idx < Batches ? right_idx : Batches - 1;
         auto right_value          = inputs[safe_right_idx];
         // Each left lane exchanges its right value against a right lane's left value
@@ -157,9 +151,7 @@ struct WarpReduceBatchedWspro
 #pragma unroll
     for (int i = 1; i < max_out_per_thread; ++i)
     {
-      const auto batch_idx =
-        i * LogicalWarpThreads + static_cast<int>(::cuda::ptx::get_sreg_laneid()) % LogicalWarpThreads;
-      if (batch_idx < Batches)
+      if (i * LogicalWarpThreads < Batches)
       {
         inputs[i] = inputs[i * LogicalWarpThreads];
       }
