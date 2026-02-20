@@ -131,6 +131,10 @@ if [ $VERBOSE ]; then
     set -x
 fi
 
+if [[ "${GLOBAL_CMAKE_OPTIONS}" =~ "CCCL_USE_LIBCXX=ON" ]]; then
+    sudo apt-get update && sudo apt-get install libc++-dev libc++abi-dev
+fi
+
 # Check for required dependencies
 check_required_dependencies
 
