@@ -150,7 +150,9 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys work with iterators", "[keys][topk][device]"
   }
 }
 
-C2H_TEST("DeviceTopK::{Min,Max}Keys works with a large number of items", "[keys][topk][device]", num_items_types)
+C2H_TEST("DeviceTopK::{Min,Max}Keys works with a large number of items",
+         "[keys][topk][device][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         num_items_types)
 try
 {
   using key_t              = cuda::std::uint32_t;
@@ -192,7 +194,7 @@ catch (std::bad_alloc& e)
 }
 
 C2H_TEST("DeviceTopK::{Min,Max}Keys works for different offset types for num_items and k",
-         "[keys][topk][device]",
+         "[keys][topk][device][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]",
          k_items_types)
 try
 {

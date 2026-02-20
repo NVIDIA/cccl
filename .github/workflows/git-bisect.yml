@@ -256,7 +256,7 @@ jobs:
       - name: Run git bisect
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          LAUNCH_ARGS: ${{ inputs.launch_args }}
+          LAUNCH_ARGS: '-d ${{ inputs.launch_args }}'
           GITHUB_REPOSITORY: ${{ github.repository }}
           # AWS credentials from the configure-aws-credentials action
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
@@ -297,7 +297,7 @@ jobs:
           mkdir -p /tmp/shared
           rc=0
           set -x
-          .devcontainer/launch.sh -d ${LAUNCH_ARGS} ${GPU_ARGS} \
+          .devcontainer/launch.sh ${LAUNCH_ARGS} ${GPU_ARGS} \
             --env "AWS_ROLE_ARN=" \
             --env "AWS_REGION=${AWS_REGION}" \
             --env "SCCACHE_REGION=${AWS_REGION}" \
