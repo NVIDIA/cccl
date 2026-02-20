@@ -89,13 +89,13 @@ struct agent_t
 
   static constexpr bool keys_use_bl2sh     = use_block_load_to_shared<key_type, KeysIt1, KeysIt2>;
   static constexpr bool items_use_bl2sh    = use_block_load_to_shared<item_type, ItemsIt1, ItemsIt2>;
-  static constexpr int bl2sh_minimum_align = block_load_to_shared::template SharedBufferAlignBytes<char>();
+  static constexpr int bl2sh_minimum_align = cub::detail::LoadToSharedBufferAlignBytes<char>();
 
   template <typename ValueT>
-  struct alignas(block_load_to_shared::template SharedBufferAlignBytes<ValueT>()) buffer_t
+  struct alignas(cub::detail::LoadToSharedBufferAlignBytes<ValueT>()) buffer_t
   {
     // Need extra bytes of padding for TMA because this static buffer has to hold the two dynamically sized buffers.
-    static constexpr int bytes_needed = block_load_to_shared::template SharedBufferSizeBytes<ValueT>(items_per_tile + 1)
+    static constexpr int bytes_needed = cub::detail::LoadToSharedBufferSizeBytes<ValueT>(items_per_tile + 1)
                                       + (alignof(ValueT) < bl2sh_minimum_align ? 2 * bl2sh_minimum_align : 0);
 
     char c_array[bytes_needed];
@@ -192,10 +192,8 @@ struct agent_t
       ::cuda::std::span keys2_src{THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(keys2_in + keys2_beg),
                                   static_cast<::cuda::std::size_t>(keys2_count_tile)};
       ::cuda::std::span keys_buffers{storage.keys_shared.c_array};
-      auto keys1_buffer =
-        keys_buffers.first(block_load_to_shared::template SharedBufferSizeBytes<key_type>(keys1_count_tile));
-      auto keys2_buffer =
-        keys_buffers.last(block_load_to_shared::template SharedBufferSizeBytes<key_type>(keys2_count_tile));
+      auto keys1_buffer = keys_buffers.first(cub::detail::LoadToSharedBufferSizeBytes<key_type>(keys1_count_tile));
+      auto keys2_buffer = keys_buffers.last(cub::detail::LoadToSharedBufferSizeBytes<key_type>(keys2_count_tile));
       _CCCL_ASSERT(keys1_buffer.end() <= keys2_buffer.begin(),
                    "Keys buffer needs to be appropriately sized (internal)");
       keys1_shared = data(load2sh.CopyAsync(keys1_buffer, keys1_src));
@@ -291,10 +289,8 @@ struct agent_t
         ::cuda::std::span items2_src{THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(items2_in + keys2_beg),
                                      static_cast<::cuda::std::size_t>(keys2_count_tile)};
         ::cuda::std::span items_buffers{storage.items_shared.c_array};
-        auto items1_buffer =
-          items_buffers.first(block_load_to_shared::template SharedBufferSizeBytes<item_type>(keys1_count_tile));
-        auto items2_buffer =
-          items_buffers.last(block_load_to_shared::template SharedBufferSizeBytes<item_type>(keys2_count_tile));
+        auto items1_buffer = items_buffers.first(cub::detail::LoadToSharedBufferSizeBytes<item_type>(keys1_count_tile));
+        auto items2_buffer = items_buffers.last(cub::detail::LoadToSharedBufferSizeBytes<item_type>(keys2_count_tile));
         _CCCL_ASSERT(items1_buffer.end() <= items2_buffer.begin(),
                      "Items buffer needs to be appropriately sized (internal)");
         // block_store_keys above uses shared memory, so make sure all threads are done before we write
