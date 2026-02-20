@@ -23,6 +23,7 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_arch.cuh> // MemBoundScaling
 
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
@@ -346,7 +347,7 @@ public:
     // cooperatively compute inclusive scan of sizes of segments to be processed by this block
     {
       n_segments               = ::cuda::std::min(n_segments, static_cast<int>(NumSegments));
-      unsigned n_chunks        = ::cuda::ceil_div<unsigned>(n_segments, block_threads);
+      unsigned n_chunks        = ::cuda::ceil_div(n_segments, block_threads);
       OffsetT exclusive_prefix = 0;
       using plus_t             = ::cuda::std::plus<>;
       const plus_t offsets_scan_op{};
