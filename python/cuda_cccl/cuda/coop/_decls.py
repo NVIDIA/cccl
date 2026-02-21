@@ -392,6 +392,34 @@ class CoopTempStorageDecl(CoopAbstractTemplate):
 class CoopTempStorageGetItemDecl(AbstractTemplate):
     # Allows for coop primitives to be called with a temp_storage argument
     # via the getitem syntax, e.g. `coop.block.load[temp_storage](...)`.
+    target_key = None
+
+    def _supports_getitem_temp_storage(self, func_obj):
+        try:
+            templates = func_obj.templates
+        except AttributeError:
+            return False
+
+        if len(templates) != 1:
+            return False
+
+        template = templates[0]
+        primitive_name = getattr(template, "primitive_name", "")
+        if not primitive_name.startswith("coop."):
+            return False
+
+        for signature_attr in ("signature_instance", "signature"):
+            signature_fn = getattr(template, signature_attr, None)
+            if signature_fn is None:
+                continue
+            try:
+                params = inspect.signature(signature_fn).parameters
+            except (TypeError, ValueError):
+                continue
+            if "temp_storage" in params:
+                return True
+        return False
+
     def generic(self, args, kwds):
         assert not kwds, "No keyword arguments expected"
         assert len(args) == 2, "Expected two arguments"
@@ -399,13 +427,22 @@ class CoopTempStorageGetItemDecl(AbstractTemplate):
         if not isinstance(func_obj, types.Function):
             return None
 
+        target_key = getattr(self, "target_key", None)
         try:
             typing_key = func_obj.typing_key
         except AttributeError:
             return None
 
-        if typing_key != self.target_key:
-            return None
+        if target_key is not None:
+            if typing_key != target_key:
+                return None
+        else:
+            # Avoid overlap with specialized getitem templates that target
+            # block load/store explicitly.
+            if typing_key in (coop.block.load, coop.block.store):
+                return None
+            if not self._supports_getitem_temp_storage(func_obj):
+                return None
 
         if not isinstance(temp_storage, TempStorageType):
             msg = f"temp_storage must be a {TempStorageType}, got {temp_storage}"
@@ -1127,6 +1164,11 @@ class CoopBlockStoreDecl(CoopLoadStoreBaseTemplate, StoreMixin, CoopDeclMixin):
 class CoopBlockStoreTempStorageGetItemDecl(CoopTempStorageGetItemDecl):
     target_key = coop.block.store
     target_template = CoopBlockStoreDecl
+
+
+@infer_global(operator.getitem)
+class CoopGenericTempStorageGetItemDecl(CoopTempStorageGetItemDecl):
+    target_key = None
 
 
 # =============================================================================
