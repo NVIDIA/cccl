@@ -193,3 +193,137 @@ class merge_sort_pairs(merge_sort_keys):
             temp_storage_alignment=specialization.temp_storage_alignment,
             algorithm=specialization,
         )
+
+
+def _build_merge_sort_keys_spec(
+    dtype,
+    items_per_thread,
+    compare_op,
+    value_dtype=None,
+    threads_in_warp=32,
+    methods=None,
+):
+    return {
+        "dtype": dtype,
+        "items_per_thread": items_per_thread,
+        "compare_op": compare_op,
+        "value_dtype": value_dtype,
+        "threads_in_warp": threads_in_warp,
+        "methods": methods,
+    }
+
+
+def _build_merge_sort_pairs_spec(
+    keys,
+    values,
+    items_per_thread,
+    compare_op,
+    threads_in_warp=32,
+    methods=None,
+):
+    return {
+        "keys": keys,
+        "values": values,
+        "items_per_thread": items_per_thread,
+        "compare_op": compare_op,
+        "threads_in_warp": threads_in_warp,
+        "methods": methods,
+    }
+
+
+def _make_merge_sort_keys_two_phase(
+    dtype,
+    items_per_thread,
+    compare_op,
+    value_dtype=None,
+    threads_in_warp=32,
+    methods=None,
+):
+    return merge_sort_keys.create(
+        **_build_merge_sort_keys_spec(
+            dtype=dtype,
+            items_per_thread=items_per_thread,
+            compare_op=compare_op,
+            value_dtype=value_dtype,
+            threads_in_warp=threads_in_warp,
+            methods=methods,
+        )
+    )
+
+
+def _make_merge_sort_keys_rewrite(
+    dtype,
+    items_per_thread,
+    compare_op,
+    value_dtype=None,
+    threads_in_warp=32,
+    methods=None,
+    unique_id=None,
+    temp_storage=None,
+    node=None,
+):
+    spec = _build_merge_sort_keys_spec(
+        dtype=dtype,
+        items_per_thread=items_per_thread,
+        compare_op=compare_op,
+        value_dtype=value_dtype,
+        threads_in_warp=threads_in_warp,
+        methods=methods,
+    )
+    spec.update(
+        {
+            "unique_id": unique_id,
+            "temp_storage": temp_storage,
+            "node": node,
+        }
+    )
+    return merge_sort_keys(**spec)
+
+
+def _make_merge_sort_pairs_two_phase(
+    keys,
+    values,
+    items_per_thread,
+    compare_op,
+    threads_in_warp=32,
+    methods=None,
+):
+    return merge_sort_pairs.create(
+        **_build_merge_sort_pairs_spec(
+            keys=keys,
+            values=values,
+            items_per_thread=items_per_thread,
+            compare_op=compare_op,
+            threads_in_warp=threads_in_warp,
+            methods=methods,
+        )
+    )
+
+
+def _make_merge_sort_pairs_rewrite(
+    keys,
+    values,
+    items_per_thread,
+    compare_op,
+    threads_in_warp=32,
+    methods=None,
+    unique_id=None,
+    temp_storage=None,
+    node=None,
+):
+    spec = _build_merge_sort_pairs_spec(
+        keys=keys,
+        values=values,
+        items_per_thread=items_per_thread,
+        compare_op=compare_op,
+        threads_in_warp=threads_in_warp,
+        methods=methods,
+    )
+    spec.update(
+        {
+            "unique_id": unique_id,
+            "temp_storage": temp_storage,
+            "node": node,
+        }
+    )
+    return merge_sort_pairs(**spec)

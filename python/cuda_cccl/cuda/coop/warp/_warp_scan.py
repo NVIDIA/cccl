@@ -437,3 +437,187 @@ class inclusive_scan(BasePrimitive):
             temp_storage_alignment=specialization.temp_storage_alignment,
             algorithm=specialization,
         )
+
+
+def _build_exclusive_sum_spec(
+    dtype,
+    threads_in_warp=32,
+    warp_aggregate=None,
+):
+    return {
+        "dtype": dtype,
+        "threads_in_warp": threads_in_warp,
+        "warp_aggregate": warp_aggregate,
+    }
+
+
+def _build_inclusive_sum_spec(
+    dtype,
+    threads_in_warp=32,
+    warp_aggregate=None,
+):
+    return {
+        "dtype": dtype,
+        "threads_in_warp": threads_in_warp,
+        "warp_aggregate": warp_aggregate,
+    }
+
+
+def _build_exclusive_scan_spec(
+    dtype,
+    scan_op,
+    initial_value=None,
+    threads_in_warp=32,
+    valid_items=None,
+    warp_aggregate=None,
+):
+    return {
+        "dtype": dtype,
+        "scan_op": scan_op,
+        "initial_value": initial_value,
+        "threads_in_warp": threads_in_warp,
+        "valid_items": valid_items,
+        "warp_aggregate": warp_aggregate,
+    }
+
+
+def _build_inclusive_scan_spec(
+    dtype,
+    scan_op,
+    initial_value=None,
+    threads_in_warp=32,
+    valid_items=None,
+    warp_aggregate=None,
+):
+    return {
+        "dtype": dtype,
+        "scan_op": scan_op,
+        "initial_value": initial_value,
+        "threads_in_warp": threads_in_warp,
+        "valid_items": valid_items,
+        "warp_aggregate": warp_aggregate,
+    }
+
+
+def _make_exclusive_sum_two_phase(
+    dtype,
+    threads_in_warp=32,
+):
+    return exclusive_sum.create(
+        dtype=dtype,
+        threads_in_warp=threads_in_warp,
+    )
+
+
+def _make_exclusive_sum_rewrite(
+    dtype,
+    threads_in_warp=32,
+    warp_aggregate=None,
+    unique_id=None,
+    temp_storage=None,
+):
+    spec = _build_exclusive_sum_spec(
+        dtype=dtype,
+        threads_in_warp=threads_in_warp,
+        warp_aggregate=warp_aggregate,
+    )
+    spec.update({"unique_id": unique_id, "temp_storage": temp_storage})
+    return exclusive_sum(**spec)
+
+
+def _make_inclusive_sum_two_phase(
+    dtype,
+    threads_in_warp=32,
+):
+    return inclusive_sum.create(
+        dtype=dtype,
+        threads_in_warp=threads_in_warp,
+    )
+
+
+def _make_inclusive_sum_rewrite(
+    dtype,
+    threads_in_warp=32,
+    warp_aggregate=None,
+    unique_id=None,
+    temp_storage=None,
+):
+    spec = _build_inclusive_sum_spec(
+        dtype=dtype,
+        threads_in_warp=threads_in_warp,
+        warp_aggregate=warp_aggregate,
+    )
+    spec.update({"unique_id": unique_id, "temp_storage": temp_storage})
+    return inclusive_sum(**spec)
+
+
+def _make_exclusive_scan_two_phase(
+    dtype,
+    scan_op,
+    initial_value=None,
+    threads_in_warp=32,
+):
+    return exclusive_scan.create(
+        dtype=dtype,
+        scan_op=scan_op,
+        initial_value=initial_value,
+        threads_in_warp=threads_in_warp,
+    )
+
+
+def _make_exclusive_scan_rewrite(
+    dtype,
+    scan_op,
+    initial_value=None,
+    threads_in_warp=32,
+    valid_items=None,
+    warp_aggregate=None,
+    unique_id=None,
+    temp_storage=None,
+):
+    spec = _build_exclusive_scan_spec(
+        dtype=dtype,
+        scan_op=scan_op,
+        initial_value=initial_value,
+        threads_in_warp=threads_in_warp,
+        valid_items=valid_items,
+        warp_aggregate=warp_aggregate,
+    )
+    spec.update({"unique_id": unique_id, "temp_storage": temp_storage})
+    return exclusive_scan(**spec)
+
+
+def _make_inclusive_scan_two_phase(
+    dtype,
+    scan_op,
+    initial_value=None,
+    threads_in_warp=32,
+):
+    return inclusive_scan.create(
+        dtype=dtype,
+        scan_op=scan_op,
+        initial_value=initial_value,
+        threads_in_warp=threads_in_warp,
+    )
+
+
+def _make_inclusive_scan_rewrite(
+    dtype,
+    scan_op,
+    initial_value=None,
+    threads_in_warp=32,
+    valid_items=None,
+    warp_aggregate=None,
+    unique_id=None,
+    temp_storage=None,
+):
+    spec = _build_inclusive_scan_spec(
+        dtype=dtype,
+        scan_op=scan_op,
+        initial_value=initial_value,
+        threads_in_warp=threads_in_warp,
+        valid_items=valid_items,
+        warp_aggregate=warp_aggregate,
+    )
+    spec.update({"unique_id": unique_id, "temp_storage": temp_storage})
+    return inclusive_scan(**spec)
