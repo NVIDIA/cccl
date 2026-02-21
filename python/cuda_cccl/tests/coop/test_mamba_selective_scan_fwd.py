@@ -5,9 +5,11 @@
 from pathlib import Path
 
 import numpy as np
+import pytest
 from mamba_selective_scan_fwd import (
     make_kernel_traits,
     make_selective_scan_fwd_kernel,
+    make_selective_scan_fwd_kernel_single_phase_temp_storage,
 )
 from numba import cuda
 
@@ -34,7 +36,11 @@ def _load_ref_data():
     }
 
 
-def test_mamba_selective_scan_fwd_simple():
+@pytest.mark.parametrize(
+    "kernel_variant",
+    ["traits_gpu_dataclass", "single_phase_temp_storage"],
+)
+def test_mamba_selective_scan_fwd_simple(kernel_variant):
     threads_per_block = 128
     items_per_thread = 4
 
@@ -46,24 +52,41 @@ def test_mamba_selective_scan_fwd_simple():
             f"Reference seqlen {seqlen} != expected {expected_seqlen}."
         )
 
-    traits = make_kernel_traits(np.float32, threads_per_block, items_per_thread)
-
     d_u = cuda.to_device(ref["u"])
     d_delta = cuda.to_device(ref["delta"])
     d_out = cuda.device_array_like(d_u)
 
-    k = make_selective_scan_fwd_kernel(traits)[1, threads_per_block]
-    k(
-        d_u,
-        d_delta,
-        d_out,
-        ref["A"],
-        ref["B"],
-        ref["C"],
-        ref["D"],
-        ref["delta_bias"],
-        traits,
-    )
+    if kernel_variant == "traits_gpu_dataclass":
+        traits = make_kernel_traits(np.float32, threads_per_block, items_per_thread)
+        k = make_selective_scan_fwd_kernel(traits)[1, threads_per_block]
+        k(
+            d_u,
+            d_delta,
+            d_out,
+            ref["A"],
+            ref["B"],
+            ref["C"],
+            ref["D"],
+            ref["delta_bias"],
+            traits,
+        )
+    elif kernel_variant == "single_phase_temp_storage":
+        k = make_selective_scan_fwd_kernel_single_phase_temp_storage(
+            threads_per_block,
+            items_per_thread,
+        )[1, threads_per_block]
+        k(
+            d_u,
+            d_delta,
+            d_out,
+            ref["A"],
+            ref["B"],
+            ref["C"],
+            ref["D"],
+            ref["delta_bias"],
+        )
+    else:
+        raise AssertionError(f"Unknown kernel_variant: {kernel_variant}")
     cuda.synchronize()
 
     h_out = d_out.copy_to_host()

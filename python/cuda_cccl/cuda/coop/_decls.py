@@ -51,6 +51,7 @@ import cuda.coop as coop
 
 from ._common import CUB_BLOCK_REDUCE_ALGOS
 from ._scan_op import ScanOp
+from ._types import Invocable
 from ._typing import (
     ScanOpType,
 )
@@ -236,6 +237,8 @@ class TempStorageType(types.Type):
 
 
 temp_storage_type = TempStorageType()
+TempStorageSharing = Literal["shared", "exclusive"]
+_TEMP_STORAGE_SHARING_VALUES = frozenset(("shared", "exclusive"))
 
 
 @typeof_impl.register(coop.TempStorage)
@@ -253,12 +256,14 @@ class CoopTempStorageDecl(CoopAbstractTemplate):
     def signature(
         size_in_bytes: Optional[int] = None,
         alignment: Optional[int] = None,
-        auto_sync: Optional[bool] = True,
+        auto_sync: Optional[bool] = None,
+        sharing: Optional[TempStorageSharing] = "shared",
     ):
         return inspect.signature(CoopTempStorageDecl.signature).bind(
             size_in_bytes,
             alignment=alignment,
             auto_sync=auto_sync,
+            sharing=sharing,
         )
 
     def _validate_args_and_create_signature(self, bound, two_phase=False):
@@ -296,6 +301,29 @@ class CoopTempStorageDecl(CoopAbstractTemplate):
                 msg = f"auto_sync must be a boolean value, got {auto_sync}"
                 raise errors.TypingError(msg)
             arglist.append(auto_sync)
+
+        sharing = bound.arguments.get("sharing")
+        if isinstance(sharing, types.NoneType):
+            arglist.append(sharing)
+            sharing = None
+        if sharing is not None:
+            permitted = (str, types.StringLiteral)
+            if not isinstance(sharing, permitted):
+                msg = f"sharing must be a string literal value, got {sharing}"
+                raise errors.TypingError(msg)
+            sharing_value = (
+                sharing.literal_value
+                if isinstance(sharing, types.StringLiteral)
+                else sharing
+            )
+            if not isinstance(sharing_value, str):
+                msg = f"sharing must be a string literal value, got {sharing}"
+                raise errors.TypingError(msg)
+            sharing_value = sharing_value.strip().lower()
+            if sharing_value not in _TEMP_STORAGE_SHARING_VALUES:
+                msg = f"sharing must be 'shared' or 'exclusive', got {sharing!r}"
+                raise errors.TypingError(msg)
+            arglist.append(sharing)
 
         return signature(temp_storage_type, *arglist)
 
@@ -5586,6 +5614,55 @@ class CoopWarpMergeSortPairsInstanceModel(models.OpaqueModel):
 @lower_constant(CoopWarpMergeSortPairsInstanceType)
 def lower_constant_warp_merge_sort_pairs_instance_type(context, builder, typ, value):
     return context.get_dummy_value()
+
+
+_INVOCABLE_PRIMITIVE_TYPE_TO_INSTANCE_TYPE = {
+    coop.block.load: block_load_instance_type,
+    coop.block.store: block_store_instance_type,
+    coop.block.exchange: block_exchange_instance_type,
+    coop.block.merge_sort_keys: block_merge_sort_instance_type,
+    coop.block.merge_sort_pairs: block_merge_sort_pairs_instance_type,
+    coop.block.radix_sort_keys: block_radix_sort_instance_type,
+    coop.block.radix_sort_pairs: block_radix_sort_instance_type,
+    coop.block.radix_sort_keys_descending: block_radix_sort_descending_instance_type,
+    coop.block.radix_sort_pairs_descending: block_radix_sort_descending_instance_type,
+    coop.block.radix_rank: block_radix_rank_instance_type,
+    coop.block.reduce: block_reduce_instance_type,
+    coop.block.sum: block_sum_instance_type,
+    coop.block.scan: block_scan_instance_type,
+    coop.block.exclusive_sum: block_scan_instance_type,
+    coop.block.inclusive_sum: block_scan_instance_type,
+    coop.block.exclusive_scan: block_scan_instance_type,
+    coop.block.inclusive_scan: block_scan_instance_type,
+    coop.block.adjacent_difference: block_adjacent_difference_instance_type,
+    coop.block.discontinuity: block_discontinuity_instance_type,
+    coop.block.shuffle: block_shuffle_instance_type,
+    coop.warp.load: warp_load_instance_type,
+    coop.warp.store: warp_store_instance_type,
+    coop.warp.exchange: warp_exchange_instance_type,
+    coop.warp.reduce: warp_reduce_instance_type,
+    coop.warp.sum: warp_sum_instance_type,
+    coop.warp.exclusive_sum: warp_exclusive_sum_instance_type,
+    coop.warp.inclusive_sum: warp_inclusive_sum_instance_type,
+    coop.warp.exclusive_scan: warp_exclusive_scan_instance_type,
+    coop.warp.inclusive_scan: warp_inclusive_scan_instance_type,
+    coop.warp.merge_sort_keys: warp_merge_sort_instance_type,
+    coop.warp.merge_sort_pairs: warp_merge_sort_pairs_instance_type,
+}
+
+
+@typeof_impl.register(Invocable)
+def typeof_invocable_instance(val, c):
+    specialization = getattr(val, "specialization", None)
+    if specialization is None:
+        return None
+
+    primitive = getattr(specialization, "primitive", None)
+    if primitive is None:
+        return None
+
+    primitive_type = type(primitive)
+    return _INVOCABLE_PRIMITIVE_TYPE_TO_INSTANCE_TYPE.get(primitive_type)
 
 
 # =============================================================================

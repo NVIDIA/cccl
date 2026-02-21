@@ -246,12 +246,12 @@ class discontinuity(BasePrimitive):
             flag_dtype = numba.types.boolean
 
         algo = cls(
-            block_discontinuity_type,
             dtype=dtype,
             threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
             flag_op=flag_op,
             flag_dtype=flag_dtype,
+            block_discontinuity_type=block_discontinuity_type,
             methods=methods,
             temp_storage=temp_storage,
             tile_predecessor_item=tile_predecessor_item,

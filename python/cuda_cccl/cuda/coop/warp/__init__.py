@@ -21,8 +21,8 @@ else:
 
     # Maker-style factory functions.
     #
-    # These wrappers are the supported two-phase entry points going forward.
-    # They intentionally accept rewrite-internal kwargs as passthrough.
+    # These are the public two-phase entry points and return Invocable
+    # objects.
     def make_load(
         dtype,
         items_per_thread=1,
@@ -30,7 +30,7 @@ else:
         algorithm=None,
         **kwargs,
     ):
-        return load(
+        return load.create(
             dtype=dtype,
             items_per_thread=items_per_thread,
             threads_in_warp=threads_in_warp,
@@ -45,7 +45,7 @@ else:
         algorithm=None,
         **kwargs,
     ):
-        return store(
+        return store.create(
             dtype=dtype,
             items_per_thread=items_per_thread,
             threads_in_warp=threads_in_warp,
@@ -60,7 +60,7 @@ else:
         warp_exchange_type=WarpExchangeType.StripedToBlocked,
         **kwargs,
     ):
-        return exchange(
+        return exchange.create(
             warp_exchange_type=warp_exchange_type,
             dtype=dtype,
             items_per_thread=items_per_thread,
@@ -75,7 +75,7 @@ else:
         valid_items=None,
         **kwargs,
     ):
-        return reduce(
+        return reduce.create(
             dtype=dtype,
             binary_op=binary_op,
             threads_in_warp=threads_in_warp,
@@ -89,7 +89,7 @@ else:
         valid_items=None,
         **kwargs,
     ):
-        return sum(
+        return sum.create(
             dtype=dtype,
             threads_in_warp=threads_in_warp,
             valid_items=valid_items,
@@ -101,7 +101,7 @@ else:
         threads_in_warp=32,
         **kwargs,
     ):
-        return exclusive_sum(
+        return exclusive_sum.create(
             dtype=dtype,
             threads_in_warp=threads_in_warp,
             **kwargs,
@@ -112,7 +112,7 @@ else:
         threads_in_warp=32,
         **kwargs,
     ):
-        return inclusive_sum(
+        return inclusive_sum.create(
             dtype=dtype,
             threads_in_warp=threads_in_warp,
             **kwargs,
@@ -125,7 +125,7 @@ else:
         threads_in_warp=32,
         **kwargs,
     ):
-        return exclusive_scan(
+        return exclusive_scan.create(
             dtype=dtype,
             scan_op=scan_op,
             initial_value=initial_value,
@@ -140,7 +140,7 @@ else:
         threads_in_warp=32,
         **kwargs,
     ):
-        return inclusive_scan(
+        return inclusive_scan.create(
             dtype=dtype,
             scan_op=scan_op,
             initial_value=initial_value,
@@ -156,7 +156,7 @@ else:
         threads_in_warp=32,
         **kwargs,
     ):
-        return merge_sort_keys(
+        return merge_sort_keys.create(
             dtype=dtype,
             items_per_thread=items_per_thread,
             compare_op=compare_op,
@@ -173,7 +173,7 @@ else:
         threads_in_warp=32,
         **kwargs,
     ):
-        return merge_sort_pairs(
+        return merge_sort_pairs.create(
             keys=keys,
             values=values,
             items_per_thread=items_per_thread,
