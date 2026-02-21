@@ -216,3 +216,116 @@ class store(base_load_store):
     method_name = "Store"
     c_name = "block_store"
     includes = ["cub/block/block_store.cuh"]
+
+
+def _normalize_threads_per_block(kwargs, threads_per_block):
+    kw = dict(kwargs)
+    if threads_per_block is None:
+        threads_per_block = kw.pop("dim", None)
+    return kw, threads_per_block
+
+
+def _build_load_spec(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    algorithm="direct",
+    **kwargs,
+):
+    kw, threads_per_block = _normalize_threads_per_block(kwargs, threads_per_block)
+    spec = {
+        "dtype": dtype,
+        "threads_per_block": threads_per_block,
+        "items_per_thread": items_per_thread,
+        "algorithm": algorithm,
+    }
+    spec.update(kw)
+    return spec
+
+
+def _build_store_spec(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    algorithm="direct",
+    **kwargs,
+):
+    kw, threads_per_block = _normalize_threads_per_block(kwargs, threads_per_block)
+    spec = {
+        "dtype": dtype,
+        "threads_per_block": threads_per_block,
+        "items_per_thread": items_per_thread,
+        "algorithm": algorithm,
+    }
+    spec.update(kw)
+    return spec
+
+
+def _make_load_two_phase(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    algorithm="direct",
+    **kwargs,
+):
+    spec = _build_load_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        algorithm=algorithm,
+        **kwargs,
+    )
+    return load.create(**spec)
+
+
+def _make_load_rewrite(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    algorithm="direct",
+    **kwargs,
+):
+    spec = _build_load_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        algorithm=algorithm,
+        **kwargs,
+    )
+    spec["dim"] = spec.pop("threads_per_block")
+    return load(**spec)
+
+
+def _make_store_two_phase(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    algorithm="direct",
+    **kwargs,
+):
+    spec = _build_store_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        algorithm=algorithm,
+        **kwargs,
+    )
+    return store.create(**spec)
+
+
+def _make_store_rewrite(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    algorithm="direct",
+    **kwargs,
+):
+    spec = _build_store_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        algorithm=algorithm,
+        **kwargs,
+    )
+    spec["dim"] = spec.pop("threads_per_block")
+    return store(**spec)

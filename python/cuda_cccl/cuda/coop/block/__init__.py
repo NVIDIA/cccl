@@ -10,32 +10,56 @@ if os.environ.get("CCCL_COOP_DOCS") == "1":
 else:
     from ._block_adjacent_difference import (
         BlockAdjacentDifferenceType,
+        _make_adjacent_difference_two_phase,
         adjacent_difference,
     )
     from ._block_discontinuity import (
         BlockDiscontinuityType,
+        _make_discontinuity_two_phase,
         discontinuity,
     )
     from ._block_exchange import (
         BlockExchangeType,
+        _make_exchange_two_phase,
         exchange,
     )
-    from ._block_histogram import histogram
+    from ._block_histogram import _make_histogram_two_phase, histogram
     from ._block_load_store import (
+        _make_load_two_phase,
+        _make_store_two_phase,
         load,
         store,
     )
-    from ._block_merge_sort import merge_sort_keys, merge_sort_pairs
-    from ._block_radix_rank import radix_rank
+    from ._block_merge_sort import (
+        _make_merge_sort_keys_two_phase,
+        _make_merge_sort_pairs_two_phase,
+        merge_sort_keys,
+        merge_sort_pairs,
+    )
+    from ._block_radix_rank import _make_radix_rank_two_phase, radix_rank
     from ._block_radix_sort import (
+        _make_radix_sort_keys_descending_two_phase,
+        _make_radix_sort_keys_two_phase,
+        _make_radix_sort_pairs_descending_two_phase,
+        _make_radix_sort_pairs_two_phase,
         radix_sort_keys,
         radix_sort_keys_descending,
         radix_sort_pairs,
         radix_sort_pairs_descending,
     )
-    from ._block_reduce import reduce, sum
-    from ._block_run_length_decode import run_length
+    from ._block_reduce import (
+        _make_reduce_two_phase,
+        _make_sum_two_phase,
+        reduce,
+        sum,
+    )
+    from ._block_run_length_decode import _make_run_length_two_phase, run_length
     from ._block_scan import (
+        _make_exclusive_scan_two_phase,
+        _make_exclusive_sum_two_phase,
+        _make_inclusive_scan_two_phase,
+        _make_inclusive_sum_two_phase,
+        _make_scan_two_phase,
         exclusive_scan,
         exclusive_sum,
         inclusive_scan,
@@ -44,26 +68,9 @@ else:
     )
     from ._block_shuffle import (
         BlockShuffleType,
+        _make_shuffle_two_phase,
         shuffle,
     )
-
-    def _normalize_threads_per_block(kwargs, threads_per_block):
-        kw = dict(kwargs)
-        if threads_per_block is None:
-            threads_per_block = kw.pop("dim", None)
-        if threads_per_block is not None:
-            kw["threads_per_block"] = threads_per_block
-        return kw
-
-    def _normalize_scan_prefix(kwargs, prefix_op, target_name):
-        kw = dict(kwargs)
-        if prefix_op is None:
-            prefix_op = kw.pop("prefix_op", None)
-        if prefix_op is None:
-            prefix_op = kw.pop("block_prefix_callback_op", None)
-        if prefix_op is not None:
-            kw[target_name] = prefix_op
-        return kw
 
     # Maker-style factory functions.
     #
@@ -78,12 +85,12 @@ else:
         algorithm="direct",
         **kwargs,
     ):
-        kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return load.create(
+        return _make_load_two_phase(
             dtype=dtype,
+            threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
             algorithm=algorithm,
-            **kw,
+            **kwargs,
         )
 
     def make_store(
@@ -93,12 +100,12 @@ else:
         algorithm="direct",
         **kwargs,
     ):
-        kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return store.create(
+        return _make_store_two_phase(
             dtype=dtype,
+            threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
             algorithm=algorithm,
-            **kw,
+            **kwargs,
         )
 
     def make_exchange(
@@ -108,12 +115,12 @@ else:
         block_exchange_type=BlockExchangeType.StripedToBlocked,
         **kwargs,
     ):
-        kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return exchange.create(
+        return _make_exchange_two_phase(
             block_exchange_type=block_exchange_type,
             dtype=dtype,
+            threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
-            **kw,
+            **kwargs,
         )
 
     def make_merge_sort_keys(
@@ -123,12 +130,12 @@ else:
         compare_op=None,
         **kwargs,
     ):
-        kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return merge_sort_keys.create(
+        return _make_merge_sort_keys_two_phase(
             dtype=dtype,
+            threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
             compare_op=compare_op,
-            **kw,
+            **kwargs,
         )
 
     def make_merge_sort_pairs(
@@ -139,13 +146,13 @@ else:
         compare_op=None,
         **kwargs,
     ):
-        kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return merge_sort_pairs.create(
+        return _make_merge_sort_pairs_two_phase(
             keys=keys,
             values=values,
+            threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
             compare_op=compare_op,
-            **kw,
+            **kwargs,
         )
 
     def make_radix_sort_keys(
@@ -154,11 +161,11 @@ else:
         items_per_thread=1,
         **kwargs,
     ):
-        kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return radix_sort_keys.create(
+        return _make_radix_sort_keys_two_phase(
             dtype=dtype,
+            threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
-            **kw,
+            **kwargs,
         )
 
     def make_radix_sort_keys_descending(
@@ -167,11 +174,11 @@ else:
         items_per_thread=1,
         **kwargs,
     ):
-        kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return radix_sort_keys_descending.create(
+        return _make_radix_sort_keys_descending_two_phase(
             dtype=dtype,
+            threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
-            **kw,
+            **kwargs,
         )
 
     def make_radix_sort_pairs(
@@ -181,12 +188,12 @@ else:
         items_per_thread=1,
         **kwargs,
     ):
-        kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return radix_sort_pairs.create(
+        return _make_radix_sort_pairs_two_phase(
             keys=keys,
             values=values,
+            threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
-            **kw,
+            **kwargs,
         )
 
     def make_radix_sort_pairs_descending(
@@ -196,12 +203,12 @@ else:
         items_per_thread=1,
         **kwargs,
     ):
-        kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return radix_sort_pairs_descending.create(
+        return _make_radix_sort_pairs_descending_two_phase(
             keys=keys,
             values=values,
+            threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
-            **kw,
+            **kwargs,
         )
 
     def make_radix_rank(
@@ -212,13 +219,13 @@ else:
         end_bit=None,
         **kwargs,
     ):
-        kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return radix_rank.create(
+        return _make_radix_rank_two_phase(
             dtype=dtype,
+            threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
             begin_bit=begin_bit,
             end_bit=end_bit,
-            **kw,
+            **kwargs,
         )
 
     def make_reduce(
@@ -229,13 +236,13 @@ else:
         algorithm="warp_reductions",
         **kwargs,
     ):
-        kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return reduce.create(
+        return _make_reduce_two_phase(
             dtype=dtype,
+            threads_per_block=threads_per_block,
             binary_op=binary_op,
             items_per_thread=items_per_thread,
             algorithm=algorithm,
-            **kw,
+            **kwargs,
         )
 
     def make_sum(
@@ -245,12 +252,12 @@ else:
         algorithm="warp_reductions",
         **kwargs,
     ):
-        kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return sum.create(
+        return _make_sum_two_phase(
             dtype=dtype,
+            threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
             algorithm=algorithm,
-            **kw,
+            **kwargs,
         )
 
     def make_scan(
@@ -263,19 +270,15 @@ else:
         block_prefix_callback_op=None,
         **kwargs,
     ):
-        kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        kw = _normalize_scan_prefix(
-            kw,
-            block_prefix_callback_op,
-            target_name="block_prefix_callback_op",
-        )
-        return scan.create(
+        return _make_scan_two_phase(
             dtype=dtype,
+            threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
             initial_value=initial_value,
             mode=mode,
             scan_op=scan_op,
-            **kw,
+            block_prefix_callback_op=block_prefix_callback_op,
+            **kwargs,
         )
 
     def make_exclusive_sum(
@@ -285,12 +288,12 @@ else:
         prefix_op=None,
         **kwargs,
     ):
-        kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        kw = _normalize_scan_prefix(kw, prefix_op, target_name="prefix_op")
-        return exclusive_sum.create(
+        return _make_exclusive_sum_two_phase(
             dtype=dtype,
+            threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
-            **kw,
+            prefix_op=prefix_op,
+            **kwargs,
         )
 
     def make_inclusive_sum(
@@ -300,12 +303,12 @@ else:
         prefix_op=None,
         **kwargs,
     ):
-        kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        kw = _normalize_scan_prefix(kw, prefix_op, target_name="prefix_op")
-        return inclusive_sum.create(
+        return _make_inclusive_sum_two_phase(
             dtype=dtype,
+            threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
-            **kw,
+            prefix_op=prefix_op,
+            **kwargs,
         )
 
     def make_exclusive_scan(
@@ -317,14 +320,14 @@ else:
         prefix_op=None,
         **kwargs,
     ):
-        kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        kw = _normalize_scan_prefix(kw, prefix_op, target_name="prefix_op")
-        return exclusive_scan.create(
+        return _make_exclusive_scan_two_phase(
             dtype=dtype,
+            threads_per_block=threads_per_block,
             scan_op=scan_op,
             items_per_thread=items_per_thread,
             initial_value=initial_value,
-            **kw,
+            prefix_op=prefix_op,
+            **kwargs,
         )
 
     def make_inclusive_scan(
@@ -336,14 +339,14 @@ else:
         prefix_op=None,
         **kwargs,
     ):
-        kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        kw = _normalize_scan_prefix(kw, prefix_op, target_name="prefix_op")
-        return inclusive_scan.create(
+        return _make_inclusive_scan_two_phase(
             dtype=dtype,
+            threads_per_block=threads_per_block,
             scan_op=scan_op,
             items_per_thread=items_per_thread,
             initial_value=initial_value,
-            **kw,
+            prefix_op=prefix_op,
+            **kwargs,
         )
 
     def make_histogram(
@@ -353,16 +356,12 @@ else:
         items_per_thread=1,
         **kwargs,
     ):
-        kw = dict(kwargs)
-        if threads_per_block is None:
-            threads_per_block = kw.pop("dim", None)
-        if threads_per_block is not None:
-            kw["dim"] = threads_per_block
-        return histogram.create(
+        return _make_histogram_two_phase(
             item_dtype=item_dtype,
             counter_dtype=counter_dtype,
+            threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
-            **kw,
+            **kwargs,
         )
 
     def make_run_length(
@@ -372,16 +371,12 @@ else:
         decoded_items_per_thread=1,
         **kwargs,
     ):
-        kw = dict(kwargs)
-        if threads_per_block is None:
-            threads_per_block = kw.pop("dim", None)
-        if threads_per_block is not None:
-            kw["dim"] = threads_per_block
-        return run_length.create(
+        return _make_run_length_two_phase(
             item_dtype=item_dtype,
+            threads_per_block=threads_per_block,
             runs_per_thread=runs_per_thread,
             decoded_items_per_thread=decoded_items_per_thread,
-            **kw,
+            **kwargs,
         )
 
     def make_adjacent_difference(
@@ -391,12 +386,12 @@ else:
         difference_op=None,
         **kwargs,
     ):
-        kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return adjacent_difference.create(
+        return _make_adjacent_difference_two_phase(
             dtype=dtype,
+            threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
             difference_op=difference_op,
-            **kw,
+            **kwargs,
         )
 
     def make_discontinuity(
@@ -406,12 +401,12 @@ else:
         flag_op=None,
         **kwargs,
     ):
-        kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return discontinuity.create(
+        return _make_discontinuity_two_phase(
             dtype=dtype,
+            threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
             flag_op=flag_op,
-            **kw,
+            **kwargs,
         )
 
     def make_shuffle(
@@ -420,11 +415,11 @@ else:
         items_per_thread=1,
         **kwargs,
     ):
-        kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return shuffle.create(
+        return _make_shuffle_two_phase(
             dtype=dtype,
+            threads_per_block=threads_per_block,
             items_per_thread=items_per_thread,
-            **kw,
+            **kwargs,
         )
 
     __all__ = [

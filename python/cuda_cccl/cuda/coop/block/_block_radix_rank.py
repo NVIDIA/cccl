@@ -196,3 +196,63 @@ class radix_rank(BasePrimitive):
             temp_storage_alignment=specialization.temp_storage_alignment,
             algorithm=specialization,
         )
+
+
+def _build_radix_rank_spec(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    begin_bit=0,
+    end_bit=None,
+    **kwargs,
+):
+    kw = dict(kwargs)
+    if threads_per_block is None:
+        threads_per_block = kw.pop("dim", None)
+    spec = {
+        "dtype": dtype,
+        "threads_per_block": threads_per_block,
+        "items_per_thread": items_per_thread,
+        "begin_bit": begin_bit,
+        "end_bit": end_bit,
+    }
+    spec.update(kw)
+    return spec
+
+
+def _make_radix_rank_two_phase(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    begin_bit=0,
+    end_bit=None,
+    **kwargs,
+):
+    spec = _build_radix_rank_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        **kwargs,
+    )
+    return radix_rank.create(**spec)
+
+
+def _make_radix_rank_rewrite(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    begin_bit=0,
+    end_bit=None,
+    **kwargs,
+):
+    spec = _build_radix_rank_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        **kwargs,
+    )
+    return radix_rank(**spec)
