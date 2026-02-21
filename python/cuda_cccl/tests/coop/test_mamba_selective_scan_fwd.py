@@ -9,6 +9,7 @@ import pytest
 from mamba_selective_scan_fwd import (
     make_kernel_traits,
     make_selective_scan_fwd_kernel,
+    make_selective_scan_fwd_kernel_single_phase_bleeding_edge_qol,
     make_selective_scan_fwd_kernel_single_phase_temp_storage,
 )
 from numba import cuda
@@ -38,7 +39,11 @@ def _load_ref_data():
 
 @pytest.mark.parametrize(
     "kernel_variant",
-    ["traits_gpu_dataclass", "single_phase_temp_storage"],
+    [
+        "traits_gpu_dataclass",
+        "single_phase_temp_storage",
+        "single_phase_bleeding_edge_qol",
+    ],
 )
 def test_mamba_selective_scan_fwd_simple(kernel_variant):
     threads_per_block = 128
@@ -72,6 +77,21 @@ def test_mamba_selective_scan_fwd_simple(kernel_variant):
         )
     elif kernel_variant == "single_phase_temp_storage":
         k = make_selective_scan_fwd_kernel_single_phase_temp_storage(
+            threads_per_block,
+            items_per_thread,
+        )[1, threads_per_block]
+        k(
+            d_u,
+            d_delta,
+            d_out,
+            ref["A"],
+            ref["B"],
+            ref["C"],
+            ref["D"],
+            ref["delta_bias"],
+        )
+    elif kernel_variant == "single_phase_bleeding_edge_qol":
+        k = make_selective_scan_fwd_kernel_single_phase_bleeding_edge_qol(
             threads_per_block,
             items_per_thread,
         )[1, threads_per_block]

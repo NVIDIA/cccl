@@ -616,6 +616,19 @@ def get_root_definition(
                 )
                 definitions.append(getattr_def)
                 continue
+            elif instr.op in ("getitem", "static_getitem"):
+                # Treat function subscript syntax (e.g. `coop.block.load[ts]`)
+                # as syntactic sugar by walking through to the base callable.
+                var_obj = instr.value
+                if not isinstance(var_obj, ir.Var):
+                    raise RuntimeError(
+                        f"Expected ir.Var for getitem value, got "
+                        f"{type(var_obj)}: {var_obj!r}"
+                    )
+                next_instr = func_ir.get_definition(var_obj)
+                instructions.append(next_instr)
+                all_instructions.append(next_instr)
+                continue
             elif instr.op == "call":
                 func = instr.func
                 next_instr = func_ir.get_definition(func.name)
@@ -1235,7 +1248,29 @@ class CoopNode:
         """
         sig = self.decl_signature
         args = list(self.expr.args)
-        kwds = dict(self.expr.kws)
+        expr_kws = self.expr.kws
+        if isinstance(expr_kws, (tuple, list)):
+            kwds = dict(expr_kws)
+        elif isinstance(expr_kws, dict):
+            kwds = dict(expr_kws)
+        else:
+            kwds = {}
+
+        rewriter = getattr(self, "rewriter", None)
+        if rewriter is not None:
+            getitem_temp_storage = rewriter.get_getitem_temp_storage_arg(self.expr)
+            if getitem_temp_storage is not None:
+                if "temp_storage" in kwds:
+                    raise RuntimeError(
+                        f"{self.primitive_name} cannot use both getitem "
+                        "temp_storage syntax and temp_storage keyword."
+                    )
+                if "temp_storage" not in sig.parameters:
+                    raise RuntimeError(
+                        f"{self.primitive_name} does not support getitem "
+                        "temp_storage syntax."
+                    )
+                kwds["temp_storage"] = getitem_temp_storage
 
         if self.is_two_phase:
             # Fill in any missing arguments from the two-phase instance.
@@ -8362,19 +8397,95 @@ class CoopNodeRewriter(Rewrite):
                 if isinstance(expr, ir.Expr) and expr.op == "call":
                     yield block, instr, expr
 
-    @staticmethod
-    def _expr_uses_var(expr, var_name):
+    def _getitem_expr_temp_storage_arg(self, expr):
+        if not isinstance(expr, ir.Expr):
+            return None
+        if expr.op not in ("getitem", "static_getitem"):
+            return None
+
+        base_var = expr.value
+        if not isinstance(base_var, ir.Var):
+            return None
+        base_ty = self.typemap.get(base_var.name)
+        if not (
+            isinstance(base_ty, types.Function)
+            and hasattr(base_ty, "templates")
+            and base_ty.templates
+            and getattr(base_ty.templates[0], "primitive_name", "").startswith("coop.")
+        ):
+            return None
+
+        index_var = getattr(expr, "index", None)
+        if not isinstance(index_var, ir.Var):
+            index_var = getattr(expr, "index_var", None)
+        if not isinstance(index_var, ir.Var):
+            return None
+
+        try:
+            from ._decls import TempStorageType
+        except Exception:
+            TempStorageType = None
+
+        if TempStorageType is None:
+            index_ty = None
+        else:
+            index_ty = self.typemap.get(index_var.name)
+            if isinstance(index_ty, TempStorageType):
+                return index_var
+
+        try:
+            root = self.get_root_def(index_var)
+            leaf = root.leaf_constructor_call
+        except Exception:
+            leaf = None
+        if not isinstance(leaf, TempStorageCallDefinition):
+            return None
+
+        return index_var
+
+    def _call_expr_getitem_index_var(self, expr):
+        if not isinstance(expr, ir.Expr) or expr.op != "call":
+            return None
+
+        func_var = expr.func
+        if not isinstance(func_var, ir.Var):
+            return None
+
+        try:
+            func_def = self.func_ir.get_definition(func_var.name)
+        except Exception:
+            return None
+
+        if not isinstance(func_def, ir.Expr):
+            return None
+        return self._getitem_expr_temp_storage_arg(func_def)
+
+    def get_getitem_temp_storage_arg(self, expr):
+        index_var = self._call_expr_getitem_index_var(expr)
+        if index_var is None:
+            return None
+
+        return index_var
+
+    def _expr_uses_var(self, expr, var_name):
         args = expr.args
         kws = expr.kws
         if isinstance(kws, (list, tuple)):
             kws = dict(kws)
         elif kws is None:
             kws = {}
-        return any(
-            isinstance(arg, ir.Var) and arg.name == var_name for arg in args
-        ) or any(
+        if any(isinstance(arg, ir.Var) and arg.name == var_name for arg in args):
+            return True
+        if any(
             isinstance(arg, ir.Var) and arg.name == var_name for arg in kws.values()
-        )
+        ):
+            return True
+
+        getitem_temp_storage = self.get_getitem_temp_storage_arg(expr)
+        if getitem_temp_storage is not None and getitem_temp_storage.name == var_name:
+            return True
+
+        return False
 
     def _build_coop_node_for_call_expr(self, block, instr):
         expr = instr.value
@@ -10297,6 +10408,7 @@ class CoopNodeRewriter(Rewrite):
         skipped = 0
         ignored = 0
         rewrote = 0
+        desugared_getitems = 0
         no_new_instructions = 0
 
         for instr in self.current_block.body:
@@ -10304,6 +10416,29 @@ class CoopNodeRewriter(Rewrite):
                 # If the instruction is not an assignment, copy it verbatim.
                 new_block.append(instr)
                 ignored += 1
+                continue
+
+            expr = instr.value
+            getitem_temp_storage = self._getitem_expr_temp_storage_arg(expr)
+            if getitem_temp_storage is not None and isinstance(expr.value, ir.Var):
+                # Desugar `primitive[temp_storage]` into a plain alias of the
+                # primitive callable so no getitem IR reaches lowering.
+                replacement = ir.Assign(
+                    value=expr.value,
+                    target=instr.target,
+                    loc=instr.loc,
+                )
+                source_ty = self.typemap.get(expr.value.name)
+                if source_ty is not None:
+                    target_name = instr.target.name
+                    existing = self.typemap.get(target_name)
+                    if existing != source_ty:
+                        if existing is not None:
+                            del self.typemap[target_name]
+                        self.typemap[target_name] = source_ty
+                self.calltypes.pop(expr, None)
+                new_block.append(replacement)
+                desugared_getitems += 1
                 continue
 
             # We're dealing with an assignment instruction.  See if we
@@ -10342,6 +10477,7 @@ class CoopNodeRewriter(Rewrite):
             f"skipped: {skipped}, "
             f"ignored: {ignored}, "
             f"rewrote: {rewrote}, "
+            f"desugared_getitems: {desugared_getitems}, "
             f"no_new_instructions: {no_new_instructions}, "
             f"num nodes: {len(self.nodes)}"
         )

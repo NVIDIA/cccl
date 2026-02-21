@@ -335,6 +335,71 @@ def make_selective_scan_fwd_kernel_single_phase_temp_storage(
     return _build_kernel(cuda.jit)
 
 
+def make_selective_scan_fwd_kernel_single_phase_bleeding_edge_qol(
+    threads_per_block,
+    items_per_thread=DEFAULT_ITEMS_PER_THREAD,
+):
+    if items_per_thread != DEFAULT_ITEMS_PER_THREAD:
+        raise ValueError(
+            f"items_per_thread must be {DEFAULT_ITEMS_PER_THREAD} for this kernel"
+        )
+
+    def _build_kernel(decorator):
+        @decorator
+        def kernel(u, delta, out, A, B, C, D, delta_bias):
+            scan_data = coop.local.array(items_per_thread, dtype=float2_type)
+            u_vals = coop.ThreadData(items_per_thread, dtype=u.dtype)
+            delta_vals = coop.ThreadData(items_per_thread, dtype=delta.dtype)
+
+            temp_storage = coop.TempStorage()
+            coop.block.load[temp_storage](
+                u,
+                u_vals,
+                algorithm=BlockLoadAlgorithm.WARP_TRANSPOSE,
+            )
+            coop.block.load[temp_storage](
+                delta,
+                delta_vals,
+                algorithm=BlockLoadAlgorithm.WARP_TRANSPOSE,
+            )
+
+            for i in range(items_per_thread):
+                u_val = u_vals[i]
+                delta_val = numba.float32(delta_vals[i] + delta_bias)
+                a_val = numba.float32(math.exp(delta_val * A))
+                b_val = numba.float32(delta_val * u_val * B)
+                scan_data[i] = Float2(a_val, b_val)
+
+            prefix_op = coop.local.array(1, dtype=ssm_prefix_callback_op_type)
+            prefix_op[0] = SSMScanPrefixCallbackOp(
+                Float2(numba.float32(1.0), numba.float32(0.0))
+            )
+
+            coop.block.scan[temp_storage](
+                scan_data,
+                scan_data,
+                items_per_thread=items_per_thread,
+                mode="inclusive",
+                scan_op=ssm_scan_op,
+                block_prefix_callback_op=prefix_op,
+                algorithm=BlockScanAlgorithm.WARP_SCANS,
+            )
+
+            out_vals = coop.local.array(items_per_thread, dtype=out.dtype)
+            for i in range(items_per_thread):
+                out_vals[i] = D * u_vals[i] + scan_data[i].y * C
+
+            coop.block.store[temp_storage](
+                out,
+                out_vals,
+                algorithm=BlockStoreAlgorithm.WARP_TRANSPOSE,
+            )
+
+        return kernel
+
+    return _build_kernel(cuda.jit)
+
+
 def selective_scan_fwd_reference(u, delta, A, B, C, D, delta_bias):
     out = np.empty_like(u, dtype=np.float32)
     a_run = 1.0
