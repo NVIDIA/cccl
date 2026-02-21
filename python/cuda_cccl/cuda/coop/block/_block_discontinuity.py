@@ -264,3 +264,69 @@ class discontinuity(BasePrimitive):
             temp_storage_alignment=specialization.temp_storage_alignment,
             algorithm=specialization,
         )
+
+
+def _build_discontinuity_spec(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    flag_op=None,
+    block_discontinuity_type=BlockDiscontinuityType.HEADS,
+    flag_dtype=None,
+    **kwargs,
+):
+    kw = dict(kwargs)
+    if threads_per_block is None:
+        threads_per_block = kw.pop("dim", None)
+    spec = {
+        "dtype": dtype,
+        "threads_per_block": threads_per_block,
+        "items_per_thread": items_per_thread,
+        "flag_op": flag_op,
+        "block_discontinuity_type": block_discontinuity_type,
+        "flag_dtype": flag_dtype,
+    }
+    spec.update(kw)
+    return spec
+
+
+def _make_discontinuity_two_phase(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    flag_op=None,
+    block_discontinuity_type=BlockDiscontinuityType.HEADS,
+    flag_dtype=None,
+    **kwargs,
+):
+    spec = _build_discontinuity_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        flag_op=flag_op,
+        block_discontinuity_type=block_discontinuity_type,
+        flag_dtype=flag_dtype,
+        **kwargs,
+    )
+    return discontinuity.create(**spec)
+
+
+def _make_discontinuity_rewrite(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    flag_op=None,
+    block_discontinuity_type=BlockDiscontinuityType.HEADS,
+    flag_dtype=None,
+    **kwargs,
+):
+    spec = _build_discontinuity_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        flag_op=flag_op,
+        block_discontinuity_type=block_discontinuity_type,
+        flag_dtype=flag_dtype,
+        **kwargs,
+    )
+    return discontinuity(**spec)
