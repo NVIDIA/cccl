@@ -1478,3 +1478,58 @@
     criteria for scan-first helper refactor.
   - `SINGLE-PHASE-NOTES.md`: updated with design guidance for the helper split
     (see latest “Factory split” note).
+
+## 2026-02-21 (warp internal factory-helper rollout)
+- Request: proceed with the internal factory-helper refactor and start with
+  warp primitives.
+- Changes:
+  - `cuda/coop/warp/_warp_load_store.py`:
+    - added internal helper split:
+      - `_build_load_spec(...)`, `_make_load_two_phase(...)`,
+        `_make_load_rewrite(...)`
+      - `_build_store_spec(...)`, `_make_store_two_phase(...)`,
+        `_make_store_rewrite(...)`
+  - `cuda/coop/warp/_warp_exchange.py`:
+    - added `_build_exchange_spec(...)`,
+      `_make_exchange_two_phase(...)`, `_make_exchange_rewrite(...)`.
+  - `cuda/coop/warp/_warp_reduce.py`:
+    - added `_build_reduce_spec(...)`, `_make_reduce_two_phase(...)`,
+      `_make_reduce_rewrite(...)`.
+    - added `_build_sum_spec(...)`, `_make_sum_two_phase(...)`,
+      `_make_sum_rewrite(...)`.
+  - `cuda/coop/warp/_warp_scan.py`:
+    - added helper builders and split creators for:
+      - exclusive/inclusive sum
+      - exclusive/inclusive scan
+    - two-phase helpers return `create(...)`; rewrite helpers return primitive
+      instances with rewrite-only kwargs (`unique_id`, `temp_storage`,
+      `warp_aggregate`, `valid_items`).
+  - `cuda/coop/warp/_warp_merge_sort.py`:
+    - added `_build_merge_sort_keys_spec(...)`,
+      `_make_merge_sort_keys_two_phase(...)`,
+      `_make_merge_sort_keys_rewrite(...)`.
+    - added `_build_merge_sort_pairs_spec(...)`,
+      `_make_merge_sort_pairs_two_phase(...)`,
+      `_make_merge_sort_pairs_rewrite(...)`.
+  - `cuda/coop/warp/__init__.py`:
+    - updated public `make_*` wrappers to route through `_make_*_two_phase`
+      helpers (keeps public two-phase `Invocable` contract unchanged).
+  - `cuda/coop/_decls.py`:
+    - imported warp `_make_*_rewrite` helpers and set `impl_key` for warp
+      decl templates:
+      - load/store/exchange/reduce/sum
+      - inclusive/exclusive sum
+      - inclusive/exclusive scan
+      - merge_sort_keys/merge_sort_pairs
+    - this makes rewrite instantiation use internal rewrite helpers rather than
+      direct public keys.
+  - `cuda/coop/_rewrite.py`:
+    - hardened `CoopNode.prepare_args()` for callable `impl_class` values by
+      deriving `expected_type` from the two-phase instance when needed.
+      This avoids type-check issues now that some decl `impl_key` entries are
+      helper callables, not classes.
+- Tests:
+  - `python -m py_compile cuda/coop/warp/_warp_load_store.py cuda/coop/warp/_warp_exchange.py cuda/coop/warp/_warp_merge_sort.py cuda/coop/warp/_warp_reduce.py cuda/coop/warp/_warp_scan.py cuda/coop/warp/__init__.py cuda/coop/_decls.py cuda/coop/_rewrite.py` (passed)
+  - `pre-commit run --files cuda/coop/_decls.py cuda/coop/_rewrite.py cuda/coop/warp/__init__.py cuda/coop/warp/_warp_exchange.py cuda/coop/warp/_warp_load_store.py cuda/coop/warp/_warp_merge_sort.py cuda/coop/warp/_warp_reduce.py cuda/coop/warp/_warp_scan.py` (passed)
+  - `pytest -q tests/coop/test_make_factories_two_phase.py tests/coop/test_warp_load_store_api.py tests/coop/test_warp_exchange_api.py tests/coop/test_warp_reduce_api.py tests/coop/test_warp_scan_api.py tests/coop/test_warp_merge_sort_api.py tests/coop/test_warp_merge_sort_pairs_api.py tests/coop/test_warp_reduce.py tests/coop/test_warp_scan.py tests/coop/test_warp_merge_sort.py`
+    - Result: `121 passed`.
