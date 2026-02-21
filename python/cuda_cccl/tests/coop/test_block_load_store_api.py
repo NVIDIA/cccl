@@ -237,6 +237,103 @@ def test_block_load_store_single_phase_thread_data_temp_storage_infer_from_omitt
     np.testing.assert_allclose(h_output, h_input)
 
 
+def test_block_load_store_temp_storage_getitem_sugar_infer_from_omitted_size_alignment():
+    dtype = np.int32
+    threads_per_block = 128
+    items_per_thread = 4
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        temp_storage = coop.TempStorage()
+        thread_data = coop.ThreadData(items_per_thread)
+        coop.block.load[temp_storage](
+            d_in,
+            thread_data,
+            algorithm=BlockLoadAlgorithm.TRANSPOSE,
+        )
+        coop.block.store[temp_storage](
+            d_out,
+            thread_data,
+            algorithm=BlockStoreAlgorithm.TRANSPOSE,
+        )
+
+    h_input = np.random.randint(
+        0, 42, threads_per_block * items_per_thread, dtype=dtype
+    )
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+    kernel[1, threads_per_block](d_input, d_output)
+    h_output = d_output.copy_to_host()
+
+    np.testing.assert_allclose(h_output, h_input)
+
+
+def test_block_load_store_temp_storage_getitem_sugar_distinct_temp_storage_vars():
+    dtype = np.int32
+    threads_per_block = 128
+    items_per_thread = 4
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        load_temp_storage = coop.TempStorage(sharing="exclusive")
+        store_temp_storage = coop.TempStorage(sharing="exclusive")
+        thread_data = coop.ThreadData(items_per_thread)
+        coop.block.load[load_temp_storage](
+            d_in,
+            thread_data,
+            algorithm=BlockLoadAlgorithm.TRANSPOSE,
+        )
+        coop.block.store[store_temp_storage](
+            d_out,
+            thread_data,
+            algorithm=BlockStoreAlgorithm.TRANSPOSE,
+        )
+
+    h_input = np.random.randint(
+        0, 42, threads_per_block * items_per_thread, dtype=dtype
+    )
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+    kernel[1, threads_per_block](d_input, d_output)
+    h_output = d_output.copy_to_host()
+
+    np.testing.assert_allclose(h_output, h_input)
+
+
+def test_block_load_store_temp_storage_getitem_sugar_rejects_duplicate_temp_storage_kwarg():
+    dtype = np.int32
+    threads_per_block = 128
+    items_per_thread = 4
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        temp_storage = coop.TempStorage()
+        thread_data = coop.ThreadData(items_per_thread)
+        coop.block.load[temp_storage](
+            d_in,
+            thread_data,
+            algorithm=BlockLoadAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+        coop.block.store(
+            d_out,
+            thread_data,
+            algorithm=BlockStoreAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+
+    h_input = np.random.randint(
+        0, 42, threads_per_block * items_per_thread, dtype=dtype
+    )
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+    with pytest.raises(
+        Exception,
+        match="cannot use both getitem temp_storage syntax and temp_storage keyword",
+    ):
+        kernel[1, threads_per_block](d_input, d_output)
+
+
 def test_temp_storage_shared_partial_inference_size_only():
     dtype = np.int32
     threads_per_block = 128

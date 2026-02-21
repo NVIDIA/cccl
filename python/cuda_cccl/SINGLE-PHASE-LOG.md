@@ -1618,3 +1618,74 @@
   - Final broad block/mamba sweep:
     - `pytest -q tests/coop/test_make_factories_two_phase.py tests/coop/test_block_load.py tests/coop/test_block_store.py tests/coop/test_block_load_store_api.py tests/coop/test_block_exchange.py tests/coop/test_block_exchange_api.py tests/coop/test_block_reduce.py tests/coop/test_block_scan.py tests/coop/test_block_scan_api.py tests/coop/test_block_scan_single_phase_aliases.py tests/coop/test_block_merge_sort.py tests/coop/test_block_radix_sort.py tests/coop/test_block_radix_rank.py tests/coop/test_block_adjacent_difference.py tests/coop/test_block_adjacent_difference_api.py tests/coop/test_block_discontinuity.py tests/coop/test_block_discontinuity_api.py tests/coop/test_block_discontinuity_flag_heads_and_tails_api.py tests/coop/test_block_shuffle.py tests/coop/test_block_run_length_decode.py tests/coop/test_block_histogram.py tests/coop/test_block_weird_dims_stateful_custom_types.py tests/coop/test_block_stress_kernels.py tests/coop/test_mamba_selective_scan_fwd.py`
       - Result: `2328 passed, 26 skipped, 5 xfailed`.
+
+## 2026-02-21 (TempStorage getitem sugar rewrite support)
+- Request: support `primitive[temp_storage](...)` syntax as rewrite-time sugar
+  for `temp_storage=temp_storage`, with robust behavior and tests.
+- Changes:
+  - `cuda/coop/_decls.py`:
+    - generalized `CoopTempStorageGetItemDecl` so getitem-temp-storage typing can
+      apply to coop primitives that expose a `temp_storage` parameter in their
+      signature (beyond block load/store).
+    - kept explicit block load/store getitem decls and added a generic
+      fallback getitem decl for other coop primitives with temp_storage support.
+  - `cuda/coop/_rewrite.py`:
+    - `CoopNode.bound` now detects getitem sugar call sites and injects
+      synthetic `temp_storage=` for binding.
+    - Added getitem/temp-storage detection helpers in `CoopNodeRewriter` and
+      updated `_expr_uses_var(...)` so TempStorage inference/usage detection
+      includes `primitive[temp_storage](...)`.
+    - Extended root-definition traversal to handle `getitem/static_getitem`
+      expressions so call-root resolution works for subscripted primitive calls.
+    - In `apply()`, desugar getitem assignments for coop primitive callables
+      into plain callable aliases so no callable-getitem IR reaches lowering.
+    - Added duplicate-API guard: reject simultaneous
+      `primitive[temp_storage](..., temp_storage=...)`.
+  - `tests/coop/test_block_load_store_api.py`:
+    - Added `test_block_load_store_temp_storage_getitem_sugar_infer_from_omitted_size_alignment`.
+    - Added `test_block_load_store_temp_storage_getitem_sugar_distinct_temp_storage_vars`.
+    - Added `test_block_load_store_temp_storage_getitem_sugar_rejects_duplicate_temp_storage_kwarg`.
+  - `tests/coop/test_block_reduce.py`:
+    - Added `test_block_reduce_temp_storage_getitem_sugar` to validate
+      non-load/store getitem-temp-storage syntax.
+- Tests:
+  - `python -m py_compile cuda/coop/_decls.py cuda/coop/_rewrite.py tests/coop/test_block_load_store_api.py tests/coop/test_block_reduce.py` (passed)
+  - `pytest -q tests/coop/test_block_load_store_api.py -k "getitem_sugar"` (passed, 3 tests)
+  - `pytest -q tests/coop/test_block_reduce.py -k "temp_storage_getitem_sugar"` (passed, 1 test)
+  - `pytest -q tests/coop/test_warp_reduce.py -k "temp_storage_getitem_sugar"` (passed, 1 test)
+  - `pytest -q tests/coop/test_block_load_store_api.py -k "getitem_sugar" tests/coop/test_block_reduce.py -k "temp_storage_getitem_sugar"` (passed, 4 tests)
+  - `pytest -q tests/coop/test_block_load_store_api.py -k "getitem_sugar" tests/coop/test_block_reduce.py -k "temp_storage_getitem_sugar" tests/coop/test_warp_reduce.py -k "temp_storage"` (passed, 46 tests)
+  - `pytest -q tests/coop/test_block_load_store_api.py` (passed, 38 tests)
+  - `pytest -q tests/coop/test_block_reduce.py -k "temp_storage"` (passed, 29 tests)
+  - `pytest -q tests/coop/test_block_scan.py -k "temp_storage"` (passed, 4 tests)
+  - `pytest -q tests/coop/test_warp_load_store_api.py -k "temp_storage"` (passed, 2 tests)
+  - `pytest -q tests/coop/test_block_stress_kernels.py -k "dynamic_shared_temp_storage"` (passed, 2 tests)
+  - `pytest -q tests/coop/test_block_load.py tests/coop/test_block_store.py tests/coop/test_block_load_store_api.py tests/coop/test_block_scan.py tests/coop/test_warp_load_store_api.py tests/coop/test_block_stress_kernels.py`
+    - Result: `732 passed, 26 skipped, 3 xfailed, 2 warnings`.
+  - `pre-commit run --files cuda/coop/_rewrite.py tests/coop/test_block_load_store_api.py` (passed)
+
+## 2026-02-21 (mamba bleeding-edge single-phase kernel variant)
+- Request: add a new selective-scan forward kernel variant demonstrating the
+  latest single-phase cuda.coop quality-of-life features.
+- Changes:
+  - `tests/coop/mamba_selective_scan_fwd.py`:
+    - added `make_selective_scan_fwd_kernel_single_phase_bleeding_edge_qol(...)`.
+    - kernel demonstrates:
+      - `TempStorage()` omission-driven inference.
+      - getitem temp-storage sugar on primitives:
+        - `coop.block.load[temp_storage](...)`
+        - `coop.block.scan[temp_storage](...)`
+        - `coop.block.store[temp_storage](...)`
+      - `ThreadData(items_per_thread, dtype=<array>.dtype)` for loaded values,
+        removing `items_per_thread=` repetition on load calls.
+    - For scan payload/output staging in this custom `Float2` mamba path,
+      retained `coop.local.array(...)` to keep lowering stable for element
+      assignment in this kernel.
+  - `tests/coop/test_mamba_selective_scan_fwd.py`:
+    - imported new factory and extended `kernel_variant` parameterization with
+      `"single_phase_bleeding_edge_qol"`.
+    - added launch branch for the new variant under the existing golden-output
+      parity test.
+- Tests:
+  - `python -m py_compile tests/coop/mamba_selective_scan_fwd.py tests/coop/test_mamba_selective_scan_fwd.py` (passed)
+  - `pytest -q tests/coop/test_mamba_selective_scan_fwd.py` (passed, 3 tests)
