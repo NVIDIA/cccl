@@ -352,7 +352,7 @@ private:
 
     const bit_ordered_type kth_prefix = kth_key_bits & prefix_mask;
 
-    int scatter_indices[items_per_thread];
+    [[maybe_unused]] int scatter_indices[items_per_thread];
     if constexpr (!keys_only)
     {
       for (int i = 0; i < items_per_thread; ++i)
