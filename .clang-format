@@ -147,6 +147,7 @@ MaxEmptyLinesToKeep: 1
 Macros:
 - _CCCL_TEMPLATE(...)=template<...>
 - _CCCL_REQUIRES(...)=requires (...)
+- _CCCL_AND=,
 - _CUDAX_SEMI_PRIVATE=private
 NamespaceIndentation: None
 PackConstructorInitializers: Never
