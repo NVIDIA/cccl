@@ -1160,3 +1160,276 @@
     - `python -m py_compile cuda/coop/_rewrite.py`
     - `pytest -q tests/coop/test_block_load.py tests/coop/test_block_store.py tests/coop/test_block_load_store_api.py tests/coop/test_block_scan.py tests/coop/test_warp_scan.py tests/coop/test_block_stress_kernels.py`
     - Result: `734 passed, 26 skipped, 3 xfailed` (same 2 NVRTC warnings).
+
+## 2026-02-20
+- Request: evaluate backlog issue `#4832` ("Ensure radix sort of UDTs w/ user-provided Decomposers is supported in cuda.coop") in the context of recent single-phase work, and prototype viability.
+- Context gathered:
+  - Confirmed issue metadata via GitHub API (`https://api.github.com/repos/NVIDIA/cccl/issues/4832`): open issue, title-only (no body/comments with extra requirements).
+  - Confirmed current baseline behavior remains intentionally guarded.
+- Prototype work:
+  - Ran baseline test:
+    - `pytest -q tests/coop/test_block_radix_sort.py::test_block_radix_sort_decomposer`
+    - Result: `1 passed` (guarded `ValueError` as expected).
+  - Temporarily removed the decomposer guard in `cuda/coop/block/_block_radix_sort.py` to observe true downstream behavior.
+  - Re-ran decomposer test:
+    - `pytest -q tests/coop/test_block_radix_sort.py::test_block_radix_sort_decomposer -vv`
+    - Result: fails during NVRTC/CUB compilation.
+    - Key failure: CUB `for_each_member_impl` expects `::cuda::std::tuple<Ts&...>` (tuple-of-references), but current lowering emits decomposer returning tuple-by-value (`tuple<int32_t, int32_t>`).
+  - Tried a deeper temporary experiment to route decomposers through `DependentCxxOperator` for C++ functor-style decomposers.
+    - Outcome: not production-viable in current pipeline (expression-shape constraints, lambda/device annotation limitations under current NVRTC flags, and no robust code-injection path for a generated decomposer type).
+- Final state:
+  - Reverted all temporary prototype edits; no functional coop code changes retained.
+  - Re-ran baseline test to ensure clean behavior:
+    - `pytest -q tests/coop/test_block_radix_sort.py::test_block_radix_sort_decomposer`
+    - Result: `1 passed`.
+- Decision/finding:
+  - Issue `#4832` is still blocked by lowering/codegen semantics, not by single-phase maker-function integration.
+  - Viable long-term direction requires a dedicated C++ adapter/lowering path that can produce a CUB-compatible tuple-of-references decomposer for UDT keys.
+
+## 2026-02-20 (TempStorage auto-size investigation)
+- Request: confirm whether two-phase is still required in single-phase kernels when sharing temp storage across multiple primitives, and assess whether `coop.TempStorage()` could infer size/alignment automatically from rewrite-time primitive usage.
+- Findings:
+  - Design intent is still documented as: two-phase remains needed when pre-launch temp-storage size/alignment must be known for shared storage across multiple primitives.
+  - Current implementation still enforces this in rewrite:
+    - `coop.TempStorage` typing allows omitted args, but rewrite rejects missing `size_in_bytes` with:
+      `"TempStorage requires size_in_bytes for now; pass size_in_bytes or omit temp_storage to use implicit storage."`
+  - Existing helper coverage:
+    - `coop.gpu_dataclass(..., compute_temp_storage=True)` already computes `temp_storage_bytes_max` and `temp_storage_alignment` across two-phase primitives, but this still depends on pre-created primitive instances.
+- Feasibility:
+  - Auto-sizing `TempStorage()` from all primitive uses in a kernel appears feasible in principle (rewrite already performs similar whole-kernel inference for `ThreadData` dtype and inserts auto-sync barriers), but would require deferred/global temp-storage-use analysis to handle multi-block CFG use sites robustly.
+- Changes: none.
+- Tests: not run (analysis-only session).
+
+## 2026-02-20 (TempStorage auto_size_and_alignment implementation)
+- Request: implement `coop.TempStorage(auto_size_and_alignment=True|False)` and add focused unit coverage plus broader stress/mamba validation.
+- Changes:
+  - `cuda/coop/_types.py`:
+    - Extended `TempStorage.__init__` with `auto_size_and_alignment` (default `False`).
+  - `cuda/coop/_decls.py`:
+    - Added typing support/validation for `auto_size_and_alignment` in `CoopTempStorageDecl`.
+  - `cuda/coop/_rewrite.py`:
+    - Extended temp-storage root-call capture to include `auto_size_and_alignment`.
+    - Added rewrite-time inference of temp-storage requirements from all uses of a `TempStorage` variable:
+      - scans call sites across function IR,
+      - identifies coop primitive uses where the variable is bound as `temp_storage`,
+      - derives per-use temp-storage bytes/alignment from inferred primitive specializations,
+      - allocates `coop.TempStorage` as shared `uint8` array using max bytes and max alignment.
+    - Added guards:
+      - explicit `size_in_bytes`/`alignment` cannot be combined with `auto_size_and_alignment=True`,
+      - recursive inference detection,
+      - clear failure when no inferable primitive uses are found.
+    - Kept existing `auto_sync` behavior unchanged.
+  - Tests:
+    - `tests/coop/test_block_load_store_api.py`:
+      - added single-phase load/store test using `TempStorage(auto_size_and_alignment=True)`,
+      - added validation test for invalid explicit-size + auto-size combination.
+    - `tests/coop/test_block_stress_kernels.py`:
+      - extended two-phase gpu_dataclass shared-smem mode matrix with:
+        - `shared_auto_infer`,
+        - `shared_manual_infer`.
+    - `tests/coop/mamba_selective_scan_fwd.py` + `tests/coop/test_mamba_selective_scan_fwd.py`:
+      - added optional shared-temp-storage path that reuses one auto-sized `TempStorage` across block load/load/scan/store,
+      - parameterized mamba v1 test to run both baseline and auto-sized shared-temp modes.
+  - `SINGLE-PHASE-TODO.md`:
+    - added and checked off TempStorage auto-size/alignment task.
+- Tests:
+  - `pre-commit run --files cuda/coop/_types.py cuda/coop/_decls.py cuda/coop/_rewrite.py tests/coop/test_block_load_store_api.py tests/coop/test_block_stress_kernels.py tests/coop/mamba_selective_scan_fwd.py tests/coop/test_mamba_selective_scan_fwd.py SINGLE-PHASE-TODO.md SINGLE-PHASE-LOG.md`
+  - `pytest -q tests/coop/test_block_load_store_api.py -k "auto_size_and_alignment"` (2 passed)
+  - `pytest -q tests/coop/test_block_load_store_api.py` (28 passed)
+  - `pytest -q tests/coop/test_block_stress_kernels.py -k "test_block_primitives_two_phase_gpu_dataclass_smem_modes"` (5 passed, 25 deselected)
+  - `pytest -q tests/coop/test_mamba_selective_scan_fwd.py -k mamba` (2 passed)
+
+## 2026-02-21 (mamba kernel split: retain KernelTraits path + add direct TempStorage path)
+- Request: keep the existing `gpu_dataclass`/`KernelTraits` mamba kernel intact, and add a separate direct-primitives kernel that uses single-phase `TempStorage(auto_size_and_alignment=True)`.
+- Changes:
+  - `tests/coop/mamba_selective_scan_fwd.py`:
+    - Restored `make_selective_scan_fwd_kernel(traits)` to the original traits-only behavior.
+    - Added `make_selective_scan_fwd_kernel_single_phase_temp_storage(...)` with direct
+      single-phase calls:
+      - `coop.block.load(..., temp_storage=TempStorage(auto_size_and_alignment=True))`
+      - `coop.block.scan(..., temp_storage=...)`
+      - `coop.block.store(..., temp_storage=...)`
+    - For the direct kernel, relied on dtype-attached methods via `float2_type.methods`
+      (removed explicit `methods=` kwarg in the in-kernel single-phase call to avoid
+      Numba typing failures on global dict constants).
+  - `tests/coop/test_mamba_selective_scan_fwd.py`:
+    - Parameterized test by `kernel_variant`:
+      - `traits_gpu_dataclass`
+      - `single_phase_temp_storage`
+    - Kept both variants in one test path with variant-specific kernel invocation.
+- Tests:
+  - `pytest -q tests/coop/test_mamba_selective_scan_fwd.py -k mamba` (2 passed)
+  - `pytest -q tests/coop/test_block_load_store_api.py -k "auto_size_and_alignment"` (2 passed, 26 deselected)
+  - `pytest -q tests/coop/test_block_stress_kernels.py -k "test_block_primitives_two_phase_gpu_dataclass_smem_modes"` (5 passed, 25 deselected)
+
+## 2026-02-21 (TempStorage redesign: omission-driven inference, sharing modes, and auto dynamic smem)
+- Request: replace `auto_size_and_alignment` with omission-driven behavior (`size_in_bytes`/`alignment` omitted => infer), introduce explicit sharing semantics, tighten `auto_sync` behavior, and add broad coverage (unit + stress + mamba), including automatic dynamic-shared handling.
+- Changes:
+  - `cuda/coop/_types.py`:
+    - Updated `TempStorage.__init__` to:
+      - `size_in_bytes: Optional[int] = None`
+      - `alignment: Optional[int] = None`
+      - `auto_sync: Optional[bool] = None`
+      - `sharing: str = "shared"`
+    - Removed `auto_size_and_alignment`.
+  - `cuda/coop/_decls.py`:
+    - Updated `CoopTempStorageDecl.signature` and typing validation for the new TempStorage API.
+    - Added `sharing` validation (`str`/literal string types).
+  - `cuda/coop/_rewrite.py`:
+    - Reworked temp-storage root-call parsing to capture `sharing` and ternary `auto_sync`.
+    - Implemented omission-driven inference/validation in `get_temp_storage_info()`:
+      - if size/alignment omitted: infer from all primitive uses,
+      - `sharing="shared"`: `required_size = max(uses)`, `required_alignment = max(uses)`,
+      - `sharing="exclusive"`: per-use carved layout with alignment padding and total-size validation,
+      - `sharing="exclusive"` rejects `auto_sync=True`.
+    - Centralized temp-storage runtime argument binding (`bind_temp_storage_runtime_arg`) across primitives.
+    - Added global TempStorage planning and global backing-buffer allocation across all `TempStorage()` roots in a kernel.
+    - Added exclusive per-use slicing from the global backing buffer.
+    - Added robust prelude insertion for backing allocation and per-node slicing.
+    - Added auto dynamic-shared support when coalesced TempStorage exceeds default per-block shared memory:
+      - switch backing allocation to `cuda.shared.array(0, dtype=uint8)`,
+      - auto-set launch shared memory requirement,
+      - auto-register pre-launch callback to set `CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES` and carveout,
+      - patch kernel launch path in callback to enforce the required dynamic shared bytes on first launch.
+    - Hardened root-var discovery to skip non-constructor roots safely.
+    - Removed old `auto_size_and_alignment` rewrite paths.
+  - Test updates:
+    - `tests/coop/test_block_load_store_api.py`:
+      - migrated to omission-driven TempStorage tests,
+      - added shared/exclusive and `auto_sync` permutation coverage,
+      - added rejection tests for invalid sharing and invalid exclusive `auto_sync=True`,
+      - added explicit-size/alignment validation cases.
+    - `tests/coop/test_block_stress_kernels.py`:
+      - expanded shared-memory mode matrix to include exclusive infer/explicit paths,
+      - removed `auto_size_and_alignment` modes,
+      - added dynamic-shared auto-callback tests:
+        - positive path (auto callback + auto sharedmem),
+        - reject path when requested size exceeds device opt-in maximum.
+    - `tests/coop/mamba_selective_scan_fwd.py`:
+      - switched direct single-phase mamba kernel to `TempStorage()` omission-driven inference.
+    - `tests/coop/test_mamba_selective_scan_fwd.py`:
+      - retained both variants:
+        - traits gpu_dataclass kernel,
+        - direct single-phase TempStorage kernel.
+  - `SINGLE-PHASE-TODO.md`:
+    - replaced old `auto_size_and_alignment` completed item with omission-driven + sharing-mode item,
+    - added follow-up TODO for redundant user `syncthreads` detection when auto-sync already inserted.
+- Tests:
+  - `python -m compileall cuda/coop/_rewrite.py cuda/coop/_decls.py cuda/coop/_types.py tests/coop/test_block_load_store_api.py tests/coop/test_block_stress_kernels.py tests/coop/mamba_selective_scan_fwd.py tests/coop/test_mamba_selective_scan_fwd.py`
+  - `pytest -q tests/coop/test_block_load_store_api.py -k "temp_storage"` (11 passed)
+  - `pytest -q tests/coop/test_block_load_store_api.py` (35 passed)
+  - `pytest -q tests/coop/test_block_stress_kernels.py -k "smem_modes or auto_dynamic_shared"` (9 passed, 25 deselected)
+  - `pytest -q tests/coop/test_mamba_selective_scan_fwd.py` (2 passed)
+
+## 2026-02-21 (TempStorage rewrite state dataclass cleanup)
+- Request: refactor ad-hoc TempStorage rewrite bookkeeping fields into a named structure (`dataclass` preferred).
+- Changes:
+  - `cuda/coop/_rewrite.py`:
+    - Added `TempStorageRewriteState` dataclass with docstring and typed fields for:
+      - inference recursion stack,
+      - global plan + in-progress guard,
+      - global backing var/prelude/inserted flag,
+      - launch callback registration flag.
+    - Updated `CoopNodeRewriter.__init__` to store this state as `self._temp_storage_state`.
+    - Rewired all prior direct field accesses to use `self._temp_storage_state.*`.
+- Tests:
+  - `pre-commit run --files cuda/coop/_rewrite.py` (passed)
+  - `pytest -q tests/coop/test_block_load_store_api.py -k "temp_storage"` (11 passed)
+  - `pytest -q tests/coop/test_block_stress_kernels.py -k "smem_modes or auto_dynamic_shared"` (9 passed, 25 deselected)
+
+## 2026-02-21 (TempStorage constants + dynamic carveout sizing)
+- Request: replace magic constants in TempStorage dynamic-shared callback path (`48 * 1024`, carveout `100`) with named constants and derive carveout from required shared-memory size.
+- Changes:
+  - `cuda/coop/_rewrite.py`:
+    - Added module constants:
+      - `DEFAULT_STATIC_SHARED_MEMORY_BYTES = 48 * 1024`
+      - `MAX_SHARED_MEMORY_CARVEOUT_PERCENT = 100`
+    - Added helper `_required_shared_memory_carveout_percent(required_dynamic_shared_bytes, max_optin_shared_bytes)`.
+    - Updated dynamic callback registration to use computed carveout percent instead of hardcoded `100`.
+    - Stored computed carveout percent in the temp-storage global plan.
+- Tests:
+  - `pre-commit run --files cuda/coop/_rewrite.py` (passed)
+  - `pytest -q tests/coop/test_block_stress_kernels.py -k "auto_dynamic_shared"` (2 passed, 32 deselected)
+  - `pytest -q tests/coop/test_block_stress_kernels.py -k "smem_modes"` (7 passed, 27 deselected)
+
+## 2026-02-21 (TempStorage use-layout dataclass)
+- Request: replace TempStorage `use_layout` `SimpleNamespace` entries with a properly documented dataclass.
+- Changes:
+  - `cuda/coop/_rewrite.py`:
+    - Added `TempStorageUseLayoutEntry` dataclass with docstring.
+    - Replaced `SimpleNamespace(...)` construction for shared/exclusive `use_layout` entries with `TempStorageUseLayoutEntry(...)`.
+    - Added explicit type annotation: `use_layout: dict[int, TempStorageUseLayoutEntry]`.
+- Tests:
+  - `pre-commit run --files cuda/coop/_rewrite.py` (passed)
+  - `pytest -q tests/coop/test_block_load_store_api.py -k "temp_storage"` (11 passed, 24 deselected)
+  - `pytest -q tests/coop/test_block_stress_kernels.py -k "smem_modes or auto_dynamic_shared"` (9 passed, 25 deselected)
+
+## 2026-02-21 (mamba test helper cleanup: remove link_files plumbing)
+- Request: remove unnecessary `link_files` usage from mamba cooperative test helper kernels; rely on rewrite/link machinery.
+- Changes:
+  - `tests/coop/mamba_selective_scan_fwd.py`:
+    - removed `link_files = []` and conditional `cuda.jit(link=link_files)` branches from:
+      - `make_selective_scan_fwd_kernel(...)`
+      - `make_selective_scan_fwd_kernel_single_phase_temp_storage(...)`
+    - both now directly return `_build_kernel(cuda.jit)`.
+- Tests:
+  - `pre-commit run --files tests/coop/mamba_selective_scan_fwd.py tests/coop/test_mamba_selective_scan_fwd.py` (passed)
+  - `pytest -q tests/coop/test_mamba_selective_scan_fwd.py` (2 passed)
+
+## 2026-02-21 (benchmark link cleanup)
+- Request: clarify whether benchmark `cuda.jit(link=...)` is needed and why.
+- Findings:
+  - `benchmarks/coop/device_side_benchmark.py` was stale: it referenced `{algorithm_name}.files`, but current `coop.warp.make_sum/make_reduce` instances do not expose `.files`.
+  - Reproducer before fix: calling `make_unrolled_kernel(..., "warp_sum", ...)` raised `AttributeError: 'sum' object has no attribute 'files'`.
+- Changes:
+  - `benchmarks/coop/device_side_benchmark.py`:
+    - removed `link={algorithm_name}.files` from generated kernel decorator;
+    - now uses `@cuda.jit(launch_bounds=...)`.
+  - This relies on coop rewrite/lowering machinery to link required LTO-IR automatically.
+- Validation:
+  - Executed a runtime smoke test creating and launching both generated kernels:
+    - `warp_sum` variant launched successfully.
+    - `warp_min` variant launched successfully.
+  - `pre-commit run --files benchmarks/coop/device_side_benchmark.py` passed.
+
+## 2026-02-21 (restore two-phase make_* invocable contract)
+- Request: Confirm and restore public `make_*` two-phase behavior so block/warp
+  `make_*` factories return Invocable/stateful objects again while preserving
+  single-phase rewrite behavior.
+- Changes:
+  - `cuda/coop/block/__init__.py` and `cuda/coop/warp/__init__.py`:
+    switched public `make_*` wrappers to class `.create(...)` paths.
+  - `cuda/coop/_rewrite.py`: removed single-phase dependence on public
+    `make_*` wrappers and restored direct primitive-constructor instantiation.
+  - `cuda/coop/_types.py` + `cuda/coop/_decls.py`: made `Invocable` participate
+    in coop two-phase instance typing/rewrite by carrying specialization/node
+    metadata and adding `typeof_impl` mapping from invocable primitive class to
+    coop instance types.
+  - Fixed latent `.create()` issues uncovered by this change:
+    - `cuda/coop/block/_block_discontinuity.py`: corrected `create()` ctor
+      argument ordering.
+    - `cuda/coop/block/_block_merge_sort.py` and
+      `cuda/coop/block/_block_radix_sort.py`: handle modern `LTOIR` objects in
+      `create()` (not only raw bytes).
+    - `cuda/coop/block/_block_radix_sort.py`: added explicit subclass
+      `create()` methods for keys/keys_desc/pairs/pairs_desc and fixed two-phase
+      creation to keep implicit temp-storage call signatures.
+  - Added `tests/coop/test_make_factories_two_phase.py` to enforce:
+    - expanded block/warp `make_*` factory coverage,
+    - Invocable return contract for one-shot factories,
+    - stateful return contract for histogram/run_length,
+    - `dim` alias behavior,
+    - kernel execution using `make_sum` without explicit `link=`.
+- Tests:
+  - `pytest -q tests/coop/test_make_factories_two_phase.py`
+    - Result: `35 passed`.
+  - `pytest -q tests/coop/test_block_load_store_api.py`
+    - Result: `35 passed`.
+  - `pytest -q tests/coop/test_block_radix_sort.py`
+    - Result: `109 passed`.
+  - `pytest -q tests/coop/test_block_stress_kernels.py`
+    - Result: `31 passed, 3 xfailed`.
+  - `pytest -q tests/coop/test_mamba_selective_scan_fwd.py`
+    - Result: `2 passed`.
+  - `pre-commit run --files cuda/coop/_rewrite.py cuda/coop/block/__init__.py cuda/coop/warp/__init__.py cuda/coop/block/_block_radix_sort.py cuda/coop/block/_block_merge_sort.py cuda/coop/block/_block_discontinuity.py cuda/coop/_decls.py cuda/coop/_types.py tests/coop/test_make_factories_two_phase.py`
+    - Result: all hooks passed.

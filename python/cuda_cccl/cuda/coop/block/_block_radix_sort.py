@@ -64,6 +64,25 @@ TEMPLATE_PARAMETER_DEFAULTS = {
 }
 
 
+def _make_invocable_from_specialization(specialization) -> Invocable:
+    lto_irs = specialization.get_lto_ir()
+    if lto_irs and hasattr(lto_irs[0], "data"):
+        return Invocable(
+            ltoir_files=lto_irs,
+            temp_storage_bytes=specialization.temp_storage_bytes,
+            temp_storage_alignment=specialization.temp_storage_alignment,
+            algorithm=specialization,
+        )
+
+    # Backward-compatible fallback for raw-bytes LTO IR payloads.
+    return Invocable(
+        temp_files=[make_binary_tempfile(ltoir, ".ltoir") for ltoir in lto_irs],
+        temp_storage_bytes=specialization.temp_storage_bytes,
+        temp_storage_alignment=specialization.temp_storage_alignment,
+        algorithm=specialization,
+    )
+
+
 def _build_method_parameters(
     *,
     has_values: bool,
@@ -268,18 +287,10 @@ class _radix_sort_base(BasePrimitive):
             end_bit=end_bit,
             decomposer=decomposer,
             blocked_to_striped=blocked_to_striped,
-            temp_storage=True,
+            temp_storage=None,
         )
         specialization = algo.specialization
-        return Invocable(
-            temp_files=[
-                make_binary_tempfile(ltoir, ".ltoir")
-                for ltoir in specialization.get_lto_ir()
-            ],
-            temp_storage_bytes=specialization.temp_storage_bytes,
-            temp_storage_alignment=specialization.temp_storage_alignment,
-            algorithm=specialization,
-        )
+        return _make_invocable_from_specialization(specialization)
 
 
 class radix_sort_keys(_radix_sort_base):
@@ -355,6 +366,32 @@ class radix_sort_keys(_radix_sort_base):
             node=node,
         )
 
+    @classmethod
+    def create(
+        cls,
+        dtype: Union[str, type, "np.dtype", "numba.types.Type"],
+        threads_per_block: Union[int, Tuple[int, int], Tuple[int, int, int], dim3],
+        items_per_thread: int,
+        value_dtype: Union[str, type, "np.dtype", "numba.types.Type"] = None,
+        begin_bit: int = None,
+        end_bit: int = None,
+        decomposer: Any = None,
+        blocked_to_striped: bool = False,
+    ) -> Invocable:
+        algo = cls(
+            dtype=dtype,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+            value_dtype=value_dtype,
+            begin_bit=begin_bit,
+            end_bit=end_bit,
+            decomposer=decomposer,
+            blocked_to_striped=blocked_to_striped,
+            temp_storage=None,
+        )
+        specialization = algo.specialization
+        return _make_invocable_from_specialization(specialization)
+
 
 class radix_sort_keys_descending(_radix_sort_base):
     """Performs an descending block-wide radix sort over a :ref:`blocked arrangement <coop-flexible-data-arrangement>` of keys.
@@ -429,6 +466,32 @@ class radix_sort_keys_descending(_radix_sort_base):
             node=node,
         )
 
+    @classmethod
+    def create(
+        cls,
+        dtype: Union[str, type, "np.dtype", "numba.types.Type"],
+        threads_per_block: Union[int, Tuple[int, int], Tuple[int, int, int], dim3],
+        items_per_thread: int,
+        value_dtype: Union[str, type, "np.dtype", "numba.types.Type"] = None,
+        begin_bit: int = None,
+        end_bit: int = None,
+        decomposer: Any = None,
+        blocked_to_striped: bool = False,
+    ) -> Invocable:
+        algo = cls(
+            dtype=dtype,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+            value_dtype=value_dtype,
+            begin_bit=begin_bit,
+            end_bit=end_bit,
+            decomposer=decomposer,
+            blocked_to_striped=blocked_to_striped,
+            temp_storage=None,
+        )
+        specialization = algo.specialization
+        return _make_invocable_from_specialization(specialization)
+
 
 class radix_sort_pairs(radix_sort_keys):
     def __init__(
@@ -459,6 +522,32 @@ class radix_sort_pairs(radix_sort_keys):
             node=node,
         )
 
+    @classmethod
+    def create(
+        cls,
+        keys: Union[str, type, "np.dtype", "numba.types.Type"],
+        values: Union[str, type, "np.dtype", "numba.types.Type"],
+        threads_per_block: Union[int, Tuple[int, int], Tuple[int, int, int], dim3],
+        items_per_thread: int,
+        begin_bit: int = None,
+        end_bit: int = None,
+        decomposer: Any = None,
+        blocked_to_striped: bool = False,
+    ) -> Invocable:
+        algo = cls(
+            keys=keys,
+            values=values,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+            begin_bit=begin_bit,
+            end_bit=end_bit,
+            decomposer=decomposer,
+            blocked_to_striped=blocked_to_striped,
+            temp_storage=None,
+        )
+        specialization = algo.specialization
+        return _make_invocable_from_specialization(specialization)
+
 
 class radix_sort_pairs_descending(radix_sort_keys_descending):
     def __init__(
@@ -488,3 +577,29 @@ class radix_sort_pairs_descending(radix_sort_keys_descending):
             temp_storage=temp_storage,
             node=node,
         )
+
+    @classmethod
+    def create(
+        cls,
+        keys: Union[str, type, "np.dtype", "numba.types.Type"],
+        values: Union[str, type, "np.dtype", "numba.types.Type"],
+        threads_per_block: Union[int, Tuple[int, int], Tuple[int, int, int], dim3],
+        items_per_thread: int,
+        begin_bit: int = None,
+        end_bit: int = None,
+        decomposer: Any = None,
+        blocked_to_striped: bool = False,
+    ) -> Invocable:
+        algo = cls(
+            keys=keys,
+            values=values,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+            begin_bit=begin_bit,
+            end_bit=end_bit,
+            decomposer=decomposer,
+            blocked_to_striped=blocked_to_striped,
+            temp_storage=None,
+        )
+        specialization = algo.specialization
+        return _make_invocable_from_specialization(specialization)

@@ -204,6 +204,330 @@ def test_block_load_store_single_phase_thread_data_temp_storage():
     np.testing.assert_allclose(h_output, h_input)
 
 
+def test_block_load_store_single_phase_thread_data_temp_storage_infer_from_omitted_size_alignment():
+    dtype = np.int32
+    threads_per_block = 128
+    items_per_thread = 4
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        temp_storage = coop.TempStorage()
+        thread_data = coop.ThreadData(items_per_thread)
+        coop.block.load(
+            d_in,
+            thread_data,
+            algorithm=BlockLoadAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+        coop.block.store(
+            d_out,
+            thread_data,
+            algorithm=BlockStoreAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+
+    h_input = np.random.randint(
+        0, 42, threads_per_block * items_per_thread, dtype=dtype
+    )
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+    kernel[1, threads_per_block](d_input, d_output)
+    h_output = d_output.copy_to_host()
+
+    np.testing.assert_allclose(h_output, h_input)
+
+
+def test_temp_storage_shared_partial_inference_size_only():
+    dtype = np.int32
+    threads_per_block = 128
+    items_per_thread = 4
+
+    block_load = coop.block.load(
+        dtype,
+        threads_per_block,
+        items_per_thread,
+        algorithm=BlockLoadAlgorithm.TRANSPOSE,
+    )
+    block_store = coop.block.store(
+        dtype,
+        threads_per_block,
+        items_per_thread,
+        algorithm=BlockStoreAlgorithm.TRANSPOSE,
+    )
+    temp_storage_bytes = max(
+        block_load.temp_storage_bytes,
+        block_store.temp_storage_bytes,
+    )
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        temp_storage = coop.TempStorage(
+            temp_storage_bytes,
+        )
+        thread_data = coop.ThreadData(items_per_thread)
+        coop.block.load(
+            d_in,
+            thread_data,
+            algorithm=BlockLoadAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+        coop.block.store(
+            d_out,
+            thread_data,
+            algorithm=BlockStoreAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+
+    h_input = np.random.randint(
+        0, 42, threads_per_block * items_per_thread, dtype=dtype
+    )
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+    kernel[1, threads_per_block](d_input, d_output)
+    h_output = d_output.copy_to_host()
+    np.testing.assert_allclose(h_output, h_input)
+
+
+def test_temp_storage_shared_partial_inference_alignment_only():
+    dtype = np.int32
+    threads_per_block = 128
+    items_per_thread = 4
+
+    block_load = coop.block.load(
+        dtype,
+        threads_per_block,
+        items_per_thread,
+        algorithm=BlockLoadAlgorithm.TRANSPOSE,
+    )
+    block_store = coop.block.store(
+        dtype,
+        threads_per_block,
+        items_per_thread,
+        algorithm=BlockStoreAlgorithm.TRANSPOSE,
+    )
+    temp_storage_alignment = max(
+        block_load.temp_storage_alignment,
+        block_store.temp_storage_alignment,
+    )
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        temp_storage = coop.TempStorage(
+            alignment=temp_storage_alignment,
+        )
+        thread_data = coop.ThreadData(items_per_thread)
+        coop.block.load(
+            d_in,
+            thread_data,
+            algorithm=BlockLoadAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+        coop.block.store(
+            d_out,
+            thread_data,
+            algorithm=BlockStoreAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+
+    h_input = np.random.randint(
+        0, 42, threads_per_block * items_per_thread, dtype=dtype
+    )
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+    kernel[1, threads_per_block](d_input, d_output)
+    h_output = d_output.copy_to_host()
+    np.testing.assert_allclose(h_output, h_input)
+
+
+def test_temp_storage_shared_rejects_explicit_size_too_small():
+    dtype = np.int32
+    threads_per_block = 128
+    items_per_thread = 4
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        temp_storage = coop.TempStorage(1)
+        thread_data = coop.ThreadData(items_per_thread)
+        coop.block.load(
+            d_in,
+            thread_data,
+            algorithm=BlockLoadAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+        coop.block.store(
+            d_out,
+            thread_data,
+            algorithm=BlockStoreAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+
+    h_input = np.random.randint(
+        0, 42, threads_per_block * items_per_thread, dtype=dtype
+    )
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+    with pytest.raises(Exception, match="size_in_bytes is smaller than required"):
+        kernel[1, threads_per_block](d_input, d_output)
+
+
+def test_temp_storage_shared_rejects_explicit_alignment_too_small():
+    dtype = np.int32
+    threads_per_block = 128
+    items_per_thread = 4
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        temp_storage = coop.TempStorage(8192, alignment=1)
+        thread_data = coop.ThreadData(items_per_thread)
+        coop.block.load(
+            d_in,
+            thread_data,
+            algorithm=BlockLoadAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+        coop.block.store(
+            d_out,
+            thread_data,
+            algorithm=BlockStoreAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+
+    h_input = np.random.randint(
+        0, 42, threads_per_block * items_per_thread, dtype=dtype
+    )
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+    with pytest.raises(Exception, match="alignment is smaller than required"):
+        kernel[1, threads_per_block](d_input, d_output)
+
+
+def test_temp_storage_shared_manual_sync():
+    dtype = np.int32
+    threads_per_block = 128
+    items_per_thread = 4
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        temp_storage = coop.TempStorage(auto_sync=False)
+        thread_data = coop.ThreadData(items_per_thread)
+        coop.block.load(
+            d_in,
+            thread_data,
+            algorithm=BlockLoadAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+        cuda.syncthreads()
+        coop.block.store(
+            d_out,
+            thread_data,
+            algorithm=BlockStoreAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+
+    h_input = np.random.randint(
+        0, 42, threads_per_block * items_per_thread, dtype=dtype
+    )
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+    kernel[1, threads_per_block](d_input, d_output)
+    h_output = d_output.copy_to_host()
+    np.testing.assert_allclose(h_output, h_input)
+
+
+def test_temp_storage_exclusive_infer():
+    dtype = np.int32
+    threads_per_block = 128
+    items_per_thread = 4
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        temp_storage = coop.TempStorage(sharing="exclusive")
+        thread_data = coop.ThreadData(items_per_thread)
+        coop.block.load(
+            d_in,
+            thread_data,
+            algorithm=BlockLoadAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+        coop.block.store(
+            d_out,
+            thread_data,
+            algorithm=BlockStoreAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+
+    h_input = np.random.randint(
+        0, 42, threads_per_block * items_per_thread, dtype=dtype
+    )
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+    kernel[1, threads_per_block](d_input, d_output)
+    h_output = d_output.copy_to_host()
+    np.testing.assert_allclose(h_output, h_input)
+
+
+def test_temp_storage_exclusive_rejects_auto_sync_true():
+    dtype = np.int32
+    threads_per_block = 128
+    items_per_thread = 4
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        temp_storage = coop.TempStorage(sharing="exclusive", auto_sync=True)
+        thread_data = coop.ThreadData(items_per_thread)
+        coop.block.load(
+            d_in,
+            thread_data,
+            algorithm=BlockLoadAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+        coop.block.store(
+            d_out,
+            thread_data,
+            algorithm=BlockStoreAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+
+    h_input = np.random.randint(
+        0, 42, threads_per_block * items_per_thread, dtype=dtype
+    )
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+    with pytest.raises(Exception, match="sharing='exclusive'.*auto_sync=True"):
+        kernel[1, threads_per_block](d_input, d_output)
+
+
+def test_temp_storage_rejects_invalid_sharing():
+    dtype = np.int32
+    threads_per_block = 128
+    items_per_thread = 4
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        temp_storage = coop.TempStorage(sharing="bogus")
+        thread_data = coop.ThreadData(items_per_thread)
+        coop.block.load(
+            d_in,
+            thread_data,
+            algorithm=BlockLoadAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+        coop.block.store(
+            d_out,
+            thread_data,
+            algorithm=BlockStoreAlgorithm.TRANSPOSE,
+            temp_storage=temp_storage,
+        )
+
+    h_input = np.random.randint(
+        0, 42, threads_per_block * items_per_thread, dtype=dtype
+    )
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+    with pytest.raises(Exception, match="sharing must be 'shared' or 'exclusive'"):
+        kernel[1, threads_per_block](d_input, d_output)
+
+
 def test_block_load_store_single_phase_num_valid_items():
     # example-begin load-store-num-valid-items
     @cuda.jit
