@@ -1779,7 +1779,25 @@ class CoopLoadStoreNode(CoopNode):
             if self.is_two_phase and self.two_phase_instance is not None:
                 algorithm_id = int(self.two_phase_instance.algorithm_enum)
             else:
-                algorithm_id = int(self.impl_class.default_algorithm)
+                default_algorithm = getattr(self.impl_class, "default_algorithm", None)
+                if default_algorithm is None:
+                    instance = self.two_phase_instance or self.instance
+                    if instance is not None:
+                        default_algorithm = getattr(instance, "default_algorithm", None)
+                        if default_algorithm is None:
+                            default_algorithm = getattr(
+                                type(instance), "default_algorithm", None
+                            )
+                if default_algorithm is None:
+                    from .block._block_load_store import load as block_load
+                    from .block._block_load_store import store as block_store
+
+                    default_algorithm = (
+                        block_load.default_algorithm
+                        if self.is_load
+                        else block_store.default_algorithm
+                    )
+                algorithm_id = int(default_algorithm)
 
         num_valid_items = self.get_arg_value_safe("num_valid_items")
         if num_valid_items is None:

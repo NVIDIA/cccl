@@ -220,3 +220,63 @@ class adjacent_difference(BasePrimitive):
             temp_storage_alignment=specialization.temp_storage_alignment,
             algorithm=specialization,
         )
+
+
+def _build_adjacent_difference_spec(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    difference_op=None,
+    block_adjacent_difference_type=BlockAdjacentDifferenceType.SubtractLeft,
+    **kwargs,
+):
+    kw = dict(kwargs)
+    if threads_per_block is None:
+        threads_per_block = kw.pop("dim", None)
+    spec = {
+        "block_adjacent_difference_type": block_adjacent_difference_type,
+        "dtype": dtype,
+        "threads_per_block": threads_per_block,
+        "items_per_thread": items_per_thread,
+        "difference_op": difference_op,
+    }
+    spec.update(kw)
+    return spec
+
+
+def _make_adjacent_difference_two_phase(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    difference_op=None,
+    block_adjacent_difference_type=BlockAdjacentDifferenceType.SubtractLeft,
+    **kwargs,
+):
+    spec = _build_adjacent_difference_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        difference_op=difference_op,
+        block_adjacent_difference_type=block_adjacent_difference_type,
+        **kwargs,
+    )
+    return adjacent_difference.create(**spec)
+
+
+def _make_adjacent_difference_rewrite(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    difference_op=None,
+    block_adjacent_difference_type=BlockAdjacentDifferenceType.SubtractLeft,
+    **kwargs,
+):
+    spec = _build_adjacent_difference_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        difference_op=difference_op,
+        block_adjacent_difference_type=block_adjacent_difference_type,
+        **kwargs,
+    )
+    return adjacent_difference(**spec)

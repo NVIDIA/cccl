@@ -52,16 +52,16 @@
 - [x] Keep public two-phase `make_*` factories returning Invocable/stateful
       objects and keep single-phase rewrite instantiation on primitive
       constructors.
-- [ ] Add private internal factory helpers for rewrite-time construction
+- [x] Add private internal factory helpers for rewrite-time construction
       (starting with block scan) to centralize alias/default normalization
       without using public `make_*` wrappers.
 - [x] Roll out private internal factory helpers for warp primitives
       (`_make_*_two_phase` + `_make_*_rewrite`) and wire decl `impl_key`
       to rewrite helpers.
-- [ ] Define and adopt a shared normalization pattern for each primitive family
+- [x] Define and adopt a shared normalization pattern for each primitive family
       (`dim` vs `threads_per_block`, prefix-op aliases, enum/string algorithm
       normalization) while keeping semantic validation in primitive constructors.
-- [ ] Migrate rewrite nodes to internal factory helpers incrementally and add
+- [x] Migrate rewrite nodes to internal factory helpers incrementally and add
       parity tests ensuring no behavior drift versus direct constructor paths.
 - [x] Add missing two-phase tests for block primitives.
 - [ ] Audit CUB block/warp overload coverage and fill gaps.
