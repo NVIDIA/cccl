@@ -312,3 +312,57 @@ class exchange(BasePrimitive):
             temp_storage_alignment=specialization.temp_storage_alignment,
             algorithm=specialization,
         )
+
+
+def _build_exchange_spec(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    block_exchange_type=BlockExchangeType.StripedToBlocked,
+    **kwargs,
+):
+    kw = dict(kwargs)
+    if threads_per_block is None:
+        threads_per_block = kw.pop("dim", None)
+    spec = {
+        "block_exchange_type": block_exchange_type,
+        "dtype": dtype,
+        "threads_per_block": threads_per_block,
+        "items_per_thread": items_per_thread,
+    }
+    spec.update(kw)
+    return spec
+
+
+def _make_exchange_two_phase(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    block_exchange_type=BlockExchangeType.StripedToBlocked,
+    **kwargs,
+):
+    spec = _build_exchange_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        block_exchange_type=block_exchange_type,
+        **kwargs,
+    )
+    return exchange.create(**spec)
+
+
+def _make_exchange_rewrite(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    block_exchange_type=BlockExchangeType.StripedToBlocked,
+    **kwargs,
+):
+    spec = _build_exchange_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        block_exchange_type=block_exchange_type,
+        **kwargs,
+    )
+    return exchange(**spec)

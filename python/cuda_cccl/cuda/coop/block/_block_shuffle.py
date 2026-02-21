@@ -238,3 +238,63 @@ class shuffle(BasePrimitive):
             temp_storage_alignment=specialization.temp_storage_alignment,
             algorithm=specialization,
         )
+
+
+def _build_shuffle_spec(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=None,
+    block_shuffle_type=BlockShuffleType.Up,
+    distance=None,
+    **kwargs,
+):
+    kw = dict(kwargs)
+    if threads_per_block is None:
+        threads_per_block = kw.pop("dim", None)
+    spec = {
+        "block_shuffle_type": block_shuffle_type,
+        "dtype": dtype,
+        "threads_per_block": threads_per_block,
+        "items_per_thread": items_per_thread,
+        "distance": distance,
+    }
+    spec.update(kw)
+    return spec
+
+
+def _make_shuffle_two_phase(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=None,
+    block_shuffle_type=BlockShuffleType.Up,
+    distance=None,
+    **kwargs,
+):
+    spec = _build_shuffle_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        block_shuffle_type=block_shuffle_type,
+        distance=distance,
+        **kwargs,
+    )
+    return shuffle.create(**spec)
+
+
+def _make_shuffle_rewrite(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=None,
+    block_shuffle_type=BlockShuffleType.Up,
+    distance=None,
+    **kwargs,
+):
+    spec = _build_shuffle_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        block_shuffle_type=block_shuffle_type,
+        distance=distance,
+        **kwargs,
+    )
+    return shuffle(**spec)

@@ -1533,3 +1533,88 @@
   - `pre-commit run --files cuda/coop/_decls.py cuda/coop/_rewrite.py cuda/coop/warp/__init__.py cuda/coop/warp/_warp_exchange.py cuda/coop/warp/_warp_load_store.py cuda/coop/warp/_warp_merge_sort.py cuda/coop/warp/_warp_reduce.py cuda/coop/warp/_warp_scan.py` (passed)
   - `pytest -q tests/coop/test_make_factories_two_phase.py tests/coop/test_warp_load_store_api.py tests/coop/test_warp_exchange_api.py tests/coop/test_warp_reduce_api.py tests/coop/test_warp_scan_api.py tests/coop/test_warp_merge_sort_api.py tests/coop/test_warp_merge_sort_pairs_api.py tests/coop/test_warp_reduce.py tests/coop/test_warp_scan.py tests/coop/test_warp_merge_sort.py`
     - Result: `121 passed`.
+
+## 2026-02-21 (block internal factory-helper rollout)
+- Request: continue the internal factory-helper refactor for block primitives
+  after warp rollout; update tests and ensure coverage passes.
+- Changes:
+  - Added private helper split across block primitive modules:
+    - `cuda/coop/block/_block_load_store.py`:
+      - `_build_load_spec/_build_store_spec`
+      - `_make_load_two_phase/_make_load_rewrite`
+      - `_make_store_two_phase/_make_store_rewrite`
+    - `cuda/coop/block/_block_exchange.py`:
+      - `_build_exchange_spec`
+      - `_make_exchange_two_phase/_make_exchange_rewrite`
+    - `cuda/coop/block/_block_reduce.py`:
+      - `_build_reduce_spec/_build_sum_spec`
+      - `_make_reduce_two_phase/_make_reduce_rewrite`
+      - `_make_sum_two_phase/_make_sum_rewrite`
+    - `cuda/coop/block/_block_scan.py`:
+      - `_build_scan_spec` + per-alias builders for
+        exclusive/inclusive sum/scan
+      - `_make_scan_two_phase/_make_scan_rewrite`
+      - `_make_exclusive_sum_two_phase`
+      - `_make_inclusive_sum_two_phase`
+      - `_make_exclusive_scan_two_phase`
+      - `_make_inclusive_scan_two_phase`
+    - `cuda/coop/block/_block_merge_sort.py`:
+      - `_build_merge_sort_keys_spec/_build_merge_sort_pairs_spec`
+      - `_make_merge_sort_keys_two_phase/_make_merge_sort_keys_rewrite`
+      - `_make_merge_sort_pairs_two_phase/_make_merge_sort_pairs_rewrite`
+    - `cuda/coop/block/_block_radix_sort.py`:
+      - `_build_radix_sort_keys_spec/_build_radix_sort_pairs_spec`
+      - `_make_radix_sort_keys(_descending)_two_phase/_rewrite`
+      - `_make_radix_sort_pairs(_descending)_two_phase/_rewrite`
+    - `cuda/coop/block/_block_radix_rank.py`:
+      - `_build_radix_rank_spec`
+      - `_make_radix_rank_two_phase/_make_radix_rank_rewrite`
+    - `cuda/coop/block/_block_adjacent_difference.py`:
+      - `_build_adjacent_difference_spec`
+      - `_make_adjacent_difference_two_phase/_rewrite`
+    - `cuda/coop/block/_block_discontinuity.py`:
+      - `_build_discontinuity_spec`
+      - `_make_discontinuity_two_phase/_rewrite`
+    - `cuda/coop/block/_block_shuffle.py`:
+      - `_build_shuffle_spec`
+      - `_make_shuffle_two_phase/_make_shuffle_rewrite`
+    - Stateful parent helper routing for wrappers:
+      - `cuda/coop/block/_block_histogram.py`: `_make_histogram_two_phase`
+      - `cuda/coop/block/_block_run_length_decode.py`: `_make_run_length_two_phase`
+  - Updated public block wrappers to route through two-phase helpers:
+    - `cuda/coop/block/__init__.py`
+    - Removed wrapper-local normalization helpers; normalization now lives in
+      primitive modules.
+  - Updated block decl impl bindings to helper callables:
+    - `cuda/coop/_decls.py`
+    - Added block helper imports (aliased to avoid warp helper name collisions).
+    - Set `impl_key` for block decl templates:
+      - load/store/exchange
+      - merge_sort_keys/pairs
+      - adjacent_difference/shuffle/discontinuity
+      - radix_sort_keys/descending
+      - radix_rank
+      - reduce/sum
+      - scan + exclusive/inclusive sum/scan aliases (all via block scan helper).
+  - Fixed load/store rewrite default-algorithm fallback for callable `impl_key`:
+    - `cuda/coop/_rewrite.py`
+    - `CoopLoadStoreNode.refine_match()` now resolves default algorithm from:
+      1) `impl_class.default_algorithm` when available,
+      2) instance/type default when present,
+      3) block load/store classes as fallback.
+    - This avoids `AttributeError` when `impl_class` is a helper function.
+- TODO updates:
+  - Marked complete in `SINGLE-PHASE-TODO.md`:
+    - private rewrite-factory helper rollout (block scan+),
+    - shared normalization pattern adoption,
+    - rewrite migration/parity coverage item.
+- Tests:
+  - Compile/sanity:
+    - `python -m py_compile cuda/coop/block/__init__.py cuda/coop/_decls.py cuda/coop/block/_block_load_store.py cuda/coop/block/_block_exchange.py cuda/coop/block/_block_reduce.py cuda/coop/block/_block_scan.py cuda/coop/block/_block_merge_sort.py cuda/coop/block/_block_radix_sort.py cuda/coop/block/_block_radix_rank.py cuda/coop/block/_block_adjacent_difference.py cuda/coop/block/_block_discontinuity.py cuda/coop/block/_block_shuffle.py cuda/coop/block/_block_histogram.py cuda/coop/block/_block_run_length_decode.py` (passed)
+  - Initial broad block/mamba sweep surfaced callable-impl default-algorithm failures in load/store scan paths.
+  - Focused verify after fix:
+    - `pytest -q tests/coop/test_block_load_store_api.py tests/coop/test_block_scan.py tests/coop/test_block_scan_api.py tests/coop/test_block_scan_single_phase_aliases.py`
+      - Result: `223 passed, 26 skipped`.
+  - Final broad block/mamba sweep:
+    - `pytest -q tests/coop/test_make_factories_two_phase.py tests/coop/test_block_load.py tests/coop/test_block_store.py tests/coop/test_block_load_store_api.py tests/coop/test_block_exchange.py tests/coop/test_block_exchange_api.py tests/coop/test_block_reduce.py tests/coop/test_block_scan.py tests/coop/test_block_scan_api.py tests/coop/test_block_scan_single_phase_aliases.py tests/coop/test_block_merge_sort.py tests/coop/test_block_radix_sort.py tests/coop/test_block_radix_rank.py tests/coop/test_block_adjacent_difference.py tests/coop/test_block_adjacent_difference_api.py tests/coop/test_block_discontinuity.py tests/coop/test_block_discontinuity_api.py tests/coop/test_block_discontinuity_flag_heads_and_tails_api.py tests/coop/test_block_shuffle.py tests/coop/test_block_run_length_decode.py tests/coop/test_block_histogram.py tests/coop/test_block_weird_dims_stateful_custom_types.py tests/coop/test_block_stress_kernels.py tests/coop/test_mamba_selective_scan_fwd.py`
+      - Result: `2328 passed, 26 skipped, 5 xfailed`.

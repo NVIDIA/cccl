@@ -335,3 +335,40 @@ class histogram(BasePrimitive):
             temp_storage=temp_storage,
         )
         return algo
+
+
+def _build_histogram_spec(
+    item_dtype,
+    counter_dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    **kwargs,
+):
+    kw = dict(kwargs)
+    if threads_per_block is None:
+        threads_per_block = kw.pop("dim", None)
+    spec = {
+        "item_dtype": item_dtype,
+        "counter_dtype": counter_dtype,
+        "dim": threads_per_block,
+        "items_per_thread": items_per_thread,
+    }
+    spec.update(kw)
+    return spec
+
+
+def _make_histogram_two_phase(
+    item_dtype,
+    counter_dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    **kwargs,
+):
+    spec = _build_histogram_spec(
+        item_dtype=item_dtype,
+        counter_dtype=counter_dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        **kwargs,
+    )
+    return histogram.create(**spec)

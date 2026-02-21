@@ -279,3 +279,120 @@ class merge_sort_pairs(BasePrimitive):
         )
         specialization = algo.specialization
         return _make_invocable_from_specialization(specialization)
+
+
+def _normalize_threads_per_block(kwargs, threads_per_block):
+    kw = dict(kwargs)
+    if threads_per_block is None:
+        threads_per_block = kw.pop("dim", None)
+    return kw, threads_per_block
+
+
+def _build_merge_sort_keys_spec(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    compare_op=None,
+    **kwargs,
+):
+    kw, threads_per_block = _normalize_threads_per_block(kwargs, threads_per_block)
+    spec = {
+        "dtype": dtype,
+        "threads_per_block": threads_per_block,
+        "items_per_thread": items_per_thread,
+        "compare_op": compare_op,
+    }
+    spec.update(kw)
+    return spec
+
+
+def _build_merge_sort_pairs_spec(
+    keys,
+    values,
+    threads_per_block=None,
+    items_per_thread=1,
+    compare_op=None,
+    **kwargs,
+):
+    kw, threads_per_block = _normalize_threads_per_block(kwargs, threads_per_block)
+    spec = {
+        "keys": keys,
+        "values": values,
+        "threads_per_block": threads_per_block,
+        "items_per_thread": items_per_thread,
+        "compare_op": compare_op,
+    }
+    spec.update(kw)
+    return spec
+
+
+def _make_merge_sort_keys_two_phase(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    compare_op=None,
+    **kwargs,
+):
+    spec = _build_merge_sort_keys_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        compare_op=compare_op,
+        **kwargs,
+    )
+    return merge_sort_keys.create(**spec)
+
+
+def _make_merge_sort_keys_rewrite(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    compare_op=None,
+    **kwargs,
+):
+    spec = _build_merge_sort_keys_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        compare_op=compare_op,
+        **kwargs,
+    )
+    return merge_sort_keys(**spec)
+
+
+def _make_merge_sort_pairs_two_phase(
+    keys,
+    values,
+    threads_per_block=None,
+    items_per_thread=1,
+    compare_op=None,
+    **kwargs,
+):
+    spec = _build_merge_sort_pairs_spec(
+        keys=keys,
+        values=values,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        compare_op=compare_op,
+        **kwargs,
+    )
+    return merge_sort_pairs.create(**spec)
+
+
+def _make_merge_sort_pairs_rewrite(
+    keys,
+    values,
+    threads_per_block=None,
+    items_per_thread=1,
+    compare_op=None,
+    **kwargs,
+):
+    spec = _build_merge_sort_pairs_spec(
+        keys=keys,
+        values=values,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        compare_op=compare_op,
+        **kwargs,
+    )
+    return merge_sort_pairs(**spec)
