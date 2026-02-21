@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__pstl/copy_if.h>
 #include <cuda/std/__pstl/count.h>
 #include <cuda/std/__pstl/count_if.h>
 #include <cuda/std/__pstl/fill.h>
