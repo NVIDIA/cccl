@@ -55,6 +55,25 @@ from ._types import Invocable
 from ._typing import (
     ScanOpType,
 )
+from .warp._warp_exchange import _make_exchange_rewrite
+from .warp._warp_load_store import (
+    _make_load_rewrite,
+    _make_store_rewrite,
+)
+from .warp._warp_merge_sort import (
+    _make_merge_sort_keys_rewrite,
+    _make_merge_sort_pairs_rewrite,
+)
+from .warp._warp_reduce import (
+    _make_reduce_rewrite,
+    _make_sum_rewrite,
+)
+from .warp._warp_scan import (
+    _make_exclusive_scan_rewrite,
+    _make_exclusive_sum_rewrite,
+    _make_inclusive_scan_rewrite,
+    _make_inclusive_sum_rewrite,
+)
 
 registry = Registry()
 register = registry.register
@@ -1267,6 +1286,7 @@ class WarpStoreMixin:
 @register_global(coop.warp.load)
 class CoopWarpLoadDecl(CoopWarpLoadStoreBaseTemplate, WarpLoadMixin, CoopDeclMixin):
     key = coop.warp.load
+    impl_key = _make_load_rewrite
     primitive_name = "coop.warp.load"
     algorithm_enum = coop.WarpLoadAlgorithm
     default_algorithm = coop.WarpLoadAlgorithm.DIRECT
@@ -1275,6 +1295,7 @@ class CoopWarpLoadDecl(CoopWarpLoadStoreBaseTemplate, WarpLoadMixin, CoopDeclMix
 @register_global(coop.warp.store)
 class CoopWarpStoreDecl(CoopWarpLoadStoreBaseTemplate, WarpStoreMixin, CoopDeclMixin):
     key = coop.warp.store
+    impl_key = _make_store_rewrite
     primitive_name = "coop.warp.store"
     algorithm_enum = coop.WarpStoreAlgorithm
     default_algorithm = coop.WarpStoreAlgorithm.DIRECT
@@ -4468,6 +4489,7 @@ def lower_constant_block_radix_rank_instance_type(context, builder, typ, value):
 @register_global(coop.warp.exchange)
 class CoopWarpExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.warp.exchange
+    impl_key = _make_exchange_rewrite
     primitive_name = "coop.warp.exchange"
     is_constructor = False
     minimum_num_args = 1
@@ -4620,6 +4642,7 @@ class CoopWarpExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
 @register_global(coop.warp.reduce)
 class CoopWarpReduceDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.warp.reduce
+    impl_key = _make_reduce_rewrite
     primitive_name = "coop.warp.reduce"
     is_constructor = False
     minimum_num_args = 2
@@ -4706,6 +4729,7 @@ class CoopWarpReduceDecl(CoopAbstractTemplate, CoopDeclMixin):
 @register_global(coop.warp.sum)
 class CoopWarpSumDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.warp.sum
+    impl_key = _make_sum_rewrite
     primitive_name = "coop.warp.sum"
     is_constructor = False
     minimum_num_args = 1
@@ -4763,6 +4787,7 @@ class CoopWarpSumDecl(CoopAbstractTemplate, CoopDeclMixin):
 @register_global(coop.warp.inclusive_sum)
 class CoopWarpInclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.warp.inclusive_sum
+    impl_key = _make_inclusive_sum_rewrite
     primitive_name = "coop.warp.inclusive_sum"
     is_constructor = False
     minimum_num_args = 1
@@ -4829,6 +4854,7 @@ class CoopWarpInclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
 @register_global(coop.warp.exclusive_sum)
 class CoopWarpExclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.warp.exclusive_sum
+    impl_key = _make_exclusive_sum_rewrite
     primitive_name = "coop.warp.exclusive_sum"
     is_constructor = False
     minimum_num_args = 1
@@ -4895,6 +4921,7 @@ class CoopWarpExclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
 @register_global(coop.warp.exclusive_scan)
 class CoopWarpExclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.warp.exclusive_scan
+    impl_key = _make_exclusive_scan_rewrite
     primitive_name = "coop.warp.exclusive_scan"
     is_constructor = False
     minimum_num_args = 2
@@ -5028,6 +5055,7 @@ class CoopWarpExclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
 @register_global(coop.warp.inclusive_scan)
 class CoopWarpInclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.warp.inclusive_scan
+    impl_key = _make_inclusive_scan_rewrite
     primitive_name = "coop.warp.inclusive_scan"
     is_constructor = False
     minimum_num_args = 2
@@ -5161,6 +5189,7 @@ class CoopWarpInclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
 @register_global(coop.warp.merge_sort_keys)
 class CoopWarpMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.warp.merge_sort_keys
+    impl_key = _make_merge_sort_keys_rewrite
     primitive_name = "coop.warp.merge_sort_keys"
     is_constructor = False
     minimum_num_args = 2
@@ -5252,6 +5281,7 @@ class CoopWarpMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
 @register_global(coop.warp.merge_sort_pairs)
 class CoopWarpMergeSortPairsDecl(CoopWarpMergeSortDecl):
     key = coop.warp.merge_sort_pairs
+    impl_key = _make_merge_sort_pairs_rewrite
     primitive_name = "coop.warp.merge_sort_pairs"
 
     @staticmethod
