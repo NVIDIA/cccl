@@ -5,9 +5,6 @@
 
 #include <thrust/detail/config.h>
 
-#include "thrust/iterator/constant_iterator.h"
-#include "thrust/iterator/detail/iterator_traits.inl"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -15,6 +12,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/select_system.h>
 
@@ -614,19 +612,17 @@ template <typename InputIterator1,
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
   using System2 = typename thrust::iterator_system<InputIterator2>::type;
   using System3 = typename thrust::iterator_system<InputIterator3>::type;
-  using System4 = typename thrust::iterator_system<constant_iterator>::type;
-  using System5 = typename thrust::iterator_system<OutputIterator1>::type;
-  using System6 = typename thrust::iterator_system<OutputIterator2>::type;
+  using System4 = typename thrust::iterator_system<OutputIterator1>::type;
+  using System5 = typename thrust::iterator_system<OutputIterator2>::type;
 
   System1 system1;
   System2 system2;
   System3 system3;
   System4 system4;
   System5 system5;
-  System6 system6;
 
   return thrust::set_difference_by_key(
-    select_system(system1, system2, system3, system4, system5, system6),
+    select_system(system1, system2, system3, system4, system5),
     keys_first1,
     keys_last1,
     keys_first2,

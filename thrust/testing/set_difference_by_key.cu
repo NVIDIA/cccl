@@ -111,18 +111,14 @@ void TestSetDifferenceByKeySimple()
 DECLARE_VECTOR_UNITTEST(TestSetDifferenceByKeySimple);
 
 template <typename Vector>
-void TestSetDifferenceByKeyOverride(void)
+void TestSetDifferenceByKeyOverride()
 {
-  typedef typename Vector::iterator Iterator;
+  using Iterator = typename Vector::iterator;
 
   Vector a_key{0, 2, 4, 5}, b_key{0, 3, 3, 4, 6};
   Vector a_val(4, 0);
 
-  Vector ref_key(2), ref_val(2);
-  ref_key[0] = 2;
-  ref_key[1] = 5;
-  ref_val[0] = 0;
-  ref_val[1] = 0;
+  Vector ref_key{2, 5}, ref_val{0, 0};
 
   Vector result_key(2), result_val(2);
 
