@@ -2206,7 +2206,17 @@ class Invocable:
         self._lto_irs = ltoir_files or []
         self._temp_storage_bytes = temp_storage_bytes
         self._temp_storage_alignment = temp_storage_alignment
+        self.node = None
         if algorithm:
+            # Keep the specialization so invocables can participate in the
+            # same rewrite/type-inference paths as primitive instances.
+            self.specialization = algorithm
+            primitive = getattr(algorithm, "primitive", None)
+            if primitive is not None:
+                for key, value in primitive.__dict__.items():
+                    if key in ("node", "temp_storage"):
+                        continue
+                    self.__dict__.setdefault(key, value)
             algorithm.codegen(self)
 
     @property
@@ -2338,11 +2348,16 @@ class BasePrimitive:
 
 class TempStorage:
     def __init__(
-        self, size_in_bytes: int = None, alignment: int = None, auto_sync: bool = True
+        self,
+        size_in_bytes: int = None,
+        alignment: int = None,
+        auto_sync: bool = None,
+        sharing: Literal["shared", "exclusive"] = "shared",
     ):
         self.size_in_bytes = size_in_bytes
         self.alignment = alignment
         self.auto_sync = auto_sync
+        self.sharing = sharing
 
 
 class ThreadData:

@@ -47,7 +47,18 @@ single-phase kernel usage unchanged.
 
 - Rebase/transplant work was performed onto `788fe7cc59` using a squash-merge
   conflict resolution strategy for this branch.
-- Single-phase rewrite now consistently instantiates primitives through
-  maker functions (`make_*`) via centralized `CoopNode.instantiate_impl()`.
+- Follow-up (2026-02-21): public `make_*` wrappers were restored to two-phase
+  Invocable/stateful behavior; single-phase rewrite now instantiates direct
+  primitive constructors again via centralized `CoopNode.instantiate_impl()`.
 - Full coop validation completed:
   - `3058 passed, 42 skipped, 5 xfailed` on `pytest -q tests/coop`.
+
+## Follow-Up (2026-02-20)
+
+- [x] Evaluate issue `#4832` (BlockRadixSort UDT decomposer support) against
+  current single-phase architecture and run a compile prototype.
+- Finding:
+  - The blocker is still active and architectural, not just API plumbing:
+    current decomposer lowering produces `tuple<T...>` values, while CUB radix
+    paths require `tuple<T&...>` and fail template deduction in
+    `for_each_member_impl`.
