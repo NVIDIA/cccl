@@ -12,6 +12,7 @@ CUDA C++ Core Libraries
    thrust/index
    cudax/index
    cccl/tma
+   cccl/config_macros
    cccl/3.0_migration_guide
    cccl/development/index
    cccl/contributing
