@@ -1689,3 +1689,27 @@
 - Tests:
   - `python -m py_compile tests/coop/mamba_selective_scan_fwd.py tests/coop/test_mamba_selective_scan_fwd.py` (passed)
   - `pytest -q tests/coop/test_mamba_selective_scan_fwd.py` (passed, 3 tests)
+
+## 2026-02-21 (single-phase overview post for internal PR review)
+- Request: write a new blog post at
+  `~/src/website/posts/cuda-coop-single-phase-overview` that summarizes the
+  single-phase implementation for CCCL/internal NVIDIA reviewer context, using
+  the prior notes post as structure guidance.
+- Changes:
+  - Added `~/src/website/posts/cuda-coop-single-phase-overview/index.qmd`.
+  - Content focuses on current architecture/state (not historical prototype
+    state), including:
+    - public API contracts (single-phase in-kernel and two-phase `make_*`),
+    - factory split (`_build_*_spec`, `_make_*_two_phase`, `_make_*_rewrite`),
+    - typing/rewrite/lowering review map (`_decls.py`, `_rewrite.py`, `_types.py`),
+    - TempStorage redesign (omission-driven inference, sharing modes,
+      dynamic-shared auto handling),
+    - getitem temp-storage sugar,
+    - validation summary and known open items (`#4832`, overload audit, etc.).
+- Decisions:
+  - Keep the post explicitly review-oriented and scoped to current behavior as
+    of 2026-02-21, with direct file paths for code navigation.
+- Tests:
+  - `mamba run -n quarto quarto render ~/src/website/posts/cuda-coop-single-phase-overview/index.qmd`
+    - Result: render succeeded; output created at
+      `~/src/website/docs/posts/cuda-coop-single-phase-overview/index.html`.
