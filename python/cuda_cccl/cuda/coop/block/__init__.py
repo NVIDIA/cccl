@@ -67,9 +67,10 @@ else:
 
     # Maker-style factory functions.
     #
-    # These are the supported two-phase entry points going forward.
-    # The wrappers intentionally accept both `threads_per_block=` and
-    # internal rewrite-style `dim=` keyword forms.
+    # These are the public two-phase entry points. They return Invocable
+    # objects (or parent primitive objects for stateful APIs like histogram
+    # and run_length). The wrappers intentionally accept both
+    # `threads_per_block=` and `dim=` keyword forms.
     def make_load(
         dtype,
         threads_per_block=None,
@@ -77,12 +78,8 @@ else:
         algorithm="direct",
         **kwargs,
     ):
-        kw = dict(kwargs)
-        if threads_per_block is None:
-            threads_per_block = kw.pop("dim", None)
-        if threads_per_block is not None:
-            kw["dim"] = threads_per_block
-        return load(
+        kw = _normalize_threads_per_block(kwargs, threads_per_block)
+        return load.create(
             dtype=dtype,
             items_per_thread=items_per_thread,
             algorithm=algorithm,
@@ -96,12 +93,8 @@ else:
         algorithm="direct",
         **kwargs,
     ):
-        kw = dict(kwargs)
-        if threads_per_block is None:
-            threads_per_block = kw.pop("dim", None)
-        if threads_per_block is not None:
-            kw["dim"] = threads_per_block
-        return store(
+        kw = _normalize_threads_per_block(kwargs, threads_per_block)
+        return store.create(
             dtype=dtype,
             items_per_thread=items_per_thread,
             algorithm=algorithm,
@@ -116,7 +109,7 @@ else:
         **kwargs,
     ):
         kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return exchange(
+        return exchange.create(
             block_exchange_type=block_exchange_type,
             dtype=dtype,
             items_per_thread=items_per_thread,
@@ -131,7 +124,7 @@ else:
         **kwargs,
     ):
         kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return merge_sort_keys(
+        return merge_sort_keys.create(
             dtype=dtype,
             items_per_thread=items_per_thread,
             compare_op=compare_op,
@@ -147,7 +140,7 @@ else:
         **kwargs,
     ):
         kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return merge_sort_pairs(
+        return merge_sort_pairs.create(
             keys=keys,
             values=values,
             items_per_thread=items_per_thread,
@@ -162,7 +155,7 @@ else:
         **kwargs,
     ):
         kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return radix_sort_keys(
+        return radix_sort_keys.create(
             dtype=dtype,
             items_per_thread=items_per_thread,
             **kw,
@@ -175,7 +168,7 @@ else:
         **kwargs,
     ):
         kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return radix_sort_keys_descending(
+        return radix_sort_keys_descending.create(
             dtype=dtype,
             items_per_thread=items_per_thread,
             **kw,
@@ -189,7 +182,7 @@ else:
         **kwargs,
     ):
         kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return radix_sort_pairs(
+        return radix_sort_pairs.create(
             keys=keys,
             values=values,
             items_per_thread=items_per_thread,
@@ -204,7 +197,7 @@ else:
         **kwargs,
     ):
         kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return radix_sort_pairs_descending(
+        return radix_sort_pairs_descending.create(
             keys=keys,
             values=values,
             items_per_thread=items_per_thread,
@@ -220,7 +213,7 @@ else:
         **kwargs,
     ):
         kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return radix_rank(
+        return radix_rank.create(
             dtype=dtype,
             items_per_thread=items_per_thread,
             begin_bit=begin_bit,
@@ -237,7 +230,7 @@ else:
         **kwargs,
     ):
         kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return reduce(
+        return reduce.create(
             dtype=dtype,
             binary_op=binary_op,
             items_per_thread=items_per_thread,
@@ -253,7 +246,7 @@ else:
         **kwargs,
     ):
         kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return sum(
+        return sum.create(
             dtype=dtype,
             items_per_thread=items_per_thread,
             algorithm=algorithm,
@@ -276,7 +269,7 @@ else:
             block_prefix_callback_op,
             target_name="block_prefix_callback_op",
         )
-        return scan(
+        return scan.create(
             dtype=dtype,
             items_per_thread=items_per_thread,
             initial_value=initial_value,
@@ -294,7 +287,7 @@ else:
     ):
         kw = _normalize_threads_per_block(kwargs, threads_per_block)
         kw = _normalize_scan_prefix(kw, prefix_op, target_name="prefix_op")
-        return exclusive_sum(
+        return exclusive_sum.create(
             dtype=dtype,
             items_per_thread=items_per_thread,
             **kw,
@@ -309,7 +302,7 @@ else:
     ):
         kw = _normalize_threads_per_block(kwargs, threads_per_block)
         kw = _normalize_scan_prefix(kw, prefix_op, target_name="prefix_op")
-        return inclusive_sum(
+        return inclusive_sum.create(
             dtype=dtype,
             items_per_thread=items_per_thread,
             **kw,
@@ -326,7 +319,7 @@ else:
     ):
         kw = _normalize_threads_per_block(kwargs, threads_per_block)
         kw = _normalize_scan_prefix(kw, prefix_op, target_name="prefix_op")
-        return exclusive_scan(
+        return exclusive_scan.create(
             dtype=dtype,
             scan_op=scan_op,
             items_per_thread=items_per_thread,
@@ -345,7 +338,7 @@ else:
     ):
         kw = _normalize_threads_per_block(kwargs, threads_per_block)
         kw = _normalize_scan_prefix(kw, prefix_op, target_name="prefix_op")
-        return inclusive_scan(
+        return inclusive_scan.create(
             dtype=dtype,
             scan_op=scan_op,
             items_per_thread=items_per_thread,
@@ -365,7 +358,7 @@ else:
             threads_per_block = kw.pop("dim", None)
         if threads_per_block is not None:
             kw["dim"] = threads_per_block
-        return histogram(
+        return histogram.create(
             item_dtype=item_dtype,
             counter_dtype=counter_dtype,
             items_per_thread=items_per_thread,
@@ -384,7 +377,7 @@ else:
             threads_per_block = kw.pop("dim", None)
         if threads_per_block is not None:
             kw["dim"] = threads_per_block
-        return run_length(
+        return run_length.create(
             item_dtype=item_dtype,
             runs_per_thread=runs_per_thread,
             decoded_items_per_thread=decoded_items_per_thread,
@@ -399,7 +392,7 @@ else:
         **kwargs,
     ):
         kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return adjacent_difference(
+        return adjacent_difference.create(
             dtype=dtype,
             items_per_thread=items_per_thread,
             difference_op=difference_op,
@@ -414,7 +407,7 @@ else:
         **kwargs,
     ):
         kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return discontinuity(
+        return discontinuity.create(
             dtype=dtype,
             items_per_thread=items_per_thread,
             flag_op=flag_op,
@@ -428,7 +421,7 @@ else:
         **kwargs,
     ):
         kw = _normalize_threads_per_block(kwargs, threads_per_block)
-        return shuffle(
+        return shuffle.create(
             dtype=dtype,
             items_per_thread=items_per_thread,
             **kw,

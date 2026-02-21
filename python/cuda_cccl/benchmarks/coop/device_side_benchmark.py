@@ -114,7 +114,7 @@ def make_unrolled_kernel(block_size, algorithm_name, unroll_factor, numba_dtype)
     )
 
     kernel_code = f"""
-@cuda.jit(link={algorithm_name}.files, launch_bounds={block_size})
+@cuda.jit(launch_bounds={block_size})
 def benchmark_kernel(sink_buffer):
     data = generate_random_data(target_dtype)
 
