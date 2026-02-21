@@ -14,7 +14,7 @@
 #if !TUNE_BASE
 struct policy_selector_t
 {
-  [[nodiscard]] constexpr auto operator()(::cuda::arch_id) const -> cub::detail::rfa::rfa_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> cub::detail::rfa::rfa_policy
   {
     return {{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, cub::BLOCK_REDUCE_RAKING},
             {TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, cub::BLOCK_REDUCE_RAKING}};
@@ -46,7 +46,7 @@ void deterministic_sum(nvbench::state& state, nvbench::type_list<T>)
   std::size_t temp_storage_bytes{};
   // we explicitly provide template arguments to override accum_t
   cub::detail::rfa::dispatch<input_it_t, output_it_t, int, init_t, transform_t, accum_t>(
-    nullptr, temp_storage_bytes, d_in, d_out, elements, init_t{}, /* stream */ 0);
+    nullptr, temp_storage_bytes, d_in, d_out, elements, init_t{}, /* stream */ nullptr);
 
   thrust::device_vector<nvbench::uint8_t> temp_storage(temp_storage_bytes);
   auto* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
