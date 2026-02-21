@@ -1635,3 +1635,27 @@ yet, or things I have tried but are broken in the single-phase branch.
 
 9. Ensure `temp_storage=` kwargs works again.  Definitely neglected it whilst
    getting single-phase stuff working.  (Est: ~2 days?)
+
+## Factory split note (2026-02-21)
+
+When public `make_*` returns two-phase objects (`Invocable`/stateful parents),
+rewrite should not call public `make_*` directly.
+
+Preferred pattern for complex primitives (pilot: block scan):
+
+1. Keep primitive constructor (`scan.__init__`) as the semantic-validation
+   source of truth.
+2. Add a private normalization helper in the primitive module
+   (`_build_scan_spec(...)`) to centralize lightweight alias/default handling.
+3. Add two thin private creators:
+   - `_make_scan_two_phase(...)` -> returns `scan.create(...)` result.
+   - `_make_scan_rewrite(...)` -> returns `scan(...)` instance with rewrite-only
+     kwargs (`unique_id`, `temp_storage`, `use_array_inputs`, etc.).
+4. Public wrapper (`block.make_scan`) calls `_make_scan_two_phase`.
+5. Rewrite node calls `_make_scan_rewrite`.
+
+This preserves:
+- clean public API contracts,
+- rewrite internal flexibility,
+- minimized normalization duplication,
+- single semantic-validation source.

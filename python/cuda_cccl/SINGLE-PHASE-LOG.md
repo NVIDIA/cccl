@@ -1433,3 +1433,48 @@
     - Result: `2 passed`.
   - `pre-commit run --files cuda/coop/_rewrite.py cuda/coop/block/__init__.py cuda/coop/warp/__init__.py cuda/coop/block/_block_radix_sort.py cuda/coop/block/_block_merge_sort.py cuda/coop/block/_block_discontinuity.py cuda/coop/_decls.py cuda/coop/_types.py tests/coop/test_make_factories_two_phase.py`
     - Result: all hooks passed.
+
+## 2026-02-21 (prep for internal rewrite-factory helper refactor)
+- Request: before context compaction, document in detail the next workstream for
+  introducing private internal factory helpers (starting with block scan) so
+  normalization logic can be centralized without coupling rewrite to public
+  `make_*` wrappers.
+- Clarification captured:
+  - Public `make_*` wrappers are two-phase-facing and now intentionally return
+    `Invocable` (or stateful parent objects).
+  - Single-phase rewrite paths require primitive instances and internal-only
+    kwargs (`unique_id`, `node`, explicit `temp_storage`, `use_array_inputs`,
+    block-aggregate plumbing, etc.).
+  - Therefore rewrite cannot safely call public `make_*` directly, but we can
+    still share alias/default normalization via private helper(s).
+- Planned implementation shape (scan as pilot):
+  - In `cuda/coop/block/_block_scan.py`:
+    - add a private normalization builder (e.g. `_build_scan_spec(...)`) for
+      lightweight alias/default handling only (`dim` vs `threads_per_block`,
+      prefix callback aliases, default mode/op wiring).
+    - add `_make_scan_two_phase(...)` used by public `make_scan`.
+    - add `_make_scan_rewrite(...)` used by rewrite node instantiation.
+  - In `cuda/coop/block/__init__.py`:
+    - keep public `make_scan` signature stable; route internals through the new
+      two-phase helper.
+  - In `cuda/coop/_rewrite.py`:
+    - switch scan instantiation path to the rewrite helper.
+    - ensure rewrite-only kwargs and metadata flow are unchanged.
+- Guardrails agreed for the next pass:
+  - Keep semantic validation in primitive constructors (`scan.__init__`) as the
+    source of truth; helpers should normalize, not re-validate semantically.
+  - Do not regress two-phase `Invocable` contract.
+  - Do not alter single-phase call surface (`coop.block.scan(...)` in kernels).
+- Test plan for next pass:
+  - `tests/coop/test_make_factories_two_phase.py` (factory contract + runtime)
+  - `tests/coop/test_block_scan.py` / `tests/coop/test_block_scan_api.py`
+  - `tests/coop/test_block_stress_kernels.py`
+  - `tests/coop/test_mamba_selective_scan_fwd.py`
+  - targeted pre-commit on touched files.
+- Ledger updates completed in this prep pass:
+  - `SINGLE-PHASE-TODO.md`: added explicit unchecked work items for private
+    rewrite-factory helper rollout.
+  - `SINGLE-PHASE-CURRENT-PLAN.md`: added next-pass goal/steps/acceptance
+    criteria for scan-first helper refactor.
+  - `SINGLE-PHASE-NOTES.md`: updated with design guidance for the helper split
+    (see latest “Factory split” note).
