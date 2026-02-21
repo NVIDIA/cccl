@@ -8,487 +8,409 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
+
 #include <cuda/stream>
 
 #include <cuda/experimental/__copy_bytes/copy_bytes_naive.cuh>
 #include <cuda/experimental/__copy_bytes/copy_bytes_registers.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-
+#include "testing.cuh"
 #include <cute/layout.hpp>
 
-#include <testing.cuh>
+static const cuda::stream stream{cuda::device_ref{0}};
 
-C2H_TEST("copy_bytes 1D contiguous", "[copy_bytes]")
+template <typename T, typename SrcLayout, typename DstLayout>
+void test_impl(const thrust::host_vector<T>& input,
+               const thrust::host_vector<T>& expected,
+               const SrcLayout& src_layout,
+               const DstLayout& dst_layout)
 {
-  using namespace cute;
-  using T = float;
+  namespace cudax                = cuda::experimental;
+  thrust::device_vector<T> d_src = input;
+  thrust::device_vector<T> d_dst(expected.size(), T{0});
+  auto* src_ptr = thrust::raw_pointer_cast(d_src.data());
+  auto* dst_ptr = thrust::raw_pointer_cast(d_dst.data());
 
-  constexpr int n = 128;
-  thrust::host_vector<T> h_src(n);
-  for (int i = 0; i < n; ++i)
-  {
-    h_src[i] = static_cast<T>(i);
-  }
+  d_dst.assign(expected.size(), T{0});
+  cudax::copy_bytes_naive(src_ptr, src_layout, dst_ptr, dst_layout, stream);
+  stream.sync();
+  CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == expected);
 
-  thrust::device_vector<T> d_src = h_src;
-  thrust::device_vector<T> d_dst(n, T{0});
-
-  cuda::stream stream{cuda::device_ref{0}};
-  auto layout = make_layout(make_shape(n));
-
-  SECTION("naive")
-  {
-    cudax::copy_bytes_naive(
-      thrust::raw_pointer_cast(d_src.data()), layout, thrust::raw_pointer_cast(d_dst.data()), layout, stream);
-    stream.sync();
-    CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == h_src);
-  }
-  SECTION("registers")
-  {
-    cudax::copy_bytes_registers(
-      thrust::raw_pointer_cast(d_src.data()), layout, thrust::raw_pointer_cast(d_dst.data()), layout, stream);
-    stream.sync();
-    CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == h_src);
-  }
+  d_dst.assign(expected.size(), T{0});
+  cudax::copy_bytes_registers(src_ptr, src_layout, dst_ptr, dst_layout, stream);
+  stream.sync();
+  CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == expected);
 }
 
-C2H_TEST("copy_bytes 2D same layout", "[copy_bytes]")
+template <typename T, typename Layout>
+void test_impl(const thrust::host_vector<T>& input, const Layout& layout)
 {
-  using namespace cute;
-  using T = int;
-
-  constexpr int rows = 16;
-  constexpr int cols = 32;
-  constexpr int n    = rows * cols;
-
-  thrust::host_vector<T> h_src(n);
-  for (int i = 0; i < n; ++i)
-  {
-    h_src[i] = i;
-  }
-
-  thrust::device_vector<T> d_src = h_src;
-  thrust::device_vector<T> d_dst(n, 0);
-
-  cuda::stream stream{cuda::device_ref{0}};
-  auto layout = make_layout(make_shape(rows, cols), make_stride(cols, 1));
-
-  SECTION("naive")
-  {
-    cudax::copy_bytes_naive(
-      thrust::raw_pointer_cast(d_src.data()), layout, thrust::raw_pointer_cast(d_dst.data()), layout, stream);
-    stream.sync();
-    CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == h_src);
-  }
-  SECTION("registers")
-  {
-    cudax::copy_bytes_registers(
-      thrust::raw_pointer_cast(d_src.data()), layout, thrust::raw_pointer_cast(d_dst.data()), layout, stream);
-    stream.sync();
-    CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == h_src);
-  }
+  test_impl(input, input, layout, layout);
 }
 
-C2H_TEST("copy_bytes 2D layout transposition", "[copy_bytes]")
+/***********************************************************************************************************************
+ * 1D Tests
+ **********************************************************************************************************************/
+
+// tensorA: (16):(1)
+// tensorB: (16):(1)
+TEST_CASE("copy_bytes 1D", "[copy_bytes][1d]")
 {
   using namespace cute;
-  using T = int;
-
-  constexpr int rows = 8;
-  constexpr int cols = 16;
-  constexpr int n    = rows * cols;
-
-  thrust::host_vector<T> h_src(n);
-  for (int r = 0; r < rows; ++r)
+  constexpr int N = 16;
+  thrust::host_vector<int> data(N);
+  for (int i = 0; i < N; ++i)
   {
-    for (int c = 0; c < cols; ++c)
+    data[i] = i;
+  }
+  test_impl(data, make_layout(make_shape(N), make_stride(1)));
+}
+
+/***********************************************************************************************************************
+ * 2D Tests
+ **********************************************************************************************************************/
+
+// tensorA: (4,8)
+// tensorB: (4,8)
+// All row-major/column-major combinations
+TEST_CASE("copy_bytes 2D", "[copy_bytes][2d][basic]")
+{
+  using namespace cute;
+  constexpr int M = 4;
+  constexpr int N = 8;
+  thrust::host_vector<int> data(M * N);
+  for (int i = 0; i < M * N; ++i)
+  {
+    data[i] = i;
+  }
+  auto shape = make_shape(M, N);
+
+  // row major to row major: (4,8):(8,1) -> (4,8):(8,1)
+  test_impl(data, make_layout(shape, make_stride(N, 1)));
+
+  // column major to column major: (4,8):(1,4) -> (4,8):(1,4)
+  test_impl(data, make_layout(shape, make_stride(1, M)));
+
+  // row major to column major: (4,8):(8,1) -> (4,8):(1,4)
+  thrust::host_vector<int> expected_r2c(M * N);
+  for (int i = 0; i < M; ++i)
+  {
+    for (int j = 0; j < N; ++j)
     {
-      h_src[r * cols + c] = r * 100 + c;
+      expected_r2c[i + j * M] = i * N + j;
     }
   }
+  test_impl(data, expected_r2c, make_layout(shape, make_stride(N, 1)), make_layout(shape, make_stride(1, M)));
 
-  thrust::device_vector<T> d_src = h_src;
-  thrust::device_vector<T> d_dst(n, 0);
-
-  cuda::stream stream{cuda::device_ref{0}};
-
-  auto shape      = make_shape(rows, cols);
-  auto src_layout = make_layout(shape, make_stride(cols, 1));
-  auto dst_layout = make_layout(shape, make_stride(1, rows));
-
-  auto verify = [&]() {
-    thrust::host_vector<T> h_expected(n);
-    for (int r = 0; r < rows; ++r)
+  // column major to row major: (4,8):(1,4) -> (4,8):(8,1)
+  thrust::host_vector<int> expected_c2r(M * N);
+  for (int i = 0; i < M; ++i)
+  {
+    for (int j = 0; j < N; ++j)
     {
-      for (int c = 0; c < cols; ++c)
+      expected_c2r[i * N + j] = i + j * M;
+    }
+  }
+  test_impl(data, expected_c2r, make_layout(shape, make_stride(1, M)), make_layout(shape, make_stride(N, 1)));
+}
+
+// tensorA: (1280,2564):(2564,1)
+// tensorB: (1280,2564):(2564,1)
+TEST_CASE("copy_bytes 2D large", "[copy_bytes][2d][large]")
+{
+  using namespace cute;
+  constexpr int M = 1280;
+  constexpr int N = 2564;
+  thrust::host_vector<int> data(M * N);
+  for (int i = 0; i < M * N; ++i)
+  {
+    data[i] = i;
+  }
+  test_impl(data, make_layout(make_shape(M, N), make_stride(N, 1)));
+}
+
+/***********************************************************************************************************************
+ * 3D Tests
+ **********************************************************************************************************************/
+
+// tensorA: (2,3,4)
+// tensorB: (2,3,4)
+// row-major to row-major, column-major to column-major
+TEST_CASE("copy_bytes 3D", "[copy_bytes][3d]")
+{
+  using namespace cute;
+  constexpr int D0    = 2;
+  constexpr int D1    = 3;
+  constexpr int D2    = 4;
+  constexpr int total = D0 * D1 * D2;
+  thrust::host_vector<int> data(total);
+  for (int i = 0; i < total; ++i)
+  {
+    data[i] = i;
+  }
+  auto shape = make_shape(D0, D1, D2);
+
+  // row major to row major: (2,3,4):(12,4,1) -> same
+  test_impl(data, make_layout(shape, make_stride(D1 * D2, D2, 1)));
+
+  // row major to column major: (2,3,4):(12,4,1) -> (2,3,4):(1,2,6)
+  thrust::host_vector<int> expected(total);
+  for (int i = 0; i < D0; ++i)
+  {
+    for (int j = 0; j < D1; ++j)
+    {
+      for (int k = 0; k < D2; ++k)
       {
-        h_expected[c * rows + r] = r * 100 + c;
-      }
-    }
-    CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == h_expected);
-  };
-
-  SECTION("naive")
-  {
-    cudax::copy_bytes_naive(
-      thrust::raw_pointer_cast(d_src.data()),
-      src_layout,
-      thrust::raw_pointer_cast(d_dst.data()),
-      dst_layout,
-      stream);
-    stream.sync();
-    verify();
-  }
-  SECTION("registers")
-  {
-    cudax::copy_bytes_registers(
-      thrust::raw_pointer_cast(d_src.data()),
-      src_layout,
-      thrust::raw_pointer_cast(d_dst.data()),
-      dst_layout,
-      stream);
-    stream.sync();
-    verify();
-  }
-}
-
-C2H_TEST("copy_bytes 3D dynamic shapes", "[copy_bytes]")
-{
-  using namespace cute;
-  using T = float;
-
-  int d0 = 4;
-  int d1 = 6;
-  int d2 = 8;
-  int n  = d0 * d1 * d2;
-
-  thrust::host_vector<T> h_src(n);
-  for (int i = 0; i < n; ++i)
-  {
-    h_src[i] = static_cast<T>(i);
-  }
-
-  thrust::device_vector<T> d_src = h_src;
-  thrust::device_vector<T> d_dst(n, T{0});
-
-  cuda::stream stream{cuda::device_ref{0}};
-  auto layout = make_layout(make_shape(d0, d1, d2), make_stride(d1 * d2, d2, 1));
-
-  SECTION("naive")
-  {
-    cudax::copy_bytes_naive(
-      thrust::raw_pointer_cast(d_src.data()), layout, thrust::raw_pointer_cast(d_dst.data()), layout, stream);
-    stream.sync();
-    CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == h_src);
-  }
-  SECTION("registers")
-  {
-    cudax::copy_bytes_registers(
-      thrust::raw_pointer_cast(d_src.data()), layout, thrust::raw_pointer_cast(d_dst.data()), layout, stream);
-    stream.sync();
-    CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == h_src);
-  }
-}
-
-// ------------------------------------------------------------------
-// Large-size tests (exercise vectorization and multi-block dispatch)
-// ------------------------------------------------------------------
-
-C2H_TEST("copy_bytes 1D large contiguous", "[copy_bytes]")
-{
-  using namespace cute;
-  using T = float;
-
-  constexpr int n = 100000;
-  thrust::host_vector<T> h_src(n);
-  for (int i = 0; i < n; ++i)
-  {
-    h_src[i] = static_cast<T>(i);
-  }
-
-  thrust::device_vector<T> d_src = h_src;
-  thrust::device_vector<T> d_dst(n, T{0});
-
-  cuda::stream stream{cuda::device_ref{0}};
-  auto layout = make_layout(make_shape(n));
-
-  SECTION("naive")
-  {
-    cudax::copy_bytes_naive(
-      thrust::raw_pointer_cast(d_src.data()), layout, thrust::raw_pointer_cast(d_dst.data()), layout, stream);
-    stream.sync();
-    CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == h_src);
-  }
-  SECTION("registers")
-  {
-    cudax::copy_bytes_registers(
-      thrust::raw_pointer_cast(d_src.data()), layout, thrust::raw_pointer_cast(d_dst.data()), layout, stream);
-    stream.sync();
-    CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == h_src);
-  }
-}
-
-// ------------------------------------------------------------------
-// Non-tile-divisible sizes for diff-layout (boundary tile handling)
-// ------------------------------------------------------------------
-
-C2H_TEST("copy_bytes 2D transposition non-tile-divisible", "[copy_bytes]")
-{
-  using namespace cute;
-  using T = float;
-
-  constexpr int rows = 13;
-  constexpr int cols = 17;
-  constexpr int n    = rows * cols;
-
-  thrust::host_vector<T> h_src(n);
-  for (int r = 0; r < rows; ++r)
-  {
-    for (int c = 0; c < cols; ++c)
-    {
-      h_src[r * cols + c] = static_cast<T>(r * 100 + c);
-    }
-  }
-
-  thrust::device_vector<T> d_src = h_src;
-  thrust::device_vector<T> d_dst(n, T{0});
-
-  cuda::stream stream{cuda::device_ref{0}};
-
-  auto shape      = make_shape(rows, cols);
-  auto src_layout = make_layout(shape, make_stride(cols, 1));
-  auto dst_layout = make_layout(shape, make_stride(1, rows));
-
-  auto verify = [&]() {
-    thrust::host_vector<T> h_expected(n);
-    for (int r = 0; r < rows; ++r)
-    {
-      for (int c = 0; c < cols; ++c)
-      {
-        h_expected[c * rows + r] = static_cast<T>(r * 100 + c);
-      }
-    }
-    CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == h_expected);
-  };
-
-  SECTION("naive")
-  {
-    cudax::copy_bytes_naive(
-      thrust::raw_pointer_cast(d_src.data()),
-      src_layout,
-      thrust::raw_pointer_cast(d_dst.data()),
-      dst_layout,
-      stream);
-    stream.sync();
-    verify();
-  }
-  SECTION("registers")
-  {
-    cudax::copy_bytes_registers(
-      thrust::raw_pointer_cast(d_src.data()),
-      src_layout,
-      thrust::raw_pointer_cast(d_dst.data()),
-      dst_layout,
-      stream);
-    stream.sync();
-    verify();
-  }
-}
-
-C2H_TEST("copy_bytes 2D large transposition", "[copy_bytes]")
-{
-  using namespace cute;
-  using T = int;
-
-  constexpr int rows = 100;
-  constexpr int cols = 200;
-  constexpr int n    = rows * cols;
-
-  thrust::host_vector<T> h_src(n);
-  for (int r = 0; r < rows; ++r)
-  {
-    for (int c = 0; c < cols; ++c)
-    {
-      h_src[r * cols + c] = r * 1000 + c;
-    }
-  }
-
-  thrust::device_vector<T> d_src = h_src;
-  thrust::device_vector<T> d_dst(n, 0);
-
-  cuda::stream stream{cuda::device_ref{0}};
-
-  auto shape      = make_shape(rows, cols);
-  auto src_layout = make_layout(shape, make_stride(cols, 1));
-  auto dst_layout = make_layout(shape, make_stride(1, rows));
-
-  auto verify = [&]() {
-    thrust::host_vector<T> h_expected(n);
-    for (int r = 0; r < rows; ++r)
-    {
-      for (int c = 0; c < cols; ++c)
-      {
-        h_expected[c * rows + r] = r * 1000 + c;
-      }
-    }
-    CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == h_expected);
-  };
-
-  SECTION("naive")
-  {
-    cudax::copy_bytes_naive(
-      thrust::raw_pointer_cast(d_src.data()),
-      src_layout,
-      thrust::raw_pointer_cast(d_dst.data()),
-      dst_layout,
-      stream);
-    stream.sync();
-    verify();
-  }
-  SECTION("registers")
-  {
-    cudax::copy_bytes_registers(
-      thrust::raw_pointer_cast(d_src.data()),
-      src_layout,
-      thrust::raw_pointer_cast(d_dst.data()),
-      dst_layout,
-      stream);
-    stream.sync();
-    verify();
-  }
-}
-
-// ------------------------------------------------------------------
-// Different element types
-// ------------------------------------------------------------------
-
-C2H_TEST("copy_bytes 1D contiguous double", "[copy_bytes]")
-{
-  using namespace cute;
-  using T = double;
-
-  constexpr int n = 1024;
-  thrust::host_vector<T> h_src(n);
-  for (int i = 0; i < n; ++i)
-  {
-    h_src[i] = static_cast<T>(i) * 0.5;
-  }
-
-  thrust::device_vector<T> d_src = h_src;
-  thrust::device_vector<T> d_dst(n, T{0});
-
-  cuda::stream stream{cuda::device_ref{0}};
-  auto layout = make_layout(make_shape(n));
-
-  SECTION("naive")
-  {
-    cudax::copy_bytes_naive(
-      thrust::raw_pointer_cast(d_src.data()), layout, thrust::raw_pointer_cast(d_dst.data()), layout, stream);
-    stream.sync();
-    CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == h_src);
-  }
-  SECTION("registers")
-  {
-    cudax::copy_bytes_registers(
-      thrust::raw_pointer_cast(d_src.data()), layout, thrust::raw_pointer_cast(d_dst.data()), layout, stream);
-    stream.sync();
-    CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == h_src);
-  }
-}
-
-C2H_TEST("copy_bytes 1D contiguous short", "[copy_bytes]")
-{
-  using namespace cute;
-  using T = short;
-
-  constexpr int n = 2048;
-  thrust::host_vector<T> h_src(n);
-  for (int i = 0; i < n; ++i)
-  {
-    h_src[i] = static_cast<T>(i % 1000);
-  }
-
-  thrust::device_vector<T> d_src = h_src;
-  thrust::device_vector<T> d_dst(n, T{0});
-
-  cuda::stream stream{cuda::device_ref{0}};
-  auto layout = make_layout(make_shape(n));
-
-  SECTION("naive")
-  {
-    cudax::copy_bytes_naive(
-      thrust::raw_pointer_cast(d_src.data()), layout, thrust::raw_pointer_cast(d_dst.data()), layout, stream);
-    stream.sync();
-    CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == h_src);
-  }
-  SECTION("registers")
-  {
-    cudax::copy_bytes_registers(
-      thrust::raw_pointer_cast(d_src.data()), layout, thrust::raw_pointer_cast(d_dst.data()), layout, stream);
-    stream.sync();
-    CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == h_src);
-  }
-}
-
-// ------------------------------------------------------------------
-// 2D same layout with non-contiguous outer stride (strided)
-// ------------------------------------------------------------------
-
-C2H_TEST("copy_bytes 2D same layout strided", "[copy_bytes]")
-{
-  using namespace cute;
-  using T = float;
-
-  constexpr int rows         = 16;
-  constexpr int cols         = 32;
-  constexpr int outer_stride = 64;
-  constexpr int alloc_size   = rows * outer_stride;
-
-  thrust::host_vector<T> h_src(alloc_size, T{-1});
-  for (int r = 0; r < rows; ++r)
-  {
-    for (int c = 0; c < cols; ++c)
-    {
-      h_src[r * outer_stride + c] = static_cast<T>(r * 100 + c);
-    }
-  }
-
-  thrust::device_vector<T> d_src = h_src;
-  thrust::device_vector<T> d_dst(alloc_size, T{0});
-
-  cuda::stream stream{cuda::device_ref{0}};
-  auto layout = make_layout(make_shape(rows, cols), make_stride(outer_stride, 1));
-
-  SECTION("naive")
-  {
-    cudax::copy_bytes_naive(
-      thrust::raw_pointer_cast(d_src.data()), layout, thrust::raw_pointer_cast(d_dst.data()), layout, stream);
-    stream.sync();
-
-    thrust::host_vector<T> h_dst = d_dst;
-    for (int r = 0; r < rows; ++r)
-    {
-      for (int c = 0; c < cols; ++c)
-      {
-        CUDAX_REQUIRE(h_dst[r * outer_stride + c] == static_cast<T>(r * 100 + c));
+        expected[i + j * D0 + k * D0 * D1] = i * (D1 * D2) + j * D2 + k;
       }
     }
   }
-  SECTION("registers")
-  {
-    cudax::copy_bytes_registers(
-      thrust::raw_pointer_cast(d_src.data()), layout, thrust::raw_pointer_cast(d_dst.data()), layout, stream);
-    stream.sync();
+  test_impl(
+    data, expected, make_layout(shape, make_stride(D1 * D2, D2, 1)), make_layout(shape, make_stride(1, D0, D0 * D1)));
+}
 
-    thrust::host_vector<T> h_dst = d_dst;
-    for (int r = 0; r < rows; ++r)
+/***********************************************************************************************************************
+ * Edge Cases
+ **********************************************************************************************************************/
+
+TEST_CASE("copy_bytes scalar", "[copy_bytes][0d]")
+{
+  using namespace cute;
+  thrust::host_vector<int> data(1, 42);
+  test_impl(data, make_layout(make_shape(1)));
+}
+
+TEST_CASE("copy_bytes size 0", "[copy_bytes][zero_size]")
+{
+  using namespace cute;
+  thrust::host_vector<int> data(1, 0);
+  thrust::host_vector<int> expected(1, 0);
+  auto layout = make_layout(make_shape(0, 0));
+  test_impl(data, expected, layout, layout);
+}
+
+/***********************************************************************************************************************
+ * Strided Layout Tests
+ **********************************************************************************************************************/
+
+// tensorA: (4,8):(16,1)
+// tensorB: (4,8):(16,1)
+TEST_CASE("copy_bytes 2D strided, padded row-major", "[copy_bytes][2d][stride][row]")
+{
+  using namespace cute;
+  constexpr int M  = 4;
+  constexpr int N  = 8;
+  constexpr int Ld = 16;
+  thrust::host_vector<int> data(Ld * M, 0);
+  for (int i = 0; i < M; ++i)
+  {
+    for (int j = 0; j < N; ++j)
     {
-      for (int c = 0; c < cols; ++c)
+      data[i * Ld + j] = i * N + j;
+    }
+  }
+  auto layout = make_layout(make_shape(M, N), make_stride(Ld, 1));
+  test_impl(data, layout);
+}
+
+// tensorA: (4,8):(1,16)
+// tensorB: (4,8):(1,16)
+TEST_CASE("copy_bytes 2D strided, padded column-major", "[copy_bytes][2d][stride][column]")
+{
+  using namespace cute;
+  constexpr int M  = 4;
+  constexpr int N  = 8;
+  constexpr int Ld = 16;
+  thrust::host_vector<int> data(Ld * N, 0);
+  for (int i = 0; i < M; ++i)
+  {
+    for (int j = 0; j < N; ++j)
+    {
+      data[i + j * Ld] = i * N + j;
+    }
+  }
+  auto layout = make_layout(make_shape(M, N), make_stride(1, Ld));
+  test_impl(data, layout);
+}
+
+// src: (2,3,4):(12,4,1) -> dst: (2,3,4):(1,8,2)
+TEST_CASE("copy_bytes 3D strided, permutation", "[copy_bytes][3d][stride][permutation]")
+{
+  using namespace cute;
+  constexpr int D0 = 2;
+  constexpr int D1 = 3;
+  constexpr int D2 = 4;
+  constexpr int N  = D0 * D1 * D2;
+  thrust::host_vector<int> input(N);
+  for (int i = 0; i < N; ++i)
+  {
+    input[i] = i;
+  }
+  thrust::host_vector<int> expected(N, -1);
+  for (int i = 0; i < D0; ++i)
+  {
+    for (int j = 0; j < D1; ++j)
+    {
+      for (int k = 0; k < D2; ++k)
       {
-        CUDAX_REQUIRE(h_dst[r * outer_stride + c] == static_cast<T>(r * 100 + c));
+        const int src_off = i * (D1 * D2) + j * D2 + k;
+        const int dst_off = i + j * (D2 * D0) + k * D0;
+        expected[dst_off] = input[src_off];
       }
     }
   }
+  auto shape = make_shape(D0, D1, D2);
+  test_impl(
+    input, expected, make_layout(shape, make_stride(D1 * D2, D2, 1)), make_layout(shape, make_stride(1, D2 * D0, D0)));
+}
+
+// TensorA: (2,3,4):(12,4,1)
+// TensorB: (2,3,4):(8,16,1)
+TEST_CASE("copy_bytes 3D strided, different stride order", "[copy_bytes][3d][stride][tile]")
+{
+  using namespace cute;
+  constexpr int D0         = 2;
+  constexpr int D1         = 3;
+  constexpr int D2         = 4;
+  constexpr int alloc_size = (D0 - 1) * 8 + (D1 - 1) * 16 + (D2 - 1) * 1 + 1; // 44
+  thrust::host_vector<int> input(alloc_size, -1);
+  for (int i = 0; i < D0; ++i)
+  {
+    for (int j = 0; j < D1; ++j)
+    {
+      for (int k = 0; k < D2; ++k)
+      {
+        input[i * (D1 * D2) + j * D2 + k] = i * (D1 * D2) + j * D2 + k;
+      }
+    }
+  }
+  thrust::host_vector<int> expected(alloc_size, 0);
+  for (int i = 0; i < D0; ++i)
+  {
+    for (int j = 0; j < D1; ++j)
+    {
+      for (int k = 0; k < D2; ++k)
+      {
+        const int src_off = i * (D1 * D2) + j * D2 + k;
+        const int dst_off = i * 8 + j * 16 + k;
+        expected[dst_off] = src_off;
+      }
+    }
+  }
+  auto shape = make_shape(D0, D1, D2);
+  test_impl(input, expected, make_layout(shape, make_stride(D1 * D2, D2, 1)), make_layout(shape, make_stride(8, 16, 1)));
+}
+
+/***********************************************************************************************************************
+ * Different Element Types
+ **********************************************************************************************************************/
+
+// tensorA: (1024):(1)
+// tensorB: (1024):(1)
+TEST_CASE("copy_bytes 1D double", "[copy_bytes][types][double]")
+{
+  using namespace cute;
+  constexpr int N = 1024;
+  thrust::host_vector<double> data(N);
+  for (int i = 0; i < N; ++i)
+  {
+    data[i] = static_cast<double>(i) * 0.5;
+  }
+  test_impl(data, make_layout(make_shape(N), make_stride(1)));
+}
+
+// tensorA: (2048):(1)
+// tensorB: (2048):(1)
+TEST_CASE("copy_bytes 1D short", "[copy_bytes][types][short]")
+{
+  using namespace cute;
+  constexpr int N = 2048;
+  thrust::host_vector<short> data(N);
+  for (int i = 0; i < N; ++i)
+  {
+    data[i] = static_cast<short>(i % 1000);
+  }
+  test_impl(data, make_layout(make_shape(N), make_stride(1)));
+}
+
+// tensorA: (4096):(1)
+// tensorB: (4096):(1)
+TEST_CASE("copy_bytes 1D char", "[copy_bytes][types][char]")
+{
+  using namespace cute;
+  constexpr int N = 4096;
+  thrust::host_vector<char> data(N);
+  for (int i = 0; i < N; ++i)
+  {
+    data[i] = static_cast<char>(i % 128);
+  }
+  test_impl(data, make_layout(make_shape(N), make_stride(1)));
+}
+
+/***********************************************************************************************************************
+ * Large / Multi-Block Tests
+ **********************************************************************************************************************/
+
+// tensorA: (100000):(1)
+// tensorB: (100000):(1)
+TEST_CASE("copy_bytes 1D large", "[copy_bytes][1d][large]")
+{
+  using namespace cute;
+  constexpr int N = 100000;
+  thrust::host_vector<float> data(N);
+  for (int i = 0; i < N; ++i)
+  {
+    data[i] = static_cast<float>(i);
+  }
+  test_impl(data, make_layout(make_shape(N), make_stride(1)));
+}
+
+// tensorA: (13,17):(17,1)
+// tensorB: (13,17):(1,13)
+TEST_CASE("copy_bytes 2D transposition non-tile-divisible", "[copy_bytes][2d][boundary]")
+{
+  using namespace cute;
+  constexpr int M = 13;
+  constexpr int N = 17;
+  thrust::host_vector<float> data(M * N);
+  for (int i = 0; i < M * N; ++i)
+  {
+    data[i] = static_cast<float>(i);
+  }
+  thrust::host_vector<float> expected(M * N);
+  for (int r = 0; r < M; ++r)
+  {
+    for (int c = 0; c < N; ++c)
+    {
+      expected[c * M + r] = data[r * N + c];
+    }
+  }
+  auto shape = make_shape(M, N);
+  test_impl(data, expected, make_layout(shape, make_stride(N, 1)), make_layout(shape, make_stride(1, M)));
+}
+
+// tensorA: (100,200):(200,1)
+// tensorB: (100,200):(1,100)
+TEST_CASE("copy_bytes 2D large transposition", "[copy_bytes][2d][large][transpose]")
+{
+  using namespace cute;
+  constexpr int M = 100;
+  constexpr int N = 200;
+  thrust::host_vector<int> data(M * N);
+  for (int i = 0; i < M * N; ++i)
+  {
+    data[i] = i;
+  }
+  thrust::host_vector<int> expected(M * N);
+  for (int r = 0; r < M; ++r)
+  {
+    for (int c = 0; c < N; ++c)
+    {
+      expected[c * M + r] = data[r * N + c];
+    }
+  }
+  auto shape = make_shape(M, N);
+  test_impl(data, expected, make_layout(shape, make_stride(N, 1)), make_layout(shape, make_stride(1, M)));
 }

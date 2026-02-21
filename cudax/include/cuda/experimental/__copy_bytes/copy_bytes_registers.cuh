@@ -25,11 +25,15 @@
 #include <cuda/launch>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 
+#include <cuda/experimental/__copy/types.cuh>
 #include <cuda/experimental/__copy_bytes/copy_bytes_naive.cuh>
 #include <cuda/experimental/__copy_bytes/layout_utils.cuh>
 
+#include <cuda/experimental/__copy/utils.cuh>
+
 #include <cuda/std/__cccl/prologue.h>
 #include <cute/algorithm/copy.hpp>
+#include <cute/layout.hpp>
 #include <cute/tensor.hpp>
 
 namespace cuda::experimental
@@ -89,153 +93,159 @@ void __launch_copy_bytes_kernel(
   const int grid_size      = tiles_per_row * outer_size;
   auto config              = ::cuda::make_config(::cuda::block_dims<block_size>(), ::cuda::grid_dims(grid_size));
   ::cuda::launch(
-    stream, config, copy_bytes_kernel<decltype(config), SrcTensor, DstTensor, TileSize>, src_tensor, dst_tensor, inner_size, tiles_per_row);
+    stream,
+    config,
+    copy_bytes_kernel<decltype(config), SrcTensor, DstTensor, TileSize>,
+    src_tensor,
+    dst_tensor,
+    inner_size,
+    tiles_per_row);
+}
+
+//! @brief Dispatch a vectorized copy kernel based on the common vector size in bytes.
+//!
+//! Recasts the source and destination tensors to the appropriate vector type
+//! and launches the unified tiled copy kernel.
+//!
+//! @param[in] __stream    CUDA stream to launch on
+//! @param[in] __src       Source CuTe tensor
+//! @param[in] __dst       Destination CuTe tensor
+//! @param[in] __common_vector_bytes  Common vectorization width in bytes (1, 2, 4, 8, or 16)
+template <typename _SrcTensor, typename _DstTensor>
+void __dispatch_vectorized_copy(
+  ::cuda::stream_ref __stream, const _SrcTensor& __src, const _DstTensor& __dst, int __common_vector_bytes)
+{
+  auto __launch = [&](auto __vec_c) {
+    constexpr int VecBytes   = decltype(__vec_c)::value;
+    constexpr int VecBitsInt = VecBytes * 8;
+    using VecType            = ::cuda::std::__make_nbit_uint_t<VecBitsInt>;
+    auto src_recast          = ::cute::recast<VecType>(__src);
+    auto dst_recast          = ::cute::recast<VecType>(__dst);
+    const int vec_inner      = ::cute::size<0>(src_recast);
+    const int vec_outer      = ::cute::size(src_recast) / vec_inner;
+    constexpr int TileSize   = 256 * (16 / VecBytes);
+    __launch_copy_bytes_kernel<TileSize>(__stream, src_recast, dst_recast, vec_inner, vec_outer);
+  };
+  switch (__common_vector_bytes)
+  {
+    case 16:
+      __launch(::cuda::std::integral_constant<int, 16>{});
+      break;
+    case 8:
+      __launch(::cuda::std::integral_constant<int, 8>{});
+      break;
+    case 4:
+      __launch(::cuda::std::integral_constant<int, 4>{});
+      break;
+    case 2:
+      __launch(::cuda::std::integral_constant<int, 2>{});
+      break;
+    default:
+      __launch(::cuda::std::integral_constant<int, 1>{});
+      break;
+  }
 }
 
 //! @brief Register-based copy using cute::copy.
 //!
 //! Preprocesses both layouts to determine the optimal copy strategy:
 //!
-//! 1. Sort both layouts by src's ascending stride (common permutation).
+//! 1. Sort both layouts by dst's ascending stride (common permutation).
 //! 2. If both have stride-1 in mode 0 (vectorized path):
 //!    - Compute the contiguous extent for each tensor, use the minimum as
 //!      inner_size to avoid crossing mode boundaries.
 //!    - Compute the maximum compatible vectorization width and recast.
 //!    - Launch the unified kernel (cute::copy auto-vectorizes).
-//! 3. If mode 0 is not stride-1 for both (element-wise path, rank <= 2):
-//!    - Launch the unified kernel (element-wise through CuTe indexing).
-//! 4. Fallback: copy_bytes_naive for rank > 2 or unsupported configurations.
+//! 3. Fallback: copy_bytes_naive for non-vectorizable or unsupported configurations.
 template <typename T, typename SrcLayout, typename DstLayout>
 void copy_bytes_registers(
   const T* src, const SrcLayout& src_layout, T* dst, const DstLayout& dst_layout, ::cuda::stream_ref stream)
 {
-  constexpr int MaxRank = 8;
-  constexpr int SrcR    = decltype(::cute::rank(src_layout))::value;
-  constexpr int DstR    = decltype(::cute::rank(dst_layout))::value;
-  static_assert(SrcR <= MaxRank && DstR <= MaxRank, "Layout rank exceeds maximum supported rank");
+  constexpr ::cuda::std::size_t MaxRank = 8;
+  constexpr int SrcR                    = decltype(::cute::rank(src_layout))::value;
+  constexpr int DstR                    = decltype(::cute::rank(dst_layout))::value;
+  static_assert(static_cast<::cuda::std::size_t>(SrcR) <= MaxRank && static_cast<::cuda::std::size_t>(DstR) <= MaxRank,
+                "Layout rank exceeds maximum supported rank");
   static_assert(SrcR == DstR, "Source and destination layouts must have the same rank");
-  constexpr int __rank = SrcR;
-  const int total      = static_cast<int>(::cute::size(src_layout));
-  if (total == 0)
+  const int total_size = static_cast<int>(::cute::size(src_layout));
+  if (total_size == 0)
   {
     return;
   }
-  // NOTE:: src/dst shapes_sorted are equal
-  ::cuda::std::array<int, MaxRank> shapes_sorted{};
-  ::cuda::std::array<int, MaxRank> src_strides_sorted{};
-  ::cuda::std::array<int, MaxRank> dst_strides_sorted{};
-  ::cuda::std::array<int, MaxRank> dst_shapes_sorted{};
-  __extract_layout(src_layout, shapes_sorted, src_strides_sorted);
-  __extract_layout(dst_layout, dst_shapes_sorted, dst_strides_sorted);
-  // Sort both by src's ascending absolute stride (common permutation).
-  // After this, src has stride-1 in mode 0 (if any mode is stride-1).
-  __sort_by_stride_paired(shapes_sorted, src_strides_sorted, dst_strides_sorted, __rank);
-
-  const bool both_stride1 = (src_strides_sorted[0] == 1) && (dst_strides_sorted[0] == 1);
-
-  if (both_stride1)
+  if constexpr (SrcR == 0)
   {
-    int src_extent = __contiguous_extent(shapes_sorted, src_strides_sorted, __rank);
-    int dst_extent = __contiguous_extent(shapes_sorted, dst_strides_sorted, __rank);
-    int inner_size = ::cuda::std::min(src_extent, dst_extent);
-    int outer_size = total / inner_size;
-
-    auto src_vector_bytes    = __max_vector_size_bytes(src, shapes_sorted, src_strides_sorted);
-    auto dst_vector_bytes    = __max_vector_size_bytes(dst, shapes_sorted, dst_strides_sorted);
-    auto common_vector_bytes = ::cuda::std::min(src_vector_bytes, dst_vector_bytes);
-
-    // Recast to VecType and launch the vectorized kernel.
-    // The lambda captures the optimized layouts and dispatches on common_vector_bytes.
-    auto __dispatch_vec = [&](const auto& src_opt, const auto& dst_opt) {
-      auto __launch = [&](auto __vec_c) {
-        constexpr int VecBytes   = decltype(__vec_c)::value;
-        constexpr int VecBitsInt = VecBytes * 8;
-        using VecType            = ::cuda::std::__make_nbit_uint_t<VecBitsInt>;
-        auto src_recast          = ::cute::recast<VecType>(make_gmem_tensor(src, src_opt));
-        auto dst_recast          = ::cute::recast<VecType>(make_gmem_tensor(dst, dst_opt));
-        const int vec_inner      = ::cute::size<0>(src_recast);
-        const int vec_outer      = ::cute::size(src_recast) / vec_inner;
-        constexpr int TileSize   = 256 * (16 / VecBytes);
-        __launch_copy_bytes_kernel<TileSize>(stream, src_recast, dst_recast, vec_inner, vec_outer);
-      };
-      switch (common_vector_bytes)
-      {
-        case 16:
-          __launch(::cuda::std::integral_constant<int, 16>{});
-          break;
-        case 8:
-          __launch(::cuda::std::integral_constant<int, 8>{});
-          break;
-        case 4:
-          __launch(::cuda::std::integral_constant<int, 4>{});
-          break;
-        case 2:
-          __launch(::cuda::std::integral_constant<int, 2>{});
-          break;
-        default:
-          __launch(::cuda::std::integral_constant<int, 1>{});
-          break;
-      }
-    };
-
-    if (__rank == 1 || inner_size == total)
-    {
-      auto opt = ::cute::make_layout(::cute::make_shape(total), ::cute::make_stride(::cute::_1{}));
-      __dispatch_vec(opt, opt);
-    }
-    else if (__rank == 2)
-    {
-      auto shape   = ::cute::make_shape(shapes_sorted[0], shapes_sorted[1]);
-      auto src_opt = ::cute::make_layout(shape, ::cute::make_stride(::cute::_1{}, src_strides_sorted[1]));
-      auto dst_opt = ::cute::make_layout(shape, ::cute::make_stride(::cute::_1{}, dst_strides_sorted[1]));
-      __dispatch_vec(src_opt, dst_opt);
-    }
-    else if (__rank == 3)
-    {
-      auto shape = ::cute::make_shape(shapes_sorted[0], shapes_sorted[1], shapes_sorted[2]);
-      auto src_opt =
-        ::cute::make_layout(shape, ::cute::make_stride(::cute::_1{}, src_strides_sorted[1], src_strides_sorted[2]));
-      auto dst_opt =
-        ::cute::make_layout(shape, ::cute::make_stride(::cute::_1{}, dst_strides_sorted[1], dst_strides_sorted[2]));
-      __dispatch_vec(src_opt, dst_opt);
-    }
-    else
-    {
-      copy_bytes_naive(src, src_layout, dst, dst_layout, stream);
-    }
-  }
-  else if (__rank <= 3)
-  {
-    constexpr int TileSize = 256 * 4;
-    if (__rank == 1)
-    {
-      auto src_opt = ::cute::make_layout(::cute::make_shape(total), ::cute::make_stride(src_strides_sorted[0]));
-      auto dst_opt = ::cute::make_layout(::cute::make_shape(total), ::cute::make_stride(dst_strides_sorted[0]));
-      __launch_copy_bytes_kernel<TileSize>(
-        stream, make_gmem_tensor(src, src_opt), make_gmem_tensor(dst, dst_opt), total, 1);
-    }
-    else if (__rank == 2)
-    {
-      auto shape   = ::cute::make_shape(shapes_sorted[0], shapes_sorted[1]);
-      auto src_opt = ::cute::make_layout(shape, ::cute::make_stride(src_strides_sorted[0], src_strides_sorted[1]));
-      auto dst_opt = ::cute::make_layout(shape, ::cute::make_stride(dst_strides_sorted[0], dst_strides_sorted[1]));
-      __launch_copy_bytes_kernel<TileSize>(
-        stream, make_gmem_tensor(src, src_opt), make_gmem_tensor(dst, dst_opt), total, 1);
-    }
-    else
-    {
-      auto shape   = ::cute::make_shape(shapes_sorted[0], shapes_sorted[1], shapes_sorted[2]);
-      auto src_opt = ::cute::make_layout(
-        shape, ::cute::make_stride(src_strides_sorted[0], src_strides_sorted[1], src_strides_sorted[2]));
-      auto dst_opt = ::cute::make_layout(
-        shape, ::cute::make_stride(dst_strides_sorted[0], dst_strides_sorted[1], dst_strides_sorted[2]));
-      __launch_copy_bytes_kernel<TileSize>(
-        stream, make_gmem_tensor(src, src_opt), make_gmem_tensor(dst, dst_opt), total, 1);
-    }
+    return;
   }
   else
   {
-    copy_bytes_naive(src, src_layout, dst, dst_layout, stream);
+    // NOTE: source and destination extents are idential
+    auto __src = __to_raw_tensor<SrcR>(src, src_layout, __remove_extent1_mode);
+    auto __dst = __to_raw_tensor<DstR>(dst, dst_layout, __remove_extent1_mode);
+    _CCCL_ASSERT(__src.__rank == __dst.__rank,
+                 "Source and destination ranks must be equal after removing extent-1 modes");
+    _CCCL_ASSERT(__src.__shapes == __dst.__shapes, "Source and destination shapes must be identical");
+    // Sort both by dst's ascending absolute stride (common permutation).
+    // After this, dst has stride-1 in mode 0 (if any mode is stride-1).
+    // Shapes are kept in sync (both tensors share the same shape because they are ordered by the same permutation).
+    __sort_by_stride_paired(__src, __dst);
+    // Merge adjacent modes that are contiguous in both tensors, reducing effective rank.
+    __coalesce_paired(__src, __dst);
+
+    const int __actual_rank        = static_cast<int>(__src.__rank);
+    const bool are_both_contiguous = (__src.__strides[0] == 1) && (__dst.__strides[0] == 1);
+
+    if (are_both_contiguous)
+    {
+      const int inner_size           = static_cast<int>(__src.__shapes[0]);
+      const auto src_vector_bytes    = __max_vector_size_bytes(__src);
+      const auto dst_vector_bytes    = __max_vector_size_bytes(__dst);
+      const auto common_vector_bytes = ::cuda::std::min(src_vector_bytes, dst_vector_bytes);
+
+      printf("--------------------------------\n");
+      cute::print(src_layout);
+      printf("\n");
+      cute::print(dst_layout);
+      printf("\n");
+      printf("common_vector_bytes: %d\n", (int) common_vector_bytes);
+      __println(__src);
+      __println(__dst);
+
+      if (__actual_rank <= 1 || inner_size == total_size)
+      {
+        auto opt        = ::cute::make_layout(::cute::make_shape(total_size), ::cute::make_stride(::cute::_1{}));
+        auto src_tensor = ::cuda::experimental::make_gmem_tensor(__src.__data, opt);
+        auto dst_tensor = ::cuda::experimental::make_gmem_tensor(__dst.__data, opt);
+        __dispatch_vectorized_copy(stream, src_tensor, dst_tensor, common_vector_bytes);
+      }
+      else if (__actual_rank == 2)
+      {
+        auto shape      = ::cute::make_shape(__src.__shapes[0], __src.__shapes[1]);
+        auto src_tensor = ::cuda::experimental::make_gmem_tensor(
+          __src.__data, ::cute::make_layout(shape, ::cute::make_stride(::cute::_1{}, __src.__strides[1])));
+        auto dst_tensor = ::cuda::experimental::make_gmem_tensor(
+          __dst.__data, ::cute::make_layout(shape, ::cute::make_stride(::cute::_1{}, __dst.__strides[1])));
+        __dispatch_vectorized_copy(stream, src_tensor, dst_tensor, common_vector_bytes);
+      }
+      else if (__actual_rank == 3)
+      {
+        auto shape      = ::cute::make_shape(__src.__shapes[0], __src.__shapes[1], __src.__shapes[2]);
+        auto src_tensor = ::cuda::experimental::make_gmem_tensor(
+          __src.__data,
+          ::cute::make_layout(shape, ::cute::make_stride(::cute::_1{}, __src.__strides[1], __src.__strides[2])));
+        auto dst_tensor = ::cuda::experimental::make_gmem_tensor(
+          __dst.__data,
+          ::cute::make_layout(shape, ::cute::make_stride(::cute::_1{}, __dst.__strides[1], __dst.__strides[2])));
+        __dispatch_vectorized_copy(stream, src_tensor, dst_tensor, common_vector_bytes);
+      }
+      else
+      {
+        ::cuda::experimental::copy_bytes_naive(src, src_layout, dst, dst_layout, stream);
+      }
+    }
+    else
+    {
+      ::cuda::experimental::copy_bytes_naive(src, src_layout, dst, dst_layout, stream);
+    }
   }
 }
 } // namespace cuda::experimental

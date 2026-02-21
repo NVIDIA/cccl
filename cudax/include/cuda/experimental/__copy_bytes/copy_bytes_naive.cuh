@@ -49,9 +49,13 @@ void copy_bytes_naive(
 {
   namespace cudax          = ::cuda::experimental;
   constexpr int block_size = 256;
-  const auto src_tensor    = cudax::make_gmem_tensor(src, src_layout);
-  const auto dst_tensor    = cudax::make_gmem_tensor(dst, dst_layout);
   const auto num_items     = static_cast<int>(::cute::size(src_layout));
+  if (num_items == 0)
+  {
+    return;
+  }
+  const auto src_tensor = cudax::make_gmem_tensor(src, src_layout);
+  const auto dst_tensor = cudax::make_gmem_tensor(dst, dst_layout);
   const auto grid_size     = ::cuda::ceil_div(num_items, block_size);
   const auto config        = ::cuda::make_config(::cuda::block_dims<block_size>(), ::cuda::grid_dims(grid_size));
   const auto& kernel = cudax::copy_bytes_naive_kernel<decltype(config), decltype(src_tensor), decltype(dst_tensor)>;
