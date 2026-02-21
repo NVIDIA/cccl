@@ -1,7 +1,7 @@
 .. _cccl-cpp-libraries:
 
-CUDA C++ Core Libraries
-=======================
+CCCL C++ Libraries
+==================
 
 .. toctree::
    :hidden:
@@ -19,7 +19,7 @@ CUDA C++ Core Libraries
 
 Welcome to the CUDA Core Compute Libraries (CCCL) libraries for C++.
 
-The concept for the  CCCL C++ librarires grew organically out of the Thrust,
+The concept for the CCCL C++ librarires grew organically out of the Thrust,
 CUB, and libcudacxx projects that were developed independently over the years
 with a similar goal: to provide high-quality, high-performance, and
 easy-to-use C++ abstractions for CUDA developers. Naturally, there was a lot
