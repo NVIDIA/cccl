@@ -55,6 +55,48 @@ from ._types import Invocable
 from ._typing import (
     ScanOpType,
 )
+from .block._block_adjacent_difference import (
+    _make_adjacent_difference_rewrite as _make_block_adjacent_difference_rewrite,
+)
+from .block._block_discontinuity import (
+    _make_discontinuity_rewrite as _make_block_discontinuity_rewrite,
+)
+from .block._block_exchange import (
+    _make_exchange_rewrite as _make_block_exchange_rewrite,
+)
+from .block._block_load_store import (
+    _make_load_rewrite as _make_block_load_rewrite,
+)
+from .block._block_load_store import (
+    _make_store_rewrite as _make_block_store_rewrite,
+)
+from .block._block_merge_sort import (
+    _make_merge_sort_keys_rewrite as _make_block_merge_sort_keys_rewrite,
+)
+from .block._block_merge_sort import (
+    _make_merge_sort_pairs_rewrite as _make_block_merge_sort_pairs_rewrite,
+)
+from .block._block_radix_rank import (
+    _make_radix_rank_rewrite as _make_block_radix_rank_rewrite,
+)
+from .block._block_radix_sort import (
+    _make_radix_sort_keys_descending_rewrite as _make_block_radix_sort_keys_descending_rewrite,
+)
+from .block._block_radix_sort import (
+    _make_radix_sort_keys_rewrite as _make_block_radix_sort_keys_rewrite,
+)
+from .block._block_reduce import (
+    _make_reduce_rewrite as _make_block_reduce_rewrite,
+)
+from .block._block_reduce import (
+    _make_sum_rewrite as _make_block_sum_rewrite,
+)
+from .block._block_scan import (
+    _make_scan_rewrite as _make_block_scan_rewrite,
+)
+from .block._block_shuffle import (
+    _make_shuffle_rewrite as _make_block_shuffle_rewrite,
+)
 from .warp._warp_exchange import _make_exchange_rewrite
 from .warp._warp_load_store import (
     _make_load_rewrite,
@@ -1053,6 +1095,7 @@ class StoreMixin:
 @register_global(coop.block.load)
 class CoopBlockLoadDecl(CoopLoadStoreBaseTemplate, LoadMixin, CoopDeclMixin):
     key = coop.block.load
+    impl_key = _make_block_load_rewrite
     primitive_name = "coop.block.load"
     algorithm_enum = coop.BlockLoadAlgorithm
     default_algorithm = coop.BlockLoadAlgorithm.DIRECT
@@ -1071,6 +1114,7 @@ class CoopBlockLoadTempStorageGetItemDecl(CoopTempStorageGetItemDecl):
 @register_global(coop.block.store)
 class CoopBlockStoreDecl(CoopLoadStoreBaseTemplate, StoreMixin, CoopDeclMixin):
     key = coop.block.store
+    impl_key = _make_block_store_rewrite
     primitive_name = "coop.block.store"
     algorithm_enum = coop.BlockStoreAlgorithm
     default_algorithm = coop.BlockStoreAlgorithm.DIRECT
@@ -1309,6 +1353,7 @@ class CoopWarpStoreDecl(CoopWarpLoadStoreBaseTemplate, WarpStoreMixin, CoopDeclM
 @register_global(coop.block.exchange)
 class CoopBlockExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.exchange
+    impl_key = _make_block_exchange_rewrite
     primitive_name = "coop.block.exchange"
     is_constructor = False
     minimum_num_args = 1
@@ -1530,6 +1575,7 @@ class CoopBlockExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
 @register_global(coop.block.merge_sort_keys)
 class CoopBlockMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.merge_sort_keys
+    impl_key = _make_block_merge_sort_keys_rewrite
     primitive_name = "coop.block.merge_sort_keys"
     is_constructor = False
     minimum_num_args = 2
@@ -1617,6 +1663,7 @@ class CoopBlockMergeSortDecl(CoopAbstractTemplate, CoopDeclMixin):
 @register_global(coop.block.merge_sort_pairs)
 class CoopBlockMergeSortPairsDecl(CoopBlockMergeSortDecl):
     key = coop.block.merge_sort_pairs
+    impl_key = _make_block_merge_sort_pairs_rewrite
     primitive_name = "coop.block.merge_sort_pairs"
     minimum_num_args = 3
 
@@ -1710,6 +1757,7 @@ class CoopBlockMergeSortPairsDecl(CoopBlockMergeSortDecl):
 @register_global(coop.block.adjacent_difference)
 class CoopBlockAdjacentDifferenceDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.adjacent_difference
+    impl_key = _make_block_adjacent_difference_rewrite
     primitive_name = "coop.block.adjacent_difference"
     is_constructor = False
     minimum_num_args = 2
@@ -1868,6 +1916,7 @@ class CoopBlockAdjacentDifferenceDecl(CoopAbstractTemplate, CoopDeclMixin):
 @register_global(coop.block.shuffle)
 class CoopBlockShuffleDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.shuffle
+    impl_key = _make_block_shuffle_rewrite
     primitive_name = "coop.block.shuffle"
     is_constructor = False
     minimum_num_args = 1
@@ -2090,6 +2139,7 @@ class CoopBlockShuffleDecl(CoopAbstractTemplate, CoopDeclMixin):
 @register_global(coop.block.discontinuity)
 class CoopBlockDiscontinuityDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.discontinuity
+    impl_key = _make_block_discontinuity_rewrite
     primitive_name = "coop.block.discontinuity"
     is_constructor = False
     minimum_num_args = 2
@@ -2255,6 +2305,7 @@ class CoopBlockDiscontinuityDecl(CoopAbstractTemplate, CoopDeclMixin):
 @register_global(coop.block.radix_sort_keys)
 class CoopBlockRadixSortDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.radix_sort_keys
+    impl_key = _make_block_radix_sort_keys_rewrite
     primitive_name = "coop.block.radix_sort_keys"
     is_constructor = False
     minimum_num_args = 2
@@ -2353,6 +2404,7 @@ class CoopBlockRadixSortDecl(CoopAbstractTemplate, CoopDeclMixin):
 @register_global(coop.block.radix_sort_keys_descending)
 class CoopBlockRadixSortDescendingDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.radix_sort_keys_descending
+    impl_key = _make_block_radix_sort_keys_descending_rewrite
     primitive_name = "coop.block.radix_sort_keys_descending"
     is_constructor = False
     minimum_num_args = 2
@@ -2456,6 +2508,7 @@ class CoopBlockRadixSortDescendingDecl(CoopAbstractTemplate, CoopDeclMixin):
 @register_global(coop.block.radix_rank)
 class CoopBlockRadixRankDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.radix_rank
+    impl_key = _make_block_radix_rank_rewrite
     primitive_name = "coop.block.radix_rank"
     is_constructor = False
     minimum_num_args = 3
@@ -3301,6 +3354,7 @@ def codegen_block_run_length_call(context, builder, sig, args):
 @register
 class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.scan
+    impl_key = _make_block_scan_rewrite
     primitive_name = "coop.block.scan"
     algorithm_enum = coop.BlockScanAlgorithm
     default_algorithm = coop.BlockScanAlgorithm.RAKING
@@ -3680,7 +3734,7 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
 @register
 class CoopBlockExclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.exclusive_sum
-    impl_key = coop.block.scan
+    impl_key = _make_block_scan_rewrite
     primitive_name = "coop.block.scan"
     algorithm_enum = coop.BlockScanAlgorithm
     default_algorithm = coop.BlockScanAlgorithm.RAKING
@@ -3721,7 +3775,7 @@ class CoopBlockExclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
 @register
 class CoopBlockInclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.inclusive_sum
-    impl_key = coop.block.scan
+    impl_key = _make_block_scan_rewrite
     primitive_name = "coop.block.scan"
     algorithm_enum = coop.BlockScanAlgorithm
     default_algorithm = coop.BlockScanAlgorithm.RAKING
@@ -3762,7 +3816,7 @@ class CoopBlockInclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
 @register
 class CoopBlockExclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.exclusive_scan
-    impl_key = coop.block.scan
+    impl_key = _make_block_scan_rewrite
     primitive_name = "coop.block.scan"
     algorithm_enum = coop.BlockScanAlgorithm
     default_algorithm = coop.BlockScanAlgorithm.RAKING
@@ -3804,7 +3858,7 @@ class CoopBlockExclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
 @register
 class CoopBlockInclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.inclusive_scan
-    impl_key = coop.block.scan
+    impl_key = _make_block_scan_rewrite
     primitive_name = "coop.block.scan"
     algorithm_enum = coop.BlockScanAlgorithm
     default_algorithm = coop.BlockScanAlgorithm.RAKING
@@ -3910,6 +3964,7 @@ def lower_constant_block_scan_instance_type(context, builder, typ, value):
 @register
 class CoopBlockReduceDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.reduce
+    impl_key = _make_block_reduce_rewrite
     primitive_name = "coop.block.reduce"
     is_constructor = False
     minimum_num_args = 1
@@ -4069,6 +4124,7 @@ def lower_constant_block_reduce_instance_type(context, builder, typ, value):
 @register
 class CoopBlockSumDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.sum
+    impl_key = _make_block_sum_rewrite
     primitive_name = "coop.block.sum"
     is_constructor = False
     minimum_num_args = 1

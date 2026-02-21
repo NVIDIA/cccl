@@ -298,3 +298,40 @@ class run_length(BasePrimitive):
             unique_id=unique_id,
             temp_storage=temp_storage,
         )
+
+
+def _build_run_length_spec(
+    item_dtype,
+    threads_per_block=None,
+    runs_per_thread=1,
+    decoded_items_per_thread=1,
+    **kwargs,
+):
+    kw = dict(kwargs)
+    if threads_per_block is None:
+        threads_per_block = kw.pop("dim", None)
+    spec = {
+        "item_dtype": item_dtype,
+        "dim": threads_per_block,
+        "runs_per_thread": runs_per_thread,
+        "decoded_items_per_thread": decoded_items_per_thread,
+    }
+    spec.update(kw)
+    return spec
+
+
+def _make_run_length_two_phase(
+    item_dtype,
+    threads_per_block=None,
+    runs_per_thread=1,
+    decoded_items_per_thread=1,
+    **kwargs,
+):
+    spec = _build_run_length_spec(
+        item_dtype=item_dtype,
+        threads_per_block=threads_per_block,
+        runs_per_thread=runs_per_thread,
+        decoded_items_per_thread=decoded_items_per_thread,
+        **kwargs,
+    )
+    return run_length.create(**spec)

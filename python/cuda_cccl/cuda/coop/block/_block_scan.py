@@ -1306,3 +1306,267 @@ class inclusive_scan(scan):
             unique_id=unique_id,
             temp_storage=temp_storage,
         )
+
+
+def _normalize_threads_per_block(kwargs, threads_per_block):
+    kw = dict(kwargs)
+    if threads_per_block is None:
+        threads_per_block = kw.pop("dim", None)
+    return kw, threads_per_block
+
+
+def _normalize_scan_prefix(kwargs, prefix_op, target_name):
+    kw = dict(kwargs)
+    if prefix_op is None:
+        prefix_op = kw.pop("prefix_op", None)
+    if prefix_op is None:
+        prefix_op = kw.pop("block_prefix_callback_op", None)
+    if prefix_op is not None:
+        kw[target_name] = prefix_op
+    return kw
+
+
+def _build_scan_spec(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    initial_value=None,
+    mode="exclusive",
+    scan_op="+",
+    block_prefix_callback_op=None,
+    **kwargs,
+):
+    kw, threads_per_block = _normalize_threads_per_block(kwargs, threads_per_block)
+    kw = _normalize_scan_prefix(
+        kw,
+        block_prefix_callback_op,
+        target_name="block_prefix_callback_op",
+    )
+    spec = {
+        "dtype": dtype,
+        "threads_per_block": threads_per_block,
+        "items_per_thread": items_per_thread,
+        "initial_value": initial_value,
+        "mode": mode,
+        "scan_op": scan_op,
+    }
+    spec.update(kw)
+    return spec
+
+
+def _build_exclusive_sum_spec(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    prefix_op=None,
+    algorithm=None,
+    **kwargs,
+):
+    kw, threads_per_block = _normalize_threads_per_block(kwargs, threads_per_block)
+    kw = _normalize_scan_prefix(kw, prefix_op, target_name="prefix_op")
+    spec = {
+        "dtype": dtype,
+        "threads_per_block": threads_per_block,
+        "items_per_thread": items_per_thread,
+        "algorithm": algorithm,
+    }
+    spec.update(kw)
+    return spec
+
+
+def _build_inclusive_sum_spec(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    prefix_op=None,
+    algorithm=None,
+    **kwargs,
+):
+    kw, threads_per_block = _normalize_threads_per_block(kwargs, threads_per_block)
+    kw = _normalize_scan_prefix(kw, prefix_op, target_name="prefix_op")
+    spec = {
+        "dtype": dtype,
+        "threads_per_block": threads_per_block,
+        "items_per_thread": items_per_thread,
+        "algorithm": algorithm,
+    }
+    spec.update(kw)
+    return spec
+
+
+def _build_exclusive_scan_spec(
+    dtype,
+    threads_per_block=None,
+    scan_op="+",
+    items_per_thread=1,
+    initial_value=None,
+    prefix_op=None,
+    algorithm=None,
+    **kwargs,
+):
+    kw, threads_per_block = _normalize_threads_per_block(kwargs, threads_per_block)
+    kw = _normalize_scan_prefix(kw, prefix_op, target_name="prefix_op")
+    spec = {
+        "dtype": dtype,
+        "threads_per_block": threads_per_block,
+        "scan_op": scan_op,
+        "items_per_thread": items_per_thread,
+        "initial_value": initial_value,
+        "algorithm": algorithm,
+    }
+    spec.update(kw)
+    return spec
+
+
+def _build_inclusive_scan_spec(
+    dtype,
+    threads_per_block=None,
+    scan_op="+",
+    items_per_thread=1,
+    initial_value=None,
+    prefix_op=None,
+    algorithm=None,
+    **kwargs,
+):
+    kw, threads_per_block = _normalize_threads_per_block(kwargs, threads_per_block)
+    kw = _normalize_scan_prefix(kw, prefix_op, target_name="prefix_op")
+    spec = {
+        "dtype": dtype,
+        "threads_per_block": threads_per_block,
+        "scan_op": scan_op,
+        "items_per_thread": items_per_thread,
+        "initial_value": initial_value,
+        "algorithm": algorithm,
+    }
+    spec.update(kw)
+    return spec
+
+
+def _make_scan_two_phase(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    initial_value=None,
+    mode="exclusive",
+    scan_op="+",
+    block_prefix_callback_op=None,
+    **kwargs,
+):
+    spec = _build_scan_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        initial_value=initial_value,
+        mode=mode,
+        scan_op=scan_op,
+        block_prefix_callback_op=block_prefix_callback_op,
+        **kwargs,
+    )
+    return scan.create(**spec)
+
+
+def _make_scan_rewrite(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    initial_value=None,
+    mode="exclusive",
+    scan_op="+",
+    block_prefix_callback_op=None,
+    **kwargs,
+):
+    spec = _build_scan_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        initial_value=initial_value,
+        mode=mode,
+        scan_op=scan_op,
+        block_prefix_callback_op=block_prefix_callback_op,
+        **kwargs,
+    )
+    return scan(**spec)
+
+
+def _make_exclusive_sum_two_phase(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    prefix_op=None,
+    algorithm=None,
+    **kwargs,
+):
+    spec = _build_exclusive_sum_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        prefix_op=prefix_op,
+        algorithm=algorithm,
+        **kwargs,
+    )
+    return exclusive_sum.create(**spec)
+
+
+def _make_inclusive_sum_two_phase(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    prefix_op=None,
+    algorithm=None,
+    **kwargs,
+):
+    spec = _build_inclusive_sum_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        prefix_op=prefix_op,
+        algorithm=algorithm,
+        **kwargs,
+    )
+    return inclusive_sum.create(**spec)
+
+
+def _make_exclusive_scan_two_phase(
+    dtype,
+    threads_per_block=None,
+    scan_op="+",
+    items_per_thread=1,
+    initial_value=None,
+    prefix_op=None,
+    algorithm=None,
+    **kwargs,
+):
+    spec = _build_exclusive_scan_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        scan_op=scan_op,
+        items_per_thread=items_per_thread,
+        initial_value=initial_value,
+        prefix_op=prefix_op,
+        algorithm=algorithm,
+        **kwargs,
+    )
+    return exclusive_scan.create(**spec)
+
+
+def _make_inclusive_scan_two_phase(
+    dtype,
+    threads_per_block=None,
+    scan_op="+",
+    items_per_thread=1,
+    initial_value=None,
+    prefix_op=None,
+    algorithm=None,
+    **kwargs,
+):
+    spec = _build_inclusive_scan_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        scan_op=scan_op,
+        items_per_thread=items_per_thread,
+        initial_value=initial_value,
+        prefix_op=prefix_op,
+        algorithm=algorithm,
+        **kwargs,
+    )
+    return inclusive_scan.create(**spec)
