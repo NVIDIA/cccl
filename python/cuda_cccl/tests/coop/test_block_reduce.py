@@ -723,6 +723,33 @@ def test_block_reduction_temp_storage_api():
     assert h_output_single[0] == h_output_two[0]
 
 
+def test_block_reduce_temp_storage_getitem_sugar():
+    @cuda.jit(device=True)
+    def op(a, b):
+        return a + b
+
+    threads_per_block = 128
+
+    @cuda.jit
+    def kernel(input, output):
+        temp_storage = coop.TempStorage()
+        block_output = coop.block.reduce[temp_storage](
+            input[cuda.threadIdx.x],
+            binary_op=op,
+            items_per_thread=1,
+        )
+        if cuda.threadIdx.x == 0:
+            output[0] = block_output
+
+    h_input = np.random.randint(0, 42, threads_per_block, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(1, dtype=np.int32)
+    kernel[1, threads_per_block](d_input, d_output)
+    h_output = d_output.copy_to_host()
+
+    assert h_output[0] == np.sum(h_input)
+
+
 def test_block_sum_temp_storage_api():
     threads_per_block = 128
     block_sum = coop.block.sum(

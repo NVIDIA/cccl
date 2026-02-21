@@ -286,3 +286,25 @@ def test_warp_sum_temp_storage_single_phase():
     expected = np.sum(h_input)
     assert h_out_single[0] == expected
     assert h_out_two_phase[0] == expected
+
+
+def test_warp_sum_temp_storage_getitem_sugar():
+    threads_in_warp = 32
+
+    @cuda.jit
+    def kernel(input, output):
+        val = input[cuda.threadIdx.x]
+        temp_storage = coop.TempStorage()
+        warp_out = coop.warp.sum[temp_storage](val)
+        if cuda.threadIdx.x == 0:
+            output[0] = warp_out
+
+    h_input = np.random.randint(0, 42, threads_in_warp, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(1, dtype=np.int32)
+
+    kernel[1, threads_in_warp](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    assert h_output[0] == np.sum(h_input)
