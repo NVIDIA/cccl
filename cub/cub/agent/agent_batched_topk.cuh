@@ -206,11 +206,11 @@ struct agent_batched_topk_worker_per_segment
         select_directions, segment_id, [this, &thread_keys, k, segment_size](auto direction_tag) {
           if constexpr (decltype(direction_tag)::value == detail::topk::select::max)
           {
-            block_topk_t(temp_storage.topk).max_keys<is_full_tile>(thread_keys, k, segment_size);
+            block_topk_t(temp_storage.topk).template max_keys<is_full_tile>(thread_keys, k, segment_size);
           }
           else
           {
-            block_topk_t(temp_storage.topk).min_keys<is_full_tile>(thread_keys, k, segment_size);
+            block_topk_t(temp_storage.topk).template min_keys<is_full_tile>(thread_keys, k, segment_size);
           }
         });
       _CCCL_ASSERT(is_successful_dispatch, "Error: Unsupported select direction");
@@ -222,11 +222,13 @@ struct agent_batched_topk_worker_per_segment
         select_directions, segment_id, [this, &thread_keys, &thread_values, k, segment_size](auto direction_tag) {
           if constexpr (decltype(direction_tag)::value == detail::topk::select::max)
           {
-            block_topk_t(temp_storage.topk).max_pairs<is_full_tile>(thread_keys, thread_values, k, segment_size);
+            block_topk_t(temp_storage.topk)
+              .template max_pairs<is_full_tile>(thread_keys, thread_values, k, segment_size);
           }
           else
           {
-            block_topk_t(temp_storage.topk).min_pairs<is_full_tile>(thread_keys, thread_values, k, segment_size);
+            block_topk_t(temp_storage.topk)
+              .template min_pairs<is_full_tile>(thread_keys, thread_values, k, segment_size);
           }
         });
       _CCCL_ASSERT(is_successful_dispatch, "Error: Unsupported select direction");
