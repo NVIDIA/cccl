@@ -55,6 +55,9 @@
 - [ ] Add private internal factory helpers for rewrite-time construction
       (starting with block scan) to centralize alias/default normalization
       without using public `make_*` wrappers.
+- [x] Roll out private internal factory helpers for warp primitives
+      (`_make_*_two_phase` + `_make_*_rewrite`) and wire decl `impl_key`
+      to rewrite helpers.
 - [ ] Define and adopt a shared normalization pattern for each primitive family
       (`dim` vs `threads_per_block`, prefix-op aliases, enum/string algorithm
       normalization) while keeping semantic validation in primitive constructors.

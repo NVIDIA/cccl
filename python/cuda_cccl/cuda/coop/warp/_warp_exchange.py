@@ -179,3 +179,70 @@ class exchange(BasePrimitive):
             temp_storage_alignment=specialization.temp_storage_alignment,
             algorithm=specialization,
         )
+
+
+def _build_exchange_spec(
+    dtype,
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    warp_exchange_type: WarpExchangeType = WarpExchangeType.StripedToBlocked,
+    offset_dtype: Optional[numba.types.Type] = None,
+    methods: Optional[dict] = None,
+):
+    return {
+        "dtype": dtype,
+        "items_per_thread": items_per_thread,
+        "threads_in_warp": threads_in_warp,
+        "warp_exchange_type": warp_exchange_type,
+        "offset_dtype": offset_dtype,
+        "methods": methods,
+    }
+
+
+def _make_exchange_two_phase(
+    dtype,
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    warp_exchange_type: WarpExchangeType = WarpExchangeType.StripedToBlocked,
+    offset_dtype: Optional[numba.types.Type] = None,
+    methods: Optional[dict] = None,
+):
+    return exchange.create(
+        **_build_exchange_spec(
+            dtype=dtype,
+            items_per_thread=items_per_thread,
+            threads_in_warp=threads_in_warp,
+            warp_exchange_type=warp_exchange_type,
+            offset_dtype=offset_dtype,
+            methods=methods,
+        )
+    )
+
+
+def _make_exchange_rewrite(
+    dtype,
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    warp_exchange_type: WarpExchangeType = WarpExchangeType.StripedToBlocked,
+    offset_dtype: Optional[numba.types.Type] = None,
+    methods: Optional[dict] = None,
+    unique_id=None,
+    temp_storage=None,
+    node=None,
+):
+    spec = _build_exchange_spec(
+        dtype=dtype,
+        items_per_thread=items_per_thread,
+        threads_in_warp=threads_in_warp,
+        warp_exchange_type=warp_exchange_type,
+        offset_dtype=offset_dtype,
+        methods=methods,
+    )
+    spec.update(
+        {
+            "unique_id": unique_id,
+            "temp_storage": temp_storage,
+            "node": node,
+        }
+    )
+    return exchange(**spec)

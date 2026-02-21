@@ -202,3 +202,106 @@ class sum(BasePrimitive):
             temp_storage_alignment=specialization.temp_storage_alignment,
             algorithm=specialization,
         )
+
+
+def _build_reduce_spec(
+    dtype,
+    binary_op,
+    threads_in_warp=32,
+    valid_items=None,
+    methods=None,
+):
+    return {
+        "dtype": dtype,
+        "binary_op": binary_op,
+        "threads_in_warp": threads_in_warp,
+        "valid_items": valid_items,
+        "methods": methods,
+    }
+
+
+def _make_reduce_two_phase(
+    dtype,
+    binary_op,
+    threads_in_warp=32,
+    valid_items=None,
+    methods=None,
+):
+    return reduce.create(
+        **_build_reduce_spec(
+            dtype=dtype,
+            binary_op=binary_op,
+            threads_in_warp=threads_in_warp,
+            valid_items=valid_items,
+            methods=methods,
+        )
+    )
+
+
+def _make_reduce_rewrite(
+    dtype,
+    binary_op,
+    threads_in_warp=32,
+    valid_items=None,
+    methods=None,
+    unique_id=None,
+    temp_storage=None,
+    node=None,
+):
+    spec = _build_reduce_spec(
+        dtype=dtype,
+        binary_op=binary_op,
+        threads_in_warp=threads_in_warp,
+        valid_items=valid_items,
+        methods=methods,
+    )
+    spec.update(
+        {
+            "unique_id": unique_id,
+            "temp_storage": temp_storage,
+            "node": node,
+        }
+    )
+    return reduce(**spec)
+
+
+def _build_sum_spec(
+    dtype,
+    threads_in_warp=32,
+    valid_items=None,
+):
+    return {
+        "dtype": dtype,
+        "threads_in_warp": threads_in_warp,
+        "valid_items": valid_items,
+    }
+
+
+def _make_sum_two_phase(
+    dtype,
+    threads_in_warp=32,
+    valid_items=None,
+):
+    return sum.create(
+        **_build_sum_spec(
+            dtype=dtype,
+            threads_in_warp=threads_in_warp,
+            valid_items=valid_items,
+        )
+    )
+
+
+def _make_sum_rewrite(
+    dtype,
+    threads_in_warp=32,
+    valid_items=None,
+    unique_id=None,
+    temp_storage=None,
+):
+    spec = _build_sum_spec(
+        dtype=dtype,
+        threads_in_warp=threads_in_warp,
+        valid_items=valid_items,
+    )
+    spec.update({"unique_id": unique_id, "temp_storage": temp_storage})
+    return sum(**spec)
