@@ -62,3 +62,44 @@ single-phase kernel usage unchanged.
     current decomposer lowering produces `tuple<T...>` values, while CUB radix
     paths require `tuple<T&...>` and fail template deduction in
     `for_each_member_impl`.
+
+## Follow-Up (2026-02-21, next implementation pass)
+
+### Goal
+Introduce private internal factory helpers for rewrite construction so we can
+share argument normalization logic with public `make_*` without binding rewrite
+to the two-phase `Invocable` contract.
+
+### Why
+- Public `make_*` now intentionally returns two-phase objects (`Invocable` or
+  stateful parent objects).
+- Rewrite needs internal-only kwargs (`unique_id`, `node`, explicit
+  `temp_storage`, `use_array_inputs`, etc.) and must produce primitive
+  instances, not `Invocable`.
+- We still want to avoid duplicating alias/default normalization logic.
+
+### Planned Steps
+- [ ] 1. Add block-scan internal helpers in `cuda/coop/block/_block_scan.py`:
+  - `_build_scan_spec(...)` for shared normalization only.
+  - `_make_scan_two_phase(...)` used by public `make_scan`.
+  - `_make_scan_rewrite(...)` used by rewrite paths.
+- [ ] 2. Update public wrappers in `cuda/coop/block/__init__.py`:
+  - route `make_scan` through `_make_scan_two_phase`.
+  - preserve existing public signature and semantics.
+- [ ] 3. Update rewrite scan node(s) in `cuda/coop/_rewrite.py`:
+  - use `_make_scan_rewrite` for instantiation.
+  - verify current rewrite-only kwargs are passed through unchanged.
+- [ ] 4. Add parity and regression coverage:
+  - two-phase make-scan contract tests (`Invocable` + kernel execution).
+  - single-phase scan stress paths (ThreadData, temp storage, prefix callbacks).
+  - ensure no regressions in mamba/stress kernels.
+- [ ] 5. If pattern works, roll out incrementally to adjacent families:
+  - block exclusive/inclusive sum/scan wrappers,
+  - then other complex primitives (load/store, merge/radix families).
+
+### Acceptance Criteria
+- Public `make_scan(...)` behavior unchanged for users.
+- Single-phase scan rewrite behavior unchanged.
+- No additional semantic validation duplication introduced in wrappers/helpers
+  (constructor remains source of truth for validation).
+- Targeted test matrix passes.
