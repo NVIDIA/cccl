@@ -33,6 +33,25 @@ if TYPE_CHECKING:
     from ._rewrite import CoopNode
 
 
+def _make_invocable_from_specialization(specialization) -> Invocable:
+    lto_irs = specialization.get_lto_ir()
+    if lto_irs and hasattr(lto_irs[0], "data"):
+        return Invocable(
+            ltoir_files=lto_irs,
+            temp_storage_bytes=specialization.temp_storage_bytes,
+            temp_storage_alignment=specialization.temp_storage_alignment,
+            algorithm=specialization,
+        )
+
+    # Backward-compatible fallback for raw-bytes LTO IR payloads.
+    return Invocable(
+        temp_files=[make_binary_tempfile(ltoir, ".ltoir") for ltoir in lto_irs],
+        temp_storage_bytes=specialization.temp_storage_bytes,
+        temp_storage_alignment=specialization.temp_storage_alignment,
+        algorithm=specialization,
+    )
+
+
 class merge_sort_keys(BasePrimitive):
     is_one_shot = True
 
@@ -203,15 +222,7 @@ class merge_sort_keys(BasePrimitive):
             methods=methods,
         )
         specialization = algo.specialization
-        return Invocable(
-            temp_files=[
-                make_binary_tempfile(ltoir, ".ltoir")
-                for ltoir in specialization.get_lto_ir()
-            ],
-            temp_storage_bytes=specialization.temp_storage_bytes,
-            temp_storage_alignment=specialization.temp_storage_alignment,
-            algorithm=specialization,
-        )
+        return _make_invocable_from_specialization(specialization)
 
 
 class merge_sort_pairs(BasePrimitive):
@@ -267,12 +278,4 @@ class merge_sort_pairs(BasePrimitive):
             methods=methods,
         )
         specialization = algo.specialization
-        return Invocable(
-            temp_files=[
-                make_binary_tempfile(ltoir, ".ltoir")
-                for ltoir in specialization.get_lto_ir()
-            ],
-            temp_storage_bytes=specialization.temp_storage_bytes,
-            temp_storage_alignment=specialization.temp_storage_alignment,
-            algorithm=specialization,
-        )
+        return _make_invocable_from_specialization(specialization)

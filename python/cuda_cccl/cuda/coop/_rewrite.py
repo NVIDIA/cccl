@@ -8,11 +8,12 @@
 import functools
 import inspect
 import itertools
+import operator
 import os
 import struct
 import sys
 from collections import OrderedDict, defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import IntEnum, auto
 from functools import cached_property, lru_cache, reduce
 from operator import mul
@@ -94,6 +95,8 @@ NUMBA_CUDA_ARRAY_MODULE_NAME = "numba.cuda.stubs"
 
 DEBUG_PRINT = False
 _GLOBAL_SYMBOL_ID_COUNTER = itertools.count(0)
+DEFAULT_STATIC_SHARED_MEMORY_BYTES = 48 * 1024
+MAX_SHARED_MEMORY_CARVEOUT_PERCENT = 100
 
 
 def debug_print(*args, **kwargs):
@@ -281,6 +284,54 @@ class TempStorageCallDefinition(CallDefinition):
     size_in_bytes: Optional[int] = None
     alignment: Optional[int] = None
     auto_sync: Optional[bool] = None
+    sharing: Optional[str] = None
+
+
+@dataclass
+class TempStorageRewriteState:
+    """
+    Mutable TempStorage rewrite state tracked for a single CoopNodeRewriter.
+
+    Attributes:
+        info_inference_stack: Active TempStorage variables currently undergoing
+            requirement inference, used to detect recursive inference paths.
+        global_plan: Cached global TempStorage coalescing plan for the kernel.
+        global_plan_in_progress: Guard against recursive global-plan generation.
+        global_backing_var: The shared uint8 backing buffer variable used to
+            carve TempStorage slices.
+        global_backing_prelude_instrs: IR assignments required to materialize
+            `global_backing_var`.
+        global_backing_inserted: Indicates whether backing prelude instructions
+            have already been emitted into rewritten IR.
+        launch_callback_registered: Indicates whether the dynamic shared-memory
+            pre-launch callback has already been registered.
+    """
+
+    info_inference_stack: set[str] = field(default_factory=set)
+    global_plan: Optional[SimpleNamespace] = None
+    global_plan_in_progress: bool = False
+    global_backing_var: Optional[ir.Var] = None
+    global_backing_prelude_instrs: list[ir.Assign] = field(default_factory=list)
+    global_backing_inserted: bool = False
+    launch_callback_registered: bool = False
+
+
+@dataclass
+class TempStorageUseLayoutEntry:
+    """
+    Layout information for a single primitive use of a TempStorage binding.
+
+    Attributes:
+        offset: Byte offset within the bound TempStorage region.
+        size_in_bytes: Number of bytes required by this primitive use.
+        alignment: Required alignment in bytes for this primitive use.
+        primitive_name: Fully-qualified cooperative primitive name.
+    """
+
+    offset: int
+    size_in_bytes: int
+    alignment: int
+    primitive_name: str
 
 
 @dataclass
@@ -661,20 +712,26 @@ def get_root_definition(
                         )
                         alignment_arg = None
                         auto_sync_arg = None
+                        sharing_arg = None
                         if len(instr_args) > 1:
                             alignment_arg = instr_args[1]
                         if len(instr_args) > 2:
                             auto_sync_arg = instr_args[2]
+                        if len(instr_args) > 3:
+                            sharing_arg = instr_args[3]
                         if "alignment" in instr_kws:
                             alignment_arg = instr_kws.get("alignment")
                         if "auto_sync" in instr_kws:
                             auto_sync_arg = instr_kws.get("auto_sync")
+                        if "sharing" in instr_kws:
+                            sharing_arg = instr_kws.get("sharing")
 
                         size_in_bytes = _resolve_arg_value(size_arg)
                         alignment = _resolve_arg_value(alignment_arg)
                         auto_sync = _resolve_arg_value(auto_sync_arg)
-                        if auto_sync is None:
-                            auto_sync = True
+                        sharing = _resolve_arg_value(sharing_arg)
+                        if sharing is None:
+                            sharing = "shared"
 
                         defn = TempStorageCallDefinition(
                             instr=instr,
@@ -686,6 +743,7 @@ def get_root_definition(
                             size_in_bytes=size_in_bytes,
                             alignment=alignment,
                             auto_sync=auto_sync,
+                            sharing=sharing,
                         )
                     else:
                         # Normal function, create a CallDefinition.
@@ -984,6 +1042,7 @@ class CoopNode:
     codegens: list = None
     children: list = None
     temp_storage: Optional[Any] = None
+    temp_storage_prelude_instrs: Optional[list[ir.Assign]] = None
     root_def: Optional["RootDefinition"] = None
     parent_node: Optional["CoopNode"] = None
     parent_root_def: Optional["RootDefinition"] = None
@@ -1001,6 +1060,9 @@ class CoopNode:
         return f"{self.__class__.__name__}({self.target.name})"
 
     def __post_init__(self):
+        if self.temp_storage_prelude_instrs is None:
+            self.temp_storage_prelude_instrs = []
+
         # If we're handling a two-phase invocation via a primitive that was
         # passed as a kernel parameter, `needs_pre_launch_callback` will be
         # set.
@@ -1346,59 +1408,8 @@ class CoopNode:
     def codegen_callback(self):
         raise NotImplementedError
 
-    @cached_property
-    def maker_impl(self):
-        if self.is_two_phase:
-            return None
-
-        try:
-            import cuda.coop as coop
-        except Exception:
-            return None
-
-        maker_map = {
-            "coop.block.load": coop.block.make_load,
-            "coop.block.store": coop.block.make_store,
-            "coop.block.exchange": coop.block.make_exchange,
-            "coop.block.shuffle": coop.block.make_shuffle,
-            "coop.block.adjacent_difference": coop.block.make_adjacent_difference,
-            "coop.block.discontinuity": coop.block.make_discontinuity,
-            "coop.block.histogram": coop.block.make_histogram,
-            "coop.block.run_length": coop.block.make_run_length,
-            "coop.block.merge_sort_keys": coop.block.make_merge_sort_keys,
-            "coop.block.merge_sort_pairs": coop.block.make_merge_sort_pairs,
-            "coop.block.radix_sort_keys": coop.block.make_radix_sort_keys,
-            "coop.block.radix_sort_keys_descending": coop.block.make_radix_sort_keys_descending,
-            "coop.block.radix_rank": coop.block.make_radix_rank,
-            "coop.block.scan": coop.block.make_scan,
-            "coop.block.exclusive_sum": coop.block.make_exclusive_sum,
-            "coop.block.inclusive_sum": coop.block.make_inclusive_sum,
-            "coop.block.exclusive_scan": coop.block.make_exclusive_scan,
-            "coop.block.inclusive_scan": coop.block.make_inclusive_scan,
-            "coop.block.reduce": coop.block.make_reduce,
-            "coop.block.sum": coop.block.make_sum,
-            "coop.warp.load": coop.warp.make_load,
-            "coop.warp.store": coop.warp.make_store,
-            "coop.warp.exchange": coop.warp.make_exchange,
-            "coop.warp.merge_sort_keys": coop.warp.make_merge_sort_keys,
-            "coop.warp.merge_sort_pairs": coop.warp.make_merge_sort_pairs,
-            "coop.warp.exclusive_sum": coop.warp.make_exclusive_sum,
-            "coop.warp.inclusive_sum": coop.warp.make_inclusive_sum,
-            "coop.warp.exclusive_scan": coop.warp.make_exclusive_scan,
-            "coop.warp.inclusive_scan": coop.warp.make_inclusive_scan,
-            "coop.warp.reduce": coop.warp.make_reduce,
-            "coop.warp.sum": coop.warp.make_sum,
-        }
-
-        return maker_map.get(self.primitive_name)
-
     def instantiate_impl(self, **impl_kwds):
-        impl = self.impl_class
-        if not self.is_two_phase:
-            maker_impl = self.maker_impl
-            if maker_impl is not None:
-                impl = maker_impl
-        return impl(**impl_kwds)
+        return self.impl_class(**impl_kwds)
 
     def do_rewrite(self):
         if self.is_two_phase:
@@ -1614,9 +1625,16 @@ class CoopNode:
             new_assign=new_assign,
             sig=sig,
             func_ty=func_ty,
+            prelude_instrs=list(self.temp_storage_prelude_instrs or ()),
         )
 
         return rewrite_details
+
+    @staticmethod
+    def _append_prelude_instrs(instrs, rewrite_details):
+        prelude = getattr(rewrite_details, "prelude_instrs", None)
+        if prelude:
+            instrs.extend(prelude)
 
 
 @dataclass
@@ -1693,10 +1711,9 @@ class CoopLoadStoreNode(CoopNode):
         src_ty = self.typemap[src.name]
         dst_ty = self.typemap[dst.name]
         try:
-            from ._decls import TempStorageType, ThreadDataType
+            from ._decls import ThreadDataType
         except Exception:
             ThreadDataType = None
-            TempStorageType = None
 
         src_is_thread = ThreadDataType is not None and isinstance(
             src_ty, ThreadDataType
@@ -1833,19 +1850,16 @@ class CoopLoadStoreNode(CoopNode):
             runtime_arg_names.append("oob_default")
 
         temp_storage = self.bound.arguments.get("temp_storage")
-        temp_storage_ty = None
         temp_storage_info = None
         if temp_storage is not None:
-            assert isinstance(temp_storage, ir.Var)
-            temp_storage_ty = self.typemap[temp_storage.name]
-            if TempStorageType is not None and isinstance(
-                temp_storage_ty, TempStorageType
-            ):
-                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
-                temp_storage_ty = types.Array(types.uint8, 1, "C")
-            runtime_args.insert(0, temp_storage)
-            runtime_arg_types.insert(0, temp_storage_ty)
-            runtime_arg_names.insert(0, "temp_storage")
+            (_, _, temp_storage_info) = rewriter.bind_temp_storage_runtime_arg(
+                node=self,
+                temp_storage=temp_storage,
+                runtime_args=runtime_args,
+                runtime_arg_types=runtime_arg_types,
+                runtime_arg_names=runtime_arg_names,
+                insert_pos=0,
+            )
 
         self.dtype = dtype
         self.items_per_thread = items_per_thread
@@ -2351,19 +2365,14 @@ class CoopWarpLoadStoreNode(CoopNode):
                 raise RuntimeError(
                     "coop.warp.load/store temp_storage must be provided as a variable"
                 )
-            temp_storage_ty = self.typemap[temp_storage.name]
-            try:
-                from ._decls import TempStorageType
-            except Exception:
-                TempStorageType = None
-            if TempStorageType is not None and isinstance(
-                temp_storage_ty, TempStorageType
-            ):
-                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
-                temp_storage_ty = types.Array(types.uint8, 1, "C")
-            runtime_args.insert(0, temp_storage)
-            runtime_arg_types.insert(0, temp_storage_ty)
-            runtime_arg_names.insert(0, "temp_storage")
+            (_, _, temp_storage_info) = rewriter.bind_temp_storage_runtime_arg(
+                node=self,
+                temp_storage=temp_storage,
+                runtime_args=runtime_args,
+                runtime_arg_types=runtime_arg_types,
+                runtime_arg_names=runtime_arg_names,
+                insert_pos=0,
+            )
 
         self.dtype = dtype
         self.items_per_thread = items_per_thread
@@ -2462,9 +2471,8 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
 
         items_ty = self.typemap[items.name]
         try:
-            from ._decls import TempStorageType, ThreadDataType
+            from ._decls import ThreadDataType
         except Exception:
-            TempStorageType = None
             ThreadDataType = None
 
         items_is_thread = ThreadDataType is not None and isinstance(
@@ -2685,15 +2693,14 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
                 raise RuntimeError(
                     "coop.block.exchange temp_storage must be provided as a variable"
                 )
-            temp_storage_ty = self.typemap[temp_storage.name]
-            if TempStorageType is not None and isinstance(
-                temp_storage_ty, TempStorageType
-            ):
-                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
-                temp_storage_ty = types.Array(types.uint8, 1, "C")
-            runtime_args.insert(0, temp_storage)
-            runtime_arg_types.insert(0, temp_storage_ty)
-            runtime_arg_names.insert(0, "temp_storage")
+            (_, _, temp_storage_info) = rewriter.bind_temp_storage_runtime_arg(
+                node=self,
+                temp_storage=temp_storage,
+                runtime_args=runtime_args,
+                runtime_arg_types=runtime_arg_types,
+                runtime_arg_names=runtime_arg_names,
+                insert_pos=0,
+            )
 
         if ThreadDataType is not None:
             array_ty = types.Array(dtype, 1, "C")
@@ -2940,19 +2947,14 @@ class CoopWarpExchangeNode(CoopNode, CoopNodeMixin):
                 raise RuntimeError(
                     "coop.warp.exchange temp_storage must be provided as a variable"
                 )
-            temp_storage_ty = self.typemap[temp_storage.name]
-            try:
-                from ._decls import TempStorageType
-            except Exception:
-                TempStorageType = None
-            if TempStorageType is not None and isinstance(
-                temp_storage_ty, TempStorageType
-            ):
-                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
-                temp_storage_ty = types.Array(types.uint8, 1, "C")
-            runtime_args.insert(0, temp_storage)
-            runtime_arg_types.insert(0, temp_storage_ty)
-            runtime_arg_names.insert(0, "temp_storage")
+            (_, _, temp_storage_info) = rewriter.bind_temp_storage_runtime_arg(
+                node=self,
+                temp_storage=temp_storage,
+                runtime_args=runtime_args,
+                runtime_arg_types=runtime_arg_types,
+                runtime_arg_names=runtime_arg_names,
+                insert_pos=0,
+            )
 
         if output_items is None:
             runtime_args.append(items)
@@ -3061,9 +3063,8 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
         items_ty = self.typemap[items.name]
 
         try:
-            from ._decls import TempStorageType, ThreadDataType
+            from ._decls import ThreadDataType
         except Exception:
-            TempStorageType = None
             ThreadDataType = None
 
         items_is_thread = ThreadDataType is not None and isinstance(
@@ -3234,15 +3235,14 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
                     raise RuntimeError(
                         "coop.block.shuffle temp_storage must be provided as a variable"
                     )
-                temp_storage_ty = self.typemap[temp_storage.name]
-                if TempStorageType is not None and isinstance(
-                    temp_storage_ty, TempStorageType
-                ):
-                    temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
-                    temp_storage_ty = types.Array(types.uint8, 1, "C")
-                runtime_args.insert(0, temp_storage)
-                runtime_arg_types.insert(0, temp_storage_ty)
-                runtime_arg_names.insert(0, "temp_storage")
+                (_, _, temp_storage_info) = rewriter.bind_temp_storage_runtime_arg(
+                    node=self,
+                    temp_storage=temp_storage,
+                    runtime_args=runtime_args,
+                    runtime_arg_types=runtime_arg_types,
+                    runtime_arg_names=runtime_arg_names,
+                    insert_pos=0,
+                )
 
             array_items_ty = types.Array(item_dtype, 1, "C")
             if items_is_thread:
@@ -3426,15 +3426,14 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
                 raise RuntimeError(
                     "coop.block.shuffle temp_storage must be provided as a variable"
                 )
-            temp_storage_ty = self.typemap[temp_storage.name]
-            if TempStorageType is not None and isinstance(
-                temp_storage_ty, TempStorageType
-            ):
-                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
-                temp_storage_ty = types.Array(types.uint8, 1, "C")
-            runtime_args.insert(0, temp_storage)
-            runtime_arg_types.insert(0, temp_storage_ty)
-            runtime_arg_names.insert(0, "temp_storage")
+            (_, _, temp_storage_info) = rewriter.bind_temp_storage_runtime_arg(
+                node=self,
+                temp_storage=temp_storage,
+                runtime_args=runtime_args,
+                runtime_arg_types=runtime_arg_types,
+                runtime_arg_names=runtime_arg_names,
+                insert_pos=0,
+            )
 
         runtime_args.append(items)
         runtime_arg_types.append(items_ty)
@@ -3527,9 +3526,8 @@ class CoopBlockAdjacentDifferenceNode(CoopNode, CoopNodeMixin):
         output_items_ty = self.typemap[output_items.name]
 
         try:
-            from ._decls import TempStorageType, ThreadDataType
+            from ._decls import ThreadDataType
         except Exception:
-            TempStorageType = None
             ThreadDataType = None
 
         items_is_thread = ThreadDataType is not None and isinstance(
@@ -3728,15 +3726,14 @@ class CoopBlockAdjacentDifferenceNode(CoopNode, CoopNodeMixin):
                     "coop.block.adjacent_difference temp_storage must be provided "
                     "as a variable"
                 )
-            temp_storage_ty = self.typemap[temp_storage.name]
-            if TempStorageType is not None and isinstance(
-                temp_storage_ty, TempStorageType
-            ):
-                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
-                temp_storage_ty = types.Array(types.uint8, 1, "C")
-            runtime_args.insert(0, temp_storage)
-            runtime_arg_types.insert(0, temp_storage_ty)
-            runtime_arg_names.insert(0, "temp_storage")
+            (_, _, temp_storage_info) = rewriter.bind_temp_storage_runtime_arg(
+                node=self,
+                temp_storage=temp_storage,
+                runtime_args=runtime_args,
+                runtime_arg_types=runtime_arg_types,
+                runtime_arg_names=runtime_arg_names,
+                insert_pos=0,
+            )
 
         array_items_ty = types.Array(item_dtype, 1, "C")
         if items_is_thread:
@@ -3853,9 +3850,8 @@ class CoopBlockDiscontinuityNode(CoopNode, CoopNodeMixin):
         )
 
         try:
-            from ._decls import TempStorageType, ThreadDataType
+            from ._decls import ThreadDataType
         except Exception:
-            TempStorageType = None
             ThreadDataType = None
 
         items_is_thread = ThreadDataType is not None and isinstance(
@@ -4062,15 +4058,14 @@ class CoopBlockDiscontinuityNode(CoopNode, CoopNodeMixin):
                     "coop.block.discontinuity temp_storage must be provided as a "
                     "variable"
                 )
-            temp_storage_ty = self.typemap[temp_storage.name]
-            if TempStorageType is not None and isinstance(
-                temp_storage_ty, TempStorageType
-            ):
-                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
-                temp_storage_ty = types.Array(types.uint8, 1, "C")
-            runtime_args.insert(0, temp_storage)
-            runtime_arg_types.insert(0, temp_storage_ty)
-            runtime_arg_names.insert(0, "temp_storage")
+            (_, _, temp_storage_info) = rewriter.bind_temp_storage_runtime_arg(
+                node=self,
+                temp_storage=temp_storage,
+                runtime_args=runtime_args,
+                runtime_arg_types=runtime_arg_types,
+                runtime_arg_names=runtime_arg_names,
+                insert_pos=0,
+            )
 
         array_items_ty = types.Array(item_dtype, 1, "C")
         array_flags_ty = types.Array(flag_dtype, 1, "C")
@@ -4419,19 +4414,14 @@ class CoopBlockMergeSortNode(CoopNode, CoopNodeMixin):
                 raise RuntimeError(
                     "coop.block.merge_sort_keys temp_storage must be provided as a variable"
                 )
-            temp_storage_ty = self.typemap[temp_storage.name]
-            try:
-                from ._decls import TempStorageType
-            except Exception:
-                TempStorageType = None
-            if TempStorageType is not None and isinstance(
-                temp_storage_ty, TempStorageType
-            ):
-                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
-                temp_storage_ty = types.Array(types.uint8, 1, "C")
-            runtime_args.insert(0, temp_storage)
-            runtime_arg_types.insert(0, temp_storage_ty)
-            runtime_arg_names.insert(0, "temp_storage")
+            (_, _, temp_storage_info) = rewriter.bind_temp_storage_runtime_arg(
+                node=self,
+                temp_storage=temp_storage,
+                runtime_args=runtime_args,
+                runtime_arg_types=runtime_arg_types,
+                runtime_arg_names=runtime_arg_names,
+                insert_pos=0,
+            )
 
         runtime_args.append(keys)
         runtime_arg_types.append(keys_ty)
@@ -4645,19 +4635,14 @@ class CoopWarpMergeSortNode(CoopNode, CoopNodeMixin):
                 raise RuntimeError(
                     "coop.warp.merge_sort_keys temp_storage must be provided as a variable"
                 )
-            temp_storage_ty = self.typemap[temp_storage.name]
-            try:
-                from ._decls import TempStorageType
-            except Exception:
-                TempStorageType = None
-            if TempStorageType is not None and isinstance(
-                temp_storage_ty, TempStorageType
-            ):
-                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
-                temp_storage_ty = types.Array(types.uint8, 1, "C")
-            runtime_args.insert(0, temp_storage)
-            runtime_arg_types.insert(0, temp_storage_ty)
-            runtime_arg_names.insert(0, "temp_storage")
+            (_, _, temp_storage_info) = rewriter.bind_temp_storage_runtime_arg(
+                node=self,
+                temp_storage=temp_storage,
+                runtime_args=runtime_args,
+                runtime_arg_types=runtime_arg_types,
+                runtime_arg_names=runtime_arg_names,
+                insert_pos=0,
+            )
 
         runtime_args.append(keys)
         runtime_arg_types.append(keys_ty)
@@ -4955,19 +4940,14 @@ class CoopBlockRadixSortNode(CoopNode, CoopNodeMixin):
                 raise RuntimeError(
                     "coop.block.radix_sort_keys temp_storage must be provided as a variable"
                 )
-            temp_storage_ty = self.typemap[temp_storage.name]
-            try:
-                from ._decls import TempStorageType
-            except Exception:
-                TempStorageType = None
-            if TempStorageType is not None and isinstance(
-                temp_storage_ty, TempStorageType
-            ):
-                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
-                temp_storage_ty = types.Array(types.uint8, 1, "C")
-            runtime_args.insert(0, temp_storage)
-            runtime_arg_types.insert(0, temp_storage_ty)
-            runtime_arg_names.insert(0, "temp_storage")
+            (_, _, temp_storage_info) = rewriter.bind_temp_storage_runtime_arg(
+                node=self,
+                temp_storage=temp_storage,
+                runtime_args=runtime_args,
+                runtime_arg_types=runtime_arg_types,
+                runtime_arg_names=runtime_arg_names,
+                insert_pos=0,
+            )
 
         if ThreadDataType is not None and keys_is_thread:
             keys_ty = types.Array(dtype, 1, "C")
@@ -5119,9 +5099,8 @@ class CoopBlockRadixRankNode(CoopNode, CoopNodeMixin):
         ranks_ty = self.typemap[ranks.name]
 
         try:
-            from ._decls import TempStorageType, ThreadDataType
+            from ._decls import ThreadDataType
         except Exception:
-            TempStorageType = None
             ThreadDataType = None
 
         items_is_thread = ThreadDataType is not None and isinstance(
@@ -5230,15 +5209,14 @@ class CoopBlockRadixRankNode(CoopNode, CoopNodeMixin):
                 raise RuntimeError(
                     "coop.block.radix_rank temp_storage must be provided as a variable"
                 )
-            temp_storage_ty = self.typemap[temp_storage.name]
-            if TempStorageType is not None and isinstance(
-                temp_storage_ty, TempStorageType
-            ):
-                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
-                temp_storage_ty = types.Array(types.uint8, 1, "C")
-            runtime_args.insert(0, temp_storage)
-            runtime_arg_types.insert(0, temp_storage_ty)
-            runtime_arg_names.insert(0, "temp_storage")
+            (_, _, temp_storage_info) = rewriter.bind_temp_storage_runtime_arg(
+                node=self,
+                temp_storage=temp_storage,
+                runtime_args=runtime_args,
+                runtime_arg_types=runtime_arg_types,
+                runtime_arg_names=runtime_arg_names,
+                insert_pos=0,
+            )
 
         array_items_ty = types.Array(item_dtype, 1, "C")
         array_ranks_ty = types.Array(ranks_dtype, 1, "C")
@@ -5664,6 +5642,8 @@ class CoopTempStorageNode:
     size_in_bytes: int = None
     alignment: Optional[int] = None
     auto_sync: bool = True
+    sharing: str = "shared"
+    base_offset: int = 0
 
     @property
     def shortname(self):
@@ -5671,22 +5651,34 @@ class CoopTempStorageNode:
 
     def refine_match(self, rewriter):
         info = rewriter.get_temp_storage_info(self.target)
+        rewriter._ensure_temp_storage_global_plan()
         self.size_in_bytes = info.size_in_bytes
         self.alignment = info.alignment
         self.auto_sync = info.auto_sync
+        self.sharing = info.sharing
+        self.base_offset = info.base_offset
 
     def rewrite(self, rewriter):
-        import numba
-
-        return rewriter.emit_cuda_array_call(
+        backing_var = rewriter._ensure_temp_storage_global_backing_var()
+        if backing_var is None:
+            raise RuntimeError("TempStorage global backing allocation is missing.")
+        instrs = []
+        if not rewriter._temp_storage_state.global_backing_inserted:
+            instrs.extend(rewriter._temp_storage_state.global_backing_prelude_instrs)
+            rewriter._temp_storage_state.global_backing_inserted = True
+        start = self.base_offset
+        stop = self.base_offset + self.size_in_bytes
+        bind_instrs, _ = rewriter.emit_array_slice_call(
             self.target.scope,
             self.expr.loc,
-            self.size_in_bytes,
-            numba.uint8,
-            alignment=self.alignment,
-            shared=True,
+            backing_var,
+            start,
+            stop,
             target=self.target,
+            symbol_prefix=f"$coop_temp_storage_bind_{self.target.name}",
         )
+        instrs.extend(bind_instrs)
+        return instrs
 
 
 @dataclass
@@ -5994,19 +5986,14 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
                 raise RuntimeError(
                     "coop.block.run_length temp_storage must be provided as a variable"
                 )
-            temp_storage_ty = self.typemap[temp_storage.name]
-            try:
-                from ._decls import TempStorageType
-            except Exception:
-                TempStorageType = None
-            if TempStorageType is not None and isinstance(
-                temp_storage_ty, TempStorageType
-            ):
-                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
-                temp_storage_ty = types.Array(types.uint8, 1, "C")
-            runtime_args.insert(0, temp_storage)
-            runtime_arg_types.insert(0, temp_storage_ty)
-            runtime_arg_names.insert(0, "temp_storage")
+            (_, _, temp_storage_info) = rewriter.bind_temp_storage_runtime_arg(
+                node=self,
+                temp_storage=temp_storage,
+                runtime_args=runtime_args,
+                runtime_arg_types=runtime_arg_types,
+                runtime_arg_names=runtime_arg_names,
+                insert_pos=0,
+            )
 
         if decoded_offset_dtype is None and self.child_expr is not None:
             # We're being created indirectly as part of the rewriter
@@ -6465,9 +6452,8 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
         dst_ty = self.typemap[dst.name] if dst is not None else None
 
         try:
-            from ._decls import TempStorageType, ThreadDataType
+            from ._decls import ThreadDataType
         except Exception:
-            TempStorageType = None
             ThreadDataType = None
 
         src_is_thread = ThreadDataType is not None and isinstance(
@@ -6809,15 +6795,14 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
                 raise RuntimeError(
                     "coop.block.scan temp_storage must be provided as a variable"
                 )
-            temp_storage_ty = self.typemap[temp_storage.name]
-            if TempStorageType is not None and isinstance(
-                temp_storage_ty, TempStorageType
-            ):
-                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
-                temp_storage_ty = types.Array(types.uint8, 1, "C")
-            runtime_args.insert(0, temp_storage)
-            runtime_arg_types.insert(0, temp_storage_ty)
-            runtime_arg_names.insert(0, "temp_storage")
+            (_, _, temp_storage_info) = rewriter.bind_temp_storage_runtime_arg(
+                node=self,
+                temp_storage=temp_storage,
+                runtime_args=runtime_args,
+                runtime_arg_types=runtime_arg_types,
+                runtime_arg_names=runtime_arg_names,
+                insert_pos=0,
+            )
 
         self.runtime_args = runtime_args
         self.runtime_arg_types = runtime_arg_types
@@ -6966,19 +6951,14 @@ class CoopWarpExclusiveSumNode(CoopNode, CoopNodeMixin):
                     "coop.warp.exclusive_sum temp_storage must be provided as a "
                     "variable"
                 )
-            temp_storage_ty = self.typemap[temp_storage.name]
-            try:
-                from ._decls import TempStorageType
-            except Exception:
-                TempStorageType = None
-            if TempStorageType is not None and isinstance(
-                temp_storage_ty, TempStorageType
-            ):
-                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
-                temp_storage_ty = types.Array(types.uint8, 1, "C")
-            runtime_args.insert(0, temp_storage)
-            runtime_arg_types.insert(0, temp_storage_ty)
-            runtime_arg_names.insert(0, "temp_storage")
+            (_, _, temp_storage_info) = rewriter.bind_temp_storage_runtime_arg(
+                node=self,
+                temp_storage=temp_storage,
+                runtime_args=runtime_args,
+                runtime_arg_types=runtime_arg_types,
+                runtime_arg_names=runtime_arg_names,
+                insert_pos=0,
+            )
 
         self.impl_kwds = {
             "dtype": src_ty,
@@ -7089,19 +7069,14 @@ class CoopWarpInclusiveSumNode(CoopNode, CoopNodeMixin):
                     "coop.warp.inclusive_sum temp_storage must be provided as a "
                     "variable"
                 )
-            temp_storage_ty = self.typemap[temp_storage.name]
-            try:
-                from ._decls import TempStorageType
-            except Exception:
-                TempStorageType = None
-            if TempStorageType is not None and isinstance(
-                temp_storage_ty, TempStorageType
-            ):
-                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
-                temp_storage_ty = types.Array(types.uint8, 1, "C")
-            runtime_args.insert(0, temp_storage)
-            runtime_arg_types.insert(0, temp_storage_ty)
-            runtime_arg_names.insert(0, "temp_storage")
+            (_, _, temp_storage_info) = rewriter.bind_temp_storage_runtime_arg(
+                node=self,
+                temp_storage=temp_storage,
+                runtime_args=runtime_args,
+                runtime_arg_types=runtime_arg_types,
+                runtime_arg_names=runtime_arg_names,
+                insert_pos=0,
+            )
 
         self.impl_kwds = {
             "dtype": src_ty,
@@ -7327,17 +7302,14 @@ def _refine_warp_scan_node(node, rewriter):
             raise RuntimeError(
                 f"{node.primitive_name} temp_storage must be provided as a variable"
             )
-        temp_storage_ty = node.typemap[temp_storage.name]
-        try:
-            from ._decls import TempStorageType
-        except Exception:
-            TempStorageType = None
-        if TempStorageType is not None and isinstance(temp_storage_ty, TempStorageType):
-            temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
-            temp_storage_ty = types.Array(types.uint8, 1, "C")
-        runtime_args.insert(0, temp_storage)
-        runtime_arg_types.insert(0, temp_storage_ty)
-        runtime_arg_names.insert(0, "temp_storage")
+        (temp_storage, _, temp_storage_info) = rewriter.bind_temp_storage_runtime_arg(
+            node=node,
+            temp_storage=temp_storage,
+            runtime_args=runtime_args,
+            runtime_arg_types=runtime_arg_types,
+            runtime_arg_names=runtime_arg_names,
+            insert_pos=0,
+        )
 
     initial_value_for_impl = (
         initial_value_var if initial_value_var is not None else initial_value_value
@@ -7530,19 +7502,16 @@ class CoopBlockReduceNode(CoopNode, CoopNodeMixin):
                 raise RuntimeError(
                     "coop.block.reduce temp_storage must be provided as a variable"
                 )
-            temp_storage_ty = self.typemap[temp_storage.name]
-            try:
-                from ._decls import TempStorageType
-            except Exception:
-                TempStorageType = None
-            if TempStorageType is not None and isinstance(
-                temp_storage_ty, TempStorageType
-            ):
-                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
-                temp_storage_ty = types.Array(types.uint8, 1, "C")
-            runtime_args.insert(0, temp_storage)
-            runtime_arg_types.insert(0, temp_storage_ty)
-            runtime_arg_names.insert(0, "temp_storage")
+            (temp_storage, _, temp_storage_info) = (
+                rewriter.bind_temp_storage_runtime_arg(
+                    node=self,
+                    temp_storage=temp_storage,
+                    runtime_args=runtime_args,
+                    runtime_arg_types=runtime_arg_types,
+                    runtime_arg_names=runtime_arg_names,
+                    insert_pos=0,
+                )
+            )
 
         self.dtype = dtype
         self.items_per_thread = items_per_thread
@@ -7680,19 +7649,14 @@ class CoopWarpReduceNode(CoopNode, CoopNodeMixin):
                 raise RuntimeError(
                     "coop.warp.reduce temp_storage must be provided as a variable"
                 )
-            temp_storage_ty = self.typemap[temp_storage.name]
-            try:
-                from ._decls import TempStorageType
-            except Exception:
-                TempStorageType = None
-            if TempStorageType is not None and isinstance(
-                temp_storage_ty, TempStorageType
-            ):
-                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
-                temp_storage_ty = types.Array(types.uint8, 1, "C")
-            runtime_args.insert(0, temp_storage)
-            runtime_arg_types.insert(0, temp_storage_ty)
-            runtime_arg_names.insert(0, "temp_storage")
+            (_, _, temp_storage_info) = rewriter.bind_temp_storage_runtime_arg(
+                node=self,
+                temp_storage=temp_storage,
+                runtime_args=runtime_args,
+                runtime_arg_types=runtime_arg_types,
+                runtime_arg_names=runtime_arg_names,
+                insert_pos=0,
+            )
 
         self.impl_kwds = {
             "dtype": src_ty,
@@ -7838,19 +7802,14 @@ class CoopWarpSumNode(CoopNode, CoopNodeMixin):
                 raise RuntimeError(
                     "coop.warp.sum temp_storage must be provided as a variable"
                 )
-            temp_storage_ty = self.typemap[temp_storage.name]
-            try:
-                from ._decls import TempStorageType
-            except Exception:
-                TempStorageType = None
-            if TempStorageType is not None and isinstance(
-                temp_storage_ty, TempStorageType
-            ):
-                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
-                temp_storage_ty = types.Array(types.uint8, 1, "C")
-            runtime_args.insert(0, temp_storage)
-            runtime_arg_types.insert(0, temp_storage_ty)
-            runtime_arg_names.insert(0, "temp_storage")
+            (_, _, temp_storage_info) = rewriter.bind_temp_storage_runtime_arg(
+                node=self,
+                temp_storage=temp_storage,
+                runtime_args=runtime_args,
+                runtime_arg_types=runtime_arg_types,
+                runtime_arg_names=runtime_arg_names,
+                insert_pos=0,
+            )
 
         self.impl_kwds = {
             "dtype": src_ty,
@@ -8004,19 +7963,16 @@ class CoopBlockSumNode(CoopNode, CoopNodeMixin):
                 raise RuntimeError(
                     "coop.block.sum temp_storage must be provided as a variable"
                 )
-            temp_storage_ty = self.typemap[temp_storage.name]
-            try:
-                from ._decls import TempStorageType
-            except Exception:
-                TempStorageType = None
-            if TempStorageType is not None and isinstance(
-                temp_storage_ty, TempStorageType
-            ):
-                temp_storage_info = rewriter.get_temp_storage_info(temp_storage)
-                temp_storage_ty = types.Array(types.uint8, 1, "C")
-            runtime_args.insert(0, temp_storage)
-            runtime_arg_types.insert(0, temp_storage_ty)
-            runtime_arg_names.insert(0, "temp_storage")
+            (temp_storage, _, temp_storage_info) = (
+                rewriter.bind_temp_storage_runtime_arg(
+                    node=self,
+                    temp_storage=temp_storage,
+                    runtime_args=runtime_args,
+                    runtime_arg_types=runtime_arg_types,
+                    runtime_arg_names=runtime_arg_names,
+                    insert_pos=0,
+                )
+            )
 
         self.dtype = dtype
         self.items_per_thread = items_per_thread
@@ -8150,6 +8106,7 @@ class CoopNodeRewriter(Rewrite):
 
         self._thread_data_info: dict[str, Any] = {}
         self._temp_storage_info: dict[str, Any] = {}
+        self._temp_storage_state = TempStorageRewriteState()
 
         self._state = state
         self.typingctx = state.typingctx
@@ -8368,6 +8325,609 @@ class CoopNodeRewriter(Rewrite):
                 if isinstance(expr, ir.Expr) and expr.op == "call":
                     yield expr
 
+    def _iter_call_assigns(self):
+        for block in self.func_ir.blocks.values():
+            for instr in block.body:
+                if not isinstance(instr, ir.Assign):
+                    continue
+                expr = instr.value
+                if isinstance(expr, ir.Expr) and expr.op == "call":
+                    yield block, instr, expr
+
+    @staticmethod
+    def _expr_uses_var(expr, var_name):
+        args = expr.args
+        kws = expr.kws
+        if isinstance(kws, (list, tuple)):
+            kws = dict(kws)
+        elif kws is None:
+            kws = {}
+        return any(
+            isinstance(arg, ir.Var) and arg.name == var_name for arg in args
+        ) or any(
+            isinstance(arg, ir.Var) and arg.name == var_name for arg in kws.values()
+        )
+
+    def _build_coop_node_for_call_expr(self, block, instr):
+        expr = instr.value
+        if not isinstance(expr, ir.Expr) or expr.op != "call":
+            return None
+
+        func_name = expr.func.name
+        func = self.typemap.get(func_name)
+        if func is None:
+            return None
+
+        template = None
+        impl_class = None
+        primitive_name = None
+        type_instance = None
+        two_phase_instance = None
+
+        if hasattr(func, "templates"):
+            templates = func.templates
+            if len(templates) != 1:
+                return None
+
+            template = templates[0]
+            impl_class = self._decl_classes.get(template)
+            if not impl_class:
+                return None
+
+            primitive_name = getattr(template, "primitive_name", None)
+            if primitive_name is None:
+                return None
+        elif func in self._instances:
+            type_instance = func
+            value_type = self.typemap.get(func_name)
+            decl = getattr(value_type, "decl", None)
+            if decl is None:
+                return None
+
+            template = decl.__class__
+            impl_class = self._decl_classes.get(template)
+            if not impl_class:
+                return None
+
+            primitive_name = decl.primitive_name
+
+            func_root = self.get_root_def(expr.func)
+            two_phase_instance = func_root.attr_instance
+            if two_phase_instance is None:
+                two_phase_instance = func_root.instance
+            if isinstance(two_phase_instance, PyModuleType):
+                return None
+            if two_phase_instance is None:
+                return None
+        else:
+            return None
+
+        node_class = self._node_classes.get(primitive_name)
+        if node_class is None:
+            return None
+
+        root_def = self.get_root_def(instr)
+        node = node_class(
+            index=0,
+            block_line=block.loc.line,
+            expr=expr,
+            instr=instr,
+            template=template,
+            func=func,
+            func_name=func_name,
+            impl_class=impl_class,
+            target=instr.target,
+            calltypes=self.calltypes,
+            typemap=self.typemap,
+            func_ir=self.func_ir,
+            typingctx=self._state.typingctx,
+            launch_config=self.launch_config,
+            needs_pre_launch_callback=False,
+            unique_id=self.next_unique_id(),
+            type_instance=type_instance,
+            two_phase_instance=two_phase_instance,
+            root_def=root_def,
+            parent_struct_instance_type=None,
+            parent_node=None,
+            parent_root_def=None,
+            rewriter=self,
+        )
+        return node
+
+    @staticmethod
+    def _align_up(value: int, alignment: int) -> int:
+        if alignment <= 1:
+            return value
+        return ((value + alignment - 1) // alignment) * alignment
+
+    def _infer_temp_storage_requirements_from_uses(self, var):
+        var_name = var.name
+        requirements = []
+        failures = []
+        ordinal = 0
+
+        for block, instr, expr in self._iter_call_assigns():
+            if not self._expr_uses_var(expr, var_name):
+                continue
+
+            node = self._build_coop_node_for_call_expr(block, instr)
+            if node is None:
+                continue
+
+            try:
+                bound = node.bound.arguments
+            except Exception:
+                continue
+
+            temp_storage_arg = bound.get("temp_storage")
+            if not (
+                isinstance(temp_storage_arg, ir.Var)
+                and temp_storage_arg.name == var_name
+            ):
+                continue
+
+            original_ty = self.typemap.get(var_name)
+            patched_typemap = False
+            try:
+                try:
+                    from ._decls import TempStorageType
+                except Exception:
+                    TempStorageType = None
+
+                if TempStorageType is not None and isinstance(
+                    original_ty, TempStorageType
+                ):
+                    del self.typemap[var_name]
+                    self.typemap[var_name] = types.Array(types.uint8, 1, "C")
+                    patched_typemap = True
+
+                node.refine_match(self)
+
+                instance = node.instance or node.two_phase_instance
+                if instance is None and node.impl_kwds is not None:
+                    instance = node.instantiate_impl(**node.impl_kwds)
+                if instance is None and isinstance(node, CoopLoadStoreNode):
+                    instance = node.instantiate_impl(
+                        dtype=node.dtype,
+                        dim=node.threads_per_block,
+                        items_per_thread=node.items_per_thread,
+                        algorithm=node.algorithm_id,
+                        num_valid_items=node.num_valid_items,
+                        oob_default=node.oob_default,
+                        unique_id=node.unique_id,
+                        node=node,
+                        temp_storage=node.temp_storage,
+                    )
+                if instance is None:
+                    raise RuntimeError(
+                        f"Could not build instance for {node.primitive_name}"
+                    )
+
+                size_in_bytes = int(instance.temp_storage_bytes)
+                alignment = int(instance.temp_storage_alignment or 1)
+                if size_in_bytes <= 0:
+                    raise RuntimeError(
+                        f"Invalid temp_storage_bytes={size_in_bytes} for "
+                        f"{node.primitive_name}"
+                    )
+                if alignment <= 0:
+                    raise RuntimeError(
+                        f"Invalid temp_storage_alignment={alignment} for "
+                        f"{node.primitive_name}"
+                    )
+
+                requirements.append(
+                    SimpleNamespace(
+                        instr=instr,
+                        expr=expr,
+                        call_key=id(instr),
+                        ordinal=ordinal,
+                        primitive_name=node.primitive_name,
+                        size_in_bytes=size_in_bytes,
+                        alignment=alignment,
+                    )
+                )
+                ordinal += 1
+            except Exception as exc:
+                failures.append((instr.loc, node.primitive_name, str(exc)))
+            finally:
+                if patched_typemap:
+                    del self.typemap[var_name]
+                    self.typemap[var_name] = original_ty
+
+        if failures:
+            details = "; ".join(
+                f"{primitive}@{loc}: {reason}" for (loc, primitive, reason) in failures
+            )
+            raise RuntimeError(
+                f"Failed to infer TempStorage size/alignment for {var_name}: {details}"
+            )
+
+        if not requirements:
+            raise RuntimeError(
+                "Could not infer TempStorage size/alignment for "
+                f"{var_name}; pass size_in_bytes/alignment explicitly."
+            )
+
+        return requirements
+
+    def _iter_temp_storage_root_vars(self):
+        seen = set()
+        vars_and_order = []
+        for block in self.func_ir.blocks.values():
+            for instr in block.body:
+                if not isinstance(instr, ir.Assign):
+                    continue
+                target = instr.target
+                if not isinstance(target, ir.Var):
+                    continue
+                try:
+                    root = self.get_root_def(target)
+                except Exception:
+                    continue
+                try:
+                    leaf = root.leaf_constructor_call
+                except Exception:
+                    continue
+                if not isinstance(leaf, TempStorageCallDefinition):
+                    continue
+                root_assign = root.root_assign
+                if not isinstance(root_assign, ir.Assign):
+                    continue
+                root_var = root_assign.target
+                if not isinstance(root_var, ir.Var):
+                    continue
+                if root_var.name in seen:
+                    continue
+                seen.add(root_var.name)
+                order = leaf.order if leaf.order is not None else 0
+                vars_and_order.append((order, root_var))
+
+        vars_and_order.sort(key=lambda pair: pair[0])
+        return [v for _, v in vars_and_order]
+
+    def _temp_storage_var_is_used(self, var):
+        var_name = var.name
+        for expr in self._iter_call_exprs():
+            if self._expr_uses_var(expr, var_name):
+                return True
+        return False
+
+    def _get_device_shared_memory_limits(self):
+        max_default = DEFAULT_STATIC_SHARED_MEMORY_BYTES
+        max_optin = max_default
+        try:
+            import numba.cuda
+
+            device = numba.cuda.current_context().device
+            max_default = int(
+                getattr(device, "MAX_SHARED_MEMORY_PER_BLOCK", max_default)
+                or max_default
+            )
+            max_optin = int(
+                getattr(device, "MAX_SHARED_MEMORY_PER_BLOCK_OPTIN", 0) or 0
+            )
+            if max_optin <= 0:
+                max_optin = max_default
+        except Exception:
+            pass
+        return max_default, max_optin
+
+    @staticmethod
+    def _required_shared_memory_carveout_percent(
+        required_dynamic_shared_bytes: int,
+        max_optin_shared_bytes: int,
+    ) -> int:
+        if required_dynamic_shared_bytes <= 0 or max_optin_shared_bytes <= 0:
+            return 0
+        # Round up to the minimum percentage that can satisfy the requested
+        # shared-memory bytes.
+        percent = (
+            (required_dynamic_shared_bytes * MAX_SHARED_MEMORY_CARVEOUT_PERCENT)
+            + (max_optin_shared_bytes - 1)
+        ) // max_optin_shared_bytes
+        return max(0, min(MAX_SHARED_MEMORY_CARVEOUT_PERCENT, int(percent)))
+
+    def _maybe_register_temp_storage_launch_callback(
+        self,
+        dynamic_shared_bytes,
+        shared_memory_carveout_percent,
+    ):
+        if self._temp_storage_state.launch_callback_registered:
+            return
+
+        launch_config = self.launch_config_safe
+        if launch_config is None:
+            return
+
+        if dynamic_shared_bytes <= 0:
+            return
+
+        try:
+            if launch_config.sharedmem < dynamic_shared_bytes:
+                launch_config.sharedmem = dynamic_shared_bytes
+        except Exception:
+            pass
+
+        def _temp_storage_pre_launch_callback(kernel_obj, _launch_config):
+            try:
+                from numba.cuda.cudadrv import driver
+                from numba.cuda.cudadrv.driver import binding
+
+                CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES = binding.CUfunction_attribute.CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES
+
+                cufunc = kernel_obj._codelibrary.get_cufunc()
+                driver.driver.cuKernelSetAttribute(
+                    CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES,
+                    dynamic_shared_bytes,
+                    cufunc.handle,
+                    cufunc.device.id,
+                )
+                cufunc.set_shared_memory_carveout(shared_memory_carveout_percent)
+
+                launch_patched_attr = "_coop_temp_storage_dynamic_launch_patched"
+                if dynamic_shared_bytes > 0 and not getattr(
+                    kernel_obj, launch_patched_attr, False
+                ):
+                    original_launch = kernel_obj.launch
+
+                    def _launch_with_dynamic_smem(
+                        args, griddim, blockdim, stream, sharedmem
+                    ):
+                        if sharedmem < dynamic_shared_bytes:
+                            sharedmem = dynamic_shared_bytes
+                        return original_launch(
+                            args,
+                            griddim,
+                            blockdim,
+                            stream,
+                            sharedmem,
+                        )
+
+                    kernel_obj.launch = _launch_with_dynamic_smem
+                    setattr(kernel_obj, launch_patched_attr, True)
+            except Exception:
+                return
+
+        launch_config.pre_launch_callbacks.append(_temp_storage_pre_launch_callback)
+        self._temp_storage_state.launch_callback_registered = True
+
+    def _ensure_temp_storage_global_plan(self):
+        if self._temp_storage_state.global_plan is not None:
+            return self._temp_storage_state.global_plan
+        if self._temp_storage_state.global_plan_in_progress:
+            raise RuntimeError("Recursive TempStorage global planning detected.")
+
+        self._temp_storage_state.global_plan_in_progress = True
+        try:
+            infos = []
+            for root_var in self._iter_temp_storage_root_vars():
+                info = self.get_temp_storage_info(root_var)
+                infos.append(info)
+
+            infos.sort(key=lambda info: info.order)
+            offset = 0
+            max_alignment = 1
+            for info in infos:
+                alignment = int(info.alignment or 1)
+                offset = self._align_up(offset, alignment)
+                info.base_offset = offset
+                offset += int(info.size_in_bytes)
+                max_alignment = max(max_alignment, alignment)
+
+            total_size = self._align_up(offset, max_alignment)
+            max_default, max_optin = self._get_device_shared_memory_limits()
+            uses_dynamic_smem = total_size > max_default
+            dynamic_shared_bytes = total_size if uses_dynamic_smem else 0
+            shared_memory_carveout_percent = (
+                self._required_shared_memory_carveout_percent(
+                    dynamic_shared_bytes,
+                    max_optin,
+                )
+            )
+            if dynamic_shared_bytes > max_optin:
+                raise RuntimeError(
+                    "TempStorage requires "
+                    f"{dynamic_shared_bytes} bytes dynamic shared memory, but "
+                    f"device max opt-in is {max_optin} bytes."
+                )
+
+            plan = SimpleNamespace(
+                infos=infos,
+                total_size=total_size,
+                max_alignment=max_alignment,
+                uses_dynamic_smem=uses_dynamic_smem,
+                dynamic_shared_bytes=dynamic_shared_bytes,
+                shared_memory_carveout_percent=shared_memory_carveout_percent,
+                max_default_smem=max_default,
+                max_optin_smem=max_optin,
+            )
+            self._temp_storage_state.global_plan = plan
+            if dynamic_shared_bytes > 0:
+                self._maybe_register_temp_storage_launch_callback(
+                    dynamic_shared_bytes,
+                    shared_memory_carveout_percent,
+                )
+            return plan
+        finally:
+            self._temp_storage_state.global_plan_in_progress = False
+
+    def _ensure_temp_storage_global_backing_var(self):
+        if self._temp_storage_state.global_backing_var is not None:
+            return self._temp_storage_state.global_backing_var
+
+        plan = self._ensure_temp_storage_global_plan()
+        if plan.total_size <= 0:
+            return None
+
+        entry_label = min(self.func_ir.blocks.keys())
+        entry_block = self.func_ir.blocks[entry_label]
+        scope = entry_block.scope
+        loc = entry_block.loc
+
+        var_name = ir_utils.mk_unique_var("$coop_temp_storage_backing")
+        backing_var = ir.Var(scope, var_name, loc)
+
+        import numba
+
+        instrs = self.emit_cuda_array_call(
+            scope,
+            loc,
+            0 if plan.uses_dynamic_smem else plan.total_size,
+            numba.uint8,
+            alignment=plan.max_alignment,
+            shared=True,
+            target=backing_var,
+        )
+        self._temp_storage_state.global_backing_var = backing_var
+        self._temp_storage_state.global_backing_prelude_instrs.extend(instrs)
+        return backing_var
+
+    def emit_array_slice_call(
+        self,
+        scope,
+        loc,
+        src_var,
+        start,
+        stop=None,
+        *,
+        target=None,
+        symbol_prefix="$coop_slice",
+    ):
+        new_nodes = []
+
+        start_name = ir_utils.mk_unique_var(f"{symbol_prefix}_start")
+        start_var = ir.Var(scope, start_name, loc)
+        self.typemap[start_var.name] = types.IntegerLiteral(start)
+        new_nodes.append(ir.Assign(ir.Const(start, loc), start_var, loc))
+
+        stop_name = ir_utils.mk_unique_var(f"{symbol_prefix}_stop")
+        stop_var = ir.Var(scope, stop_name, loc)
+        if stop is None:
+            self.typemap[stop_var.name] = types.none
+            new_nodes.append(ir.Assign(ir.Const(None, loc), stop_var, loc))
+        else:
+            self.typemap[stop_var.name] = types.IntegerLiteral(stop)
+            new_nodes.append(ir.Assign(ir.Const(stop, loc), stop_var, loc))
+
+        slice_fn_name = ir_utils.mk_unique_var(f"{symbol_prefix}_slice_fn")
+        slice_fn_var = ir.Var(scope, slice_fn_name, loc)
+        slice_fn_ty = self.typingctx.resolve_value_type(slice)
+        self.typemap[slice_fn_var.name] = slice_fn_ty
+        new_nodes.append(ir.Assign(ir.Global("slice", slice, loc), slice_fn_var, loc))
+
+        slice_obj_name = ir_utils.mk_unique_var(f"{symbol_prefix}_slice_obj")
+        slice_obj_var = ir.Var(scope, slice_obj_name, loc)
+        slice_call = ir.Expr.call(
+            func=slice_fn_var,
+            args=(start_var, stop_var),
+            kws=(),
+            loc=loc,
+        )
+        slice_sig = slice_fn_ty.get_call_type(
+            self.typingctx,
+            args=(self.typemap[start_var.name], self.typemap[stop_var.name]),
+            kws={},
+        )
+        self.calltypes[slice_call] = slice_sig
+        self.typemap[slice_obj_var.name] = slice_sig.return_type
+        new_nodes.append(ir.Assign(slice_call, slice_obj_var, loc))
+
+        getitem_fn_name = ir_utils.mk_unique_var(f"{symbol_prefix}_getitem_fn")
+        getitem_fn_var = ir.Var(scope, getitem_fn_name, loc)
+        getitem_fn_ty = self.typingctx.resolve_value_type(operator.getitem)
+        self.typemap[getitem_fn_var.name] = getitem_fn_ty
+        new_nodes.append(
+            ir.Assign(
+                ir.Global("getitem", operator.getitem, loc),
+                getitem_fn_var,
+                loc,
+            )
+        )
+
+        if target is None:
+            target_name = ir_utils.mk_unique_var(f"{symbol_prefix}_target")
+            target = ir.Var(scope, target_name, loc)
+
+        getitem_call = ir.Expr.call(
+            func=getitem_fn_var,
+            args=(src_var, slice_obj_var),
+            kws=(),
+            loc=loc,
+        )
+        getitem_sig = getitem_fn_ty.get_call_type(
+            self.typingctx,
+            args=(self.typemap[src_var.name], self.typemap[slice_obj_var.name]),
+            kws={},
+        )
+        self.calltypes[getitem_call] = getitem_sig
+        existing = self.typemap.get(target.name)
+        if existing is not None and existing != getitem_sig.return_type:
+            del self.typemap[target.name]
+        self.typemap[target.name] = getitem_sig.return_type
+        new_nodes.append(ir.Assign(getitem_call, target, loc))
+
+        return new_nodes, target
+
+    def bind_temp_storage_runtime_arg(
+        self,
+        *,
+        node,
+        temp_storage,
+        runtime_args,
+        runtime_arg_types,
+        runtime_arg_names,
+        insert_pos=0,
+    ):
+        if temp_storage is None:
+            return None, None, None
+
+        assert isinstance(temp_storage, ir.Var)
+        temp_storage_ty = self.typemap[temp_storage.name]
+        temp_storage_info = None
+
+        try:
+            from ._decls import TempStorageType
+        except Exception:
+            TempStorageType = None
+
+        if TempStorageType is not None and isinstance(temp_storage_ty, TempStorageType):
+            temp_storage_info = self.get_temp_storage_info(temp_storage)
+            temp_storage_ty = types.Array(types.uint8, 1, "C")
+
+            if temp_storage_info.sharing == "exclusive":
+                use_info = temp_storage_info.use_layout.get(id(node.instr))
+                if use_info is None:
+                    raise RuntimeError(
+                        "Could not resolve exclusive TempStorage slice for "
+                        f"{node.primitive_name} at {node.instr.loc}"
+                    )
+                backing_var = self._ensure_temp_storage_global_backing_var()
+                if backing_var is None:
+                    raise RuntimeError(
+                        "TempStorage global backing allocation is missing."
+                    )
+                offset = int(temp_storage_info.base_offset) + int(use_info.offset)
+                size = int(use_info.size_in_bytes)
+                prelude, sliced = self.emit_array_slice_call(
+                    node.instr.target.scope,
+                    node.expr.loc,
+                    backing_var,
+                    offset,
+                    offset + size,
+                    symbol_prefix=f"$coop_temp_storage_exclusive_{node.unique_id}",
+                )
+                if getattr(node, "temp_storage_prelude_instrs", None) is None:
+                    node.temp_storage_prelude_instrs = []
+                node.temp_storage_prelude_instrs.extend(prelude)
+                temp_storage = sliced
+                temp_storage_ty = self.typemap[temp_storage.name]
+
+        runtime_args.insert(insert_pos, temp_storage)
+        runtime_arg_types.insert(insert_pos, temp_storage_ty)
+        runtime_arg_names.insert(insert_pos, "temp_storage")
+        return temp_storage, temp_storage_ty, temp_storage_info
+
     @staticmethod
     def _kws_to_dict(kws):
         if isinstance(kws, (list, tuple)):
@@ -8514,44 +9074,147 @@ class CoopNodeRewriter(Rewrite):
         return info
 
     def get_temp_storage_info(self, var):
-        cached = self._temp_storage_info.get(var.name)
+        root = self.get_root_def(var)
+        root_assign = root.root_assign
+        if not isinstance(root_assign, ir.Assign):
+            raise RuntimeError(f"Expected root assign for TempStorage var {var!r}")
+        root_var = root_assign.target
+        if not isinstance(root_var, ir.Var):
+            raise RuntimeError(f"Expected root var for TempStorage var {var!r}")
+        key = root_var.name
+
+        cached = self._temp_storage_info.get(key)
         if cached is not None:
             return cached
 
-        root = self.get_root_def(var)
         leaf = root.leaf_constructor_call
         if not isinstance(leaf, TempStorageCallDefinition):
             raise RuntimeError(f"Expected TempStorage call for {var!r}, got {leaf!r}")
 
         size_in_bytes = leaf.size_in_bytes
         alignment = leaf.alignment
-        auto_sync = leaf.auto_sync if leaf.auto_sync is not None else True
+        auto_sync = leaf.auto_sync
+        sharing = leaf.sharing if leaf.sharing is not None else "shared"
+        if not isinstance(sharing, str):
+            raise RuntimeError(
+                "TempStorage sharing must be a compile-time string literal "
+                f"(got {sharing!r})"
+            )
+        sharing = sharing.strip().lower()
+        if sharing not in ("shared", "exclusive"):
+            raise RuntimeError(
+                f"TempStorage sharing must be 'shared' or 'exclusive', got {sharing!r}"
+            )
+
+        requirements = []
+        inference_failed = None
+        needs_inference = True
+
+        if needs_inference:
+            if key in self._temp_storage_state.info_inference_stack:
+                raise RuntimeError(
+                    f"Recursive TempStorage inference detected for {root_var.name!r}."
+                )
+            self._temp_storage_state.info_inference_stack.add(key)
+            try:
+                requirements = self._infer_temp_storage_requirements_from_uses(root_var)
+            except RuntimeError as exc:
+                inference_failed = exc
+            finally:
+                self._temp_storage_state.info_inference_stack.remove(key)
+
+            if inference_failed is not None:
+                # If the user gave explicit size+alignment in shared mode, allow
+                # unused placeholders and skip inference-derived validation.
+                explicit_shared = (
+                    sharing == "shared"
+                    and size_in_bytes is not None
+                    and alignment is not None
+                )
+                if not explicit_shared or self._temp_storage_var_is_used(root_var):
+                    raise inference_failed
+
+        required_alignment = (
+            max(req.alignment for req in requirements) if requirements else 1
+        )
+        required_shared_size = (
+            max(req.size_in_bytes for req in requirements) if requirements else 0
+        )
+        use_layout: dict[int, TempStorageUseLayoutEntry] = {}
+
+        if sharing == "shared":
+            required_size = required_shared_size
+            for req in requirements:
+                use_layout[req.call_key] = TempStorageUseLayoutEntry(
+                    offset=0,
+                    size_in_bytes=req.size_in_bytes,
+                    alignment=req.alignment,
+                    primitive_name=req.primitive_name,
+                )
+        else:
+            required_size = 0
+            for req in requirements:
+                required_size = self._align_up(required_size, req.alignment)
+                offset = required_size
+                use_layout[req.call_key] = TempStorageUseLayoutEntry(
+                    offset=offset,
+                    size_in_bytes=req.size_in_bytes,
+                    alignment=req.alignment,
+                    primitive_name=req.primitive_name,
+                )
+                required_size = offset + req.size_in_bytes
 
         if size_in_bytes is None:
-            msg = (
-                "TempStorage requires size_in_bytes for now; "
-                "pass size_in_bytes or omit temp_storage to use implicit storage."
-            )
-            raise RuntimeError(msg)
+            size_in_bytes = required_size
         if not isinstance(size_in_bytes, int) or size_in_bytes <= 0:
             raise RuntimeError("TempStorage size_in_bytes must be a positive integer")
-        if alignment is not None:
-            if not isinstance(alignment, int) or alignment <= 0:
-                raise RuntimeError("TempStorage alignment must be a positive integer")
-            pointer_size = struct.calcsize("P")
-            if alignment % pointer_size != 0:
-                alignment = (
-                    (alignment + pointer_size - 1) // pointer_size
-                ) * pointer_size
-        if not isinstance(auto_sync, bool):
-            raise RuntimeError("TempStorage auto_sync must be a boolean value")
+        if required_size > 0 and size_in_bytes < required_size:
+            raise RuntimeError(
+                "TempStorage size_in_bytes is smaller than required by primitive "
+                f"uses ({size_in_bytes} < {required_size})."
+            )
+
+        if alignment is None:
+            alignment = required_alignment
+        if not isinstance(alignment, int) or alignment <= 0:
+            raise RuntimeError("TempStorage alignment must be a positive integer")
+
+        pointer_size = struct.calcsize("P")
+        if alignment % pointer_size != 0:
+            alignment = self._align_up(alignment, pointer_size)
+        if required_alignment > 0 and alignment < required_alignment:
+            raise RuntimeError(
+                "TempStorage alignment is smaller than required by primitive uses "
+                f"({alignment} < {required_alignment})."
+            )
+
+        if auto_sync is not None and not isinstance(auto_sync, bool):
+            raise RuntimeError("TempStorage auto_sync must be None/True/False")
+        if sharing == "exclusive":
+            if auto_sync is True:
+                raise RuntimeError(
+                    "TempStorage with sharing='exclusive' does not support "
+                    "auto_sync=True."
+                )
+            effective_auto_sync = False
+        else:
+            effective_auto_sync = True if auto_sync is None else auto_sync
 
         info = SimpleNamespace(
+            key=key,
+            root_var=root_var,
+            order=leaf.order if leaf.order is not None else 0,
             size_in_bytes=size_in_bytes,
             alignment=alignment,
-            auto_sync=auto_sync,
+            required_size=required_size,
+            required_alignment=required_alignment,
+            use_layout=use_layout,
+            requirements=requirements,
+            sharing=sharing,
+            auto_sync=effective_auto_sync,
+            base_offset=0,
         )
-        self._temp_storage_info[var.name] = info
+        self._temp_storage_info[key] = info
         return info
 
     def emit_cuda_array_call(self, scope, loc, shape, dtype, alignment, shared, target):
@@ -9587,6 +10250,22 @@ class CoopNodeRewriter(Rewrite):
 
         new_block = ir.Block(self.current_block.scope, self.current_block.loc)
 
+        if (
+            not self._temp_storage_state.global_backing_inserted
+            and self._temp_storage_state.global_backing_prelude_instrs
+        ):
+            entry_label = min(self.func_ir.blocks.keys())
+            if self.current_block_no == entry_label:
+                for instr in self._temp_storage_state.global_backing_prelude_instrs:
+                    new_block.append(instr)
+                self._temp_storage_state.global_backing_inserted = True
+            else:
+                # Fallback for traversal orders where apply() is reached on a
+                # non-entry block first.
+                for instr in self._temp_storage_state.global_backing_prelude_instrs:
+                    new_block.append(instr)
+                self._temp_storage_state.global_backing_inserted = True
+
         skipped = 0
         ignored = 0
         rewrote = 0
@@ -9620,6 +10299,10 @@ class CoopNodeRewriter(Rewrite):
             node.has_been_rewritten = True
             if results:
                 rewrote += 1
+                prelude_instrs = getattr(node, "temp_storage_prelude_instrs", None)
+                if prelude_instrs:
+                    for prelude_instr in prelude_instrs:
+                        new_block.append(prelude_instr)
                 for new_instr in results:
                     new_block.append(new_instr)
             else:

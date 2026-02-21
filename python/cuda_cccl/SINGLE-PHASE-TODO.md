@@ -49,8 +49,9 @@
 - [x] Add two-phase instance typing for remaining block/warp primitives.
 - [x] Store instance constructor parameters needed for two-phase inference.
 - [x] Remove `.create()`/`link=` usage from coop tests and examples.
-- [x] Route single-phase primitive instantiation through per-primitive
-      `make_*` factories in rewrite (instead of direct constructors).
+- [x] Keep public two-phase `make_*` factories returning Invocable/stateful
+      objects and keep single-phase rewrite instantiation on primitive
+      constructors.
 - [x] Add missing two-phase tests for block primitives.
 - [ ] Audit CUB block/warp overload coverage and fill gaps.
 - [x] Add literalinclude examples for coop API overloads (doc stubs + tests).
@@ -62,12 +63,15 @@
 - [x] Add block scan block-aggregate overloads (multi-output).
 - [x] Add block merge/radix sort key/value + valid-items/oob_default/decomposer overloads.
 - [x] Add block radix rank exclusive_digit_prefix output overloads.
-- [ ] Enable BlockRadixSort decomposer for user-defined types (blocked: CUB expects tuple-of-references; need C++ adapter or alternate lowering).
+- [ ] Enable BlockRadixSort decomposer for user-defined types (blocked: CUB expects tuple-of-references; prototype confirms current lowering emits tuple-by-value and fails CUB deduction; need C++ adapter or alternate lowering).
 - [x] Add warp merge sort key/value overloads.
 - [x] Add single-phase parity tests for warp primitives (reduce/scan/exchange/load-store/merge sort).
 - [x] Support block-aggregate scan out-params (no tuple-style multi-output return).
 - [x] Expand single-phase `temp_storage=` support across all primitives and
       keep `TempStorage` getitem syntax compatible; add coverage.
+- [x] Add omission-driven TempStorage inference (`size_in_bytes`/`alignment`)
+      plus `sharing={"shared","exclusive"}` behavior and validate with
+      unit/stress/mamba coverage.
 - [x] Add GPU tests that use `gpu_dataclass` with multiple primitives sharing
       temp storage (load/scan/reduce/store pipelines, mixed parent/child).
 - [x] Add/upgrade docstrings for every public primitive with
@@ -80,6 +84,8 @@
 - [ ] Expand stress tests: overlapping carved smem slices, mixed auto_sync usage,
       partial tiles with num_valid/oob_default, 2D/3D block dims, mixed warp+block
       primitives, and ThreadData inference conflicts.
+- [ ] Investigate/implement detection of redundant user `cuda.syncthreads()`
+      when TempStorage auto-sync has already inserted synchronization.
 - [ ] Improve kwarg validation and error messages for primitives with many
       overloads (match CUB API supersets; fail early with friendly errors).
 - [ ] Extend ThreadData inference (alignment/shape/dtype propagation from

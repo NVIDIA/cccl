@@ -2834,6 +2834,10 @@ def test_block_primitives_dynamic_shared_run_length_histogram_carved():
         "private",
         "shared_auto",
         "shared_manual",
+        "shared_auto_infer",
+        "shared_manual_infer",
+        "exclusive_infer",
+        "exclusive_explicit",
     ],
 )
 def test_block_primitives_two_phase_gpu_dataclass_smem_modes(smem_mode):
@@ -2884,13 +2888,36 @@ def test_block_primitives_two_phase_gpu_dataclass_smem_modes(smem_mode):
     radix_alignment = block_radix_sort.temp_storage_alignment
     merge_bytes = block_merge_sort.temp_storage_bytes
     merge_alignment = block_merge_sort.temp_storage_alignment
+    load_bytes = block_load.temp_storage_bytes
+    load_alignment = block_load.temp_storage_alignment
+    store_bytes = block_store.temp_storage_bytes
+    store_alignment = block_store.temp_storage_alignment
 
-    shared_bytes = max(scan_bytes, radix_bytes, merge_bytes)
+    shared_bytes = max(
+        load_bytes,
+        scan_bytes,
+        radix_bytes,
+        merge_bytes,
+        store_bytes,
+    )
     shared_alignment = max(
+        load_alignment,
         scan_alignment,
         radix_alignment,
         merge_alignment,
+        store_alignment,
     )
+    exclusive_bytes = 0
+    for size_in_bytes, alignment in (
+        (load_bytes, load_alignment),
+        (scan_bytes, scan_alignment),
+        (radix_bytes, radix_alignment),
+        (merge_bytes, merge_alignment),
+        (store_bytes, store_alignment),
+    ):
+        exclusive_bytes = _align_up(exclusive_bytes, alignment)
+        exclusive_bytes += size_in_bytes
+    exclusive_alignment = shared_alignment
 
     @dataclass
     class KernelParams:
@@ -2921,13 +2948,24 @@ def test_block_primitives_two_phase_gpu_dataclass_smem_modes(smem_mode):
             shared_temp = coop.TempStorage(
                 shared_bytes,
                 shared_alignment,
-                auto_sync=True,
             )
         elif smem_mode == "shared_manual":
             shared_temp = coop.TempStorage(
                 shared_bytes,
                 shared_alignment,
                 auto_sync=False,
+            )
+        elif smem_mode == "shared_auto_infer":
+            shared_temp = coop.TempStorage()
+        elif smem_mode == "shared_manual_infer":
+            shared_temp = coop.TempStorage(auto_sync=False)
+        elif smem_mode == "exclusive_infer":
+            shared_temp = coop.TempStorage(sharing="exclusive")
+        elif smem_mode == "exclusive_explicit":
+            shared_temp = coop.TempStorage(
+                exclusive_bytes,
+                exclusive_alignment,
+                sharing="exclusive",
             )
         else:
             shared_temp = None
@@ -2966,7 +3004,7 @@ def test_block_primitives_two_phase_gpu_dataclass_smem_modes(smem_mode):
                     thread_data,
                     temp_storage=shared_temp,
                 )
-                if smem_mode == "shared_manual":
+                if smem_mode in ("shared_manual", "shared_manual_infer"):
                     cuda.syncthreads()
 
                 kp.block_exclusive_sum(
@@ -2974,7 +3012,7 @@ def test_block_primitives_two_phase_gpu_dataclass_smem_modes(smem_mode):
                     thread_data,
                     temp_storage=shared_temp,
                 )
-                if smem_mode == "shared_manual":
+                if smem_mode in ("shared_manual", "shared_manual_infer"):
                     cuda.syncthreads()
 
                 kp.block_radix_sort(
@@ -2984,7 +3022,7 @@ def test_block_primitives_two_phase_gpu_dataclass_smem_modes(smem_mode):
                     end_bit,
                     temp_storage=shared_temp,
                 )
-                if smem_mode == "shared_manual":
+                if smem_mode in ("shared_manual", "shared_manual_infer"):
                     cuda.syncthreads()
 
                 kp.block_merge_sort(
@@ -2993,7 +3031,7 @@ def test_block_primitives_two_phase_gpu_dataclass_smem_modes(smem_mode):
                     _merge_op,
                     temp_storage=shared_temp,
                 )
-                if smem_mode == "shared_manual":
+                if smem_mode in ("shared_manual", "shared_manual_infer"):
                     cuda.syncthreads()
 
                 kp.block_store(
@@ -3001,7 +3039,7 @@ def test_block_primitives_two_phase_gpu_dataclass_smem_modes(smem_mode):
                     thread_data,
                     temp_storage=shared_temp,
                 )
-                if smem_mode == "shared_manual":
+                if smem_mode in ("shared_manual", "shared_manual_infer"):
                     cuda.syncthreads()
 
             block_offset += grid_stride
@@ -3023,3 +3061,96 @@ def test_block_primitives_two_phase_gpu_dataclass_smem_modes(smem_mode):
 
     h_output = d_output.copy_to_host()
     np.testing.assert_array_equal(h_output, h_reference)
+
+
+def test_temp_storage_auto_dynamic_shared_callback():
+    threads_per_block = 128
+    items_per_thread = 4
+    total_items = threads_per_block * items_per_thread
+    dtype = np.uint32
+
+    block_exclusive_sum = coop.block.exclusive_sum(
+        dtype,
+        threads_per_block,
+        items_per_thread,
+    )
+    temp_storage_alignment = block_exclusive_sum.temp_storage_alignment
+    temp_storage_bytes = _align_up(
+        max(block_exclusive_sum.temp_storage_bytes, 49 * 1024),
+        temp_storage_alignment,
+    )
+
+    max_optin = cuda.current_context().device.MAX_SHARED_MEMORY_PER_BLOCK_OPTIN
+    if max_optin and temp_storage_bytes > max_optin:
+        pytest.skip(
+            "Device does not support required dynamic shared memory size "
+            f"({temp_storage_bytes} > {max_optin})."
+        )
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
+        temp_storage = coop.TempStorage(temp_storage_bytes, temp_storage_alignment)
+        coop.block.load(d_in, thread_data, items_per_thread=items_per_thread)
+        coop.block.exclusive_sum(
+            thread_data,
+            thread_data,
+            items_per_thread=items_per_thread,
+            temp_storage=temp_storage,
+        )
+        coop.block.store(d_out, thread_data, items_per_thread=items_per_thread)
+
+    h_input = np.random.randint(0, 16, total_items, dtype=dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    configured = kernel[1, threads_per_block]
+    before_callbacks = len(configured.pre_launch_callbacks)
+    configured(d_input, d_output)
+    cuda.synchronize()
+
+    assert configured.sharedmem >= temp_storage_bytes
+    assert len(configured.pre_launch_callbacks) >= before_callbacks + 1
+
+    h_output = d_output.copy_to_host()
+    h_reference = _exclusive_scan_host(h_input)
+    np.testing.assert_array_equal(h_output, h_reference)
+
+
+def test_temp_storage_auto_dynamic_shared_rejects_device_limit():
+    threads_per_block = 128
+    items_per_thread = 4
+    total_items = threads_per_block * items_per_thread
+    dtype = np.uint32
+
+    block_exclusive_sum = coop.block.exclusive_sum(
+        dtype,
+        threads_per_block,
+        items_per_thread,
+    )
+    temp_storage_alignment = block_exclusive_sum.temp_storage_alignment
+    max_optin = cuda.current_context().device.MAX_SHARED_MEMORY_PER_BLOCK_OPTIN
+    if not max_optin:
+        pytest.skip("Device does not expose MAX_SHARED_MEMORY_PER_BLOCK_OPTIN.")
+
+    temp_storage_bytes = _align_up(max_optin + 256, temp_storage_alignment)
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
+        temp_storage = coop.TempStorage(temp_storage_bytes, temp_storage_alignment)
+        coop.block.load(d_in, thread_data, items_per_thread=items_per_thread)
+        coop.block.exclusive_sum(
+            thread_data,
+            thread_data,
+            items_per_thread=items_per_thread,
+            temp_storage=temp_storage,
+        )
+        coop.block.store(d_out, thread_data, items_per_thread=items_per_thread)
+
+    h_input = np.random.randint(0, 16, total_items, dtype=dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    with pytest.raises(Exception, match="device max opt-in"):
+        kernel[1, threads_per_block](d_input, d_output)
