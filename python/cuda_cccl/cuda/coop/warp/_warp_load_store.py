@@ -330,3 +330,143 @@ class store(BasePrimitive):
             temp_storage_alignment=specialization.temp_storage_alignment,
             algorithm=specialization,
         )
+
+
+def _build_load_spec(
+    dtype,
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    algorithm: Optional[WarpLoadAlgorithm] = None,
+    num_valid_items: Optional[int] = None,
+    oob_default=None,
+    methods: Optional[dict] = None,
+):
+    return {
+        "dtype": dtype,
+        "items_per_thread": items_per_thread,
+        "threads_in_warp": threads_in_warp,
+        "algorithm": algorithm,
+        "num_valid_items": num_valid_items,
+        "oob_default": oob_default,
+        "methods": methods,
+    }
+
+
+def _build_store_spec(
+    dtype,
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    algorithm: Optional[WarpStoreAlgorithm] = None,
+    num_valid_items: Optional[int] = None,
+    methods: Optional[dict] = None,
+):
+    return {
+        "dtype": dtype,
+        "items_per_thread": items_per_thread,
+        "threads_in_warp": threads_in_warp,
+        "algorithm": algorithm,
+        "num_valid_items": num_valid_items,
+        "methods": methods,
+    }
+
+
+def _make_load_two_phase(
+    dtype,
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    algorithm: Optional[WarpLoadAlgorithm] = None,
+    num_valid_items: Optional[int] = None,
+    oob_default=None,
+    methods: Optional[dict] = None,
+):
+    return load.create(
+        **_build_load_spec(
+            dtype=dtype,
+            items_per_thread=items_per_thread,
+            threads_in_warp=threads_in_warp,
+            algorithm=algorithm,
+            num_valid_items=num_valid_items,
+            oob_default=oob_default,
+            methods=methods,
+        )
+    )
+
+
+def _make_load_rewrite(
+    dtype,
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    algorithm: Optional[WarpLoadAlgorithm] = None,
+    num_valid_items: Optional[int] = None,
+    oob_default=None,
+    methods: Optional[dict] = None,
+    unique_id=None,
+    temp_storage=None,
+    node=None,
+):
+    spec = _build_load_spec(
+        dtype=dtype,
+        items_per_thread=items_per_thread,
+        threads_in_warp=threads_in_warp,
+        algorithm=algorithm,
+        num_valid_items=num_valid_items,
+        oob_default=oob_default,
+        methods=methods,
+    )
+    spec.update(
+        {
+            "unique_id": unique_id,
+            "temp_storage": temp_storage,
+            "node": node,
+        }
+    )
+    return load(**spec)
+
+
+def _make_store_two_phase(
+    dtype,
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    algorithm: Optional[WarpStoreAlgorithm] = None,
+    num_valid_items: Optional[int] = None,
+    methods: Optional[dict] = None,
+):
+    return store.create(
+        **_build_store_spec(
+            dtype=dtype,
+            items_per_thread=items_per_thread,
+            threads_in_warp=threads_in_warp,
+            algorithm=algorithm,
+            num_valid_items=num_valid_items,
+            methods=methods,
+        )
+    )
+
+
+def _make_store_rewrite(
+    dtype,
+    items_per_thread: int = 1,
+    threads_in_warp: int = 32,
+    algorithm: Optional[WarpStoreAlgorithm] = None,
+    num_valid_items: Optional[int] = None,
+    methods: Optional[dict] = None,
+    unique_id=None,
+    temp_storage=None,
+    node=None,
+):
+    spec = _build_store_spec(
+        dtype=dtype,
+        items_per_thread=items_per_thread,
+        threads_in_warp=threads_in_warp,
+        algorithm=algorithm,
+        num_valid_items=num_valid_items,
+        methods=methods,
+    )
+    spec.update(
+        {
+            "unique_id": unique_id,
+            "temp_storage": temp_storage,
+            "node": node,
+        }
+    )
+    return store(**spec)

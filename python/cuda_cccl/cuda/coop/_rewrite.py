@@ -1099,10 +1099,20 @@ class CoopNode:
 
     def prepare_args(self, ty, val, *args, **kwargs):
         # N.B. This routine is only invoked for two-phase instances.
+        impl_class = self.impl_class
+        expected_type = impl_class if isinstance(impl_class, type) else None
+        if expected_type is None:
+            instance = self.two_phase_instance or self.instance
+            if instance is not None:
+                expected_type = type(instance)
 
-        if not isinstance(val, self.impl_class):
+        if expected_type is not None and not isinstance(val, expected_type):
             # We can ignore everything that isn't an instance of our two-phase
             # implementation class.
+            return (ty, val)
+        if expected_type is None:
+            # If we cannot determine an implementation type, avoid mutating
+            # unrelated args.
             return (ty, val)
 
         # Example values at this point for e.g. block load:

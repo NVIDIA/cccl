@@ -8,11 +8,34 @@ if os.environ.get("CCCL_COOP_DOCS") == "1":
     from .api import *  # noqa: F403
     from .api import __all__  # noqa: F401
 else:
-    from ._warp_exchange import WarpExchangeType, exchange
-    from ._warp_load_store import load, store
-    from ._warp_merge_sort import merge_sort_keys, merge_sort_pairs
-    from ._warp_reduce import reduce, sum
+    from ._warp_exchange import (
+        WarpExchangeType,
+        _make_exchange_two_phase,
+        exchange,
+    )
+    from ._warp_load_store import (
+        _make_load_two_phase,
+        _make_store_two_phase,
+        load,
+        store,
+    )
+    from ._warp_merge_sort import (
+        _make_merge_sort_keys_two_phase,
+        _make_merge_sort_pairs_two_phase,
+        merge_sort_keys,
+        merge_sort_pairs,
+    )
+    from ._warp_reduce import (
+        _make_reduce_two_phase,
+        _make_sum_two_phase,
+        reduce,
+        sum,
+    )
     from ._warp_scan import (
+        _make_exclusive_scan_two_phase,
+        _make_exclusive_sum_two_phase,
+        _make_inclusive_scan_two_phase,
+        _make_inclusive_sum_two_phase,
         exclusive_scan,
         exclusive_sum,
         inclusive_scan,
@@ -30,7 +53,7 @@ else:
         algorithm=None,
         **kwargs,
     ):
-        return load.create(
+        return _make_load_two_phase(
             dtype=dtype,
             items_per_thread=items_per_thread,
             threads_in_warp=threads_in_warp,
@@ -45,7 +68,7 @@ else:
         algorithm=None,
         **kwargs,
     ):
-        return store.create(
+        return _make_store_two_phase(
             dtype=dtype,
             items_per_thread=items_per_thread,
             threads_in_warp=threads_in_warp,
@@ -60,7 +83,7 @@ else:
         warp_exchange_type=WarpExchangeType.StripedToBlocked,
         **kwargs,
     ):
-        return exchange.create(
+        return _make_exchange_two_phase(
             warp_exchange_type=warp_exchange_type,
             dtype=dtype,
             items_per_thread=items_per_thread,
@@ -75,7 +98,7 @@ else:
         valid_items=None,
         **kwargs,
     ):
-        return reduce.create(
+        return _make_reduce_two_phase(
             dtype=dtype,
             binary_op=binary_op,
             threads_in_warp=threads_in_warp,
@@ -89,7 +112,7 @@ else:
         valid_items=None,
         **kwargs,
     ):
-        return sum.create(
+        return _make_sum_two_phase(
             dtype=dtype,
             threads_in_warp=threads_in_warp,
             valid_items=valid_items,
@@ -101,7 +124,7 @@ else:
         threads_in_warp=32,
         **kwargs,
     ):
-        return exclusive_sum.create(
+        return _make_exclusive_sum_two_phase(
             dtype=dtype,
             threads_in_warp=threads_in_warp,
             **kwargs,
@@ -112,7 +135,7 @@ else:
         threads_in_warp=32,
         **kwargs,
     ):
-        return inclusive_sum.create(
+        return _make_inclusive_sum_two_phase(
             dtype=dtype,
             threads_in_warp=threads_in_warp,
             **kwargs,
@@ -125,7 +148,7 @@ else:
         threads_in_warp=32,
         **kwargs,
     ):
-        return exclusive_scan.create(
+        return _make_exclusive_scan_two_phase(
             dtype=dtype,
             scan_op=scan_op,
             initial_value=initial_value,
@@ -140,7 +163,7 @@ else:
         threads_in_warp=32,
         **kwargs,
     ):
-        return inclusive_scan.create(
+        return _make_inclusive_scan_two_phase(
             dtype=dtype,
             scan_op=scan_op,
             initial_value=initial_value,
@@ -156,7 +179,7 @@ else:
         threads_in_warp=32,
         **kwargs,
     ):
-        return merge_sort_keys.create(
+        return _make_merge_sort_keys_two_phase(
             dtype=dtype,
             items_per_thread=items_per_thread,
             compare_op=compare_op,
@@ -173,7 +196,7 @@ else:
         threads_in_warp=32,
         **kwargs,
     ):
-        return merge_sort_pairs.create(
+        return _make_merge_sort_pairs_two_phase(
             keys=keys,
             values=values,
             items_per_thread=items_per_thread,
