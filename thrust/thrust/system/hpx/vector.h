@@ -1,0 +1,96 @@
+/*
+ *  Copyright 2008-2025 NVIDIA Corporation
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+/*! \file thrust/system/hpx/vector.h
+ *  \brief A dynamically-sizable array of elements which reside in memory available to
+ *         Thrust's HPX system.
+ */
+
+#pragma once
+
+#include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+#include <thrust/detail/vector_base.h>
+#include <thrust/system/hpx/memory.h>
+
+#include <vector>
+
+THRUST_NAMESPACE_BEGIN
+namespace system
+{
+namespace hpx
+{
+
+/*! \p hpx::vector is a container that supports random access to elements,
+ *  constant time removal of elements at the end, and linear time insertion
+ *  and removal of elements at the beginning or in the middle. The number of
+ *  elements in a \p hpx::vector may vary dynamically; memory management is
+ *  automatic. The elements contained in a \p hpx::vector reside in memory
+ *  accessible by the \p hpx system.
+ *
+ *  \tparam T The element type of the \p hpx::vector.
+ *  \tparam Allocator The allocator type of the \p hpx::vector.
+ *          Defaults to \p hpx::allocator.
+ *
+ *  \see https://en.cppreference.com/w/cpp/container/vector
+ *  \see host_vector For the documentation of the complete interface which is
+ *                   shared by \p hpx::vector.
+ *  \see device_vector
+ *  \see universal_vector
+ */
+template <typename T, typename Allocator = thrust::system::hpx::allocator<T>>
+using vector = thrust::detail::vector_base<T, Allocator>;
+
+/*! \p hpx::universal_vector is a container that supports random access to
+ *  elements, constant time removal of elements at the end, and linear time
+ *  insertion and removal of elements at the beginning or in the middle. The
+ *  number of elements in a \p hpx::universal_vector may vary dynamically;
+ *  memory management is automatic. The elements contained in a
+ *  \p hpx::universal_vector reside in memory accessible by the \p hpx system
+ *  and host systems.
+ *
+ *  \tparam T The element type of the \p hpx::universal_vector.
+ *  \tparam Allocator The allocator type of the \p hpx::universal_vector.
+ *          Defaults to \p hpx::universal_allocator.
+ *
+ *  \see https://en.cppreference.com/w/cpp/container/vector
+ *  \see host_vector For the documentation of the complete interface which is
+ *                   shared by \p hpx::universal_vector
+ *  \see device_vector
+ *  \see universal_vector
+ */
+template <typename T, typename Allocator = thrust::system::hpx::universal_allocator<T>>
+using universal_vector = thrust::detail::vector_base<T, Allocator>;
+
+template <typename T>
+using universal_host_pinned_vector = thrust::detail::vector_base<T, universal_host_pinned_allocator<T>>;
+} // namespace hpx
+} // namespace system
+
+namespace hpx
+{
+using thrust::system::hpx::universal_vector;
+using thrust::system::hpx::vector;
+} // namespace hpx
+
+THRUST_NAMESPACE_END

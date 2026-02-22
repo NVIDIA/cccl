@@ -75,6 +75,13 @@ function(add_bench_dir bench_dir)
       cccl_configure_target(${bench_name} DIALECT 17)
       target_link_libraries(${bench_name} PRIVATE ${thrust_target})
 
+      # HPX Integration: Ensures HPX runtime is started
+      if (("${config_host}" STREQUAL "HPX" OR "${config_device}" STREQUAL "HPX")
+	      AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))
+	    # Wrap main so HPX's __wrap_main runs before nvbench main.
+	    target_link_libraries(${bench_name} PRIVATE HPX::hpx HPX::auto_wrap_main)
+      endif()
+
       if ("CUDA" STREQUAL "${config_device}")
         target_compile_options(${bench_name} PRIVATE "--extended-lambda")
       endif()
