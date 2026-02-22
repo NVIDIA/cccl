@@ -335,6 +335,30 @@ class TempStorageUseLayoutEntry:
 
 
 @dataclass
+class RewriteDetails:
+    """
+    IR artifacts generated for a rewritten cooperative primitive call.
+
+    Attributes:
+        g_var: Synthetic global variable backing the generated callable.
+        g_assign: Assignment that binds `g_var` in the rewritten block.
+        new_call: Replacement call expression targeting `g_var`.
+        new_assign: Assignment storing `new_call` into the original target.
+        sig: Signature registered for `new_call` in Numba typing state.
+        func_ty: Numba function type created for the synthetic callable.
+        prelude_instrs: Extra IR instructions to emit before `g_assign`.
+    """
+
+    g_var: ir.Var
+    g_assign: ir.Assign
+    new_call: ir.Expr
+    new_assign: ir.Assign
+    sig: Signature
+    func_ty: types.Type
+    prelude_instrs: list[ir.Assign] = field(default_factory=list)
+
+
+@dataclass
 class GetAttrDefinition:
     instr: VarType
     instance_name: str
@@ -1652,7 +1676,7 @@ class CoopNode:
 
         self.typemap[g_var.name] = func_ty
 
-        rewrite_details = SimpleNamespace(
+        rewrite_details = RewriteDetails(
             g_var=g_var,
             g_assign=g_assign,
             new_call=new_call,
