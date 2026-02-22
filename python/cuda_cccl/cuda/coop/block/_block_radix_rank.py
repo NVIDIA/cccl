@@ -82,7 +82,8 @@ class radix_rank(BasePrimitive):
         node: "CoopNode" = None,
     ) -> None:
         """
-        Computes radix ranks for a block of keys within the specified bit range.
+        Create a block-wide radix-rank primitive backed by
+        ``cub::BlockRadixRank``.
 
         Example:
             The snippet below ranks keys using a 4-bit radix.
@@ -98,6 +99,43 @@ class radix_rank(BasePrimitive):
                 :dedent:
                 :start-after: example-begin radix-rank
                 :end-before: example-end radix-rank
+
+        :param dtype: Key dtype used for radix ranking.
+        :type dtype: str | type | np.dtype | numba.types.Type
+
+        :param threads_per_block: CUDA block dimensions as an int or
+            ``(x, y, z)`` tuple.
+        :type threads_per_block: int | Tuple[int, int] | Tuple[int, int, int] | dim3
+
+        :param items_per_thread: Number of keys owned by each thread.
+        :type items_per_thread: int
+
+        :param begin_bit: Inclusive starting bit of the radix interval.
+        :type begin_bit: int
+
+        :param end_bit: Exclusive ending bit of the radix interval.
+        :type end_bit: int
+
+        :param descending: Whether the ranking is descending instead of
+            ascending.
+        :type descending: bool, optional
+
+        :param exclusive_digit_prefix: Optional per-digit exclusive prefix
+            output array.
+        :type exclusive_digit_prefix: Any, optional
+
+        :param unique_id: Optional unique suffix used for generated symbols.
+        :type unique_id: int, optional
+
+        :param temp_storage: Optional explicit temporary storage argument.
+        :type temp_storage: Any, optional
+
+        :param node: Internal rewrite node used by single-phase rewriting.
+        :type node: CoopNode, optional
+
+        :raises ValueError: If ``items_per_thread < 1``.
+        :raises ValueError: If ``begin_bit``/``end_bit`` are missing.
+        :raises ValueError: If ``end_bit <= begin_bit``.
         """
         if items_per_thread < 1:
             raise ValueError("items_per_thread must be >= 1")

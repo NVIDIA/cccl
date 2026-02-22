@@ -59,7 +59,7 @@ class shuffle(BasePrimitive):
         node: "CoopNode" = None,
     ) -> None:
         """
-        Shuffles items across a thread block using the selected shuffle type.
+        Create a block-wide shuffle primitive backed by ``cub::BlockShuffle``.
 
         Example:
             The snippet below demonstrates a scalar offset shuffle.
@@ -75,6 +75,46 @@ class shuffle(BasePrimitive):
                 :dedent:
                 :start-after: example-begin offset-scalar
                 :end-before: example-end offset-scalar
+
+        :param block_shuffle_type: Shuffle mode (offset, rotate, up, or down).
+        :type block_shuffle_type: BlockShuffleType
+
+        :param dtype: Element dtype for input/output items.
+        :type dtype: DtypeType
+
+        :param threads_per_block: CUDA block dimensions as an int or
+            ``(x, y, z)`` tuple.
+        :type threads_per_block: DimType
+
+        :param items_per_thread: Number of items per thread for up/down array
+            variants.
+        :type items_per_thread: int, optional
+
+        :param distance: Shuffle distance for scalar offset/rotate variants.
+        :type distance: int, optional
+
+        :param block_prefix: Optional boundary prefix for down variants.
+        :type block_prefix: Any, optional
+
+        :param block_suffix: Optional boundary suffix for up variants.
+        :type block_suffix: Any, optional
+
+        :param methods: Optional user-defined-type adapter methods.
+        :type methods: dict, optional
+
+        :param unique_id: Optional unique suffix used for generated symbols.
+        :type unique_id: int, optional
+
+        :param temp_storage: Optional explicit temporary storage argument.
+        :type temp_storage: Any, optional
+
+        :param node: Internal rewrite node used by single-phase rewriting.
+        :type node: CoopNode, optional
+
+        :raises ValueError: If ``block_shuffle_type`` is invalid.
+        :raises ValueError: If ``items_per_thread`` is invalid for up/down.
+        :raises ValueError: If boundary arguments are invalid for the selected
+            shuffle type.
         """
         if block_shuffle_type not in BlockShuffleType:
             raise ValueError(

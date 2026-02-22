@@ -79,8 +79,8 @@ class base_load_store(BasePrimitive):
         temp_storage=None,
     ) -> None:
         """
-        Loads or stores a blocked arrangement of items using the selected
-        BlockLoad/BlockStore algorithm.
+        Create a block load/store primitive backed by ``cub::BlockLoad`` or
+        ``cub::BlockStore``.
 
         Example:
             The snippet below demonstrates using block load and store
@@ -97,6 +97,39 @@ class base_load_store(BasePrimitive):
                 :dedent:
                 :start-after: example-begin load_store
                 :end-before: example-end load_store
+
+        :param dtype: Element dtype for source/destination items.
+        :type dtype: DtypeType
+
+        :param dim: CUDA block dimensions as an int or ``(x, y, z)`` tuple.
+        :type dim: DimType
+
+        :param items_per_thread: Number of items processed by each thread.
+        :type items_per_thread: int
+
+        :param algorithm: Optional load/store algorithm selector.
+        :type algorithm: str | int | enum, optional
+
+        :param num_valid_items: Optional valid-item count for guarded loads.
+        :type num_valid_items: Any, optional
+
+        :param oob_default: Optional out-of-bounds default value for load APIs.
+            Requires ``num_valid_items``.
+        :type oob_default: Any, optional
+
+        :param unique_id: Optional unique suffix used for generated symbols.
+        :type unique_id: int, optional
+
+        :param node: Internal rewrite node used by single-phase rewriting.
+        :type node: CoopNode, optional
+
+        :param temp_storage: Optional explicit temporary storage argument.
+        :type temp_storage: Any, optional
+
+        :raises ValueError: If ``algorithm`` is invalid.
+        :raises ValueError: If ``oob_default`` is provided for store APIs.
+        :raises ValueError: If ``oob_default`` is provided without
+            ``num_valid_items``.
         """
         self.node = node
         self.dtype = normalize_dtype_param(dtype)

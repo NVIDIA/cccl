@@ -41,6 +41,24 @@ class run_length_decode(BasePrimitive):
         decoded_window_offset_dtype: DtypeType,
         relative_offsets_dtype: DtypeType = None,
     ) -> None:
+        """
+        Create the ``RunLengthDecode`` child primitive for a parent run-length
+        decoder.
+
+        :param parent: Parent block run-length primitive instance.
+        :type parent: run_length
+
+        :param decoded_items_dtype: Dtype of decoded output items.
+        :type decoded_items_dtype: DtypeType
+
+        :param decoded_window_offset_dtype: Dtype of the decoded-window-offset
+            argument.
+        :type decoded_window_offset_dtype: DtypeType
+
+        :param relative_offsets_dtype: Optional dtype for relative-offset
+            output items.
+        :type relative_offsets_dtype: DtypeType, optional
+        """
         self.parent = parent
         self.decoded_items_dtype = decoded_items_dtype
         self.decoded_window_offset_dtype = decoded_window_offset_dtype
