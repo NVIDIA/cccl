@@ -80,6 +80,64 @@ def test_block_adjacent_difference_subtract_left_thread_data_temp_storage():
     np.testing.assert_array_equal(h_output, h_reference)
 
 
+def test_block_adjacent_difference_subtract_left_thread_data_temp_storage_getitem_sugar():
+    dtype = np.int32
+    threads_per_block = 128
+    items_per_thread = 4
+
+    block_adj = coop.block.adjacent_difference(
+        BlockAdjacentDifferenceType.SubtractLeft,
+        dtype,
+        threads_per_block,
+        items_per_thread,
+        diff_op,
+    )
+    temp_storage_bytes = block_adj.temp_storage_bytes
+    temp_storage_alignment = block_adj.temp_storage_alignment
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        temp_storage = coop.TempStorage(
+            temp_storage_bytes,
+            temp_storage_alignment,
+        )
+        items = coop.ThreadData(items_per_thread, dtype=d_in.dtype)
+        output = coop.ThreadData(items_per_thread, dtype=d_in.dtype)
+
+        coop.block.load(d_in, items)
+        coop.block.adjacent_difference[temp_storage](
+            items,
+            output,
+            difference_op=diff_op,
+            block_adjacent_difference_type=BlockAdjacentDifferenceType.SubtractLeft,
+        )
+        coop.block.store(d_out, output)
+
+    num_threads = (
+        threads_per_block
+        if isinstance(threads_per_block, int)
+        else reduce(mul, threads_per_block)
+    )
+    num_items = num_threads * items_per_thread
+
+    h_input = np.random.randint(0, 32, num_items, dtype=dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(num_items, dtype=dtype)
+
+    kernel[1, threads_per_block](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    h_reference = np.zeros_like(h_output)
+    for idx in range(num_items):
+        if idx == 0:
+            h_reference[idx] = h_input[idx]
+        else:
+            h_reference[idx] = h_input[idx] - h_input[idx - 1]
+
+    np.testing.assert_array_equal(h_output, h_reference)
+
+
 @cuda.jit(device=True)
 def diff_op_right(lhs, rhs):
     return lhs - rhs

@@ -60,6 +60,7 @@ Guides
    coop_single_phase
    coop_two_phase
    coop_temp_storage
+   coop_thread_data
    coop_gpu_dataclass
    coop_advanced
    coop_faq
