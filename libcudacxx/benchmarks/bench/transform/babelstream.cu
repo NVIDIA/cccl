@@ -46,19 +46,14 @@ static void mul(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(n);
 
   caching_allocator_t alloc{};
-  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
 
   const T scalar = startScalar;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               cuda::std::transform(
-                 policy.with_stream(launch.get_stream().get_stream()),
-                 c.begin(),
-                 c.end(),
-                 b.begin(),
-                 [=] _CCCL_HOST_DEVICE(const T& ci) {
+               do_not_optimize(cuda::std::transform(
+                 cuda_policy(alloc, launch), c.begin(), c.end(), b.begin(), [=] _CCCL_HOST_DEVICE(const T& ci) {
                    return ci * scalar;
-                 });
+                 }));
              });
 }
 
@@ -80,17 +75,11 @@ static void add(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(n);
 
   caching_allocator_t alloc{};
-  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               cuda::std::transform(
-                 policy.with_stream(launch.get_stream().get_stream()),
-                 a.begin(),
-                 a.end(),
-                 b.begin(),
-                 c.begin(),
-                 cuda::std::plus<T>{});
+               do_not_optimize(cuda::std::transform(
+                 cuda_policy(alloc, launch), a.begin(), a.end(), b.begin(), c.begin(), cuda::std::plus<T>{}));
              });
 }
 
@@ -112,20 +101,19 @@ static void triad(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(n);
 
   caching_allocator_t alloc{};
-  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
 
   const T scalar = startScalar;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               cuda::std::transform(
-                 policy.with_stream(launch.get_stream().get_stream()),
+               do_not_optimize(cuda::std::transform(
+                 cuda_policy(alloc, launch),
                  b.begin(),
                  b.end(),
                  c.begin(),
                  a.begin(),
                  [=] _CCCL_HOST_DEVICE(const T& bi, const T& ci) {
                    return bi + scalar * ci;
-                 });
+                 }));
              });
 }
 
@@ -147,19 +135,18 @@ static void nstream(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(n);
 
   caching_allocator_t alloc{};
-  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
 
   const T scalar = startScalar;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               cuda::std::transform(
-                 policy.with_stream(launch.get_stream().get_stream()),
+               do_not_optimize(cuda::std::transform(
+                 cuda_policy(alloc, launch),
                  cuda::make_zip_iterator(a.begin(), b.begin(), c.begin()),
                  cuda::make_zip_iterator(a.end(), b.end(), c.end()),
                  a.begin(),
                  cuda::zip_function{[=] _CCCL_HOST_DEVICE(const T& ai, const T& bi, const T& ci) {
                    return ai + bi + scalar * ci;
-                 }});
+                 }}));
              });
 }
 

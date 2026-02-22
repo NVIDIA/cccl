@@ -247,8 +247,8 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
 
   // Lambda
   {
-    cudax::launch(dst, cuda::block_dims<256>() & cuda::grid_dims(1), [] __device__(auto config) {
-      if (cuda::gpu_thread.rank(cuda::block, config) == 0)
+    cudax::launch(dst, cuda::block_dims<256>() & cuda::grid_dims(1), [] __device__() {
+      if (cuda::gpu_thread.rank(cuda::block) == 0)
       {
         printf("Hello from the GPU\n");
         kernel_run_proof = true;
