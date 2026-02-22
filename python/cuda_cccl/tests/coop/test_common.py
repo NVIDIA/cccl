@@ -7,6 +7,11 @@ import numba.cuda
 import numpy as np
 import pytest
 
+try:
+    from numba.cuda.vector_types import vector_types as numba_cuda_vector_types
+except Exception:
+    numba_cuda_vector_types = None
+
 from cuda.coop._common import (
     CudaSharedMemConfig,
     dim3,
@@ -42,8 +47,13 @@ class TestNormalizeDtypeParam:
         ],
     )
     def test_numba_cuda_vector_type(self, dtype):
-        """Test that numba cuda vector types are returned as-is."""
-        assert normalize_dtype_param(dtype) is dtype
+        """Test conversion of CUDA vector stubs to Numba CUDA vector types."""
+        result = normalize_dtype_param(dtype)
+        if numba_cuda_vector_types is None:
+            assert result is dtype
+            return
+        assert result is numba_cuda_vector_types[dtype.__name__]
+        assert result.user_facing_object is dtype
 
     @pytest.mark.parametrize(
         "dtype,expected",
