@@ -131,6 +131,40 @@ class exchange(BasePrimitive):
                 :dedent:
                 :start-after: example-begin striped-to-blocked
                 :end-before: example-end striped-to-blocked
+
+        :param block_exchange_type: The exchange operation to perform. Supported
+            values include striped/blocked conversions and scatter variants.
+
+        :param dtype: Element type for input/output items.
+
+        :param threads_per_block: CUDA block dimensions as an int or
+            ``(x, y, z)`` tuple.
+
+        :param items_per_thread: Number of items each thread contributes.
+
+        :param warp_time_slicing: Compile-time boolean that enables the CUB
+            warp time-sliced variants where available.
+
+        :param methods: Optional user-defined-type adapter methods. If
+            provided, ``items_per_thread`` must be ``1``.
+
+        :param unique_id: Optional unique suffix used when emitting generated
+            symbols.
+
+        :param temp_storage: Optional explicit temporary storage argument used
+            by rewrite/two-phase paths.
+
+        :param use_output_items: When ``True``, generate an out-of-place
+            signature that takes ``(input_items, output_items, ...)``.
+            Otherwise, use in-place signatures.
+
+        :param offset_dtype: Rank/offset element type for scatter variants
+            (required for scatter, invalid otherwise).
+
+        :param valid_flag_dtype: Valid-flag element type for
+            ``ScatterToStripedFlagged`` (required there, invalid otherwise).
+
+        :param node: Internal rewrite node used by the single-phase rewriter.
         """
         # Validate initial parameters.
         if block_exchange_type not in BlockExchangeType:
@@ -321,6 +355,11 @@ def _build_exchange_spec(
     block_exchange_type=BlockExchangeType.StripedToBlocked,
     **kwargs,
 ):
+    """
+    Build a normalized constructor-spec dictionary for block exchange.
+
+    Accepts ``threads_per_block`` directly or via the ``dim`` alias.
+    """
     kw = dict(kwargs)
     if threads_per_block is None:
         threads_per_block = kw.pop("dim", None)
@@ -341,6 +380,9 @@ def _make_exchange_two_phase(
     block_exchange_type=BlockExchangeType.StripedToBlocked,
     **kwargs,
 ):
+    """
+    Create the public two-phase ``Invocable`` for block exchange.
+    """
     spec = _build_exchange_spec(
         dtype=dtype,
         threads_per_block=threads_per_block,
@@ -358,6 +400,9 @@ def _make_exchange_rewrite(
     block_exchange_type=BlockExchangeType.StripedToBlocked,
     **kwargs,
 ):
+    """
+    Create a concrete block-exchange primitive instance for rewrite-time use.
+    """
     spec = _build_exchange_spec(
         dtype=dtype,
         threads_per_block=threads_per_block,
