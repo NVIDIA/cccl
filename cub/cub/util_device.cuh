@@ -17,6 +17,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_policy_wrapper_t.cuh>
 #include <cub/util_type.cuh>
@@ -508,6 +509,41 @@ MaxPotentialDynamicSmemBytes(int& max_dyn_smem_bytes, KernelPtr kernel_ptr) noex
   max_dyn_smem_bytes = max_smem_size_optin - reserved_smem_size - static_cast<int>(kernel_attrs.sharedSizeBytes);
   return cudaSuccess;
 }
+
+namespace detail
+{
+//! @brief Returns the alignment needed for the shared memory destination buffer of BlockLoadToShared.
+//! @tparam T
+//!   Value type to be loaded.
+template <typename T>
+_CCCL_HOST_DEVICE constexpr int LoadToSharedBufferAlignBytes()
+{
+  return (::cuda::std::max) (int{alignof(T)}, cub::detail::bulk_min_align);
+}
+
+//! @brief Returns the size needed for the shared memory destination buffer of BlockLoadToShared.
+//! @tparam T
+//!   Value type to be loaded.
+//! @tparam GmemAlign
+//!   Guaranteed alignment in bytes of the source range (both begin and end) in global memory
+//! @param[in] num_items
+//!   Size of the source range in global memory
+template <typename T, int GmemAlign = alignof(T)>
+_CCCL_HOST_DEVICE constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t num_items)
+{
+  static_assert(::cuda::std::has_single_bit(unsigned{GmemAlign}));
+  static_assert(GmemAlign >= int{alignof(T)});
+  _CCCL_ASSERT(num_items <= ::cuda::std::size_t{::cuda::std::numeric_limits<int>::max()},
+               "num_items must fit into an int");
+  const int num_bytes = static_cast<int>(num_items) * int{sizeof(T)};
+  if constexpr (GmemAlign >= cub::detail::bulk_min_align)
+  {
+    return num_bytes;
+  }
+  const int extra_space = (num_bytes == 0) ? 0 : cub::detail::bulk_min_align;
+  return ::cuda::round_up(num_bytes, cub::detail::bulk_min_align) + extra_space;
+}
+} // namespace detail
 
 namespace detail
 {

@@ -115,6 +115,8 @@ inline constexpr bool prefer_conflict_over_padding = CUB_PTX_PREFER_CONFLICT_OVE
 // shared memory in a kernel. Note that dynamic shared memory may be larger than this amount.
 static constexpr ::cuda::std::size_t max_smem_per_block = 48 * 1024;
 
+static constexpr int bulk_min_align = 16;
+
 struct scaling_result
 {
   int items_per_thread;
