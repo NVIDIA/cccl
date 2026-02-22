@@ -49,6 +49,37 @@ def test_block_load_store():
     np.testing.assert_allclose(h_output, h_input)
 
 
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        numba.cuda.float2,
+        numba.cuda.uint4,
+        numba.cuda.float32x4,
+    ],
+)
+def test_block_load_store_make_supports_cuda_vector_dtypes(dtype):
+    threads_per_block = 32
+    items_per_thread = 1
+
+    block_load = coop.block.make_load(
+        dtype,
+        threads_per_block,
+        items_per_thread,
+        algorithm=BlockLoadAlgorithm.DIRECT,
+    )
+    block_store = coop.block.make_store(
+        dtype,
+        threads_per_block,
+        items_per_thread,
+        algorithm=BlockStoreAlgorithm.DIRECT,
+    )
+
+    assert block_load.temp_storage_bytes >= 0
+    assert block_load.temp_storage_alignment >= 1
+    assert block_store.temp_storage_bytes >= 0
+    assert block_store.temp_storage_alignment >= 1
+
+
 def test_block_load_store_single_phase_implicit_temp_storage():
     # example-begin load_store_single_phase_implicit_temp_storage_kernel
     import cuda.coop as coop

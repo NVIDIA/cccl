@@ -112,7 +112,44 @@ NUMBA_TYPES_TO_CPP = {
 }
 
 
+def _cuda_vector_type_to_cpp(numba_type):
+    user_facing_object = getattr(numba_type, "user_facing_object", None)
+    if user_facing_object is None:
+        return None
+
+    aliases = getattr(user_facing_object, "aliases", None)
+    if aliases:
+        return aliases[0]
+
+    name = getattr(numba_type, "name", "")
+    match = re.fullmatch(r"(int|uint|float)(8|16|32|64)x([1-4])", name or "")
+    if match is None:
+        return None
+
+    base_name = f"{match.group(1)}{match.group(2)}"
+    count = match.group(3)
+    base_alias = {
+        "int8": "char",
+        "int16": "short",
+        "int32": "int",
+        "int64": "longlong",
+        "uint8": "uchar",
+        "uint16": "ushort",
+        "uint32": "uint",
+        "uint64": "ulonglong",
+        "float32": "float",
+        "float64": "double",
+    }.get(base_name)
+    if base_alias is None:
+        return None
+    return f"{base_alias}{count}"
+
+
 def numba_type_to_cpp(numba_type, default="storage_t"):
+    vector_cpp = _cuda_vector_type_to_cpp(numba_type)
+    if vector_cpp is not None:
+        return vector_cpp
+
     if isinstance(numba_type, (types.Tuple, types.UniTuple)):
         elem_cpp = []
         for elem in numba_type:
