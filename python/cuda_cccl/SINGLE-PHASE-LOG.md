@@ -1812,3 +1812,78 @@
     - Result: passed (after one formatter rewrite pass).
   - `pytest -q tests/coop/test_warp_exchange_api.py tests/coop/test_warp_load_store_api.py tests/coop/test_warp_merge_sort_api.py tests/coop/test_warp_merge_sort_pairs_api.py`
     - Result: `20 passed`.
+
+## 2026-02-22 (PR #7214 `@codex` review-thread triage + ledger update)
+- Request: read `SINGLE-PHASE-*.md`, ingest unresolved `@codex` review comments
+  on `https://github.com/NVIDIA/cccl/pull/7214`, produce an implementation plan
+  for each comment, and update the markdown ledgers for review before coding.
+- Changes:
+  - Read and reviewed:
+    - `SINGLE-PHASE-NOTES.md`
+    - `SINGLE-PHASE-TODO.md`
+    - `SINGLE-PHASE-LOG.md`
+    - `SINGLE-PHASE-CURRENT-PLAN.md`
+  - Pulled PR metadata/comments with `gh` (authenticated as `tpn`) and
+    extracted unresolved `@codex` threads from `NVIDIA/cccl#7214`.
+  - Identified 12 actionable `@codex` threads and prepared thread-by-thread
+    proposed actions.
+  - Updated ledgers:
+    - `SINGLE-PHASE-CURRENT-PLAN.md`: appended a new follow-up section with
+      numbered plans for all 12 review threads plus validation commands.
+    - `SINGLE-PHASE-TODO.md`: added a dedicated `PR #7214 @codex review
+      follow-up (2026-02-22)` checklist.
+- Decisions / Proposed handling:
+  - `_block_exchange.py:116`:
+    - Expand constructor and helper docstrings to clearly describe parameters,
+      overload constraints, and behavior.
+  - `_block_histogram.py:232`:
+    - Keep `temp_storage` under active review; clarify docs around current
+      unsupported behavior and reconcile with CUB `BlockHistogram::TempStorage`.
+  - `_numba_extension.py:12`:
+    - Rename module globals to `CUDA_CCCL_*` naming, keeping compatibility.
+  - `_rewrite.py:943`:
+    - Resolve/retire stale `Primitive` naming TODO with explicit rationale.
+  - `_rewrite.py:1573`:
+    - Replace vague comment with concrete typemap reconciliation rationale.
+  - `_rewrite.py:1593`:
+    - Remove stale commented debug breakpoint block or convert to targeted
+      debug assertion.
+  - `_rewrite.py:1666`:
+    - Replace `SimpleNamespace` rewrite payload with typed dataclass.
+  - `_rewrite.py:2063`:
+    - Rewrite comment to explain call-type priming and `_impl_keys` behavior.
+  - `_rewrite.py:2094`:
+    - Rewrite comment in neutral, technical terms about two-phase wrapper
+      path constraints.
+  - `_rewrite.py:2155`:
+    - Remove stray comment.
+  - `_rewrite.py:4435`:
+    - Replace broad `ThreadDataType` import fallback with deterministic helper.
+  - `_rewrite.py:6533`:
+    - Evaluate deleting duplicate run-length decode rewrite-details path in
+      favor of base `do_rewrite()` if behavior is equivalent.
+- Tests:
+  - No build/test commands run in this triage-only pass.
+
+## 2026-02-22 (follow-up: `rewrite_details` duplication audit)
+- Request: audit `_rewrite.py` for primitive-specific duplication around
+  rewrite plumbing (clarified as `rewrite_details`, not `do_rewrite`) and add
+  tasks for each primitive requiring validation.
+- Findings:
+  - `_rewrite.py` has a single `def do_rewrite(...)` implementation on
+    `CoopNode`.
+  - Primitive-specific `rewrite_details` implementations that do not simply
+    return `self.do_rewrite()` are limited to:
+    - `CoopBlockRunLengthNode.rewrite_details`
+    - `CoopBlockRunLengthDecodeNode.rewrite_details`
+  - All other primitive node `rewrite_details` methods currently delegate
+    directly to `CoopNode.do_rewrite()`.
+- Ledger updates:
+  - `SINGLE-PHASE-TODO.md`:
+    - replaced the single run-length decode item with two explicit validation
+      tasks (run-length parent + run-length decode child).
+  - `SINGLE-PHASE-CURRENT-PLAN.md`:
+    - added a new numbered thread-follow-up item for
+      `CoopBlockRunLengthNode.rewrite_details`.
+- Tests:
+  - No build/test commands run (ledger/audit-only follow-up).
