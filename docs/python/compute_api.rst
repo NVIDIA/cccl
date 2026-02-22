@@ -63,6 +63,9 @@ Operators
    .. py:attribute:: MINIMUM
    .. py:attribute:: MAXIMUM
 
+.. autoclass:: cuda.compute.op.RawOp
+   :members:
+   :undoc-members:
 
 Utilities
 ---------

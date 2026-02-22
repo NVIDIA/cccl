@@ -83,6 +83,13 @@
 #  define _CCCL_HAS_CDP() 0
 #endif // ^^^ no CDP ^^^
 
+// When RDC is enabled, __launch_bounds__ cannot be used reliably. See #902.
+#if !_CCCL_HAS_RDC() && !defined(CCCL_DISABLE_LAUNCH_BOUNDS)
+#  define _CCCL_LAUNCH_BOUNDS(...) __launch_bounds__(__VA_ARGS__)
+#else // ^^^ has launch bounds attribute ^^^ / vvv no launch bounds attribute vvv
+#  define _CCCL_LAUNCH_BOUNDS(...)
+#endif // ^^^ no launch bounds attribute ^^^
+
 #if _CCCL_HAS_CDP()
 #  ifdef CUDA_FORCE_CDP1_IF_SUPPORTED
 #    error "CUDA Dynamic Parallelism 1 is no longer supported. Please undefine CUDA_FORCE_CDP1_IF_SUPPORTED."

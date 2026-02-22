@@ -226,14 +226,14 @@ struct AgentHistogram
   _TempStorage& temp_storage;
   WrappedSampleIteratorT d_wrapped_samples; // with cache modifier applied, if possible
   SampleT* d_native_samples; // possibly nullptr if unavailable
-  const int* num_output_bins; // one for each channel (read-only)
-  const int* num_privatized_bins; // one for each channel (read-only)
+  const int* num_output_bins; // one for each channel
+  const int* num_privatized_bins; // one for each channel
   CounterT* d_privatized_histograms[NumActiveChannels]; // one for each channel
   CounterT** d_output_histograms; // in global memory
   const OutputDecodeOpT* output_decode_op; // determines output bin-id from privatized counter index, one for each
-                                           // channel (read-only)
+                                           // channel
   const PrivatizedDecodeOpT* privatized_decode_op; // determines privatized counter index from sample, one for each
-                                                   // channel (read-only)
+                                                   // channel
   bool prefer_smem; // for privatized counterss
 
   template <typename TwoDimSubscriptableCounterT>

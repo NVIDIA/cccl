@@ -38,32 +38,47 @@ struct equal_to_42
   }
 };
 
+template <class Policy>
+void test_count_if(const Policy& policy)
+{
+  { // empty should not access anything
+    const auto res = cuda::std::count_if(policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), equal_to_42{});
+    CHECK(res == 0);
+  }
+
+  { // same type
+    const auto res =
+      cuda::std::count_if(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, equal_to_42{});
+    CHECK(res == 1);
+  }
+
+  { // convertible type
+    const auto res = cuda::std::count_if(
+      policy, cuda::counting_iterator<short>{0}, cuda::counting_iterator<short>{size}, equal_to_42{});
+    CHECK(res == 1);
+  }
+}
+
 C2H_TEST("cuda::std::count_if", "[parallel algorithm]")
 {
   SECTION("with default stream")
   {
     const auto policy = cuda::execution::__cub_par_unseq;
-    const auto res =
-      cuda::std::count_if(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, equal_to_42{});
-    CHECK(res == 1);
+    test_count_if(policy);
   }
 
   SECTION("with provided stream")
   {
     cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::__cub_par_unseq.with_stream(stream);
-    const auto res =
-      cuda::std::count_if(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, equal_to_42{});
-    CHECK(res == 1);
+    test_count_if(policy);
   }
 
   SECTION("with provided memory_resource")
   {
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
     const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource);
-    const auto res =
-      cuda::std::count_if(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, equal_to_42{});
-    CHECK(res == 1);
+    test_count_if(policy);
   }
 
   SECTION("with provided stream and memory_resource")
@@ -71,8 +86,6 @@ C2H_TEST("cuda::std::count_if", "[parallel algorithm]")
     cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource).with_stream(stream);
-    const auto res =
-      cuda::std::count_if(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, equal_to_42{});
-    CHECK(res == 1);
+    test_count_if(policy);
   }
 }

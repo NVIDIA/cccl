@@ -27,7 +27,6 @@ classifiers = [
 requires-python = ">=3.10"
 
 dependencies = [
-  "numba>=0.60.0",
   "numpy",
   "cuda-pathfinder>=1.2.3",
   "cuda-core",
@@ -38,14 +37,22 @@ dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }
 
 [project.optional-dependencies]
-cu12 = [
+minimal-cu12 = [
   "cuda-bindings>=12.9.1,<13.0.0",
   "cuda-toolkit[nvrtc,nvjitlink,cudart,nvcc]==12.*",
+]
+minimal-cu13 = [
+  "cuda-bindings>=13.0.0,<14.0.0",
+  "cuda-toolkit[nvrtc,nvjitlink,cudart,nvcc,nvvm]==13.*",
+]
+cu12 = [
+  "cuda-cccl[minimal-cu12]",
+  "numba>=0.60.0",
   "numba-cuda[cu12]>=0.23.0,<0.27.0",
 ]
 cu13 = [
-  "cuda-bindings>=13.0.0,<14.0.0",
-  "cuda-toolkit[nvrtc,nvjitlink,cudart,nvcc,nvvm]==13.*",
+  "cuda-cccl[minimal-cu13]",
+  "numba>=0.60.0",
   "numba-cuda[cu13]>=0.23.0,<0.27.0",
 ]
 test-cu12 = [
@@ -54,14 +61,14 @@ test-cu12 = [
   "cuda-cccl[cu12]",
   "pytest",
   "pytest-xdist",
-  "cupy-cuda12x",
+  "cupy-cuda12x<14.0.0",
   "pytest-benchmark",
 ]
 test-cu13 = [
   "cuda-cccl[cu13]",
   "pytest",
   "pytest-xdist",
-  "cupy-cuda13x",
+  "cupy-cuda13x<14.0.0",
   "pytest-benchmark",
 ]
 bench-cu12 = ["cuda-cccl[cu12]", "cuda-bench[cu12]"]
@@ -128,4 +135,5 @@ known-first-party = [
 markers = [
   "no_verify_sass: skip SASS verification check",
   "large: tests requiring large device memory allocations",
+  "no_numba: tests that should not import numba or numba.cuda",
 ]

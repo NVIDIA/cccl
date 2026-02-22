@@ -52,7 +52,7 @@ class _UnaryTransform:
 
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
-        op_adapter.update_op_state(self.op_cccl)
+        self.op_cccl.state = op_adapter.get_state()
 
         stream_handle = protocols.validate_and_get_stream(stream)
         self.build_result.compute(
@@ -113,7 +113,7 @@ class _BinaryTransform:
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
         op_adapter = make_op_adapter(op)
-        op_adapter.update_op_state(self.op_cccl)
+        self.op_cccl.state = op_adapter.get_state()
 
         stream_handle = protocols.validate_and_get_stream(stream)
         self.build_result.compute(
