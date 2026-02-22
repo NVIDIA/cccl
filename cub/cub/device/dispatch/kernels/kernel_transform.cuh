@@ -78,19 +78,16 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch(const T* addr)
   asm volatile("prefetch.global.L2 [%0];" : : "l"(__cvta_generic_to_global(addr)) : "memory");
 }
 
-template <int BlockDim, typename It>
+template <int BlockDim, int PrefetchStride, typename It>
 _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It begin, int items)
 {
   if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<It>)
   {
-    constexpr int prefetch_byte_stride = 128; // TODO(bgruber): should correspond to cache line size. Does this need to
-                                              // be architecture dependent?
     const int items_bytes = items * sizeof(it_value_t<It>);
 
     // prefetch does not stall and unrolling just generates a lot of unnecessary computations and predicate handling
     _CCCL_PRAGMA_NOUNROLL()
-    for (int offset = threadIdx.x * prefetch_byte_stride; offset < items_bytes;
-         offset += BlockDim * prefetch_byte_stride)
+    for (int offset = threadIdx.x * PrefetchStride; offset < items_bytes; offset += BlockDim * PrefetchStride)
     {
       prefetch(reinterpret_cast<const char*>(::cuda::std::to_address(begin)) + offset);
     }
@@ -101,6 +98,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It begin, int items)
 // global memory. No intermediate copies are taken. If the parameter type of f is a reference, taking the address of the
 // parameter yields a global memory address.
 template <int BlockThreads,
+          int PrefetchByteStride,
+          int UnrollFactor,
           typename Offset,
           typename Predicate,
           typename F,
@@ -126,12 +125,14 @@ _CCCL_DEVICE void transform_kernel_prefetch(
   }
 
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
-  (..., prefetch_tile<block_threads>(ins, valid_items));
+  (..., prefetch_tile<block_threads, PrefetchByteStride>(ins, valid_items));
 
+  _CCCL_DIAG_SUPPRESS_NVCC(20168) // suppress warning on non-positive unroll factors, nvcc<13 with MSVC does not
+                                  // let us put this into the _CCCL_PRAGMA_UNROLL macro, or inside a lambda
   auto process_tile = [&](auto full_tile, auto... ins2 /* nvcc fails to compile when just using the captured ins */) {
-    // ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost
-    // bgruber: but A6000 and H100 show small gains without pragma
-    // _CCCL_PRAGMA_NOUNROLL()
+#if !_CCCL_CUDA_COMPILER(CLANG) // clang in CUDA mode does not allow non-positive unroll factors to disable the pragma
+    _CCCL_PRAGMA_UNROLL(UnrollFactor)
+#endif // !_CCCL_CUDA_COMPILER(CLANG)
     for (int j = 0; j < num_elem_per_thread; ++j)
     {
       const int idx = j * block_threads + threadIdx.x;
@@ -145,6 +146,7 @@ _CCCL_DEVICE void transform_kernel_prefetch(
       }
     }
   };
+  _CCCL_DIAG_DEFAULT_NVCC(20168)
   if (tile_size == valid_items)
   {
     process_tile(::cuda::std::true_type{}, ins...);
@@ -213,6 +215,8 @@ template < // const transform_policy& Policy,
   int block_threads,
   int items_per_thread,
   int vec_size,
+  int PrefetchByteStride,
+  int PrefetchUnrollFactor,
   typename Offset,
   typename F,
   typename RandomAccessIteratorOut,
@@ -236,7 +240,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   // if we cannot vectorize or don't have a full tile, fall back to prefetch kernel
   if (!can_vectorize || valid_items != tile_size)
   {
-    transform_kernel_prefetch<block_threads>(
+    transform_kernel_prefetch<block_threads, PrefetchByteStride, PrefetchUnrollFactor>(
       num_items,
       num_elem_per_thread_prefetch,
       always_true_predicate{},
@@ -561,6 +565,7 @@ _CCCL_DEVICE auto copy_and_return_smem_dst_fallback(
 // note: there is no PDL in this kernel since PDL is not supported below Hopper and this kernel is intended for Ampere
 template < // const transform_policy& Policy,
   int block_threads,
+  int unroll_factor,
   typename Offset,
   typename Predicate,
   typename F,
@@ -603,8 +608,7 @@ _CCCL_DEVICE void transform_kernel_ldgsts(
   // TODO(bgruber): fbusato suggests to move the valid_items and smem_base_ptrs by threadIdx.x before the loop below
 
   auto process_tile = [&](auto full_tile) {
-    // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
-    _CCCL_PRAGMA_NOUNROLL()
+    _CCCL_PRAGMA_UNROLL(unroll_factor)
     for (int j = 0; j < num_elem_per_thread; ++j)
     {
       const int idx = j * block_threads + threadIdx.x;
@@ -715,6 +719,7 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
 template < // const transform_policy& Policy,
   int block_threads,
   int bulk_copy_alignment,
+  int unroll_factor,
   typename Offset,
   typename Predicate,
   typename F,
@@ -899,8 +904,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   out += offset;
 
   auto process_tile = [&](auto full_tile) {
-    // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
-    _CCCL_PRAGMA_NOUNROLL()
+    _CCCL_PRAGMA_UNROLL(unroll_factor)
     for (int j = 0; j < num_elem_per_thread; ++j)
     {
       // TODO(bgruber): fbusato suggests to hoist threadIdx.x out of the loop below
@@ -1030,7 +1034,9 @@ __launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTE
 
   if constexpr (policy.algorithm == Algorithm::prefetch)
   {
-    transform_kernel_prefetch<policy.prefetch.block_threads>(
+    transform_kernel_prefetch<policy.prefetch.block_threads,
+                              policy.prefetch.prefetch_byte_stride,
+                              policy.prefetch.unroll_factor>(
       num_items,
       num_elem_per_thread,
       ::cuda::std::move(pred),
@@ -1045,7 +1051,9 @@ __launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTE
 
     transform_kernel_vectorized</*policy*/ policy.vectorized.block_threads,
                                 policy.vectorized.items_per_thread,
-                                policy.vectorized.vec_size>(
+                                policy.vectorized.vec_size,
+                                policy.prefetch.prefetch_byte_stride,
+                                policy.prefetch.unroll_factor>(
       num_items,
       num_elem_per_thread,
       can_vectorize,
@@ -1057,7 +1065,7 @@ __launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTE
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_80,
-      (transform_kernel_ldgsts</*policy*/ policy.async_copy.block_threads>(
+      (transform_kernel_ldgsts</*policy*/ policy.async_copy.block_threads, policy.async_copy.unroll_factor>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),
@@ -1069,7 +1077,9 @@ __launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTE
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_90,
-      (transform_kernel_ublkcp</*policy*/ policy.async_copy.block_threads, policy.async_copy.bulk_copy_alignment>(
+      (transform_kernel_ublkcp</*policy*/ policy.async_copy.block_threads,
+                               policy.async_copy.bulk_copy_alignment,
+                               policy.async_copy.unroll_factor>(
          num_items,
          num_elem_per_thread,
          ::cuda::std::move(pred),
