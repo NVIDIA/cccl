@@ -111,9 +111,9 @@ struct DeviceFind
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! For each ``value`` in ``[values_first, values_last)``, performs a binary search in the range ``[first, last)``,
-  //! using ``comp`` as the comparator to find the iterator to the element of said range which **is not** ordered
-  //! **before** ``value``.
+  //! For each ``value`` in ``[d_values, d_values + values_num_items)``, performs a binary search in the range
+  //! ``[d_range, d_range + range_num_items)``, using ``comp`` as the comparator to find the iterator to the element
+  //! of said range which **is not** ordered **before** ``value``.
   //!
   //! - The range ``[first, last)`` must be sorted consistently with ``comp``.
   //!
@@ -124,9 +124,15 @@ struct DeviceFind
   //!   is a model of [Random Access Iterator], whose value type forms a [Relation] with the value type of
   //!   ``ValuesIteratorT`` using ``CompareOpT`` as the predicate.
   //!
+  //! @tparam RangeNumItemsT
+  //!   is an integral type representing the number of elements in the range to be searched.
+  //!
   //! @tparam ValuesIteratorT
   //!   is a model of [Random Access Iterator], whose value type forms a [Relation] with the value type of
   //!   ``RangeIteratorT`` using ``CompareOpT`` as the predicate.
+  //!
+  //! @tparam ValuesNumItemsT
+  //!   is a model of integral type representing the number of elements in the range of values to be searched for.
   //!
   //! @tparam OutputIteratorT
   //!   is a model of [Random Access Iterator], whose value type is assignable from ``RangeIteratorT``'s difference
@@ -144,19 +150,19 @@ struct DeviceFind
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in] first
+  //! @param[in] d_range
   //!   Iterator to the beginning of the ordered range to be searched.
   //!
-  //! @param[in] last
-  //!   Iterator denoting the one-past-the-end element of the ordered range to be searched.
+  //! @param[in] range_num_items
+  //!   Number of elements in the ordered range to be searched.
   //!
-  //! @param[in] values_first
+  //! @param[in] d_values
   //!   Iterator to the beginning of the range of values to be searched for.
   //!
-  //! @param[in] values_last
-  //!   Iterator denoting the one-past-the-end element of the range of values to be searched for.
+  //! @param[in] values_num_items
+  //!   Number of elements in the range of values to be searched for.
   //!
-  //! @param[out] output
+  //! @param[out] d_output
   //!   Iterator to the beginning of the output range.
   //!
   //! @param[in] comp
@@ -170,25 +176,35 @@ struct DeviceFind
   //! [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
   //! [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
   //! [Relation]: https://en.cppreference.com/w/cpp/concepts/relation
-  template <typename RangeIteratorT, typename ValuesIteratorT, typename OutputIteratorT, typename CompareOpT>
+  template <typename RangeIteratorT,
+            typename RangeNumItemsT,
+            typename ValuesIteratorT,
+            typename ValuesNumItemsT,
+            typename OutputIteratorT,
+            typename CompareOpT>
   CUB_RUNTIME_FUNCTION static cudaError_t LowerBound(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
-    RangeIteratorT first,
-    RangeIteratorT last,
-    ValuesIteratorT values_first,
-    ValuesIteratorT values_last,
-    OutputIteratorT output,
+    RangeIteratorT d_range,
+    RangeNumItemsT range_num_items,
+    ValuesIteratorT d_values,
+    ValuesNumItemsT values_num_items,
+    OutputIteratorT d_output,
     CompareOpT comp,
     cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFind::LowerBound");
-    return DeviceFor::ForEach(
+
+    using RangeOffsetT  = detail::choose_offset_t<RangeNumItemsT>;
+    using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
+
+    return DeviceFor::ForEachN(
       d_temp_storage,
       temp_storage_bytes,
-      ::cuda::make_zip_iterator(values_first, output),
-      ::cuda::make_zip_iterator(values_last, output + ::cuda::std::distance(values_first, values_last)),
-      detail::find::make_comp_wrapper<detail::find::lower_bound>(first, last, comp),
+      ::cuda::make_zip_iterator(d_values, d_output),
+      static_cast<ValuesOffsetT>(values_num_items),
+      detail::find::make_comp_wrapper<detail::find::lower_bound>(
+        d_range, static_cast<RangeOffsetT>(range_num_items), comp),
       stream);
   }
 
@@ -196,11 +212,12 @@ struct DeviceFind
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! For each ``value`` in ``[values_first, values_last)``, performs a binary search in the range ``[first, last)``,
+  //! For each ``value`` in ``[d_values, d_values + values_num_items)``, performs a binary search in the range
+  //! ``[d_range, d_range + range_num_items)``,
   //! using ``comp`` as the comparator to find the iterator to the element of said range which **is** ordered
   //! **after** ``value``.
   //!
-  //! - The range ``[first, last)`` must be sorted consistently with ``comp``.
+  //! - The range ``[d_range, d_range + range_num_items)`` must be sorted consistently with ``comp``.
   //!
   //! .. versionadded:: 3.3.0
   //! @endrst
@@ -209,9 +226,15 @@ struct DeviceFind
   //!   is a model of [Random Access Iterator], whose value type forms a [Relation] with the value type of
   //!   ``ValuesIteratorT`` using ``CompareOpT`` as the predicate.
   //!
+  //! @tparam RangeNumItemsT
+  //!   is an integral type representing the number of elements in the range to be searched.
+  //!
   //! @tparam ValuesIteratorT
   //!   is a model of [Random Access Iterator], whose value type forms a [Relation] with the value type of
   //!   ``RangeIteratorT`` using ``CompareOpT`` as the predicate.
+  //!
+  //! @tparam ValuesNumItemsT
+  //!   is a model of integral type representing the number of elements in the range of values to be searched for.
   //!
   //! @tparam OutputIteratorT
   //!   is a model of [Random Access Iterator], whose value type is assignable from ``RangeIteratorT``'s difference
@@ -229,19 +252,19 @@ struct DeviceFind
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
-  //! @param[in] first
+  //! @param[in] d_range
   //!   Iterator to the beginning of the ordered range to be searched.
   //!
-  //! @param[in] last
-  //!   Iterator denoting the one-past-the-end element of the ordered range to be searched.
+  //! @param[in] range_num_items
+  //!   Number of elements in the ordered range to be searched.
   //!
-  //! @param[in] values_first
+  //! @param[in] d_values
   //!   Iterator to the beginning of the range of values to be searched for.
   //!
-  //! @param[in] values_last
-  //!   Iterator denoting the one-past-the-end element of the range of values to be searched for.
+  //! @param[in] values_num_items
+  //!   Number of elements in the range of values to be searched for.
   //!
-  //! @param[out] output
+  //! @param[out] d_output
   //!   Iterator to the beginning of the output range.
   //!
   //! @param[in] comp
@@ -255,25 +278,35 @@ struct DeviceFind
   //! [Random Access Iterator]: https://en.cppreference.com/w/cpp/iterator/random_access_iterator
   //! [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
   //! [Relation]: https://en.cppreference.com/w/cpp/concepts/relation
-  template <typename RangeIteratorT, typename ValuesIteratorT, typename OutputIteratorT, typename CompareOpT>
+  template <typename RangeIteratorT,
+            typename RangeNumItemsT,
+            typename ValuesIteratorT,
+            typename ValuesNumItemsT,
+            typename OutputIteratorT,
+            typename CompareOpT>
   CUB_RUNTIME_FUNCTION static cudaError_t UpperBound(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
-    RangeIteratorT first,
-    RangeIteratorT last,
-    ValuesIteratorT values_first,
-    ValuesIteratorT values_last,
-    OutputIteratorT output,
+    RangeIteratorT d_range,
+    RangeNumItemsT range_num_items,
+    ValuesIteratorT d_values,
+    ValuesNumItemsT values_num_items,
+    OutputIteratorT d_output,
     CompareOpT comp,
     cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFind::UpperBound");
-    return DeviceFor::ForEach(
+
+    using RangeOffsetT  = detail::choose_offset_t<RangeNumItemsT>;
+    using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
+
+    return DeviceFor::ForEachN(
       d_temp_storage,
       temp_storage_bytes,
-      ::cuda::make_zip_iterator(values_first, output),
-      ::cuda::make_zip_iterator(values_last, output + ::cuda::std::distance(values_first, values_last)),
-      detail::find::make_comp_wrapper<detail::find::upper_bound>(first, last, comp),
+      ::cuda::make_zip_iterator(d_values, d_output),
+      static_cast<ValuesOffsetT>(values_num_items),
+      detail::find::make_comp_wrapper<detail::find::upper_bound>(
+        d_range, static_cast<RangeOffsetT>(range_num_items), comp),
       stream);
   }
 };
