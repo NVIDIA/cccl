@@ -107,33 +107,42 @@
 
 ## PR #7214 @codex review follow-up (2026-02-22)
 
-- [ ] Add/expand docstrings for `coop.block.exchange` constructor and helper
+- [x] Add/expand docstrings for `coop.block.exchange` constructor and helper
       makers (`_build_exchange_spec`, `_make_exchange_two_phase`,
       `_make_exchange_rewrite`) so params/requirements are explicit.
-- [ ] Reconcile `coop.block.histogram(..., temp_storage=...)` API/docs with CUB
+- [x] Reconcile `coop.block.histogram(..., temp_storage=...)` API/docs with CUB
       behavior: confirm whether to keep placeholder-only support vs implement
       explicit temp storage, and make typing/rewrite/docs consistent.
-- [ ] Rename `_numba_extension.py` module globals to `CUDA_CCCL_*` naming while
+- [x] Rename `_numba_extension.py` module globals to `CUDA_CCCL_*` naming while
       preserving backward compatibility.
-- [ ] Resolve `_rewrite.py` primitive-type naming TODO (`Primitive` vs
+- [x] Resolve `_rewrite.py` primitive-type naming TODO (`Primitive` vs
       `primitive_type`) by either implementing the rename or removing the stale
       TODO with rationale.
-- [ ] Clean up `_rewrite.py` comment/dead-debug block cluster around
+- [x] Clean up `_rewrite.py` comment/dead-debug block cluster around
       `CoopNode.do_rewrite()` (`:1573`, `:1593`) and replace with concise,
       technical rationale.
-- [ ] Replace ad-hoc rewrite-details payloads (`SimpleNamespace`) with a typed
+- [x] Replace ad-hoc rewrite-details payloads (`SimpleNamespace`) with a typed
       dataclass where practical, starting from `CoopNode.do_rewrite()`.
-- [ ] Reword load/store rewrite comments (`_rewrite.py:2063`, `:2094`) and
+- [x] Reword load/store rewrite comments (`_rewrite.py:2063`, `:2094`) and
       remove stray comments (`:2155`) to explain cache priming/wrapper reasons
       without editorial tone.
-- [ ] Replace broad `ThreadDataType` import fallbacks (`except Exception`) with
+- [x] Replace broad `ThreadDataType` import fallbacks (`except Exception`) with
       a deterministic helper/failure mode in rewrite nodes.
-- [ ] Validate `CoopBlockRunLengthNode.rewrite_details` can defer to
+- [x] Validate `CoopBlockRunLengthNode.rewrite_details` can defer to
       `CoopNode.do_rewrite()` (or a shared helper) without regressing
       parent-instance return typing and TempStorage prelude handling.
-- [ ] Validate `CoopBlockRunLengthDecodeNode.rewrite_details` can defer to
+- [x] Validate `CoopBlockRunLengthDecodeNode.rewrite_details` can defer to
       `CoopNode.do_rewrite()` (or a shared helper) while preserving child
       no-linking behavior.
+- [x] Remove duplicated `make_*` wrapper bodies from `cuda.coop.block.__init__`
+      and bind public factories directly to module-level two-phase builders.
+- [x] Remove `cuda.coop.block.api` docs-stub path and associated
+      `CCCL_COOP_DOCS` block-mode branch usage.
+- [x] Expand constructor docstrings for newly-added block primitives
+      (load/store, radix rank, radix sort variants, reduce, run-length decode
+      child, shuffle, adjacent difference, discontinuity, histogram children).
+- [x] Normalize copyright headers for newly-added python `cuda.coop` files to
+      include year 2026.
 
 ## Deferred / Not Planned
 

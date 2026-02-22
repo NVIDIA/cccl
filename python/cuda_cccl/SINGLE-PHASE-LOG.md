@@ -1887,3 +1887,72 @@
       `CoopBlockRunLengthNode.rewrite_details`.
 - Tests:
   - No build/test commands run (ledger/audit-only follow-up).
+
+## 2026-02-22 (PR #7214 @codex implementation + thread resolution)
+- Request: Implement all planned `@codex` PR follow-ups on `NVIDIA/cccl#7214`,
+  test thoroughly, commit incrementally, and resolve each originating thread with
+  commit-linked notes.
+- Changes:
+  - Implemented + committed the original 12 triaged follow-ups:
+    - `fec34a417d` `cuda.coop: clarify block exchange docs`
+    - `ec1a693968` `cuda.coop: clarify histogram temp_storage semantics`
+    - `4bb08d3c86` `cuda.coop: rename numba extension globals`
+    - `2a22c4065f` `cuda.coop: drop stale PrimitiveType TODO`
+    - `2ebdeb92b8` `cuda.coop: clarify typemap return-type rewrite comment`
+    - `ab57ed9cca` `cuda.coop: remove stale rewrite debug block`
+    - `1328f5b6c7` `cuda.coop: type rewrite details payload`
+    - `755138893b` `cuda.coop: clarify cache priming rationale`
+    - `f5279de09d` `cuda.coop: reword two-phase rewrite rationale`
+    - `59cee18d6e` `cuda.coop: remove stray rewrite comment`
+    - `9aa45265e7` `cuda.coop: tighten ThreadDataType lookup in merge sort rewrite`
+    - `4e5a9b70c9` `cuda.coop: dedupe run-length rewrite details`
+  - Discovered additional unresolved `@codex` threads after each resolution wave,
+    implemented and committed follow-up batches:
+    - `830905fd5d` `cuda.coop: remove duplicate block make_* wrappers`
+    - `a9e89fe881` `cuda.coop: normalize 2026 headers and expand docs`
+    - `0e9482c0c7` `cuda.coop: remove block api stubs and expand docs`
+  - Removed `cuda/coop/block/api.py` and block-side docs-stub branching, keeping
+    `cuda.coop.block` bound to real implementations.
+  - Expanded constructor docstrings across newly added block primitives per
+    review request (exchange, adjacent difference, discontinuity, histogram
+    child constructors, load/store, radix rank, radix sort constructors,
+    reduce, run-length decode child, shuffle).
+  - Added compatibility-preserving `CUDA_CCCL_*` globals in
+    `_numba_extension.py` plus alias tests.
+  - Added/updated tests:
+    - `tests/coop/test_make_factories_two_phase.py` histogram explicit
+      temp-storage rejection coverage.
+    - `tests/coop/test_numba_extension.py` alias synchronization coverage.
+- Decisions:
+  - Kept explicit histogram `temp_storage` unsupported in this PR, but clarified
+    docs/error text and added regression coverage.
+  - Unified run-length parent/child rewrite-details onto `CoopNode.do_rewrite()`
+    to minimize duplication while preserving typing/link behavior.
+  - Replaced broad `ThreadDataType` catch-all fallback in merge-sort rewrite
+    with deterministic helper-based lookup.
+- Thread status:
+  - Resolved all unresolved `@codex` review threads currently present on
+    `NVIDIA/cccl#7214` (`unresolved_codex_threads=0` after final check).
+- Tests:
+  - `pytest -q tests/coop/test_block_exchange.py`
+    - Result: 126 passed.
+  - `pytest -q tests/coop/test_make_factories_two_phase.py tests/coop/test_block_histogram.py -k "make_histogram_rejects_explicit_temp_storage or test_block_histogram_init_composite"`
+    - Result: 2 passed, 342 deselected.
+  - `pytest -q tests/coop/test_numba_extension.py`
+    - Result: 2 passed.
+  - `pytest -q tests/coop/test_block_exchange.py tests/coop/test_block_reduce.py -k "block_exchange_temp_storage_single_phase or block_reduce_temp_storage_api or block_sum_temp_storage_api"`
+    - Result: 2 passed, 999 deselected.
+  - `pytest -q tests/coop/test_block_merge_sort.py -k "temp_storage or pair"`
+    - Result: 2 passed, 102 deselected.
+  - `pytest -q tests/coop/test_block_run_length_decode.py`
+    - Result: 7 passed.
+  - `pytest -q tests/coop/test_make_factories_two_phase.py`
+    - Result: 36 passed.
+  - `pytest -q tests/coop/test_block_adjacent_difference_api.py tests/coop/test_block_discontinuity_api.py tests/coop/test_block_histogram.py -k "init_composite or subtract or flag"`
+    - Result: 6 passed, 307 deselected.
+  - `CCCL_COOP_DOCS=1 python -c` import sanity for `cuda.coop.block`
+    - Result: import OK; `scan`/`make_scan` callable.
+  - `pytest -q tests/coop/test_block_load_store_api.py -k "load_store" tests/coop/test_block_radix_rank.py -k "radix_rank" tests/coop/test_block_radix_sort.py -k "radix_sort" tests/coop/test_block_reduce.py -k "block_reduction" tests/coop/test_block_run_length_decode.py -k "run_length_decode_single_phase_temp_storage" tests/coop/test_block_shuffle.py -k "shuffle"`
+    - Result: 8 passed, 1036 deselected.
+  - `python -m py_compile cuda/coop/_rewrite.py`
+    - Result: passed (multiple checkpoints during rewrite cleanup).
