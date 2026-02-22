@@ -12,6 +12,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/select_system.h>
 
@@ -573,6 +574,55 @@ template <typename InputIterator1,
 
   return thrust::set_difference_by_key(
     select_system(system1, system2, system3, system4, system5, system6),
+    keys_first1,
+    keys_last1,
+    keys_first2,
+    keys_last2,
+    values_first1,
+    values_first2,
+    keys_result,
+    values_result);
+} // end set_difference_by_key()
+
+template <typename InputIterator1,
+          typename InputIterator2,
+          typename InputIterator3,
+          typename OutputIterator1,
+          typename OutputIterator2>
+::cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
+  InputIterator1 keys_first1,
+  InputIterator1 keys_last1,
+  InputIterator2 keys_first2,
+  InputIterator2 keys_last2,
+  InputIterator3 values_first1,
+  OutputIterator1 keys_result,
+  OutputIterator2 values_result)
+{
+  _CCCL_NVTX_RANGE_SCOPE("thrust::set_difference_by_key");
+  using thrust::system::detail::generic::select_system;
+
+  using value_type1 = typename thrust::iterator_value<InputIterator3>::type;
+
+  using constant_iterator = thrust::constant_iterator<value_type1>;
+
+  // fabricate a values_first2 by repeating a default-constructed value_type1
+  // XXX assumes value_type1 is default-constructible
+  constant_iterator values_first2 = thrust::make_constant_iterator(value_type1());
+
+  using System1 = typename thrust::iterator_system<InputIterator1>::type;
+  using System2 = typename thrust::iterator_system<InputIterator2>::type;
+  using System3 = typename thrust::iterator_system<InputIterator3>::type;
+  using System4 = typename thrust::iterator_system<OutputIterator1>::type;
+  using System5 = typename thrust::iterator_system<OutputIterator2>::type;
+
+  System1 system1;
+  System2 system2;
+  System3 system3;
+  System4 system4;
+  System5 system5;
+
+  return thrust::set_difference_by_key(
+    select_system(system1, system2, system3, system4, system5),
     keys_first1,
     keys_last1,
     keys_first2,
