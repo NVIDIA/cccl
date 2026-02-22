@@ -23,9 +23,9 @@
 
 #include <cuda/std/__exception/terminate.h>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <cstdio>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -94,22 +94,31 @@ _CCCL_END_NAMESPACE_CUDA_STD
     else                          \
     {                             \
     }
-#  define _CCCL_THROW(_TYPE, ...)                                                                                \
-    do                                                                                                           \
-    {                                                                                                            \
-      NV_IF_ELSE_TARGET(NV_IS_HOST,                                                                              \
-                        ({                                                                                       \
-                          ::fprintf(stderr,                                                                      \
-                                    "%s:%u: An instance of class %s would be thrown.\n  what():  %s\nAborted\n", \
-                                    __FILE__,                                                                    \
-                                    __LINE__,                                                                    \
-                                    #_TYPE,                                                                      \
-                                    (_TYPE(__VA_ARGS__)).what());                                                \
-                          ::fflush(stderr);                                                                      \
-                        }),                                                                                      \
-                        ({ _CCCL_ASSERT(false, "An instance of class " #_TYPE " would be thrown."); }))          \
-      ::cuda::std::terminate();                                                                                  \
-    } while (0)
+#  if _CCCL_HOSTED()
+#    define _CCCL_THROW(_TYPE, ...)                                                                                \
+      do                                                                                                           \
+      {                                                                                                            \
+        NV_IF_ELSE_TARGET(NV_IS_HOST,                                                                              \
+                          ({                                                                                       \
+                            ::fprintf(stderr,                                                                      \
+                                      "%s:%u: An instance of class %s would be thrown.\n  what():  %s\nAborted\n", \
+                                      __FILE__,                                                                    \
+                                      __LINE__,                                                                    \
+                                      #_TYPE,                                                                      \
+                                      (_TYPE(__VA_ARGS__)).what());                                                \
+                            ::fflush(stderr);                                                                      \
+                          }),                                                                                      \
+                          ({ _CCCL_ASSERT(false, "An instance of class " #_TYPE " would be thrown."); }))          \
+        ::cuda::std::terminate();                                                                                  \
+      } while (0)
+#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
+#    define _CCCL_THROW(_TYPE, ...)                                              \
+      do                                                                         \
+      {                                                                          \
+        _CCCL_ASSERT(false, "An instance of class " #_TYPE " would be thrown."); \
+        ::cuda::std::terminate();                                                \
+      } while (0)
+#  endif // ^^^ !_CCCL_HOSTED() ^^^
 #  define _CCCL_RETHROW ::cuda::std::terminate()
 #endif // ^^^ no exceptions ^^^
 

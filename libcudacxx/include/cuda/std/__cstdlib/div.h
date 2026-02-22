@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <cstdlib>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -31,7 +31,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // If available, use the host's div_t, ldiv_t, and lldiv_t types because the struct members order is
 // implementation-defined.
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 using ::div_t;
 using ::ldiv_t;
 using ::lldiv_t;
@@ -53,7 +53,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT lldiv_t
   long long quot;
   long long rem;
 };
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 [[nodiscard]] _CCCL_API constexpr div_t div(int __x, int __y) noexcept
 {

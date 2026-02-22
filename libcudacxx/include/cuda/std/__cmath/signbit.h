@@ -21,13 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__floating_point/fp.h>
-#include <cuda/std/__type_traits/is_extended_arithmetic.h>
-#include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/limits>
+#ifndef _CCCL_DISABLE_CMATH
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__floating_point/fp.h>
+#  include <cuda/std/__type_traits/is_extended_arithmetic.h>
+#  include <cuda/std/__type_traits/is_integral.h>
+#  include <cuda/std/limits>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -51,6 +53,8 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_DISABLE_CMATH
 
 #endif // _CUDA_STD___CMATH_SIGNBIT_H

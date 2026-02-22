@@ -24,10 +24,10 @@
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <complex>
 #  include <sstream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #define THRUST_STD_COMPLEX_REAL(z) \
   reinterpret_cast<const typename ::cuda::std::remove_reference_t<decltype(z)>::value_type(&)[2]>(z)[0]
@@ -118,7 +118,7 @@ public:
   template <typename U>
   _CCCL_HOST_DEVICE complex(const complex<U>& z);
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   /*! This converting copy constructor copies from a <tt>std::complex</tt> with
    *  a type that is convertible to this \p complex's \c value_type.
    *
@@ -143,7 +143,7 @@ public:
    */
   template <typename U>
   _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex(const ::std::complex<U>& z);
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
   /* --- Assignment Operators --- */
 
@@ -179,7 +179,7 @@ public:
   template <typename U>
   _CCCL_HOST_DEVICE complex& operator=(const complex<U>& z);
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   /*! Assign `z.real()` and `z.imag()` to the real and imaginary parts of this
    *  \p complex respectively.
    *
@@ -204,7 +204,7 @@ public:
    */
   template <typename U>
   _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex& operator=(const ::std::complex<U>& z);
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
   /* --- Compound Assignment Operators --- */
 
@@ -430,7 +430,7 @@ public:
     data.y = im;
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   /* --- Casting functions --- */
 
   /*! Casts this \p complex to a <tt>std::complex</tt> of the same type.
@@ -443,7 +443,7 @@ public:
   {
     return ::std::complex<T>(real(), imag());
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 private:
   struct alignas(sizeof(T) * 2) storage
@@ -981,7 +981,7 @@ _CCCL_HOST_DEVICE complex<T> asinh(const complex<T>& z);
 template <typename T>
 _CCCL_HOST_DEVICE complex<T> atanh(const complex<T>& z);
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 /* --- Stream Operators --- */
 
 /*! Writes to an output stream a \p complex number in the form (real, imaginary).
@@ -1014,7 +1014,7 @@ std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>&
  */
 template <typename T, typename CharT, typename Traits>
 _CCCL_HOST ::std::basic_istream<CharT, Traits>& operator>>(std::basic_istream<CharT, Traits>& is, complex<T>& z);
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 /* --- Equality Operators --- */
 
@@ -1030,7 +1030,7 @@ _CCCL_HOST ::std::basic_istream<CharT, Traits>& operator>>(std::basic_istream<Ch
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE bool operator==(const complex<T0>& x, const complex<T1>& y);
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 /*! Returns true if two \p complex numbers are equal and false otherwise.
  *
  *  \param x The first \p complex.
@@ -1054,7 +1054,7 @@ _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator==(const complex<T0>& x, const
  */
 template <typename T0, typename T1>
 _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator==(const ::std::complex<T0>& x, const complex<T1>& y);
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 /*! Returns true if the imaginary part of the \p complex number is zero and
  *  the real part is equal to the scalar. Returns false otherwise.
@@ -1094,7 +1094,7 @@ _CCCL_HOST_DEVICE bool operator==(const complex<T0>& x, const T1& y);
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE bool operator!=(const complex<T0>& x, const complex<T1>& y);
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 /*! Returns true if two \p complex numbers are different and false otherwise.
  *
  *  \param x The first \p complex.
@@ -1118,7 +1118,7 @@ _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator!=(const complex<T0>& x, const
  */
 template <typename T0, typename T1>
 _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator!=(const ::std::complex<T0>& x, const complex<T1>& y);
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 /*! Returns true if the imaginary part of the \p complex number is not zero or
  *  the real part is different from the scalar. Returns false otherwise.

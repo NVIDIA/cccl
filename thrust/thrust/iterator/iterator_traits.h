@@ -76,9 +76,9 @@ struct lazy_trait
 template <typename T>
 using iterator_traits CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits instead") =
 // FIXME(bgruber): switching to ::cuda::std::iterator_traits<T> breaks some tests, e.g. cub.test.device_merge_sort.lid_1
-#if _CCCL_COMPILER(NVRTC)
+#if _CCCL_FREESTANDING()
   ::cuda
-#endif // _CCCL_COMPILER(NVRTC)
+#endif // _CCCL_FREESTANDING()
   ::std::iterator_traits<T>;
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH

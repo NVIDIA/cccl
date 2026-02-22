@@ -19,12 +19,12 @@
 
 #include <nv/target>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <thrust/system/cuda/error.h>
 #  include <thrust/system_error.h>
 
 #  include <cstdio>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -111,7 +111,7 @@ _CCCL_HOST_DEVICE cudaError_t synchronize_optional(Policy& policy)
   return synchronize_stream_optional(derived_cast(policy));
 }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 template <class Type>
 _CCCL_HOST_API _CCCL_FORCEINLINE cudaError_t
 trivial_copy_from_device(Type* dst, Type const* src, size_t count, cudaStream_t stream)
@@ -158,7 +158,7 @@ trivial_copy_device_to_device(Policy& policy, Type* dst, Type const* src, size_t
   cuda_cub::synchronize_optional(policy);
   return status;
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status)
 {
@@ -185,9 +185,14 @@ _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status)
 
 #endif
 
+#if _CCCL_HOSTED()
     NV_IF_TARGET(NV_IS_HOST,
                  (throw thrust::system_error(status, thrust::cuda_category());),
                  (THRUST_TEMP_DEVICE_CODE; ::cuda::std::terminate();));
+#else
+    THRUST_TEMP_DEVICE_CODE;
+    ::cuda::std::terminate();
+#endif // _CCCL_HOSTED()
 
 #undef THRUST_TEMP_DEVICE_CODE
   }
@@ -218,9 +223,14 @@ _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status, char const* msg
 
 #endif
 
+#if _CCCL_HOSTED()
     NV_IF_TARGET(NV_IS_HOST,
                  (throw thrust::system_error(status, thrust::cuda_category(), msg);),
                  (THRUST_TEMP_DEVICE_CODE; ::cuda::std::terminate();));
+#else
+    THRUST_TEMP_DEVICE_CODE;
+    ::cuda::std::terminate();
+#endif // _CCCL_HOSTED()
 
 #undef THRUST_TEMP_DEVICE_CODE
   }

@@ -21,10 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/limits>
+#ifndef _CCCL_DISABLE_CMATH
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__type_traits/is_integral.h>
+#  include <cuda/std/limits>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -40,15 +42,17 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
   return ::cuda::std::numeric_limits<double>::quiet_NaN();
 }
 
-#if _CCCL_HAS_LONG_DOUBLE()
+#  if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API constexpr long double nanl(const char*) noexcept
 {
   return ::cuda::std::numeric_limits<long double>::quiet_NaN();
 }
-#endif // _CCCL_HAS_LONG_DOUBLE()
+#  endif // _CCCL_HAS_LONG_DOUBLE()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_DISABLE_CMATH
 
 #endif // _CUDA_STD___CMATH_NAN_H

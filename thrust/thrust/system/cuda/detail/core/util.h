@@ -204,7 +204,7 @@ struct has_enough_shmem : has_enough_shmem_impl<true, Agent, MAX_SHMEM, sm_list>
 /////////////////////////
 /////////////////////////
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 // AgentPlan structure and helpers
 // --------------------------------
 
@@ -347,7 +347,7 @@ THRUST_RUNTIME_FUNCTION inline size_t vshmem_size(size_t shmem_per_block, size_t
     return 0;
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 template <class>
 struct get_arch;
@@ -398,7 +398,7 @@ public:
   }
 };
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 THRUST_RUNTIME_FUNCTION inline int get_ptx_version()
 {
   int ptx_version = 0;
@@ -452,7 +452,7 @@ THRUST_RUNTIME_FUNCTION inline int get_ptx_version()
 
   return ptx_version;
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #define _CUDA_CUB_RET_IF_FAIL(e)               \
   {                                            \
@@ -521,7 +521,7 @@ struct uninitialized_array
   }
 };
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 namespace host
 {
 inline cuda_optional<size_t> get_max_shared_memory_per_block()
@@ -550,7 +550,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t alias_storage(
 {
   return cub::detail::alias_temporaries(storage_ptr, storage_size, allocations, allocation_sizes);
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 } // namespace cuda_cub::core::detail
 
 THRUST_NAMESPACE_END

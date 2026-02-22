@@ -25,9 +25,9 @@
 #include <cuda/std/__chrono/time_point.h>
 #include <cuda/std/ctime>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <chrono>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -46,12 +46,19 @@ public:
 
   [[nodiscard]] _CCCL_API inline static time_point now() noexcept
   {
+#if _CCCL_HOSTED()
     NV_IF_ELSE_TARGET(
       NV_IS_HOST,
       (return time_point(duration_cast<duration>(nanoseconds(
         ::std::chrono::duration_cast<::std::chrono::nanoseconds>(::std::chrono::system_clock::now().time_since_epoch())
           .count())));),
       (return time_point(duration_cast<duration>(nanoseconds(::cuda::ptx::get_sreg_globaltimer())));))
+#else
+    // host-side `now` is not supported in freestanding
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      (::cuda::std::terminate();),
+                      (return time_point(duration_cast<duration>(nanoseconds(::cuda::ptx::get_sreg_globaltimer())));))
+#endif
   }
 
   [[nodiscard]] _CCCL_API inline static time_t to_time_t(const time_point& __t) noexcept

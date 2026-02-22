@@ -23,7 +23,9 @@
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
-#include <cub/device/dispatch/dispatch_reduce_deterministic.cuh>
+#ifndef _CCCL_DISABLE_CMATH
+#  include <cub/device/dispatch/dispatch_reduce_deterministic.cuh>
+#endif // _CCCL_DISABLE_CMATH
 #include <cub/device/dispatch/dispatch_reduce_nondeterministic.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce.cuh>
 #include <cub/thread/thread_operators.cuh>
@@ -71,11 +73,13 @@ struct tuning
   }
 };
 
+#ifndef _CCCL_DISABLE_CMATH
 struct default_rfa_tuning : tuning<default_rfa_tuning>
 {
   template <class AccumT, class Offset, class OpT>
   using fn = detail::rfa::policy_hub<AccumT, Offset, OpT>;
 };
+#endif // _CCCL_DISABLE_CMATH
 
 template <typename ExtremumOutIteratorT, typename IndexOutIteratorT>
 struct unzip_and_write_arg_extremum_op
@@ -182,6 +186,7 @@ private:
     ::cuda::execution::determinism::gpu_to_gpu_t,
     cudaStream_t stream)
   {
+#ifndef _CCCL_DISABLE_CMATH
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
     using reduce_tuning_t = ::cuda::std::execution::
@@ -195,6 +200,12 @@ private:
 
     return dispatch_t::Dispatch(
       d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream, transform_op);
+#else // _CCCL_DISABLE_CMATH
+    static_assert(sizeof(InputIteratorT) == 0,
+                  "Deterministic reduction (gpu_to_gpu) requires cmath support and is not available when "
+                  "_CCCL_DISABLE_CMATH is defined.");
+    return cudaErrorNotSupported;
+#endif // _CCCL_DISABLE_CMATH
   }
 
   template <typename TuningEnvT,

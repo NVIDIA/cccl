@@ -33,7 +33,7 @@
 #  include <cuda/std/__thread/threading_support_pthread.h>
 #elif defined(_CCCL_HAS_THREAD_API_WIN32)
 #  include <cuda/std/__thread/threading_support_win32.h>
-#else // ^^^ _CCCL_HAS_THREAD_API_WIN32 ^^^ / vvv Unknown Thread API vvv
+#elif _CCCL_HOSTED()
 #  error "Unknown Thread API"
 #endif // Unknown Thread API
 
@@ -56,6 +56,7 @@ _CCCL_API inline void __cccl_thread_yield_processor()
   NV_IF_TARGET(NV_IS_HOST, __LIBCUDACXX_ASM_THREAD_YIELD)
 }
 
+#if defined(_CCCL_HAS_THREAD_API_CUDA) || defined(_CCCL_HAS_THREAD_API_PTHREAD) || defined(_CCCL_HAS_THREAD_API_WIN32)
 template <class _Fn>
 _CCCL_API inline bool __cccl_thread_poll_with_backoff(
   _Fn&& __f, ::cuda::std::chrono::nanoseconds __max = ::cuda::std::chrono::nanoseconds::zero())
@@ -98,6 +99,27 @@ _CCCL_API inline bool __cccl_thread_poll_with_backoff(
     }
   }
 }
+#else // Freestanding fallbacks
+// In freestanding mode, yield falls back to processor yield (or no-op)
+_CCCL_API inline void __cccl_thread_yield()
+{
+  ::cuda::std::__cccl_thread_yield_processor();
+}
+
+// Simple busy-wait polling without sleep support
+template <class _Fn>
+_CCCL_API inline bool __cccl_thread_poll_with_backoff(_Fn&& __f, ::cuda::std::chrono::nanoseconds = {})
+{
+  for (;;)
+  {
+    if (__f())
+    {
+      return true;
+    }
+    ::cuda::std::__cccl_thread_yield_processor();
+  }
+}
+#endif // Thread API available
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

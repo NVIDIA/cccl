@@ -39,10 +39,12 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool __isnan_impl(_Tp __x) noexcept
 {
   static_assert(is_floating_point_v<_Tp>, "Only standard floating-point types are supported");
+#if _CCCL_HOSTED()
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     return ::isnan(__x);
   }
+#endif // _CCCL_HOSTED()
   return __x != __x;
 }
 

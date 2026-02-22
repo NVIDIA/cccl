@@ -15,7 +15,7 @@
 
 #include <cub/agent/single_pass_scan_operators.cuh>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <ostream>
 #endif
 
@@ -35,7 +35,7 @@ enum class delay_constructor_kind
   exponential_backon
 };
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 inline ::std::ostream& operator<<(::std::ostream& os, delay_constructor_kind kind)
 {
   switch (kind)
@@ -60,7 +60,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, delay_constructor_kind kin
       return os << "<unknown delay_constructor_kind: " << static_cast<int>(kind) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 struct delay_constructor_policy
 {
@@ -78,13 +78,13 @@ struct delay_constructor_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const delay_constructor_policy& p)
   {
     return os << "delay_constructor_policy { .kind = " << p.kind << ", .delay = " << p.delay
               << ", .l2_write_latency = " << p.l2_write_latency << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 template <typename DelayConstructor>

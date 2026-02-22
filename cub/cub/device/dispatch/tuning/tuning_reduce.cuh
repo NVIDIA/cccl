@@ -21,7 +21,7 @@
 #include <cuda/__device/arch_id.h>
 #include <cuda/std/optional>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <ostream>
 #endif
 
@@ -51,14 +51,14 @@ struct agent_reduce_policy // equivalent of AgentReducePolicy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const agent_reduce_policy& p)
   {
     return os << "agent_reduce_policy { .block_threads = " << p.block_threads
               << ", .items_per_thread = " << p.items_per_thread << ", .vector_load_length = " << p.vector_load_length
               << ", .block_algorithm = " << p.block_algorithm << ", .load_modifier = " << p.load_modifier << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct reduce_policy
@@ -78,13 +78,13 @@ struct reduce_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const reduce_policy& p)
   {
     return os << "reduce_policy { .reduce = " << p.reduce << ", .single_tile = " << p.single_tile
               << ", .reduce_nondeterministic = " << p.reduce_nondeterministic << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()

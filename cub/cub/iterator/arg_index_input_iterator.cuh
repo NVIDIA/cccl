@@ -23,9 +23,9 @@
 
 #include <thrust/iterator/iterator_facade.h>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 CUB_NAMESPACE_BEGIN
 
@@ -224,12 +224,12 @@ public:
     offset = 0;
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const self_type& /*itr*/)
   {
     return os;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 CUB_NAMESPACE_END

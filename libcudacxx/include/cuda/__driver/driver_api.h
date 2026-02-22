@@ -30,11 +30,14 @@
 #  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_same.h>
-#  if _CCCL_OS(WINDOWS)
-#    include <windows.h>
-#  else
-#    include <dlfcn.h>
-#  endif
+
+#  if _CCCL_HOSTED()
+#    if _CCCL_OS(WINDOWS)
+#      include <windows.h>
+#    else
+#      include <dlfcn.h>
+#    endif
+#  endif // _CCCL_HOSTED()
 
 #  include <cuda.h>
 
@@ -53,11 +56,12 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
 // cudaGetDriverEntryPoint function is deprecated
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
+#  if _CCCL_HOSTED()
 //! @brief Gets the cuGetProcAddress function pointer.
 [[nodiscard]] _CCCL_PUBLIC_HOST_API inline auto __getProcAddressFn() -> decltype(cuGetProcAddress)*
 {
   const char* __fn_name = "cuGetProcAddress_v2";
-#  if _CCCL_OS(WINDOWS)
+#    if _CCCL_OS(WINDOWS)
   static auto __driver_library = ::LoadLibraryExA("nvcuda.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
   if (__driver_library == nullptr)
   {
@@ -68,12 +72,12 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
   {
     ::cuda::__throw_cuda_error(::cudaErrorInitializationError, "Failed to get cuGetProcAddress from nvcuda.dll");
   }
-#  else // ^^^ _CCCL_OS(WINDOWS) ^^^ / vvv !_CCCL_OS(WINDOWS) vvv
-#    if _CCCL_OS(ANDROID)
+#    else // ^^^ _CCCL_OS(WINDOWS) ^^^ / vvv !_CCCL_OS(WINDOWS) vvv
+#      if _CCCL_OS(ANDROID)
   const char* __driver_library_name = "libcuda.so";
-#    else // ^^^ _CCCL_OS(ANDROID) ^^^ / vvv !_CCCL_OS(ANDROID) vvv
+#      else // ^^^ _CCCL_OS(ANDROID) ^^^ / vvv !_CCCL_OS(ANDROID) vvv
   const char* __driver_library_name = "libcuda.so.1";
-#    endif // ^^^ !_CCCL_OS(ANDROID) ^^^
+#      endif // ^^^ !_CCCL_OS(ANDROID) ^^^
   static void* __driver_library = ::dlopen(__driver_library_name, RTLD_NOW);
   if (__driver_library == nullptr)
   {
@@ -84,9 +88,23 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
   {
     ::cuda::__throw_cuda_error(::cudaErrorInitializationError, "Failed to get cuGetProcAddress from libcuda.so.1");
   }
-#  endif // ^^^ !_CCCL_OS(WINDOWS) ^^^
+#    endif // ^^^ !_CCCL_OS(WINDOWS) ^^^
   return reinterpret_cast<decltype(cuGetProcAddress)*>(__fn);
 }
+#  else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
+[[nodiscard]] _CCCL_PUBLIC_HOST_API inline auto
+__getProcAddressFn(decltype(cuGetProcAddress)* __ptr = nullptr, bool __set = false) -> decltype(cuGetProcAddress)*
+{
+  static decltype(cuGetProcAddress)* __fn = __ptr;
+
+  if (__set)
+  {
+    __fn = __ptr;
+  }
+
+  return __fn;
+}
+#  endif // !_CCCL_HOSTED()
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 

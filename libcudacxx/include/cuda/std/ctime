@@ -25,19 +25,21 @@
 #  include <cuda/__ptx/instructions/get_sreg.h>
 #endif // _CCCL_CUDA_COMPILATION()
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <time.h>
-#else
+#else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
 #  define TIME_UTC 1
 
-using time_t = long long int;
+using clock_t = long long int;
+using time_t  = long long int;
+using size_t  = decltype(sizeof(0));
 
 struct timespec
 {
   ::time_t tv_sec;
   long tv_nsec;
 };
-#endif // _CCCL_COMPILER(NVRTC)
+#endif // _CCCL_FREESTANDING()
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -64,7 +66,13 @@ using ::timespec;
 #  undef _LIBCUDACXX_POP_CLOCK_MACRO
 #endif // _LIBCUDACXX_POP_CLOCK_MACRO
 {
+#if _CCCL_HOSTED()
   NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::clock();), (return static_cast<clock_t>(::cuda::ptx::get_sreg_clock64());))
+#else
+  // host-side `clock` is not supported in freestanding
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST, (::cuda::std::terminate();), (return static_cast<clock_t>(::cuda::ptx::get_sreg_clock64());))
+#endif
 }
 
 // difftime
@@ -108,7 +116,12 @@ _CCCL_API inline time_t time(time_t* __v) noexcept
 #  undef _LIBCUDACXX_POP_TIME_MACRO
 #endif // _LIBCUDACXX_POP_TIME_MACRO
 {
+#if _CCCL_HOSTED()
   NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::time(__v);), (return ::cuda::std::__cccl_time_impl_device(__v);))
+#else
+  // host-side `time` is not supported in freestanding
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (::cuda::std::terminate();), (return ::cuda::std::__cccl_time_impl_device(__v);))
+#endif
 }
 
 #if !defined(__ANDROID_API__) || __ANDROID_API__ >= 29
@@ -141,9 +154,15 @@ template <int = 0>
 #    undef _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
 #  endif // _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
 {
+#  if _CCCL_HOSTED()
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (return ::timespec_get(__ts, __base);),
                     (return ::cuda::std::__cccl_timespec_get_impl_device(__ts, __base);))
+#  else
+  // host-side `timespec_get` is not supported in freestanding
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST, (::cuda::std::terminate();), (return ::cuda::std::__cccl_timespec_get_impl_device(__ts, __base);))
+#  endif
 }
 
 #endif // !defined(__ANDROID_API__) || __ANDROID_API__ >= 29

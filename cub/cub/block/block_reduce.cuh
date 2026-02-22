@@ -28,9 +28,9 @@
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 CUB_NAMESPACE_BEGIN
 
@@ -152,7 +152,7 @@ enum BlockReduceAlgorithm
   BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
 };
 
-#if !_CCCL_COMPILER(NVRTC) && !defined(_CCCL_DOXYGEN_INVOKED)
+#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 inline ::std::ostream& operator<<(::std::ostream& os, const BlockReduceAlgorithm& alg)
 {
   switch (alg)
@@ -169,7 +169,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, const BlockReduceAlgorithm
       return os << "<unknown BlockReduceAlgorithm: " << static_cast<int>(alg) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
+#endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
 //! @rst
 //! The BlockReduce class provides :ref:`collective <collective-primitives>` methods for computing a

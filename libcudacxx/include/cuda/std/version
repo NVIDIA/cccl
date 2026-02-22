@@ -25,9 +25,9 @@
 // At the same time we want bring in all feature test macros from host
 #if __has_include(<version>) // <version> should be the smallest include possible
 #  include <version>
-#elif !_CCCL_COMPILER(NVRTC)
+#elif _CCCL_HOSTED()
 #  include <ciso646> // otherwise go for the smallest possible header
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #define __cccl_lib_bitops                       201907L
 #define __cccl_lib_bool_constant                201505L

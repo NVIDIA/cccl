@@ -32,9 +32,9 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <functional> // IWYU pragma: keep for ::std::reference_wrapper
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 //! @file env.h
 //! @brief Provides utilities for querying and managing environments, an unordered
@@ -113,10 +113,10 @@ using __nothrow_queryable_with_t _CCCL_NODEBUG_ALIAS =
 template <class _Ty>
 extern _Ty __unwrap_ref;
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 template <class _Ty>
 extern _Ty& __unwrap_ref<::std::reference_wrapper<_Ty>>;
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 template <class _Ty>
 extern _Ty& __unwrap_ref<reference_wrapper<_Ty>>;

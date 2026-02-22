@@ -32,9 +32,9 @@
 #  include <cuda/std/__type_traits/is_constructible.h>
 
 // todo: find a way to get rid of this include
-#  if !_CCCL_COMPILER(NVRTC)
+#  if _CCCL_HOSTED()
 #    include <complex> // for std::complex stream operators
-#  endif // !_CCCL_COMPILER(NVRTC)
+#  endif // _CCCL_HOSTED()
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -145,7 +145,7 @@ public:
     return *this;
   }
 
-#  if !_CCCL_COMPILER(NVRTC)
+#  if _CCCL_HOSTED()
   template <class _Up>
   _CCCL_API inline complex(const ::std::complex<_Up>& __other)
       : __repr_(_LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other), _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other))
@@ -163,7 +163,7 @@ public:
   {
     return {__repr_.x, __repr_.y};
   }
-#  endif // !_CCCL_COMPILER(NVRTC)
+#  endif // _CCCL_HOSTED()
 
   [[nodiscard]] _CCCL_API inline value_type real() const
   {
@@ -295,7 +295,7 @@ struct __get_complex_impl<__half>
   }
 };
 
-#  if !_CCCL_COMPILER(NVRTC)
+#  if _CCCL_HOSTED()
 template <class _CharT, class _Traits>
 ::std::basic_istream<_CharT, _Traits>& operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<__half>& __x)
 {
@@ -311,7 +311,7 @@ operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<__half>& _
 {
   return __os << complex<float>{__x};
 }
-#  endif // !_CCCL_COMPILER(NVRTC)
+#  endif // _CCCL_HOSTED()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

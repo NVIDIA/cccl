@@ -22,24 +22,24 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <cstddef>
 #else
 #  if !defined(offsetof)
 #    define offsetof(type, member) (::size_t) ((char*) &(((type*) 0)->member) - (char*) 0)
 #  endif // !offsetof
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if _CCCL_COMPILER(NVRTC)
+#if _CCCL_FREESTANDING()
 using max_align_t = long double;
-#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC) vvv
+#else // ^^^ _CCCL_FREESTANDING() ^^^ / vvv _CCCL_HOSTED() vvv
 // Re-use the compiler's <stddef.h> max_align_t where possible.
 using ::max_align_t;
-#endif // _CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 using nullptr_t = decltype(nullptr);
 using ::ptrdiff_t;

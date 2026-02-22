@@ -22,7 +22,7 @@
 
 #include <cuda/std/__type_traits/add_const.h>
 
-#if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 12)
+#if (_CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 12)) && _CCCL_HOSTED()
 #  define _CCCL_HAS_BUILTIN_STD_AS_CONST() 1
 #else // ^^^ has builtin std::as_const ^^^ / vvv no builtin std::as_const vvv
 #  define _CCCL_HAS_BUILTIN_STD_AS_CONST() 0
@@ -38,7 +38,7 @@
 #if _CCCL_HAS_BUILTIN_STD_AS_CONST()
 #  if _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__utility/as_const.h>)
 #    include <__utility/as_const.h>
-#  elif !_CCCL_COMPILER(NVRTC)
+#  elif _CCCL_HOSTED()
 #    include <utility>
 #  endif
 #endif // _CCCL_HAS_BUILTIN_STD_AS_CONST()

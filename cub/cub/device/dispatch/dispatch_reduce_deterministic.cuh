@@ -19,30 +19,32 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_reduce.cuh>
-#include <cub/detail/rfa.cuh>
-#include <cub/device/dispatch/dispatch_reduce.cuh>
-#include <cub/grid/grid_even_share.cuh>
-#include <cub/iterator/arg_index_input_iterator.cuh>
-#include <cub/thread/thread_operators.cuh>
-#include <cub/thread/thread_store.cuh>
-#include <cub/util_debug.cuh>
-#include <cub/util_device.cuh>
-#include <cub/util_temporary_storage.cuh>
+#ifndef _CCCL_DISABLE_CMATH
 
-#include <thrust/iterator/transform_output_iterator.h>
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#  include <cub/agent/agent_reduce.cuh>
+#  include <cub/detail/rfa.cuh>
+#  include <cub/device/dispatch/dispatch_reduce.cuh>
+#  include <cub/grid/grid_even_share.cuh>
+#  include <cub/iterator/arg_index_input_iterator.cuh>
+#  include <cub/thread/thread_operators.cuh>
+#  include <cub/thread/thread_store.cuh>
+#  include <cub/util_debug.cuh>
+#  include <cub/util_device.cuh>
+#  include <cub/util_temporary_storage.cuh>
 
-#include <cuda/__cmath/ceil_div.h>
-#include <cuda/__type_traits/is_floating_point.h>
-#include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__functional/identity.h>
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__functional/operations.h>
-#include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/cstdint>
-#include <cuda/std/limits>
+#  include <thrust/iterator/transform_output_iterator.h>
+#  include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+
+#  include <cuda/__cmath/ceil_div.h>
+#  include <cuda/__type_traits/is_floating_point.h>
+#  include <cuda/std/__algorithm/min.h>
+#  include <cuda/std/__functional/identity.h>
+#  include <cuda/std/__functional/invoke.h>
+#  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__type_traits/decay.h>
+#  include <cuda/std/__type_traits/enable_if.h>
+#  include <cuda/std/cstdint>
+#  include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -185,13 +187,13 @@ struct dispatch_t
       return cudaSuccess;
     }
 // Log single_reduce_sweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#  ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
     _CubLog("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
             "%d items per thread\n",
             ActivePolicyT::SingleTilePolicy::BLOCK_THREADS,
             (long long) stream,
             ActivePolicyT::SingleTilePolicy::ITEMS_PER_THREAD);
-#endif
+#  endif
     // Invoke single_reduce_sweep_kernel
     if (const auto error = CubDebug(
           launcher_factory(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
@@ -301,7 +303,7 @@ struct dispatch_t
         static_cast<int>(num_current_items == num_items_per_chunk ? chunk_grid_size : last_chunk_grid_size);
 
       // Log device_reduce_sweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#  ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
       _CubLog("Invoking DeterministicDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items "
               "per thread, %d SM occupancy\n",
               current_grid_size,
@@ -309,7 +311,7 @@ struct dispatch_t
               (long long) stream,
               ActivePolicyT::ReducePolicy::ITEMS_PER_THREAD,
               reduce_config.sm_occupancy);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#  endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       if (const auto error = CubDebug(
             launcher_factory(current_grid_size, ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
@@ -337,13 +339,13 @@ struct dispatch_t
       }
     }
 // Log single_reduce_sweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#  ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
     _CubLog("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
             "%d items per thread\n",
             ActivePolicyT::SingleTilePolicy::BLOCK_THREADS,
             (long long) stream,
             ActivePolicyT::SingleTilePolicy::ITEMS_PER_THREAD);
-#endif // CUB_DETAIL_DEBUG_ENABLE_LOG
+#  endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
     // Invoke DeterministicDeviceReduceSingleTileKernel
     if (const auto error = CubDebug(
@@ -476,3 +478,5 @@ struct dispatch_t
 };
 } // namespace detail::rfa
 CUB_NAMESPACE_END
+
+#endif // _CCCL_DISABLE_CMATH

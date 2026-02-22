@@ -21,13 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <initializer_list>
-#else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
+#if _CCCL_COMPILER(NVRTC)
 #  if !defined(__NV_BUILTIN_INITIALIZER_LIST)
 #    error "libcu++ requires -builtin-initializer-list=true when compiling with NVRTC"
 #  endif // !__NV_BUILTIN_INITIALIZER_LIST
-#endif // ^^^ _CCCL_COMPILER(NVRTC) ^^^
+#elif __has_include(<initializer_list>)
+#  include <initializer_list>
+#else
+#  error "No std::initializer_list available"
+#endif
 
 #include <cuda/std/__cccl/prologue.h>
 

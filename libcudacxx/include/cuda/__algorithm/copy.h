@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HAS_CTK() && _CCCL_HOSTED()
 
 #  include <cuda/__algorithm/common.h>
 #  include <cuda/__stream/launch_transform.h>
@@ -194,6 +194,6 @@ _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HAS_CTK() && _CCCL_HOSTED()
 
 #endif // __CUDA___ALGORITHM_COPY_H

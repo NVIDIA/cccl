@@ -39,8 +39,9 @@
 #  endif // _CCCL_COMPILER(MSVC) && !defined(_CCCL_HAS_THREAD_API_CUDA)
 #endif // _CCCL_HAS_THREAD_API_WIN32
 
+// Thread APIs require hosted mode (pthread, win32 threads need OS support)
 #if !defined(_CCCL_HAS_THREAD_API_PTHREAD) && !defined(_CCCL_HAS_THREAD_API_WIN32) \
-  && !defined(_CCCL_HAS_THREAD_API_EXTERNAL)
+  && !defined(_CCCL_HAS_THREAD_API_EXTERNAL) && _CCCL_HOSTED()
 #  if defined(__GNU__) || _CCCL_OS(LINUX) || _CCCL_OS(APPLE) || _CCCL_OS(QNX) \
     || (defined(__MINGW32__) && __has_include(<pthread.h>))
 #    define _CCCL_HAS_THREAD_API_PTHREAD

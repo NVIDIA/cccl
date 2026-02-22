@@ -26,9 +26,9 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/climits>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <cstring>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -52,11 +52,13 @@ template <class _CharT>
 _CCCL_HIDE_FROM_ABI _CCCL_HOST _CharT*
 __cccl_strcpy_impl_host(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src) noexcept
 {
+#  if _CCCL_HOSTED()
   if constexpr (sizeof(_CharT) == 1)
   {
     return reinterpret_cast<_CharT*>(::strcpy(reinterpret_cast<char*>(__dst), reinterpret_cast<const char*>(__src)));
   }
   else
+#  endif // _CCCL_HOSTED()
   {
     return ::cuda::std::__cccl_strcpy_impl_constexpr(__dst, __src);
   }
@@ -99,12 +101,14 @@ template <class _CharT>
 _CCCL_HIDE_FROM_ABI _CCCL_HOST _CharT*
 __cccl_strncpy_impl_host(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src, size_t __n) noexcept
 {
+#  if _CCCL_HOSTED()
   if constexpr (sizeof(_CharT) == 1)
   {
     return reinterpret_cast<_CharT*>(
       ::strncpy(reinterpret_cast<char*>(__dst), reinterpret_cast<const char*>(__src), __n));
   }
   else
+#  endif // _CCCL_HOSTED()
   {
     return ::cuda::std::__cccl_strncpy_impl_constexpr(__dst, __src, __n);
   }
@@ -139,11 +143,13 @@ template <class _CharT>
 template <class _CharT>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST size_t __cccl_strlen_impl_host(const _CharT* __ptr) noexcept
 {
+#  if _CCCL_HOSTED()
   if constexpr (sizeof(_CharT) == 1)
   {
     return ::strlen(reinterpret_cast<const char*>(__ptr));
   }
   else
+#  endif // _CCCL_HOSTED()
   {
     return ::cuda::std::__cccl_strlen_impl_constexpr(__ptr);
   }
@@ -185,11 +191,13 @@ template <class _CharT>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST int
 __cccl_strcmp_impl_host(const _CharT* __lhs, const _CharT* __rhs) noexcept
 {
+#  if _CCCL_HOSTED()
   if constexpr (sizeof(_CharT) == 1)
   {
     return ::strcmp(reinterpret_cast<const char*>(__lhs), reinterpret_cast<const char*>(__rhs));
   }
   else
+#  endif // _CCCL_HOSTED()
   {
     return ::cuda::std::__cccl_strcmp_impl_constexpr(__lhs, __rhs);
   }
@@ -237,11 +245,13 @@ template <class _CharT>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST int
 __cccl_strncmp_impl_host(const _CharT* __lhs, const _CharT* __rhs, size_t __n) noexcept
 {
+#  if _CCCL_HOSTED()
   if constexpr (sizeof(_CharT) == 1)
   {
     return ::strncmp(reinterpret_cast<const char*>(__lhs), reinterpret_cast<const char*>(__rhs), __n);
   }
   else
+#  endif // _CCCL_HOSTED()
   {
     return ::cuda::std::__cccl_strncmp_impl_constexpr(__lhs, __rhs, __n);
   }
@@ -278,6 +288,7 @@ template <class _CharT>
 template <class _CharT>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST _CharT* __cccl_strchr_impl_host(_CharT* __ptr, _CharT __c) noexcept
 {
+#  if _CCCL_HOSTED()
   if constexpr (sizeof(_CharT) == 1)
   {
     using _Up = remove_const_t<_CharT>;
@@ -285,6 +296,7 @@ template <class _CharT>
       reinterpret_cast<_Up*>(::strchr(reinterpret_cast<char*>(const_cast<_Up*>(__ptr)), static_cast<int>(__c))));
   }
   else
+#  endif // _CCCL_HOSTED()
   {
     return ::cuda::std::__cccl_strchr_impl_constexpr<_CharT>(__ptr, __c);
   }
@@ -327,6 +339,7 @@ template <class _CharT>
 template <class _CharT>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST _CharT* __cccl_strrchr_impl_host(_CharT* __ptr, _CharT __c) noexcept
 {
+#  if _CCCL_HOSTED()
   if constexpr (sizeof(_CharT) == 1)
   {
     using _Up = remove_const_t<_CharT>;
@@ -334,6 +347,7 @@ template <class _CharT>
       reinterpret_cast<_Up*>(::strrchr(reinterpret_cast<char*>(const_cast<_Up*>(__ptr)), static_cast<int>(__c))));
   }
   else
+#  endif // _CCCL_HOSTED()
   {
     return ::cuda::std::__cccl_strrchr_impl_constexpr<_CharT>(__ptr, __c);
   }
@@ -370,12 +384,14 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST _Tp* __cccl_memchr_impl_host(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
+#  if _CCCL_HOSTED()
   if constexpr (sizeof(_Tp) == 1)
   {
     using _Up = remove_const_t<_Tp>;
     return const_cast<_Tp*>(reinterpret_cast<_Up*>(::memchr(const_cast<_Up*>(__ptr), static_cast<int>(__c), __n)));
   }
   else
+#  endif // _CCCL_HOSTED()
   {
     return ::cuda::std::__cccl_memchr_impl_constexpr<_Tp>(__ptr, __c, __n);
   }
@@ -419,14 +435,14 @@ template <class _Tp>
   return __dst_copy;
 }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 template <class _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST _Tp*
 __cccl_memmove_impl_host(_Tp* __dst, const _Tp* __src, size_t __n) noexcept
 {
   return reinterpret_cast<_Tp*>(::memmove(__dst, __src, __n * sizeof(_Tp)));
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 template <class _Tp>
 _CCCL_API constexpr _Tp* __cccl_memmove(_Tp* __dst, const _Tp* __src, size_t __n) noexcept
@@ -435,9 +451,9 @@ _CCCL_API constexpr _Tp* __cccl_memmove(_Tp* __dst, const _Tp* __src, size_t __n
   {
 #if defined(_CCCL_BUILTIN_MEMMOVE)
     return reinterpret_cast<_Tp*>(_CCCL_BUILTIN_MEMMOVE(__dst, __src, __n * sizeof(_Tp)));
-#else // ^^^ _CCCL_BUILTIN_MEMMOVE ^^^ / vvv !_CCCL_BUILTIN_MEMMOVE vvv
+#elif _CCCL_HOSTED()
     NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_memmove_impl_host(__dst, __src, __n);))
-#endif // ^^^ !_CCCL_BUILTIN_MEMMOVE ^^^
+#endif // _CCCL_HOSTED()
   }
   return ::cuda::std::__cccl_memmove_impl_constexpr(__dst, __src, __n);
 }
@@ -467,11 +483,13 @@ template <class _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST int
 __cccl_memcmp_impl_host(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noexcept
 {
+#  if _CCCL_HOSTED()
   if constexpr (sizeof(_Tp) == 1)
   {
     return ::memcmp(__lhs, __rhs, __n);
   }
   else
+#  endif // _CCCL_HOSTED()
   {
     return ::cuda::std::__cccl_memcmp_impl_constexpr(__lhs, __rhs, __n);
   }
@@ -485,9 +503,9 @@ template <class _Tp>
   {
 #if defined(_CCCL_BUILTIN_MEMCMP)
     return _CCCL_BUILTIN_MEMCMP(__lhs, __rhs, __n * sizeof(_Tp));
-#else // ^^^ _CCCL_BUILTIN_MEMCMP ^^^ / vvv !_CCCL_BUILTIN_MEMCMP vvv
+#else
     NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_memcmp_impl_host(__lhs, __rhs, __n);))
-#endif // ^^^ !_CCCL_BUILTIN_MEMCMP ^^^
+#endif
   }
   return ::cuda::std::__cccl_memcmp_impl_constexpr(__lhs, __rhs, __n);
 }
@@ -507,14 +525,14 @@ __cccl_memcpy_impl_constexpr(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRIC
   return __dst_copy;
 }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 template <class _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST _Tp*
 __cccl_memcpy_impl_host(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRICT __src, size_t __n) noexcept
 {
   return reinterpret_cast<_Tp*>(::memcpy(__dst, __src, __n * sizeof(_Tp)));
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 template <class _Tp>
 _CCCL_API constexpr _Tp* __cccl_memcpy(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRICT __src, size_t __n) noexcept
@@ -523,9 +541,9 @@ _CCCL_API constexpr _Tp* __cccl_memcpy(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CC
   {
 #if defined(_CCCL_BUILTIN_MEMCPY)
     return reinterpret_cast<_Tp*>(_CCCL_BUILTIN_MEMCPY(__dst, __src, __n * sizeof(_Tp)));
-#else // ^^^ _CCCL_BUILTIN_MEMCPY ^^^ / vvv !_CCCL_BUILTIN_MEMCPY vvv
+#elif _CCCL_HOSTED()
     NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_memcpy_impl_host(__dst, __src, __n);))
-#endif // ^^^ !_CCCL_BUILTIN_MEMCPY ^^^
+#endif // _CCCL_HOSTED()
   }
   return ::cuda::std::__cccl_memcpy_impl_constexpr(__dst, __src, __n);
 }
@@ -548,11 +566,13 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST _Tp* __cccl_memset_impl_host(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
+#  if _CCCL_HOSTED()
   if constexpr (sizeof(_Tp) == 1)
   {
     return reinterpret_cast<_Tp*>(::memset(__ptr, static_cast<int>(__c), __n));
   }
   else
+#  endif // _CCCL_HOSTED()
   {
     return ::cuda::std::__cccl_memset_impl_constexpr(__ptr, __c, __n);
   }
@@ -566,9 +586,9 @@ _CCCL_API constexpr _Tp* __cccl_memset(_Tp* __ptr, _Tp __c, size_t __n) noexcept
   {
 #if defined(_CCCL_BUILTIN_MEMSET)
     return reinterpret_cast<_Tp*>(_CCCL_BUILTIN_MEMSET(__ptr, __c, __n * sizeof(_Tp)));
-#else // ^^^ _CCCL_BUILTIN_MEMSET ^^^ / vvv !_CCCL_BUILTIN_MEMSET vvv
+#else
     NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_memset_impl_host(__ptr, __c, __n);))
-#endif // ^^^ !_CCCL_BUILTIN_MEMSET ^^^
+#endif
   }
   return ::cuda::std::__cccl_memset_impl_constexpr(__ptr, __c, __n);
 }
