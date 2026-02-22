@@ -71,7 +71,42 @@ class load(BasePrimitive):
         node=None,
     ):
         """
-        Loads items from global memory into a warp-striped layout.
+        Loads per-thread items from global memory into a warp-local array.
+
+        :param dtype: Supplies the item dtype to load.
+        :type  dtype: DtypeType
+
+        :param items_per_thread: Supplies the number of items loaded per lane.
+            Must be >= 1.
+        :type  items_per_thread: int
+
+        :param threads_in_warp: Supplies the logical warp size.
+        :type  threads_in_warp: int, optional
+
+        :param algorithm: Optionally supplies the CUB warp-load algorithm
+            (enum member or string alias such as ``"direct"`` or
+            ``"transpose"``).
+        :type  algorithm: WarpLoadAlgorithm, optional
+
+        :param num_valid_items: Optionally limits how many items in the tile
+            are valid (partial tile handling).
+        :type  num_valid_items: int, optional
+
+        :param oob_default: Optionally supplies the value written for out-of-
+            bounds lanes when ``num_valid_items`` is provided.
+        :type  oob_default: Any, optional
+
+        :param methods: Optionally supplies UDT helper methods
+            (``construct``/``assign``) when ``dtype`` is user-defined.
+        :type  methods: dict, optional
+
+        :param temp_storage: Optionally supplies explicit cooperative temporary
+            storage (e.g. via ``coop.TempStorage``).
+        :type  temp_storage: Any, optional
+
+        :raises ValueError: If ``items_per_thread < 1``.
+        :raises ValueError: If ``oob_default`` is provided without
+            ``num_valid_items``.
 
         Example:
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_load_store_api.py
@@ -213,7 +248,36 @@ class store(BasePrimitive):
         node=None,
     ):
         """
-        Stores items from a warp-striped layout into global memory.
+        Stores per-thread items from a warp-local array into global memory.
+
+        :param dtype: Supplies the item dtype to store.
+        :type  dtype: DtypeType
+
+        :param items_per_thread: Supplies the number of items stored per lane.
+            Must be >= 1.
+        :type  items_per_thread: int
+
+        :param threads_in_warp: Supplies the logical warp size.
+        :type  threads_in_warp: int, optional
+
+        :param algorithm: Optionally supplies the CUB warp-store algorithm
+            (enum member or string alias such as ``"direct"`` or
+            ``"transpose"``).
+        :type  algorithm: WarpStoreAlgorithm, optional
+
+        :param num_valid_items: Optionally limits how many items in the tile
+            are stored (partial tile handling).
+        :type  num_valid_items: int, optional
+
+        :param methods: Optionally supplies UDT helper methods
+            (``construct``/``assign``) when ``dtype`` is user-defined.
+        :type  methods: dict, optional
+
+        :param temp_storage: Optionally supplies explicit cooperative temporary
+            storage (e.g. via ``coop.TempStorage``).
+        :type  temp_storage: Any, optional
+
+        :raises ValueError: If ``items_per_thread < 1``.
 
         Example:
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_load_store_api.py
