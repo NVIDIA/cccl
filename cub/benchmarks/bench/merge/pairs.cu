@@ -18,21 +18,25 @@
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK_POW2 tpb 6:10:1
 
-template <typename KeyT, typename ValueT, typename OffsetT>
-void pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
-{
-  using compare_op_t = less_t;
-
 #if !TUNE_BASE
-  constexpr auto policy_selector = [](::cuda::arch_id) constexpr {
+struct bench_policy_selector
+{
+  constexpr auto operator()(::cuda::arch_id /*arch*/) const -> cub::detail::merge::merge_policy
+  {
     return cub::detail::merge::merge_policy{
       TUNE_THREADS_PER_BLOCK,
       cub::Nominal4BItemsToItems<KeyT>(TUNE_ITEMS_PER_THREAD),
       TUNE_LOAD_MODIFIER,
       TUNE_STORE_ALGORITHM,
       TUNE_USE_BL2SH};
-  };
+  }
+};
 #endif // !TUNE_BASE
+
+template <typename KeyT, typename ValueT, typename OffsetT>
+void pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
+{
+  using compare_op_t = less_t;
 
   // Retrieve axis parameters
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
@@ -79,7 +83,7 @@ void pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
     cudaStream_t{}
 #if !TUNE_BASE
     ,
-    policy_selector
+    bench_policy_selector{}
 #endif // !TUNE_BASE
   );
 
@@ -102,7 +106,7 @@ void pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
       launch.get_stream()
 #if !TUNE_BASE
         ,
-      policy_selector
+      bench_policy_selector{}
 #endif // !TUNE_BASE
     );
   });
