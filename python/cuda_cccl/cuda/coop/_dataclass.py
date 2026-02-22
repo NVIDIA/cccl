@@ -17,6 +17,28 @@ from numba.cuda.cudadecl import registry as cuda_registry
 
 
 def gpu_dataclass(dc: Any, *, compute_temp_storage: bool = True) -> Any:
+    """
+    Registers a Python dataclass instance for use as a CUDA kernel argument.
+
+    This helper creates a custom Numba type/model for the dataclass instance,
+    installs attribute typing/lowering hooks, and injects optional cooperative
+    metadata used by ``cuda.coop`` primitives (for example, aggregated temp
+    storage properties and pre-launch extension registration).
+
+    :param dc: Supplies a dataclass instance whose fields should be exposed to
+        CUDA kernels.
+    :type  dc: Any
+
+    :param compute_temp_storage: When true, precomputes aggregate temp-storage
+        metadata across cooperative primitive fields and stores:
+        ``temp_storage_bytes_sum``, ``temp_storage_bytes_max``, and
+        ``temp_storage_alignment`` on ``dc``.
+    :type  compute_temp_storage: bool, optional
+
+    :returns: The same dataclass instance, augmented with CUDA typing/lowering
+        integration and helper callbacks used during kernel launch.
+    :rtype: Any
+    """
     fields = dataclasses.fields(dc)
     names = [f.name for f in fields]
     objs = [getattr(dc, name) for name in names]
