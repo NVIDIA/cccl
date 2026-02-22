@@ -681,17 +681,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
     return error;
   }
 
+  const non_trivial_runs::rle_non_trivial_runs_policy active_policy = policy_selector(arch_id);
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(
     NV_IS_HOST,
-    (::std::stringstream ss; ss << policy_selector(arch_id);
+    (::std::stringstream ss; ss << active_policy;
      _CubLog("Dispatching DeviceRle to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());))
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
-  const non_trivial_runs::rle_non_trivial_runs_policy policy = policy_selector(arch_id);
-  const int block_threads                                    = policy.block_threads;
-  const int items_per_thread                                 = policy.items_per_thread;
-  const auto tile_size = static_cast<global_offset_t>(block_threads * items_per_thread);
+  const int block_threads    = active_policy.block_threads;
+  const int items_per_thread = active_policy.items_per_thread;
+  const auto tile_size       = static_cast<global_offset_t>(block_threads * items_per_thread);
 
   auto capped_num_items_per_invocation = num_items;
   if constexpr (use_streaming_invocation)
@@ -751,7 +751,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
 #endif
     if (const auto error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
-            .doit(&detail::scan::template DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
+            .doit(&detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
                   tile_status,
                   num_current_tiles,
                   d_num_runs_out)))
@@ -773,17 +773,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
             (long long) stream,
             items_per_thread);
 #endif
-    auto device_rle_sweep_kernel = &detail::rle::DeviceRleSweepKernel<
-      PolicySelector,
-      InputIteratorT,
-      OffsetsOutputIteratorT,
-      LengthsOutputIteratorT,
-      NumRunsOutputIteratorT,
-      ScanTileStateT,
-      EqualityOpT,
-      local_offset_t,
-      global_offset_t,
-      streaming_context_t>;
 
     auto streaming_context = [&] {
       if constexpr (use_streaming_invocation)
@@ -810,7 +799,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
 
     if (const auto error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
-            .doit(device_rle_sweep_kernel,
+            .doit(&detail::rle::DeviceRleSweepKernel<
+                    PolicySelector,
+                    InputIteratorT,
+                    OffsetsOutputIteratorT,
+                    LengthsOutputIteratorT,
+                    NumRunsOutputIteratorT,
+                    ScanTileStateT,
+                    EqualityOpT,
+                    local_offset_t,
+                    global_offset_t,
+                    streaming_context_t>,
                   d_in + current_partition_offset,
                   d_offsets_out,
                   d_lengths_out,

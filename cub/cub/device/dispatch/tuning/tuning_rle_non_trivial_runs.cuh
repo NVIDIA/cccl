@@ -23,7 +23,6 @@
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
 #include <cub/util_device.cuh>
 
-#include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/arch_id.h>
 #include <cuda/std/__algorithm/clamp.h>
 
@@ -336,7 +335,7 @@ struct rle_non_trivial_runs_policy
   CacheLoadModifier load_modifier;
   bool store_with_time_slicing;
   BlockScanAlgorithm scan_algorithm;
-  delay_constructor_policy delay_constructor;
+  delay_constructor_policy delay_constructor = {delay_constructor_kind::fixed_delay, 350, 450};
 
   [[nodiscard]] _CCCL_API constexpr friend bool
   operator==(const rle_non_trivial_runs_policy& lhs, const rle_non_trivial_runs_policy& rhs)
@@ -372,12 +371,12 @@ concept rle_non_trivial_runs_policy_selector = detail::policy_selector<T, rle_no
 
 struct policy_selector
 {
-  // TODO(bgruber): refactor the key information if this ever goes public
+  // TODO(bgruber): refactor the key information
   int length_size;
   int key_size;
   type_t key_type;
   bool length_is_primitive;
-  bool key_is_primitive;
+  bool key_is_primitive; // TODO(bgruber): can probably be derived from key_type
 
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> rle_non_trivial_runs_policy
   {
@@ -593,6 +592,10 @@ struct policy_selector
   }
 };
 
+#if _CCCL_HAS_CONCEPTS()
+static_assert(rle_non_trivial_runs_policy_selector<policy_selector>);
+#endif // _CCCL_HAS_CONCEPTS()
+
 template <class LengthT, class KeyT>
 struct policy_selector_from_types
 {
@@ -603,10 +606,6 @@ struct policy_selector_from_types
     return selector(arch);
   }
 };
-
-#if _CCCL_HAS_CONCEPTS()
-static_assert(rle_non_trivial_runs_policy_selector<policy_selector>);
-#endif // _CCCL_HAS_CONCEPTS()
 } // namespace detail::rle::non_trivial_runs
 
 CUB_NAMESPACE_END
