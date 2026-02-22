@@ -59,6 +59,30 @@ def test_block_exclusive_sum_single_phase():
     np.testing.assert_array_equal(h_output, h_reference)
 
 
+def test_block_exclusive_sum_single_phase_thread_data_infers_items_per_thread():
+    threads_per_block = 128
+    items_per_thread = 4
+    total_items = threads_per_block * items_per_thread
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        thread_data = coop.ThreadData(items_per_thread, dtype=d_in.dtype)
+        coop.block.load(d_in, thread_data)
+        coop.block.exclusive_sum(thread_data, thread_data)
+        coop.block.store(d_out, thread_data)
+
+    h_input = np.ones(total_items, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    kernel[1, threads_per_block](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    h_reference = _exclusive_scan_host(h_input, operator.add, np.int32(0))
+    np.testing.assert_array_equal(h_output, h_reference)
+
+
 def test_block_inclusive_sum_single_phase():
     threads_per_block = 128
     items_per_thread = 4

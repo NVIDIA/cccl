@@ -88,3 +88,42 @@ def test_warp_merge_sort():
         assert h_keys_two_phase[i] == expected[i]
         assert h_keys_single_phase[i] == expected[i]
         assert h_keys_two_phase[i] == h_keys_single_phase[i]
+
+
+def test_warp_merge_sort_thread_data_infers_items_per_thread():
+    @cuda.jit(device=True)
+    def compare_op(a, b):
+        return a > b
+
+    items_per_thread = 4
+    threads_in_warp = 32
+
+    @cuda.jit
+    def kernel(keys_in, keys_out):
+        thread_keys = coop.ThreadData(items_per_thread, dtype=keys_in.dtype)
+        coop.warp.load(
+            keys_in,
+            thread_keys,
+            threads_in_warp=threads_in_warp,
+            algorithm=WarpLoadAlgorithm.DIRECT,
+        )
+        coop.warp.merge_sort_keys(
+            thread_keys,
+            compare_op=compare_op,
+            threads_in_warp=threads_in_warp,
+        )
+        coop.warp.store(
+            keys_out,
+            thread_keys,
+            threads_in_warp=threads_in_warp,
+            algorithm=WarpStoreAlgorithm.DIRECT,
+        )
+
+    tile_size = threads_in_warp * items_per_thread
+    h_keys = np.arange(0, tile_size, dtype=np.int32)
+    d_keys_in = cuda.to_device(h_keys)
+    d_keys_out = cuda.device_array_like(d_keys_in)
+    kernel[1, threads_in_warp](d_keys_in, d_keys_out)
+    h_keys_out = d_keys_out.copy_to_host()
+    expected = np.sort(h_keys)[::-1]
+    np.testing.assert_array_equal(h_keys_out, expected)

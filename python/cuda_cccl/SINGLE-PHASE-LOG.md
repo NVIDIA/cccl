@@ -1713,3 +1713,102 @@
   - `mamba run -n quarto quarto render ~/src/website/posts/cuda-coop-single-phase-overview/index.qmd`
     - Result: render succeeded; output created at
       `~/src/website/docs/posts/cuda-coop-single-phase-overview/index.html`.
+
+## 2026-02-21 (single-phase overview post second pass)
+- Request: do another pass on the new overview post and add more implementation
+  detail useful for reviewers.
+- Changes:
+  - Expanded `~/src/website/posts/cuda-coop-single-phase-overview/index.qmd`
+    with additional reviewer-focused sections:
+    - explicit "what changed vs early notes" summary,
+    - end-to-end typing->rewrite->lowering flow,
+    - primitive-family coverage snapshot table,
+    - ThreadData behavior/inference notes,
+    - parent/child primitive review notes,
+    - NVRTC/LTOIR debug-hook section,
+    - reviewer command snippets.
+  - Tightened/expanded open-items section to reflect current TODO themes.
+- Decisions:
+  - Keep this post as a practical PR review companion rather than a narrative
+    development diary.
+- Tests:
+  - `mamba run -n quarto quarto render ~/src/website/posts/cuda-coop-single-phase-overview/index.qmd`
+    - Result: render succeeded; output created at
+      `~/src/website/docs/posts/cuda-coop-single-phase-overview/index.html`.
+
+## 2026-02-21 (public-facing introducing cuda.coop post)
+- Request: write a new public-facing blog post at
+  `~/src/website/posts/introducing-cuda-coop` aimed at general technical blog
+  readers; cover two-phase background, single-phase transition, and use Mamba
+  v1 selective scan as the primary technical demonstrator (including traits-style
+  and raw single-phase variants), plus benchmark placeholders.
+- Changes:
+  - Added `~/src/website/posts/introducing-cuda-coop/index.qmd`.
+  - Content includes:
+    - two-phase and single-phase `cuda.coop` API narrative,
+    - C++ Mamba kernel excerpt from `mamba/csrc/selective_scan/` as the baseline,
+    - Python Mamba traits-style kernel example (`gpu_dataclass` / `KernelTraits`),
+    - Python single-phase kernel example using `TempStorage`, `ThreadData`, and
+      getitem temp-storage sugar,
+    - benchmark placeholder tables and detailed measurement methodology.
+- Tests:
+  - `mamba run -n quarto quarto render ~/src/website/posts/introducing-cuda-coop/index.qmd`
+    - Result: render succeeded; output created at
+      `~/src/website/docs/posts/introducing-cuda-coop/index.html`.
+
+## 2026-02-22 (ThreadData items_per_thread inference parity across block/warp)
+- Request: review block/warp single-phase primitives and ensure
+  `items_per_thread` is inferred from `coop.ThreadData` where appropriate,
+  specifically fixing the `coop.block.exclusive_sum(...)` pattern from the
+  introducing-cuda-coop post and closing parity gaps.
+- Changes:
+  - `cuda/coop/_rewrite.py`:
+    - Extended ThreadData-aware inference and runtime type remapping for:
+      - `CoopWarpLoadStoreNode`
+      - `CoopWarpExchangeNode`
+      - `CoopWarpMergeSortNode`
+      - `CoopBlockReduceNode`
+      - `CoopBlockSumNode`
+    - Added ThreadData support for block exchange scatter auxiliaries:
+      - `ranks` in scatter variants
+      - `valid_flags` in `ScatterToStripedFlagged`
+    - For ThreadData-backed args, rewrite now infers `items_per_thread`/dtype
+      from `get_thread_data_info(...)` and passes array-typed runtime args to
+      lowering (`types.Array(...)`) to match primitive codegen expectations.
+  - Tests added/updated:
+    - `tests/coop/test_block_scan_single_phase_aliases.py`
+      - `test_block_exclusive_sum_single_phase_thread_data_infers_items_per_thread`
+    - `tests/coop/test_block_reduce.py`
+      - `test_block_reduce_sum_thread_data_infers_items_per_thread`
+    - `tests/coop/test_warp_load_store_api.py`
+      - `test_warp_load_store_single_phase_thread_data_infers_items_per_thread`
+    - `tests/coop/test_warp_exchange_api.py`
+      - `test_warp_exchange_striped_to_blocked_single_phase_thread_data_infers_items_per_thread`
+    - `tests/coop/test_block_exchange.py`
+      - `test_block_exchange_scatter_to_blocked_thread_data_ranks_infers_items_per_thread`
+      - `test_block_exchange_scatter_to_striped_flagged_thread_data_infers_items_per_thread`
+    - `tests/coop/test_warp_merge_sort_api.py`
+      - `test_warp_merge_sort_thread_data_infers_items_per_thread`
+    - `tests/coop/test_warp_merge_sort_pairs_api.py`
+      - `test_warp_merge_sort_pairs_thread_data_infers_items_per_thread`
+    - `tests/coop/test_compile_time_error_paths.py`
+      - `test_warp_exchange_thread_data_items_per_thread_mismatch_raises`
+  - `SINGLE-PHASE-TODO.md`:
+    - Added checked item for ThreadData items_per_thread inference parity work
+      across block reduce/sum + warp load/store/exchange/merge sort and block
+      exchange scatter ranks/flags.
+- Decisions:
+  - Kept ThreadData-focused tests on load/exchange/store pipelines (instead of
+    direct `ThreadData[i] = ...` writes) because direct indexed assignment to
+    ThreadData currently hits a known lowering assertion outside this change.
+  - For the block exclusive-sum ThreadData test, used default block load/store
+    algorithms to keep typing aligned with enum-only algorithm validation.
+- Tests:
+  - `pytest -q tests/coop/test_block_scan_single_phase_aliases.py::test_block_exclusive_sum_single_phase_thread_data_infers_items_per_thread tests/coop/test_block_reduce.py::test_block_reduce_sum_thread_data_infers_items_per_thread tests/coop/test_warp_load_store_api.py::test_warp_load_store_single_phase_thread_data_infers_items_per_thread tests/coop/test_warp_exchange_api.py::test_warp_exchange_striped_to_blocked_single_phase_thread_data_infers_items_per_thread tests/coop/test_block_exchange.py::test_block_exchange_scatter_to_blocked_thread_data_ranks_infers_items_per_thread tests/coop/test_block_exchange.py::test_block_exchange_scatter_to_striped_flagged_thread_data_infers_items_per_thread tests/coop/test_warp_merge_sort_api.py::test_warp_merge_sort_thread_data_infers_items_per_thread tests/coop/test_warp_merge_sort_pairs_api.py::test_warp_merge_sort_pairs_thread_data_infers_items_per_thread tests/coop/test_compile_time_error_paths.py::test_warp_exchange_thread_data_items_per_thread_mismatch_raises`
+    - Result: `9 passed`.
+  - `pytest -q tests/coop/test_block_exchange.py::test_scatter_to_blocked tests/coop/test_block_exchange.py::test_scatter_to_striped tests/coop/test_block_exchange.py::test_scatter_to_striped_guarded_and_flagged`
+    - Result: `19 passed`.
+  - `pre-commit run --files cuda/coop/_rewrite.py tests/coop/test_block_exchange.py tests/coop/test_block_reduce.py tests/coop/test_block_scan_single_phase_aliases.py tests/coop/test_compile_time_error_paths.py tests/coop/test_warp_exchange_api.py tests/coop/test_warp_load_store_api.py tests/coop/test_warp_merge_sort_api.py tests/coop/test_warp_merge_sort_pairs_api.py`
+    - Result: passed (after one formatter rewrite pass).
+  - `pytest -q tests/coop/test_warp_exchange_api.py tests/coop/test_warp_load_store_api.py tests/coop/test_warp_merge_sort_api.py tests/coop/test_warp_merge_sort_pairs_api.py`
+    - Result: `20 passed`.
