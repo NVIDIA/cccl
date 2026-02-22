@@ -2103,11 +2103,12 @@ class CoopLoadStoreNode(CoopNode):
         return tuple(instrs)
 
     def rewrite_two_phase(self, rewriter):
-        # N.B. I tried valiantly to avoid duplicating the code from
-        #      single-phase here; after all, we've already got an instance
-        #      of the primitive created, so we should be able to reuse it.
-        #      However, try as I might, I couldn't get the lowering to kick
-        #      in with all the other attempted variants.
+        # Two-phase instances already carry specialized state, but rewrite-time
+        # lowering registration is keyed on a callable symbol. We therefore
+        # synthesize a wrapper function and register lowering on that symbol,
+        # mirroring the single-phase path. Unifying these paths would require
+        # one shared registration flow that reliably handles both wrapper
+        # callables and pre-built two-phase invocables.
         instance = self.instance or self.two_phase_instance
         instance.node = self
         algo = instance.specialization
