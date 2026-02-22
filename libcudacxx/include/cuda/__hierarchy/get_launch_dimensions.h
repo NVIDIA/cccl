@@ -69,7 +69,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA
  *  Hierarchy that the launch dimensions are requested for
  */
 template <class _BottomLevel, class... _LevelDescs>
-constexpr auto _CCCL_HOST get_launch_dimensions(const hierarchy<_BottomLevel, _LevelDescs...>& __hierarchy)
+[[nodiscard]] _CCCL_HOST_API constexpr auto
+get_launch_dimensions(const hierarchy<_BottomLevel, _LevelDescs...>& __hierarchy)
 {
   if constexpr (hierarchy<_BottomLevel, _LevelDescs...>::has_level(cluster))
   {

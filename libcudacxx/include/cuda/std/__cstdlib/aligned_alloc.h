@@ -40,7 +40,7 @@ extern "C" _CCCL_DEVICE void* __cuda_syscall_aligned_malloc(size_t, size_t);
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if !_CCCL_COMPILER(NVRTC)
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST void*
+[[nodiscard]] _CCCL_HOST_API inline void*
 __aligned_alloc_host([[maybe_unused]] size_t __nbytes, [[maybe_unused]] size_t __align) noexcept
 {
 #  if _CCCL_OS(WINDOWS)

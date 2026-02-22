@@ -43,43 +43,43 @@ struct __atomic_locked_storage
 
   _CCCL_HIDE_FROM_ABI explicit constexpr __atomic_locked_storage() noexcept = default;
 
-  _CCCL_HOST_DEVICE constexpr explicit inline __atomic_locked_storage(_Tp value) noexcept
+  _CCCL_API constexpr explicit __atomic_locked_storage(_Tp value) noexcept
       : __a_value(value)
       , __a_lock{}
   {}
 
   template <typename _Sco>
-  _CCCL_HOST_DEVICE inline void __lock(_Sco) const volatile noexcept
+  _CCCL_API void __lock(_Sco) const volatile noexcept
   {
     while (1 == __atomic_exchange_dispatch(&__a_lock, _CCCL_ATOMIC_FLAG_TYPE(true), memory_order_acquire, _Sco{}))
       /*spin*/;
   }
   template <typename _Sco>
-  _CCCL_HOST_DEVICE inline void __lock(_Sco) const noexcept
+  _CCCL_API void __lock(_Sco) const noexcept
   {
     while (1 == __atomic_exchange_dispatch(&__a_lock, _CCCL_ATOMIC_FLAG_TYPE(true), memory_order_acquire, _Sco{}))
       /*spin*/;
   }
   template <typename _Sco>
-  _CCCL_HOST_DEVICE inline void __unlock(_Sco) const volatile noexcept
+  _CCCL_API void __unlock(_Sco) const volatile noexcept
   {
     __atomic_store_dispatch(&__a_lock, _CCCL_ATOMIC_FLAG_TYPE(false), memory_order_release, _Sco{});
   }
   template <typename _Sco>
-  _CCCL_HOST_DEVICE inline void __unlock(_Sco) const noexcept
+  _CCCL_API void __unlock(_Sco) const noexcept
   {
     __atomic_store_dispatch(&__a_lock, _CCCL_ATOMIC_FLAG_TYPE(false), memory_order_release, _Sco{});
   }
 };
 
 template <typename _Sto, typename _Up, __atomic_storage_is_locked<_Sto> = 0>
-_CCCL_HOST_DEVICE inline void __atomic_init_dispatch(_Sto* __a, _Up __val)
+_CCCL_API void __atomic_init_dispatch(_Sto* __a, _Up __val)
 {
   __atomic_assign_volatile(&__a->__a_value, __val);
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_locked<_Sto> = 0>
-_CCCL_HOST_DEVICE inline void __atomic_store_dispatch(_Sto* __a, _Up __val, memory_order, _Sco = {})
+_CCCL_API void __atomic_store_dispatch(_Sto* __a, _Up __val, memory_order, _Sco = {})
 {
   __a->__lock(_Sco{});
   __atomic_assign_volatile(&__a->__a_value, __val);
@@ -87,8 +87,7 @@ _CCCL_HOST_DEVICE inline void __atomic_store_dispatch(_Sto* __a, _Up __val, memo
 }
 
 template <typename _Sto, typename _Sco, __atomic_storage_is_locked<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto __atomic_load_dispatch(const _Sto* __a, memory_order, _Sco = {})
-  -> __atomic_underlying_t<_Sto>
+_CCCL_API auto __atomic_load_dispatch(const _Sto* __a, memory_order, _Sco = {}) -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
   _Tp __old;
@@ -99,7 +98,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_load_dispatch(const _Sto* __a, memory_ord
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_locked<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto __atomic_exchange_dispatch(_Sto* __a, _Up __value, memory_order, _Sco = {})
+_CCCL_API auto __atomic_exchange_dispatch(_Sto* __a, _Up __value, memory_order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
@@ -112,7 +111,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_exchange_dispatch(_Sto* __a, _Up __value,
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_locked<_Sto> = 0>
-_CCCL_HOST_DEVICE inline bool __atomic_compare_exchange_strong_dispatch(
+_CCCL_API bool __atomic_compare_exchange_strong_dispatch(
   _Sto* __a, _Up* __expected, _Up __value, memory_order, memory_order, _Sco = {})
 {
   using _Tp = __atomic_underlying_t<_Sto>;
@@ -133,7 +132,7 @@ _CCCL_HOST_DEVICE inline bool __atomic_compare_exchange_strong_dispatch(
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_locked<_Sto> = 0>
-_CCCL_HOST_DEVICE inline bool
+_CCCL_API bool
 __atomic_compare_exchange_weak_dispatch(_Sto* __a, _Up* __expected, _Up __value, memory_order, memory_order, _Sco = {})
 {
   using _Tp = __atomic_underlying_t<_Sto>;
@@ -154,7 +153,7 @@ __atomic_compare_exchange_weak_dispatch(_Sto* __a, _Up* __expected, _Up __value,
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_locked<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, memory_order, _Sco = {})
+_CCCL_API auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta, memory_order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
@@ -167,7 +166,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_add_dispatch(_Sto* __a, _Up __delta
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_locked<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta, memory_order, _Sco = {})
+_CCCL_API auto __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta, memory_order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
@@ -180,7 +179,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_sub_dispatch(_Sto* __a, _Up __delta
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_locked<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto __atomic_fetch_and_dispatch(_Sto* __a, _Up __pattern, memory_order, _Sco = {})
+_CCCL_API auto __atomic_fetch_and_dispatch(_Sto* __a, _Up __pattern, memory_order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
@@ -193,7 +192,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_and_dispatch(_Sto* __a, _Up __patte
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_locked<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto __atomic_fetch_or_dispatch(_Sto* __a, _Up __pattern, memory_order, _Sco = {})
+_CCCL_API auto __atomic_fetch_or_dispatch(_Sto* __a, _Up __pattern, memory_order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;
@@ -206,7 +205,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_or_dispatch(_Sto* __a, _Up __patter
 }
 
 template <typename _Sto, typename _Up, typename _Sco, __atomic_storage_is_locked<_Sto> = 0>
-_CCCL_HOST_DEVICE inline auto __atomic_fetch_xor_dispatch(_Sto* __a, _Up __pattern, memory_order, _Sco = {})
+_CCCL_API auto __atomic_fetch_xor_dispatch(_Sto* __a, _Up __pattern, memory_order, _Sco = {})
   -> __atomic_underlying_t<_Sto>
 {
   using _Tp = __atomic_underlying_t<_Sto>;

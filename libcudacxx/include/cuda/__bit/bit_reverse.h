@@ -90,7 +90,7 @@ template <typename _Tp>
 #if _CCCL_CUDA_COMPILATION()
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr _Tp __bit_reverse_device(_Tp __value) noexcept
+[[nodiscard]] _CCCL_DEVICE_API constexpr _Tp __bit_reverse_device(_Tp __value) noexcept
 {
 #  if _CCCL_HAS_INT128()
   if constexpr (sizeof(_Tp) == sizeof(__uint128_t))

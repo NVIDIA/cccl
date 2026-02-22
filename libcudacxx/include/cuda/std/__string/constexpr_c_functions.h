@@ -49,8 +49,7 @@ __cccl_strcpy_impl_constexpr(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_R
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class _CharT>
-_CCCL_HIDE_FROM_ABI _CCCL_HOST _CharT*
-__cccl_strcpy_impl_host(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src) noexcept
+_CCCL_HOST_API _CharT* __cccl_strcpy_impl_host(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src) noexcept
 {
   if constexpr (sizeof(_CharT) == 1)
   {
@@ -96,7 +95,7 @@ __cccl_strncpy_impl_constexpr(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class _CharT>
-_CCCL_HIDE_FROM_ABI _CCCL_HOST _CharT*
+_CCCL_HOST_API _CharT*
 __cccl_strncpy_impl_host(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src, size_t __n) noexcept
 {
   if constexpr (sizeof(_CharT) == 1)
@@ -137,7 +136,7 @@ template <class _CharT>
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class _CharT>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST size_t __cccl_strlen_impl_host(const _CharT* __ptr) noexcept
+[[nodiscard]] _CCCL_HOST_API size_t __cccl_strlen_impl_host(const _CharT* __ptr) noexcept
 {
   if constexpr (sizeof(_CharT) == 1)
   {
@@ -182,8 +181,7 @@ template <class _CharT>
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class _CharT>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST int
-__cccl_strcmp_impl_host(const _CharT* __lhs, const _CharT* __rhs) noexcept
+[[nodiscard]] _CCCL_HOST_API int __cccl_strcmp_impl_host(const _CharT* __lhs, const _CharT* __rhs) noexcept
 {
   if constexpr (sizeof(_CharT) == 1)
   {
@@ -234,8 +232,7 @@ __cccl_strncmp_impl_constexpr(const _CharT* __lhs, const _CharT* __rhs, size_t _
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class _CharT>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST int
-__cccl_strncmp_impl_host(const _CharT* __lhs, const _CharT* __rhs, size_t __n) noexcept
+[[nodiscard]] _CCCL_HOST_API int __cccl_strncmp_impl_host(const _CharT* __lhs, const _CharT* __rhs, size_t __n) noexcept
 {
   if constexpr (sizeof(_CharT) == 1)
   {
@@ -276,7 +273,7 @@ template <class _CharT>
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class _CharT>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST _CharT* __cccl_strchr_impl_host(_CharT* __ptr, _CharT __c) noexcept
+[[nodiscard]] _CCCL_HOST_API _CharT* __cccl_strchr_impl_host(_CharT* __ptr, _CharT __c) noexcept
 {
   if constexpr (sizeof(_CharT) == 1)
   {
@@ -325,7 +322,7 @@ template <class _CharT>
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class _CharT>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST _CharT* __cccl_strrchr_impl_host(_CharT* __ptr, _CharT __c) noexcept
+[[nodiscard]] _CCCL_HOST_API _CharT* __cccl_strrchr_impl_host(_CharT* __ptr, _CharT __c) noexcept
 {
   if constexpr (sizeof(_CharT) == 1)
   {
@@ -368,7 +365,7 @@ template <class _Tp>
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class _Tp>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST _Tp* __cccl_memchr_impl_host(_Tp* __ptr, _Tp __c, size_t __n) noexcept
+[[nodiscard]] _CCCL_HOST_API _Tp* __cccl_memchr_impl_host(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
   if constexpr (sizeof(_Tp) == 1)
   {
@@ -421,8 +418,7 @@ template <class _Tp>
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class _Tp>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST _Tp*
-__cccl_memmove_impl_host(_Tp* __dst, const _Tp* __src, size_t __n) noexcept
+[[nodiscard]] _CCCL_HOST_API _Tp* __cccl_memmove_impl_host(_Tp* __dst, const _Tp* __src, size_t __n) noexcept
 {
   return reinterpret_cast<_Tp*>(::memmove(__dst, __src, __n * sizeof(_Tp)));
 }
@@ -464,8 +460,7 @@ __cccl_memcmp_impl_constexpr(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noe
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class _Tp>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST int
-__cccl_memcmp_impl_host(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noexcept
+[[nodiscard]] _CCCL_HOST_API int __cccl_memcmp_impl_host(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noexcept
 {
   if constexpr (sizeof(_Tp) == 1)
   {
@@ -509,7 +504,7 @@ __cccl_memcpy_impl_constexpr(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRIC
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class _Tp>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST _Tp*
+[[nodiscard]] _CCCL_HOST_API _Tp*
 __cccl_memcpy_impl_host(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRICT __src, size_t __n) noexcept
 {
   return reinterpret_cast<_Tp*>(::memcpy(__dst, __src, __n * sizeof(_Tp)));
@@ -546,7 +541,7 @@ template <class _Tp>
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class _Tp>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST _Tp* __cccl_memset_impl_host(_Tp* __ptr, _Tp __c, size_t __n) noexcept
+[[nodiscard]] _CCCL_HOST_API _Tp* __cccl_memset_impl_host(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
   if constexpr (sizeof(_Tp) == 1)
   {

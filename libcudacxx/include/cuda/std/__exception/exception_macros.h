@@ -34,7 +34,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 struct __cccl_catch_any_lvalue
 {
   template <class _Tp>
-  _CCCL_HOST_DEVICE operator _Tp&() const noexcept;
+  _CCCL_API operator _Tp&() const noexcept;
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
