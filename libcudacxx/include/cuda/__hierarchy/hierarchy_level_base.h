@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -34,6 +34,10 @@
 #  include <cuda/std/__type_traits/is_integer.h>
 #  include <cuda/std/__utility/integer_sequence.h>
 #  include <cuda/std/array>
+
+#  if defined(_CUDAX_HIERARCHY)
+#    include <cuda/experimental/__hierarchy/fwd.cuh>
+#  endif // _CUDAX_HIERARCHY
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -257,9 +261,12 @@ struct hierarchy_level_base
     {
       using _CurrExts = decltype(_Level::template extents_as<_Tp>(_NextLevel{}, __hier_unpacked));
       auto __curr_idx = _Level::template index_as<_Tp>(_NextLevel{});
-      for (::cuda::std::size_t __i = _CurrExts::rank(); __i < 3; ++__i)
+      for (::cuda::std::size_t __i = 0; __i < 3; ++__i)
       {
-        __curr_idx[__i] = 0;
+        if (__i >= _CurrExts::rank() || _CurrExts::static_extent(__i) == 1)
+        {
+          __curr_idx[__i] = 0;
+        }
       }
       return __curr_idx;
     }
@@ -313,6 +320,72 @@ struct hierarchy_level_base
     return __ret;
   }
 #  endif // _CCCL_CUDA_COMPILATION()
+
+#  if defined(_CUDAX_HIERARCHY)
+  _CCCL_TEMPLATE(class _Tp, class _Group)
+  _CCCL_REQUIRES(
+    ::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::experimental::__is_this_hierarchy_group_v<_Group>)
+  [[nodiscard]] _CCCL_API static constexpr _Tp count_as(const _Group& __group) noexcept
+  {
+    if constexpr (::cuda::std::is_same_v<_Level, typename _Group::level_type>)
+    {
+      return _Tp{1};
+    }
+    else
+    {
+      // todo: Pass __group.hierarchy() to the query.
+      return _Level::template count_as<_Tp>(typename _Group::level_type{} /*, __group.hierarchy()*/);
+    }
+  }
+
+  _CCCL_TEMPLATE(class _Group)
+  _CCCL_REQUIRES(::cuda::experimental::__is_this_hierarchy_group_v<_Group>)
+  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t count(const _Group& __group) noexcept
+  {
+    if constexpr (::cuda::std::is_same_v<_Level, typename _Group::level_type>)
+    {
+      return 1;
+    }
+    else
+    {
+      // todo: Pass __group.hierarchy() to the query.
+      return _Level::count(typename _Group::level_type{} /*, __group.hierarchy()*/);
+    }
+  }
+
+#    if _CCCL_CUDA_COMPILATION()
+  _CCCL_TEMPLATE(class _Tp, class _Group)
+  _CCCL_REQUIRES(
+    ::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::experimental::__is_this_hierarchy_group_v<_Group>)
+  [[nodiscard]] _CCCL_API static constexpr _Tp rank_as(const _Group& __group) noexcept
+  {
+    if constexpr (::cuda::std::is_same_v<_Level, typename _Group::level_type>)
+    {
+      return _Tp{0};
+    }
+    else
+    {
+      // todo: Pass __group.hierarchy() to the query.
+      return _Level::template rank_as<_Tp>(typename _Group::level_type{} /*, __group.hierarchy()*/);
+    }
+  }
+
+  _CCCL_TEMPLATE(class _Group)
+  _CCCL_REQUIRES(::cuda::experimental::__is_this_hierarchy_group_v<_Group>)
+  [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t rank(const _Group& __group) noexcept
+  {
+    if constexpr (::cuda::std::is_same_v<_Level, typename _Group::level_type>)
+    {
+      return 0;
+    }
+    else
+    {
+      // todo: Pass __group.hierarchy() to the query.
+      return _Level::rank(typename _Group::level_type{} /*, __group.hierarchy()*/);
+    }
+  }
+#    endif // _CCCL_CUDA_COMPILATION()
+#  endif // _CUDAX_HIERARCHY
 
 private:
   template <class>

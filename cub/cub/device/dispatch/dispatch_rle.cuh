@@ -22,7 +22,7 @@
 
 #include <cub/agent/agent_rle.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
-#include <cub/device/dispatch/tuning/tuning_run_length_encode.cuh>
+#include <cub/device/dispatch/tuning/tuning_rle_non_trivial_runs.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>

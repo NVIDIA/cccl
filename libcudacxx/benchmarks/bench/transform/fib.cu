@@ -63,13 +63,12 @@ static void fib(nvbench::state& state, nvbench::type_list<T>)
   fib_t<T, nvbench::uint32_t> op{};
 
   caching_allocator_t alloc{};
-  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
 
-  state.exec(
-    nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-      cuda::std::transform(
-        policy.with_stream(launch.get_stream().get_stream()), input.cbegin(), input.cend(), output.begin(), op);
-    });
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               do_not_optimize(
+                 cuda::std::transform(cuda_policy(alloc, launch), input.cbegin(), input.cend(), output.begin(), op));
+             });
 }
 
 using types = nvbench::type_list<nvbench::uint32_t, nvbench::uint64_t>;

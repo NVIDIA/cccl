@@ -145,7 +145,7 @@ struct pinned_memory_pool : pinned_memory_pool_ref
   //!
   //! @param __numa_id The NUMA node id of the NUMA node the pool is constructed
   //! on.
-  //! @param __pool_properties Optional, additional properties of the pool to be
+  //! @param __properties Optional, additional properties of the pool to be
   //! created.
   _CCCL_HOST_API pinned_memory_pool(int __numa_id, memory_pool_properties __properties = {})
       : pinned_memory_pool_ref(__create_cuda_mempool(
@@ -168,10 +168,10 @@ struct pinned_memory_pool : pinned_memory_pool_ref
   }
 
   //! @brief Returns a \c pinned_memory_pool_ref for this \c pinned_memory_pool.
-  //! The result is the same as if this object was cast to a \c pinned_memory_pool_ref.
-  _CCCL_HOST_API pinned_memory_pool_ref as_ref() noexcept
+  //! We return by reference to ensure that we can subsequently convert to a resource_ref
+  _CCCL_HOST_API pinned_memory_pool_ref& as_ref() noexcept
   {
-    return pinned_memory_pool_ref(__pool_);
+    return static_cast<pinned_memory_pool_ref&>(*this);
   }
 
   pinned_memory_pool(const pinned_memory_pool&)            = delete;
