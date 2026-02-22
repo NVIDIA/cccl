@@ -108,12 +108,12 @@ template <typename PolicySelector,
 CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).segmented_reduce.block_threads)) //
   void DeviceSegmentedReduceKernel(
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
+    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
+    _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
+    _CCCL_GRID_CONSTANT const BeginOffsetIteratorT d_begin_offsets,
+    _CCCL_GRID_CONSTANT const EndOffsetIteratorT d_end_offsets,
     ReductionOpT reduction_op,
-    InitT init)
+    _CCCL_GRID_CONSTANT const InitT init)
 {
   static constexpr reduce::agent_reduce_policy policy =
     PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).segmented_reduce;
@@ -215,15 +215,15 @@ template <typename ChainedPolicyT,
           typename AccumT>
 CUB_DETAIL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) void DeviceFixedSizeSegmentedReduceKernel(
-  InputIteratorT d_in,
-  OutputIteratorT d_out,
-  OffsetT segment_size,
-  int num_segments,
+  _CCCL_GRID_CONSTANT const InputIteratorT d_in,
+  _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
+  _CCCL_GRID_CONSTANT const OffsetT segment_size,
+  _CCCL_GRID_CONSTANT const int num_segments,
   ReductionOpT reduction_op,
-  InitT init,
-  AccumT* d_partial_out,
-  int full_chunk_size,
-  int blocks_per_segment)
+  _CCCL_GRID_CONSTANT const InitT init,
+  _CCCL_GRID_CONSTANT AccumT* const d_partial_out,
+  _CCCL_GRID_CONSTANT const int full_chunk_size,
+  _CCCL_GRID_CONSTANT const int blocks_per_segment)
 {
   using ActivePolicyT = typename ChainedPolicyT::ActivePolicy;
 

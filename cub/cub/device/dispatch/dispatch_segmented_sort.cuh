@@ -178,22 +178,22 @@ template <typename WrappedPolicyT,
           typename EndOffsetIteratorT,
           typename KernelLauncherFactory>
 __launch_bounds__(1) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContinuationKernel(
-  LargeKernelT large_kernel,
-  SmallKernelT small_kernel,
-  local_segment_index_t num_segments,
-  KeyT* d_current_keys,
-  KeyT* d_final_keys,
+  _CCCL_GRID_CONSTANT const LargeKernelT large_kernel,
+  _CCCL_GRID_CONSTANT const SmallKernelT small_kernel,
+  _CCCL_GRID_CONSTANT const local_segment_index_t num_segments,
+  _CCCL_GRID_CONSTANT KeyT* const d_current_keys,
+  _CCCL_GRID_CONSTANT KeyT* const d_final_keys,
   device_double_buffer<KeyT> d_keys_double_buffer,
-  ValueT* d_current_values,
-  ValueT* d_final_values,
+  _CCCL_GRID_CONSTANT ValueT* const d_current_values,
+  _CCCL_GRID_CONSTANT ValueT* const d_final_values,
   device_double_buffer<ValueT> d_values_double_buffer,
-  BeginOffsetIteratorT d_begin_offsets,
-  EndOffsetIteratorT d_end_offsets,
-  local_segment_index_t* group_sizes,
-  local_segment_index_t* large_and_medium_segments_indices,
-  local_segment_index_t* small_segments_indices,
-  KernelLauncherFactory launcher_factory,
-  WrappedPolicyT wrapped_policy)
+  _CCCL_GRID_CONSTANT const BeginOffsetIteratorT d_begin_offsets,
+  _CCCL_GRID_CONSTANT const EndOffsetIteratorT d_end_offsets,
+  _CCCL_GRID_CONSTANT local_segment_index_t* const group_sizes,
+  _CCCL_GRID_CONSTANT local_segment_index_t* const large_and_medium_segments_indices,
+  _CCCL_GRID_CONSTANT local_segment_index_t* const small_segments_indices,
+  _CCCL_GRID_CONSTANT const KernelLauncherFactory launcher_factory,
+  _CCCL_GRID_CONSTANT const WrappedPolicyT wrapped_policy)
 {
   // In case of CDP:
   // 1. each CTA has a different main stream

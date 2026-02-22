@@ -1016,12 +1016,12 @@ template <typename PolicySelector,
   requires transform_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(get_block_threads<PolicySelector>) CUB_DETAIL_KERNEL_ATTRIBUTES void transform_kernel(
-  Offset num_items,
-  int num_elem_per_thread,
-  [[maybe_unused]] bool can_vectorize,
-  Predicate pred,
-  F f,
-  RandomAccessIteratorOut out,
+  _CCCL_GRID_CONSTANT const Offset num_items,
+  _CCCL_GRID_CONSTANT const int num_elem_per_thread,
+  [[maybe_unused]] _CCCL_GRID_CONSTANT const bool can_vectorize,
+  _CCCL_GRID_CONSTANT const Predicate pred,
+  _CCCL_GRID_CONSTANT const F f,
+  _CCCL_GRID_CONSTANT const RandomAccessIteratorOut out,
   kernel_arg<RandomAccessIteratorsIn>... ins)
 {
   _CCCL_ASSERT(blockDim.y == 1 && blockDim.z == 1, "transform_kernel only supports 1D blocks");

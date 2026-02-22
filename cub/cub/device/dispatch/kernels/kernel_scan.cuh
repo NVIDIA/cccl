@@ -55,7 +55,7 @@ union tile_state_kernel_arg_t
  */
 template <typename ChainedPolicyT, typename InputIteratorT, typename OutputIteratorT, typename ScanTileState, typename AccumT>
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
-  tile_state_kernel_arg_t<ScanTileState, AccumT> tile_state, int num_tiles)
+  tile_state_kernel_arg_t<ScanTileState, AccumT> tile_state, _CCCL_GRID_CONSTANT const int num_tiles)
 {
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // beneficial for all problem sizes in cub.bench.scan.exclusive.sum.base
@@ -94,8 +94,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
  *   (i.e., length of `d_selected_out`)
  */
 template <typename ScanTileStateT, typename NumSelectedIteratorT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void
-DeviceCompactInitKernel(ScanTileStateT tile_state, int num_tiles, NumSelectedIteratorT d_num_selected_out)
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceCompactInitKernel(
+  ScanTileStateT tile_state, _CCCL_GRID_CONSTANT const int num_tiles, NumSelectedIteratorT d_num_selected_out)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);
