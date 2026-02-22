@@ -204,6 +204,21 @@ def register_kernel_extension(kernel, instance):
     extensions.append(instance)
 
 
+@lru_cache(maxsize=1)
+def get_thread_data_type():
+    """
+    Return `ThreadDataType` from `cuda.coop._decls`.
+
+    Rewrite-time typing relies on this symbol being available.
+    """
+    from . import _decls
+
+    thread_data_type = getattr(_decls, "ThreadDataType", None)
+    if thread_data_type is None:
+        raise RuntimeError("cuda.coop._decls.ThreadDataType is not available")
+    return thread_data_type
+
+
 VarType = Union[ir.Arg, ir.Const, ir.Expr, ir.FreeVar, ir.Global, ir.Var]
 RootVarType = Union[ir.Arg, ir.Const, ir.FreeVar, ir.Global]
 CallDefinitionType = Union[
@@ -4442,13 +4457,8 @@ class CoopBlockMergeSortNode(CoopNode, CoopNodeMixin):
                 "coop.block.merge_sort_keys requires keys to be an array"
             )
 
-        try:
-            from ._decls import ThreadDataType
-        except Exception:
-            ThreadDataType = None
-        keys_is_thread = ThreadDataType is not None and isinstance(
-            keys_ty, ThreadDataType
-        )
+        thread_data_type = get_thread_data_type()
+        keys_is_thread = isinstance(keys_ty, thread_data_type)
 
         keys_root = rewriter.get_root_def(keys)
         keys_leaf = keys_root.leaf_constructor_call
@@ -4494,9 +4504,7 @@ class CoopBlockMergeSortNode(CoopNode, CoopNodeMixin):
                     "coop.block.merge_sort_keys values must be a variable"
                 )
             values_ty = self.typemap[values.name]
-            values_is_thread = ThreadDataType is not None and isinstance(
-                values_ty, ThreadDataType
-            )
+            values_is_thread = isinstance(values_ty, thread_data_type)
             if not isinstance(values_ty, types.Array):
                 raise RuntimeError(
                     "coop.block.merge_sort_keys requires values to be an array"
@@ -4541,9 +4549,9 @@ class CoopBlockMergeSortNode(CoopNode, CoopNodeMixin):
         if items_per_thread < 1:
             raise RuntimeError("items_per_thread must be >= 1")
 
-        if ThreadDataType is not None and keys_is_thread:
+        if keys_is_thread:
             keys_ty = types.Array(dtype, 1, "C")
-        if ThreadDataType is not None and values is not None and values_is_thread:
+        if values is not None and values_is_thread:
             values_ty = types.Array(value_dtype, 1, "C")
         methods = getattr(dtype, "methods", None)
         if methods is not None and not methods:
