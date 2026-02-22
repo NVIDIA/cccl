@@ -1,0 +1,1286 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Device-scope &#8212; CUDA Core Compute Libraries</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+
+
+    <script src="../../_static/documentation_options.js?v=bbe6ed3a"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=5ceeb459"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'cub/developer/device_scope';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://NVIDIA.github.io/cccl/nv-versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'unstable';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+
+    <link rel="canonical" href="https://NVIDIA.github.io/cccl/cub/developer/device_scope.html" />
+    <link rel="icon" href="../../_static/favicon.png"/>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="NVTX" href="nvtx.html" />
+    <link rel="prev" title="Block-scope" href="block_scope.html" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="unstable" />
+
+
+  </head>
+
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../../cpp.html">CUDA C++ Core Libraries</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../libcudacxx/index.html">libcu++</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/setup.html">Setup</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/requirements.html">Requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/getting.html">Getting libcu++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/building_and_testing.html">Building &amp; Testing libcu++</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/standard_api.html">Standard API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/algorithms_library.html">Algorithms Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/c_library.html">C Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/concepts_library.html">Concepts Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/container_library.html">Container Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/execution_library.html">Execution Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/numerics_library.html">Numerics Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/ranges_library.html">Ranges Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/synchronization_library.html">Synchronization Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/time_library.html">Time Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/type_support.html">Type Support Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/utility_library.html">Utility Library</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/extended_api.html">Extended API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/bit.html">Bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/execution_model.html">Execution model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/exceptions.html">Exception Handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_model.html">Memory model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/thread_groups.html">Thread Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/synchronization_primitives.html">Synchronization Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/asynchronous_operations.html">Asynchronous Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_access_properties.html">Memory access properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/functional.html">Functional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/iterators.html">Fancy Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/type_traits.html">Type traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/vector_tuple_protocol.html">Vector Tuple Protocol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/numeric.html">Numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/random.html">Random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory.html">Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_resource.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/math.html">Math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/mdspan.html">Mdspan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/warp.html">Warp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/utility.html">Utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/work_stealing.html">Work stealing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/stream.html">Streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/event.html">Events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/algorithm.html">Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/legacy_resources.html">Legacy resources</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/examples.html">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/instructions.html">PTX Instructions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/pragmas.html">PTX Pragmas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="../index.html">CUB</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../test_overview.html">CUB Tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../benchmarking.html">CUB Benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tuning.html">CUB Tunings</a></li>
+<li class="toctree-l3 current active has-children"><a class="reference internal" href="../developer_overview.html">CUB Developer Overview</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="block_scope.html">Block-scope</a></li>
+<li class="toctree-l4 current active"><a class="current reference internal" href="#">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="nvtx.html">NVTX</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../releases.html">CUB Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../releases/changelog.html">CUB 2.1.0</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/thread_level.html">Thread-level Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/warp_wide.html">Warp-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/block_wide.html">Block-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/device_wide.html">Device-Wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/index.html">API reference</a></li>
+</ul>
+</details></li>
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../thrust/index.html">Thrust</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/developer_overview.html">Thrust Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/systems.html">Thrust systems</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/release_process.html">Release Process</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/algorithms.html">Algorithms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/containers.html">Containers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/function_objects.html">Function Objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/iterators.html">Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/memory_management.html">Memory Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/numerics.html">Numerics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/random.html">Random Number Generators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/system.html">System</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/utility.html">Utility</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cudax/index.html">CUDA Experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/container.html">Containers library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1uninitialized__buffer.html">cuda::experimental::uninitialized_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/memory_resource.html">Memory Resources</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1basic__any__resource.html">cuda::mr::basic_any_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1memory__pool__properties.html">cuda::memory_pool_properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1device__memory__pool.html">cuda::device_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1pinned__memory__pool.html">cuda::pinned_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1managed__memory__pool.html">cuda::managed_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1legacy__pinned__memory__resource.html">cuda::mr::legacy_pinned_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1legacy__managed__memory__resource.html">cuda::mr::legacy_managed_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1mr_1_1shared__resource.html">cuda::mr::shared_resource</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/graph.html">Graphs library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph.html">cuda::experimental::graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__builder.html">cuda::experimental::graph_builder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__builder__ref.html">cuda::experimental::graph_builder_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__node__ref.html">cuda::experimental::graph_node_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of.html">cuda::experimental::stf::graphed_interface_of</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; mdspan&lt; T, P… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; void_interface &gt;</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/stf.html">CUDASTF</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/stf/custom_data_interface.html">Implementation of the <code class="docutils literal notranslate"><span class="pre">matrix</span></code> class</a></li>
+
+
+
+
+
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/stf/lower_level_api.html">Lower-level API</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/3.0_migration_guide.html">CCCL 2.x ‐ CCCL 3.0 migration guide</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/development/index.html">CCCL Development Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/macro.html">CCCL Internal Macros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/testing.html">CCCL Testing Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/contributing.html">Contributing to the CUDA Core Compute Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/contributing/code_of_conduct.html">Code of Conduct</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/license.html">License</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../python/index.html">CCCL Python Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../python/setup.html">Setup and Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/compute.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/coop.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>: Cooperative Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/resources.html">Resources</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../python/api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../python/compute_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../python/coop_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> API Reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../cpp.html" class="nav-link">CUDA C++ Core Libraries</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">CUB</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../developer_overview.html" class="nav-link">CUB Developer Overview</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Device-scope</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="device-scope">
+<span id="cub-developer-guide-device-scope"></span><h1>Device-scope<a class="headerlink" href="#device-scope" title="Link to this heading">#</a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">#</a></h2>
+<p>Device-scope functionality is provided by classes called <code class="docutils literal notranslate"><span class="pre">DeviceAlgorithm</span></code>,
+where <code class="docutils literal notranslate"><span class="pre">Algorithm</span></code> is the implemented algorithm.
+These classes then contain static member functions providing corresponding API entry points.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">DeviceAlgorithm</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="p">...</span><span class="o">&gt;</span>
+<span class="w">  </span><span class="n">CUB_RUNTIME_FUNCTION</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="n">cudaError_t</span><span class="w"> </span><span class="n">Algorithm</span><span class="p">(</span>
+<span class="w">      </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">d_temp_storage</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="o">&amp;</span><span class="n">temp_storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="p">...,</span><span class="w"> </span><span class="n">cudaStream_t</span><span class="w"> </span><span class="n">stream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// optional: minimal argument checking or setup to call dispatch layer</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">DispatchAlgorithm</span><span class="o">&lt;</span><span class="p">...</span><span class="o">&gt;::</span><span class="n">Dispatch</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="p">...,</span><span class="w"> </span><span class="n">stream</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>For example, device-level reduce will look like <cite>cub::DeviceReduce::Sum</cite>.
+Device-scope facilities always return <code class="docutils literal notranslate"><span class="pre">cudaError_t</span></code> and accept <code class="docutils literal notranslate"><span class="pre">stream</span></code> as the last parameter (NULL stream by default)
+and the first two parameters are always <code class="docutils literal notranslate"><span class="pre">void</span> <span class="pre">*d_temp_storage,</span> <span class="pre">size_t</span> <span class="pre">&amp;temp_storage_bytes</span></code>.
+The implementation may consist of some minimal argument checking, but should forward as soon as possible to the dispatch layer.
+Device-scope algorithms are implemented in files located in <cite>cub/device/device_***.cuh</cite>.</p>
+<p>In general, the use of a CUB algorithm consists of two phases:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Temporary storage size is calculated and returned in <code class="docutils literal notranslate"><span class="pre">size_t</span> <span class="pre">&amp;temp_storage_bytes</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">temp_storage_bytes</span></code> of memory is expected to be allocated and <code class="docutils literal notranslate"><span class="pre">d_temp_storage</span></code> is expected to be the pointer to this memory.</p></li>
+</ol>
+</div></blockquote>
+<p>The following example illustrates this pattern:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// First call: Determine temporary device storage requirements</span>
+<span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="n">cub</span><span class="o">::</span><span class="n">DeviceReduce</span><span class="o">::</span><span class="n">Sum</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="n">d_in</span><span class="p">,</span><span class="w"> </span><span class="n">d_out</span><span class="p">,</span><span class="w"> </span><span class="n">num_items</span><span class="p">);</span>
+
+<span class="c1">// Allocate temporary storage</span>
+<span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">d_temp_storage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
+<span class="n">cudaMalloc</span><span class="p">(</span><span class="o">&amp;</span><span class="n">d_temp_storage</span><span class="p">,</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="p">);</span>
+
+<span class="c1">// Second call: Perform algorithm</span>
+<span class="n">cub</span><span class="o">::</span><span class="n">DeviceReduce</span><span class="o">::</span><span class="n">Sum</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="n">d_in</span><span class="p">,</span><span class="w"> </span><span class="n">d_out</span><span class="p">,</span><span class="w"> </span><span class="n">num_items</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Even if the algorithm doesn’t need temporary storage as scratch space,
+we still require one byte of memory to be allocated.</p>
+</div>
+</section>
+<section id="dispatch-layer">
+<h2>Dispatch layer<a class="headerlink" href="#dispatch-layer" title="Link to this heading">#</a></h2>
+<p>A dispatch layer exists for each device-scope algorithms (e.g., <cite>DispatchReduce</cite>),
+and is located in <cite>cub/device/dispatch</cite>.
+Only device-scope algorithms have a dispatch layer.</p>
+<p>The dispatch layer follows a certain architecture.
+The high-level control flow is represented by the code below.
+A more precise description is given later.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// Device-scope API</span>
+<span class="n">cudaError_t</span><span class="w"> </span><span class="nf">cub::DeviceAlgorithm::Algorithm</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="p">...)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">DispatchAlgorithm</span><span class="o">::</span><span class="n">Dispatch</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="p">...);</span><span class="w"> </span><span class="c1">// calls (1)</span>
+<span class="p">}</span>
+
+<span class="c1">// Dispatch entry point</span>
+<span class="k">static</span><span class="w"> </span><span class="n">cudaError_t</span><span class="w"> </span><span class="nf">DispatchAlgorithm::Dispatch</span><span class="p">(...)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// (1)</span>
+<span class="w">  </span><span class="n">DispatchAlgorithm</span><span class="w"> </span><span class="n">closure</span><span class="p">{...};</span>
+<span class="w">  </span><span class="c1">// MaxPolicy - tail of linked list containing architecture-specific tunings</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">MaxPolicy</span><span class="o">::</span><span class="n">Invoke</span><span class="p">(</span><span class="n">get_device_ptx_version</span><span class="p">(),</span><span class="w"> </span><span class="n">closure</span><span class="p">);</span><span class="w"> </span><span class="c1">// calls (2)</span>
+<span class="p">}</span>
+
+<span class="c1">// Chained policy - linked list of tunings</span>
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="kt">int</span><span class="w"> </span><span class="n">PolicyPtxVersion</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">Policy</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">PrevPolicy</span><span class="o">&gt;</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">ChainedPolicy</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">ActivePolicy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">conditional_t</span><span class="o">&lt;</span><span class="n">CUB_PTX_ARCH</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">PolicyPtxVersion</span><span class="p">,</span><span class="w"> </span><span class="c1">// (5)</span>
+<span class="w">                                    </span><span class="k">typename</span><span class="w"> </span><span class="nc">PrevPolicy</span><span class="o">::</span><span class="n">ActivePolicy</span><span class="p">,</span><span class="w"> </span><span class="n">Policy</span><span class="o">&gt;</span><span class="p">;</span>
+
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="n">cudaError_t</span><span class="w"> </span><span class="nf">Invoke</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">device_ptx_version</span><span class="p">,</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">dispatch_closure</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// (2)</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">device_ptx_version</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">PolicyPtxVersion</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">PrevPolicy</span><span class="o">::</span><span class="n">Invoke</span><span class="p">(</span><span class="n">device_ptx_version</span><span class="p">,</span><span class="w"> </span><span class="n">dispatch_closure</span><span class="p">);</span><span class="w"> </span><span class="c1">// calls (2) of next policy</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">dispatch_closure</span><span class="p">.</span><span class="n">Invoke</span><span class="o">&lt;</span><span class="n">Policy</span><span class="o">&gt;</span><span class="p">();</span><span class="w"> </span><span class="c1">// eventually calls (3)</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">};</span>
+
+<span class="c1">// Dispatch object - a closure over all algorithm parameters</span>
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">Policy</span><span class="o">&gt;</span>
+<span class="n">cudaError_t</span><span class="w"> </span><span class="n">DispatchAlgorithm</span><span class="o">::</span><span class="n">Invoke</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// (3)</span>
+<span class="w">    </span><span class="c1">// host-side implementation of algorithm, calls kernels</span>
+<span class="w">    </span><span class="n">kernel</span><span class="o">&lt;</span><span class="n">MaxPolicy</span><span class="o">&gt;&lt;&lt;&lt;</span><span class="n">grid_size</span><span class="p">,</span><span class="w"> </span><span class="n">Policy</span><span class="o">::</span><span class="n">AlgorithmPolicy</span><span class="o">::</span><span class="n">BLOCK_THREADS</span><span class="o">&gt;&gt;&gt;</span><span class="p">(...);</span><span class="w"> </span><span class="c1">// calls (4)</span>
+<span class="p">}</span>
+
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">ChainedPolicy</span><span class="o">&gt;</span>
+<span class="n">__launch_bounds__</span><span class="p">(</span><span class="n">ChainedPolicy</span><span class="o">::</span><span class="n">ActivePolicy</span><span class="o">::</span><span class="n">AlgorithmPolicy</span><span class="o">::</span><span class="n">BLOCK_THREADS</span><span class="p">)</span><span class="w"> </span><span class="n">CUB_DETAIL_KERNEL_ATTRIBUTES</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">kernel</span><span class="p">(...)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// (4)</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">policy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ChainedPolicy</span><span class="o">::</span><span class="n">ActivePolicy</span><span class="p">;</span><span class="w"> </span><span class="c1">// selects policy of active device compilation pass (5)</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">agent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AgentAlgorithm</span><span class="o">&lt;</span><span class="n">policy</span><span class="o">&gt;</span><span class="p">;</span><span class="w"> </span><span class="c1">// instantiates (6)</span>
+<span class="w">  </span><span class="n">agent</span><span class="w"> </span><span class="n">a</span><span class="p">{...};</span>
+<span class="w">  </span><span class="n">a</span><span class="p">.</span><span class="n">Process</span><span class="p">();</span><span class="w"> </span><span class="c1">// calls (7)</span>
+<span class="p">}</span>
+
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">Policy</span><span class="o">&gt;</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">AlgorithmAgent</span><span class="w"> </span><span class="p">{</span><span class="w">  </span><span class="c1">// (6)</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">Process</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="c1">// (7)</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>Let’s look at each of the building blocks closer.</p>
+<p>The dispatch entry point is typically represented by a static member function called <code class="docutils literal notranslate"><span class="pre">DispatchAlgorithm::Dispatch</span></code>
+that constructs an object of type <code class="docutils literal notranslate"><span class="pre">DispatchAlgorithm</span></code>, filling it with all arguments to run the algorithm,
+and passes it to the <code class="docutils literal notranslate"><span class="pre">ChainedPolicy::Invoke</span></code> function:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="p">...,</span><span class="w"> </span><span class="c1">// algorithm specific compile-time parameters</span>
+<span class="w">          </span><span class="k">typename</span><span class="w"> </span><span class="nc">PolicyHub</span><span class="o">&gt;</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">DispatchAlgorithm</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">CUB_RUNTIME_FUNCTION</span><span class="w"> </span><span class="n">_CCCL_FORCEINLINE</span><span class="w"> </span><span class="k">static</span>
+<span class="w">  </span><span class="n">cudaError_t</span><span class="w"> </span><span class="n">Dispatch</span><span class="p">(</span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">d_temp_storage</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="o">&amp;</span><span class="n">temp_storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="p">...,</span><span class="w"> </span><span class="n">cudaStream</span><span class="w"> </span><span class="n">stream</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="cm">/* no items to process */</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">d_temp_storage</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">nullptr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">temp_storage_bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">cudaSuccess</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">ptx_version</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">cudaError_t</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CubDebug</span><span class="p">(</span><span class="n">PtxVersion</span><span class="p">(</span><span class="n">ptx_version</span><span class="p">));</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">cudaSuccess</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">error</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">error</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">DispatchAlgorithm</span><span class="w"> </span><span class="n">dispatch</span><span class="p">(...,</span><span class="w"> </span><span class="n">stream</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">CubDebug</span><span class="p">(</span><span class="n">PolicyHub</span><span class="o">::</span><span class="n">MaxPolicy</span><span class="o">::</span><span class="n">Invoke</span><span class="p">(</span><span class="n">ptx_version</span><span class="p">,</span><span class="w"> </span><span class="n">dispatch</span><span class="p">));</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>For many legacy algorithms, the dispatch layer is publicly accessible and used directly by users,
+since it often exposes additional performance knobs or configuration,
+like choosing the index type or policies to use.
+Exposing the dispatch layer also allowed users to tune algorithms for their use cases.
+In the newly added algorithms, the dispatch layer should not be exposed publicly anymore.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">ChainedPolicy</span></code> has two purposes.
+During <code class="docutils literal notranslate"><span class="pre">Invoke</span></code>, it converts the runtime PTX version of the current device
+to the nearest lower-or-equal compile-time policy available:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="kt">int</span><span class="w"> </span><span class="n">PolicyPtxVersion</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">Policy</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">PrevPolicy</span><span class="o">&gt;</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">ChainedPolicy</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">ActivePolicy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">conditional_t</span><span class="o">&lt;</span><span class="n">CUB_PTX_ARCH</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">PolicyPtxVersion</span><span class="p">,</span>
+<span class="w">                                    </span><span class="k">typename</span><span class="w"> </span><span class="nc">PrevPolicy</span><span class="o">::</span><span class="n">ActivePolicy</span><span class="p">,</span><span class="w"> </span><span class="n">Policy</span><span class="o">&gt;</span><span class="p">;</span>
+
+<span class="w">  </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">Functor</span><span class="o">&gt;</span>
+<span class="w">  </span><span class="n">CUB_RUNTIME_FUNCTION</span><span class="w"> </span><span class="n">_CCCL_FORCEINLINE</span>
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="n">cudaError_t</span><span class="w"> </span><span class="n">Invoke</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">device_ptx_version</span><span class="p">,</span><span class="w"> </span><span class="n">Functor</span><span class="w"> </span><span class="n">dispatch_closure</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">device_ptx_version</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">PolicyPtxVersion</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">PrevPolicy</span><span class="o">::</span><span class="n">Invoke</span><span class="p">(</span><span class="n">device_ptx_version</span><span class="p">,</span><span class="w"> </span><span class="n">dispatch_closure</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">dispatch_closure</span><span class="p">.</span><span class="n">Invoke</span><span class="o">&lt;</span><span class="n">Policy</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>The dispatch object’s <code class="docutils literal notranslate"><span class="pre">Invoke</span></code> function is then called with the best policy for the device’s PTX version:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="p">...,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">PolicyHub</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">detail</span><span class="o">::</span><span class="n">algorithm</span><span class="o">::</span><span class="n">policy_hub</span><span class="o">&gt;</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">DispatchAlgorithm</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">ActivePolicy</span><span class="o">&gt;</span>
+<span class="w">  </span><span class="n">CUB_RUNTIME_FUNCTION</span><span class="w"> </span><span class="n">_CCCL_FORCEINLINE</span>
+<span class="w">  </span><span class="n">cudaError_t</span><span class="w"> </span><span class="n">Invoke</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// host-side implementation of algorithm, calls kernels</span>
+<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="n">MaxPolicy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">DispatchSegmentedReduce</span><span class="o">::</span><span class="n">MaxPolicy</span><span class="p">;</span>
+<span class="w">    </span><span class="n">kernel</span><span class="o">&lt;</span><span class="n">MaxPolicy</span><span class="w"> </span><span class="cm">/*(2)*/</span><span class="o">&gt;&lt;&lt;&lt;</span><span class="n">grid_size</span><span class="p">,</span><span class="w"> </span><span class="n">ActivePolicy</span><span class="o">::</span><span class="n">AlgorithmPolicy</span><span class="o">::</span><span class="n">BLOCK_THREADS</span><span class="w"> </span><span class="cm">/*(1)*/</span><span class="o">&gt;&gt;&gt;</span><span class="p">(...);</span><span class="w"> </span><span class="c1">// calls (4)</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>This is where all the host-side work happens and kernels are eventually launched using the supplied policies.
+Note how the kernel is instantiated on <code class="docutils literal notranslate"><span class="pre">MaxPolicy</span></code> (2) while the kernel launch configuration uses <code class="docutils literal notranslate"><span class="pre">ActivePolicy</span></code> (1).
+This is an important optimization to reduce compilation-time:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">ChainedPolicy</span><span class="w"> </span><span class="cm">/* ... */</span><span class="w"> </span><span class="o">&gt;</span>
+<span class="n">__launch_bounds__</span><span class="p">(</span><span class="n">ChainedPolicy</span><span class="o">::</span><span class="n">ActivePolicy</span><span class="o">::</span><span class="n">AlgorithmPolicy</span><span class="o">::</span><span class="n">BLOCK_THREADS</span><span class="p">)</span><span class="w"> </span><span class="n">__CUB_DETAIL_KERNEL_ATTRIBUTES</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">kernel</span><span class="p">(...)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">policy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ChainedPolicy</span><span class="o">::</span><span class="n">ActivePolicy</span><span class="o">::</span><span class="n">AlgorithmPolicy</span><span class="p">;</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">agent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AgentAlgorithm</span><span class="o">&lt;</span><span class="n">policy</span><span class="o">&gt;</span><span class="p">;</span>
+
+<span class="w">  </span><span class="n">__shared__</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">agent</span><span class="o">::</span><span class="n">TempStorage</span><span class="w"> </span><span class="n">temp_storage</span><span class="p">;</span><span class="w"> </span><span class="c1">// allocate static shared memory for agent</span>
+
+<span class="w">  </span><span class="n">agent</span><span class="w"> </span><span class="n">a</span><span class="p">{</span><span class="n">temp_storage</span><span class="p">,</span><span class="w"> </span><span class="p">...};</span>
+<span class="w">  </span><span class="n">a</span><span class="p">.</span><span class="n">Process</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The kernel gets compiled for each PTX version (<code class="docutils literal notranslate"><span class="pre">N</span></code> many) that was provided to the compiler.
+During each device pass,
+<code class="docutils literal notranslate"><span class="pre">ChainedPolicy</span></code> compares <code class="docutils literal notranslate"><span class="pre">CUB_PTX_ARCH</span></code> against the template parameter <code class="docutils literal notranslate"><span class="pre">PolicyPtxVersion</span></code>
+to select an <code class="docutils literal notranslate"><span class="pre">ActivePolicy</span></code> type.
+During the host pass,
+<code class="docutils literal notranslate"><span class="pre">Invoke</span></code> is compiled for each architecture in the tuning list (<code class="docutils literal notranslate"><span class="pre">M</span></code> many).
+If we used <code class="docutils literal notranslate"><span class="pre">ActivePolicy</span></code> instead of <code class="docutils literal notranslate"><span class="pre">MaxPolicy</span></code> as a kernel template parameter,
+we would compile <code class="docutils literal notranslate"><span class="pre">O(M*N)</span></code> kernels instead of <code class="docutils literal notranslate"><span class="pre">O(N)</span></code>.</p>
+<p>The kernels in the dispatch layer shouldn’t contain a lot of code.
+Usually, the functionality is extracted into the agent layer.
+All the kernel does is derive the proper policy type,
+unwrap the policy to initialize the agent and call one of its <code class="docutils literal notranslate"><span class="pre">Consume</span></code> / <code class="docutils literal notranslate"><span class="pre">Process</span></code> functions.
+Agents hold kernel bodies and are frequently reused by unrelated device-scope algorithms.</p>
+<p>To gain a better understanding of why we use <code class="docutils literal notranslate"><span class="pre">MaxPolicy</span></code> instead of
+<code class="docutils literal notranslate"><span class="pre">ActivePolicy</span></code> to instantiate the kernel, consider the following example which
+minimally reproduces the CUB dispatch layer.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/std/type_traits&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstdio&gt;</span>
+
+<span class="c1">/// In device code, CUB_PTX_ARCH expands to the PTX version for which we are</span>
+<span class="c1">/// compiling. In host code, CUB_PTX_ARCH&#39;s value is implementation defined.</span>
+<span class="cp">#ifndef CUB_PTX_ARCH</span>
+<span class="cp">#  if !defined(__CUDA_ARCH__)</span>
+<span class="cp">#    define CUB_PTX_ARCH 0</span>
+<span class="cp">#  else</span>
+<span class="cp">#    define CUB_PTX_ARCH __CUDA_ARCH__</span>
+<span class="cp">#  endif</span>
+<span class="cp">#endif</span>
+
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="kt">int</span><span class="w"> </span><span class="n">PTXVersion</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">Policy</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">PrevPolicy</span><span class="o">&gt;</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">ChainedPolicy</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">cc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PTXVersion</span><span class="p">;</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">ActivePolicy</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">std</span><span class="o">::</span><span class="n">conditional_t</span><span class="o">&lt;</span><span class="n">CUB_PTX_ARCH</span><span class="o">&lt;</span><span class="n">PTXVersion</span><span class="p">,</span><span class="w"> </span><span class="n">PrevPolicy</span><span class="p">,</span><span class="w"> </span><span class="n">Policy</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">PrevPolicyT</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="n">PrevPolicy</span><span class="p">;</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">PolicyT</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="n">Policy</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="kt">int</span><span class="w"> </span><span class="n">PTXVersion</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">Policy</span><span class="o">&gt;</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">ChainedPolicy</span><span class="o">&lt;</span><span class="n">PTXVersion</span><span class="p">,</span><span class="w"> </span><span class="n">Policy</span><span class="p">,</span><span class="w"> </span><span class="n">Policy</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">cc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PTXVersion</span><span class="p">;</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">ActivePolicy</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="n">Policy</span><span class="p">;</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">PrevPolicyT</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="n">Policy</span><span class="p">;</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">PolicyT</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="n">Policy</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">sm60</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">ChainedPolicy</span><span class="o">&lt;</span><span class="mi">600</span><span class="p">,</span><span class="w"> </span><span class="n">sm60</span><span class="p">,</span><span class="w"> </span><span class="n">sm60</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">BLOCK_THREADS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">256</span><span class="p">;</span><span class="w"> </span><span class="p">};</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">sm70</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">ChainedPolicy</span><span class="o">&lt;</span><span class="mi">700</span><span class="p">,</span><span class="w"> </span><span class="n">sm70</span><span class="p">,</span><span class="w"> </span><span class="n">sm60</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">BLOCK_THREADS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">512</span><span class="p">;</span><span class="w"> </span><span class="p">};</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">sm80</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">ChainedPolicy</span><span class="o">&lt;</span><span class="mi">800</span><span class="p">,</span><span class="w"> </span><span class="n">sm80</span><span class="p">,</span><span class="w"> </span><span class="n">sm70</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">BLOCK_THREADS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">768</span><span class="p">;</span><span class="w"> </span><span class="p">};</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">sm90</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">ChainedPolicy</span><span class="o">&lt;</span><span class="mi">900</span><span class="p">,</span><span class="w"> </span><span class="n">sm90</span><span class="p">,</span><span class="w"> </span><span class="n">sm80</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">BLOCK_THREADS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1024</span><span class="p">;</span><span class="w"> </span><span class="p">};</span>
+
+<span class="k">using</span><span class="w"> </span><span class="n">MaxPolicy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sm90</span><span class="p">;</span>
+
+<span class="c1">// Kernel instantiated with ActivePolicy</span>
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">ActivePolicy</span><span class="o">&gt;</span>
+<span class="n">__launch_bounds__</span><span class="p">(</span><span class="n">ActivePolicy</span><span class="o">::</span><span class="n">BLOCK_THREADS</span><span class="p">)</span><span class="w"> </span><span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">bad_kernel</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;launch bounds %d; block threads %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ActivePolicy</span><span class="o">::</span><span class="n">BLOCK_THREADS</span><span class="p">,</span><span class="w"> </span><span class="n">blockDim</span><span class="p">.</span><span class="n">x</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// Kernel instantiated with MaxPolicy</span>
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">MaxPolicy</span><span class="o">&gt;</span>
+<span class="n">__launch_bounds__</span><span class="p">(</span><span class="n">MaxPolicy</span><span class="o">::</span><span class="n">ActivePolicy</span><span class="o">::</span><span class="n">BLOCK_THREADS</span><span class="p">)</span><span class="w"> </span><span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">good_kernel</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;launch bounds %d; block threads %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">MaxPolicy</span><span class="o">::</span><span class="n">ActivePolicy</span><span class="o">::</span><span class="n">BLOCK_THREADS</span><span class="p">,</span><span class="w"> </span><span class="n">blockDim</span><span class="p">.</span><span class="n">x</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// Function to dispatch kernel with the correct ActivePolicy</span>
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">invoke_with_best_policy_bad</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">runtime_cc</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">runtime_cc</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">T</span><span class="o">::</span><span class="n">cc</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">invoke_with_best_policy_bad</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">::</span><span class="n">PrevPolicyT</span><span class="o">&gt;</span><span class="p">(</span><span class="n">runtime_cc</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">bad_kernel</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">::</span><span class="n">PolicyT</span><span class="o">&gt;&lt;&lt;&lt;</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">::</span><span class="n">PolicyT</span><span class="o">::</span><span class="n">BLOCK_THREADS</span><span class="o">&gt;&gt;&gt;</span><span class="p">();</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// Function to dispatch kernel with the correct MaxPolicy</span>
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">invoke_with_best_policy_good</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">runtime_cc</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">runtime_cc</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">T</span><span class="o">::</span><span class="n">cc</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">invoke_with_best_policy_good</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">::</span><span class="n">PrevPolicyT</span><span class="o">&gt;</span><span class="p">(</span><span class="n">runtime_cc</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">good_kernel</span><span class="o">&lt;</span><span class="n">MaxPolicy</span><span class="o">&gt;&lt;&lt;&lt;</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">::</span><span class="n">PolicyT</span><span class="o">::</span><span class="n">BLOCK_THREADS</span><span class="o">&gt;&gt;&gt;</span><span class="p">();</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="n">call_kernel</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">cudaDeviceProp</span><span class="w"> </span><span class="n">deviceProp</span><span class="p">;</span>
+<span class="w">  </span><span class="n">cudaGetDeviceProperties</span><span class="p">(</span><span class="o">&amp;</span><span class="n">deviceProp</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">runtime_cc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">deviceProp</span><span class="p">.</span><span class="n">major</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">deviceProp</span><span class="p">.</span><span class="n">minor</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;runtime cc %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">runtime_cc</span><span class="p">);</span>
+
+<span class="w">  </span><span class="n">invoke_with_best_policy_bad</span><span class="o">&lt;</span><span class="n">MaxPolicy</span><span class="o">&gt;</span><span class="p">(</span><span class="n">runtime_cc</span><span class="p">);</span>
+<span class="w">  </span><span class="n">invoke_with_best_policy_good</span><span class="o">&lt;</span><span class="n">MaxPolicy</span><span class="o">&gt;</span><span class="p">(</span><span class="n">runtime_cc</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">int</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">call_kernel</span><span class="p">();</span>
+<span class="w">  </span><span class="n">cudaDeviceSynchronize</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>In this example, we define four execution policies for four GPU architectures,
+<code class="docutils literal notranslate"><span class="pre">sm60</span></code>, <code class="docutils literal notranslate"><span class="pre">sm70</span></code>, <code class="docutils literal notranslate"><span class="pre">sm80</span></code>, and <code class="docutils literal notranslate"><span class="pre">sm90</span></code>, with each having a different value
+for <code class="docutils literal notranslate"><span class="pre">BLOCK_THREADS</span></code>. Additionally, we define two kernels, <code class="docutils literal notranslate"><span class="pre">bad_kernel</span></code> and
+<code class="docutils literal notranslate"><span class="pre">good_kernel</span></code> to illustrate the effect of instantiating with the
+<code class="docutils literal notranslate"><span class="pre">ActivePolicy</span></code> and <code class="docutils literal notranslate"><span class="pre">MaxPolicy</span></code> respectively, as well a function to invoke
+each of the kernels by selecting the policy for the appropriate architecture.
+Finally, we call these two functions by specifying the current device’s
+architecture, which we obtain at run-time from host code. We cannot use the
+<code class="docutils literal notranslate"><span class="pre">__CUDA_ARCH__</span></code> macro here since it is not defined in host code, so it must be
+extracted at run-time.</p>
+<p>Compiling this file results in four template instantiations of <code class="docutils literal notranslate"><span class="pre">bad_kernel</span></code>,
+one for each architecture’s policy, but only one template instantiation of
+<code class="docutils literal notranslate"><span class="pre">good_kernel</span></code> using <code class="docutils literal notranslate"><span class="pre">MaxPolicy</span></code>. Assume we compiled the above file using
+<code class="docutils literal notranslate"><span class="pre">nvcc</span> <span class="pre">policies.cu</span> <span class="pre">-std=c++20</span> <span class="pre">-gencode</span> <span class="pre">arch=compute_80,code=sm_80</span> <span class="pre">-o</span> <span class="pre">policies</span></code>,
+we can inspect the generated binary to see these template instantiations using
+<code class="docutils literal notranslate"><span class="pre">cuobjdump</span> <span class="pre">--dump-elf-symbols</span> <span class="pre">policies</span></code>. The relevant output is shown below.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>symbols:
+STT_OBJECT       STB_LOCAL  STV_DEFAULT    $str
+STT_FUNC         STB_GLOBAL STO_ENTRY      _Z11good_kernelI4sm90Evv
+STT_FUNC         STB_GLOBAL STV_DEFAULT  U vprintf
+STT_FUNC         STB_GLOBAL STO_ENTRY      _Z10bad_kernelI4sm90Evv
+STT_FUNC         STB_GLOBAL STO_ENTRY      _Z10bad_kernelI4sm80Evv
+STT_FUNC         STB_GLOBAL STO_ENTRY      _Z10bad_kernelI4sm70Evv
+STT_FUNC         STB_GLOBAL STO_ENTRY      _Z10bad_kernelI4sm60Evv
+</pre></div>
+</div>
+<p>We can see that there are four symbols containing <code class="docutils literal notranslate"><span class="pre">bad_kernel</span></code> in their name,
+which correspond to the four execution policies, but only one symbol for
+<code class="docutils literal notranslate"><span class="pre">good_kernel</span></code>. This is due to the functions that invoke these kernels. For
+<code class="docutils literal notranslate"><span class="pre">bad_kernel</span></code>, the template instantiation we call depends on the <code class="docutils literal notranslate"><span class="pre">T::PolicyT</span></code>
+(the <code class="docutils literal notranslate"><span class="pre">ActivePolicy</span></code>), which depends on a run-time argument, so the compiler
+must instantiate <code class="docutils literal notranslate"><span class="pre">bad_kernel</span></code> for every policy. For <code class="docutils literal notranslate"><span class="pre">good_kernel</span></code>, we always
+instantiate the kernel with <code class="docutils literal notranslate"><span class="pre">MaxPolicy</span></code>. This results in only one template
+instantiation compared to four template instantiations per fat binary, which
+saves on compile time and binary size.</p>
+<p>To show that both kernels’ invocation is equivalent, we can run the code using
+<code class="docutils literal notranslate"><span class="pre">./policies</span></code>. We obtain the following output.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>runtime cc 890
+launch bounds 768; block threads 768
+launch bounds 768; block threads 768
+</pre></div>
+</div>
+<p>Our GPU’s architecture is <code class="docutils literal notranslate"><span class="pre">sm89</span></code>, so the nearest policy less than or equal to
+that, <code class="docutils literal notranslate"><span class="pre">sm80</span></code> in this case, is selected at run-time. Both kernels are invoked
+with the same launch bounds and number of threads per block.</p>
+</section>
+<section id="policies">
+<span id="cub-developer-policies"></span><h2>Policies<a class="headerlink" href="#policies" title="Link to this heading">#</a></h2>
+<p>Policies describe the configuration of agents wrt. to their execution.
+They do not change functional behavior, but usually affect how work is mapped to the hardware by defining certain compile-time parameters (items per thread, block size, etc.).</p>
+<p>An agent policy could look like this:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="kt">int</span><span class="w"> </span><span class="n">_BLOCK_THREADS</span><span class="p">,</span>
+<span class="w">          </span><span class="kt">int</span><span class="w"> </span><span class="n">_ITEMS_PER_THREAD</span><span class="p">,</span>
+<span class="w">          </span><span class="n">BlockLoadAlgorithm</span><span class="w"> </span><span class="n">_LOAD_ALGORITHM</span><span class="p">,</span>
+<span class="w">          </span><span class="n">CacheLoadModifier</span><span class="w"> </span><span class="n">_LOAD_MODIFIER</span><span class="o">&gt;</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">AgentAlgorithmPolicy</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">BLOCK_THREADS</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">_BLOCK_THREADS</span><span class="p">;</span>
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">ITEMS_PER_THREAD</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_ITEMS_PER_THREAD</span><span class="p">;</span>
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">ITEMS_PER_TILE</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">BLOCK_THREADS</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">ITEMS_PER_THREAD</span><span class="p">;</span>
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">BlockLoadAlgorithm</span><span class="w"> </span><span class="n">LOAD_ALGORITHM</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">_LOAD_ALGORITHM</span><span class="p">;</span>
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">CacheLoadModifier</span><span class="w"> </span><span class="n">LOAD_MODIFIER</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="n">_LOAD_MODIFIER</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>It’s typically a collection of configuration values for the kernel launch configuration,
+work distribution setting, load and store algorithms to use, as well as load instruction cache modifiers.
+A CUB algorithm can have multiple agents and thus use multiple agent policies.</p>
+<p>Since the device code of CUB algorithms is compiled for each PTX version, a different agent policy may be used.
+Therefore, all agent policies of a CUB algorithm, called a policy, may be replicated for several minimum PTX versions.
+A chained collection of such policies finally forms a policy hub:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="p">...</span><span class="w"> </span><span class="n">TuningRelevantParams</span><span class="w"> </span><span class="cm">/* ... */</span><span class="o">&gt;</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">policy_hub</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// TuningRelevantParams... could be used for decision making, like element types used, iterator category, etc.</span>
+
+<span class="w">  </span><span class="c1">// for SM50</span>
+<span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">Policy500</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">ChainedPolicy</span><span class="o">&lt;</span><span class="mi">500</span><span class="p">,</span><span class="w"> </span><span class="n">Policy500</span><span class="p">,</span><span class="w"> </span><span class="n">Policy500</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="n">AlgorithmPolicy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AgentAlgorithmPolicy</span><span class="o">&lt;</span><span class="mi">256</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="n">BLOCK_LOAD_DIRECT</span><span class="p">,</span><span class="w"> </span><span class="n">LOAD_LDG</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="w">    </span><span class="c1">// ... additional policies may exist, often one per agent</span>
+<span class="w">  </span><span class="p">};</span>
+
+<span class="w">  </span><span class="c1">// for SM60</span>
+<span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">Policy600</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">ChainedPolicy</span><span class="o">&lt;</span><span class="mi">600</span><span class="p">,</span><span class="w"> </span><span class="n">Policy600</span><span class="p">,</span><span class="w"> </span><span class="n">Policy500</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="n">AlgorithmPolicy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AgentAlgorithmPolicy</span><span class="o">&lt;</span><span class="mi">256</span><span class="p">,</span><span class="w"> </span><span class="mi">16</span><span class="p">,</span><span class="w"> </span><span class="n">BLOCK_LOAD_DIRECT</span><span class="p">,</span><span class="w"> </span><span class="n">LOAD_LDG</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="w">  </span><span class="p">};</span>
+
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">MaxPolicy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Policy600</span><span class="p">;</span><span class="w"> </span><span class="c1">// alias where policy selection is started by ChainedPolicy</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>The policy hub is a class template, possibly parameterized by tuning-relevant compile-time parameters,
+containing a list of policies, one per minimum PTX version (i.e., SM architecture) they target.
+These policies are chained by inheriting from <code class="docutils literal notranslate"><span class="pre">ChainedPolicy</span></code>
+and passing the minimum PTX version where they should be used,
+as well as their own policy type and the next lower policy type.
+An alias <code class="docutils literal notranslate"><span class="pre">MaxPolicy</span></code> serves as entry point into the chain of tuning policies.</p>
+</section>
+<section id="tunings">
+<h2>Tunings<a class="headerlink" href="#tunings" title="Link to this heading">#</a></h2>
+<p>Because the values to parameterize an agent may vary a lot for different compile-time parameters,
+the selection of values can be further delegated to tunings.
+Often, such tunings are found by experimentation or heuristic search.
+See also <a class="reference internal" href="../tuning.html#cub-tuning"><span class="std std-ref">CUB Tunings</span></a>.</p>
+<p>Tunings are usually organized as a class template, one per PTX version,
+with a template specialization for each combination of the compile-time parameters,
+for which better values for an agent policy are known.
+An example set of tunings could look like this:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="kt">int</span><span class="w"> </span><span class="n">ValueSize</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">IsPlus</span><span class="o">&gt;</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">sm60_tuning</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// default tuning</span>
+<span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">threads</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">128</span><span class="p">;</span>
+<span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">16</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;&gt;</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">sm60_tuning</span><span class="o">&lt;</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// tuning for summing 4-byte values</span>
+<span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">threads</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">256</span><span class="p">;</span>
+<span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="kt">int</span><span class="w"> </span><span class="n">ValueSize</span><span class="o">&gt;</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">sm60_tuning</span><span class="o">&lt;</span><span class="n">ValueSize</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// tuning for summing values of other sizes</span>
+<span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">threads</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">128</span><span class="p">;</span>
+<span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">12</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="p">...</span>
+
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">ValueType</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">Operation</span><span class="o">&gt;</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">policy_hub</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">Policy600</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">ChainedPolicy</span><span class="o">&lt;</span><span class="mi">600</span><span class="p">,</span><span class="w"> </span><span class="n">Policy600</span><span class="p">,</span><span class="w"> </span><span class="n">Policy500</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="n">tuning</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sm60_tuning</span><span class="o">&lt;</span><span class="k">sizeof</span><span class="p">(</span><span class="n">ValueType</span><span class="p">),</span><span class="w"> </span><span class="n">is_same_v</span><span class="o">&lt;</span><span class="n">Operation</span><span class="p">,</span><span class="w"> </span><span class="n">plus</span><span class="o">&gt;&gt;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="n">AlgorithmPolicy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AgentAlgorithmPolicy</span><span class="o">&lt;</span><span class="n">tuning</span><span class="o">::</span><span class="n">threads</span><span class="p">,</span><span class="w"> </span><span class="n">tuning</span><span class="o">::</span><span class="n">items</span><span class="p">,</span><span class="w"> </span><span class="n">BLOCK_LOAD_DIRECT</span><span class="p">,</span><span class="w"> </span><span class="n">LOAD_LDG</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="w">  </span><span class="p">};</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>Here, <code class="docutils literal notranslate"><span class="pre">sm60_tuning</span></code> provides defaults for the tuning values <code class="docutils literal notranslate"><span class="pre">threads</span></code> and <code class="docutils literal notranslate"><span class="pre">items</span></code>.
+<code class="docutils literal notranslate"><span class="pre">sm60_tuning</span></code> is instantiated with the size of the value type and with a boolean indicating whether the operation is a sum.
+Template specializations of <code class="docutils literal notranslate"><span class="pre">sm60_tuning</span></code> then provide different tuning values for summing value types of 4-byte size,
+and for summing any other value types.
+Notice how partial template specializations are used to pattern match the compile-time parameters.
+Independent of which template specializations (or the base template) of the tuning is chose,
+the agent policy is then parameterized by the nested <code class="docutils literal notranslate"><span class="pre">threads</span></code> and <code class="docutils literal notranslate"><span class="pre">items</span></code> values from this tuning.</p>
+<p>The logic to select tunings varies, and different mechanisms are used for different algorithms.
+Some algorithms provide a generic default policy if no tuning is available,
+others implement a fallback logic to select the previous PTX version’s agent policy,
+if no tuning is available for the current PTX version.
+In general, tunings are not exhaustive and usually only apply for specific combinations of parameter values and a single PTX version,
+falling back to generic policies when no tuning matches.
+Tunings for CUB algorithms reside in <code class="docutils literal notranslate"><span class="pre">cub/device/dispatch/tuning/tuning_&lt;algorithm&gt;.cuh</span></code>.</p>
+</section>
+<section id="temporary-storage-usage">
+<h2>Temporary storage usage<a class="headerlink" href="#temporary-storage-usage" title="Link to this heading">#</a></h2>
+<p>It’s safe to reuse storage in the stream order:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">cub</span><span class="o">::</span><span class="n">DeviceReduce</span><span class="o">::</span><span class="n">Sum</span><span class="p">(</span><span class="k">nullptr</span><span class="p">,</span><span class="w"> </span><span class="n">storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="n">d_in</span><span class="p">,</span><span class="w"> </span><span class="n">d_out</span><span class="p">,</span><span class="w"> </span><span class="n">num_items</span><span class="p">,</span><span class="w"> </span><span class="n">stream_1</span><span class="p">);</span>
+<span class="c1">// allocate temp storage</span>
+<span class="n">cub</span><span class="o">::</span><span class="n">DeviceReduce</span><span class="o">::</span><span class="n">Sum</span><span class="p">(</span><span class="n">d_storage</span><span class="p">,</span><span class="w"> </span><span class="n">storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="n">d_in</span><span class="p">,</span><span class="w"> </span><span class="n">d_out</span><span class="p">,</span><span class="w"> </span><span class="n">num_items</span><span class="p">,</span><span class="w"> </span><span class="n">stream_1</span><span class="p">);</span>
+<span class="c1">// fine not to synchronize stream</span>
+<span class="n">cub</span><span class="o">::</span><span class="n">DeviceReduce</span><span class="o">::</span><span class="n">Sum</span><span class="p">(</span><span class="n">d_storage</span><span class="p">,</span><span class="w"> </span><span class="n">storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="n">d_in</span><span class="p">,</span><span class="w"> </span><span class="n">d_out</span><span class="p">,</span><span class="w"> </span><span class="n">num_items</span><span class="p">,</span><span class="w"> </span><span class="n">stream_1</span><span class="p">);</span>
+<span class="c1">// illegal, should call cudaStreamSynchronize(stream)</span>
+<span class="n">cub</span><span class="o">::</span><span class="n">DeviceReduce</span><span class="o">::</span><span class="n">Sum</span><span class="p">(</span><span class="n">d_storage</span><span class="p">,</span><span class="w"> </span><span class="n">storage_bytes</span><span class="p">,</span><span class="w"> </span><span class="n">d_in</span><span class="p">,</span><span class="w"> </span><span class="n">d_out</span><span class="p">,</span><span class="w"> </span><span class="n">num_items</span><span class="p">,</span><span class="w"> </span><span class="n">stream_2</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+<section id="temporary-storage-management">
+<h2>Temporary storage management<a class="headerlink" href="#temporary-storage-management" title="Link to this heading">#</a></h2>
+<p>Often times temporary storage for device-scope algorithms has a complex structure.
+To simplify temporary storage management and make it safer,
+we introduced <code class="docutils literal notranslate"><span class="pre">cub::detail::temporary_storage::layout</span></code>:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">cub</span><span class="o">::</span><span class="n">detail</span><span class="o">::</span><span class="n">temporary_storage</span><span class="o">::</span><span class="n">layout</span><span class="o">&lt;</span><span class="mi">2</span><span class="o">&gt;</span><span class="w"> </span><span class="n">storage_layout</span><span class="p">;</span>
+
+<span class="k">auto</span><span class="w"> </span><span class="n">slot_1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">storage_layout</span><span class="p">.</span><span class="n">get_slot</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">slot_2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">storage_layout</span><span class="p">.</span><span class="n">get_slot</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+
+<span class="k">auto</span><span class="w"> </span><span class="n">allocation_1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">slot_1</span><span class="o">-&gt;</span><span class="n">create_alias</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">allocation_2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">slot_1</span><span class="o">-&gt;</span><span class="n">create_alias</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">42</span><span class="p">);</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">allocation_3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">slot_2</span><span class="o">-&gt;</span><span class="n">create_alias</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">12</span><span class="p">);</span>
+
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="n">allocation_1</span><span class="p">.</span><span class="n">grow</span><span class="p">(</span><span class="n">num_items</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">d_temp_storage</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">nullptr</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="n">temp_storage_bytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">storage_layout</span><span class="p">.</span><span class="n">get_size</span><span class="p">();</span>
+<span class="w">  </span><span class="k">return</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="n">storage_layout</span><span class="p">.</span><span class="n">map_to_buffer</span><span class="p">(</span><span class="n">d_temp_storage</span><span class="p">,</span><span class="w"> </span><span class="n">temp_storage_bytes</span><span class="p">);</span>
+
+<span class="c1">// different slots, safe to use simultaneously</span>
+<span class="n">use</span><span class="p">(</span><span class="n">allocation_1</span><span class="p">.</span><span class="n">get</span><span class="p">(),</span><span class="w"> </span><span class="n">allocation_3</span><span class="p">.</span><span class="n">get</span><span class="p">(),</span><span class="w"> </span><span class="n">stream</span><span class="p">);</span>
+<span class="c1">// `allocation_2` alias `allocation_1`, safe to use in stream order</span>
+<span class="n">use</span><span class="p">(</span><span class="n">allocation_2</span><span class="p">.</span><span class="n">get</span><span class="p">(),</span><span class="w"> </span><span class="n">stream</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="block_scope.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Block-scope</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="nvtx.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">NVTX</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dispatch-layer">Dispatch layer</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#policies">Policies</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tunings">Tunings</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#temporary-storage-usage">Temporary storage usage</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#temporary-storage-management">Temporary storage management</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2026, NVIDIA Corporation.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

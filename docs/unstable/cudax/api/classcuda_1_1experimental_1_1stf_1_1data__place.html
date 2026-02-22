@@ -1,0 +1,1211 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>cuda::experimental::stf::data_place &#8212; CUDA Core Compute Libraries</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+
+
+    <script src="../../_static/documentation_options.js?v=bbe6ed3a"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=5ceeb459"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://NVIDIA.github.io/cccl/nv-versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'unstable';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+
+    <link rel="canonical" href="https://NVIDIA.github.io/cccl/cudax/api/classcuda_1_1experimental_1_1stf_1_1data__place.html" />
+    <link rel="icon" href="../../_static/favicon.png"/>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="unstable" />
+
+
+  </head>
+
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../cpp.html">CUDA C++ Core Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../libcudacxx/index.html">libcu++</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/setup.html">Setup</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/requirements.html">Requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/getting.html">Getting libcu++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/building_and_testing.html">Building &amp; Testing libcu++</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/standard_api.html">Standard API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/algorithms_library.html">Algorithms Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/c_library.html">C Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/concepts_library.html">Concepts Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/container_library.html">Container Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/execution_library.html">Execution Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/numerics_library.html">Numerics Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/ranges_library.html">Ranges Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/synchronization_library.html">Synchronization Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/time_library.html">Time Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/type_support.html">Type Support Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/utility_library.html">Utility Library</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/extended_api.html">Extended API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/bit.html">Bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/execution_model.html">Execution model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/exceptions.html">Exception Handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_model.html">Memory model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/thread_groups.html">Thread Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/synchronization_primitives.html">Synchronization Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/asynchronous_operations.html">Asynchronous Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_access_properties.html">Memory access properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/functional.html">Functional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/iterators.html">Fancy Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/type_traits.html">Type traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/vector_tuple_protocol.html">Vector Tuple Protocol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/numeric.html">Numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/random.html">Random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory.html">Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_resource.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/math.html">Math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/mdspan.html">Mdspan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/warp.html">Warp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/utility.html">Utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/work_stealing.html">Work stealing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/stream.html">Streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/event.html">Events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/algorithm.html">Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/legacy_resources.html">Legacy resources</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/examples.html">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/instructions.html">PTX Instructions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/pragmas.html">PTX Pragmas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cub/index.html">CUB</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/test_overview.html">CUB Tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/benchmarking.html">CUB Benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/tuning.html">CUB Tunings</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/developer_overview.html">CUB Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/nvtx.html">NVTX</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/releases.html">CUB Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/releases/changelog.html">CUB 2.1.0</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/thread_level.html">Thread-level Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/warp_wide.html">Warp-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/block_wide.html">Block-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/device_wide.html">Device-Wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../thrust/index.html">Thrust</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/developer_overview.html">Thrust Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/systems.html">Thrust systems</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/release_process.html">Release Process</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/algorithms.html">Algorithms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/containers.html">Containers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/function_objects.html">Function Objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/iterators.html">Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/memory_management.html">Memory Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/numerics.html">Numerics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/random.html">Random Number Generators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/system.html">System</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/utility.html">Utility</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../index.html">CUDA Experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../container.html">Containers library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1uninitialized__buffer.html">cuda::experimental::uninitialized_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../memory_resource.html">Memory Resources</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1basic__any__resource.html">cuda::mr::basic_any_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1memory__pool__properties.html">cuda::memory_pool_properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1device__memory__pool.html">cuda::device_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1pinned__memory__pool.html">cuda::pinned_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1managed__memory__pool.html">cuda::managed_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1legacy__pinned__memory__resource.html">cuda::mr::legacy_pinned_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1legacy__managed__memory__resource.html">cuda::mr::legacy_managed_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1mr_1_1shared__resource.html">cuda::mr::shared_resource</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../graph.html">Graphs library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1graph.html">cuda::experimental::graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1graph__builder.html">cuda::experimental::graph_builder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1graph__builder__ref.html">cuda::experimental::graph_builder_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1graph__node__ref.html">cuda::experimental::graph_node_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1graphed__interface__of.html">cuda::experimental::stf::graphed_interface_of</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; mdspan&lt; T, P… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; void_interface &gt;</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../stf.html">CUDASTF</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../stf/custom_data_interface.html">Implementation of the <code class="docutils literal notranslate"><span class="pre">matrix</span></code> class</a></li>
+
+
+
+
+
+<li class="toctree-l4"><a class="reference internal" href="../stf/lower_level_api.html">Lower-level API</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/3.0_migration_guide.html">CCCL 2.x ‐ CCCL 3.0 migration guide</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/development/index.html">CCCL Development Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/macro.html">CCCL Internal Macros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/testing.html">CCCL Testing Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/contributing.html">Contributing to the CUDA Core Compute Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/contributing/code_of_conduct.html">Code of Conduct</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/license.html">License</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../python/index.html">CCCL Python Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../python/setup.html">Setup and Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/compute.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/coop.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>: Cooperative Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/resources.html">Resources</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../python/api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../python/compute_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../python/coop_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> API Reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">cuda::experimental::stf::data_place</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="cuda-experimental-stf-data-place">
+<h1>cuda::experimental::stf::data_place<a class="headerlink" href="#cuda-experimental-stf-data-place" title="Link to this heading">#</a></h1>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf10data_placeE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">data_place</span></span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf10data_placeE" title="Link to this definition">#</a><br /></dt>
+<dd><p>Designates where data will be stored (CPU memory vs. </p>
+<p>on device 0 (first GPU), device 1 (second GPU), …)</p>
+<p>This typed <code class="docutils literal notranslate"><span class="pre">enum</span></code> is aligned with CUDA device ordinals but does not implicitly convert to <code class="docutils literal notranslate"><span class="pre">int</span></code>. See <code class="docutils literal notranslate"><span class="pre">device_ordinal</span></code> below. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf10data_place10data_placeEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1af012d0be1c1011a87a764db69fddd112"></span><span class="sig-name descname"><span class="n"><span class="pre">data_place</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">default</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf10data_place10data_placeEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Default constructor. </p>
+<p>The object is initialized as invalid. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_placeeqERK10data_place">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1aca14cf9716410cbe5133e06ce0d37ade"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">==</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_placeeqERK10data_place" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_placeneERK10data_place">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a63f8b7685959bcc7dc22156ec913ef39"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">!=</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_placeneERK10data_place" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_placeltERK10data_place">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a98d42406190b880be21cf332d6874f00"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">&lt;</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_placeltERK10data_place" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_placegtERK10data_place">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1af7cc615ba7dc01a6b2f3f9e76b85b8a3"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">&gt;</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_placegtERK10data_place" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_placeleERK10data_place">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1af3c37596e7f9f04806bddc5899d84366"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">&lt;=</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_placeleERK10data_place" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_placegeERK10data_place">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a8a85f40c392ce97c58630e51a68b60bc"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">&gt;=</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_placegeERK10data_place" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place12is_compositeEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a13dcf6e52d13784d3a63e49162a52f34"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">is_composite</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place12is_compositeEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>checks if this data place is a composite data place </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place12is_extensionEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a1aef36ce0af86396827cbdbe0272ade2"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">is_extension</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place12is_extensionEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>checks if this data place has an extension (green context, etc.) </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place10is_invalidEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1abf135460bb1860a909a45411ea36d397"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">is_invalid</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place10is_invalidEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place7is_hostEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a5e1f707b26bafe3c25661e4131b23906"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">is_host</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place7is_hostEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place10is_managedEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a88ea67b3c5ec03ddb739a98309c97744"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">is_managed</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place10is_managedEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place9is_affineEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1af9fe35c12789714b2b8b4941c7ff8725"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">is_affine</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place9is_affineEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place9is_deviceEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a90be9e9cbc62d56a3747c125361ceceb"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">is_device</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place9is_deviceEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>checks if this data place corresponds to a specific device </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place14is_device_autoEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1ae401e1f3b000b4ad9e73a9ba46df4f47"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">is_device_auto</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place14is_device_autoEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place9to_stringEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a8fcc28a5f87c764600db5ec73ac42aa5"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">to_string</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place9to_stringEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place8get_gridEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1afdda10f60fb115a68dd4a7f7825895dc"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place__grid.html#_CPPv4N4cuda12experimental3stf15exec_place_gridE" title="cuda::experimental::stf::exec_place_grid"><span class="n"><span class="pre">exec_place_grid</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_grid</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place8get_gridEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place15get_partitionerEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a65c5ed01e9cf4aa226370db5483d7009"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1aa088b12cd756808bfba193e21b88e95c.html#_CPPv4N4cuda12experimental3stf19get_executor_func_tE" title="cuda::experimental::stf::get_executor_func_t"><span class="n"><span class="pre">get_executor_func_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_partitioner</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place15get_partitionerEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place21get_affine_exec_placeEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1ac8b4d369ae88dab5488b5c2c179e0730"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_placeE" title="cuda::experimental::stf::exec_place"><span class="n"><span class="pre">exec_place</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_affine_exec_place</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place21get_affine_exec_placeEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place4hashEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a6d2cdc2021667d8f7cae6a7146ebdb96"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">hash</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place4hashEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Compute a hash value for this data place. </p>
+<p>Used by std::hash specialization for unordered containers. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place13getDataStreamER22async_resources_handle">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a203081b9840fe5fb00b78a4e7c5ea784"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1decorated__stream.html#_CPPv4N4cuda12experimental3stf16decorated_streamE" title="cuda::experimental::stf::decorated_stream"><span class="n"><span class="pre">decorated_stream</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">getDataStream</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1async__resources__handle.html#_CPPv4N4cuda12experimental3stf22async_resources_handleE" title="cuda::experimental::stf::async_resources_handle"><span class="n"><span class="pre">async_resources_handle</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">async_resources</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place13getDataStreamER22async_resources_handle" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place13has_extensionEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a2c84ccdce28906f268031334ee509413"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">has_extension</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place13has_extensionEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Check if this data place has a custom extension. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place13get_extensionEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1acc3f7d9abd22a91fb609856b5bf16dd8"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1data__place__extension.html#_CPPv4N4cuda12experimental3stf20data_place_extensionE" title="cuda::experimental::stf::data_place_extension"><span class="n"><span class="pre">data_place_extension</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_extension</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+</dl>
+
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place13get_extensionEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Get the extension (may be nullptr for standard place types) </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place10mem_createEP28CUmemGenericAllocationHandle6size_t">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1ac2c23dccd4049d8f16aebb9ed59ae556"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">CUresult</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">mem_create</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">CUmemGenericAllocationHandle</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">handle</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">size</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place10mem_createEP28CUmemGenericAllocationHandle6size_t" title="Link to this definition">#</a><br /></dt>
+<dd><p>Create a physical memory allocation for this place (VMM API) </p>
+<p>This method is used by localized arrays (composite_slice) to create physical memory segments that are then mapped into a contiguous virtual address space. It delegates to the extension’s mem_create if present (enabling custom place types to override memory allocation), otherwise creates a standard pinned allocation on this place’s device or host.</p>
+<p>Managed memory is not supported by the VMM API.</p>
+<p><div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#classcuda_1_1experimental_1_1stf_1_1data__place_1af0aa3d278960eea1a5bb3a9bbc8fbbc5"><span class="std std-ref">allocate()</span></a> for regular memory allocation </p>
+</div>
+</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For regular memory allocation (not VMM-based), use the <a class="reference internal" href="#classcuda_1_1experimental_1_1stf_1_1data__place_1af0aa3d278960eea1a5bb3a9bbc8fbbc5"><span class="std std-ref">allocate()</span></a> method instead, which provides stream-ordered allocation via cudaMallocAsync.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>handle</strong> – Output parameter for the allocation handle </p></li>
+<li><p><strong>size</strong> – Size of the allocation in bytes </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>CUresult indicating success or failure</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place8allocateENSt9ptrdiff_tE12cudaStream_t">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1af0aa3d278960eea1a5bb3a9bbc8fbbc5"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">allocate</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">ptrdiff_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">size</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">cudaStream_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">stream</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">nullptr</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place8allocateENSt9ptrdiff_tE12cudaStream_t" title="Link to this definition">#</a><br /></dt>
+<dd><p>Allocate memory at this data place (raw allocation) </p>
+<p>This is the low-level allocation interface that handles all place types:<ul class="simple">
+<li><p>For extensions: delegates to extension-&gt;<a class="reference internal" href="#classcuda_1_1experimental_1_1stf_1_1data__place_1af0aa3d278960eea1a5bb3a9bbc8fbbc5"><span class="std std-ref">allocate()</span></a></p></li>
+<li><p>For host: uses cudaMallocHost (immediate, stream ignored)</p></li>
+<li><p>For managed: uses cudaMallocManaged (immediate, stream ignored)</p></li>
+<li><p>For device: uses cudaMallocAsync (stream-ordered)</p></li>
+</ul>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> – Size of the allocation in bytes </p></li>
+<li><p><strong>stream</strong> – CUDA stream for stream-ordered allocations (ignored for immediate allocations, defaults to nullptr) </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Pointer to allocated memory </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place10deallocateEPv6size_t12cudaStream_t">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a0e2c0b29f0dddd0540538e64def8ca0e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">deallocate</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ptr</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">size</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">cudaStream_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">stream</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">nullptr</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place10deallocateEPv6size_t12cudaStream_t" title="Link to this definition">#</a><br /></dt>
+<dd><p>Deallocate memory at this data place (raw deallocation) </p>
+<p>For immediate deallocations (host, managed), the stream is ignored. Note that cudaFree (used for managed memory) may introduce implicit synchronization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ptr</strong> – Pointer to memory to deallocate </p></li>
+<li><p><strong>size</strong> – Size of the allocation </p></li>
+<li><p><strong>stream</strong> – CUDA stream for stream-ordered deallocations (ignored for immediate deallocations, defaults to nullptr) </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place28allocation_is_stream_orderedEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a35c2ee03cecffcb6db0b07bc95fe3f6a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">allocation_is_stream_ordered</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place28allocation_is_stream_orderedEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Returns true if allocation/deallocation is stream-ordered. </p>
+<p>When this returns true, the allocation uses stream-ordered APIs like cudaMallocAsync, and allocators should use <a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1stream__async__op.html#classcuda_1_1experimental_1_1stf_1_1stream__async__op"><span class="std std-ref">stream_async_op</span></a> to synchronize prerequisites before allocation.</p>
+<p>When this returns false, the allocation is immediate (like cudaMallocHost) and the stream parameter is ignored. Note that immediate deallocations (e.g., cudaFree) may introduce implicit synchronization. </p>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-static-functions">Public Static Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf10data_place7invalidEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a3a66dfa75e502f3bb0fcd94cb2e24258"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">invalid</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf10data_place7invalidEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Represents an invalid <code class="docutils literal notranslate"><a class="reference internal" href="#classcuda_1_1experimental_1_1stf_1_1data__place"><span class="std std-ref"><span class="pre">data_place</span></span></a></code> object. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf10data_place4hostEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a79bc3b3d52b95734675960b6eabee796"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">host</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf10data_place4hostEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Represents the host CPU as the <code class="docutils literal notranslate"><a class="reference internal" href="#classcuda_1_1experimental_1_1stf_1_1data__place"><span class="std std-ref"><span class="pre">data_place</span></span></a></code> (pinned host memory, or memory which should be pinned by CUDASTF). </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf10data_place7managedEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a506f58ae8f42ec8e6c5067e68a327fd9"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">managed</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf10data_place7managedEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Represents a managed memory location as the <code class="docutils literal notranslate"><a class="reference internal" href="#classcuda_1_1experimental_1_1stf_1_1data__place"><span class="std std-ref"><span class="pre">data_place</span></span></a></code>. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf10data_place6affineEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a4795aa0ed1757368e0075c90188af3a1"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">affine</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf10data_place6affineEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>This actually does not define a <a class="reference internal" href="#classcuda_1_1experimental_1_1stf_1_1data__place"><span class="std std-ref">data_place</span></a>, but means that we should use the data place affine to the execution place. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf10data_place11device_autoEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a7025cec6e16f9dcc37ee017171ce81f7"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">device_auto</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf10data_place11device_autoEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Constant representing a placeholder that lets the library automatically select a GPU device as the <code class="docutils literal notranslate"><a class="reference internal" href="#classcuda_1_1experimental_1_1stf_1_1data__place"><span class="std std-ref"><span class="pre">data_place</span></span></a></code>. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf10data_place6deviceEi">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a6862f771ca1f2f4f90afadf5790883a2"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">device</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">dev_id</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf10data_place6deviceEi" title="Link to this definition">#</a><br /></dt>
+<dd><p>Data is placed on device with index dev_id. </p>
+<p>Two relaxations are allowed: -1 can be passed to create a placeholder for the host, and -2 can be used to create a placeholder for a managed device. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf10data_place14current_deviceEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1ab48b29f1fa5ee2075a07f6132cc1aa42"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">current_device</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf10data_place14current_deviceEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Select the embedded memory of the current device as <code class="docutils literal notranslate"><a class="reference internal" href="#classcuda_1_1experimental_1_1stf_1_1data__place"><span class="std std-ref"><span class="pre">data_place</span></span></a></code>. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN4cuda12experimental3stf10data_place9compositeE10data_place13partitioner_tRK15exec_place_grid">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">partitioner_t</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1adfd60df1832b30867022bf8f4bff68a1"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">composite</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0EN4cuda12experimental3stf10data_place9compositeE10data_place13partitioner_tRK15exec_place_grid" title="cuda::experimental::stf::data_place::composite::partitioner_t"><span class="n"><span class="pre">partitioner_t</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">p</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place__grid.html#_CPPv4N4cuda12experimental3stf15exec_place_gridE" title="cuda::experimental::stf::exec_place_grid"><span class="n"><span class="pre">exec_place_grid</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">g</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN4cuda12experimental3stf10data_place9compositeE10data_place13partitioner_tRK15exec_place_grid" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf10data_place9compositeE19get_executor_func_tRK15exec_place_grid">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1acb1db252edb5c1d11525b6b4537d8b2a"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">composite</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1aa088b12cd756808bfba193e21b88e95c.html#_CPPv4N4cuda12experimental3stf19get_executor_func_tE" title="cuda::experimental::stf::get_executor_func_t"><span class="n"><span class="pre">get_executor_func_t</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">f</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place__grid.html#_CPPv4N4cuda12experimental3stf15exec_place_gridE" title="cuda::experimental::stf::exec_place_grid"><span class="n"><span class="pre">exec_place_grid</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">grid</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf10data_place9compositeE19get_executor_func_tRK15exec_place_grid" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf10data_place9green_ctxERK14green_ctx_view">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a91390fd0ab14de761511b5903b583602"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">green_ctx</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1green__ctx__view.html#_CPPv4N4cuda12experimental3stf14green_ctx_viewE" title="cuda::experimental::stf::green_ctx_view"><span class="n"><span class="pre">green_ctx_view</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">gc_view</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf10data_place9green_ctxERK14green_ctx_view" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf10data_place9green_ctxENSt10shared_ptrI14green_ctx_viewEE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a7b661cc54a087305a000b7b5f367cd32"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">green_ctx</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1green__ctx__view.html#_CPPv4N4cuda12experimental3stf14green_ctx_viewE" title="cuda::experimental::stf::green_ctx_view"><span class="n"><span class="pre">green_ctx_view</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">gc_view_ptr</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf10data_place9green_ctxENSt10shared_ptrI14green_ctx_viewEE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf10data_place14from_extensionENSt10shared_ptrI20data_place_extensionEE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a083efb71fbab0407fb5d5a2a90c5216e"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">from_extension</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1data__place__extension.html#_CPPv4N4cuda12experimental3stf20data_place_extensionE" title="cuda::experimental::stf::data_place_extension"><span class="n"><span class="pre">data_place_extension</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">ext</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf10data_place14from_extensionENSt10shared_ptrI20data_place_extensionEE" title="Link to this definition">#</a><br /></dt>
+<dd><p>Create a <a class="reference internal" href="#classcuda_1_1experimental_1_1stf_1_1data__place"><span class="std std-ref">data_place</span></a> from an extension. </p>
+<p>This factory method allows custom place types to be created from <a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1data__place__extension.html#classcuda_1_1experimental_1_1stf_1_1data__place__extension"><span class="std std-ref">data_place_extension</span></a> implementations. </p>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-friends">Friends</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf10data_place8to_indexERK10data_place">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a4ec6a28acb86d43b8010d1e73622cc5c"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">friend</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">to_index</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf10data_place8to_indexERK10data_place" title="Link to this definition">#</a><br /></dt>
+<dd><p>Returns an index guaranteed to be &gt;= 0 (0 for managed CPU, 1 for pinned CPU, 2 for device 0, 3 for device 1, …). </p>
+<p>Requires that <code class="docutils literal notranslate"><span class="pre">p</span></code> is initialized and different from <code class="docutils literal notranslate"><a class="reference internal" href="#classcuda_1_1experimental_1_1stf_1_1data__place_1a3a66dfa75e502f3bb0fcd94cb2e24258"><span class="std std-ref"><span class="pre">data_place::invalid()</span></span></a></code>. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf10data_place14device_ordinalERK10data_place">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1a29834947edc0d1adb41bb9b73329d095"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">friend</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">device_ordinal</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf10data_place14device_ordinalERK10data_place" title="Link to this definition">#</a><br /></dt>
+<dd><p>Returns the device ordinal (0 = first GPU, 1 = second GPU, … and by convention the CPU is -1) Requires that <code class="docutils literal notranslate"><span class="pre">p</span></code> is initialized. </p>
+</dd></dl>
+
+</div>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf10data_place15composite_stateE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1_1composite__state"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">composite_state</span></span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf10data_place15composite_stateE" title="Link to this definition">#</a><br /></dt>
+<dd><div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf10data_place15composite_state15composite_stateEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1_1composite__state_1a8b94d8f6e390d72a3d7d44cca35f1fcc"></span><span class="sig-name descname"><span class="n"><span class="pre">composite_state</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">default</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf10data_place15composite_state15composite_stateEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf10data_place15composite_state15composite_stateE15exec_place_grid19get_executor_func_t">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1_1composite__state_1a7c6656f11b7bb117acbe2a34c1020381"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">composite_state</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place__grid.html#_CPPv4N4cuda12experimental3stf15exec_place_gridE" title="cuda::experimental::stf::exec_place_grid"><span class="n"><span class="pre">exec_place_grid</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">grid</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1aa088b12cd756808bfba193e21b88e95c.html#_CPPv4N4cuda12experimental3stf19get_executor_func_tE" title="cuda::experimental::stf::get_executor_func_t"><span class="n"><span class="pre">get_executor_func_t</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">partitioner_func</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf10data_place15composite_state15composite_stateE15exec_place_grid19get_executor_func_t" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place15composite_state8get_gridEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1_1composite__state_1a3c2f07a26e9dfb52ea13c3f1d0410e07"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place__grid.html#_CPPv4N4cuda12experimental3stf15exec_place_gridE" title="cuda::experimental::stf::exec_place_grid"><span class="n"><span class="pre">exec_place_grid</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_grid</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place15composite_state8get_gridEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf10data_place15composite_state15get_partitionerEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1data__place_1_1composite__state_1af39c6c40ad61a7b1a5f7faa43a5fc50e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1aa088b12cd756808bfba193e21b88e95c.html#_CPPv4N4cuda12experimental3stf19get_executor_func_tE" title="cuda::experimental::stf::get_executor_func_t"><span class="n"><span class="pre">get_executor_func_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_partitioner</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf10data_place15composite_state15get_partitionerEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf10data_placeE"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::data_place</span></code></a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf10data_place10data_placeEv"><code class="docutils literal notranslate"><span class="pre">data_place()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_placeeqERK10data_place"><code class="docutils literal notranslate"><span class="pre">operator==()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_placeneERK10data_place"><code class="docutils literal notranslate"><span class="pre">operator!=()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_placeltERK10data_place"><code class="docutils literal notranslate"><span class="pre">operator&lt;()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_placegtERK10data_place"><code class="docutils literal notranslate"><span class="pre">operator&gt;()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_placeleERK10data_place"><code class="docutils literal notranslate"><span class="pre">operator&lt;=()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_placegeERK10data_place"><code class="docutils literal notranslate"><span class="pre">operator&gt;=()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place12is_compositeEv"><code class="docutils literal notranslate"><span class="pre">is_composite()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place12is_extensionEv"><code class="docutils literal notranslate"><span class="pre">is_extension()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place10is_invalidEv"><code class="docutils literal notranslate"><span class="pre">is_invalid()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place7is_hostEv"><code class="docutils literal notranslate"><span class="pre">is_host()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place10is_managedEv"><code class="docutils literal notranslate"><span class="pre">is_managed()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place9is_affineEv"><code class="docutils literal notranslate"><span class="pre">is_affine()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place9is_deviceEv"><code class="docutils literal notranslate"><span class="pre">is_device()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place14is_device_autoEv"><code class="docutils literal notranslate"><span class="pre">is_device_auto()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place9to_stringEv"><code class="docutils literal notranslate"><span class="pre">to_string()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place8get_gridEv"><code class="docutils literal notranslate"><span class="pre">get_grid()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place15get_partitionerEv"><code class="docutils literal notranslate"><span class="pre">get_partitioner()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place21get_affine_exec_placeEv"><code class="docutils literal notranslate"><span class="pre">get_affine_exec_place()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place4hashEv"><code class="docutils literal notranslate"><span class="pre">hash()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place13getDataStreamER22async_resources_handle"><code class="docutils literal notranslate"><span class="pre">getDataStream()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place13has_extensionEv"><code class="docutils literal notranslate"><span class="pre">has_extension()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place13get_extensionEv"><code class="docutils literal notranslate"><span class="pre">get_extension()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place10mem_createEP28CUmemGenericAllocationHandle6size_t"><code class="docutils literal notranslate"><span class="pre">mem_create()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place8allocateENSt9ptrdiff_tE12cudaStream_t"><code class="docutils literal notranslate"><span class="pre">allocate()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place10deallocateEPv6size_t12cudaStream_t"><code class="docutils literal notranslate"><span class="pre">deallocate()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place28allocation_is_stream_orderedEv"><code class="docutils literal notranslate"><span class="pre">allocation_is_stream_ordered()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf10data_place7invalidEv"><code class="docutils literal notranslate"><span class="pre">invalid()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf10data_place4hostEv"><code class="docutils literal notranslate"><span class="pre">host()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf10data_place7managedEv"><code class="docutils literal notranslate"><span class="pre">managed()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf10data_place6affineEv"><code class="docutils literal notranslate"><span class="pre">affine()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf10data_place11device_autoEv"><code class="docutils literal notranslate"><span class="pre">device_auto()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf10data_place6deviceEi"><code class="docutils literal notranslate"><span class="pre">device()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf10data_place14current_deviceEv"><code class="docutils literal notranslate"><span class="pre">current_device()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0EN4cuda12experimental3stf10data_place9compositeE10data_place13partitioner_tRK15exec_place_grid"><code class="docutils literal notranslate"><span class="pre">composite()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf10data_place9compositeE19get_executor_func_tRK15exec_place_grid"><code class="docutils literal notranslate"><span class="pre">composite()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf10data_place9green_ctxERK14green_ctx_view"><code class="docutils literal notranslate"><span class="pre">green_ctx()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf10data_place9green_ctxENSt10shared_ptrI14green_ctx_viewEE"><code class="docutils literal notranslate"><span class="pre">green_ctx()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf10data_place14from_extensionENSt10shared_ptrI20data_place_extensionEE"><code class="docutils literal notranslate"><span class="pre">from_extension()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf10data_place8to_indexERK10data_place"><code class="docutils literal notranslate"><span class="pre">to_index</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf10data_place14device_ordinalERK10data_place"><code class="docutils literal notranslate"><span class="pre">device_ordinal</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf10data_place15composite_stateE"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::data_place::composite_state</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf10data_place15composite_state15composite_stateEv"><code class="docutils literal notranslate"><span class="pre">composite_state()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf10data_place15composite_state15composite_stateE15exec_place_grid19get_executor_func_t"><code class="docutils literal notranslate"><span class="pre">composite_state()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place15composite_state8get_gridEv"><code class="docutils literal notranslate"><span class="pre">get_grid()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf10data_place15composite_state15get_partitionerEv"><code class="docutils literal notranslate"><span class="pre">get_partitioner()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2026, NVIDIA Corporation.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

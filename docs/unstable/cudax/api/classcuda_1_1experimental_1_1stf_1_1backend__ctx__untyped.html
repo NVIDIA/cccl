@@ -1,0 +1,1183 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>cuda::experimental::stf::backend_ctx_untyped &#8212; CUDA Core Compute Libraries</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+
+
+    <script src="../../_static/documentation_options.js?v=bbe6ed3a"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=5ceeb459"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://NVIDIA.github.io/cccl/nv-versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'unstable';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+
+    <link rel="canonical" href="https://NVIDIA.github.io/cccl/cudax/api/classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped.html" />
+    <link rel="icon" href="../../_static/favicon.png"/>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="unstable" />
+
+
+  </head>
+
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../cpp.html">CUDA C++ Core Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../libcudacxx/index.html">libcu++</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/setup.html">Setup</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/requirements.html">Requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/getting.html">Getting libcu++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/building_and_testing.html">Building &amp; Testing libcu++</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/standard_api.html">Standard API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/algorithms_library.html">Algorithms Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/c_library.html">C Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/concepts_library.html">Concepts Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/container_library.html">Container Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/execution_library.html">Execution Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/numerics_library.html">Numerics Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/ranges_library.html">Ranges Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/synchronization_library.html">Synchronization Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/time_library.html">Time Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/type_support.html">Type Support Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/utility_library.html">Utility Library</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/extended_api.html">Extended API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/bit.html">Bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/execution_model.html">Execution model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/exceptions.html">Exception Handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_model.html">Memory model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/thread_groups.html">Thread Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/synchronization_primitives.html">Synchronization Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/asynchronous_operations.html">Asynchronous Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_access_properties.html">Memory access properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/functional.html">Functional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/iterators.html">Fancy Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/type_traits.html">Type traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/vector_tuple_protocol.html">Vector Tuple Protocol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/numeric.html">Numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/random.html">Random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory.html">Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_resource.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/math.html">Math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/mdspan.html">Mdspan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/warp.html">Warp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/utility.html">Utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/work_stealing.html">Work stealing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/stream.html">Streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/event.html">Events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/algorithm.html">Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/legacy_resources.html">Legacy resources</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/examples.html">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/instructions.html">PTX Instructions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/pragmas.html">PTX Pragmas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cub/index.html">CUB</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/test_overview.html">CUB Tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/benchmarking.html">CUB Benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/tuning.html">CUB Tunings</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/developer_overview.html">CUB Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/nvtx.html">NVTX</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/releases.html">CUB Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/releases/changelog.html">CUB 2.1.0</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/thread_level.html">Thread-level Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/warp_wide.html">Warp-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/block_wide.html">Block-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/device_wide.html">Device-Wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../thrust/index.html">Thrust</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/developer_overview.html">Thrust Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/systems.html">Thrust systems</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/release_process.html">Release Process</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/algorithms.html">Algorithms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/containers.html">Containers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/function_objects.html">Function Objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/iterators.html">Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/memory_management.html">Memory Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/numerics.html">Numerics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/random.html">Random Number Generators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/system.html">System</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/utility.html">Utility</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../index.html">CUDA Experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../container.html">Containers library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1uninitialized__buffer.html">cuda::experimental::uninitialized_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../memory_resource.html">Memory Resources</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1basic__any__resource.html">cuda::mr::basic_any_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1memory__pool__properties.html">cuda::memory_pool_properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1device__memory__pool.html">cuda::device_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1pinned__memory__pool.html">cuda::pinned_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1managed__memory__pool.html">cuda::managed_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1legacy__pinned__memory__resource.html">cuda::mr::legacy_pinned_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1legacy__managed__memory__resource.html">cuda::mr::legacy_managed_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1mr_1_1shared__resource.html">cuda::mr::shared_resource</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../graph.html">Graphs library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1graph.html">cuda::experimental::graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1graph__builder.html">cuda::experimental::graph_builder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1graph__builder__ref.html">cuda::experimental::graph_builder_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1graph__node__ref.html">cuda::experimental::graph_node_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1graphed__interface__of.html">cuda::experimental::stf::graphed_interface_of</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; mdspan&lt; T, P… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; void_interface &gt;</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../stf.html">CUDASTF</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../stf/custom_data_interface.html">Implementation of the <code class="docutils literal notranslate"><span class="pre">matrix</span></code> class</a></li>
+
+
+
+
+
+<li class="toctree-l4"><a class="reference internal" href="../stf/lower_level_api.html">Lower-level API</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/3.0_migration_guide.html">CCCL 2.x ‐ CCCL 3.0 migration guide</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/development/index.html">CCCL Development Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/macro.html">CCCL Internal Macros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/testing.html">CCCL Testing Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/contributing.html">Contributing to the CUDA Core Compute Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/contributing/code_of_conduct.html">Code of Conduct</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/license.html">License</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../python/index.html">CCCL Python Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../python/setup.html">Setup and Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/compute.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/coop.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>: Cooperative Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/resources.html">Resources</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../python/api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../python/compute_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../python/coop_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> API Reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">cuda::experimental::stf::backend_ctx_untyped</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="cuda-experimental-stf-backend-ctx-untyped">
+<h1>cuda::experimental::stf::backend_ctx_untyped<a class="headerlink" href="#cuda-experimental-stf-backend-ctx-untyped" title="Link to this heading">#</a></h1>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untypedE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">backend_ctx_untyped</span></span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untypedE" title="Link to this definition">#</a><br /></dt>
+<dd><p>This is the underlying context implementation common to all types. </p>
+<p>We use this class rather than the front-end ones (<a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1stream__ctx.html#classcuda_1_1experimental_1_1stf_1_1stream__ctx"><span class="std std-ref">stream_ctx</span></a>, <a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1graph__ctx.html#classcuda_1_1experimental_1_1stf_1_1graph__ctx"><span class="std std-ref">graph_ctx</span></a>, …) in the internal methods where we don’t always know types for example. </p>
+<p>Subclassed by <a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1backend__ctx.html#classcuda_1_1experimental_1_1stf_1_1backend__ctx"><span class="std std-ref">cuda::experimental::stf::backend_ctx&lt; graph_ctx &gt;</span></a>, <a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1backend__ctx.html#classcuda_1_1experimental_1_1stf_1_1backend__ctx"><span class="std std-ref">cuda::experimental::stf::backend_ctx&lt; stream_ctx &gt;</span></a>, <a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1backend__ctx.html#classcuda_1_1experimental_1_1stf_1_1backend__ctx"><span class="std std-ref">cuda::experimental::stf::backend_ctx&lt; Engine &gt;</span></a></p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-types">Public Types</p>
+<dl class="cpp enum-class">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped5phaseE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1aa573f858487bc93de58e0e7c5fa42bdb"></span><span class="k"><span class="pre">enum</span></span><span class="w"> </span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">phase</span></span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped5phaseE" title="Link to this definition">#</a><br /></dt>
+<dd><p>current context status </p>
+<p>We keep track of the status of context so that we do not make API calls at an inappropriate time, such as synchronizing twice. </p>
+<p><em>Values:</em></p>
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped5phase5setupE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1aa573f858487bc93de58e0e7c5fa42bdbaa0f848942ce863cf53c0fa6cc684007d"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">setup</span></span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped5phase5setupE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped5phase9submittedE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1aa573f858487bc93de58e0e7c5fa42bdba410d98939d4116adb562b97046d2a3eb"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">submitted</span></span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped5phase9submittedE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped5phase9finalizedE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1aa573f858487bc93de58e0e7c5fa42bdba73d0ccbca69b94ee4cd7fc367a8ac9fc"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">finalized</span></span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped5phase9finalizedE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped19backend_ctx_untypedEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1ac1facbdffcd9de676cd3d000b0e411dc"></span><span class="sig-name descname"><span class="n"><span class="pre">backend_ctx_untyped</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">delete</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped19backend_ctx_untypedEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped19backend_ctx_untypedENSt10shared_ptrI4implEE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a8194b0099f6e9bd37539fa78b4d230c7"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">backend_ctx_untyped</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped19backend_ctx_untypedENSt10shared_ptrI4implEE" title="cuda::experimental::stf::backend_ctx_untyped::backend_ctx_untyped::impl"><span class="n"><span class="pre">impl</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">impl</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped19backend_ctx_untypedENSt10shared_ptrI4implEE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untypedcvbEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a0d01b9f66ac3e642a590e4f09a20b55b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untypedcvbEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untypedeqERK19backend_ctx_untyped">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a68ea88b27fb15d9997e16236e5704bee"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">==</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untypedE" title="cuda::experimental::stf::backend_ctx_untyped"><span class="n"><span class="pre">backend_ctx_untyped</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untypedeqERK19backend_ctx_untyped" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untypedneERK19backend_ctx_untyped">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a6ed89564cd4496acc17ebde61600da57"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">!=</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untypedE" title="cuda::experimental::stf::backend_ctx_untyped"><span class="n"><span class="pre">backend_ctx_untyped</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untypedneERK19backend_ctx_untyped" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped15async_resourcesEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a2da331923e8c54ae5ab9fb91eae905e1"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1async__resources__handle.html#_CPPv4N4cuda12experimental3stf22async_resources_handleE" title="cuda::experimental::stf::async_resources_handle"><span class="n"><span class="pre">async_resources_handle</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">async_resources</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped15async_resourcesEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped16reordering_tasksEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1af6d3cc3c5c959368855b31c023933e3f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">reordering_tasks</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped16reordering_tasksEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped19get_composite_cacheEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a86335372f7228587a50d7f81dba72861"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_composite_cache</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped19get_composite_cacheEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped13schedule_taskERK4task">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1adb08a3f9081093f53d9512266639e0d3"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">pair</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_placeE" title="cuda::experimental::stf::exec_place"><span class="n"><span class="pre">exec_place</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">schedule_task</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1task.html#_CPPv4N4cuda12experimental3stf4taskE" title="cuda::experimental::stf::task"><span class="n"><span class="pre">task</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">t</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped13schedule_taskERK4task" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped13reorder_tasksERNSt6vectorIiEERNSt13unordered_mapIiN8reserved17reorderer_payloadEEE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a22dc8ef76802c51ee082fe4d25b499d5"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">reorder_tasks</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">tasks</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">unordered_map</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">reserved</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">reorderer_payload</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">task_map</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped13reorder_tasksERNSt6vectorIiEERNSt13unordered_mapIiN8reserved17reorderer_payloadEEE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped20increment_task_countEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1ab3b869c3bebe815fae2695bf9ce5314d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">increment_task_count</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped20increment_task_countEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped29increment_finished_task_countEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1aa0dc89921b390f0eb3224bf782fbb5ba"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">increment_finished_task_count</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped29increment_finished_task_countEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped10task_countEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a16ff89647667fbbb7e94dd605820748d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">task_count</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped10task_countEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped17release_resourcesE12cudaStream_t">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a90c9c57a5ace54834c338c575b7d5b76"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">release_resources</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cudaStream_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">stream</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped17release_resourcesE12cudaStream_t" title="Link to this definition">#</a><br /></dt>
+<dd><p>Release context resources using the provided stream This should be called after graph execution completes to clean up resources. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped12add_resourceENSt10shared_ptrI12ctx_resourceEE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a658e64e96590244a5511959d0bea3d96"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">add_resource</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1ctx__resource.html#_CPPv4N4cuda12experimental3stf12ctx_resourceE" title="cuda::experimental::stf::ctx_resource"><span class="n"><span class="pre">ctx_resource</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">resource</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped12add_resourceENSt10shared_ptrI12ctx_resourceEE" title="Link to this definition">#</a><br /></dt>
+<dd><p>Add a resource to be managed by this context. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped13set_allocatorE23block_allocator_untyped">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a033328034f8809e8b6608dbcfff6353a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_allocator</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1block__allocator__untyped.html#_CPPv4N4cuda12experimental3stf23block_allocator_untypedE" title="cuda::experimental::stf::block_allocator_untyped"><span class="n"><span class="pre">block_allocator_untyped</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">custom</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped13set_allocatorE23block_allocator_untyped" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped22set_uncached_allocatorE23block_allocator_untyped">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a546484052c279dbc9e8332752b24e0cc"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_uncached_allocator</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1block__allocator__untyped.html#_CPPv4N4cuda12experimental3stf23block_allocator_untypedE" title="cuda::experimental::stf::block_allocator_untyped"><span class="n"><span class="pre">block_allocator_untyped</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">custom</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped22set_uncached_allocatorE23block_allocator_untyped" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped13get_allocatorEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a6e6150aba0fb098ad89b299cb262be45"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_allocator</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped13get_allocatorEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped13get_allocatorEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a7a52a68be01793cde47bc6d79c1cf55a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_allocator</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped13get_allocatorEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped21get_default_allocatorEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a7837641dfeda45baa0b9087b49acc982"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_default_allocator</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped21get_default_allocatorEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped22get_uncached_allocatorEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a128479c3ed803a261d58faede1554391"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_uncached_allocator</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped22get_uncached_allocatorEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped25update_uncached_allocatorE23block_allocator_untyped">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a720ac642c8da112009f383b543e8bbfa"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">update_uncached_allocator</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1block__allocator__untyped.html#_CPPv4N4cuda12experimental3stf23block_allocator_untypedE" title="cuda::experimental::stf::block_allocator_untyped"><span class="n"><span class="pre">block_allocator_untyped</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">uncached_allocator</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped25update_uncached_allocatorE23block_allocator_untyped" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped16attach_allocatorE23block_allocator_untyped">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1ab3df5020f94de81b595e174e54d56d4f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">attach_allocator</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1block__allocator__untyped.html#_CPPv4N4cuda12experimental3stf23block_allocator_untypedE" title="cuda::experimental::stf::block_allocator_untyped"><span class="n"><span class="pre">block_allocator_untyped</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">a</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped16attach_allocatorE23block_allocator_untyped" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped12add_transferERK10data_placeRK10data_place6size_t">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a02032230f210c765d930d4645fcfd753"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">add_transfer</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">src_node</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">dst_node</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">s</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped12add_transferERK10data_placeRK10data_place6size_t" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped22generate_event_symbolsEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a29600a79e8f08824cd8e24958cc78b93"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">generate_event_symbols</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped22generate_event_symbolsEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped25enable_logical_data_statsEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1ab8f73ed6b49ed6604e96f4ebce80fe51"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">enable_logical_data_stats</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped25enable_logical_data_statsEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped5graphEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a10650f83efdb2c700759bf0652ac0718"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">cudaGraph_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">graph</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped5graphEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped22set_graph_cache_policyENSt8functionIFbvEEE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1afe0ad783a4fc6365ae6e3c499b710951"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_graph_cache_policy</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">function</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">bool</span></span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">policy</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped22set_graph_cache_policyENSt8functionIFbvEEE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped22get_graph_cache_policyEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a1ae2e3e684828fb54f897beec8e44595"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_graph_cache_policy</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped22get_graph_cache_policyEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped20graph_get_cache_statEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1ac1f605e6162cc976729fbdf25a9827f7"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1executable__graph__cache__stat.html#_CPPv4N4cuda12experimental3stf27executable_graph_cache_statE" title="cuda::experimental::stf::executable_graph_cache_stat"><span class="n"><span class="pre">executable_graph_cache_stat</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">graph_get_cache_stat</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped20graph_get_cache_statEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped20stream_to_event_listE12cudaStream_tNSt6stringE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1aedba21dfb05303fb1edb6b36b58d52f0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1event__list.html#_CPPv4N4cuda12experimental3stf10event_listE" title="cuda::experimental::stf::event_list"><span class="n"><span class="pre">event_list</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">stream_to_event_list</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">cudaStream_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">stream</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">event_symbol</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped20stream_to_event_listE12cudaStream_tNSt6stringE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped5stageEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a2e2d6081e09434b8f6ec284970dc6510"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">stage</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped5stageEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped9to_stringEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1ae76f100863a34b461deb641bc0bbb32b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">to_string</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped9to_stringEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped21track_dangling_eventsEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1ad7f168267f84373b41720456470b9994"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">track_dangling_events</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped21track_dangling_eventsEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped9get_stateEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1ae5b328520991951f615f7a6dcd02f303"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">impl</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_state</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped9get_stateEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped9get_stateEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a37c0690cfa153cf19c90d535e93e751f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">impl</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_state</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped9get_stateEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped7get_dotEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1ae49f899286a9d01865c107d28ca6e5d2"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_dot</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped7get_dotEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped7get_dotEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a9e12dd44a5bd55514d54826e90cdd59d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_dot</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped7get_dotEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN4cuda12experimental3stf19backend_ctx_untyped14set_parent_ctxEvR12parent_ctx_t">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">parent_ctx_t</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a877c483cedf4439d183c335a5919e06f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_parent_ctx</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0EN4cuda12experimental3stf19backend_ctx_untyped14set_parent_ctxEvR12parent_ctx_t" title="cuda::experimental::stf::backend_ctx_untyped::set_parent_ctx::parent_ctx_t"><span class="n"><span class="pre">parent_ctx_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">parent_ctx</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN4cuda12experimental3stf19backend_ctx_untyped14set_parent_ctxEvR12parent_ctx_t" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped11dot_sectionENSt6stringE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a93d737cd13e329fd24c6ab41aeb2707e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">dot_section</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">symbol</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped11dot_sectionENSt6stringE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped9get_phaseEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a980ff9a3447431eb24e3560e2f7ff482"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_phase</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped9get_phaseEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped9set_phaseEN19backend_ctx_untyped5phaseE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1af0c961d83617269feca01441f28ee589"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_phase</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untypedE" title="cuda::experimental::stf::backend_ctx_untyped"><span class="n"><span class="pre">backend_ctx_untyped</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped5phaseE" title="cuda::experimental::stf::backend_ctx_untyped::phase"><span class="n"><span class="pre">phase</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped9set_phaseEN19backend_ctx_untyped5phaseE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped16has_start_eventsEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1aaf3f20cc546a060ed100f50b8d511336"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">has_start_events</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped16has_start_eventsEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped16get_start_eventsEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a42a2a5715558ee0c0d22f8811a6c09f4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1event__list.html#_CPPv4N4cuda12experimental3stf10event_listE" title="cuda::experimental::stf::event_list"><span class="n"><span class="pre">event_list</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_start_events</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped16get_start_eventsEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped13push_affinityENSt6vectorINSt10shared_ptrI10exec_placeEEEE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a4b3480f4e88c9ca14019097c3853eec0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">push_affinity</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_placeE" title="cuda::experimental::stf::exec_place"><span class="n"><span class="pre">exec_place</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">p</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped13push_affinityENSt6vectorINSt10shared_ptrI10exec_placeEEEE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped13push_affinityENSt10shared_ptrI10exec_placeEE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a5744a672f852c1289d8c78709c78aa1b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">push_affinity</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_placeE" title="cuda::experimental::stf::exec_place"><span class="n"><span class="pre">exec_place</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">p</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped13push_affinityENSt10shared_ptrI10exec_placeEE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped12pop_affinityEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1ac6e1b49f95e9c5b208bfb39cb78ac919"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">pop_affinity</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped12pop_affinityEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped16current_affinityEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1ad2eced02a0e95417ac10901f65d8af75"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_placeE" title="cuda::experimental::stf::exec_place"><span class="n"><span class="pre">exec_place</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">current_affinity</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+</dl>
+
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped16current_affinityEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped18current_exec_placeEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a4ca19dc883ae1fb8d5d56524b5a65755"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_placeE" title="cuda::experimental::stf::exec_place"><span class="n"><span class="pre">exec_place</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">current_exec_place</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped18current_exec_placeEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped12has_affinityEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a7f9eb93e68f57281ad1e9ef86fbd45fd"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">has_affinity</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped12has_affinityEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped18default_exec_placeEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a98ff83b9d92689afefc1f6b76c9d7d43"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_placeE" title="cuda::experimental::stf::exec_place"><span class="n"><span class="pre">exec_place</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">default_exec_place</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped18default_exec_placeEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped12pick_dstreamEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1aaa7c8e0474281992d016f4d9a26c26f8"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">pick_dstream</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped12pick_dstreamEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf19backend_ctx_untyped11pick_streamEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped_1a513aa63ce2bbd2cb5bea90ea18395f99"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">cudaStream_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">pick_stream</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped11pick_streamEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untypedE"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::backend_ctx_untyped</span></code></a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped5phaseE"><code class="docutils literal notranslate"><span class="pre">phase</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped5phase5setupE"><code class="docutils literal notranslate"><span class="pre">setup</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped5phase9submittedE"><code class="docutils literal notranslate"><span class="pre">submitted</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped5phase9finalizedE"><code class="docutils literal notranslate"><span class="pre">finalized</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped19backend_ctx_untypedEv"><code class="docutils literal notranslate"><span class="pre">backend_ctx_untyped()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped19backend_ctx_untypedENSt10shared_ptrI4implEE"><code class="docutils literal notranslate"><span class="pre">backend_ctx_untyped()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untypedcvbEv"><code class="docutils literal notranslate"><span class="pre">operator</span> <span class="pre">bool()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untypedeqERK19backend_ctx_untyped"><code class="docutils literal notranslate"><span class="pre">operator==()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untypedneERK19backend_ctx_untyped"><code class="docutils literal notranslate"><span class="pre">operator!=()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped15async_resourcesEv"><code class="docutils literal notranslate"><span class="pre">async_resources()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped16reordering_tasksEv"><code class="docutils literal notranslate"><span class="pre">reordering_tasks()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped19get_composite_cacheEv"><code class="docutils literal notranslate"><span class="pre">get_composite_cache()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped13schedule_taskERK4task"><code class="docutils literal notranslate"><span class="pre">schedule_task()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped13reorder_tasksERNSt6vectorIiEERNSt13unordered_mapIiN8reserved17reorderer_payloadEEE"><code class="docutils literal notranslate"><span class="pre">reorder_tasks()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped20increment_task_countEv"><code class="docutils literal notranslate"><span class="pre">increment_task_count()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped29increment_finished_task_countEv"><code class="docutils literal notranslate"><span class="pre">increment_finished_task_count()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped10task_countEv"><code class="docutils literal notranslate"><span class="pre">task_count()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped17release_resourcesE12cudaStream_t"><code class="docutils literal notranslate"><span class="pre">release_resources()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped12add_resourceENSt10shared_ptrI12ctx_resourceEE"><code class="docutils literal notranslate"><span class="pre">add_resource()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped13set_allocatorE23block_allocator_untyped"><code class="docutils literal notranslate"><span class="pre">set_allocator()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped22set_uncached_allocatorE23block_allocator_untyped"><code class="docutils literal notranslate"><span class="pre">set_uncached_allocator()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped13get_allocatorEv"><code class="docutils literal notranslate"><span class="pre">get_allocator()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped13get_allocatorEv"><code class="docutils literal notranslate"><span class="pre">get_allocator()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped21get_default_allocatorEv"><code class="docutils literal notranslate"><span class="pre">get_default_allocator()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped22get_uncached_allocatorEv"><code class="docutils literal notranslate"><span class="pre">get_uncached_allocator()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped25update_uncached_allocatorE23block_allocator_untyped"><code class="docutils literal notranslate"><span class="pre">update_uncached_allocator()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped16attach_allocatorE23block_allocator_untyped"><code class="docutils literal notranslate"><span class="pre">attach_allocator()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped12add_transferERK10data_placeRK10data_place6size_t"><code class="docutils literal notranslate"><span class="pre">add_transfer()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped22generate_event_symbolsEv"><code class="docutils literal notranslate"><span class="pre">generate_event_symbols()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped25enable_logical_data_statsEv"><code class="docutils literal notranslate"><span class="pre">enable_logical_data_stats()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped5graphEv"><code class="docutils literal notranslate"><span class="pre">graph()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped22set_graph_cache_policyENSt8functionIFbvEEE"><code class="docutils literal notranslate"><span class="pre">set_graph_cache_policy()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped22get_graph_cache_policyEv"><code class="docutils literal notranslate"><span class="pre">get_graph_cache_policy()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped20graph_get_cache_statEv"><code class="docutils literal notranslate"><span class="pre">graph_get_cache_stat()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped20stream_to_event_listE12cudaStream_tNSt6stringE"><code class="docutils literal notranslate"><span class="pre">stream_to_event_list()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped5stageEv"><code class="docutils literal notranslate"><span class="pre">stage()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped9to_stringEv"><code class="docutils literal notranslate"><span class="pre">to_string()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped21track_dangling_eventsEv"><code class="docutils literal notranslate"><span class="pre">track_dangling_events()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped9get_stateEv"><code class="docutils literal notranslate"><span class="pre">get_state()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped9get_stateEv"><code class="docutils literal notranslate"><span class="pre">get_state()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped7get_dotEv"><code class="docutils literal notranslate"><span class="pre">get_dot()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped7get_dotEv"><code class="docutils literal notranslate"><span class="pre">get_dot()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0EN4cuda12experimental3stf19backend_ctx_untyped14set_parent_ctxEvR12parent_ctx_t"><code class="docutils literal notranslate"><span class="pre">set_parent_ctx()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped11dot_sectionENSt6stringE"><code class="docutils literal notranslate"><span class="pre">dot_section()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped9get_phaseEv"><code class="docutils literal notranslate"><span class="pre">get_phase()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped9set_phaseEN19backend_ctx_untyped5phaseE"><code class="docutils literal notranslate"><span class="pre">set_phase()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped16has_start_eventsEv"><code class="docutils literal notranslate"><span class="pre">has_start_events()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped16get_start_eventsEv"><code class="docutils literal notranslate"><span class="pre">get_start_events()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped13push_affinityENSt6vectorINSt10shared_ptrI10exec_placeEEEE"><code class="docutils literal notranslate"><span class="pre">push_affinity()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped13push_affinityENSt10shared_ptrI10exec_placeEE"><code class="docutils literal notranslate"><span class="pre">push_affinity()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped12pop_affinityEv"><code class="docutils literal notranslate"><span class="pre">pop_affinity()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped16current_affinityEv"><code class="docutils literal notranslate"><span class="pre">current_affinity()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped18current_exec_placeEv"><code class="docutils literal notranslate"><span class="pre">current_exec_place()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped12has_affinityEv"><code class="docutils literal notranslate"><span class="pre">has_affinity()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf19backend_ctx_untyped18default_exec_placeEv"><code class="docutils literal notranslate"><span class="pre">default_exec_place()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped12pick_dstreamEv"><code class="docutils literal notranslate"><span class="pre">pick_dstream()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf19backend_ctx_untyped11pick_streamEv"><code class="docutils literal notranslate"><span class="pre">pick_stream()</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2026, NVIDIA Corporation.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

@@ -1,0 +1,1211 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>cuda::experimental::stf::small_vector &#8212; CUDA Core Compute Libraries</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+
+
+    <script src="../../_static/documentation_options.js?v=bbe6ed3a"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=5ceeb459"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'cudax/api/classcuda_1_1experimental_1_1stf_1_1small__vector';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://NVIDIA.github.io/cccl/nv-versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'unstable';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+
+    <link rel="canonical" href="https://NVIDIA.github.io/cccl/cudax/api/classcuda_1_1experimental_1_1stf_1_1small__vector.html" />
+    <link rel="icon" href="../../_static/favicon.png"/>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="unstable" />
+
+
+  </head>
+
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../cpp.html">CUDA C++ Core Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../libcudacxx/index.html">libcu++</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/setup.html">Setup</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/requirements.html">Requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/getting.html">Getting libcu++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/building_and_testing.html">Building &amp; Testing libcu++</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/standard_api.html">Standard API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/algorithms_library.html">Algorithms Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/c_library.html">C Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/concepts_library.html">Concepts Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/container_library.html">Container Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/execution_library.html">Execution Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/numerics_library.html">Numerics Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/ranges_library.html">Ranges Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/synchronization_library.html">Synchronization Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/time_library.html">Time Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/type_support.html">Type Support Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/utility_library.html">Utility Library</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/extended_api.html">Extended API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/bit.html">Bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/execution_model.html">Execution model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/exceptions.html">Exception Handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_model.html">Memory model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/thread_groups.html">Thread Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/synchronization_primitives.html">Synchronization Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/asynchronous_operations.html">Asynchronous Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_access_properties.html">Memory access properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/functional.html">Functional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/iterators.html">Fancy Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/type_traits.html">Type traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/vector_tuple_protocol.html">Vector Tuple Protocol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/numeric.html">Numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/random.html">Random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory.html">Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_resource.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/math.html">Math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/mdspan.html">Mdspan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/warp.html">Warp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/utility.html">Utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/work_stealing.html">Work stealing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/stream.html">Streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/event.html">Events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/algorithm.html">Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/legacy_resources.html">Legacy resources</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/examples.html">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/instructions.html">PTX Instructions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/pragmas.html">PTX Pragmas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cub/index.html">CUB</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/test_overview.html">CUB Tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/benchmarking.html">CUB Benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/tuning.html">CUB Tunings</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/developer_overview.html">CUB Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/nvtx.html">NVTX</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/releases.html">CUB Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/releases/changelog.html">CUB 2.1.0</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/thread_level.html">Thread-level Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/warp_wide.html">Warp-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/block_wide.html">Block-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/device_wide.html">Device-Wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../thrust/index.html">Thrust</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/developer_overview.html">Thrust Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/systems.html">Thrust systems</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/release_process.html">Release Process</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/algorithms.html">Algorithms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/containers.html">Containers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/function_objects.html">Function Objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/iterators.html">Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/memory_management.html">Memory Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/numerics.html">Numerics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/random.html">Random Number Generators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/system.html">System</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/utility.html">Utility</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../index.html">CUDA Experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../container.html">Containers library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1uninitialized__buffer.html">cuda::experimental::uninitialized_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../memory_resource.html">Memory Resources</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1basic__any__resource.html">cuda::mr::basic_any_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1memory__pool__properties.html">cuda::memory_pool_properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1device__memory__pool.html">cuda::device_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1pinned__memory__pool.html">cuda::pinned_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1managed__memory__pool.html">cuda::managed_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1legacy__pinned__memory__resource.html">cuda::mr::legacy_pinned_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1legacy__managed__memory__resource.html">cuda::mr::legacy_managed_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1mr_1_1shared__resource.html">cuda::mr::shared_resource</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../graph.html">Graphs library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1graph.html">cuda::experimental::graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1graph__builder.html">cuda::experimental::graph_builder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1graph__builder__ref.html">cuda::experimental::graph_builder_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1graph__node__ref.html">cuda::experimental::graph_node_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1graphed__interface__of.html">cuda::experimental::stf::graphed_interface_of</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; mdspan&lt; T, P… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; void_interface &gt;</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../stf.html">CUDASTF</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../stf/custom_data_interface.html">Implementation of the <code class="docutils literal notranslate"><span class="pre">matrix</span></code> class</a></li>
+
+
+
+
+
+<li class="toctree-l4"><a class="reference internal" href="../stf/lower_level_api.html">Lower-level API</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/3.0_migration_guide.html">CCCL 2.x ‐ CCCL 3.0 migration guide</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/development/index.html">CCCL Development Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/macro.html">CCCL Internal Macros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/testing.html">CCCL Testing Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/contributing.html">Contributing to the CUDA Core Compute Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/contributing/code_of_conduct.html">Code of Conduct</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/license.html">License</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../python/index.html">CCCL Python Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../python/setup.html">Setup and Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/compute.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/coop.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>: Cooperative Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/resources.html">Resources</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../python/api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../python/compute_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../python/coop_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> API Reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">cuda::experimental::stf::small_vector</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="cuda-experimental-stf-small-vector">
+<h1>cuda::experimental::stf::small_vector<a class="headerlink" href="#cuda-experimental-stf-small-vector" title="Link to this heading">#</a></h1>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">small_cap</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">small_vector</span></span></span><a class="headerlink" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="Link to this definition">#</a><br /></dt>
+<dd><div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-types">Public Types</p>
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector10value_typeE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a1cb988642bc72d9b05221899d4b47c07"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">value_type</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector10value_typeE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector9size_typeE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a0f94314f4fefc6ea75481325d3f86462"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">size_type</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector9size_typeE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector15difference_typeE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1aaedb0b0a4cb29e61660192073eda65bf"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">difference_type</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">ptrdiff_t</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector15difference_typeE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector9referenceE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1aa3407db9c84deeafc3310fc91a4a4e5c"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">reference</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector10value_typeE" title="cuda::experimental::stf::small_vector::value_type"><span class="n"><span class="pre">value_type</span></span></a><span class="p"><span class="pre">&amp;</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector9referenceE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector15const_referenceE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1aa39ce124693b81dc500a728c2133407e"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">const_reference</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector10value_typeE" title="cuda::experimental::stf::small_vector::value_type"><span class="n"><span class="pre">value_type</span></span></a><span class="p"><span class="pre">&amp;</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector15const_referenceE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector7pointerE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1ad9ac052ee9cecfa24b8d478ed0269fce"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">pointer</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector10value_typeE" title="cuda::experimental::stf::small_vector::value_type"><span class="n"><span class="pre">value_type</span></span></a><span class="p"><span class="pre">*</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector7pointerE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector13const_pointerE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a251403711cff1984365490f2ad152804"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">const_pointer</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector10value_typeE" title="cuda::experimental::stf::small_vector::value_type"><span class="n"><span class="pre">value_type</span></span></a><span class="p"><span class="pre">*</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector13const_pointerE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector8iteratorE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a91db593c9fbed448d69ca3e9c5053028"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">iterator</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector7pointerE" title="cuda::experimental::stf::small_vector::pointer"><span class="n"><span class="pre">pointer</span></span></a><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector8iteratorE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector14const_iteratorE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a8b53e696839fef2a8c8ea269de13aafa"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">const_iterator</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector13const_pointerE" title="cuda::experimental::stf::small_vector::const_pointer"><span class="n"><span class="pre">const_pointer</span></span></a><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector14const_iteratorE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector16reverse_iteratorE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1aa2108c6f9d8116e1f51d1518cd46774d"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">reverse_iterator</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">reverse_iterator</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector8iteratorE" title="cuda::experimental::stf::small_vector::iterator"><span class="n"><span class="pre">iterator</span></span></a><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector16reverse_iteratorE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector22const_reverse_iteratorE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1aff2a9ca0d405e149d6ce4bf8c36d48aa"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">const_reverse_iterator</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">reverse_iterator</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector14const_iteratorE" title="cuda::experimental::stf::small_vector::const_iterator"><span class="n"><span class="pre">const_iterator</span></span></a><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector22const_reverse_iteratorE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector12small_vectorEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a6528270b103e8e644d3eb0e84d82d9a4"></span><span class="sig-name descname"><span class="n"><span class="pre">small_vector</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">default</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector12small_vectorEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector12small_vectorERK12small_vector">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a57f3d9d21128dda76dc5c27f8872a508"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">small_vector</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector12small_vectorERK12small_vector" title="cuda::experimental::stf::small_vector::small_vector"><span class="n"><span class="pre">small_vector</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector12small_vectorERK12small_vector" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector12small_vectorERR12small_vector">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1ac703684ed0c0b5e2019f93f55db7ced7"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">small_vector</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector12small_vectorERR12small_vector" title="cuda::experimental::stf::small_vector::small_vector"><span class="n"><span class="pre">small_vector</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector12small_vectorERR12small_vector" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector12small_vectorENSt16initializer_listI1TEE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a24e82adde1dff006c8598160963e1ae5"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">small_vector</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">initializer_list</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">init</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector12small_vectorENSt16initializer_listI1TEE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vectoraSERK12small_vector">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a6db5b5dd810dfc288db3de46e6932597"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector"><span class="n"><span class="pre">small_vector</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">=</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector"><span class="n"><span class="pre">small_vector</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vectoraSERK12small_vector" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vectoraSERR12small_vector">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a4b952aa6d3e87ae6a388992f8f0adb69"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector"><span class="n"><span class="pre">small_vector</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">=</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector"><span class="n"><span class="pre">small_vector</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vectoraSERR12small_vector" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vectoraSENSt16initializer_listI1TEE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a04c6bc5f5696567e710fadbf73e1c4da"></span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector"><span class="n"><span class="pre">small_vector</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">=</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">initializer_list</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">ilist</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vectoraSENSt16initializer_listI1TEE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vectorD0Ev">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1aab150788e5bbec4890b9631e622156da"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~small_vector</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vectorD0Ev" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vectorixE6size_t">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a22dc91cb5d0bc0f7d12fb4904b8daebb"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">[]</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">pos</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vectorixE6size_t" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf12small_vectorixE6size_t">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1aaa84c0d595622a39dcba6e159c59ad6c"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">[]</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">pos</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf12small_vectorixE6size_t" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector2atE6size_t">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a2e241866e6bee4f745d0e53d3f5e2fcc"></span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">at</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">pos</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector2atE6size_t" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf12small_vector2atE6size_t">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1abcac6bac91c15d9fc3dc5d6753d6c988"></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">at</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">pos</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf12small_vector2atE6size_t" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector5frontEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a7485aa25a704ddc6d07b3c4bfb99f72b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">front</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector5frontEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf12small_vector5frontEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a57ae5d28d7d74ef296fa6b14c0f10d91"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">front</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf12small_vector5frontEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector4backEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1aa3acf955e2ee9cf8719b1b9ce40c133d"></span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">back</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector4backEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf12small_vector4backEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a2d87b67dc67a6f337c6be64016ba9017"></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">back</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf12small_vector4backEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector4dataEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a2a0c676bb941bcace588320eb75e42f8"></span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">data</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector4dataEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf12small_vector4dataEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1aee4a6990ea8265c70d2013f45a700505"></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">data</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf12small_vector4dataEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector5beginEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1afc79ffd00fe3e3e69487a229d0aa76b4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector8iteratorE" title="cuda::experimental::stf::small_vector::iterator"><span class="n"><span class="pre">iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">begin</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector5beginEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf12small_vector5beginEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1ae58733d1cecbd85fb3c8a064c2c9cad4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector14const_iteratorE" title="cuda::experimental::stf::small_vector::const_iterator"><span class="n"><span class="pre">const_iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">begin</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf12small_vector5beginEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf12small_vector6cbeginEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a9623ef36b69b4f5c2d287da0d288af9c"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector14const_iteratorE" title="cuda::experimental::stf::small_vector::const_iterator"><span class="n"><span class="pre">const_iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cbegin</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf12small_vector6cbeginEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector3endEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a95bd1399cca33a9fbab74065a6c4158a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector8iteratorE" title="cuda::experimental::stf::small_vector::iterator"><span class="n"><span class="pre">iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">end</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector3endEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf12small_vector3endEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a7081ba923d23d38340e34d2d4a009bea"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector14const_iteratorE" title="cuda::experimental::stf::small_vector::const_iterator"><span class="n"><span class="pre">const_iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">end</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf12small_vector3endEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf12small_vector4cendEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a07b6fb2ab7ec9907fa3b4e2fd25cdcce"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector14const_iteratorE" title="cuda::experimental::stf::small_vector::const_iterator"><span class="n"><span class="pre">const_iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cend</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf12small_vector4cendEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector6rbeginEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a8670d48e3c4abc5d0ea7d794040f2426"></span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector16reverse_iteratorE" title="cuda::experimental::stf::small_vector::reverse_iterator"><span class="n"><span class="pre">reverse_iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">rbegin</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector6rbeginEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf12small_vector6rbeginEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a38fd6001b931252b96b4c9d9e43e04f9"></span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector22const_reverse_iteratorE" title="cuda::experimental::stf::small_vector::const_reverse_iterator"><span class="n"><span class="pre">const_reverse_iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">rbegin</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf12small_vector6rbeginEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf12small_vector7crbeginEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a79e813f655ebeba755a8080f33d474b8"></span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector22const_reverse_iteratorE" title="cuda::experimental::stf::small_vector::const_reverse_iterator"><span class="n"><span class="pre">const_reverse_iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">crbegin</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf12small_vector7crbeginEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector4rendEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a2592061db1d8a3160bd577c2ec76d2b6"></span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector16reverse_iteratorE" title="cuda::experimental::stf::small_vector::reverse_iterator"><span class="n"><span class="pre">reverse_iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">rend</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector4rendEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf12small_vector4rendEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a342c4b16cdf9ac78382e98b461aef9d7"></span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector22const_reverse_iteratorE" title="cuda::experimental::stf::small_vector::const_reverse_iterator"><span class="n"><span class="pre">const_reverse_iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">rend</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf12small_vector4rendEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf12small_vector5crendEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a31958512b0aec5b8da6c7630118fc2b0"></span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector22const_reverse_iteratorE" title="cuda::experimental::stf::small_vector::const_reverse_iterator"><span class="n"><span class="pre">const_reverse_iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">crend</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf12small_vector5crendEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf12small_vector5emptyEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1acfffce2db670c3d4c3405497308ab9da"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">empty</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf12small_vector5emptyEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf12small_vector4sizeEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a6b442d2cfa9dbc6b8f2188a26095f4ed"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">size</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf12small_vector4sizeEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf12small_vector8max_sizeEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a7efdb39b88420b13126244dfdd77d789"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">max_size</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf12small_vector8max_sizeEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector7reserveE6size_t">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a05a3126ba432a2c69713a5baa6639746"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">reserve</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">new_cap</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector7reserveE6size_t" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf12small_vector8capacityEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a4221d1be41a74fa448784c3db535b73e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">capacity</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf12small_vector8capacityEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector13shrink_to_fitEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1ae17538bcc0f6612414c72fa7a04903fc"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">shrink_to_fit</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector13shrink_to_fitEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector5clearEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a6de1e888d3dce2e7e1ca7aab914315b9"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">clear</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector5clearEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector6insertE14const_iteratorRK1T">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a284e1afa6dfd1e30b8b63b1f4bd02917"></span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector8iteratorE" title="cuda::experimental::stf::small_vector::iterator"><span class="n"><span class="pre">iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">insert</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector14const_iteratorE" title="cuda::experimental::stf::small_vector::const_iterator"><span class="n"><span class="pre">const_iterator</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">pos</span></span></em>, <em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector6insertE14const_iteratorRK1T" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector6insertE14const_iteratorRR1T">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a14a6060a37cfaade8e8193ae7e7c3f27"></span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector8iteratorE" title="cuda::experimental::stf::small_vector::iterator"><span class="n"><span class="pre">iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">insert</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector14const_iteratorE" title="cuda::experimental::stf::small_vector::const_iterator"><span class="n"><span class="pre">const_iterator</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">pos</span></span></em>, <em class="sig-param"><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector6insertE14const_iteratorRR1T" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector6insertE14const_iterator6size_tRK1T">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a5df7117a80b45b0aabefe7bb7f186079"></span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector8iteratorE" title="cuda::experimental::stf::small_vector::iterator"><span class="n"><span class="pre">iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">insert</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector14const_iteratorE" title="cuda::experimental::stf::small_vector::const_iterator"><span class="n"><span class="pre">const_iterator</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">pos</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">count</span></span></em>, <em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector6insertE14const_iterator6size_tRK1T" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN4cuda12experimental3stf12small_vector6insertE8iterator8iterator7InputIt7InputIt">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIt</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a6ba072026a328604d9da992ad603add6"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector8iteratorE" title="cuda::experimental::stf::small_vector::iterator"><span class="n"><span class="pre">iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">insert</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector8iteratorE" title="cuda::experimental::stf::small_vector::iterator"><span class="n"><span class="pre">iterator</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">pos</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0EN4cuda12experimental3stf12small_vector6insertE8iterator8iterator7InputIt7InputIt" title="cuda::experimental::stf::small_vector::insert::InputIt"><span class="n"><span class="pre">InputIt</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">first</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0EN4cuda12experimental3stf12small_vector6insertE8iterator8iterator7InputIt7InputIt" title="cuda::experimental::stf::small_vector::insert::InputIt"><span class="n"><span class="pre">InputIt</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">last</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN4cuda12experimental3stf12small_vector6insertE8iterator8iterator7InputIt7InputIt" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector6insertE14const_iteratorNSt16initializer_listI1TEE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1aba146ff4aedba83b47fac766215e187b"></span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector8iteratorE" title="cuda::experimental::stf::small_vector::iterator"><span class="n"><span class="pre">iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">insert</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector14const_iteratorE" title="cuda::experimental::stf::small_vector::const_iterator"><span class="n"><span class="pre">const_iterator</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">pos</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">initializer_list</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">ilist</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector6insertE14const_iteratorNSt16initializer_listI1TEE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4IDpEN4cuda12experimental3stf12small_vector7emplaceE8iterator14const_iteratorDpRR4Args">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">Args</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1ad8889774485b2c9aa4cb8b1f21d59b54"></span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector8iteratorE" title="cuda::experimental::stf::small_vector::iterator"><span class="n"><span class="pre">iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">emplace</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector14const_iteratorE" title="cuda::experimental::stf::small_vector::const_iterator"><span class="n"><span class="pre">const_iterator</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">pos</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4IDpEN4cuda12experimental3stf12small_vector7emplaceE8iterator14const_iteratorDpRR4Args" title="cuda::experimental::stf::small_vector::emplace::Args"><span class="n"><span class="pre">Args</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">...</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">args</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4IDpEN4cuda12experimental3stf12small_vector7emplaceE8iterator14const_iteratorDpRR4Args" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector5eraseE14const_iterator">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1aa79708ce6586eb1adab37978fa6b5edd"></span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector8iteratorE" title="cuda::experimental::stf::small_vector::iterator"><span class="n"><span class="pre">iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">erase</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector14const_iteratorE" title="cuda::experimental::stf::small_vector::const_iterator"><span class="n"><span class="pre">const_iterator</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">pos</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector5eraseE14const_iterator" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector5eraseE8iterator8iterator">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a9b51261afe3e44d26400b89d9fc60bb0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector8iteratorE" title="cuda::experimental::stf::small_vector::iterator"><span class="n"><span class="pre">iterator</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">erase</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector8iteratorE" title="cuda::experimental::stf::small_vector::iterator"><span class="n"><span class="pre">iterator</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">first</span></span></em>, <em class="sig-param"><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector8iteratorE" title="cuda::experimental::stf::small_vector::iterator"><span class="n"><span class="pre">iterator</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">last</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector5eraseE8iterator8iterator" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector9push_backERK1T">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1adf7d35d82812dbc16c58517c24d9e751"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">push_back</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector9push_backERK1T" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector9push_backERR1T">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1acbe63e8ea18789a02602ff18f9f358e9"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">push_back</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector9push_backERR1T" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4IDpEN4cuda12experimental3stf12small_vector12emplace_backEvDpRR4Args">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">Args</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a4131439e9e61e67556c4ec5a6a549677"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">emplace_back</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4IDpEN4cuda12experimental3stf12small_vector12emplace_backEvDpRR4Args" title="cuda::experimental::stf::small_vector::emplace_back::Args"><span class="n"><span class="pre">Args</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">...</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4IDpEN4cuda12experimental3stf12small_vector12emplace_backEvDpRR4Args" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector8pop_backEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1abfff17412799e6f1192f8079df863fa4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">pop_back</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector8pop_backEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector6resizeE6size_t">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a4ac1129f4f9406dba478260cdfdc3a39"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">resize</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">new_size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector6resizeE6size_t" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector6resizeE6size_tRK10value_type">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1abe4b0351deccbecee4134a2c737b0f2b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">resize</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">new_size</span></span></em>, <em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf12small_vector10value_typeE" title="cuda::experimental::stf::small_vector::value_type"><span class="n"><span class="pre">value_type</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector6resizeE6size_tRK10value_type" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector4swapER12small_vector">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1a21deb4f7de6e1cd1255097f7693fff6a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">swap</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector"><span class="n"><span class="pre">small_vector</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">other</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector4swapER12small_vector" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-members">Public Members</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector6small_E">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1abf49740dbb00d22cb7fb578078d49857"></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">aligned_storage_t</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">sizeof</span></span><span class="p"><span class="pre">(</span></span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">alignof</span></span><span class="p"><span class="pre">(</span></span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">small_</span></span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::small_cap"><span class="n"><span class="pre">small_cap</span></span></a><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector6small_E" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vector4big_E">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1abac97be3d321ce79219847faa6dfc848"></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">aligned_storage_t</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">sizeof</span></span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">alignof</span></span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">big_</span></span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vector4big_E" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-friends">Friends</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf12small_vectoreqERK12small_vectorRK12small_vector">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1small__vector_1af9b4970a9f045a0c53ae02cb85f65a82"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">friend</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">==</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector"><span class="n"><span class="pre">small_vector</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">lhs</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE" title="cuda::experimental::stf::small_vector"><span class="n"><span class="pre">small_vector</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">rhs</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf12small_vectoreqERK12small_vectorRK12small_vector" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0_6size_tEN4cuda12experimental3stf12small_vectorE"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::small_vector</span></code></a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector10value_typeE"><code class="docutils literal notranslate"><span class="pre">value_type</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector9size_typeE"><code class="docutils literal notranslate"><span class="pre">size_type</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector15difference_typeE"><code class="docutils literal notranslate"><span class="pre">difference_type</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector9referenceE"><code class="docutils literal notranslate"><span class="pre">reference</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector15const_referenceE"><code class="docutils literal notranslate"><span class="pre">const_reference</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector7pointerE"><code class="docutils literal notranslate"><span class="pre">pointer</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector13const_pointerE"><code class="docutils literal notranslate"><span class="pre">const_pointer</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector8iteratorE"><code class="docutils literal notranslate"><span class="pre">iterator</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector14const_iteratorE"><code class="docutils literal notranslate"><span class="pre">const_iterator</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector16reverse_iteratorE"><code class="docutils literal notranslate"><span class="pre">reverse_iterator</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector22const_reverse_iteratorE"><code class="docutils literal notranslate"><span class="pre">const_reverse_iterator</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector12small_vectorEv"><code class="docutils literal notranslate"><span class="pre">small_vector()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector12small_vectorERK12small_vector"><code class="docutils literal notranslate"><span class="pre">small_vector()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector12small_vectorERR12small_vector"><code class="docutils literal notranslate"><span class="pre">small_vector()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector12small_vectorENSt16initializer_listI1TEE"><code class="docutils literal notranslate"><span class="pre">small_vector()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vectoraSERK12small_vector"><code class="docutils literal notranslate"><span class="pre">operator=()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vectoraSERR12small_vector"><code class="docutils literal notranslate"><span class="pre">operator=()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vectoraSENSt16initializer_listI1TEE"><code class="docutils literal notranslate"><span class="pre">operator=()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vectorD0Ev"><code class="docutils literal notranslate"><span class="pre">~small_vector()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vectorixE6size_t"><code class="docutils literal notranslate"><span class="pre">operator[]()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf12small_vectorixE6size_t"><code class="docutils literal notranslate"><span class="pre">operator[]()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector2atE6size_t"><code class="docutils literal notranslate"><span class="pre">at()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf12small_vector2atE6size_t"><code class="docutils literal notranslate"><span class="pre">at()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector5frontEv"><code class="docutils literal notranslate"><span class="pre">front()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf12small_vector5frontEv"><code class="docutils literal notranslate"><span class="pre">front()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector4backEv"><code class="docutils literal notranslate"><span class="pre">back()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf12small_vector4backEv"><code class="docutils literal notranslate"><span class="pre">back()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector4dataEv"><code class="docutils literal notranslate"><span class="pre">data()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf12small_vector4dataEv"><code class="docutils literal notranslate"><span class="pre">data()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector5beginEv"><code class="docutils literal notranslate"><span class="pre">begin()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf12small_vector5beginEv"><code class="docutils literal notranslate"><span class="pre">begin()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf12small_vector6cbeginEv"><code class="docutils literal notranslate"><span class="pre">cbegin()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector3endEv"><code class="docutils literal notranslate"><span class="pre">end()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf12small_vector3endEv"><code class="docutils literal notranslate"><span class="pre">end()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf12small_vector4cendEv"><code class="docutils literal notranslate"><span class="pre">cend()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector6rbeginEv"><code class="docutils literal notranslate"><span class="pre">rbegin()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf12small_vector6rbeginEv"><code class="docutils literal notranslate"><span class="pre">rbegin()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf12small_vector7crbeginEv"><code class="docutils literal notranslate"><span class="pre">crbegin()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector4rendEv"><code class="docutils literal notranslate"><span class="pre">rend()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf12small_vector4rendEv"><code class="docutils literal notranslate"><span class="pre">rend()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf12small_vector5crendEv"><code class="docutils literal notranslate"><span class="pre">crend()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf12small_vector5emptyEv"><code class="docutils literal notranslate"><span class="pre">empty()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf12small_vector4sizeEv"><code class="docutils literal notranslate"><span class="pre">size()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf12small_vector8max_sizeEv"><code class="docutils literal notranslate"><span class="pre">max_size()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector7reserveE6size_t"><code class="docutils literal notranslate"><span class="pre">reserve()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf12small_vector8capacityEv"><code class="docutils literal notranslate"><span class="pre">capacity()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector13shrink_to_fitEv"><code class="docutils literal notranslate"><span class="pre">shrink_to_fit()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector5clearEv"><code class="docutils literal notranslate"><span class="pre">clear()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector6insertE14const_iteratorRK1T"><code class="docutils literal notranslate"><span class="pre">insert()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector6insertE14const_iteratorRR1T"><code class="docutils literal notranslate"><span class="pre">insert()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector6insertE14const_iterator6size_tRK1T"><code class="docutils literal notranslate"><span class="pre">insert()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0EN4cuda12experimental3stf12small_vector6insertE8iterator8iterator7InputIt7InputIt"><code class="docutils literal notranslate"><span class="pre">insert()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector6insertE14const_iteratorNSt16initializer_listI1TEE"><code class="docutils literal notranslate"><span class="pre">insert()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4IDpEN4cuda12experimental3stf12small_vector7emplaceE8iterator14const_iteratorDpRR4Args"><code class="docutils literal notranslate"><span class="pre">emplace()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector5eraseE14const_iterator"><code class="docutils literal notranslate"><span class="pre">erase()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector5eraseE8iterator8iterator"><code class="docutils literal notranslate"><span class="pre">erase()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector9push_backERK1T"><code class="docutils literal notranslate"><span class="pre">push_back()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector9push_backERR1T"><code class="docutils literal notranslate"><span class="pre">push_back()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4IDpEN4cuda12experimental3stf12small_vector12emplace_backEvDpRR4Args"><code class="docutils literal notranslate"><span class="pre">emplace_back()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector8pop_backEv"><code class="docutils literal notranslate"><span class="pre">pop_back()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector6resizeE6size_t"><code class="docutils literal notranslate"><span class="pre">resize()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector6resizeE6size_tRK10value_type"><code class="docutils literal notranslate"><span class="pre">resize()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector4swapER12small_vector"><code class="docutils literal notranslate"><span class="pre">swap()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector6small_E"><code class="docutils literal notranslate"><span class="pre">small_</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vector4big_E"><code class="docutils literal notranslate"><span class="pre">big_</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf12small_vectoreqERK12small_vectorRK12small_vector"><code class="docutils literal notranslate"><span class="pre">operator==</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2026, NVIDIA Corporation.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

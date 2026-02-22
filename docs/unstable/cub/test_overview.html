@@ -1,0 +1,1095 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>CUB Tests &#8212; CUDA Core Compute Libraries</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+
+
+    <script src="../_static/documentation_options.js?v=bbe6ed3a"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=5ceeb459"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'cub/test_overview';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://NVIDIA.github.io/cccl/nv-versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'unstable';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+
+    <link rel="canonical" href="https://NVIDIA.github.io/cccl/cub/test_overview.html" />
+    <link rel="icon" href="../_static/favicon.png"/>
+
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="CUB Benchmarks" href="benchmarking.html" />
+    <link rel="prev" title="CUB" href="index.html" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="unstable" />
+
+
+  </head>
+
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../cpp.html">CUDA C++ Core Libraries</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="../libcudacxx/index.html">libcu++</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../libcudacxx/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/setup.html">Setup</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/setup/requirements.html">Requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/setup/getting.html">Getting libcu++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/setup/building_and_testing.html">Building &amp; Testing libcu++</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/standard_api.html">Standard API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/algorithms_library.html">Algorithms Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/c_library.html">C Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/concepts_library.html">Concepts Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/container_library.html">Container Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/execution_library.html">Execution Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/numerics_library.html">Numerics Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/ranges_library.html">Ranges Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/synchronization_library.html">Synchronization Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/time_library.html">Time Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/type_support.html">Type Support Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/utility_library.html">Utility Library</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/extended_api.html">Extended API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/bit.html">Bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/execution_model.html">Execution model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/exceptions.html">Exception Handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/memory_model.html">Memory model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/thread_groups.html">Thread Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/synchronization_primitives.html">Synchronization Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/asynchronous_operations.html">Asynchronous Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/memory_access_properties.html">Memory access properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/functional.html">Functional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/iterators.html">Fancy Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/type_traits.html">Type traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/vector_tuple_protocol.html">Vector Tuple Protocol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/numeric.html">Numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/random.html">Random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/memory.html">Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/memory_resource.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/math.html">Math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/mdspan.html">Mdspan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/warp.html">Warp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/utility.html">Utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/work_stealing.html">Work stealing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/stream.html">Streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/event.html">Events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/algorithm.html">Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/legacy_resources.html">Legacy resources</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/ptx/examples.html">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/ptx/instructions.html">PTX Instructions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/ptx/pragmas.html">PTX Pragmas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../libcudacxx/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="index.html">CUB</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="index.html">Overview</a></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">CUB Tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="benchmarking.html">CUB Benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tuning.html">CUB Tunings</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="developer_overview.html">CUB Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/nvtx.html">NVTX</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="releases.html">CUB Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="releases/changelog.html">CUB 2.1.0</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_docs/thread_level.html">Thread-level Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_docs/warp_wide.html">Warp-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_docs/block_wide.html">Block-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_docs/device_wide.html">Device-Wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="api/index.html">API reference</a></li>
+</ul>
+</details></li>
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2 has-children"><a class="reference internal" href="../thrust/index.html">Thrust</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../thrust/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../thrust/developer_overview.html">Thrust Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/developer/cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/developer/systems.html">Thrust systems</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../thrust/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../thrust/release_process.html">Release Process</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../thrust/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/algorithms.html">Algorithms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/containers.html">Containers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/function_objects.html">Function Objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/iterators.html">Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/memory_management.html">Memory Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/numerics.html">Numerics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/random.html">Random Number Generators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/system.html">System</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/utility.html">Utility</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../thrust/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../cudax/index.html">CUDA Experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../cudax/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cudax/container.html">Containers library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/classcuda_1_1experimental_1_1uninitialized__buffer.html">cuda::experimental::uninitialized_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cudax/memory_resource.html">Memory Resources</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/classcuda_1_1mr_1_1basic__any__resource.html">cuda::mr::basic_any_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/structcuda_1_1memory__pool__properties.html">cuda::memory_pool_properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/structcuda_1_1device__memory__pool.html">cuda::device_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/structcuda_1_1pinned__memory__pool.html">cuda::pinned_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/structcuda_1_1managed__memory__pool.html">cuda::managed_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/classcuda_1_1mr_1_1legacy__pinned__memory__resource.html">cuda::mr::legacy_pinned_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/classcuda_1_1mr_1_1legacy__managed__memory__resource.html">cuda::mr::legacy_managed_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/structcuda_1_1mr_1_1shared__resource.html">cuda::mr::shared_resource</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cudax/graph.html">Graphs library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1graph.html">cuda::experimental::graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1graph__builder.html">cuda::experimental::graph_builder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1graph__builder__ref.html">cuda::experimental::graph_builder_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1graph__node__ref.html">cuda::experimental::graph_node_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of.html">cuda::experimental::stf::graphed_interface_of</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; mdspan&lt; T, P… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; void_interface &gt;</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cudax/stf.html">CUDASTF</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/stf/custom_data_interface.html">Implementation of the <code class="docutils literal notranslate"><span class="pre">matrix</span></code> class</a></li>
+
+
+
+
+
+<li class="toctree-l4"><a class="reference internal" href="../cudax/stf/lower_level_api.html">Lower-level API</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../cudax/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../cccl/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cccl/3.0_migration_guide.html">CCCL 2.x ‐ CCCL 3.0 migration guide</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../cccl/development/index.html">CCCL Development Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../cccl/development/macro.html">CCCL Internal Macros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cccl/development/testing.html">CCCL Testing Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../cccl/contributing.html">Contributing to the CUDA Core Compute Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../cccl/contributing/code_of_conduct.html">Code of Conduct</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../cccl/license.html">License</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../python/index.html">CCCL Python Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../python/setup.html">Setup and Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../python/compute.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../python/coop.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>: Cooperative Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../python/resources.html">Resources</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../python/api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../python/compute_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../python/coop_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> API Reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../cpp.html" class="nav-link">CUDA C++ Core Libraries</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">CUB</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">CUB Tests</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="cub-tests">
+<h1>CUB Tests<a class="headerlink" href="#cub-tests" title="Link to this heading">#</a></h1>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>CUB is in the progress of migrating to [Catch2](<a class="github reference external" href="https://github.com/catchorg/Catch2">catchorg/Catch2</a>) framework.</p>
+</div>
+<p>CUB tests rely on <a class="reference external" href="https://github.com/cpm-cmake/CPM.cmake">CPM</a> to fetch
+<a class="reference external" href="https://github.com/catchorg/Catch2">Catch2</a> that’s used as our main testing framework.</p>
+<p>Currently,
+legacy tests coexist with Catch2 ones.
+This guide is focused on new tests.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Instead of including <code class="docutils literal notranslate"><span class="pre">&lt;catch2/catch.hpp&gt;</span></code> directly, use <code class="docutils literal notranslate"><span class="pre">catch2_test_helper.h</span></code>.</p>
+</div>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cub/block/block_scan.cuh&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c2h/vector.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c2h/catch2_test_helper.h&gt;</span>
+</pre></div>
+</div>
+<section id="directory-and-file-naming">
+<h2>Directory and File Naming<a class="headerlink" href="#directory-and-file-naming" title="Link to this heading">#</a></h2>
+<p>Our tests can be found in the <code class="docutils literal notranslate"><span class="pre">test</span></code> directory.
+Legacy tests have the following naming scheme: <code class="docutils literal notranslate"><span class="pre">test_SCOPE_FACILITY.cu</span></code>.
+For instance, here are the reduce tests:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">test</span><span class="o">/</span><span class="n">test_warp_reduce</span><span class="p">.</span><span class="n">cu</span>
+<span class="n">test</span><span class="o">/</span><span class="n">test_block_reduce</span><span class="p">.</span><span class="n">cu</span>
+<span class="n">test</span><span class="o">/</span><span class="n">test_device_reduce</span><span class="p">.</span><span class="n">cu</span>
+</pre></div>
+</div>
+<p>Catch2-based tests have a different naming scheme: <code class="docutils literal notranslate"><span class="pre">catch2_test_SCOPE_FACILITY.cu</span></code>.</p>
+<p>The prefix is essential since that’s how CMake finds tests
+and distinguishes new tests from legacy ones.</p>
+</section>
+<section id="test-structure">
+<h2>Test Structure<a class="headerlink" href="#test-structure" title="Link to this heading">#</a></h2>
+<section id="base-case">
+<h3>Base case<a class="headerlink" href="#base-case" title="Link to this heading">#</a></h3>
+<p>Let’s start with a simple example.
+Say there’s no need to cover many types with your test.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// 0) Define test name and tags</span>
+<span class="n">C2H_TEST</span><span class="p">(</span><span class="s">&quot;SCOPE FACILITY works with CONDITION&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;[FACILITY][SCOPE]&quot;</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="kt">int32_t</span><span class="p">;</span>
+<span class="w">  </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">threads_per_block</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">256</span><span class="p">;</span>
+<span class="w">  </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">num_items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">threads_per_block</span><span class="p">;</span>
+
+<span class="w">  </span><span class="c1">// 1) Allocate device input</span>
+<span class="w">  </span><span class="n">c2h</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="n">type</span><span class="o">&gt;</span><span class="w"> </span><span class="n">d_input</span><span class="p">(</span><span class="n">num_items</span><span class="p">);</span>
+
+<span class="w">  </span><span class="c1">// 2) Generate 3 random input arrays using Catch2 helper</span>
+<span class="w">  </span><span class="n">c2h</span><span class="o">::</span><span class="n">gen</span><span class="p">(</span><span class="n">C2H_SEED</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span><span class="w"> </span><span class="n">d_input</span><span class="p">);</span>
+
+<span class="w">  </span><span class="c1">// 3) Allocate output array</span>
+<span class="w">  </span><span class="n">c2h</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="n">type</span><span class="o">&gt;</span><span class="w"> </span><span class="n">d_output</span><span class="p">(</span><span class="n">d_input</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
+
+<span class="w">  </span><span class="c1">// 4) Copy device input to host</span>
+<span class="w">  </span><span class="n">c2h</span><span class="o">::</span><span class="n">host_vector</span><span class="o">&lt;</span><span class="kt">key_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">h_reference</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d_input</span><span class="p">;</span>
+
+<span class="w">  </span><span class="c1">// 5) Compute reference output</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">ALGORITHM</span><span class="p">(</span>
+<span class="w">      </span><span class="n">thrust</span><span class="o">::</span><span class="n">raw_pointer_cast</span><span class="p">(</span><span class="n">h_reference</span><span class="p">.</span><span class="n">data</span><span class="p">()),</span>
+<span class="w">      </span><span class="n">thrust</span><span class="o">::</span><span class="n">raw_pointer_cast</span><span class="p">(</span><span class="n">h_reference</span><span class="p">.</span><span class="n">data</span><span class="p">())</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">h_reference</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
+
+<span class="w">  </span><span class="c1">// 6) Compute CUB output</span>
+<span class="w">  </span><span class="n">SCOPE_ALGORITHM</span><span class="o">&lt;</span><span class="n">threads_per_block</span><span class="o">&gt;</span><span class="p">(</span><span class="n">d_input</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span>
+<span class="w">                                     </span><span class="n">d_output</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span>
+<span class="w">                                     </span><span class="n">d_input</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
+
+<span class="w">  </span><span class="c1">// 7) Compare device and host results</span>
+<span class="w">  </span><span class="n">REQUIRE</span><span class="p">(</span><span class="w"> </span><span class="n">d_input</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">d_output</span><span class="w"> </span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>We introduce test cases with the <code class="docutils literal notranslate"><span class="pre">C2H_TEST</span></code> macro in (0).
+This macro always takes two string arguments - a free-form test name and
+one or more tags. Then, in (1), we allocate device memory using <code class="docutils literal notranslate"><span class="pre">c2h::device_vector</span></code>.
+<code class="docutils literal notranslate"><span class="pre">c2h::device_vector</span></code> and <code class="docutils literal notranslate"><span class="pre">c2h::host_vector</span></code> behave similarly to their Thrust counterparts,
+but are modified to provide more stable behavior in some testing edge cases.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Always use <code class="docutils literal notranslate"><span class="pre">c2h::host_vector&lt;T&gt;</span></code>/<code class="docutils literal notranslate"><span class="pre">c2h::device_vector&lt;T&gt;</span></code>
+instead of <code class="docutils literal notranslate"><span class="pre">thrust::host_vector&lt;T&gt;</span></code>/<code class="docutils literal notranslate"><span class="pre">thrust::device_vector&lt;T&gt;</span></code>,
+unless the test code is being used for documentation examples.</p>
+</div>
+<p>Similarly, any thrust algorithms that executed on the device must be invoked with the
+<cite>c2h::device_policy</cite> execution policy (not shown here) to support the same edge cases.
+The memory is filled with random data in (2).</p>
+<p>Generator <code class="docutils literal notranslate"><span class="pre">c2h::gen</span></code> takes at least two parameters.
+The first one is a random generator seed.
+Instead of providing a single value, we use the <code class="docutils literal notranslate"><span class="pre">C2H_SEED</span></code> macro.
+The macro expects a number of seeds that has to be generated.
+In the example above, we require three random seeds to be generated.
+This leads to the whole test being executed three times
+with different seed values.</p>
+<p>Later, in (3), we allocate device output and host reference.
+In (4), we allocate and populate the host input data.
+Then, we perform the reference computation on the host in (5).</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Standard library algorithms (<code class="docutils literal notranslate"><span class="pre">std::</span></code>) have to be used where possible when computing reference solutions.</p>
+</div>
+<p>Afterwards, we launch the corresponding CUB algorithm in (6).
+At this point, we have a reference solution on the CPU and a CUB solution on the GPU.
+The two can be compared using Catch2’s <code class="docutils literal notranslate"><span class="pre">REQUIRE</span></code> macro, which stops execution upon failure (preferred).
+Catch2 also offers the <code class="docutils literal notranslate"><span class="pre">CHECK</span></code> macro, which continues test execution if the check fails.</p>
+<p>If your test has to cover floating point types,
+it’s sufficient to replace <code class="docutils literal notranslate"><span class="pre">REQUIRE(</span> <span class="pre">a</span> <span class="pre">==</span> <span class="pre">b</span> <span class="pre">)</span></code> with <code class="docutils literal notranslate"><span class="pre">REQUIRE_APPROX_EQ(a,</span> <span class="pre">b)</span></code>.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Using <code class="docutils literal notranslate"><span class="pre">c2h::gen</span></code> for producing input data is strongly advised.</p>
+</div>
+<p>Do not use <code class="docutils literal notranslate"><span class="pre">assert</span></code> in tests, which is usually only enabled in Debug mode,
+and we run CUB tests in Release mode.</p>
+<p>If a custom (non-fundamental) type has to be tested, the following helper class template should be used:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">using</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c2h</span><span class="o">::</span><span class="n">custom_type_t</span><span class="o">&lt;</span><span class="n">c2h</span><span class="o">::</span><span class="n">accumulateable_t</span><span class="p">,</span>
+<span class="w">                                </span><span class="n">c2h</span><span class="o">::</span><span class="n">equal_comparable_t</span><span class="o">&gt;</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Here we enumerate all the type properties that we are interested in.
+The produced type ends up having <code class="docutils literal notranslate"><span class="pre">operator==</span></code> (from <code class="docutils literal notranslate"><span class="pre">equal_comparable_t</span></code>)
+and <code class="docutils literal notranslate"><span class="pre">operator+</span></code> (from <code class="docutils literal notranslate"><span class="pre">accumulateable_t</span></code>).
+More properties are available.
+If a property is missing, please add it to the existing set in <code class="docutils literal notranslate"><span class="pre">c2h</span></code>
+instead of writing a custom type from scratch.</p>
+</section>
+<section id="generators">
+<h3>Generators<a class="headerlink" href="#generators" title="Link to this heading">#</a></h3>
+<p>We often need to test CUB algorithms against different inputs or problem sizes.
+If these are <strong>runtime values</strong>, we can use the Catch2 <code class="docutils literal notranslate"><span class="pre">GENERATE</span></code> macro:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">C2H_TEST</span><span class="p">(</span><span class="s">&quot;SCOPE FACILITY works with CONDITION&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;[FACILITY][SCOPE]&quot;</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">num_items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GENERATE</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="mi">1&#39;000&#39;000</span><span class="p">);</span><span class="w"> </span><span class="c1">// 0) Init. a variable with a generator</span>
+<span class="w">  </span><span class="c1">// ...</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>This will lead to the test being executed three times, once for each argument to <code class="docutils literal notranslate"><span class="pre">GENERATE(...)</span></code>.
+Multiple generators in a test inside the same scope will form the cartesian product of all combinations.
+Please consult the <a class="reference external" href="https://github.com/catchorg/Catch2/blob/devel/docs/generators.md">Catch2 documentation</a>
+for more details.</p>
+<p><code class="docutils literal notranslate"><span class="pre">C2H_SEED(3)</span></code> uses a generator expression internally.</p>
+</section>
+<section id="type-lists">
+<h3>Type Lists<a class="headerlink" href="#type-lists" title="Link to this heading">#</a></h3>
+<p>Since CUB is a generic library,
+it’s often required to test CUB algorithms against many types.
+To do so,
+it’s sufficient to define a type list and provide it to the <code class="docutils literal notranslate"><span class="pre">C2H_TEST</span></code> macro.
+This is useful for <strong>compile-time</strong> parameterization of tests.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// 0) Define type list</span>
+<span class="k">using</span><span class="w"> </span><span class="n">types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c2h</span><span class="o">::</span><span class="n">type_list</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="kt">int32_t</span><span class="o">&gt;</span><span class="p">;</span>
+
+<span class="n">C2H_TEST</span><span class="p">(</span><span class="s">&quot;SCOPE FACILITY works with CONDITION&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;[FACILITY][SCOPE]&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="n">types</span><span class="p">)</span><span class="w"> </span><span class="c1">// 1) Provide it to the test case</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="c1">// 2) Access current type with `c2h::get`</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">c2h</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">TestType</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="w">  </span><span class="c1">// ...</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>This will lead to the test being compiled (instantiated) and run twice.
+The first run will cause <code class="docutils literal notranslate"><span class="pre">type</span></code> to be <code class="docutils literal notranslate"><span class="pre">std::uint8_t</span></code>.
+The second one will cause <code class="docutils literal notranslate"><span class="pre">type</span></code> to be <code class="docutils literal notranslate"><span class="pre">std::uint32_t</span></code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>It’s important to use types from the <code class="docutils literal notranslate"><span class="pre">&lt;cstdint&gt;</span></code> header
+instead of built-in types like <code class="docutils literal notranslate"><span class="pre">char</span></code> and <code class="docutils literal notranslate"><span class="pre">int</span></code>.</p>
+</div>
+</section>
+<section id="multidimensional-configuration-spaces">
+<h3>Multidimensional Configuration Spaces<a class="headerlink" href="#multidimensional-configuration-spaces" title="Link to this heading">#</a></h3>
+<p>In most cases, the input data type is not the only compile-time parameter we want to vary.
+For instance, you might need to test a block algorithm for different data types
+<strong>and</strong> different thread block sizes.
+To do so, you can add another type list as follows:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">using</span><span class="w"> </span><span class="n">block_sizes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c2h</span><span class="o">::</span><span class="n">enum_type_list</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">,</span><span class="w"> </span><span class="mi">256</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="k">using</span><span class="w"> </span><span class="n">types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c2h</span><span class="o">::</span><span class="n">type_list</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="kt">int32_t</span><span class="o">&gt;</span><span class="p">;</span>
+
+<span class="n">C2H_TEST</span><span class="p">(</span><span class="s">&quot;SCOPE FACILITY works with CONDITION&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;[FACILITY][SCOPE]&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="n">types</span><span class="p">,</span><span class="w"> </span><span class="n">block_sizes</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">c2h</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">TestType</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="w">  </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">threads_per_block</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c2h</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">TestType</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">;</span>
+<span class="w">  </span><span class="c1">// ...</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The code above leads to the following combinations being compiled:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">std::uint8_t</span></code>, <code class="docutils literal notranslate"><span class="pre">threads_per_block</span> <span class="pre">=</span> <span class="pre">128</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">std::uint8_t</span></code>, <code class="docutils literal notranslate"><span class="pre">threads_per_block</span> <span class="pre">=</span> <span class="pre">256</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">std::int32_t</span></code>, <code class="docutils literal notranslate"><span class="pre">threads_per_block</span> <span class="pre">=</span> <span class="pre">128</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">std::int32_t</span></code>, <code class="docutils literal notranslate"><span class="pre">threads_per_block</span> <span class="pre">=</span> <span class="pre">256</span></code></p></li>
+</ul>
+<p>As an example, the following test case includes both multidimensional configuration spaces
+and multiple random sequence generations.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">using</span><span class="w"> </span><span class="n">block_sizes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c2h</span><span class="o">::</span><span class="n">enum_type_list</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">,</span><span class="w"> </span><span class="mi">256</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="k">using</span><span class="w"> </span><span class="n">types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c2h</span><span class="o">::</span><span class="n">type_list</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="kt">int32_t</span><span class="o">&gt;</span><span class="p">;</span>
+
+<span class="n">C2H_TEST</span><span class="p">(</span><span class="s">&quot;SCOPE FACILITY works with CONDITION&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;[FACILITY][SCOPE]&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="n">types</span><span class="p">,</span><span class="w"> </span><span class="n">block_sizes</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">c2h</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">TestType</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="w">  </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">threads_per_block</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c2h</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">TestType</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">;</span>
+<span class="w">  </span><span class="c1">// ...</span>
+<span class="w">  </span><span class="n">c2h</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="n">type</span><span class="o">&gt;</span><span class="w"> </span><span class="n">d_input</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span>
+<span class="w">  </span><span class="n">c2h</span><span class="o">::</span><span class="n">gen</span><span class="p">(</span><span class="n">C2H_SEED</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="n">d_input</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The code above leads to the following combinations being compiled:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">std::uint8_t</span></code>, <code class="docutils literal notranslate"><span class="pre">threads_per_block</span> <span class="pre">=</span> <span class="pre">128</span></code>, 1st random generated input sequence</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">std::uint8_t</span></code>, <code class="docutils literal notranslate"><span class="pre">threads_per_block</span> <span class="pre">=</span> <span class="pre">256</span></code>, 1st random generated input sequence</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">std::int32_t</span></code>, <code class="docutils literal notranslate"><span class="pre">threads_per_block</span> <span class="pre">=</span> <span class="pre">128</span></code>, 1st random generated input sequence</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">std::int32_t</span></code>, <code class="docutils literal notranslate"><span class="pre">threads_per_block</span> <span class="pre">=</span> <span class="pre">256</span></code>, 1st random generated input sequence</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">std::uint8_t</span></code>, <code class="docutils literal notranslate"><span class="pre">threads_per_block</span> <span class="pre">=</span> <span class="pre">128</span></code>, 2nd random generated input sequence</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">std::uint8_t</span></code>, <code class="docutils literal notranslate"><span class="pre">threads_per_block</span> <span class="pre">=</span> <span class="pre">256</span></code>, 2nd random generated input sequence</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">std::int32_t</span></code>, <code class="docutils literal notranslate"><span class="pre">threads_per_block</span> <span class="pre">=</span> <span class="pre">128</span></code>, 2nd random generated input sequence</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span> <span class="pre">=</span> <span class="pre">std::int32_t</span></code>, <code class="docutils literal notranslate"><span class="pre">threads_per_block</span> <span class="pre">=</span> <span class="pre">256</span></code>, 2nd random generated input sequence</p></li>
+</ul>
+<p>Each new generator multiplies the number of execution times by its number of seeds. That means
+that if there were further more sequence generators (<code class="docutils literal notranslate"><span class="pre">c2h::gen(C2H_SEED(X),</span> <span class="pre">...)</span></code>) on the
+example above the test would execute X more times and so on.</p>
+</section>
+<section id="speedup-compilation-time">
+<h3>Speedup Compilation Time<a class="headerlink" href="#speedup-compilation-time" title="Link to this heading">#</a></h3>
+<p>Since type lists in the <code class="docutils literal notranslate"><span class="pre">C2H_TEST</span></code> form a Cartesian product,
+compilation time grows quickly with every new dimension.
+To keep the compilation process parallelized,
+it’s possible to rely on our <code class="docutils literal notranslate"><span class="pre">%PARAM%</span></code> machinery:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// %PARAM% BLOCK_SIZE bs 128:256</span>
+<span class="k">using</span><span class="w"> </span><span class="n">block_sizes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c2h</span><span class="o">::</span><span class="n">enum_type_list</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="n">BLOCK_SIZE</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="k">using</span><span class="w"> </span><span class="n">types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c2h</span><span class="o">::</span><span class="n">type_list</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="kt">int32_t</span><span class="o">&gt;</span><span class="p">;</span>
+
+<span class="n">C2H_TEST</span><span class="p">(</span><span class="s">&quot;SCOPE FACILITY works with CONDITION&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;[FACILITY][SCOPE]&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="n">types</span><span class="p">,</span><span class="w"> </span><span class="n">block_sizes</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">c2h</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">TestType</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="w">  </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">threads_per_block</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c2h</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">TestType</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">;</span>
+<span class="w">  </span><span class="c1">// ...</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The comment with <code class="docutils literal notranslate"><span class="pre">%PARAM%</span></code> is recognized by our CMake scripts.
+It leads to multiple executables being produced from a single test source.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bin/cub.test.scope_algorithm.bs_128
+bin/cub.test.scope_algorithm.bs_256
+</pre></div>
+</div>
+<p>Multiple <code class="docutils literal notranslate"><span class="pre">%PARAM%</span></code> comments can be specified forming another Cartesian product.</p>
+</section>
+<section id="final-test">
+<h3>Final Test<a class="headerlink" href="#final-test" title="Link to this heading">#</a></h3>
+<p>Let’s consider the final test that illustrates all of the tools we discussed above:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// %PARAM% BLOCK_SIZE bs 128:256</span>
+<span class="k">using</span><span class="w"> </span><span class="n">block_sizes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c2h</span><span class="o">::</span><span class="n">enum_type_list</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="n">BLOCK_SIZE</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="k">using</span><span class="w"> </span><span class="n">types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c2h</span><span class="o">::</span><span class="n">type_list</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="kt">uint8_t</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="kt">int32_t</span><span class="o">&gt;</span><span class="p">;</span>
+
+<span class="n">C2H_TEST</span><span class="p">(</span><span class="s">&quot;SCOPE FACILITY works with CONDITION&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;[FACILITY][SCOPE]&quot;</span><span class="p">,</span>
+<span class="w">         </span><span class="n">types</span><span class="p">,</span><span class="w"> </span><span class="n">block_sizes</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">c2h</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">TestType</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="w">  </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">threads_per_block</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c2h</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">TestType</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">;</span>
+<span class="w">  </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">max_num_items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">threads_per_block</span><span class="p">;</span>
+
+<span class="w">  </span><span class="n">c2h</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="n">type</span><span class="o">&gt;</span><span class="w"> </span><span class="n">d_input</span><span class="p">(</span>
+<span class="w">    </span><span class="n">GENERATE_COPY</span><span class="p">(</span><span class="n">take</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">random</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">max_num_items</span><span class="p">))));</span>
+<span class="w">  </span><span class="n">c2h</span><span class="o">::</span><span class="n">gen</span><span class="p">(</span><span class="n">C2H_SEED</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span><span class="w"> </span><span class="n">d_input</span><span class="p">);</span>
+
+<span class="w">  </span><span class="n">c2h</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="n">type</span><span class="o">&gt;</span><span class="w"> </span><span class="n">d_output</span><span class="p">(</span><span class="n">d_input</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
+
+<span class="w">  </span><span class="n">SCOPE_ALGORITHM</span><span class="o">&lt;</span><span class="n">threads_per_block</span><span class="o">&gt;</span><span class="p">(</span><span class="n">d_input</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span>
+<span class="w">                                    </span><span class="n">d_output</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span>
+<span class="w">                                    </span><span class="n">d_input</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
+
+<span class="w">  </span><span class="n">REQUIRE</span><span class="p">(</span><span class="w"> </span><span class="n">d_input</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">d_output</span><span class="w"> </span><span class="p">);</span>
+
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="n">expected_sum</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="n">sum</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">reduce</span><span class="p">(</span><span class="n">c2h</span><span class="o">::</span><span class="n">device_policy</span><span class="p">,</span><span class="w"> </span><span class="n">d_output</span><span class="p">.</span><span class="n">cbegin</span><span class="p">(),</span><span class="w"> </span><span class="n">d_output</span><span class="p">.</span><span class="n">cend</span><span class="p">());</span>
+<span class="w">  </span><span class="n">REQUIRE</span><span class="p">(</span><span class="w"> </span><span class="n">sum</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">expected_sum</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Apart from discussed tools, here we also rely on <code class="docutils literal notranslate"><span class="pre">Catch2</span></code> to generate random input sizes
+in the range <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">max_num_items]</span></code> for our input vector <code class="docutils literal notranslate"><span class="pre">d_input</span></code>.
+Overall, the test will produce two executables.
+Each of these executables is going to generate <code class="docutils literal notranslate"><span class="pre">2</span></code> input problem sizes.
+For each problem size, <code class="docutils literal notranslate"><span class="pre">3</span></code> random vectors are generated.
+As a result, we have <code class="docutils literal notranslate"><span class="pre">12</span></code> different tests.
+The code also demonstrates the syntax and usage of <code class="docutils literal notranslate"><span class="pre">c2h::device_policy</span></code> with a Thrust algorithm.</p>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">CUB</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="benchmarking.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">CUB Benchmarks</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#directory-and-file-naming">Directory and File Naming</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#test-structure">Test Structure</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#base-case">Base case</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#generators">Generators</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#type-lists">Type Lists</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#multidimensional-configuration-spaces">Multidimensional Configuration Spaces</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#speedup-compilation-time">Speedup Compilation Time</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#final-test">Final Test</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2026, NVIDIA Corporation.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

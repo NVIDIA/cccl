@@ -1,0 +1,1424 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>cuda.compute: Parallel Computing Primitives &#8212; CUDA Core Compute Libraries</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+
+
+    <script src="../_static/documentation_options.js?v=bbe6ed3a"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=5ceeb459"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'python/compute';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://NVIDIA.github.io/cccl/nv-versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'unstable';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+
+    <link rel="canonical" href="https://NVIDIA.github.io/cccl/python/compute.html" />
+    <link rel="icon" href="../_static/favicon.png"/>
+
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="cuda.coop: Cooperative Algorithms" href="coop.html" />
+    <link rel="prev" title="Setup and Installation" href="setup.html" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="unstable" />
+
+
+  </head>
+
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../cpp.html">CUDA C++ Core Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../libcudacxx/index.html">libcu++</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../libcudacxx/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/setup.html">Setup</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/setup/requirements.html">Requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/setup/getting.html">Getting libcu++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/setup/building_and_testing.html">Building &amp; Testing libcu++</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/standard_api.html">Standard API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/algorithms_library.html">Algorithms Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/c_library.html">C Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/concepts_library.html">Concepts Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/container_library.html">Container Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/execution_library.html">Execution Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/numerics_library.html">Numerics Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/ranges_library.html">Ranges Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/synchronization_library.html">Synchronization Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/time_library.html">Time Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/type_support.html">Type Support Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/utility_library.html">Utility Library</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/extended_api.html">Extended API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/bit.html">Bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/execution_model.html">Execution model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/exceptions.html">Exception Handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/memory_model.html">Memory model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/thread_groups.html">Thread Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/synchronization_primitives.html">Synchronization Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/asynchronous_operations.html">Asynchronous Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/memory_access_properties.html">Memory access properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/functional.html">Functional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/iterators.html">Fancy Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/type_traits.html">Type traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/vector_tuple_protocol.html">Vector Tuple Protocol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/numeric.html">Numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/random.html">Random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/memory.html">Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/memory_resource.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/math.html">Math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/mdspan.html">Mdspan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/warp.html">Warp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/utility.html">Utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/work_stealing.html">Work stealing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/stream.html">Streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/event.html">Events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/algorithm.html">Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/legacy_resources.html">Legacy resources</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/ptx/examples.html">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/ptx/instructions.html">PTX Instructions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/ptx/pragmas.html">PTX Pragmas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../libcudacxx/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../cub/index.html">CUB</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../cub/index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cub/test_overview.html">CUB Tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cub/benchmarking.html">CUB Benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cub/tuning.html">CUB Tunings</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cub/developer_overview.html">CUB Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../cub/developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cub/developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cub/developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cub/developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cub/developer/nvtx.html">NVTX</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cub/releases.html">CUB Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../cub/releases/changelog.html">CUB 2.1.0</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cub/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../cub/api_docs/thread_level.html">Thread-level Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cub/api_docs/warp_wide.html">Warp-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cub/api_docs/block_wide.html">Block-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cub/api_docs/device_wide.html">Device-Wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../cub/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2 has-children"><a class="reference internal" href="../thrust/index.html">Thrust</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../thrust/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../thrust/developer_overview.html">Thrust Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/developer/cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/developer/systems.html">Thrust systems</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../thrust/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../thrust/release_process.html">Release Process</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../thrust/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/algorithms.html">Algorithms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/containers.html">Containers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/function_objects.html">Function Objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/iterators.html">Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/memory_management.html">Memory Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/numerics.html">Numerics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/random.html">Random Number Generators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/system.html">System</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/utility.html">Utility</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../thrust/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../cudax/index.html">CUDA Experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../cudax/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cudax/container.html">Containers library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/classcuda_1_1experimental_1_1uninitialized__buffer.html">cuda::experimental::uninitialized_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cudax/memory_resource.html">Memory Resources</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/classcuda_1_1mr_1_1basic__any__resource.html">cuda::mr::basic_any_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/structcuda_1_1memory__pool__properties.html">cuda::memory_pool_properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/structcuda_1_1device__memory__pool.html">cuda::device_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/structcuda_1_1pinned__memory__pool.html">cuda::pinned_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/structcuda_1_1managed__memory__pool.html">cuda::managed_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/classcuda_1_1mr_1_1legacy__pinned__memory__resource.html">cuda::mr::legacy_pinned_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/classcuda_1_1mr_1_1legacy__managed__memory__resource.html">cuda::mr::legacy_managed_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/structcuda_1_1mr_1_1shared__resource.html">cuda::mr::shared_resource</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cudax/graph.html">Graphs library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1graph.html">cuda::experimental::graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1graph__builder.html">cuda::experimental::graph_builder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1graph__builder__ref.html">cuda::experimental::graph_builder_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1graph__node__ref.html">cuda::experimental::graph_node_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of.html">cuda::experimental::stf::graphed_interface_of</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; mdspan&lt; T, P… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; void_interface &gt;</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cudax/stf.html">CUDASTF</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/stf/custom_data_interface.html">Implementation of the <code class="docutils literal notranslate"><span class="pre">matrix</span></code> class</a></li>
+
+
+
+
+
+<li class="toctree-l4"><a class="reference internal" href="../cudax/stf/lower_level_api.html">Lower-level API</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../cudax/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../cccl/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cccl/3.0_migration_guide.html">CCCL 2.x ‐ CCCL 3.0 migration guide</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../cccl/development/index.html">CCCL Development Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../cccl/development/macro.html">CCCL Internal Macros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cccl/development/testing.html">CCCL Testing Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../cccl/contributing.html">Contributing to the CUDA Core Compute Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../cccl/contributing/code_of_conduct.html">Code of Conduct</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../cccl/license.html">License</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">CCCL Python Libraries</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="setup.html">Setup and Installation</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coop.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>: Cooperative Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="resources.html">Resources</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="compute_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="coop_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> API Reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">CCCL Python Libraries</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="cuda-compute-parallel-computing-primitives">
+<span id="cccl-python-compute"></span><h1><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives<a class="headerlink" href="#cuda-compute-parallel-computing-primitives" title="Link to this heading">#</a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> library provides composable primitives for building custom
+parallel algorithms on the GPU—without writing CUDA kernels directly.</p>
+<section id="algorithms">
+<h2>Algorithms<a class="headerlink" href="#algorithms" title="Link to this heading">#</a></h2>
+<p>Algorithms are the core of <code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>. They operate on arrays or
+<span class="xref std std-ref">iterators</span> and can be composed to build specialized
+GPU operations—reductions, scans, sorts, transforms, and more.</p>
+<p>Typical usage of an algorithm looks like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span>
+   <span class="n">d_in</span><span class="o">=...</span><span class="p">,</span>       <span class="c1"># input array or iterator</span>
+   <span class="n">d_out</span><span class="o">=...</span><span class="p">,</span>      <span class="c1"># output array or iterator</span>
+   <span class="n">op</span><span class="o">=...</span><span class="p">,</span>         <span class="c1"># binary operator (built-in or user-defined)</span>
+   <span class="n">num_items</span><span class="o">=...</span><span class="p">,</span>  <span class="c1"># number of input elements</span>
+   <span class="n">h_init</span><span class="o">=...</span><span class="p">,</span>     <span class="c1"># initial value for the reduction</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<section id="api-conventions">
+<h3>API conventions<a class="headerlink" href="#api-conventions" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><strong>Naming</strong> — The <code class="docutils literal notranslate"><span class="pre">d_</span></code> prefix denotes <em>device</em> memory (e.g., CuPy arrays, PyTorch tensors);
+<code class="docutils literal notranslate"><span class="pre">h_</span></code> denotes <em>host</em> memory (NumPy arrays). Some scalar values must be passed as
+host arrays.</p></li>
+<li><p><strong>Output semantics</strong> — Algorithms write results into a user-provided array or iterator
+rather than returning them. This keeps memory ownership explicit and lifetimes under
+your control.</p></li>
+<li><p><strong>Operators</strong> — Many algorithms accept an <code class="docutils literal notranslate"><span class="pre">op</span></code> parameter. This can be a built-in
+<a class="reference internal" href="compute_api.html#cuda.compute.op.OpKind" title="cuda.compute.op.OpKind"><code class="xref py py-class docutils literal notranslate"><span class="pre">OpKind</span></code></a> value or a
+<a class="reference internal" href="#cuda-compute-user-defined-operators"><span class="std std-ref">user-defined operator</span></a>.
+When possible, prefer built-in operators (e.g., <code class="docutils literal notranslate"><span class="pre">OpKind.PLUS</span></code>) over the equivalent
+user-defined operation (e.g., <code class="docutils literal notranslate"><span class="pre">lambda</span> <span class="pre">a,</span> <span class="pre">b:</span> <span class="pre">a</span> <span class="pre">+</span> <span class="pre">b</span></code>) for better performance.</p></li>
+<li><p><strong>Iterators</strong> — Inputs and outputs can be <span class="xref std std-ref">iterators</span>
+instead of arrays, enabling lazy evaluation and operation fusion.</p></li>
+</ul>
+</section>
+<section id="full-example">
+<h3>Full Example<a class="headerlink" href="#full-example" title="Link to this heading">#</a></h3>
+<p>The following example uses <a class="reference internal" href="compute_api.html#cuda.compute.algorithms.reduce_into" title="cuda.compute.algorithms.reduce_into"><code class="xref py py-func docutils literal notranslate"><span class="pre">reduce_into</span></code></a>
+to compute the sum of a sequence of integers:</p>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">Sum reduction example.</span><a class="headerlink" href="#id1" title="Link to this code">#</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Sum all values in an array using reduction with PLUS operation.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpKind</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+<span class="c1"># Perform the reduction.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_output</span> <span class="o">=</span> <span class="mi">15</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">d_output</span> <span class="o">==</span> <span class="n">expected_output</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">d_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sum reduction result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="object-based-api-expert-mode">
+<h3>Object-based API (expert mode)<a class="headerlink" href="#object-based-api-expert-mode" title="Link to this heading">#</a></h3>
+<p>Many algorithms allocate temporary device memory for intermediate results. For finer
+control over allocation—or to reuse buffers across calls—use the object-based API.
+For example, <a class="reference internal" href="compute_api.html#cuda.compute.algorithms.make_reduce_into" title="cuda.compute.algorithms.make_reduce_into"><code class="xref py py-func docutils literal notranslate"><span class="pre">make_reduce_into</span></code></a>
+returns a reusable reduction object that lets you manage memory explicitly.</p>
+<div class="literal-block-wrapper docutils container" id="id2">
+<div class="code-block-caption"><span class="caption-text">Controlling temporary memory.</span><a class="headerlink" href="#id2" title="Link to this code">#</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># create a reducer object:</span>
+<span class="n">reducer</span> <span class="o">=</span> <span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">make_reduce_into</span><span class="p">(</span><span class="n">d_in</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
+<span class="c1"># get the temporary storage size by passing None as the first argument:</span>
+<span class="n">temp_storage_bytes</span> <span class="o">=</span> <span class="n">reducer</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">d_in</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">num_items</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
+<span class="c1"># allocate the temporary storage as any array-like object</span>
+<span class="c1"># (e.g., CuPy array, Torch tensor):</span>
+<span class="n">temp_storage</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">temp_storage_bytes</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+<span class="c1"># perform the reduction, passing the temporary storage as the first argument:</span>
+<span class="n">reducer</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">,</span> <span class="n">d_in</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">num_items</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>The object-based API splits the algorithm invocation into three phases,</p>
+<ol class="arabic simple">
+<li><p>Constructing an algorithm object</p></li>
+<li><p>Determining the amount of temporary memory needed by the computation</p></li>
+<li><p>Performing the computation</p></li>
+</ol>
+<p>It is important that the type of arguments passed during construction (step 1) match
+those passed during invocation (step 2 and 3). Otherwise you may see unexpected errors
+or silent bugs.</p>
+<ul class="simple">
+<li><p>Data types of arrays/iterators must match. If you pass an array of <cite>int32</cite> data type
+as the <cite>d_in=</cite> argument during construction of a reducer object, you must pass
+an array of dtype <cite>int32</cite> when invoking it. The array can be of a different size.</p></li>
+<li><p>Bytecode instructions of functions must match. If you pass a function/lambda for
+the operator during construction, you must pass a function with the same bytecode
+instructions during invocation. This means you _can_ pass a different function
+referencing different global/closures, but the operations within the functions
+must be the same.</p></li>
+</ul>
+</section>
+</section>
+<section id="user-defined-operators">
+<span id="cuda-compute-user-defined-operators"></span><h2>User-Defined Operators<a class="headerlink" href="#user-defined-operators" title="Link to this heading">#</a></h2>
+<p>A powerful feature is the ability to use algorithms with user-defined operators.
+For example, to compute the sum of only the even values in a sequence,
+we can use <a class="reference internal" href="compute_api.html#cuda.compute.algorithms.reduce_into" title="cuda.compute.algorithms.reduce_into"><code class="xref py py-func docutils literal notranslate"><span class="pre">reduce_into</span></code></a> with a custom binary operation:</p>
+<div class="literal-block-wrapper docutils container" id="id3">
+<div class="code-block-caption"><span class="caption-text">Reduction with a custom binary operation.</span><a class="headerlink" href="#id3" title="Link to this code">#</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Sum only even values in an array using reduction with custom operation.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+<span class="c1"># Define the binary operation for the reduction.</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">add_op</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">a</span> <span class="k">if</span> <span class="n">a</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">b</span> <span class="k">if</span> <span class="n">b</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
+
+
+<span class="c1"># Perform the reduction.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">add_op</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_output</span> <span class="o">=</span> <span class="mi">6</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">d_output</span> <span class="o">==</span> <span class="n">expected_output</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">d_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Custom sum reduction result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<section id="features-and-restrictions">
+<h3>Features and Restrictions<a class="headerlink" href="#features-and-restrictions" title="Link to this heading">#</a></h3>
+<p>User-defined operations are just-in-time (JIT) compiled into device code using
+<a class="reference external" href="https://nvidia.github.io/numba-cuda/">Numba CUDA</a>, so they inherit many
+of the same features and restrictions as Numba CUDA functions:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://nvidia.github.io/numba-cuda/user/cudapysupported.html">Python features</a>
+and <a class="reference external" href="https://nvidia.github.io/numba-cuda/user/intrinsics.html">atomic operations</a>
+supported by Numba CUDA are also supported within user-defined operators.</p></li>
+<li><p>Nested functions must be decorated with <code class="docutils literal notranslate"><span class="pre">&#64;numba.cuda.jit</span></code>.</p></li>
+<li><p>Variables captured in closures or globals follow
+<a class="reference external" href="https://nvidia.github.io/numba-cuda/user/globals.html">Numba CUDA semantics</a>:
+scalars and host arrays are captured by value (as constants),
+while device arrays are captured by reference.</p></li>
+</ul>
+</section>
+</section>
+<section id="iterators">
+<h2>Iterators<a class="headerlink" href="#iterators" title="Link to this heading">#</a></h2>
+<p>Iterators represent sequences whose elements are computed <strong>on the fly</strong>. They can
+be used in place of arrays in most algorithms, enabling lazy evaluation, operation
+fusion, and custom data access patterns.</p>
+<p>A <a class="reference internal" href="compute_api.html#cuda.compute.iterators.CountingIterator" title="cuda.compute.iterators.CountingIterator"><code class="xref py py-func docutils literal notranslate"><span class="pre">CountingIterator</span></code></a>, for example,
+represents an integer sequence starting from a given value:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">it</span> <span class="o">=</span> <span class="n">CountingIterator</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>  <span class="c1"># represents [1, 2, 3, 4, ...]</span>
+</pre></div>
+</div>
+<p>To compute the sum of the first 100 integers, we can pass a
+<a class="reference internal" href="compute_api.html#cuda.compute.iterators.CountingIterator" title="cuda.compute.iterators.CountingIterator"><code class="xref py py-func docutils literal notranslate"><span class="pre">CountingIterator</span></code></a> directly to
+<a class="reference internal" href="compute_api.html#cuda.compute.algorithms.reduce_into" title="cuda.compute.algorithms.reduce_into"><code class="xref py py-func docutils literal notranslate"><span class="pre">reduce_into</span></code></a>. No memory is allocated
+to store the input sequence—the values are generated as needed.</p>
+<div class="literal-block-wrapper docutils container" id="id4">
+<div class="code-block-caption"><span class="caption-text">Counting iterator example.</span><a class="headerlink" href="#id4" title="Link to this code">#</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use counting_iterator.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CountingIterator</span><span class="p">,</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">first_item</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">num_items</span> <span class="o">=</span> <span class="mi">100</span>
+
+<span class="c1"># Create the counting iterator.</span>
+<span class="n">first_it</span> <span class="o">=</span> <span class="n">CountingIterator</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">first_item</span><span class="p">))</span>
+
+<span class="c1"># Prepare the initial value for the reduction.</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="c1"># Prepare the output array.</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="c1"># Perform the reduction.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">first_it</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="n">num_items</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_output</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span>
+    <span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="n">first_item</span><span class="p">,</span> <span class="n">first_item</span> <span class="o">+</span> <span class="n">num_items</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="k">assert</span> <span class="p">(</span><span class="n">d_output</span> <span class="o">==</span> <span class="n">expected_output</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Counting iterator result: </span><span class="si">{</span><span class="n">d_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> (expected: </span><span class="si">{</span><span class="n">expected_output</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Iterators can also be used to <em>fuse</em> operations. In the example below, a
+<a class="reference internal" href="compute_api.html#cuda.compute.iterators.TransformIterator" title="cuda.compute.iterators.TransformIterator"><code class="xref py py-func docutils literal notranslate"><span class="pre">TransformIterator</span></code></a> lazily applies
+the square operation to each element of the input sequence. The resulting iterator
+is then passed to <a class="reference internal" href="compute_api.html#cuda.compute.algorithms.reduce_into" title="cuda.compute.algorithms.reduce_into"><code class="xref py py-func docutils literal notranslate"><span class="pre">reduce_into</span></code></a> to compute
+the sum of squares.</p>
+<p>Because the square is evaluated on demand during the reduction, there is no need
+to create or store an intermediate array of squared values. The transform and the
+reduction are fused into a single pass over the data.</p>
+<div class="literal-block-wrapper docutils container" id="id5">
+<div class="code-block-caption"><span class="caption-text">Transform iterator example.</span><a class="headerlink" href="#id5" title="Link to this code">#</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Using ``reduce_into`` with a ``TransformIterator`` to compute the</span>
+<span class="sd">sum of squares of a sequence of numbers.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+    <span class="n">TransformIterator</span><span class="p">,</span>
+    <span class="n">reduce_into</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>  <span class="c1"># Initial value for the reduction</span>
+
+<span class="c1"># Create a TransformIterator to (lazily) apply the square</span>
+<span class="n">it_input</span> <span class="o">=</span> <span class="n">TransformIterator</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">a</span><span class="p">:</span> <span class="n">a</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="c1"># Use `reduce_into` to compute the sum of the squares of the input.</span>
+<span class="n">reduce_into</span><span class="p">(</span><span class="n">it_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="n">expected_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">d_input</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="k">assert</span> <span class="n">d_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">expected_output</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Transform iterator result: </span><span class="si">{</span><span class="n">d_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> (expected: </span><span class="si">{</span><span class="n">expected_output</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Some iterators can also be used as the output of an algorithm. In the example below,
+a <a class="reference internal" href="compute_api.html#cuda.compute.iterators.TransformOutputIterator" title="cuda.compute.iterators.TransformOutputIterator"><code class="xref py py-func docutils literal notranslate"><span class="pre">TransformOutputIterator</span></code></a>
+applies the square-root operation to the result of a reduction before writing
+it into the underlying array.</p>
+<div class="literal-block-wrapper docutils container" id="id6">
+<div class="code-block-caption"><span class="caption-text">Transform output iterator example.</span><a class="headerlink" href="#id6" title="Link to this code">#</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">TransformOutputIterator example demonstrating reduction with transform output iterator.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">OpKind</span><span class="p">,</span>
+    <span class="n">TransformOutputIterator</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Create input and output arrays</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+
+<span class="c1"># Define the transform operation to be applied</span>
+<span class="c1"># to the result of the sum reduction.</span>
+<span class="c1"># TransformOutputIterator requires type annotations:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sqrt</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">x</span><span class="o">**</span><span class="mf">0.5</span>
+
+
+<span class="c1"># Create transform output iterator</span>
+<span class="n">d_out_it</span> <span class="o">=</span> <span class="n">TransformOutputIterator</span><span class="p">(</span><span class="n">d_output</span><span class="p">,</span> <span class="n">sqrt</span><span class="p">)</span>
+
+
+<span class="c1"># Apply a sum reduction into the transform output iterator</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span>
+    <span class="n">d_input</span><span class="p">,</span>
+    <span class="n">d_out_it</span><span class="p">,</span>
+    <span class="n">OpKind</span><span class="o">.</span><span class="n">PLUS</span><span class="p">,</span>
+    <span class="nb">len</span><span class="p">(</span><span class="n">d_input</span><span class="p">),</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="k">assert</span> <span class="n">cp</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">d_output</span><span class="p">,</span> <span class="n">cp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">cp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">d_input</span><span class="p">)),</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>As another example, <a class="reference internal" href="compute_api.html#cuda.compute.iterators.ZipIterator" title="cuda.compute.iterators.ZipIterator"><code class="xref py py-func docutils literal notranslate"><span class="pre">ZipIterator</span></code></a> combines multiple
+arrays or iterators into a single logical sequence. In the example below, we combine
+a counting iterator and an array, creating an iterator that yields <code class="docutils literal notranslate"><span class="pre">(index,</span> <span class="pre">value)</span></code>
+pairs. This combined iterator is then used as the input to
+<a class="reference internal" href="compute_api.html#cuda.compute.algorithms.reduce_into" title="cuda.compute.algorithms.reduce_into"><code class="xref py py-func docutils literal notranslate"><span class="pre">reduce_into</span></code></a> to compute the index of
+the maximum value in the array.</p>
+<div class="literal-block-wrapper docutils container" id="id7">
+<div class="code-block-caption"><span class="caption-text">Argmax using a zip iterator.</span><a class="headerlink" href="#id7" title="Link to this code">#</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Example showing how to use zip_iterator with counting iterator to</span>
+<span class="sd">find the index with maximum value in an array.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CountingIterator</span><span class="p">,</span>
+    <span class="n">ZipIterator</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">max_by_value</span><span class="p">(</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reduction operation that returns the pair with the larger value.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">p1</span> <span class="k">if</span> <span class="n">p1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">p2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">else</span> <span class="n">p2</span>
+
+
+<span class="c1"># Create the counting iterator.</span>
+<span class="n">counting_it</span> <span class="o">=</span> <span class="n">CountingIterator</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+
+<span class="c1"># Prepare the input array.</span>
+<span class="n">arr</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="c1"># Create the zip iterator.</span>
+<span class="n">zip_it</span> <span class="o">=</span> <span class="n">ZipIterator</span><span class="p">(</span><span class="n">counting_it</span><span class="p">,</span> <span class="n">arr</span><span class="p">)</span>
+
+<span class="n">num_items</span> <span class="o">=</span> <span class="mi">8</span>
+
+<span class="c1"># Note: initial value passed as a numpy struct</span>
+<span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">([(</span><span class="s2">&quot;index&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)],</span> <span class="n">align</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+<span class="c1"># Perform the reduction.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">zip_it</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">max_by_value</span><span class="p">,</span> <span class="n">num_items</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">d_output</span><span class="o">.</span><span class="n">get</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">expected_index</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">expected_value</span> <span class="o">=</span> <span class="mi">7</span>
+
+<span class="k">assert</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;index&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">expected_index</span>
+<span class="k">assert</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">expected_value</span>
+
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;Zip iterator with counting result: index=</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;index&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> &quot;</span>
+    <span class="sa">f</span><span class="s2">&quot;(expected: </span><span class="si">{</span><span class="n">expected_index</span><span class="si">}</span><span class="s2">), value=</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> (expected: </span><span class="si">{</span><span class="n">expected_value</span><span class="si">}</span><span class="s2">)&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>These examples illustrate a few of the patterns enabled by iterators. See the
+<a class="reference internal" href="compute_api.html#cuda-compute-module"><span class="std std-ref">API reference</span></a> for the full set of available iterators.</p>
+</section>
+<section id="struct-types">
+<span id="cuda-compute-custom-types"></span><h2>Struct Types<a class="headerlink" href="#struct-types" title="Link to this heading">#</a></h2>
+<p>The <a class="reference internal" href="compute_api.html#cuda.compute.struct.gpu_struct" title="cuda.compute.struct.gpu_struct"><code class="xref py py-func docutils literal notranslate"><span class="pre">gpu_struct</span></code></a> decorator defines
+GPU-compatible struct types. These are useful when you have data laid out
+as an “array of structures”, similar to <a class="reference external" href="https://numpy.org/doc/stable/user/basics.rec.html">NumPy structured arrays</a>.</p>
+<div class="literal-block-wrapper docutils container" id="id8">
+<div class="code-block-caption"><span class="caption-text">Custom struct type in a reduction.</span><a class="headerlink" href="#id8" title="Link to this code">#</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Finding the maximum green value in a sequence of pixels using `reduce_into`</span>
+<span class="sd">with a custom data type.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute</span><span class="w"> </span><span class="kn">import</span> <span class="n">gpu_struct</span>
+
+
+<span class="c1"># Define a custom data type to store the pixel values.</span>
+<span class="nd">@gpu_struct</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Pixel</span><span class="p">:</span>
+    <span class="n">r</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+    <span class="n">g</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+    <span class="n">b</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+
+
+<span class="c1"># Define a reduction operation that returns the pixel with the maximum green value.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">max_g_value</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">g</span> <span class="o">&gt;</span> <span class="n">y</span><span class="o">.</span><span class="n">g</span> <span class="k">else</span> <span class="n">y</span>
+
+
+<span class="c1"># Prepare the input and output arrays.</span>
+<span class="n">d_rgb</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">Pixel</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">d_out</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Pixel</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+<span class="c1"># Prepare the initial value for the reduction.</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">Pixel</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+<span class="c1"># Perform the reduction.</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">d_rgb</span><span class="p">,</span> <span class="n">d_out</span><span class="p">,</span> <span class="n">max_g_value</span><span class="p">,</span> <span class="n">d_rgb</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Calculate the expected result.</span>
+<span class="n">h_rgb</span> <span class="o">=</span> <span class="n">d_rgb</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">expected</span> <span class="o">=</span> <span class="n">h_rgb</span><span class="p">[</span><span class="n">h_rgb</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="s2">&quot;int32&quot;</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">argmax</span><span class="p">()]</span>
+
+<span class="c1"># Verify the result.</span>
+<span class="k">assert</span> <span class="n">expected</span><span class="p">[</span><span class="s2">&quot;g&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">d_out</span><span class="o">.</span><span class="n">get</span><span class="p">()[</span><span class="s2">&quot;g&quot;</span><span class="p">]</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">d_out</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pixel reduction result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<section id="array-of-structures-vs-structure-of-arrays">
+<h3>Array of Structures vs Structure of Arrays<a class="headerlink" href="#array-of-structures-vs-structure-of-arrays" title="Link to this heading">#</a></h3>
+<p>When working with structured data, there are two common memory layouts:</p>
+<ul class="simple">
+<li><p><strong>Array of Structures (AoS)</strong> — each element is a complete struct, stored
+contiguously. For example, an array of <code class="docutils literal notranslate"><span class="pre">Point</span></code> structs where each point’s
+<code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> are adjacent in memory.</p></li>
+<li><p><strong>Structure of Arrays (SoA)</strong> — each field is stored in its own array.
+For example, separate <code class="docutils literal notranslate"><span class="pre">x_coords</span></code> and <code class="docutils literal notranslate"><span class="pre">y_coords</span></code> arrays.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> supports both layouts:</p>
+<ul class="simple">
+<li><p><strong>``gpu_struct``</strong> — defines a true AoS type with named fields</p></li>
+<li><p><strong>``ZipIterator``</strong> — combines separate arrays into tuples on the fly, letting
+you work with SoA data as if it were AoS</p></li>
+</ul>
+</section>
+</section>
+<section id="caching">
+<span id="cuda-compute-caching"></span><h2>Caching<a class="headerlink" href="#caching" title="Link to this heading">#</a></h2>
+<p>Algorithms in <code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> are compiled to GPU code at runtime. To avoid
+recompiling on every call, build results are cached in memory. When you invoke
+an algorithm with the same configuration—same dtypes, iterator kinds, operator,
+and compute capability—the cached build is reused.</p>
+<section id="what-determines-the-cache-key">
+<h3>What determines the cache key<a class="headerlink" href="#what-determines-the-cache-key" title="Link to this heading">#</a></h3>
+<p>Each algorithm computes a cache key from:</p>
+<ul class="simple">
+<li><p><strong>Array dtypes</strong> — the data types of input and output arrays</p></li>
+<li><p><strong>Iterator kinds</strong> — for iterator inputs/outputs, a descriptor of the iterator type</p></li>
+<li><p><strong>Operator identity</strong> — for user-defined functions, the function’s bytecode,
+constants, and closure contents (see below)</p></li>
+<li><p><strong>Compute capability</strong> — the GPU architecture of the current device</p></li>
+<li><p><strong>Algorithm-specific parameters</strong> — such as initial value dtype or determinism mode</p></li>
+</ul>
+<p>Note that array <em>contents</em> or <em>pointers</em> are not part of the cache key—only
+the array’s dtype. This means you can reuse a cached algorithm across different
+arrays of the same type.</p>
+</section>
+<section id="how-user-defined-functions-are-cached">
+<h3>How user-defined functions are cached<a class="headerlink" href="#how-user-defined-functions-are-cached" title="Link to this heading">#</a></h3>
+<p>User-defined operators and predicates are hashed based on their bytecode, constants,
+and closure contents. Two functions with identical bytecode and closures produce
+the same cache key, even if defined at different source locations.</p>
+<p>Closure contents are recursively hashed:</p>
+<ul class="simple">
+<li><p><strong>Scalars and host arrays</strong> — hashed by value</p></li>
+<li><p><strong>Device arrays</strong> — hashed by pointer, shape, and dtype (not contents)</p></li>
+<li><p><strong>Nested functions</strong> — hashed by their own bytecode and closures</p></li>
+</ul>
+<p>Because device arrays captured in closures are hashed by pointer, changing the
+array’s contents does not invalidate the cache—only reassigning the variable to
+a different array does.</p>
+</section>
+<section id="memory-considerations">
+<h3>Memory considerations<a class="headerlink" href="#memory-considerations" title="Link to this heading">#</a></h3>
+<p>The cache persists for the lifetime of the process and grows with the number of
+unique algorithm configurations. In long-running applications or exploratory
+notebooks, this can accumulate significant memory.</p>
+<p>To clear all caches and free memory:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">clear_all_caches</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This forces recompilation on the next algorithm invocation—useful for benchmarking
+compilation time or reclaiming memory.</p>
+</section>
+</section>
+<section id="externally-compiled-operators">
+<h2>Externally Compiled Operators<a class="headerlink" href="#externally-compiled-operators" title="Link to this heading">#</a></h2>
+<p><a class="reference internal" href="compute_api.html#cuda.compute.op.RawOp" title="cuda.compute.op.RawOp"><code class="xref py py-class docutils literal notranslate"><span class="pre">RawOp</span></code></a> can be used to directly pass compiled device code
+(LTO-IR) implementing custom operators.</p>
+<p>This is useful for users who wish to use a different compilation pipeline than the default
+used by <code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> (JIT compilation of Python callables using Numba CUDA).</p>
+<p>The example below shows how to compile a C++ device function
+to LTO-IR using <a class="reference external" href="https://nvidia.github.io/cuda-python/cuda-core/latest/">cuda.core</a>,</p>
+<p><a class="reference internal" href="compute_api.html#cuda.compute.algorithms.reduce_into" title="cuda.compute.algorithms.reduce_into"><code class="xref py py-func docutils literal notranslate"><span class="pre">reduce_into</span></code></a>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Create a custom C++ operator from LTOIR bytecode using RawOp.</span>
+
+<span class="sd">This example demonstrates how to compile C++ device code to LTOIR and use it</span>
+<span class="sd">as a custom operator.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cupy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">cuda.compute</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.compute.op</span><span class="w"> </span><span class="kn">import</span> <span class="n">RawOp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cuda.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">Device</span><span class="p">,</span> <span class="n">Program</span><span class="p">,</span> <span class="n">ProgramOptions</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_arch</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the SM architecture string for the current device.&quot;&quot;&quot;</span>
+    <span class="n">device</span> <span class="o">=</span> <span class="n">Device</span><span class="p">()</span>
+    <span class="n">device</span><span class="o">.</span><span class="n">set_current</span><span class="p">()</span>
+    <span class="n">cc_major</span><span class="p">,</span> <span class="n">cc_minor</span> <span class="o">=</span> <span class="n">device</span><span class="o">.</span><span class="n">compute_capability</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;sm_</span><span class="si">{</span><span class="n">cc_major</span><span class="si">}{</span><span class="n">cc_minor</span><span class="si">}</span><span class="s2">&quot;</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">compile_cpp_to_ltoir</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">arch</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compile C++ source to LTOIR using cuda.core.&quot;&quot;&quot;</span>
+    <span class="n">opts</span> <span class="o">=</span> <span class="n">ProgramOptions</span><span class="p">(</span>
+        <span class="n">arch</span><span class="o">=</span><span class="n">arch</span><span class="p">,</span>
+        <span class="n">relocatable_device_code</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">link_time_optimization</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">prog</span> <span class="o">=</span> <span class="n">Program</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="s2">&quot;c++&quot;</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="n">opts</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">prog</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s2">&quot;ltoir&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">code</span>
+
+
+<span class="c1"># Define a C++ custom multiply operator</span>
+<span class="n">cpp_source</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">extern &quot;C&quot; __device__ void multiply_op(void* a, void* b, void* result) {</span>
+<span class="s2">    *static_cast&lt;int*&gt;(result) = *static_cast&lt;int*&gt;(a) * *static_cast&lt;int*&gt;(b);</span>
+<span class="s2">}</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+<span class="c1"># Compile C++ to LTOIR</span>
+<span class="n">arch</span> <span class="o">=</span> <span class="n">get_arch</span><span class="p">()</span>
+<span class="n">ltoir_bytes</span> <span class="o">=</span> <span class="n">compile_cpp_to_ltoir</span><span class="p">(</span><span class="n">cpp_source</span><span class="p">,</span> <span class="n">arch</span><span class="p">)</span>
+
+<span class="c1"># Create a RawOp from the LTOIR bytecode</span>
+<span class="n">multiply_op</span> <span class="o">=</span> <span class="n">RawOp</span><span class="p">(</span><span class="n">ltoir</span><span class="o">=</span><span class="n">ltoir_bytes</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;multiply_op&quot;</span><span class="p">)</span>
+
+<span class="c1"># Prepare test data</span>
+<span class="n">h_input</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">d_input</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">h_input</span><span class="p">)</span>
+<span class="n">d_output</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+<span class="n">h_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+<span class="c1"># Use the custom operator with reduce_into</span>
+<span class="n">cuda</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">reduce_into</span><span class="p">(</span><span class="n">d_input</span><span class="p">,</span> <span class="n">d_output</span><span class="p">,</span> <span class="n">multiply_op</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">d_input</span><span class="p">),</span> <span class="n">h_init</span><span class="p">)</span>
+
+<span class="c1"># Verify the result</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">d_output</span><span class="o">.</span><span class="n">get</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">expected</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">h_input</span><span class="p">)</span>  <span class="c1"># 1 * 2 * 3 * 4 * 5 = 120</span>
+<span class="k">assert</span> <span class="n">result</span> <span class="o">==</span> <span class="n">expected</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Expected </span><span class="si">{</span><span class="n">expected</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Custom multiply reduction result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;RawOp stateless example completed successfully!&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p><strong>Required calling convention</strong>: Compiled functions must use untyped pointers for
+all parameters, with manual type casting inside the function. In C++, this means
+all arguments (and the return value) must be passed as <code class="docutils literal notranslate"><span class="pre">void*</span></code> pointers:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">extern</span><span class="w"> </span><span class="s">&quot;C&quot;</span><span class="w"> </span><span class="n">__device__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">my_binary_op</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">result</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="o">*</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">result</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">*</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">*</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">b</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>You must ensure that:</p>
+<ul class="simple">
+<li><p>All parameters are untyped pointers with manual casting in the function body</p></li>
+<li><p>Type casts match the actual data types passed at runtime</p></li>
+<li><p>For stateful operators, state is the first parameter (also an untyped pointer)</p></li>
+<li><p>State bytes have the correct layout and alignment</p></li>
+</ul>
+<p>Type mismatches can cause crashes, memory corruption, or silent incorrect results.</p>
+</div>
+<p>If you wish to use <code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> solely with externally compiled operators
+(i.e., without native JIT support), you can install a
+minimal version of the <cite>cuda-cccl</cite> package that ships without Numba/Numba CUDA dependencies:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>cuda-cccl<span class="o">[</span>minimal-cu13<span class="o">]</span><span class="w">  </span><span class="c1"># or minimal-cu12</span>
+</pre></div>
+</div>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading">#</a></h2>
+<p>For complete runnable examples and additional usage patterns, see the
+<a class="reference external" href="https://github.com/NVIDIA/CCCL/tree/main/python/cuda_cccl/tests/compute/examples">examples directory</a>.</p>
+</section>
+<section id="api-reference">
+<h2>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="compute_api.html#cuda-compute-module"><span class="std std-ref">cuda.compute API Reference</span></a></p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="setup.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Setup and Installation</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="coop.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>: Cooperative Algorithms</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#algorithms">Algorithms</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#api-conventions">API conventions</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#full-example">Full Example</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#object-based-api-expert-mode">Object-based API (expert mode)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#user-defined-operators">User-Defined Operators</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#features-and-restrictions">Features and Restrictions</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#iterators">Iterators</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#struct-types">Struct Types</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#array-of-structures-vs-structure-of-arrays">Array of Structures vs Structure of Arrays</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#caching">Caching</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#what-determines-the-cache-key">What determines the cache key</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#how-user-defined-functions-are-cached">How user-defined functions are cached</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#memory-considerations">Memory considerations</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#externally-compiled-operators">Externally Compiled Operators</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#examples">Examples</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#api-reference">API Reference</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2026, NVIDIA Corporation.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

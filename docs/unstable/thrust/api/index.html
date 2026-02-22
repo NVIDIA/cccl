@@ -1,0 +1,1250 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>THRUST API Reference &#8212; CUDA Core Compute Libraries</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+
+
+    <script src="../../_static/documentation_options.js?v=bbe6ed3a"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=5ceeb459"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'thrust/api/index';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://NVIDIA.github.io/cccl/nv-versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'unstable';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+
+    <link rel="canonical" href="https://NVIDIA.github.io/cccl/thrust/api/index.html" />
+    <link rel="icon" href="../../_static/favicon.png"/>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="CUDA Experimental" href="../../cudax/index.html" />
+    <link rel="prev" title="thrust::is_execution_policy_v" href="group__type__traits_1ga2bdbeb4d76c1629f2b2e2323ce10a556.html" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="unstable" />
+
+
+  </head>
+
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../../cpp.html">CUDA C++ Core Libraries</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../libcudacxx/index.html">libcu++</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/setup.html">Setup</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/requirements.html">Requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/getting.html">Getting libcu++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/building_and_testing.html">Building &amp; Testing libcu++</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/standard_api.html">Standard API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/algorithms_library.html">Algorithms Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/c_library.html">C Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/concepts_library.html">Concepts Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/container_library.html">Container Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/execution_library.html">Execution Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/numerics_library.html">Numerics Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/ranges_library.html">Ranges Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/synchronization_library.html">Synchronization Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/time_library.html">Time Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/type_support.html">Type Support Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/utility_library.html">Utility Library</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/extended_api.html">Extended API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/bit.html">Bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/execution_model.html">Execution model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/exceptions.html">Exception Handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_model.html">Memory model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/thread_groups.html">Thread Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/synchronization_primitives.html">Synchronization Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/asynchronous_operations.html">Asynchronous Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_access_properties.html">Memory access properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/functional.html">Functional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/iterators.html">Fancy Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/type_traits.html">Type traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/vector_tuple_protocol.html">Vector Tuple Protocol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/numeric.html">Numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/random.html">Random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory.html">Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_resource.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/math.html">Math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/mdspan.html">Mdspan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/warp.html">Warp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/utility.html">Utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/work_stealing.html">Work stealing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/stream.html">Streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/event.html">Events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/algorithm.html">Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/legacy_resources.html">Legacy resources</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/examples.html">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/instructions.html">PTX Instructions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/pragmas.html">PTX Pragmas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cub/index.html">CUB</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/test_overview.html">CUB Tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/benchmarking.html">CUB Benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/tuning.html">CUB Tunings</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/developer_overview.html">CUB Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/nvtx.html">NVTX</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/releases.html">CUB Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/releases/changelog.html">CUB 2.1.0</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/thread_level.html">Thread-level Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/warp_wide.html">Warp-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/block_wide.html">Block-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/device_wide.html">Device-Wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="../index.html">Thrust</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../developer_overview.html">Thrust Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../developer/cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../developer/systems.html">Thrust systems</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../release_process.html">Release Process</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/algorithms.html">Algorithms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/containers.html">Containers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/function_objects.html">Function Objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/iterators.html">Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/memory_management.html">Memory Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/numerics.html">Numerics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/random.html">Random Number Generators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/system.html">System</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/utility.html">Utility</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cudax/index.html">CUDA Experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/container.html">Containers library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1uninitialized__buffer.html">cuda::experimental::uninitialized_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/memory_resource.html">Memory Resources</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1basic__any__resource.html">cuda::mr::basic_any_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1memory__pool__properties.html">cuda::memory_pool_properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1device__memory__pool.html">cuda::device_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1pinned__memory__pool.html">cuda::pinned_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1managed__memory__pool.html">cuda::managed_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1legacy__pinned__memory__resource.html">cuda::mr::legacy_pinned_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1legacy__managed__memory__resource.html">cuda::mr::legacy_managed_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1mr_1_1shared__resource.html">cuda::mr::shared_resource</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/graph.html">Graphs library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph.html">cuda::experimental::graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__builder.html">cuda::experimental::graph_builder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__builder__ref.html">cuda::experimental::graph_builder_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__node__ref.html">cuda::experimental::graph_node_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of.html">cuda::experimental::stf::graphed_interface_of</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; mdspan&lt; T, P… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; void_interface &gt;</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/stf.html">CUDASTF</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/stf/custom_data_interface.html">Implementation of the <code class="docutils literal notranslate"><span class="pre">matrix</span></code> class</a></li>
+
+
+
+
+
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/stf/lower_level_api.html">Lower-level API</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/3.0_migration_guide.html">CCCL 2.x ‐ CCCL 3.0 migration guide</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/development/index.html">CCCL Development Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/macro.html">CCCL Internal Macros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/testing.html">CCCL Testing Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/contributing.html">Contributing to the CUDA Core Compute Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/contributing/code_of_conduct.html">Code of Conduct</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/license.html">License</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../python/index.html">CCCL Python Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../python/setup.html">Setup and Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/compute.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/coop.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>: Cooperative Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/resources.html">Resources</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../python/api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../python/compute_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../python/coop_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> API Reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../cpp.html" class="nav-link">CUDA C++ Core Libraries</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Thrust</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">THRUST API Reference</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="thrust-api-reference">
+<h1>THRUST API Reference<a class="headerlink" href="#thrust-api-reference" title="Link to this heading">#</a></h1>
+<section id="namespace-thrust">
+<h2>Namespace <code class="docutils literal notranslate"><span class="pre">thrust</span></code><a class="headerlink" href="#namespace-thrust" title="Link to this heading">#</a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="classthrust_1_1constant__iterator.html"><span class="doc">thrust::constant_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1counting__iterator.html"><span class="doc">thrust::counting_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1device__allocator.html"><span class="doc">thrust::device_allocator</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1device__malloc__allocator.html"><span class="doc">thrust::device_malloc_allocator</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1device__new__allocator.html"><span class="doc">thrust::device_new_allocator</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1device__ptr.html"><span class="doc">thrust::device_ptr</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1device__ptr__memory__resource.html"><span class="doc">thrust::device_ptr_memory_resource</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1device__reference.html"><span class="doc">thrust::device_reference</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1device__vector.html"><span class="doc">thrust::device_vector</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1discard__iterator.html"><span class="doc">thrust::discard_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1host__vector.html"><span class="doc">thrust::host_vector</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1iterator__adaptor.html"><span class="doc">thrust::iterator_adaptor</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1iterator__core__access.html"><span class="doc">thrust::iterator_core_access</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1iterator__facade.html"><span class="doc">thrust::iterator_facade</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1mr_1_1allocator.html"><span class="doc">thrust::mr::allocator</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1mr_1_1disjoint__unsynchronized__pool__resource.html"><span class="doc">thrust::mr::disjoint_unsynchronized_pool_resource</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1mr_1_1fancy__pointer__resource.html"><span class="doc">thrust::mr::fancy_pointer_resource</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1mr_1_1memory__resource.html"><span class="doc">thrust::mr::memory_resource</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1mr_1_1memory__resource_3_01void_01_5_01_4.html"><span class="doc">thrust::mr::memory_resource&lt; void * &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1mr_1_1new__delete__resource.html"><span class="doc">thrust::mr::new_delete_resource</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1mr_1_1new__delete__resource__base.html"><span class="doc">thrust::mr::new_delete_resource_base</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1mr_1_1polymorphic__adaptor__resource.html"><span class="doc">thrust::mr::polymorphic_adaptor_resource</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1mr_1_1stateless__resource__allocator.html"><span class="doc">thrust::mr::stateless_resource_allocator</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1mr_1_1unsynchronized__pool__resource.html"><span class="doc">thrust::mr::unsynchronized_pool_resource</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1offset__iterator.html"><span class="doc">thrust::offset_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1per__device__allocator.html"><span class="doc">thrust::per_device_allocator</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1permutation__iterator.html"><span class="doc">thrust::permutation_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1pointer.html"><span class="doc">thrust::pointer</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1random_1_1discard__block__engine.html"><span class="doc">thrust::random::discard_block_engine</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1random_1_1linear__congruential__engine.html"><span class="doc">thrust::random::linear_congruential_engine</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1random_1_1linear__feedback__shift__engine.html"><span class="doc">thrust::random::linear_feedback_shift_engine</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1random_1_1normal__distribution.html"><span class="doc">thrust::random::normal_distribution</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1random_1_1subtract__with__carry__engine.html"><span class="doc">thrust::random::subtract_with_carry_engine</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1random_1_1uniform__int__distribution.html"><span class="doc">thrust::random::uniform_int_distribution</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1random_1_1uniform__real__distribution.html"><span class="doc">thrust::random::uniform_real_distribution</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1random_1_1xor__combine__engine.html"><span class="doc">thrust::random::xor_combine_engine</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1shuffle__iterator.html"><span class="doc">thrust::shuffle_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1strided__iterator.html"><span class="doc">thrust::strided_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1system_1_1error__category.html"><span class="doc">thrust::system::error_category</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1system_1_1error__code.html"><span class="doc">thrust::system::error_code</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1system_1_1error__condition.html"><span class="doc">thrust::system::error_condition</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1system_1_1system__error.html"><span class="doc">thrust::system::system_error</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1tabulate__output__iterator.html"><span class="doc">thrust::tabulate_output_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1transform__input__output__iterator.html"><span class="doc">thrust::transform_input_output_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1transform__iterator.html"><span class="doc">thrust::transform_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1transform__output__iterator.html"><span class="doc">thrust::transform_output_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1zip__function.html"><span class="doc">thrust::zip_function</span></a></p></li>
+<li><p><a class="reference internal" href="classthrust_1_1zip__iterator.html"><span class="doc">thrust::zip_iterator</span></a></p></li>
+</ul>
+</section>
+<section id="structs">
+<h3>Structs<a class="headerlink" href="#structs" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="structthrust_1_1allocator__delete.html"><span class="doc">thrust::allocator_delete</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1array__allocator__delete.html"><span class="doc">thrust::array_allocator_delete</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1bidirectional__device__iterator__tag.html"><span class="doc">thrust::bidirectional_device_iterator_tag</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1bidirectional__traversal__tag.html"><span class="doc">thrust::bidirectional_traversal_tag</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1compile__time__value.html"><span class="doc">thrust::compile_time_value</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1complex.html"><span class="doc">thrust::complex</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1device__execution__policy.html"><span class="doc">thrust::device_execution_policy</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1forward__device__iterator__tag.html"><span class="doc">thrust::forward_device_iterator_tag</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1forward__traversal__tag.html"><span class="doc">thrust::forward_traversal_tag</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1host__execution__policy.html"><span class="doc">thrust::host_execution_policy</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1incrementable__traversal__tag.html"><span class="doc">thrust::incrementable_traversal_tag</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1input__device__iterator__tag.html"><span class="doc">thrust::input_device_iterator_tag</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__difference.html"><span class="doc">thrust::iterator_difference</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__pointer.html"><span class="doc">thrust::iterator_pointer</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__reference.html"><span class="doc">thrust::iterator_reference</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__system.html"><span class="doc">thrust::iterator_system</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__system_3_01const_01void_01_5_01_4.html"><span class="doc">thrust::iterator_system&lt; const void * &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__system_3_01void_01_5_01_4.html"><span class="doc">thrust::iterator_system&lt; void * &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__system_3_1_1cuda_1_1constant__iterator_3_01T_00_01Index_01_4_01_4.html"><span class="doc">thrust::iterator_system&lt;::cuda::constant_iterator&lt; T, Index &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__system_3_1_1cuda_1_1counting__iterator_3_01Start_01_4_01_4.html"><span class="doc">thrust::iterator_system&lt;::cuda::counting_iterator&lt; Start &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__system_3_1_1cuda_1_1discard__iterator_01_4.html"><span class="doc">thrust::iterator_system&lt;::cuda::discard_iterator &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__system_3_1_1cuda_1_1permutation__iterator_3_01Iter_00_01Offset_01_4_01_4.html"><span class="doc">thrust::iterator_system&lt;::cuda::permutation_iterator&lt; Iter, Offset &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__system_3_1_1cuda_1_1shuffle__iterator_3_01IndexType_00_01Bijection_01_4_01_4.html"><span class="doc">thrust::iterator_system&lt;::cuda::shuffle_iterator&lt; IndexType, Bijection &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__system_3_1_1cuda_1_1std_1_1reverse__iterator_3_01Iter_01_4_01_4.html"><span class="doc">thrust::iterator_system&lt;::cuda::std::reverse_iterator&lt; Iter &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__system_3_1_1cuda_1_1strided__iterator_3_01Iter_00_01Stride_01_4_01_4.html"><span class="doc">thrust::iterator_system&lt;::cuda::strided_iterator&lt; Iter, Stride &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__system_3_1_1cuda_1_1tabulate__output__iterator_3_01Fn_00_01Index_01_4_01_4.html"><span class="doc">thrust::iterator_system&lt;::cuda::tabulate_output_iterator&lt; Fn, Index &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__system_3_1_1cuda_1_1transform__input__output__iterator_3_01InputFn_00_01OutputFn_00_01Iter_01_4_01_4.html"><span class="doc">thrust::iterator_system&lt;::cuda::transform_input_output_iterator&lt; InputFn, OutputFn, Iter &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__system_3_1_1cuda_1_1transform__iterator_3_01Fn_00_01Iter_01_4_01_4.html"><span class="doc">thrust::iterator_system&lt;::cuda::transform_iterator&lt; Fn, Iter &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__system_3_1_1cuda_1_1transform__output__iterator_3_01Fn_00_01Iter_01_4_01_4.html"><span class="doc">thrust::iterator_system&lt;::cuda::transform_output_iterator&lt; Fn, Iter &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__system_3_1_1cuda_1_1zip__iterator_3_01Iterators_8_8_8_01_4_01_4.html"><span class="doc">thrust::iterator_system&lt;::cuda::zip_iterator&lt; Iterators… &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__system_3_1_1cuda_1_1zip__transform__iterator_3_01Fn_00_01Iterators_8_8_8_01_4_01_4.html"><span class="doc">thrust::iterator_system&lt;::cuda::zip_transform_iterator&lt; Fn, Iterators… &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__traversal.html"><span class="doc">thrust::iterator_traversal</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__traversal_3_1_1cuda_1_1constant__iterator_3_01T_00_01Index_01_4_01_4.html"><span class="doc">thrust::iterator_traversal&lt;::cuda::constant_iterator&lt; T, Index &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__traversal_3_1_1cuda_1_1counting__iterator_3_01Start_01_4_01_4.html"><span class="doc">thrust::iterator_traversal&lt;::cuda::counting_iterator&lt; Start &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__traversal_3_1_1cuda_1_1discard__iterator_01_4.html"><span class="doc">thrust::iterator_traversal&lt;::cuda::discard_iterator &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__traversal_3_1_1cuda_1_1permutation__iterator_3_01Iter_00_01Offset_01_4_01_4.html"><span class="doc">thrust::iterator_traversal&lt;::cuda::permutation_iterator&lt; Iter, Offset &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__traversal_3_1_1cuda_1_1shuffle__iterator_3_01IndexType_00_01Bijection_01_4_01_4.html"><span class="doc">thrust::iterator_traversal&lt;::cuda::shuffle_iterator&lt; IndexType, Bijection &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__traversal_3_1_1cuda_1_1std_1_1reverse__iterator_3_01Iter_01_4_01_4.html"><span class="doc">thrust::iterator_traversal&lt;::cuda::std::reverse_iterator&lt; Iter &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__traversal_3_1_1cuda_1_1strided__iterator_3_01Iter_00_01Stride_01_4_01_4.html"><span class="doc">thrust::iterator_traversal&lt;::cuda::strided_iterator&lt; Iter, Stride &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__traversal_3_1_1cuda_1_1tabulate__output__iterator_3_01Fn_00_01Index_01_4_01_4.html"><span class="doc">thrust::iterator_traversal&lt;::cuda::tabulate_output_iterator&lt; Fn, Index &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__traversal_3_1_1cuda_1_1transform__input__output__iterator_3_01InputFn_ba4d7832d3004a4899d2f3014ab32115.html"><span class="doc">thrust::iterator_traversal&lt;::cuda::transform_input_output_iterator&lt; InputFn, OutputFn, Iter &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__traversal_3_1_1cuda_1_1transform__iterator_3_01Fn_00_01Iter_01_4_01_4.html"><span class="doc">thrust::iterator_traversal&lt;::cuda::transform_iterator&lt; Fn, Iter &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__traversal_3_1_1cuda_1_1transform__output__iterator_3_01Fn_00_01Iter_01_4_01_4.html"><span class="doc">thrust::iterator_traversal&lt;::cuda::transform_output_iterator&lt; Fn, Iter &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__traversal_3_1_1cuda_1_1zip__iterator_3_01Iterators_8_8_8_01_4_01_4.html"><span class="doc">thrust::iterator_traversal&lt;::cuda::zip_iterator&lt; Iterators… &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__traversal_3_1_1cuda_1_1zip__transform__iterator_3_01Fn_00_01Iterators_8_8_8_01_4_01_4.html"><span class="doc">thrust::iterator_traversal&lt;::cuda::zip_transform_iterator&lt; Fn, Iterators… &gt; &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1iterator__value.html"><span class="doc">thrust::iterator_value</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1mr_1_1disjoint__synchronized__pool__resource.html"><span class="doc">thrust::mr::disjoint_synchronized_pool_resource</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1mr_1_1pool__options.html"><span class="doc">thrust::mr::pool_options</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1mr_1_1synchronized__pool__resource.html"><span class="doc">thrust::mr::synchronized_pool_resource</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1mr_1_1validator.html"><span class="doc">thrust::mr::validator</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1mr_1_1validator2.html"><span class="doc">thrust::mr::validator2</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1mr_1_1validator2_3_01T_00_01T_01_4.html"><span class="doc">thrust::mr::validator2&lt; T, T &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1no__traversal__tag.html"><span class="doc">thrust::no_traversal_tag</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1output__device__iterator__tag.html"><span class="doc">thrust::output_device_iterator_tag</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1proclaim__contiguous__iterator.html"><span class="doc">thrust::proclaim_contiguous_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1project1st.html"><span class="doc">thrust::project1st</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1project1st_3_01void_00_01void_01_4.html"><span class="doc">thrust::project1st&lt; void, void &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1project2nd.html"><span class="doc">thrust::project2nd</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1project2nd_3_01void_00_01void_01_4.html"><span class="doc">thrust::project2nd&lt; void, void &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1random__access__device__iterator__tag.html"><span class="doc">thrust::random_access_device_iterator_tag</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1random__access__traversal__tag.html"><span class="doc">thrust::random_access_traversal_tag</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1runtime__value.html"><span class="doc">thrust::runtime_value</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1single__pass__traversal__tag.html"><span class="doc">thrust::single_pass_traversal_tag</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1square.html"><span class="doc">thrust::square</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1square_3_01void_01_4.html"><span class="doc">thrust::square&lt; void &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1system_1_1is__error__code__enum.html"><span class="doc">thrust::system::is_error_code_enum</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1system_1_1is__error__code__enum_3_01cuda_1_1errc_1_1errc__t_01_4.html"><span class="doc">thrust::system::is_error_code_enum&lt; cuda::errc::errc_t &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1system_1_1is__error__condition__enum.html"><span class="doc">thrust::system::is_error_condition_enum</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1system_1_1is__error__condition__enum_3_01errc_1_1errc__t_01_4.html"><span class="doc">thrust::system::is_error_condition_enum&lt; errc::errc_t &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structthrust_1_1tagged__deleter.html"><span class="doc">thrust::tagged_deleter</span></a></p></li>
+</ul>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="group__complex__numbers_1ga35e716adc045312f862c2bf561f0f07e.html"><span class="doc">abs</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1gaa8228e3d100b0eb806d42b325f6a95d8.html"><span class="doc">acos</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga2ffc507023dd15495760fee46cdbebf9.html"><span class="doc">acosh</span></a></p></li>
+<li><p><a class="reference internal" href="group__transformations_1ga0f4d328d7b75f58901672a42591f4d3d.html"><span class="doc">adjacent_difference</span></a></p></li>
+<li><p><a class="reference internal" href="namespacethrust_1a1a067ddef0510e8b800535985b85af37.html"><span class="doc">advance</span></a></p></li>
+<li><p><a class="reference internal" href="group__logical_1ga0e0104d89eb247a7e10a6a75c1a024a2.html"><span class="doc">all_of</span></a></p></li>
+<li><p><a class="reference internal" href="namespacethrust_1a82dc371eac6d1499d28f153e3f921926.html"><span class="doc">allocate_unique</span></a></p></li>
+<li><p><a class="reference internal" href="namespacethrust_1a66c4817439220a11edc1c810c9f2c4e4.html"><span class="doc">allocate_unique_n</span></a></p></li>
+<li><p><a class="reference internal" href="group__logical_1gac5a8c0f6c91c7655a8e719b0e3aa030d.html"><span class="doc">any_of</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga7038bbec1ad0891c7e84cf49691de669.html"><span class="doc">arg</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga2402d40d11cc358cbd8a15f0d3e0a640.html"><span class="doc">asin</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga4d1b06b9e0ae6849982172915e04d70b.html"><span class="doc">asinh</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1gae3cb9b2e1de24c92ea91a61eb9477c0e.html"><span class="doc">atan</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga4a3a56ebc4cd4390daf813feb058228f.html"><span class="doc">atanh</span></a></p></li>
+<li><p><a class="reference internal" href="group__binary__search_1gaa855fdcf3942f95919bb712e26c7bfc6.html"><span class="doc">binary_search</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga969f3d40a0d9f7a2bcfdce2a83233edc.html"><span class="doc">conj</span></a></p></li>
+<li><p><a class="reference internal" href="group__copying_1ga83d834a518f336cc996e22639f5e4bee.html"><span class="doc">copy</span></a></p></li>
+<li><p><a class="reference internal" href="group__stream__compaction_1ga291bd49963dc7d3d0529fb8ed05de66e.html"><span class="doc">copy_if</span></a></p></li>
+<li><p><a class="reference internal" href="group__copying_1ga4eb33fdcfcf991eaf1c0ae209046922d.html"><span class="doc">copy_n</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga4aea440ee8f92a90b9c1cc5070349614.html"><span class="doc">cos</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga2ec4be34f6b564b8e143ea57e0fa9a94.html"><span class="doc">cosh</span></a></p></li>
+<li><p><a class="reference internal" href="group__counting_1gaad8c906c3731276fe7d4d16af50fe326.html"><span class="doc">count</span></a></p></li>
+<li><p><a class="reference internal" href="group__counting_1ga9f19601fc65c800c069a8efe356abbd2.html"><span class="doc">count_if</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__management_1ga1c393e01036d27ed0c0ab2a1750957dc.html"><span class="doc">device_delete</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__management_1ga1a350740a6ade432f3781096df91f162.html"><span class="doc">device_free</span></a></p></li>
+<li><p><a class="reference internal" href="namespacethrust_1ae1bc3d42fc02c4252b416f3a82c806f3.html"><span class="doc">device_make_unique</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__management_1ga45b46200ffdb02a4ef9191103e6f12b9.html"><span class="doc">device_malloc</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__management_1ga86a38bc1d1e0801e1a7b9abe186645ba.html"><span class="doc">device_new</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__management_1ga085f1930b39e9d7331267f39c75785a8.html"><span class="doc">device_pointer_cast</span></a></p></li>
+<li><p><a class="reference internal" href="namespacethrust_1ad46e2e96964a4d4bbae7e93ab92a3ba3.html"><span class="doc">distance</span></a></p></li>
+<li><p><a class="reference internal" href="group__comparisons_1ga6ee63d156e253d5db817c8bcc6a35bc4.html"><span class="doc">equal</span></a></p></li>
+<li><p><a class="reference internal" href="group__binary__search_1gaa62a894dd33970790599e75a186f1bb3.html"><span class="doc">equal_range</span></a></p></li>
+<li><p><a class="reference internal" href="group__prefixsums_1gae5d3cdb73f9532b0a9692624988f3ab1.html"><span class="doc">exclusive_scan</span></a></p></li>
+<li><p><a class="reference internal" href="group__segmentedprefixsums_1ga64b67bdfbc02fd8651d1732c4afefcbd.html"><span class="doc">exclusive_scan_by_key</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga4c8bdbf96d6533ba08aad19b8844205a.html"><span class="doc">exp</span></a></p></li>
+<li><p><a class="reference internal" href="group__filling_1ga819b9addfc37e36f5b3c8438293e27ab.html"><span class="doc">fill</span></a></p></li>
+<li><p><a class="reference internal" href="group__filling_1ga440c2be305b590c38c2e0bd727ad7641.html"><span class="doc">fill_n</span></a></p></li>
+<li><p><a class="reference internal" href="group__searching_1ga0a1bffa0a0c085b0f8feb146593ae661.html"><span class="doc">find</span></a></p></li>
+<li><p><a class="reference internal" href="group__searching_1gaaceff078778af22a2663727f8cf4fba4.html"><span class="doc">find_if</span></a></p></li>
+<li><p><a class="reference internal" href="group__searching_1ga6b3b610010990168c0f397bfb3a46897.html"><span class="doc">find_if_not</span></a></p></li>
+<li><p><a class="reference internal" href="group__modifying_1gacef91d7036641ffd9a9a483ff760de05.html"><span class="doc">for_each</span></a></p></li>
+<li><p><a class="reference internal" href="group__modifying_1ga4924f29db1ab184e799c15259b6c6949.html"><span class="doc">for_each_n</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__management_1ga987c4cb56d112d9fbedee453df25bc31.html"><span class="doc">free</span></a></p></li>
+<li><p><a class="reference internal" href="group__gathering_1ga9e0862c6d03cd02b9b47083043cdb129.html"><span class="doc">gather</span></a></p></li>
+<li><p><a class="reference internal" href="group__gathering_1gabe7fcb9789daffbdb2be995be1494240.html"><span class="doc">gather_if</span></a></p></li>
+<li><p><a class="reference internal" href="group__transformations_1gad0b2006831332def62d8a062eb40e706.html"><span class="doc">generate</span></a></p></li>
+<li><p><a class="reference internal" href="group__transformations_1ga74e57f5e00eddb0b52f712130a7e6de4.html"><span class="doc">generate_n</span></a></p></li>
+<li><p><a class="reference internal" href="namespacethrust_1a7ac735b6da1bb44634d01d97cbf671de.html"><span class="doc">get_per_device_resource</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__management_1gafa54f974b47c05fc24814aa1eb28d584.html"><span class="doc">get_temporary_buffer</span></a></p></li>
+<li><p><a class="reference internal" href="group__prefixsums_1ga32e405cc5a138a6ef20dc2000b3f42df.html"><span class="doc">inclusive_scan</span></a></p></li>
+<li><p><a class="reference internal" href="group__segmentedprefixsums_1ga1df14170f9a7cc484f712eb006ffeda6.html"><span class="doc">inclusive_scan_by_key</span></a></p></li>
+<li><p><a class="reference internal" href="group__transformed__reductions_1ga4c406cbac000071a167617ad41a3c12a.html"><span class="doc">inner_product</span></a></p></li>
+<li><p><a class="reference internal" href="group__predicates_1ga91da05b683fadd078eb90bf126de0e52.html"><span class="doc">is_partitioned</span></a></p></li>
+<li><p><a class="reference internal" href="group__predicates_1ga06a2b6225f76986d2861b435c2e1f7f9.html"><span class="doc">is_sorted</span></a></p></li>
+<li><p><a class="reference internal" href="group__predicates_1gac74f3dcb01dc6d861373297e8154ea5a.html"><span class="doc">is_sorted_until</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga8224f8e3822afe73300642b65b339331.html"><span class="doc">log</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga43083869bf43ea7965c742797b2dde74.html"><span class="doc">log10</span></a></p></li>
+<li><p><a class="reference internal" href="group__binary__search_1gad2ac5a1c5091366144d6fdbf2ff5551e.html"><span class="doc">lower_bound</span></a></p></li>
+<li><p><a class="reference internal" href="group__fancyiterator_1ga2265d864e1e8bd7f297559eb7f08b8e8.html"><span class="doc">make_constant_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="group__fancyiterator_1ga4f2edada3feda60b0abe3650dcea65ac.html"><span class="doc">make_counting_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="group__fancyiterator_1ga999b5157d2e341f2c92be25a5bb85469.html"><span class="doc">make_discard_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="group__fancyiterator_1ga549a86af93e685d3a6b539cc1b24f50e.html"><span class="doc">make_permutation_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="group__fancyiterator_1gab1e9bf724c638af51d3a02f3ff1d4e80.html"><span class="doc">make_shuffle_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="group__fancyiterator_1ga5af828629716c6ea8f93e489470c4b02.html"><span class="doc">make_strided_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="group__fancyiterator_1ga56e698ac979cc389b19e089e345a2297.html"><span class="doc">make_tabulate_output_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="namespacethrust_1aadb50b0c546159c3f06ecdf8349fb901.html"><span class="doc">make_tagged_deleter</span></a></p></li>
+<li><p><a class="reference internal" href="group__fancyiterator_1ga1f3d8a73d04fa5823eadb68308d3d810.html"><span class="doc">make_transform_input_output_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="group__fancyiterator_1gaad803009f6b4759363ec08a96de01cd8.html"><span class="doc">make_transform_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="group__fancyiterator_1ga6bc8a980eab36d724ee7912c6d4e6d14.html"><span class="doc">make_transform_output_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="group__function__object__adaptors_1gab539e564de3a7ab63ac1378470c77976.html"><span class="doc">make_zip_function</span></a></p></li>
+<li><p><a class="reference internal" href="group__fancyiterator_1gaa2438805284fb0ac36829328819d52f3.html"><span class="doc">make_zip_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__management_1ga50cdf0d543be6da1dd4d3f9ba3e38105.html"><span class="doc">malloc</span></a></p></li>
+<li><p><a class="reference internal" href="group__extrema_1ga879a150e971c0d4f36a0a3cc2d853f47.html"><span class="doc">max_element</span></a></p></li>
+<li><p><a class="reference internal" href="group__merging_1ga63349377f04e6b5988ba362cc82141be.html"><span class="doc">merge</span></a></p></li>
+<li><p><a class="reference internal" href="group__merging_1gac87a13a242f94abbee8dc53131682eed.html"><span class="doc">merge_by_key</span></a></p></li>
+<li><p><a class="reference internal" href="group__extrema_1gab17dd6fa29f87f9971b3be412d052e4b.html"><span class="doc">min_element</span></a></p></li>
+<li><p><a class="reference internal" href="group__extrema_1ga192ee620939451e27c3b00f7d3f90f68.html"><span class="doc">minmax_element</span></a></p></li>
+<li><p><a class="reference internal" href="group__searching_1ga8e5d32d617390a1995e2044019532a79.html"><span class="doc">mismatch</span></a></p></li>
+<li><p><a class="reference internal" href="namespacethrust_1ae268bfffafaa04f5a8a4cf902861367c.html"><span class="doc">next</span></a></p></li>
+<li><p><a class="reference internal" href="group__logical_1ga796d4d448b8b06a36734b3f6ff433417.html"><span class="doc">none_of</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga5c23c580733a912c4a782c4ec023c6b1.html"><span class="doc">norm</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1gaaa0d52f6873d7cc2cb39bfa64040c69b.html"><span class="doc">operator!=</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga8a71b59095aad09fb37a4d63df982320.html"><span class="doc">operator*</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1gaf8d90cd8139cb521bbcdc3b4adcf2e03.html"><span class="doc">operator+</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga9a987acfaaa1f71722c2cc80426db066.html"><span class="doc">operator-</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga6cdba0f86d026da897aed8d758298544.html"><span class="doc">operator/</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga040f9fbb88115eebdb8dd423c5e7e134.html"><span class="doc">thrust::operator&lt;&lt;</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga999d22f32e88807f5b629905eab61646.html"><span class="doc">operator==</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga93a39be3e9ec0ce730540be08267928e.html"><span class="doc">operator&gt;&gt;</span></a></p></li>
+<li><p><a class="reference internal" href="group__partitioning_1gad057b6f3f3f7f8098f8e5301843118e2.html"><span class="doc">partition</span></a></p></li>
+<li><p><a class="reference internal" href="group__partitioning_1ga6aad34780950921c7c1e2ec56ff4f4e3.html"><span class="doc">partition_copy</span></a></p></li>
+<li><p><a class="reference internal" href="group__searching_1ga902ccc1fe9aeb8585ac8ddcf10fb4337.html"><span class="doc">partition_point</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga992a76b40905fb6cddb8e4ff9bdd0306.html"><span class="doc">polar</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga564cffab4edc9458fbf036dbda49964e.html"><span class="doc">pow</span></a></p></li>
+<li><p><a class="reference internal" href="namespacethrust_1a253ceec56c467b5ce73b1593ff8b1375.html"><span class="doc">prev</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga8afd023e30b61d23806633f29010bc69.html"><span class="doc">proj</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__management_1ga4215d3848717050f7c47f36e43b7c19a.html"><span class="doc">raw_pointer_cast</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__management_1gae72a6da67baf8579e17836fe2c31a641.html"><span class="doc">raw_reference_cast</span></a></p></li>
+<li><p><a class="reference internal" href="group__reductions_1ga6ffe364cb9c04b5ca4dfa92ead9bfc3a.html"><span class="doc">reduce</span></a></p></li>
+<li><p><a class="reference internal" href="group__reductions_1gab66d365f9a531bb5b99615ac3e836f8f.html"><span class="doc">reduce_by_key</span></a></p></li>
+<li><p><a class="reference internal" href="group__reductions_1gac4f1a13fe10dd1a2f4abf6ba347e09c8.html"><span class="doc">reduce_into</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__tag__utilities_1gad9db2309839c1adf493522c6e879d0f5.html"><span class="doc">reinterpret_tag</span></a></p></li>
+<li><p><a class="reference internal" href="group__stream__compaction_1ga3e0a48a2b03425d9b6ee92ca026e6cc4.html"><span class="doc">remove</span></a></p></li>
+<li><p><a class="reference internal" href="group__stream__compaction_1ga1cff040dfdb202bfc3b3bb20df9ee2a9.html"><span class="doc">remove_copy</span></a></p></li>
+<li><p><a class="reference internal" href="group__stream__compaction_1gaeec02acfde68e411ca7d09063241f4d7.html"><span class="doc">remove_copy_if</span></a></p></li>
+<li><p><a class="reference internal" href="group__stream__compaction_1gaf01d45b30fecba794afae065d625f94f.html"><span class="doc">remove_if</span></a></p></li>
+<li><p><a class="reference internal" href="group__replacing_1gad78d8136fcfe032748826bd1316ab7de.html"><span class="doc">replace</span></a></p></li>
+<li><p><a class="reference internal" href="group__replacing_1ga99f1bdd9209c27e78b0e749ee7cc792f.html"><span class="doc">replace_copy</span></a></p></li>
+<li><p><a class="reference internal" href="group__replacing_1ga6c95b066219e71c8b8e4dbee6a249d8c.html"><span class="doc">replace_copy_if</span></a></p></li>
+<li><p><a class="reference internal" href="group__replacing_1gaf8b9f969de96df1e286a1fa01facf696.html"><span class="doc">replace_if</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__tag__utilities_1ga931a99cbb9d6073f2d1bca493dda5163.html"><span class="doc">retag</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__management_1ga72bb86f95d3b115663a0d9fb668165fa.html"><span class="doc">return_temporary_buffer</span></a></p></li>
+<li><p><a class="reference internal" href="group__reordering_1gac20b29a89a6fac38529d801b6bfc2b2f.html"><span class="doc">reverse</span></a></p></li>
+<li><p><a class="reference internal" href="group__reordering_1ga96a1db1860b1b0e7be7cf53856a9b456.html"><span class="doc">reverse_copy</span></a></p></li>
+<li><p><a class="reference internal" href="group__scattering_1ga87b66ab9bb6b1536550110c9dbbb1cf0.html"><span class="doc">scatter</span></a></p></li>
+<li><p><a class="reference internal" href="group__scattering_1ga24819cfa9ebbda0726a5b11ddfb10a1c.html"><span class="doc">scatter_if</span></a></p></li>
+<li><p><a class="reference internal" href="group__transformations_1gae449d575ab0dde81a717ad3847388b36.html"><span class="doc">sequence</span></a></p></li>
+<li><p><a class="reference internal" href="group__set__operations_1ga3d7c39723b065e54feccdae6fbe599a5.html"><span class="doc">set_difference</span></a></p></li>
+<li><p><a class="reference internal" href="group__set__operations_1ga4ab94f796b3df5bbf82594f27429ab0d.html"><span class="doc">set_difference_by_key</span></a></p></li>
+<li><p><a class="reference internal" href="group__set__operations_1ga69e037cb6ccedcc087e657641f8e5c63.html"><span class="doc">set_intersection</span></a></p></li>
+<li><p><a class="reference internal" href="group__set__operations_1gac4dd7e9d6d9a971a8d048212855c4fd9.html"><span class="doc">set_intersection_by_key</span></a></p></li>
+<li><p><a class="reference internal" href="group__set__operations_1ga575dc422a51753d641059e9897c51f11.html"><span class="doc">set_symmetric_difference</span></a></p></li>
+<li><p><a class="reference internal" href="group__set__operations_1ga1b867e6acb65f9667f979ad4871bfe14.html"><span class="doc">set_symmetric_difference_by_key</span></a></p></li>
+<li><p><a class="reference internal" href="group__set__operations_1gac8e1b0b7feffbbccfab972a3dab81391.html"><span class="doc">set_union</span></a></p></li>
+<li><p><a class="reference internal" href="group__set__operations_1ga6b495740c5481a347f79eefaa45d242e.html"><span class="doc">set_union_by_key</span></a></p></li>
+<li><p><a class="reference internal" href="group__shuffling_1ga5691add2f5ae54d226463c621eeb5455.html"><span class="doc">shuffle</span></a></p></li>
+<li><p><a class="reference internal" href="group__shuffling_1gaa981e499e02cbc84db91fe7b2ce2a7a1.html"><span class="doc">shuffle_copy</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1gaf838b7d375bd0bcf2e86938cdbe49aff.html"><span class="doc">sin</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga10d992afe589adffa671b976a5225b3e.html"><span class="doc">sinh</span></a></p></li>
+<li><p><a class="reference internal" href="group__sorting_1ga857dfc9b50a03888c5703699f0fbfcd4.html"><span class="doc">sort</span></a></p></li>
+<li><p><a class="reference internal" href="group__sorting_1ga667333ee2e067bb7da3fb1b8ab6d348c.html"><span class="doc">sort_by_key</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga0d00cfa41156151dc1dcd5e254c646be.html"><span class="doc">sqrt</span></a></p></li>
+<li><p><a class="reference internal" href="group__partitioning_1ga9184a73d9481374d7868f6bf9d61add7.html"><span class="doc">stable_partition</span></a></p></li>
+<li><p><a class="reference internal" href="group__partitioning_1ga90418c8b0b1fa4ad87fe0f3030858139.html"><span class="doc">stable_partition_copy</span></a></p></li>
+<li><p><a class="reference internal" href="group__sorting_1ga6993fa038e2cdb407bd1a754c6047cd3.html"><span class="doc">stable_sort</span></a></p></li>
+<li><p><a class="reference internal" href="group__sorting_1ga289fae2c9edaceba94c025beeb615ca2.html"><span class="doc">stable_sort_by_key</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__management_1ga85e62452603ffae3dc05c681841aefba.html"><span class="doc">swap</span></a></p></li>
+<li><p><a class="reference internal" href="group__copying_1ga2a5f58c36e53be600582478365ec7108.html"><span class="doc">swap_ranges</span></a></p></li>
+<li><p><a class="reference internal" href="group__transformations_1gab61bfd92df1e3694f175fef4fb61a3e7.html"><span class="doc">tabulate</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1ga8ff5d15853a4f98d229636510adcca97.html"><span class="doc">tan</span></a></p></li>
+<li><p><a class="reference internal" href="group__complex__numbers_1gab608ce4c32a54c6e849ece60df42a036.html"><span class="doc">tanh</span></a></p></li>
+<li><p><a class="reference internal" href="group__transformations_1gabbda6380c902223d777cc72d3b1b9d1a.html"><span class="doc">transform</span></a></p></li>
+<li><p><a class="reference internal" href="group__transformed__prefixsums_1gabad127fde32db45f99638f175e4b8963.html"><span class="doc">transform_exclusive_scan</span></a></p></li>
+<li><p><a class="reference internal" href="group__transformations_1gaae05e9011a57f320e2899e668104dcd9.html"><span class="doc">transform_if</span></a></p></li>
+<li><p><a class="reference internal" href="group__transformations_1gade1f7ff3c72d7da046f1b251e2091da7.html"><span class="doc">transform_if_n</span></a></p></li>
+<li><p><a class="reference internal" href="group__transformed__prefixsums_1gaf0ac7878b64b38161ba490f6aa8228d0.html"><span class="doc">transform_inclusive_scan</span></a></p></li>
+<li><p><a class="reference internal" href="group__transformations_1ga172372017111c92f4736d3c8ff38f087.html"><span class="doc">transform_n</span></a></p></li>
+<li><p><a class="reference internal" href="group__transformed__reductions_1ga096f193143e236850baaf3369b861137.html"><span class="doc">transform_reduce</span></a></p></li>
+<li><p><a class="reference internal" href="namespacethrust_1a2afd9592c3194b676fda5d87897cd6c6.html"><span class="doc">try_unwrap_contiguous_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="namespacethrust_1ae7fd98cda27174a35283582ebdd724c1.html"><span class="doc">uninitialized_allocate_unique</span></a></p></li>
+<li><p><a class="reference internal" href="namespacethrust_1a3a4c778f56a57b41e72b4a6037ed08da.html"><span class="doc">uninitialized_allocate_unique_n</span></a></p></li>
+<li><p><a class="reference internal" href="group__copying_1gad26f989a9260881c5df7707b57694fe9.html"><span class="doc">uninitialized_copy</span></a></p></li>
+<li><p><a class="reference internal" href="group__copying_1gacf44f607e6db43cd1acd0fc17ac5e988.html"><span class="doc">uninitialized_copy_n</span></a></p></li>
+<li><p><a class="reference internal" href="group__filling_1ga309ec097df7d9064fbbd2f1f45ab3ab3.html"><span class="doc">uninitialized_fill</span></a></p></li>
+<li><p><a class="reference internal" href="group__filling_1ga42b5e2428b1e78af1f3c7cd5e8d7e2e8.html"><span class="doc">uninitialized_fill_n</span></a></p></li>
+<li><p><a class="reference internal" href="group__stream__compaction_1ga0981eb0b6034017ef622075d6612f68a.html"><span class="doc">unique</span></a></p></li>
+<li><p><a class="reference internal" href="group__stream__compaction_1gadde4c1003f6b621e8940f69569eb3331.html"><span class="doc">unique_by_key</span></a></p></li>
+<li><p><a class="reference internal" href="group__stream__compaction_1ga0879ea139b0736d31b702cbcd658f054.html"><span class="doc">unique_by_key_copy</span></a></p></li>
+<li><p><a class="reference internal" href="group__stream__compaction_1gad7d0b61d3bf4ed9995f69a722693973b.html"><span class="doc">unique_copy</span></a></p></li>
+<li><p><a class="reference internal" href="group__stream__compaction_1ga9d5a88c8b9db5ff05bf54d896d294770.html"><span class="doc">unique_count</span></a></p></li>
+<li><p><a class="reference internal" href="namespacethrust_1a86a326c73a9dd841ce086d873e0d0a99.html"><span class="doc">unwrap_contiguous_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="group__binary__search_1gac85cc9ea00f4bdd8f80ad25fff16741d.html"><span class="doc">upper_bound</span></a></p></li>
+</ul>
+</section>
+<section id="type-definitions">
+<h3>Type Definitions<a class="headerlink" href="#type-definitions" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="group__iterator__tags_1ga20e12ff89385c6c4658f39316e91e7ab.html"><span class="doc">bidirectional_host_iterator_tag</span></a></p></li>
+<li><p><a class="reference internal" href="group__bitwise__operations_1ga2a31cf3d89bcbf180956d6fc22c7925c.html"><span class="doc">bit_and</span></a></p></li>
+<li><p><a class="reference internal" href="group__bitwise__operations_1ga088b71d62502e09028451e7c4c902d1d.html"><span class="doc">bit_or</span></a></p></li>
+<li><p><a class="reference internal" href="group__bitwise__operations_1gaa17bfcdebcb4ea7d6830a51becd2d7bc.html"><span class="doc">bit_xor</span></a></p></li>
+<li><p><a class="reference internal" href="namespacethrust_1a80adc98b03906ca2beb5e8f1cc154f7e.html"><span class="doc">device_memory_resource</span></a></p></li>
+<li><p><a class="reference internal" href="group__arithmetic__operations_1ga7e522d9f613022102a25ea07cc502009.html"><span class="doc">divides</span></a></p></li>
+<li><p><a class="reference internal" href="group__comparison__operations_1ga6016444d0d718bde9affbb83f86817cf.html"><span class="doc">equal_to</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__tags_1gaf265cb57247c2f8b81477cdac757f252.html"><span class="doc">forward_host_iterator_tag</span></a></p></li>
+<li><p><a class="reference internal" href="group__comparison__operations_1gaa754375d213e68012957ea5fe58dc58b.html"><span class="doc">greater</span></a></p></li>
+<li><p><a class="reference internal" href="group__comparison__operations_1ga24ffdd7aba538c5561a8fa5225436a26.html"><span class="doc">greater_equal</span></a></p></li>
+<li><p><a class="reference internal" href="namespacethrust_1ad2124d9469c0cf7b2a30e91d2cdec51b.html"><span class="doc">host_memory_resource</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1ga6bb99ef51b7a2fc17feb93059c442f24.html"><span class="doc">index_sequence</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__tags_1gaaee0807fd12662c9c768a596c56224dd.html"><span class="doc">input_host_iterator_tag</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1ga9afb7f8af7061673f9eaff9a5a4d657f.html"><span class="doc">integer_sequence</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1ga9a0f2c1da32b7b14180366265894c192.html"><span class="doc">integer_sequence_push_back</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1ga30dd0858022330597b14a4c034e1936d.html"><span class="doc">integer_sequence_push_front</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1gafcd0e9ee2ab2f7123caf84f6c85a691b.html"><span class="doc">is_contiguous_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1ga8cff578125e8f610db7f03cdba1e271d.html"><span class="doc">is_execution_policy</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__traits_1gadffd965cb3b426d99eab1f6506c30ed6.html"><span class="doc">iterator_difference_t</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__traits_1ga9410f26f50e2038f458b0274dd0a39cf.html"><span class="doc">iterator_pointer_t</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__traits_1ga6bbc4f5672e0638f4fb040db3a3ea90b.html"><span class="doc">iterator_reference_t</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__traits_1ga582d0a9dd09f407b743a8dcea3e5a7cb.html"><span class="doc">iterator_system_t</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__traits_1gab3b88c040c1ef5d985cf3b360b6efdfe.html"><span class="doc">iterator_traits</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__traits_1ga07227760c8422364daec7a72d21803cd.html"><span class="doc">iterator_traversal_t</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__traits_1gae8bd11a16155201e9778f4c75680a299.html"><span class="doc">iterator_value_t</span></a></p></li>
+<li><p><a class="reference internal" href="group__comparison__operations_1ga3df4350c6d907789cc6e9efdeb8fa8e8.html"><span class="doc">less</span></a></p></li>
+<li><p><a class="reference internal" href="group__comparison__operations_1ga1f83a200dfc94baf2238e9cc44b7d59d.html"><span class="doc">less_equal</span></a></p></li>
+<li><p><a class="reference internal" href="group__logical__operations_1ga0cfd98f5bffe57c208869ea3651c9140.html"><span class="doc">logical_and</span></a></p></li>
+<li><p><a class="reference internal" href="group__logical__operations_1ga731bd3f2f6fce802d1db185326805642.html"><span class="doc">logical_not</span></a></p></li>
+<li><p><a class="reference internal" href="group__logical__operations_1gadddf6d85fb777f7b0c41447218ea8f71.html"><span class="doc">logical_or</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1ga9141c8ba4dcabb3db2e23dda6de37f9e.html"><span class="doc">make_index_sequence</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1gab6e7873f8bd7a441653cb01201db1976.html"><span class="doc">make_integer_sequence</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1ga95fbb1696d9e8d1c61891da69cc02c03.html"><span class="doc">make_reversed_index_sequence</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1ga902b3a0313d9d2dffe1b71785fbc17f7.html"><span class="doc">make_reversed_integer_sequence</span></a></p></li>
+<li><p><a class="reference internal" href="group__generalized__identity__operations_1gad9173650fb6208469b97a740e8c48278.html"><span class="doc">maximum</span></a></p></li>
+<li><p><a class="reference internal" href="group__generalized__identity__operations_1gaae503790bd79e5ca6fa04ebb4258bdb1.html"><span class="doc">minimum</span></a></p></li>
+<li><p><a class="reference internal" href="group__arithmetic__operations_1gaf224863e4ee90d830cba24acaef5de6a.html"><span class="doc">minus</span></a></p></li>
+<li><p><a class="reference internal" href="group__arithmetic__operations_1ga2b5b457ade0dc7fb863c4dfca518bc8b.html"><span class="doc">modulus</span></a></p></li>
+<li><p><a class="reference internal" href="group__arithmetic__operations_1ga73955b2463ad31b8b9b937edde0c0693.html"><span class="doc">multiplies</span></a></p></li>
+<li><p><a class="reference internal" href="group__arithmetic__operations_1ga0d4fe7df924272f46ec6391d579636a4.html"><span class="doc">negate</span></a></p></li>
+<li><p><a class="reference internal" href="group__comparison__operations_1ga1ebb8fb466381ae25d12dd30a8947576.html"><span class="doc">not_equal_to</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__tags_1gaaa2d3281a2028d43aa8a6ab49ec70f6d.html"><span class="doc">output_host_iterator_tag</span></a></p></li>
+<li><p><a class="reference internal" href="group__pair_1ga7d34cdc2ff9b747ab930c6275cd44283.html"><span class="doc">pair</span></a></p></li>
+<li><p><a class="reference internal" href="group__arithmetic__operations_1gaae7361f0dc565944c5c99ca7bdd8f37e.html"><span class="doc">plus</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__tags_1ga52f67176b2139d334ad3fc1b93558fd6.html"><span class="doc">random_access_host_iterator_tag</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__tags_1ga20e12ff89385c6c4658f39316e91e7ab.html"><span class="doc">thrust::bidirectional_host_iterator_tag</span></a></p></li>
+<li><p><a class="reference internal" href="group__bitwise__operations_1ga2a31cf3d89bcbf180956d6fc22c7925c.html"><span class="doc">thrust::bit_and</span></a></p></li>
+<li><p><a class="reference internal" href="group__bitwise__operations_1ga088b71d62502e09028451e7c4c902d1d.html"><span class="doc">thrust::bit_or</span></a></p></li>
+<li><p><a class="reference internal" href="group__bitwise__operations_1gaa17bfcdebcb4ea7d6830a51becd2d7bc.html"><span class="doc">thrust::bit_xor</span></a></p></li>
+<li><p><a class="reference internal" href="group__arithmetic__operations_1ga7e522d9f613022102a25ea07cc502009.html"><span class="doc">thrust::divides</span></a></p></li>
+<li><p><a class="reference internal" href="group__comparison__operations_1ga6016444d0d718bde9affbb83f86817cf.html"><span class="doc">thrust::equal_to</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__tags_1gaf265cb57247c2f8b81477cdac757f252.html"><span class="doc">thrust::forward_host_iterator_tag</span></a></p></li>
+<li><p><a class="reference internal" href="group__comparison__operations_1gaa754375d213e68012957ea5fe58dc58b.html"><span class="doc">thrust::greater</span></a></p></li>
+<li><p><a class="reference internal" href="group__comparison__operations_1ga24ffdd7aba538c5561a8fa5225436a26.html"><span class="doc">thrust::greater_equal</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1ga6bb99ef51b7a2fc17feb93059c442f24.html"><span class="doc">thrust::index_sequence</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__tags_1gaaee0807fd12662c9c768a596c56224dd.html"><span class="doc">thrust::input_host_iterator_tag</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1ga9afb7f8af7061673f9eaff9a5a4d657f.html"><span class="doc">thrust::integer_sequence</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1ga9a0f2c1da32b7b14180366265894c192.html"><span class="doc">thrust::integer_sequence_push_back</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1ga30dd0858022330597b14a4c034e1936d.html"><span class="doc">thrust::integer_sequence_push_front</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1gafcd0e9ee2ab2f7123caf84f6c85a691b.html"><span class="doc">thrust::is_contiguous_iterator</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1ga8cff578125e8f610db7f03cdba1e271d.html"><span class="doc">thrust::is_execution_policy</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__traits_1gadffd965cb3b426d99eab1f6506c30ed6.html"><span class="doc">thrust::iterator_difference_t</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__traits_1ga9410f26f50e2038f458b0274dd0a39cf.html"><span class="doc">thrust::iterator_pointer_t</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__traits_1ga6bbc4f5672e0638f4fb040db3a3ea90b.html"><span class="doc">thrust::iterator_reference_t</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__traits_1ga582d0a9dd09f407b743a8dcea3e5a7cb.html"><span class="doc">thrust::iterator_system_t</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__traits_1gab3b88c040c1ef5d985cf3b360b6efdfe.html"><span class="doc">thrust::iterator_traits</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__traits_1ga07227760c8422364daec7a72d21803cd.html"><span class="doc">thrust::iterator_traversal_t</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__traits_1gae8bd11a16155201e9778f4c75680a299.html"><span class="doc">thrust::iterator_value_t</span></a></p></li>
+<li><p><a class="reference internal" href="group__comparison__operations_1ga3df4350c6d907789cc6e9efdeb8fa8e8.html"><span class="doc">thrust::less</span></a></p></li>
+<li><p><a class="reference internal" href="group__comparison__operations_1ga1f83a200dfc94baf2238e9cc44b7d59d.html"><span class="doc">thrust::less_equal</span></a></p></li>
+<li><p><a class="reference internal" href="group__logical__operations_1ga0cfd98f5bffe57c208869ea3651c9140.html"><span class="doc">thrust::logical_and</span></a></p></li>
+<li><p><a class="reference internal" href="group__logical__operations_1ga731bd3f2f6fce802d1db185326805642.html"><span class="doc">thrust::logical_not</span></a></p></li>
+<li><p><a class="reference internal" href="group__logical__operations_1gadddf6d85fb777f7b0c41447218ea8f71.html"><span class="doc">thrust::logical_or</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1ga9141c8ba4dcabb3db2e23dda6de37f9e.html"><span class="doc">thrust::make_index_sequence</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1gab6e7873f8bd7a441653cb01201db1976.html"><span class="doc">thrust::make_integer_sequence</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1ga95fbb1696d9e8d1c61891da69cc02c03.html"><span class="doc">thrust::make_reversed_index_sequence</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1ga902b3a0313d9d2dffe1b71785fbc17f7.html"><span class="doc">thrust::make_reversed_integer_sequence</span></a></p></li>
+<li><p><a class="reference internal" href="group__generalized__identity__operations_1gad9173650fb6208469b97a740e8c48278.html"><span class="doc">thrust::maximum</span></a></p></li>
+<li><p><a class="reference internal" href="group__generalized__identity__operations_1gaae503790bd79e5ca6fa04ebb4258bdb1.html"><span class="doc">thrust::minimum</span></a></p></li>
+<li><p><a class="reference internal" href="group__arithmetic__operations_1gaf224863e4ee90d830cba24acaef5de6a.html"><span class="doc">thrust::minus</span></a></p></li>
+<li><p><a class="reference internal" href="group__arithmetic__operations_1ga2b5b457ade0dc7fb863c4dfca518bc8b.html"><span class="doc">thrust::modulus</span></a></p></li>
+<li><p><a class="reference internal" href="group__allocators_1gaa3254521722da4dc78bc3ad9d8619ec0.html"><span class="doc">thrust::mr::polymorphic_allocator</span></a></p></li>
+<li><p><a class="reference internal" href="group__arithmetic__operations_1ga73955b2463ad31b8b9b937edde0c0693.html"><span class="doc">thrust::multiplies</span></a></p></li>
+<li><p><a class="reference internal" href="group__arithmetic__operations_1ga0d4fe7df924272f46ec6391d579636a4.html"><span class="doc">thrust::negate</span></a></p></li>
+<li><p><a class="reference internal" href="group__comparison__operations_1ga1ebb8fb466381ae25d12dd30a8947576.html"><span class="doc">thrust::not_equal_to</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__tags_1gaaa2d3281a2028d43aa8a6ab49ec70f6d.html"><span class="doc">thrust::output_host_iterator_tag</span></a></p></li>
+<li><p><a class="reference internal" href="group__pair_1ga7d34cdc2ff9b747ab930c6275cd44283.html"><span class="doc">thrust::pair</span></a></p></li>
+<li><p><a class="reference internal" href="group__arithmetic__operations_1gaae7361f0dc565944c5c99ca7bdd8f37e.html"><span class="doc">thrust::plus</span></a></p></li>
+<li><p><a class="reference internal" href="group__predefined__random_1ga8450c92f9d27a16992ca377f7d8dc75c.html"><span class="doc">thrust::random::default_random_engine</span></a></p></li>
+<li><p><a class="reference internal" href="group__predefined__random_1ga1c89beeeb2681026be374c4e0d6609f3.html"><span class="doc">thrust::random::minstd_rand</span></a></p></li>
+<li><p><a class="reference internal" href="group__predefined__random_1gaf8dffb2a8bfaaa20d5c916d74c07dc98.html"><span class="doc">thrust::random::minstd_rand0</span></a></p></li>
+<li><p><a class="reference internal" href="group__predefined__random_1gaacaf3beafd00b7087532c98d9062778a.html"><span class="doc">thrust::random::ranlux24</span></a></p></li>
+<li><p><a class="reference internal" href="group__predefined__random_1ga44ec779aead9b140b3fb332ea4c349bc.html"><span class="doc">thrust::random::ranlux24_base</span></a></p></li>
+<li><p><a class="reference internal" href="group__predefined__random_1ga67a4f4c57c6d60aea077a947285cb7c5.html"><span class="doc">thrust::random::ranlux48</span></a></p></li>
+<li><p><a class="reference internal" href="group__predefined__random_1gaeb4bf97731c920bdf7cc80d2c2321f2f.html"><span class="doc">thrust::random::ranlux48_base</span></a></p></li>
+<li><p><a class="reference internal" href="group__predefined__random_1gac781a23cdf5b0cdb48ec3fbe7cb4318c.html"><span class="doc">thrust::random::taus88</span></a></p></li>
+<li><p><a class="reference internal" href="group__iterator__tags_1ga52f67176b2139d334ad3fc1b93558fd6.html"><span class="doc">thrust::random_access_host_iterator_tag</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__resources_1gabc4f586a3d08bccc940bf4d6c770f53a.html"><span class="doc">thrust::system::cpp::memory_resource</span></a></p></li>
+<li><p><a class="reference internal" href="group__system__backends_1ga2a3ec5b39ce2f378b7cb1a94c13335b4.html"><span class="doc">thrust::system::cpp::pointer</span></a></p></li>
+<li><p><a class="reference internal" href="group__system__backends_1ga98af9db6b72cb24c25132a9f5645a4a8.html"><span class="doc">thrust::system::cpp::reference</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__resources_1ga6e03cda5200e8da7b6b3829ff193bd44.html"><span class="doc">thrust::system::cpp::universal_host_pinned_memory_resource</span></a></p></li>
+<li><p><a class="reference internal" href="group__system__backends_1ga95eda5ff5a87b7a92248a1545cac888a.html"><span class="doc">thrust::system::cpp::universal_host_pinned_pointer</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__resources_1ga7d370a14420fa39a5da1fb9cfa4cadfc.html"><span class="doc">thrust::system::cpp::universal_memory_resource</span></a></p></li>
+<li><p><a class="reference internal" href="group__system__backends_1ga201d3b3fa98ce6de956fa217882e7ea2.html"><span class="doc">thrust::system::cpp::universal_pointer</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__resources_1ga8255ecc6de7a8d0f762eaf54263ce398.html"><span class="doc">thrust::system::omp::memory_resource</span></a></p></li>
+<li><p><a class="reference internal" href="group__system__backends_1gaf56e4e06b93f911b4a3101762458d621.html"><span class="doc">thrust::system::omp::pointer</span></a></p></li>
+<li><p><a class="reference internal" href="group__system__backends_1ga4e8ee99cde0e3768685b03ae854866d6.html"><span class="doc">thrust::system::omp::reference</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__resources_1gaf98bae49e8c901ae6245ab41ffe4c7ec.html"><span class="doc">thrust::system::omp::universal_host_pinned_memory_resource</span></a></p></li>
+<li><p><a class="reference internal" href="group__system__backends_1gaee3bfee1ef83bfa47b1a1d66d719aee2.html"><span class="doc">thrust::system::omp::universal_host_pinned_pointer</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__resources_1gaa45bbebfd9e908c78018eb50cf6e50b9.html"><span class="doc">thrust::system::omp::universal_memory_resource</span></a></p></li>
+<li><p><a class="reference internal" href="group__system__backends_1ga30a9a8c84d5ca182999cde729150bcfa.html"><span class="doc">thrust::system::omp::universal_pointer</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__resources_1gaa9863b0abdbe835745fb5c5af8d4ddea.html"><span class="doc">thrust::system::tbb::memory_resource</span></a></p></li>
+<li><p><a class="reference internal" href="group__system__backends_1ga9b92fdb9b3ae543ca62565b34e14ddc7.html"><span class="doc">thrust::system::tbb::pointer</span></a></p></li>
+<li><p><a class="reference internal" href="group__system__backends_1ga1168b5478b7b7f50fb104bb27164522f.html"><span class="doc">thrust::system::tbb::reference</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__resources_1ga8ec5e21188caea1b3f98b56e02dd8e48.html"><span class="doc">thrust::system::tbb::universal_host_pinned_memory_resource</span></a></p></li>
+<li><p><a class="reference internal" href="group__system__backends_1ga31e803d636c86e85f1f89d4c11af1820.html"><span class="doc">thrust::system::tbb::universal_host_pinned_pointer</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__resources_1ga5fb522bf38f86f10e79f91a6d2a00509.html"><span class="doc">thrust::system::tbb::universal_memory_resource</span></a></p></li>
+<li><p><a class="reference internal" href="group__system__backends_1gab2fbe246530ce9dbaba115bc958530fb.html"><span class="doc">thrust::system::tbb::universal_pointer</span></a></p></li>
+<li><p><a class="reference internal" href="group__tuple_1gae1315f6a454ccb24d54615171a0c74d3.html"><span class="doc">thrust::tuple</span></a></p></li>
+<li><p><a class="reference internal" href="group__pair_1ga2ac67d4f4e51ab988a0221e517d58c11.html"><span class="doc">thrust::tuple_element</span></a></p></li>
+<li><p><a class="reference internal" href="group__pair_1ga64342a494e27118f7215e6264e6e5e44.html"><span class="doc">thrust::tuple_size</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__resources_1gaeec2095e3173cef7e1de1b986d77824d.html"><span class="doc">thrust::universal_host_pinned_ptr</span></a></p></li>
+<li><p><a class="reference internal" href="group__containers_1ga4a980d5c4f2e1843c6f2139216dac7fc.html"><span class="doc">thrust::universal_host_pinned_vector</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__resources_1gac349015c75728ebc709912a192d2ec55.html"><span class="doc">thrust::universal_ptr</span></a></p></li>
+<li><p><a class="reference internal" href="group__containers_1ga74d92bb13ce59a1fa025cfb8dc4fbaa0.html"><span class="doc">thrust::universal_vector</span></a></p></li>
+<li><p><a class="reference internal" href="namespacethrust_1a82d5eefba55dbfa0386572555c12a285.html"><span class="doc">try_unwrap_contiguous_iterator_t</span></a></p></li>
+<li><p><a class="reference internal" href="group__tuple_1gae1315f6a454ccb24d54615171a0c74d3.html"><span class="doc">tuple</span></a></p></li>
+<li><p><a class="reference internal" href="group__pair_1ga2ac67d4f4e51ab988a0221e517d58c11.html"><span class="doc">tuple_element</span></a></p></li>
+<li><p><a class="reference internal" href="group__pair_1ga64342a494e27118f7215e6264e6e5e44.html"><span class="doc">tuple_size</span></a></p></li>
+<li><p><a class="reference internal" href="namespacethrust_1a10d1145183f4acb796aebc6146b13220.html"><span class="doc">uninitialized_allocator_delete</span></a></p></li>
+<li><p><a class="reference internal" href="namespacethrust_1a8d7250260cdf48a33bf78f84e71db061.html"><span class="doc">uninitialized_array_allocator_delete</span></a></p></li>
+<li><p><a class="reference internal" href="namespacethrust_1aacbddd01567276ad10210432d4c3a8ef.html"><span class="doc">universal_host_pinned_memory_resource</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__resources_1gaeec2095e3173cef7e1de1b986d77824d.html"><span class="doc">universal_host_pinned_ptr</span></a></p></li>
+<li><p><a class="reference internal" href="group__containers_1ga4a980d5c4f2e1843c6f2139216dac7fc.html"><span class="doc">universal_host_pinned_vector</span></a></p></li>
+<li><p><a class="reference internal" href="namespacethrust_1aeb88051fea508b633883e45b9058d587.html"><span class="doc">universal_memory_resource</span></a></p></li>
+<li><p><a class="reference internal" href="group__memory__resources_1gac349015c75728ebc709912a192d2ec55.html"><span class="doc">universal_ptr</span></a></p></li>
+<li><p><a class="reference internal" href="group__containers_1ga74d92bb13ce59a1fa025cfb8dc4fbaa0.html"><span class="doc">universal_vector</span></a></p></li>
+<li><p><a class="reference internal" href="namespacethrust_1afd5a80615bfa82c176622b69b719d5d6.html"><span class="doc">unwrap_contiguous_iterator_t</span></a></p></li>
+</ul>
+</section>
+<section id="variables">
+<h3>Variables<a class="headerlink" href="#variables" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="group__execution__policies_1ga61bff7f6dead1da5c85eaafa9f9f5ded.html"><span class="doc">device</span></a></p></li>
+<li><p><a class="reference internal" href="group__execution__policies_1gaebabcc1c0958344babfccdcf379915e5.html"><span class="doc">host</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1ga1da323e7acfe527a28ea6bd940488584.html"><span class="doc">is_contiguous_iterator_v</span></a></p></li>
+<li><p><a class="reference internal" href="group__type__traits_1ga2bdbeb4d76c1629f2b2e2323ce10a556.html"><span class="doc">is_execution_policy_v</span></a></p></li>
+</ul>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="group__type__traits_1ga2bdbeb4d76c1629f2b2e2323ce10a556.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">thrust::is_execution_policy_v</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../../cudax/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">CUDA Experimental</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#namespace-thrust">Namespace <code class="docutils literal notranslate"><span class="pre">thrust</span></code></a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#structs">Structs</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#type-definitions">Type Definitions</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#variables">Variables</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2026, NVIDIA Corporation.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

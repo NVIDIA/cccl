@@ -1,0 +1,1034 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Versioning &#8212; CUDA Core Compute Libraries</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+
+
+    <script src="../../_static/documentation_options.js?v=bbe6ed3a"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=5ceeb459"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'libcudacxx/releases/versioning';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://NVIDIA.github.io/cccl/nv-versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'unstable';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+
+    <link rel="canonical" href="https://NVIDIA.github.io/cccl/libcudacxx/releases/versioning.html" />
+    <link rel="icon" href="../../_static/favicon.png"/>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Standard API" href="../standard_api.html" />
+    <link rel="prev" title="Changelog" href="changelog.html" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="unstable" />
+
+
+  </head>
+
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../../cpp.html">CUDA C++ Core Libraries</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="../index.html">libcu++</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../setup.html">Setup</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../setup/requirements.html">Requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../setup/getting.html">Getting libcu++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../setup/building_and_testing.html">Building &amp; Testing libcu++</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 current active has-children"><a class="reference internal" href="../releases.html">Releases</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l4 current active"><a class="current reference internal" href="#">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../standard_api.html">Standard API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/algorithms_library.html">Algorithms Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/c_library.html">C Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/concepts_library.html">Concepts Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/container_library.html">Container Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/execution_library.html">Execution Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/numerics_library.html">Numerics Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/ranges_library.html">Ranges Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/synchronization_library.html">Synchronization Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/time_library.html">Time Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/type_support.html">Type Support Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/utility_library.html">Utility Library</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../extended_api.html">Extended API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/bit.html">Bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/execution_model.html">Execution model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/exceptions.html">Exception Handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/memory_model.html">Memory model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/thread_groups.html">Thread Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/synchronization_primitives.html">Synchronization Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/asynchronous_operations.html">Asynchronous Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/memory_access_properties.html">Memory access properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/functional.html">Functional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/iterators.html">Fancy Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/type_traits.html">Type traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/vector_tuple_protocol.html">Vector Tuple Protocol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/numeric.html">Numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/random.html">Random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/memory.html">Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/memory_resource.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/math.html">Math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/mdspan.html">Mdspan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/warp.html">Warp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/utility.html">Utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/work_stealing.html">Work stealing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/stream.html">Streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/event.html">Events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/algorithm.html">Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/legacy_resources.html">Legacy resources</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../ptx/examples.html">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../ptx/instructions.html">PTX Instructions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../ptx/pragmas.html">PTX Pragmas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cub/index.html">CUB</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/test_overview.html">CUB Tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/benchmarking.html">CUB Benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/tuning.html">CUB Tunings</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/developer_overview.html">CUB Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/nvtx.html">NVTX</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/releases.html">CUB Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/releases/changelog.html">CUB 2.1.0</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/thread_level.html">Thread-level Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/warp_wide.html">Warp-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/block_wide.html">Block-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/device_wide.html">Device-Wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../thrust/index.html">Thrust</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/developer_overview.html">Thrust Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/systems.html">Thrust systems</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/release_process.html">Release Process</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/algorithms.html">Algorithms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/containers.html">Containers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/function_objects.html">Function Objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/iterators.html">Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/memory_management.html">Memory Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/numerics.html">Numerics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/random.html">Random Number Generators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/system.html">System</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/utility.html">Utility</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cudax/index.html">CUDA Experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/container.html">Containers library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1uninitialized__buffer.html">cuda::experimental::uninitialized_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/memory_resource.html">Memory Resources</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/classcuda_1_1mr_1_1basic__any__resource.html">cuda::mr::basic_any_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/structcuda_1_1memory__pool__properties.html">cuda::memory_pool_properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/structcuda_1_1device__memory__pool.html">cuda::device_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/structcuda_1_1pinned__memory__pool.html">cuda::pinned_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/structcuda_1_1managed__memory__pool.html">cuda::managed_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/classcuda_1_1mr_1_1legacy__pinned__memory__resource.html">cuda::mr::legacy_pinned_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/classcuda_1_1mr_1_1legacy__managed__memory__resource.html">cuda::mr::legacy_managed_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/structcuda_1_1mr_1_1shared__resource.html">cuda::mr::shared_resource</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/graph.html">Graphs library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph.html">cuda::experimental::graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__builder.html">cuda::experimental::graph_builder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__builder__ref.html">cuda::experimental::graph_builder_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__node__ref.html">cuda::experimental::graph_node_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of.html">cuda::experimental::stf::graphed_interface_of</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; mdspan&lt; T, P… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; void_interface &gt;</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/stf.html">CUDASTF</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/stf/custom_data_interface.html">Implementation of the <code class="docutils literal notranslate"><span class="pre">matrix</span></code> class</a></li>
+
+
+
+
+
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/stf/lower_level_api.html">Lower-level API</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/3.0_migration_guide.html">CCCL 2.x ‐ CCCL 3.0 migration guide</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/development/index.html">CCCL Development Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/macro.html">CCCL Internal Macros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/testing.html">CCCL Testing Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/contributing.html">Contributing to the CUDA Core Compute Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/contributing/code_of_conduct.html">Code of Conduct</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/license.html">License</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../python/index.html">CCCL Python Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../python/setup.html">Setup and Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/compute.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/coop.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>: Cooperative Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/resources.html">Resources</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../python/api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../python/compute_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../python/coop_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> API Reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../cpp.html" class="nav-link">CUDA C++ Core Libraries</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">libcu++</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../releases.html" class="nav-link">Releases</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Versioning</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="versioning">
+<span id="libcudacxx-releases-versioning"></span><h1>Versioning<a class="headerlink" href="#versioning" title="Link to this heading">#</a></h1>
+<p>libcu++ is versioned along two axes:</p>
+<ul class="simple">
+<li><p>API Version: A 3-component semantic version for the programmatic
+interface.</p>
+<ul>
+<li><p>Follows <a class="reference external" href="https://semver.org">semantic versioning</a>.</p></li>
+<li><p>A single API version is supported in a given snapshot of the
+codebase.</p></li>
+<li><p>An API version is released when completed. The name of the release
+is the API version.</p></li>
+<li><p>Major API breaking changes are only made when a new major <a class="reference external" href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capability">CUDA
+Compute
+Capability</a>
+is released.</p></li>
+</ul>
+</li>
+<li><p>ABI Version: An integer version for the binary interface.</p>
+<ul>
+<li><p>Multiple ABI versions may be supported in a given snapshot of the
+codebase.</p></li>
+<li><p>New ABI versions may be introduced at any time. The latest
+available ABI version is always the default.</p></li>
+<li><p>When a new major <a class="reference external" href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capability">CUDA Compute
+Capability</a>
+is released, a new ABI version is always introduced and support
+for all old ABI versions is dropped.</p></li>
+</ul>
+</li>
+</ul>
+<section id="application-programming-interface-api">
+<h2>Application Programming Interface (API)<a class="headerlink" href="#application-programming-interface-api" title="Link to this heading">#</a></h2>
+<section id="what-is-api">
+<h3>What is API?<a class="headerlink" href="#what-is-api" title="Link to this heading">#</a></h3>
+<p>The Application Programming Interface (API) of a software library is
+programming model and set of entities, represented by programming
+language constructs, that are intentionally exposed to provide the
+functionality of the library.</p>
+<p>A library’s API includes, but is not limited to:</p>
+<ul class="simple">
+<li><p>The structure and filenames of headers intended for direct inclusion
+in user code.</p></li>
+<li><p>The namespaces intended for direct use in user code.</p></li>
+<li><p>The declarations and/or definitions of functions, classes, and
+variables located in headers and intended for direct use in user
+code.</p></li>
+<li><p>The semantics of functions, classes, and variables intended for
+direct use in user code.</p></li>
+<li><p>Any identifiers intended to be found by <a class="reference external" href="https://en.cppreference.com/w/cpp/language/adl">Argument Dependent
+Lookup</a>,
+regardless of which namespaces they are in.</p></li>
+</ul>
+</section>
+<section id="libcu-api-versioning">
+<h3>libcu++ API Versioning<a class="headerlink" href="#libcu-api-versioning" title="Link to this heading">#</a></h3>
+<p>The NVIDIA C++ Standard Library API uses <a class="reference external" href="https://semver.org">semantic
+versioning</a>. The versioning scheme,
+<code class="docutils literal notranslate"><span class="pre">MMM.mmm.ppp</span></code>, consists of three components and four macros defined in
+<code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/version&gt;</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">MMM</span></code>/<code class="docutils literal notranslate"><span class="pre">_LIBCUDACXX_CUDA_API_VERSION_MAJOR</span></code>: Major version, an 8
+bit unsigned integer. The major version represents API stability to
+the best of our ability (outstanding, but not perfect). When
+API-backwards-incompatible changes are made, this component is
+incremented. Such changes are only made when a new major <a class="reference external" href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capability">CUDA
+Compute
+Capability</a>
+is released. ABI changes that do not have an associated
+API-backwards-incompatible change do not trigger a new major release.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mmm</span></code>/<code class="docutils literal notranslate"><span class="pre">_LIBCUDACXX_CUDA_API_VERSION_MINOR</span></code>: Minor version, an 8
+bit unsigned integer. When API-backwards-compatible features are
+added are made, this component is incremented. Such changes may be
+made at any time.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ppp</span></code>/<code class="docutils literal notranslate"><span class="pre">_LIBCUDACXX_CUDA_API_VERSION_PATCH</span></code>: Subminor version, an
+8 bit unsigned integer. When changes are made that do not qualify for
+an increase in either of the other two versions, it is incremented.
+Such changes may be made at any time.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">MMMmmmppp</span></code>/<code class="docutils literal notranslate"><span class="pre">_LIBCUDACXX_CUDA_API_VERSION</span></code>: A concatenation of
+the decimal digits of all three components, a 32 bit unsigned
+integer.</p></li>
+</ul>
+<p>A single API version is supported in any given snapshot of the codebase.
+Only the latest API version is supported and maintained. For more
+information on specific API versions, [please see the changelog],</p>
+<p>When work completes on an API version on the main development branch, a
+release is snapped. The name of that release is the API version. After a
+release is snapped, the API version on the main development branch is
+incremented and work begins on the next release.</p>
+</section>
+</section>
+<section id="application-binary-interface-abi">
+<h2>Application Binary Interface (ABI)<a class="headerlink" href="#application-binary-interface-abi" title="Link to this heading">#</a></h2>
+<section id="what-is-abi">
+<h3>What is ABI?<a class="headerlink" href="#what-is-abi" title="Link to this heading">#</a></h3>
+<p>The Application Binary Interface (ABI) of a software library is the
+convention for how:</p>
+<ul class="simple">
+<li><p>The library’s entities are represented in machine code, and</p></li>
+<li><p>Library entities built in one translation unit interact with entities
+from another.</p></li>
+</ul>
+<p>A library’s ABI includes, but is not limited to:</p>
+<ul class="simple">
+<li><p>The mangled names of functions.</p></li>
+<li><p>The mangled names of types, including instantiations of class
+templates.</p></li>
+<li><p>The number of bytes (<code class="docutils literal notranslate"><span class="pre">sizeof</span></code>) and the alignment of objects and
+types.</p></li>
+<li><p>The semantics of the bytes in the binary representation of an object.</p></li>
+<li><p>The register-level calling conventions governing parameter passing
+and function invocation.</p></li>
+</ul>
+<p>Parts of this section were based on <a class="reference external" href="https://wg21.link/P2028R0">P2028R0: What is ABI, and what
+Should Standard C++ Do About It?</a>.</p>
+</section>
+<section id="libcu-abi-versioning">
+<h3>libcu++ ABI Versioning<a class="headerlink" href="#libcu-abi-versioning" title="Link to this heading">#</a></h3>
+<p>The NVIDIA C++ Standard Library ABI version scheme is a single 16 bit
+unsigned integer value. An ABI version represents stability in the ABI
+to the best of our ability (excellent, but not perfect). When any
+changes are made to the ABI, even seemingly minor ones, the ABI version
+is incremented.</p>
+<p>The NVIDIA C++ Standard Library does not maintain long-term ABI
+stability. Promising long-term ABI stability would prevent us from
+fixing mistakes and providing best in class performance. So, we make no
+such promises.</p>
+<p>Whenever a new major <a class="reference external" href="https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capability">CUDA Compute
+Capability</a>
+is released, the ABI is broken. A new NVIDIA C++ Standard Library ABI
+version is introduced and becomes the default and support for all older
+ABI versions is dropped.</p>
+<p>A snapshot of the codebase may support multiple ABI versions at the same
+time. They always use the latest available ABI version by default. The
+macro <code class="docutils literal notranslate"><span class="pre">_LIBCUDACXX_CUDA_ABI_VERSION_LATEST</span></code> from
+<code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/version&gt;</span></code> defines the value of the latest ABI version.</p>
+<p>New ABI versions may be introduced at any point in time, which means
+that the default ABI version may change in any release. A subset of
+older ABI versions can be used instead by defining
+<code class="docutils literal notranslate"><span class="pre">_LIBCUDACXX_CUDA_ABI_VERSION</span></code> to the desired version.</p>
+<p>For more information on specific ABI versions, please see the
+<a class="reference internal" href="../releases.html#libcudacxx-releases"><span class="std std-ref">release section</span></a> and
+<a class="reference internal" href="changelog.html#libcudacxx-releases-changelog"><span class="std std-ref">changelog</span></a>.</p>
+<p>A program is ill-formed, no diagnostic required, if it uses two
+different translation units compiled with a different NVIDIA C++
+Standard Library ABI version. For example, all of the following is
+disallowed:</p>
+<ul class="simple">
+<li><p>Compiling <code class="docutils literal notranslate"><span class="pre">foo.cu</span></code> with ABI version 1, <code class="docutils literal notranslate"><span class="pre">bar.cu</span></code> with ABI version
+2, and linking <code class="docutils literal notranslate"><span class="pre">foo.cu</span></code> and <code class="docutils literal notranslate"><span class="pre">bar.cu</span></code> into one program.</p></li>
+<li><p>Compiling <code class="docutils literal notranslate"><span class="pre">foo.cu</span></code> with ABI version 2 and linking it with a
+library, <code class="docutils literal notranslate"><span class="pre">libbar.so</span></code>, compiled with ABI version 1.</p></li>
+<li><p>Compiling <code class="docutils literal notranslate"><span class="pre">foo.cu</span></code> with ABI version 1 and linking it with a
+library, <code class="docutils literal notranslate"><span class="pre">libbar.a</span></code>, compiled with ABI version 2.</p></li>
+</ul>
+<p>Every namespace used by the NVIDIA C++ Standard Library has an <a class="reference external" href="https://en.cppreference.com/w/cpp/language/namespace#Inline_namespaces">inline
+namespace</a>
+<code class="docutils literal notranslate"><span class="pre">__N</span></code> (where <code class="docutils literal notranslate"><span class="pre">N</span></code> is the ABI version); this is known as an ABI
+namespace. Nested namespaces have their own ABI namespace,
+e.g. <code class="docutils literal notranslate"><span class="pre">cuda::__N::</span></code> and <code class="docutils literal notranslate"><span class="pre">cuda::std::__N::</span></code>. Some library facilities
+which are tightly coupled with the C++ compiler, such as
+<code class="docutils literal notranslate"><span class="pre">std::initializer_list</span></code>, are not in the ABI namespace. The ABI
+namespace will be rarely be encountered, because, in most circumstances,
+all the members of an inline namespace are introduced into the enclosing
+namespace. So, <code class="docutils literal notranslate"><span class="pre">cuda::std::__N::barrier</span></code> is available as
+<code class="docutils literal notranslate"><span class="pre">cuda::std::barrier</span></code>.</p>
+<p>When including the NVIDIA C++ Standard Library in a translation unit, a
+single ABI version and single ABI namespace will be defined. You cannot
+utilize two different ABI versions in a single translation unit by
+explicitly using ABI namespaces.</p>
+<p>ABI namespaces aid in diagnosing the use of translation units compiled
+with different ABI versions. We want to try and help anyone who is
+mixing code from different ABIs by loudly breaking them at compile time
+instead of quietly failing them at runtime. Suppose we have one
+translation unit that uses ABI version 3 and defines a function
+<code class="docutils literal notranslate"><span class="pre">void</span> <span class="pre">negate(cuda::atomic&lt;float&gt;&amp;)</span></code>. <code class="docutils literal notranslate"><span class="pre">cuda::atomic&lt;float&gt;</span></code> is just
+another name for <code class="docutils literal notranslate"><span class="pre">cuda::__3::atomic&lt;float&gt;</span></code>, so <code class="docutils literal notranslate"><span class="pre">negate</span></code>‘s
+signature is really <code class="docutils literal notranslate"><span class="pre">void</span> <span class="pre">negate(cuda::__3::atomic&lt;float&gt;&amp;)</span></code>. If we
+use <code class="docutils literal notranslate"><span class="pre">negate</span></code> in another translation unit which was compiled with ABI
+version 4, we will get an error when we try to link these two
+translation units together. The second translation unit is looking for a
+function <code class="docutils literal notranslate"><span class="pre">void</span> <span class="pre">negate(cuda::__3::atomic&lt;float&gt;&amp;)</span></code>, which does not
+exist.</p>
+<p>However, we must be careful, because ABI namespaces cannot diagnosis all
+mixing of different ABI versions. Let’s say we a translation unit
+compiled with ABI version 3 that contains this code:</p>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">sum</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">cuda</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="p">};</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">negate</span><span class="p">(</span><span class="n">sum</span><span class="o">&amp;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>If we try to use <code class="docutils literal notranslate"><span class="pre">negate</span></code> in a second translation unit compiled with
+ABI version 4, our program will be ill-formed but we will not get a
+link-time failure, because while <code class="docutils literal notranslate"><span class="pre">cuda::atomic</span></code> is in an ABI
+namespace, <code class="docutils literal notranslate"><span class="pre">sum</span></code> is not. <code class="docutils literal notranslate"><span class="pre">cuda::atomic</span></code>‘s size and layout may have
+changed across ABI versions, so the size and layout of <code class="docutils literal notranslate"><span class="pre">sum</span></code> may be
+different in each translation unit. Our program has violated the <a class="reference external" href="https://en.cppreference.com/w/cpp/language/definition#One_Definition_Rule">One
+Definition
+Rule</a>
+and thus has undefined behavior. It will likely fail in unpredictable
+ways at run-time.</p>
+<p>If ABI stability is critical to us, we could explicitly use
+<code class="docutils literal notranslate"><span class="pre">cuda::__3::atomic&lt;float&gt;</span></code> in <code class="docutils literal notranslate"><span class="pre">sum</span></code>. Then, we would get a
+compile-time error when attempting to compile the second translation
+unit using ABI version 4, because <code class="docutils literal notranslate"><span class="pre">cuda::__3::atomic&lt;float&gt;</span></code> would not
+be defined. However, this is generally not recommended because it has
+the significant downside that our code does not automatically migrate to
+newer ABI versions.</p>
+<p>We recommend that you always recompile your code and dependencies with
+the latest NVIDIA SDKs and use the latest NVIDIA C++ Standard Library
+ABI. <a class="reference external" href="https://www.youtube.com/watch?v=tISy7EJQPzI&amp;t=1032s">Live at
+head</a>.</p>
+</section>
+</section>
+<section id="experimental-namespaces">
+<h2><code class="docutils literal notranslate"><span class="pre">experimental</span></code> Namespaces<a class="headerlink" href="#experimental-namespaces" title="Link to this heading">#</a></h2>
+<p>Some NVIDIA C++ Standard Library facilities live in a nested
+<code class="docutils literal notranslate"><span class="pre">experimental</span></code> namespace. We make absolutely no guarantees about such
+features. Their API and ABI is subject to change or wholesale removeal
+at any time without any notice.</p>
+</section>
+<section id="deprecation">
+<h2>Deprecation<a class="headerlink" href="#deprecation" title="Link to this heading">#</a></h2>
+<p>Prior to making substantial API-backwards-incompatible changes, making
+ABI changes, or modifying the platforms and compilers we support, we
+will typically notify users by deprecating the things that are changing.
+Deprecations will come in the form of programmatic warnings which can be
+disabled with a macro. The deprecation period will depend on the impact
+of the change, but will usually last three to six months.</p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="changelog.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Changelog</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../standard_api.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Standard API</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#application-programming-interface-api">Application Programming Interface (API)</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#what-is-api">What is API?</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#libcu-api-versioning">libcu++ API Versioning</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#application-binary-interface-abi">Application Binary Interface (ABI)</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#what-is-abi">What is ABI?</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#libcu-abi-versioning">libcu++ ABI Versioning</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#experimental-namespaces"><code class="docutils literal notranslate"><span class="pre">experimental</span></code> Namespaces</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#deprecation">Deprecation</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2026, NVIDIA Corporation.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

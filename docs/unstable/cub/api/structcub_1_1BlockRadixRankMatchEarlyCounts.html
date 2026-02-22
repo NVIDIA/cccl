@@ -1,0 +1,1143 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>cub::BlockRadixRankMatchEarlyCounts &#8212; CUDA Core Compute Libraries</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+
+
+    <script src="../../_static/documentation_options.js?v=bbe6ed3a"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=5ceeb459"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'cub/api/structcub_1_1BlockRadixRankMatchEarlyCounts';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://NVIDIA.github.io/cccl/nv-versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'unstable';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+
+    <link rel="canonical" href="https://NVIDIA.github.io/cccl/cub/api/structcub_1_1BlockRadixRankMatchEarlyCounts.html" />
+    <link rel="icon" href="../../_static/favicon.png"/>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="cub::BlockRadixSort" href="classcub_1_1BlockRadixSort.html" />
+    <link rel="prev" title="cub::BlockRadixRankMatch" href="classcub_1_1BlockRadixRankMatch.html" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="unstable" />
+
+
+  </head>
+
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../../cpp.html">CUDA C++ Core Libraries</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../libcudacxx/index.html">libcu++</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/setup.html">Setup</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/requirements.html">Requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/getting.html">Getting libcu++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/building_and_testing.html">Building &amp; Testing libcu++</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/standard_api.html">Standard API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/algorithms_library.html">Algorithms Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/c_library.html">C Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/concepts_library.html">Concepts Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/container_library.html">Container Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/execution_library.html">Execution Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/numerics_library.html">Numerics Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/ranges_library.html">Ranges Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/synchronization_library.html">Synchronization Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/time_library.html">Time Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/type_support.html">Type Support Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/utility_library.html">Utility Library</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/extended_api.html">Extended API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/bit.html">Bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/execution_model.html">Execution model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/exceptions.html">Exception Handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_model.html">Memory model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/thread_groups.html">Thread Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/synchronization_primitives.html">Synchronization Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/asynchronous_operations.html">Asynchronous Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_access_properties.html">Memory access properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/functional.html">Functional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/iterators.html">Fancy Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/type_traits.html">Type traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/vector_tuple_protocol.html">Vector Tuple Protocol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/numeric.html">Numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/random.html">Random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory.html">Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_resource.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/math.html">Math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/mdspan.html">Mdspan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/warp.html">Warp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/utility.html">Utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/work_stealing.html">Work stealing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/stream.html">Streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/event.html">Events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/algorithm.html">Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/legacy_resources.html">Legacy resources</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/examples.html">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/instructions.html">PTX Instructions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/pragmas.html">PTX Pragmas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="../index.html">CUB</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../test_overview.html">CUB Tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../benchmarking.html">CUB Benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tuning.html">CUB Tunings</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../developer_overview.html">CUB Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../developer/nvtx.html">NVTX</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../releases.html">CUB Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../releases/changelog.html">CUB 2.1.0</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l3 current active has-children"><a class="reference internal" href="../api.html">API documentation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/thread_level.html">Thread-level Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/warp_wide.html">Warp-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4 current active"><a class="reference internal" href="../api_docs/block_wide.html">Block-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/device_wide.html">Device-Wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="index.html">API reference</a></li>
+</ul>
+</details></li>
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../thrust/index.html">Thrust</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/developer_overview.html">Thrust Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/systems.html">Thrust systems</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/release_process.html">Release Process</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/algorithms.html">Algorithms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/containers.html">Containers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/function_objects.html">Function Objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/iterators.html">Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/memory_management.html">Memory Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/numerics.html">Numerics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/random.html">Random Number Generators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/system.html">System</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/utility.html">Utility</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cudax/index.html">CUDA Experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/container.html">Containers library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1uninitialized__buffer.html">cuda::experimental::uninitialized_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/memory_resource.html">Memory Resources</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1basic__any__resource.html">cuda::mr::basic_any_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1memory__pool__properties.html">cuda::memory_pool_properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1device__memory__pool.html">cuda::device_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1pinned__memory__pool.html">cuda::pinned_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1managed__memory__pool.html">cuda::managed_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1legacy__pinned__memory__resource.html">cuda::mr::legacy_pinned_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1legacy__managed__memory__resource.html">cuda::mr::legacy_managed_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1mr_1_1shared__resource.html">cuda::mr::shared_resource</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/graph.html">Graphs library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph.html">cuda::experimental::graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__builder.html">cuda::experimental::graph_builder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__builder__ref.html">cuda::experimental::graph_builder_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__node__ref.html">cuda::experimental::graph_node_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of.html">cuda::experimental::stf::graphed_interface_of</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; mdspan&lt; T, P… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; void_interface &gt;</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/stf.html">CUDASTF</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/stf/custom_data_interface.html">Implementation of the <code class="docutils literal notranslate"><span class="pre">matrix</span></code> class</a></li>
+
+
+
+
+
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/stf/lower_level_api.html">Lower-level API</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/3.0_migration_guide.html">CCCL 2.x ‐ CCCL 3.0 migration guide</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/development/index.html">CCCL Development Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/macro.html">CCCL Internal Macros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/testing.html">CCCL Testing Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/contributing.html">Contributing to the CUDA Core Compute Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/contributing/code_of_conduct.html">Code of Conduct</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/license.html">License</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../python/index.html">CCCL Python Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../python/setup.html">Setup and Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/compute.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/coop.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>: Cooperative Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/resources.html">Resources</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../python/api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../python/compute_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../python/coop_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> API Reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../cpp.html" class="nav-link">CUDA C++ Core Libraries</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">CUB</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../api.html" class="nav-link">CUB API documentation</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../api_docs/block_wide.html" class="nav-link">Block-Wide “Collective” Primitives</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="block.html" class="nav-link">Block-wide Primitives</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">cub::BlockRadixRankMatchEarlyCounts</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="cub-blockradixrankmatchearlycounts">
+<h1>cub::BlockRadixRankMatchEarlyCounts<a class="headerlink" href="#cub-blockradixrankmatchearlycounts" title="Link to this heading">#</a></h1>
+<dl class="cpp struct">
+<dt class="sig sig-object cpp" id="_CPPv4I_i_i_b_18BlockScanAlgorithm_18WarpMatchAlgorithm_iEN3cub30BlockRadixRankMatchEarlyCountsE">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">BlockDimX</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">RadixBits</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">IsDescending</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="namespacecub_1abec44bba36037c547e7e84906d0d23ab.html#_CPPv4N3cub18BlockScanAlgorithmE" title="cub::BlockScanAlgorithm"><span class="n"><span class="pre">BlockScanAlgorithm</span></span></a><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InnerScanAlgorithm</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="namespacecub_1abec44bba36037c547e7e84906d0d23ab.html#_CPPv4N3cub18BlockScanAlgorithm21BLOCK_SCAN_WARP_SCANSE" title="cub::BLOCK_SCAN_WARP_SCANS"><span class="n"><span class="pre">BLOCK_SCAN_WARP_SCANS</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="namespacecub_1aba00cdd73e8ef7f441861282dbc52f1c.html#_CPPv4N3cub18WarpMatchAlgorithmE" title="cub::WarpMatchAlgorithm"><span class="n"><span class="pre">WarpMatchAlgorithm</span></span></a><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">MATCH_ALGORITHM</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="namespacecub_1aba00cdd73e8ef7f441861282dbc52f1c.html#_CPPv4N3cub18WarpMatchAlgorithm14WARP_MATCH_ANYE" title="cub::WARP_MATCH_ANY"><span class="n"><span class="pre">WARP_MATCH_ANY</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">NUM_PARTS</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BlockRadixRankMatchEarlyCounts</span></span></span><a class="headerlink" href="#_CPPv4I_i_i_b_18BlockScanAlgorithm_18WarpMatchAlgorithm_iEN3cub30BlockRadixRankMatchEarlyCountsE" title="Link to this definition">#</a><br /></dt>
+<dd><p>Radix-rank using matching which computes the counts of keys for each digit value early, at the expense of doing more work. </p>
+<p>This may be useful e.g. for decoupled look-back, where it reduces the time other thread blocks need to wait for digit counts to become available. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-types">Public Types</p>
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts9BlockScanE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1aef8d2349354c10b6001df3cbeb905b0f"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BlockScan</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">cub</span></span><span class="p"><span class="pre">::</span></span><a class="reference internal" href="classcub_1_1BlockScan.html#_CPPv4I0_i_18BlockScanAlgorithm_i_iEN3cub9BlockScanE" title="cub::BlockScan"><span class="n"><span class="pre">BlockScan</span></span></a><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts13BLOCK_THREADSE" title="cub::BlockRadixRankMatchEarlyCounts::BLOCK_THREADS"><span class="n"><span class="pre">BLOCK_THREADS</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_i_i_b_18BlockScanAlgorithm_18WarpMatchAlgorithm_iEN3cub30BlockRadixRankMatchEarlyCountsE" title="cub::BlockRadixRankMatchEarlyCounts::InnerScanAlgorithm"><span class="n"><span class="pre">InnerScanAlgorithm</span></span></a><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts9BlockScanE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts30BlockRadixRankMatchEarlyCountsER11TempStorage">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1a68bc1c6a1b873e326c84ff3c885e0312"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BlockRadixRankMatchEarlyCounts</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorageE" title="cub::BlockRadixRankMatchEarlyCounts::TempStorage"><span class="n"><span class="pre">TempStorage</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">temp_storage</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts30BlockRadixRankMatchEarlyCountsER11TempStorage" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorTRA15BINS_PER_THREAD_i14CountsCallback">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">UnsignedBits</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">KEYS_PER_THREAD</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">DigitExtractorT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">CountsCallback</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1a51b242969ad050e01a350c4c015a5412"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">RankKeys</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorTRA15BINS_PER_THREAD_i14CountsCallback" title="cub::BlockRadixRankMatchEarlyCounts::RankKeys::UnsignedBits"><span class="n"><span class="pre">UnsignedBits</span></span></a><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">keys</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorTRA15BINS_PER_THREAD_i14CountsCallback" title="cub::BlockRadixRankMatchEarlyCounts::RankKeys::KEYS_PER_THREAD"><span class="n"><span class="pre">KEYS_PER_THREAD</span></span></a><span class="p"><span class="pre">]</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">ranks</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorTRA15BINS_PER_THREAD_i14CountsCallback" title="cub::BlockRadixRankMatchEarlyCounts::RankKeys::KEYS_PER_THREAD"><span class="n"><span class="pre">KEYS_PER_THREAD</span></span></a><span class="p"><span class="pre">]</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorTRA15BINS_PER_THREAD_i14CountsCallback" title="cub::BlockRadixRankMatchEarlyCounts::RankKeys::DigitExtractorT"><span class="n"><span class="pre">DigitExtractorT</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">digit_extractor</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">exclusive_digit_prefix</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts15BINS_PER_THREADE" title="cub::BlockRadixRankMatchEarlyCounts::BINS_PER_THREAD"><span class="n"><span class="pre">BINS_PER_THREAD</span></span></a><span class="p"><span class="pre">]</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorTRA15BINS_PER_THREAD_i14CountsCallback" title="cub::BlockRadixRankMatchEarlyCounts::RankKeys::CountsCallback"><span class="n"><span class="pre">CountsCallback</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">callback</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorTRA15BINS_PER_THREAD_i14CountsCallback" title="Link to this definition">#</a><br /></dt>
+<dd><p>Rank keys. </p>
+<p>For the lower <code class="docutils literal notranslate"><span class="pre">RADIX_DIGITS</span></code> threads, digit counts for each digit are provided for the corresponding thread. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0_i0EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorTRA15BINS_PER_THREAD_i">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">UnsignedBits</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">KEYS_PER_THREAD</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">DigitExtractorT</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1a34bd2e42bf64fb42dd6e4e44e2fe710a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">RankKeys</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i0EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorTRA15BINS_PER_THREAD_i" title="cub::BlockRadixRankMatchEarlyCounts::RankKeys::UnsignedBits"><span class="n"><span class="pre">UnsignedBits</span></span></a><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">keys</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4I0_i0EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorTRA15BINS_PER_THREAD_i" title="cub::BlockRadixRankMatchEarlyCounts::RankKeys::KEYS_PER_THREAD"><span class="n"><span class="pre">KEYS_PER_THREAD</span></span></a><span class="p"><span class="pre">]</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">ranks</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4I0_i0EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorTRA15BINS_PER_THREAD_i" title="cub::BlockRadixRankMatchEarlyCounts::RankKeys::KEYS_PER_THREAD"><span class="n"><span class="pre">KEYS_PER_THREAD</span></span></a><span class="p"><span class="pre">]</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i0EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorTRA15BINS_PER_THREAD_i" title="cub::BlockRadixRankMatchEarlyCounts::RankKeys::DigitExtractorT"><span class="n"><span class="pre">DigitExtractorT</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">digit_extractor</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">exclusive_digit_prefix</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts15BINS_PER_THREADE" title="cub::BlockRadixRankMatchEarlyCounts::BINS_PER_THREAD"><span class="n"><span class="pre">BINS_PER_THREAD</span></span></a><span class="p"><span class="pre">]</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0_i0EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorTRA15BINS_PER_THREAD_i" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0_i0EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorT">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">UnsignedBits</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">KEYS_PER_THREAD</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">DigitExtractorT</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1aa1af73434760b3775e0a6330efd83692"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">RankKeys</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i0EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorT" title="cub::BlockRadixRankMatchEarlyCounts::RankKeys::UnsignedBits"><span class="n"><span class="pre">UnsignedBits</span></span></a><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">keys</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4I0_i0EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorT" title="cub::BlockRadixRankMatchEarlyCounts::RankKeys::KEYS_PER_THREAD"><span class="n"><span class="pre">KEYS_PER_THREAD</span></span></a><span class="p"><span class="pre">]</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">ranks</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4I0_i0EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorT" title="cub::BlockRadixRankMatchEarlyCounts::RankKeys::KEYS_PER_THREAD"><span class="n"><span class="pre">KEYS_PER_THREAD</span></span></a><span class="p"><span class="pre">]</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i0EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorT" title="cub::BlockRadixRankMatchEarlyCounts::RankKeys::DigitExtractorT"><span class="n"><span class="pre">DigitExtractorT</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">digit_extractor</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0_i0EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorT" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-members">Public Members</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts12temp_storageE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1a2eae2bd0c5fdf5db0cbbbd33904322a7"></span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorageE" title="cub::BlockRadixRankMatchEarlyCounts::TempStorage"><span class="n"><span class="pre">TempStorage</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">temp_storage</span></span></span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts12temp_storageE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-static-attributes">Public Static Attributes</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts13BLOCK_THREADSE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1acfd90053baafc392dca0f80df296f28c"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BLOCK_THREADS</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_i_i_b_18BlockScanAlgorithm_18WarpMatchAlgorithm_iEN3cub30BlockRadixRankMatchEarlyCountsE" title="cub::BlockRadixRankMatchEarlyCounts::BlockDimX"><span class="n"><span class="pre">BlockDimX</span></span></a><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts13BLOCK_THREADSE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts12RADIX_DIGITSE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1aaae87f7bc43e1a184e609f7c40f9741e"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">RADIX_DIGITS</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span><span class="w"> </span><span class="o"><span class="pre">&lt;&lt;</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_i_i_b_18BlockScanAlgorithm_18WarpMatchAlgorithm_iEN3cub30BlockRadixRankMatchEarlyCountsE" title="cub::BlockRadixRankMatchEarlyCounts::RadixBits"><span class="n"><span class="pre">RadixBits</span></span></a><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts12RADIX_DIGITSE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts15BINS_PER_THREADE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1a658be57874ddce9f3b72e2983268d085"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BINS_PER_THREAD</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts12RADIX_DIGITSE" title="cub::BlockRadixRankMatchEarlyCounts::RADIX_DIGITS"><span class="n"><span class="pre">RADIX_DIGITS</span></span></a><span class="w"> </span><span class="o"><span class="pre">+</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts13BLOCK_THREADSE" title="cub::BlockRadixRankMatchEarlyCounts::BLOCK_THREADS"><span class="n"><span class="pre">BLOCK_THREADS</span></span></a><span class="w"> </span><span class="o"><span class="pre">-</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span><span class="p"><span class="pre">)</span></span><span class="w"> </span><span class="o"><span class="pre">/</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts13BLOCK_THREADSE" title="cub::BlockRadixRankMatchEarlyCounts::BLOCK_THREADS"><span class="n"><span class="pre">BLOCK_THREADS</span></span></a><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts15BINS_PER_THREADE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts23BINS_TRACKED_PER_THREADE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1abf8480aea0b586fc735554eb199de368"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BINS_TRACKED_PER_THREAD</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts15BINS_PER_THREADE" title="cub::BlockRadixRankMatchEarlyCounts::BINS_PER_THREAD"><span class="n"><span class="pre">BINS_PER_THREAD</span></span></a><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts23BINS_TRACKED_PER_THREADE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts9FULL_BINSE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1a6e4d40fa7d5a4fbbb2623403652a3441"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">FULL_BINS</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts15BINS_PER_THREADE" title="cub::BlockRadixRankMatchEarlyCounts::BINS_PER_THREAD"><span class="n"><span class="pre">BINS_PER_THREAD</span></span></a><span class="w"> </span><span class="o"><span class="pre">*</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts13BLOCK_THREADSE" title="cub::BlockRadixRankMatchEarlyCounts::BLOCK_THREADS"><span class="n"><span class="pre">BLOCK_THREADS</span></span></a><span class="w"> </span><span class="o"><span class="pre">==</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts12RADIX_DIGITSE" title="cub::BlockRadixRankMatchEarlyCounts::RADIX_DIGITS"><span class="n"><span class="pre">RADIX_DIGITS</span></span></a><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts9FULL_BINSE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts12WARP_THREADSE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1aecf4279d377df6330360933f72ca2974"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">WARP_THREADS</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">warp_threads</span></span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts12WARP_THREADSE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts20PARTIAL_WARP_THREADSE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1a303691131c080d91d8904ae0d7db237e"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">PARTIAL_WARP_THREADS</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts13BLOCK_THREADSE" title="cub::BlockRadixRankMatchEarlyCounts::BLOCK_THREADS"><span class="n"><span class="pre">BLOCK_THREADS</span></span></a><span class="w"> </span><span class="o"><span class="pre">%</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts12WARP_THREADSE" title="cub::BlockRadixRankMatchEarlyCounts::WARP_THREADS"><span class="n"><span class="pre">WARP_THREADS</span></span></a><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts20PARTIAL_WARP_THREADSE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11BLOCK_WARPSE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1a6463a0198744ed131dcc67a666c5454a"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BLOCK_WARPS</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts13BLOCK_THREADSE" title="cub::BlockRadixRankMatchEarlyCounts::BLOCK_THREADS"><span class="n"><span class="pre">BLOCK_THREADS</span></span></a><span class="w"> </span><span class="o"><span class="pre">/</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts12WARP_THREADSE" title="cub::BlockRadixRankMatchEarlyCounts::WARP_THREADS"><span class="n"><span class="pre">WARP_THREADS</span></span></a><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11BLOCK_WARPSE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts15PARTIAL_WARP_IDE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1a0b04033f782ab1c422cebfd532394607"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">PARTIAL_WARP_ID</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11BLOCK_WARPSE" title="cub::BlockRadixRankMatchEarlyCounts::BLOCK_WARPS"><span class="n"><span class="pre">BLOCK_WARPS</span></span></a><span class="w"> </span><span class="o"><span class="pre">-</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts15PARTIAL_WARP_IDE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts9WARP_MASKE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1a99b46a26cf77745341e7a9dae774656a"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">WARP_MASK</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="o"><span class="pre">~</span></span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts9WARP_MASKE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts15NUM_MATCH_MASKSE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1a249e99a9738ba8ca12e420dd74068c23"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">NUM_MATCH_MASKS</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_i_i_b_18BlockScanAlgorithm_18WarpMatchAlgorithm_iEN3cub30BlockRadixRankMatchEarlyCountsE" title="cub::BlockRadixRankMatchEarlyCounts::MATCH_ALGORITHM"><span class="n"><span class="pre">MATCH_ALGORITHM</span></span></a><span class="w"> </span><span class="o"><span class="pre">==</span></span><span class="w"> </span><a class="reference internal" href="namespacecub_1aba00cdd73e8ef7f441861282dbc52f1c.html#_CPPv4N3cub18WarpMatchAlgorithm20WARP_MATCH_ATOMIC_ORE" title="cub::WARP_MATCH_ATOMIC_OR"><span class="n"><span class="pre">WARP_MATCH_ATOMIC_OR</span></span></a><span class="w"> </span><span class="o"><span class="pre">?</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11BLOCK_WARPSE" title="cub::BlockRadixRankMatchEarlyCounts::BLOCK_WARPS"><span class="n"><span class="pre">BLOCK_WARPS</span></span></a><span class="w"> </span><span class="o"><span class="pre">:</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts15NUM_MATCH_MASKSE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts22MATCH_MASKS_ALLOC_SIZEE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1a215be6b357b39f87fc4f375cbfba9d5f"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">MATCH_MASKS_ALLOC_SIZE</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts15NUM_MATCH_MASKSE" title="cub::BlockRadixRankMatchEarlyCounts::NUM_MATCH_MASKS"><span class="n"><span class="pre">NUM_MATCH_MASKS</span></span></a><span class="w"> </span><span class="o"><span class="pre">&lt;</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span><span class="w"> </span><span class="o"><span class="pre">?</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span><span class="w"> </span><span class="o"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts15NUM_MATCH_MASKSE" title="cub::BlockRadixRankMatchEarlyCounts::NUM_MATCH_MASKS"><span class="n"><span class="pre">NUM_MATCH_MASKS</span></span></a><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts22MATCH_MASKS_ALLOC_SIZEE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<dl class="cpp struct">
+<dt class="sig sig-object cpp" id="_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternalE">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">UnsignedBits</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">KEYS_PER_THREAD</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">DigitExtractorT</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">CountsCallback</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1_1BlockRadixRankMatchInternal"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BlockRadixRankMatchInternal</span></span></span><a class="headerlink" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternalE" title="Link to this definition">#</a><br /></dt>
+<dd><div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal5DigitE12UnsignedBits">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1_1BlockRadixRankMatchInternal_1a48f938662d5df9a880bb7934e4b639b0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">uint32_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Digit</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternalE" title="cub::BlockRadixRankMatchEarlyCounts::BlockRadixRankMatchInternal::UnsignedBits"><span class="n"><span class="pre">UnsignedBits</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal5DigitE12UnsignedBits" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal9ThreadBinEi">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1_1BlockRadixRankMatchInternal_1a4e0a093f0721173eebb95ee17b00d6a5"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ThreadBin</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">u</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal9ThreadBinEi" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal21ComputeHistogramsWarpERA15KEYS_PER_THREAD_12UnsignedBits">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1_1BlockRadixRankMatchInternal_1ab7e0a2a09ee19bb3f5101a5148d1028b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ComputeHistogramsWarp</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternalE" title="cub::BlockRadixRankMatchEarlyCounts::BlockRadixRankMatchInternal::UnsignedBits"><span class="n"><span class="pre">UnsignedBits</span></span></a><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">keys</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternalE" title="cub::BlockRadixRankMatchEarlyCounts::BlockRadixRankMatchInternal::KEYS_PER_THREAD"><span class="n"><span class="pre">KEYS_PER_THREAD</span></span></a><span class="p"><span class="pre">]</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal21ComputeHistogramsWarpERA15KEYS_PER_THREAD_12UnsignedBits" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal25ComputeOffsetsWarpUpsweepERA15BINS_PER_THREAD_i">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1_1BlockRadixRankMatchInternal_1ae87a09da6542d882975996f401c12002"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ComputeOffsetsWarpUpsweep</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">bins</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts15BINS_PER_THREADE" title="cub::BlockRadixRankMatchEarlyCounts::BINS_PER_THREAD"><span class="n"><span class="pre">BINS_PER_THREAD</span></span></a><span class="p"><span class="pre">]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal25ComputeOffsetsWarpUpsweepERA15BINS_PER_THREAD_i" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal27ComputeOffsetsWarpDownsweepERA15BINS_PER_THREAD_i">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1_1BlockRadixRankMatchInternal_1a31e96aded94951f759f709caaee22b46"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ComputeOffsetsWarpDownsweep</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">offsets</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts15BINS_PER_THREADE" title="cub::BlockRadixRankMatchEarlyCounts::BINS_PER_THREAD"><span class="n"><span class="pre">BINS_PER_THREAD</span></span></a><span class="p"><span class="pre">]</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal27ComputeOffsetsWarpDownsweepERA15BINS_PER_THREAD_i" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal16ComputeRanksItemERA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_iN6detail10constant_tI20WARP_MATCH_ATOMIC_OREE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1_1BlockRadixRankMatchInternal_1a77a2b5ed450f64940c34cd3167acef4d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ComputeRanksItem</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternalE" title="cub::BlockRadixRankMatchEarlyCounts::BlockRadixRankMatchInternal::UnsignedBits"><span class="n"><span class="pre">UnsignedBits</span></span></a><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">keys</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternalE" title="cub::BlockRadixRankMatchEarlyCounts::BlockRadixRankMatchInternal::KEYS_PER_THREAD"><span class="n"><span class="pre">KEYS_PER_THREAD</span></span></a><span class="p"><span class="pre">]</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">ranks</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternalE" title="cub::BlockRadixRankMatchEarlyCounts::BlockRadixRankMatchInternal::KEYS_PER_THREAD"><span class="n"><span class="pre">KEYS_PER_THREAD</span></span></a><span class="p"><span class="pre">]</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">constant_t</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="namespacecub_1aba00cdd73e8ef7f441861282dbc52f1c.html#_CPPv4N3cub18WarpMatchAlgorithm20WARP_MATCH_ATOMIC_ORE" title="cub::WARP_MATCH_ATOMIC_OR"><span class="n"><span class="pre">WARP_MATCH_ATOMIC_OR</span></span></a><span class="p"><span class="pre">&gt;</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal16ComputeRanksItemERA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_iN6detail10constant_tI20WARP_MATCH_ATOMIC_OREE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal16ComputeRanksItemERA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_iN6detail10constant_tI14WARP_MATCH_ANYEE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1_1BlockRadixRankMatchInternal_1aa7bcd6630de5b9e5e9e5a47b3f156541"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ComputeRanksItem</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternalE" title="cub::BlockRadixRankMatchEarlyCounts::BlockRadixRankMatchInternal::UnsignedBits"><span class="n"><span class="pre">UnsignedBits</span></span></a><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">keys</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternalE" title="cub::BlockRadixRankMatchEarlyCounts::BlockRadixRankMatchInternal::KEYS_PER_THREAD"><span class="n"><span class="pre">KEYS_PER_THREAD</span></span></a><span class="p"><span class="pre">]</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">ranks</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternalE" title="cub::BlockRadixRankMatchEarlyCounts::BlockRadixRankMatchInternal::KEYS_PER_THREAD"><span class="n"><span class="pre">KEYS_PER_THREAD</span></span></a><span class="p"><span class="pre">]</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">constant_t</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="namespacecub_1aba00cdd73e8ef7f441861282dbc52f1c.html#_CPPv4N3cub18WarpMatchAlgorithm14WARP_MATCH_ANYE" title="cub::WARP_MATCH_ANY"><span class="n"><span class="pre">WARP_MATCH_ANY</span></span></a><span class="p"><span class="pre">&gt;</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal16ComputeRanksItemERA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_iN6detail10constant_tI14WARP_MATCH_ANYEE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal8RankKeysERA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_iRA15BINS_PER_THREAD_i">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1_1BlockRadixRankMatchInternal_1afe2bcca96d661279f1e51dc43a007392"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">RankKeys</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternalE" title="cub::BlockRadixRankMatchEarlyCounts::BlockRadixRankMatchInternal::UnsignedBits"><span class="n"><span class="pre">UnsignedBits</span></span></a><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">keys</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternalE" title="cub::BlockRadixRankMatchEarlyCounts::BlockRadixRankMatchInternal::KEYS_PER_THREAD"><span class="n"><span class="pre">KEYS_PER_THREAD</span></span></a><span class="p"><span class="pre">]</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">ranks</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternalE" title="cub::BlockRadixRankMatchEarlyCounts::BlockRadixRankMatchInternal::KEYS_PER_THREAD"><span class="n"><span class="pre">KEYS_PER_THREAD</span></span></a><span class="p"><span class="pre">]</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">exclusive_digit_prefix</span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts15BINS_PER_THREADE" title="cub::BlockRadixRankMatchEarlyCounts::BINS_PER_THREAD"><span class="n"><span class="pre">BINS_PER_THREAD</span></span></a><span class="p"><span class="pre">]</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal8RankKeysERA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_iRA15BINS_PER_THREAD_i" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal27BlockRadixRankMatchInternalER11TempStorage15DigitExtractorT14CountsCallback">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1_1BlockRadixRankMatchInternal_1a94ae1064fe88f008c9ce2d7611b2adbc"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BlockRadixRankMatchInternal</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorageE" title="cub::BlockRadixRankMatchEarlyCounts::TempStorage"><span class="n"><span class="pre">TempStorage</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">temp_storage</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternalE" title="cub::BlockRadixRankMatchEarlyCounts::BlockRadixRankMatchInternal::DigitExtractorT"><span class="n"><span class="pre">DigitExtractorT</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">digit_extractor</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternalE" title="cub::BlockRadixRankMatchEarlyCounts::BlockRadixRankMatchInternal::CountsCallback"><span class="n"><span class="pre">CountsCallback</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">callback</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal27BlockRadixRankMatchInternalER11TempStorage15DigitExtractorT14CountsCallback" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-members">Public Members</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal1sE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1_1BlockRadixRankMatchInternal_1aa63114a9df3ab4c91abb11f2be5929bd"></span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorageE" title="cub::BlockRadixRankMatchEarlyCounts::TempStorage"><span class="n"><span class="pre">TempStorage</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">s</span></span></span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal1sE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal15digit_extractorE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1_1BlockRadixRankMatchInternal_1a224706ca6c6dbb84b360a598cb6d4b6b"></span><a class="reference internal" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternalE" title="cub::BlockRadixRankMatchEarlyCounts::BlockRadixRankMatchInternal::DigitExtractorT"><span class="n"><span class="pre">DigitExtractorT</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">digit_extractor</span></span></span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal15digit_extractorE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal8callbackE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1_1BlockRadixRankMatchInternal_1a1c184183313b009c24677adda7b724f3"></span><a class="reference internal" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternalE" title="cub::BlockRadixRankMatchEarlyCounts::BlockRadixRankMatchInternal::CountsCallback"><span class="n"><span class="pre">CountsCallback</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">callback</span></span></span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal8callbackE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal4warpE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1_1BlockRadixRankMatchInternal_1a6c30c7dbe27695722b1cd0ffd463b646"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">warp</span></span></span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal4warpE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal4laneE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1_1BlockRadixRankMatchInternal_1aff878628ce64138ca88fc2c8b12236ac"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">lane</span></span></span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal4laneE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+</dd></dl>
+
+<dl class="cpp struct">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorageE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1_1TempStorage"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">TempStorage</span></span></span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorageE" title="Link to this definition">#</a><br /></dt>
+<dd><div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-members">Public Members</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorage12warp_offsetsE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1_1TempStorage_1adb48920eeb591a215ef4e8d5602638e1"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">warp_offsets</span></span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11BLOCK_WARPSE" title="cub::BlockRadixRankMatchEarlyCounts::BLOCK_WARPS"><span class="n"><span class="pre">BLOCK_WARPS</span></span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts12RADIX_DIGITSE" title="cub::BlockRadixRankMatchEarlyCounts::RADIX_DIGITS"><span class="n"><span class="pre">RADIX_DIGITS</span></span></a><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorage12warp_offsetsE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorage15warp_histogramsE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1_1TempStorage_1abeac6394db6eeb6fabc6428aaee67b74"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">warp_histograms</span></span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11BLOCK_WARPSE" title="cub::BlockRadixRankMatchEarlyCounts::BLOCK_WARPS"><span class="n"><span class="pre">BLOCK_WARPS</span></span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts12RADIX_DIGITSE" title="cub::BlockRadixRankMatchEarlyCounts::RADIX_DIGITS"><span class="n"><span class="pre">RADIX_DIGITS</span></span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4I_i_i_b_18BlockScanAlgorithm_18WarpMatchAlgorithm_iEN3cub30BlockRadixRankMatchEarlyCountsE" title="cub::BlockRadixRankMatchEarlyCounts::NUM_PARTS"><span class="n"><span class="pre">NUM_PARTS</span></span></a><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorage15warp_histogramsE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorageUt2_22E">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1_1TempStorage_1ae5b931b2cb764cbb5781cc61d37269b5"></span><span class="k"><span class="pre">union</span></span><span class="w"> </span><span class="n"><span class="pre">cub</span></span><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4I_i_i_b_18BlockScanAlgorithm_18WarpMatchAlgorithm_iEN3cub30BlockRadixRankMatchEarlyCountsE" title="cub::BlockRadixRankMatchEarlyCounts"><span class="n"><span class="pre">BlockRadixRankMatchEarlyCounts</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorageE" title="cub::BlockRadixRankMatchEarlyCounts::TempStorage"><span class="n"><span class="pre">TempStorage</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">[anonymous]</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">[anonymous]</span></span></span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorageUt2_22E" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorage11match_masksE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1_1TempStorage_1a7d29e43343c095940b25b3a1c1068d50"></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">uint32_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">match_masks</span></span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts22MATCH_MASKS_ALLOC_SIZEE" title="cub::BlockRadixRankMatchEarlyCounts::MATCH_MASKS_ALLOC_SIZE"><span class="n"><span class="pre">MATCH_MASKS_ALLOC_SIZE</span></span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts12RADIX_DIGITSE" title="cub::BlockRadixRankMatchEarlyCounts::RADIX_DIGITS"><span class="n"><span class="pre">RADIX_DIGITS</span></span></a><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorage11match_masksE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorage10prefix_tmpE">
+<span class="target" id="structcub_1_1BlockRadixRankMatchEarlyCounts_1_1TempStorage_1a3dbe904b70d461d638c7877a00410a7a"></span><a class="reference internal" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts9BlockScanE" title="cub::BlockRadixRankMatchEarlyCounts::BlockScan"><span class="n"><span class="pre">BlockScan</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">TempStorage</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">prefix_tmp</span></span></span><a class="headerlink" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorage10prefix_tmpE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="classcub_1_1BlockRadixRankMatch.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">cub::BlockRadixRankMatch</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="classcub_1_1BlockRadixSort.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">cub::BlockRadixSort</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I_i_i_b_18BlockScanAlgorithm_18WarpMatchAlgorithm_iEN3cub30BlockRadixRankMatchEarlyCountsE"><code class="docutils literal notranslate"><span class="pre">cub::BlockRadixRankMatchEarlyCounts</span></code></a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts9BlockScanE"><code class="docutils literal notranslate"><span class="pre">BlockScan</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts30BlockRadixRankMatchEarlyCountsER11TempStorage"><code class="docutils literal notranslate"><span class="pre">BlockRadixRankMatchEarlyCounts()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorTRA15BINS_PER_THREAD_i14CountsCallback"><code class="docutils literal notranslate"><span class="pre">RankKeys()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0_i0EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorTRA15BINS_PER_THREAD_i"><code class="docutils literal notranslate"><span class="pre">RankKeys()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0_i0EN3cub30BlockRadixRankMatchEarlyCounts8RankKeysEvRA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_i15DigitExtractorT"><code class="docutils literal notranslate"><span class="pre">RankKeys()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts12temp_storageE"><code class="docutils literal notranslate"><span class="pre">temp_storage</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts13BLOCK_THREADSE"><code class="docutils literal notranslate"><span class="pre">BLOCK_THREADS</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts12RADIX_DIGITSE"><code class="docutils literal notranslate"><span class="pre">RADIX_DIGITS</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts15BINS_PER_THREADE"><code class="docutils literal notranslate"><span class="pre">BINS_PER_THREAD</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts23BINS_TRACKED_PER_THREADE"><code class="docutils literal notranslate"><span class="pre">BINS_TRACKED_PER_THREAD</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts9FULL_BINSE"><code class="docutils literal notranslate"><span class="pre">FULL_BINS</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts12WARP_THREADSE"><code class="docutils literal notranslate"><span class="pre">WARP_THREADS</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts20PARTIAL_WARP_THREADSE"><code class="docutils literal notranslate"><span class="pre">PARTIAL_WARP_THREADS</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11BLOCK_WARPSE"><code class="docutils literal notranslate"><span class="pre">BLOCK_WARPS</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts15PARTIAL_WARP_IDE"><code class="docutils literal notranslate"><span class="pre">PARTIAL_WARP_ID</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts9WARP_MASKE"><code class="docutils literal notranslate"><span class="pre">WARP_MASK</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts15NUM_MATCH_MASKSE"><code class="docutils literal notranslate"><span class="pre">NUM_MATCH_MASKS</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts22MATCH_MASKS_ALLOC_SIZEE"><code class="docutils literal notranslate"><span class="pre">MATCH_MASKS_ALLOC_SIZE</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0_i00EN3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternalE"><code class="docutils literal notranslate"><span class="pre">cub::BlockRadixRankMatchEarlyCounts::BlockRadixRankMatchInternal</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal5DigitE12UnsignedBits"><code class="docutils literal notranslate"><span class="pre">Digit()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal9ThreadBinEi"><code class="docutils literal notranslate"><span class="pre">ThreadBin()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal21ComputeHistogramsWarpERA15KEYS_PER_THREAD_12UnsignedBits"><code class="docutils literal notranslate"><span class="pre">ComputeHistogramsWarp()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal25ComputeOffsetsWarpUpsweepERA15BINS_PER_THREAD_i"><code class="docutils literal notranslate"><span class="pre">ComputeOffsetsWarpUpsweep()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal27ComputeOffsetsWarpDownsweepERA15BINS_PER_THREAD_i"><code class="docutils literal notranslate"><span class="pre">ComputeOffsetsWarpDownsweep()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal16ComputeRanksItemERA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_iN6detail10constant_tI20WARP_MATCH_ATOMIC_OREE"><code class="docutils literal notranslate"><span class="pre">ComputeRanksItem()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal16ComputeRanksItemERA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_iN6detail10constant_tI14WARP_MATCH_ANYEE"><code class="docutils literal notranslate"><span class="pre">ComputeRanksItem()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal8RankKeysERA15KEYS_PER_THREAD_12UnsignedBitsRA15KEYS_PER_THREAD_iRA15BINS_PER_THREAD_i"><code class="docutils literal notranslate"><span class="pre">RankKeys()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal27BlockRadixRankMatchInternalER11TempStorage15DigitExtractorT14CountsCallback"><code class="docutils literal notranslate"><span class="pre">BlockRadixRankMatchInternal()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal1sE"><code class="docutils literal notranslate"><span class="pre">s</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal15digit_extractorE"><code class="docutils literal notranslate"><span class="pre">digit_extractor</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal8callbackE"><code class="docutils literal notranslate"><span class="pre">callback</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal4warpE"><code class="docutils literal notranslate"><span class="pre">warp</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts27BlockRadixRankMatchInternal4laneE"><code class="docutils literal notranslate"><span class="pre">lane</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorageE"><code class="docutils literal notranslate"><span class="pre">cub::BlockRadixRankMatchEarlyCounts::TempStorage</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorage12warp_offsetsE"><code class="docutils literal notranslate"><span class="pre">warp_offsets</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorage15warp_histogramsE"><code class="docutils literal notranslate"><span class="pre">warp_histograms</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorageUt2_22E"><code class="docutils literal notranslate"><span class="pre">@22</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorage11match_masksE"><code class="docutils literal notranslate"><span class="pre">match_masks</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3cub30BlockRadixRankMatchEarlyCounts11TempStorage10prefix_tmpE"><code class="docutils literal notranslate"><span class="pre">prefix_tmp</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2026, NVIDIA Corporation.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

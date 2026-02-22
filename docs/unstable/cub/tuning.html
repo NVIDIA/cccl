@@ -1,0 +1,1336 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>CUB Tunings &#8212; CUDA Core Compute Libraries</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+
+
+    <script src="../_static/documentation_options.js?v=bbe6ed3a"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=5ceeb459"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'cub/tuning';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://NVIDIA.github.io/cccl/nv-versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'unstable';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+
+    <link rel="canonical" href="https://NVIDIA.github.io/cccl/cub/tuning.html" />
+    <link rel="icon" href="../_static/favicon.png"/>
+
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="CUB Developer Overview" href="developer_overview.html" />
+    <link rel="prev" title="CUB Benchmarks" href="benchmarking.html" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="unstable" />
+
+
+  </head>
+
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../cpp.html">CUDA C++ Core Libraries</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="../libcudacxx/index.html">libcu++</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../libcudacxx/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/setup.html">Setup</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/setup/requirements.html">Requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/setup/getting.html">Getting libcu++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/setup/building_and_testing.html">Building &amp; Testing libcu++</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/standard_api.html">Standard API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/algorithms_library.html">Algorithms Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/c_library.html">C Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/concepts_library.html">Concepts Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/container_library.html">Container Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/execution_library.html">Execution Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/numerics_library.html">Numerics Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/ranges_library.html">Ranges Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/synchronization_library.html">Synchronization Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/time_library.html">Time Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/type_support.html">Type Support Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/utility_library.html">Utility Library</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/extended_api.html">Extended API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/bit.html">Bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/execution_model.html">Execution model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/exceptions.html">Exception Handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/memory_model.html">Memory model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/thread_groups.html">Thread Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/synchronization_primitives.html">Synchronization Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/asynchronous_operations.html">Asynchronous Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/memory_access_properties.html">Memory access properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/functional.html">Functional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/iterators.html">Fancy Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/type_traits.html">Type traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/vector_tuple_protocol.html">Vector Tuple Protocol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/numeric.html">Numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/random.html">Random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/memory.html">Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/memory_resource.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/math.html">Math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/mdspan.html">Mdspan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/warp.html">Warp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/utility.html">Utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/work_stealing.html">Work stealing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/stream.html">Streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/event.html">Events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/algorithm.html">Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/legacy_resources.html">Legacy resources</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/ptx/examples.html">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/ptx/instructions.html">PTX Instructions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/ptx/pragmas.html">PTX Pragmas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../libcudacxx/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="index.html">CUB</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test_overview.html">CUB Tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="benchmarking.html">CUB Benchmarks</a></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">CUB Tunings</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="developer_overview.html">CUB Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/nvtx.html">NVTX</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="releases.html">CUB Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="releases/changelog.html">CUB 2.1.0</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_docs/thread_level.html">Thread-level Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_docs/warp_wide.html">Warp-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_docs/block_wide.html">Block-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_docs/device_wide.html">Device-Wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="api/index.html">API reference</a></li>
+</ul>
+</details></li>
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2 has-children"><a class="reference internal" href="../thrust/index.html">Thrust</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../thrust/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../thrust/developer_overview.html">Thrust Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/developer/cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/developer/systems.html">Thrust systems</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../thrust/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../thrust/release_process.html">Release Process</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../thrust/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/algorithms.html">Algorithms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/containers.html">Containers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/function_objects.html">Function Objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/iterators.html">Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/memory_management.html">Memory Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/numerics.html">Numerics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/random.html">Random Number Generators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/system.html">System</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/utility.html">Utility</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../thrust/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../cudax/index.html">CUDA Experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../cudax/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cudax/container.html">Containers library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/classcuda_1_1experimental_1_1uninitialized__buffer.html">cuda::experimental::uninitialized_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cudax/memory_resource.html">Memory Resources</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/classcuda_1_1mr_1_1basic__any__resource.html">cuda::mr::basic_any_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/structcuda_1_1memory__pool__properties.html">cuda::memory_pool_properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/structcuda_1_1device__memory__pool.html">cuda::device_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/structcuda_1_1pinned__memory__pool.html">cuda::pinned_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/structcuda_1_1managed__memory__pool.html">cuda::managed_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/classcuda_1_1mr_1_1legacy__pinned__memory__resource.html">cuda::mr::legacy_pinned_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/classcuda_1_1mr_1_1legacy__managed__memory__resource.html">cuda::mr::legacy_managed_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/structcuda_1_1mr_1_1shared__resource.html">cuda::mr::shared_resource</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cudax/graph.html">Graphs library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1graph.html">cuda::experimental::graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1graph__builder.html">cuda::experimental::graph_builder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1graph__builder__ref.html">cuda::experimental::graph_builder_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1graph__node__ref.html">cuda::experimental::graph_node_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of.html">cuda::experimental::stf::graphed_interface_of</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; mdspan&lt; T, P… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; void_interface &gt;</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cudax/stf.html">CUDASTF</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/stf/custom_data_interface.html">Implementation of the <code class="docutils literal notranslate"><span class="pre">matrix</span></code> class</a></li>
+
+
+
+
+
+<li class="toctree-l4"><a class="reference internal" href="../cudax/stf/lower_level_api.html">Lower-level API</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../cudax/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../cccl/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cccl/3.0_migration_guide.html">CCCL 2.x ‐ CCCL 3.0 migration guide</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../cccl/development/index.html">CCCL Development Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../cccl/development/macro.html">CCCL Internal Macros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cccl/development/testing.html">CCCL Testing Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../cccl/contributing.html">Contributing to the CUDA Core Compute Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../cccl/contributing/code_of_conduct.html">Code of Conduct</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../cccl/license.html">License</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../python/index.html">CCCL Python Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../python/setup.html">Setup and Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../python/compute.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../python/coop.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>: Cooperative Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../python/resources.html">Resources</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../python/api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../python/compute_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../python/coop_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> API Reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../cpp.html" class="nav-link">CUDA C++ Core Libraries</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">CUB</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">CUB Tunings</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="cub-tunings">
+<span id="cub-tuning"></span><h1>CUB Tunings<a class="headerlink" href="#cub-tunings" title="Link to this heading">#</a></h1>
+<p>The following is an analytical guide on how to tune CUB Device primitives for performance.</p>
+<p>Device-scope algorithms in CUB have many knobs that significantly impact performance (without affecting correctness). For instance, the number of threads per block and items per thread can be tuned to maximize performance for a given device and data type.
+This document describes CUB’s tuning Infrastructure, a set of tools facilitating the process of
+selecting optimal tuning parameters for a given device and data type.</p>
+<section id="terminology">
+<h2>Terminology<a class="headerlink" href="#terminology" title="Link to this heading">#</a></h2>
+<p><em>We omit the word “tuning” but assume it in the definitions for all terms below,
+so those terms may mean something else in a more generic context.</em></p>
+<p>The following three terms are fundamental to understanding the essence of CUB tuning:</p>
+<ul class="simple">
+<li><p><strong>compile-time (ct) workload</strong>: a workload that can be recognized only at compile time.</p></li>
+</ul>
+<p><em>e.g. the combination of key type and offset type,</em> <code class="code docutils literal notranslate"><span class="pre">int16_t</span></code> <em>and</em> <code class="code docutils literal notranslate"><span class="pre">int32_t</span></code></p>
+<ul class="simple">
+<li><p><strong>runtime (rt) workload</strong>: a workload that can be recognized only at runtime.</p></li>
+</ul>
+<p><em>e.g. the number of input elements</em></p>
+<ul class="simple">
+<li><p><strong>tuning parameter (or parameter)</strong>: a parameter that can be tuned to maximize performance for a given device and data type.</p></li>
+</ul>
+<p><em>e.g. number of threads per block, items per thread</em></p>
+<p>Algorithms are tuned for different workloads. These workloads are defined as subspaces by NVBench via the benchmarks’ axis.
+For instance, radix sort can be tuned for different key types, different number of keys, and different distributions of keys. The tuning process is summarized in
+the following statement:</p>
+<div style="display: flex; justify-content: center; align-items: center; height: 10; text-align: center; font-size: 1.5em; color: #76B900;">
+    "For each Compile-time Workload, we search for the best tuning parameters"
+</div><p>More specifically, the tuning infrastructure optimizes algorithms for specific compile-time workloads,
+aggregating results across all runtime workloads.
+It searches through a space of parameters to find the combination for a given compile-time workload with the highest score.</p>
+<hr class="docutils" />
+<p>Following is supplemental terminology that will be used throughout the rest of this tuning guide:</p>
+<ul class="simple">
+<li><p><strong>Parameter Space</strong>: the set of all possible values for a given Tuning Parameter.</p></li>
+</ul>
+<p><em>It is specific to the algorithm</em>. For example the parameter space for the number of threads per block can be <span class="math notranslate nohighlight">\(\{32, 64, 96, 128, \dots, 1024\}\)</span> for radix sort, but <span class="math notranslate nohighlight">\(\{32, 64, 128, 256, 512\}\)</span> for merge sort.</p>
+<ul class="simple">
+<li><p><strong>Search Space</strong>: Cartesian product of all the Parameter Spaces of a single algorithm.</p></li>
+</ul>
+<p>For instance, the Search Space for an algorithm with tunable items per thread and threads per block might look like <span class="math notranslate nohighlight">\(\{(ipt \times tpb) | ipt \in \{1, \dots, 25\} \text{and} tpb \in \{32, 64, 96, 128, \dots, 1024\}\}\)</span>.</p>
+<ul class="simple">
+<li><p><strong>Variant</strong> - a point in the corresponding Search Space.</p></li>
+<li><p><strong>Base</strong> - the variant that CUB uses by default.</p></li>
+<li><p><strong>Score</strong> - a single number representing the performance for a given compile-time workload across all runtime workloads. For instance, a weighted-sum of speedups of a given variant compared to its base for all runtime workloads is a score.</p></li>
+</ul>
+</section>
+<section id="authoring-benchmarks">
+<span id="cub-tuning-authoring-benchmarks"></span><h2>Authoring Benchmarks<a class="headerlink" href="#authoring-benchmarks" title="Link to this heading">#</a></h2>
+<p>CUB benchmarks are split into multiple files based on the algorithm they are testing
+and potentially further into compile-time flavors that are tuned for individually
+(e.g. sorting only keys vs. key-value pairs, or reducing using sum vs. using min).
+The name of the directory represents the name of the algorithm.
+The filename corresponds on the flavor.
+For instance, the benchmark <code class="code docutils literal notranslate"><span class="pre">benchmarks/bench/radix_sort/keys.cu</span></code> tests the radix sort implementation sorting only keys.
+The executable file name is going to be transformed into <code class="code docutils literal notranslate"><span class="pre">cub.bench.radix_sort.keys.*</span></code>,
+which is the benchmark name reported by the infrastructure.</p>
+<section id="headers">
+<h3>Headers<a class="headerlink" href="#headers" title="Link to this heading">#</a></h3>
+<p><strong>Benchmarks are based on NVBench.</strong>
+You start writing a benchmark by including <code class="code docutils literal notranslate"><span class="pre">nvbench_helper.cuh</span></code>. This contains all
+necessary includes and definitions.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;nvbench_helper.cuh&gt;</span>
+</pre></div>
+</div>
+<p>The next step is to define a search space. The search space is represented by a number of C++ comments.
+The format consists of the <code class="code docutils literal notranslate"><span class="pre">%RANGE%</span></code> keyword, the parameter macro, the parameter abbreviation, and its range of values.
+The range is represented by three numbers: <code class="code docutils literal notranslate"><span class="pre">start:end:step</span></code>.
+Start and end are included.
+For instance, the following code defines a search space for two parameters, the number of threads per block and items per thread.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1</span>
+<span class="c1">// %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32</span>
+</pre></div>
+</div>
+<p>Next, you need to define a benchmark function. The function accepts <code class="code docutils literal notranslate"><span class="pre">nvbench::state</span> <span class="pre">&amp;state</span></code> and
+a <code class="code docutils literal notranslate"><span class="pre">nvbench::type_list</span></code>. For more details on the benchmark signature, take a look at the
+<a class="reference external" href="https://github.com/NVIDIA/nvbench">NVBench documentation</a>.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">OffsetT</span><span class="o">&gt;</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">algname</span><span class="p">(</span><span class="n">nvbench</span><span class="o">::</span><span class="n">state</span><span class="w"> </span><span class="o">&amp;</span><span class="n">state</span><span class="p">,</span><span class="w"> </span><span class="n">nvbench</span><span class="o">::</span><span class="n">type_list</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">OffsetT</span><span class="o">&gt;</span><span class="p">)</span>
+<span class="p">{...}</span>
+</pre></div>
+</div>
+<p>Before proceeding further with the benchmark authoring it is imperative to understand the Policy Hub mechanism.</p>
+</section>
+<section id="policy-hub">
+<h3>Policy Hub<a class="headerlink" href="#policy-hub" title="Link to this heading">#</a></h3>
+<p>Tuning relies on CUB’s device algorithms to expose a dispatch layer which can be parameterized by a Policy Hub. The Policy Hub is an intermediate
+class that enables tuning. In other words it translates the SM architecture, the input types etc. which accepts at instantiation as input,
+into the parameter values that are optimal for when executing the specific compile time workload.</p>
+<p>CUB usually provides a default policy hub, but when tuning we want to overwrite it, so we have to specialize the dispatch layer.
+<strong>The tuning infrastructure will use the</strong> <code class="code docutils literal notranslate"><span class="pre">TUNE_BASE</span></code> <strong>macro to distinguish between compiling the base version (i.e. baseline) of a benchmark
+and compiling a variant for a given set of tuning parameters.</strong>
+When base is used, no policy is specified, so that the default policy CUB provides is used.
+If <code class="code docutils literal notranslate"><span class="pre">TUNE_BASE</span></code> is not defined, we specify a custom policy
+using the parameter macros defined in the <code class="code docutils literal notranslate"><span class="pre">%RANGE%</span></code> comments which define the search space.</p>
+<p>The following code is included in the benchmark for the policy hub to be enabled and the parameters to have effect in execution:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#if TUNE_BASE</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">dispatch_t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">DispatchReduce</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">OffsetT</span><span class="o">&gt;</span><span class="p">;</span><span class="w"> </span><span class="c1">// uses default policy hub</span>
+<span class="cp">#else</span>
+<span class="w">  </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">AccumT</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">OffsetT</span><span class="o">&gt;</span>
+<span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">policy_hub_t</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">MaxPolicy</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">ChainedPolicy</span><span class="o">&lt;</span><span class="mi">300</span><span class="p">,</span><span class="w"> </span><span class="n">policy_t</span><span class="p">,</span><span class="w"> </span><span class="n">policy_t</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">threads_per_block</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">TUNE_THREADS_PER_BLOCK</span><span class="p">;</span>
+<span class="w">      </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">items_per_thread</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">TUNE_ITEMS_PER_THREAD</span><span class="p">;</span>
+<span class="w">      </span><span class="p">...</span>
+<span class="w">    </span><span class="p">};</span>
+<span class="w">  </span><span class="p">};</span>
+
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">dispatch_t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">DispatchReduce</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">OffsetT</span><span class="p">,</span><span class="w"> </span><span class="n">policy_hub_t</span><span class="o">&lt;</span><span class="n">accum_t</span><span class="p">,</span><span class="w"> </span><span class="n">offset_t</span><span class="o">&gt;&gt;</span><span class="p">;</span>
+<span class="cp">#endif</span>
+</pre></div>
+</div>
+<p>The custom policy hub used for tuning should only expose a single <code class="code docutils literal notranslate"><span class="pre">MaxPolicy</span></code> for CUB to use.
+It must contain all parameters required for the full definition of the search space.</p>
+</section>
+<section id="main-body">
+<h3>Main Body<a class="headerlink" href="#main-body" title="Link to this heading">#</a></h3>
+<p>The <code class="code docutils literal notranslate"><span class="pre">state</span></code> passed into the benchmark function allows access to runtime workload axes,
+for example the number of elements to process.
+<em>When creating containers for the input avoid to initialize data yourself.
+Instead, use the</em> <code class="code docutils literal notranslate"><span class="pre">gen</span></code> <em>function,
+which will fill the input vector with random data on GPU with no compile-time overhead.</em></p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">elements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">state</span><span class="p">.</span><span class="n">get_int64</span><span class="p">(</span><span class="s">&quot;Elements{io}&quot;</span><span class="p">));</span>
+<span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">in</span><span class="p">(</span><span class="n">elements</span><span class="p">);</span>
+<span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">out</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+
+<span class="n">gen</span><span class="p">(</span><span class="n">seed_t</span><span class="p">{},</span><span class="w"> </span><span class="n">in</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>In addition to the benchmark runtime, NVBench can also report information on the achieved memory bandwidth.
+For this, you can optionally provide information on the memory reads and writes of the algorithm to the <code class="code docutils literal notranslate"><span class="pre">state</span></code>:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">state</span><span class="p">.</span><span class="n">add_element_count</span><span class="p">(</span><span class="n">elements</span><span class="p">);</span>
+<span class="n">state</span><span class="p">.</span><span class="n">add_global_memory_reads</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">elements</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Size&quot;</span><span class="p">);</span>
+<span class="n">state</span><span class="p">.</span><span class="n">add_global_memory_writes</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Most CUB algorithms need to be called twice:</p>
+<ol class="arabic simple">
+<li><p>once to query the amount of temporary storage needed,</p></li>
+<li><p>once to run the actual algorithm.</p></li>
+</ol>
+<p>We perform the first call now and allocate temporary storage:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">temp_size</span><span class="p">;</span>
+<span class="n">dispatch_t</span><span class="o">::</span><span class="n">Dispatch</span><span class="p">(</span><span class="k">nullptr</span><span class="p">,</span>
+<span class="w">                     </span><span class="n">temp_size</span><span class="p">,</span>
+<span class="w">                     </span><span class="n">d_in</span><span class="p">,</span>
+<span class="w">                     </span><span class="n">d_out</span><span class="p">,</span>
+<span class="w">                     </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="n">offset_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">elements</span><span class="p">),</span>
+<span class="w">                     </span><span class="mi">0</span><span class="w"> </span><span class="cm">/* stream */</span><span class="p">);</span>
+
+<span class="n">thrust</span><span class="o">::</span><span class="n">device_vector</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="w"> </span><span class="n">temp</span><span class="p">(</span><span class="n">temp_size</span><span class="p">);</span>
+<span class="k">auto</span><span class="w"> </span><span class="o">*</span><span class="n">temp_storage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thrust</span><span class="o">::</span><span class="n">raw_pointer_cast</span><span class="p">(</span><span class="n">temp</span><span class="p">.</span><span class="n">data</span><span class="p">());</span>
+</pre></div>
+</div>
+<p>Finally, we can execute the timed region of the benchmark,
+which contains the second call to a CUB algorithm and performs the actual work we want to benchmark:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="n">state</span><span class="p">.</span><span class="n">exec</span><span class="p">(</span><span class="n">nvbench</span><span class="o">::</span><span class="n">exec_tag</span><span class="o">::</span><span class="n">gpu</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">nvbench</span><span class="o">::</span><span class="n">exec_tag</span><span class="o">::</span><span class="n">no_batch</span><span class="p">,</span>
+<span class="w">             </span><span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="n">nvbench</span><span class="o">::</span><span class="n">launch</span><span class="w"> </span><span class="o">&amp;</span><span class="n">launch</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">dispatch_t</span><span class="o">::</span><span class="n">Dispatch</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">,</span>
+<span class="w">                         </span><span class="n">temp_size</span><span class="p">,</span>
+<span class="w">                         </span><span class="n">d_in</span><span class="p">,</span>
+<span class="w">                         </span><span class="n">d_out</span><span class="p">,</span>
+<span class="w">                         </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="n">offset_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">elements</span><span class="p">),</span>
+<span class="w">                         </span><span class="n">launch</span><span class="p">.</span><span class="n">get_stream</span><span class="p">());</span>
+<span class="w">  </span><span class="p">});</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>This concludes defining the benchmark function.
+Now we need to tell NVBench about it.</p>
+</section>
+<section id="nvbench-attributes">
+<h3>NVBench Attributes<a class="headerlink" href="#nvbench-attributes" title="Link to this heading">#</a></h3>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">NVBENCH_BENCH_TYPES</span><span class="p">(</span><span class="n">algname</span><span class="p">,</span><span class="w"> </span><span class="n">NVBENCH_TYPE_AXES</span><span class="p">(</span><span class="n">all_types</span><span class="p">,</span><span class="w"> </span><span class="n">offset_types</span><span class="p">))</span>
+<span class="w">  </span><span class="p">.</span><span class="n">set_name</span><span class="p">(</span><span class="s">&quot;base&quot;</span><span class="p">)</span>
+<span class="w">  </span><span class="p">.</span><span class="n">set_type_axes_names</span><span class="p">({</span><span class="s">&quot;T{ct}&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;OffsetT{ct}&quot;</span><span class="p">})</span>
+<span class="w">  </span><span class="p">.</span><span class="n">add_int64_power_of_two_axis</span><span class="p">(</span><span class="s">&quot;Elements{io}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">nvbench</span><span class="o">::</span><span class="n">range</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span><span class="w"> </span><span class="mi">28</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">));</span>
+</pre></div>
+</div>
+<p><code class="code docutils literal notranslate"><span class="pre">NVBENCH_BENCH_TYPES</span></code> registers the benchmark as one with multiple compile-time workloads,
+which are defined by the Cartesian product of the type lists in <code class="code docutils literal notranslate"><span class="pre">NVBENCH_TYPE_AXES</span></code>.
+<code class="code docutils literal notranslate"><span class="pre">set_name(...)</span></code> sets the name of the benchmark.
+Only alphabetical characters, numbers and underscores are allowed in the benchmark name.</p>
+<p>Furthermore, compile-time axes should be suffixed with <code class="code docutils literal notranslate"><span class="pre">{ct}</span></code>. The runtime axes might be optionally annotated
+as <code class="code docutils literal notranslate"><span class="pre">{io}</span></code> which stands for importance-ordered. <em>This will tell the tuning infrastructure that
+the later values on the axis are more important. If the axis is not annotated, each value will be
+treated as equally important.</em></p>
+<p>When you define a type axis annotated with <code class="code docutils literal notranslate"><span class="pre">{ct}</span></code>, you should consider optimizing
+the build time. Many variants are going to be build, but the search is considering one compile-time
+use case at a time. This means that if you have many types to tune for, you’ll end up having
+many template specializations that you don’t need. To avoid this, for each compile time axis, the tuning framework will predefine
+a <cite>TUNE_AxisName</cite> macro with the type that’s currently being tuned. For instance, if you
+have the type axes <code class="code docutils literal notranslate"><span class="pre">T{ct}</span></code> and <code class="code docutils literal notranslate"><span class="pre">OffsetT</span></code> (as shown above), you can use the following
+pattern to narrow down the types you compile for:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#ifdef TUNE_T</span>
+<span class="k">using</span><span class="w"> </span><span class="n">all_types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nvbench</span><span class="o">::</span><span class="n">type_list</span><span class="o">&lt;</span><span class="n">TUNE_T</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="cp">#else</span>
+<span class="k">using</span><span class="w"> </span><span class="n">all_types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nvbench</span><span class="o">::</span><span class="n">type_list</span><span class="o">&lt;</span><span class="kt">char</span><span class="p">,</span><span class="w"> </span><span class="kt">short</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="kt">long</span><span class="p">,</span><span class="w"> </span><span class="p">...</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="cp">#endif</span>
+
+<span class="cp">#ifdef TUNE_OffsetT</span>
+<span class="k">using</span><span class="w"> </span><span class="n">offset_types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nvbench</span><span class="o">::</span><span class="n">type_list</span><span class="o">&lt;</span><span class="n">TUNE_OffsetT</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="cp">#else</span>
+<span class="k">using</span><span class="w"> </span><span class="n">offset_types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nvbench</span><span class="o">::</span><span class="n">type_list</span><span class="o">&lt;</span><span class="kt">int32_t</span><span class="p">,</span><span class="w"> </span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="cp">#endif</span>
+</pre></div>
+</div>
+<p>This logic is already implemented if you use any of the following predefined type lists:</p>
+<div class="pst-scrollable-table-container"><table class="table" id="id1">
+<caption><span class="caption-text">Predefined type lists</span><a class="headerlink" href="#id1" title="Link to this table">#</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Axis name</p></th>
+<th class="head"><p>C++ identifier</p></th>
+<th class="head"><p>Included types</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="code docutils literal notranslate"><span class="pre">T{ct}</span></code></p></td>
+<td><p><code class="code docutils literal notranslate"><span class="pre">integral_types</span></code></p></td>
+<td><p><code class="code docutils literal notranslate"><span class="pre">int8_t,</span> <span class="pre">int16_t,</span> <span class="pre">int32_t,</span> <span class="pre">int64_t</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="code docutils literal notranslate"><span class="pre">T{ct}</span></code></p></td>
+<td><p><code class="code docutils literal notranslate"><span class="pre">fundamental_types</span></code></p></td>
+<td><p><code class="code docutils literal notranslate"><span class="pre">integral_types</span></code> and <code class="code docutils literal notranslate"><span class="pre">int128_t,</span> <span class="pre">float,</span> <span class="pre">double</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="code docutils literal notranslate"><span class="pre">T{ct}</span></code></p></td>
+<td><p><code class="code docutils literal notranslate"><span class="pre">all_types</span></code></p></td>
+<td><p><code class="code docutils literal notranslate"><span class="pre">fundamental_types</span></code> and <code class="code docutils literal notranslate"><span class="pre">complex</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="code docutils literal notranslate"><span class="pre">OffsetT{ct}</span></code></p></td>
+<td><p><code class="code docutils literal notranslate"><span class="pre">offset_types</span></code></p></td>
+<td><p><code class="code docutils literal notranslate"><span class="pre">int32_t,</span> <span class="pre">int64_t</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>You are free to define your own axis names and use the logic above for them (see the sort pairs example).</p>
+<p>A single benchmark file can define multiple benchmarks (multiple benchmark functions registered with <code class="code docutils literal notranslate"><span class="pre">NVBENCH_BENCH_TYPES</span></code>).
+All benchmarks in a single file must share the same compile-time axes.
+<strong>The tuning infrastructure will run all benchmarks in a single file together for the same compile-time workload
+and compute a common score across all benchmarks and runtime workloads.
+Unless a benchmark axis is importance-ordered, each sample contributes equally to the score.</strong>
+This is useful to tune an algorithm for multiple runtime use cases at once,
+that we don’t intend to provide separate tuning policies for.
+Also, a large space of runtime workloads can be segmented this way,
+e.g. by splitting the benchmark entry point and supplying a few low and a few high values for a runtime axis:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">NVBENCH_BENCH_TYPES</span><span class="p">(</span><span class="n">algname</span><span class="p">,</span><span class="w"> </span><span class="n">NVBENCH_TYPE_AXES</span><span class="p">(</span><span class="n">all_types</span><span class="p">,</span><span class="w"> </span><span class="n">offset_types</span><span class="p">))</span>
+<span class="w">  </span><span class="p">.</span><span class="n">set_name</span><span class="p">(</span><span class="s">&quot;small&quot;</span><span class="p">)</span>
+<span class="w">  </span><span class="p">...</span>
+<span class="w">  </span><span class="p">.</span><span class="n">add_int64_power_of_two_axis</span><span class="p">(</span><span class="s">&quot;SegmentSize&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">nvbench</span><span class="o">::</span><span class="n">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">));</span><span class="w"> </span><span class="c1">// tests sizes 2^0, 2^1, 2^2, 2^3</span>
+
+<span class="n">NVBENCH_BENCH_TYPES</span><span class="p">(</span><span class="n">algname</span><span class="p">,</span><span class="w"> </span><span class="n">NVBENCH_TYPE_AXES</span><span class="p">(</span><span class="n">all_types</span><span class="p">,</span><span class="w"> </span><span class="n">offset_types</span><span class="p">))</span>
+<span class="w">  </span><span class="p">.</span><span class="n">set_name</span><span class="p">(</span><span class="s">&quot;large&quot;</span><span class="p">)</span>
+<span class="w">  </span><span class="p">...</span>
+<span class="w">  </span><span class="p">.</span><span class="n">add_int64_power_of_two_axis</span><span class="p">(</span><span class="s">&quot;SegmentSize&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">nvbench</span><span class="o">::</span><span class="n">range</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="mi">18</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">));</span><span class="w"> </span><span class="c1">// tests sizes 2^12, 2^14, 2^16, 2^18</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="search-process">
+<h2>Search Process<a class="headerlink" href="#search-process" title="Link to this heading">#</a></h2>
+<p>During the Search Process we are covering all variants for all compile-time workloads to find a variant with a maximum (at least locally) score.</p>
+<p>To get started with tuning, you need to configure CMake.
+You can use the following command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>mkdir<span class="w"> </span>build
+$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>build
+$<span class="w"> </span>cmake<span class="w"> </span>..<span class="w"> </span>--preset<span class="o">=</span>cub-tune
+</pre></div>
+</div>
+<p>You can then run the tuning search for a specific algorithm and compile-time workload. We use a CCCL internal script for that:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>../benchmarks/scripts/search.py<span class="w"> </span>-R<span class="w"> </span><span class="s1">&#39;.*merge_sort.*pairs&#39;</span><span class="w"> </span>-a<span class="w"> </span><span class="s1">&#39;KeyT{ct}=I128&#39;</span><span class="w"> </span>-a<span class="w"> </span><span class="s1">&#39;Elements{io}[pow2]=28&#39;</span>
+cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_13.tpb_6<span class="w"> </span><span class="m">0</span>.6805093269929858
+cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_11.tpb_10<span class="w"> </span><span class="m">1</span>.0774560502969677
+...
+</pre></div>
+</div>
+<p>This will search the space of merge sort for key-value pairs, for the key type <code class="code docutils literal notranslate"><span class="pre">int128_t</span></code> on <code class="code docutils literal notranslate"><span class="pre">2^28</span></code> elements.
+The <code class="code docutils literal notranslate"><span class="pre">-R</span></code> and <code class="code docutils literal notranslate"><span class="pre">-a</span></code> options are optional. <strong>If not specified, all benchmarks are going to be tuned.</strong>
+The <code class="code docutils literal notranslate"><span class="pre">-R</span></code> option can select multiple benchmarks using a regular expression.
+For the axis option <code class="code docutils literal notranslate"><span class="pre">-a</span></code>, you can also specify a range of values like <code class="code docutils literal notranslate"><span class="pre">-a</span> <span class="pre">'KeyT{ct}=[I32,I64]'</span></code>.
+Any axis values not supported by a selected benchmark will be ignored.
+The first variant <code class="code docutils literal notranslate"><span class="pre">cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_13.tpb_6</span></code> has a score &lt;1 and is thus generally slower than the baseline,
+whereas the second variant <code class="code docutils literal notranslate"><span class="pre">cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_11.tpb_10</span></code> has a score of &gt;1 and is thus an improvement over the baseline.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Notice there is currently a limitation in <code class="code docutils literal notranslate"><span class="pre">search.py</span></code>
+which will only execute runs for the first axis value for each axis
+(independently of whether the axis is specified on the command line or not).
+Tuning for multiple axis values requires multiple runs of <code class="code docutils literal notranslate"><span class="pre">search.py</span></code>.
+Please see <a class="reference external" href="https://github.com/NVIDIA/cccl/issues/2267">this issue</a> for more information.</p>
+</div>
+<p><strong>Benchmarks do not need to be built a priori.</strong> The tuning framework will handle building the benchmarks (base and variants) and running them by itself.
+It will keep track of the build time for base and variants.
+Sometimes, a tuning variant may lead the compiler to hang or take exceptionally long to compile.
+To keep the tuning process going, if the build time of a variant exceeds a threshold, the build is cancelled.
+The same applies to benchmarks running for too long.</p>
+<p>To get quick feedback on what benchmarks are selected and how big the search space is,
+you can add the <code class="code docutils literal notranslate"><span class="pre">-l</span></code> option:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>../benchmarks/scripts/search.py<span class="w"> </span>-R<span class="w"> </span><span class="s1">&#39;.*merge_sort.*pairs&#39;</span><span class="w"> </span>-a<span class="w"> </span><span class="s1">&#39;KeyT{ct}=I128&#39;</span><span class="w"> </span>-a<span class="w"> </span><span class="s1">&#39;Elements{io}[pow2]=28&#39;</span><span class="w"> </span>-l
+ctk:<span class="w">  </span><span class="m">12</span>.6.85
+cccl:<span class="w">  </span>v2.7.0
+<span class="c1">### Benchmarks</span>
+<span class="w">  </span>*<span class="w"> </span><span class="sb">`</span>cub.bench.merge_sort.pairs<span class="sb">`</span>:<span class="w"> </span><span class="m">540</span><span class="w"> </span>variants:
+<span class="w">    </span>*<span class="w"> </span><span class="sb">`</span>trp<span class="sb">`</span>:<span class="w"> </span><span class="o">(</span><span class="m">0</span>,<span class="w"> </span><span class="m">2</span>,<span class="w"> </span><span class="m">1</span><span class="o">)</span>
+<span class="w">    </span>*<span class="w"> </span><span class="sb">`</span>ld<span class="sb">`</span>:<span class="w"> </span><span class="o">(</span><span class="m">0</span>,<span class="w"> </span><span class="m">3</span>,<span class="w"> </span><span class="m">1</span><span class="o">)</span>
+<span class="w">    </span>*<span class="w"> </span><span class="sb">`</span>ipt<span class="sb">`</span>:<span class="w"> </span><span class="o">(</span><span class="m">7</span>,<span class="w"> </span><span class="m">25</span>,<span class="w"> </span><span class="m">1</span><span class="o">)</span>
+<span class="w">    </span>*<span class="w"> </span><span class="sb">`</span>tpb<span class="sb">`</span>:<span class="w"> </span><span class="o">(</span><span class="m">6</span>,<span class="w"> </span><span class="m">11</span>,<span class="w"> </span><span class="m">1</span><span class="o">)</span>
+</pre></div>
+</div>
+<p>It will list all selected benchmarks as well as the total number of variants (the magnitude of the search space)
+as a result of the Cartesian product of all its tuning parameter spaces.</p>
+<p>The tuning infrastructure stores the results in an SQLite database called <code class="code docutils literal notranslate"><span class="pre">cccl_meta_bench.db</span></code> in the build directory.
+This database persists across tuning runs.
+If you interrupt the benchmark script and then launch it again, only missing benchmark variants will be run.</p>
+</section>
+<section id="tuning-on-multiple-gpus">
+<h2>Tuning on multiple GPUs<a class="headerlink" href="#tuning-on-multiple-gpus" title="Link to this heading">#</a></h2>
+<p>Because the search process computes scores by comparing the performance of a variant to the baseline,
+it has to store the baseline result in the tuning database.
+The baseline is specific to the physical GPU on which it was obtained.
+Therefore, a single tuning database should not be used to run the tuning search on two different GPUs, even of the same architecture.
+Similarly, you should also not interrupt the search and resume it on a different GPU.
+Be careful when sharing build directories over network file systems.
+Check whether a build directory already contains a <code class="code docutils literal notranslate"><span class="pre">cccl_meta_bench.db</span></code> from a previous run before starting a new search.</p>
+<p>Because the search space can be separated based on different axis values,
+a tuning search can be run on multiple GPUs in parallel, even across multiple physical machines (e.g., on a cluster).
+To do this, <code class="code docutils literal notranslate"><span class="pre">search.py</span></code> is invoked in parallel, one invocation/process per GPU,
+with different axis values specified for each invocation.
+A dedicated tuning database will be created per physical GPU.
+If a shared filesystem is in use, make sure that <code class="code docutils literal notranslate"><span class="pre">search.py</span></code> is run from different directories,
+so the <code class="code docutils literal notranslate"><span class="pre">cccl_meta_bench.db</span></code> files are placed into distinct paths.</p>
+<p>It is recommended to drive a multi-GPU/multi-node search process from a script,
+iterating the axis values and invoking <code class="code docutils literal notranslate"><span class="pre">search.py</span></code> for each variant.
+This integrates nicely with workload managers on clusters, which allow submitting batch jobs.
+In such a scenario, it is recommended to submit a job per variant.</p>
+<p>After tuning on multiple GPUs, the results are available in multiple tuning databases, which can be analyzed together.</p>
+</section>
+<section id="analyzing-the-results">
+<h2>Analyzing the results<a class="headerlink" href="#analyzing-the-results" title="Link to this heading">#</a></h2>
+<p>The result of the search is stored in one or more <code class="code docutils literal notranslate"><span class="pre">cccl_meta_bench.db</span></code> files. To analyze the
+result you can use the <code class="code docutils literal notranslate"><span class="pre">analyze.py</span></code> script.
+The <code class="code docutils literal notranslate"><span class="pre">--coverage</span></code> flag will show the amount of variants that were covered per compile-time workload:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>../benchmarks/scripts/analyze.py<span class="w"> </span>--coverage
+<span class="w">  </span>cub.bench.radix_sort.keys<span class="o">[</span>T<span class="o">{</span>ct<span class="o">}=</span>I8,<span class="w"> </span>OffsetT<span class="o">{</span>ct<span class="o">}=</span>I32<span class="o">]</span><span class="w"> </span>coverage:<span class="w"> </span><span class="m">167</span><span class="w"> </span>/<span class="w"> </span><span class="m">522</span><span class="w"> </span><span class="o">(</span><span class="m">31</span>.9923%<span class="o">)</span>
+<span class="w">  </span>cub.bench.radix_sort.keys<span class="o">[</span>T<span class="o">{</span>ct<span class="o">}=</span>I8,<span class="w"> </span>OffsetT<span class="o">{</span>ct<span class="o">}=</span>I64<span class="o">]</span><span class="w"> </span>coverage:<span class="w"> </span><span class="m">152</span><span class="w"> </span>/<span class="w"> </span><span class="m">522</span><span class="w"> </span><span class="o">(</span><span class="m">29</span>.1188%<span class="o">)</span>
+</pre></div>
+</div>
+<p>The <code class="code docutils literal notranslate"><span class="pre">--top</span> <span class="pre">N</span></code> flag will list the best <code class="code docutils literal notranslate"><span class="pre">N</span></code> variants for each compile-time workload:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>../benchmarks/scripts/analyze.py<span class="w"> </span>--top<span class="o">=</span><span class="m">5</span>
+<span class="w">  </span>cub.bench.radix_sort.keys<span class="o">[</span>T<span class="o">{</span>ct<span class="o">}=</span>I8,<span class="w"> </span>OffsetT<span class="o">{</span>ct<span class="o">}=</span>I32<span class="o">]</span>:
+<span class="w">            </span>variant<span class="w">     </span>score<span class="w">      </span>mins<span class="w">     </span>means<span class="w">      </span>maxs
+<span class="w">  </span><span class="m">97</span><span class="w">  </span>ipt_19.tpb_512<span class="w">  </span><span class="m">1</span>.141015<span class="w">  </span><span class="m">1</span>.039052<span class="w">  </span><span class="m">1</span>.243448<span class="w">  </span><span class="m">1</span>.679558
+<span class="w">  </span><span class="m">84</span><span class="w">  </span>ipt_18.tpb_512<span class="w">  </span><span class="m">1</span>.136463<span class="w">  </span><span class="m">1</span>.030434<span class="w">  </span><span class="m">1</span>.245825<span class="w">  </span><span class="m">1</span>.668038
+<span class="w">  </span><span class="m">68</span><span class="w">  </span>ipt_17.tpb_512<span class="w">  </span><span class="m">1</span>.132696<span class="w">  </span><span class="m">1</span>.020470<span class="w">  </span><span class="m">1</span>.250665<span class="w">  </span><span class="m">1</span>.688889
+<span class="w">  </span><span class="m">41</span><span class="w">  </span>ipt_15.tpb_576<span class="w">  </span><span class="m">1</span>.124077<span class="w">  </span><span class="m">1</span>.011560<span class="w">  </span><span class="m">1</span>.245011<span class="w">  </span><span class="m">1</span>.722379
+<span class="w">  </span><span class="m">52</span><span class="w">  </span>ipt_16.tpb_512<span class="w">  </span><span class="m">1</span>.121044<span class="w">  </span><span class="m">0</span>.995238<span class="w">  </span><span class="m">1</span>.252378<span class="w">  </span><span class="m">1</span>.717514
+<span class="w">  </span>cub.bench.radix_sort.keys<span class="o">[</span>T<span class="o">{</span>ct<span class="o">}=</span>I8,<span class="w"> </span>OffsetT<span class="o">{</span>ct<span class="o">}=</span>I64<span class="o">]</span>:
+<span class="w">            </span>variant<span class="w">     </span>score<span class="w">      </span>mins<span class="w">     </span>means<span class="w">      </span>maxs
+<span class="w">  </span><span class="m">71</span><span class="w">  </span>ipt_19.tpb_512<span class="w">  </span><span class="m">1</span>.250941<span class="w">  </span><span class="m">1</span>.155738<span class="w">  </span><span class="m">1</span>.321665<span class="w">  </span><span class="m">1</span>.647868
+<span class="w">  </span><span class="m">86</span><span class="w">  </span>ipt_20.tpb_512<span class="w">  </span><span class="m">1</span>.250840<span class="w">  </span><span class="m">1</span>.128940<span class="w">  </span><span class="m">1</span>.308591<span class="w">  </span><span class="m">1</span>.612382
+<span class="w">  </span><span class="m">55</span><span class="w">  </span>ipt_17.tpb_512<span class="w">  </span><span class="m">1</span>.244399<span class="w">  </span><span class="m">1</span>.152033<span class="w">  </span><span class="m">1</span>.327424<span class="w">  </span><span class="m">1</span>.692091
+<span class="w">  </span><span class="m">98</span><span class="w">  </span>ipt_21.tpb_448<span class="w">  </span><span class="m">1</span>.231045<span class="w">  </span><span class="m">1</span>.152798<span class="w">  </span><span class="m">1</span>.298332<span class="w">  </span><span class="m">1</span>.621110
+<span class="w">  </span><span class="m">85</span><span class="w">  </span>ipt_20.tpb_480<span class="w">  </span><span class="m">1</span>.229382<span class="w">  </span><span class="m">1</span>.135447<span class="w">  </span><span class="m">1</span>.294937<span class="w">  </span><span class="m">1</span>.631225
+</pre></div>
+</div>
+<p>The name of the variant contains the short parameter names and values used for the variant.
+For each variant, a score is reported. The base has a score of 1.0, so each score higher than 1.0 is an improvement over the base.
+However, because a single variant contains multiple runtime workloads, also the minimum, mean, maximum score is reported.
+If all those three values are larger than 1.0, the variant is strictly better than the base.
+If only the mean or max are larger than 1.0, the variant may perform better in most runtime workloads, but regress in others.
+This information can be used to change the existing tuning policies in CUB. A detailed explanation of the output is presented
+in the following image:</p>
+<img alt="../_images/top_results_expl.png" src="../_images/top_results_expl.png" />
+<p>By default, <code class="code docutils literal notranslate"><span class="pre">analyze.py</span></code> will look for a file named <code class="code docutils literal notranslate"><span class="pre">cccl_meta_bench.db</span></code> in the current directory.
+If the tuning results are available in multiple databases, e.g., after tuning on multiple GPUs,
+glob expressions matching multiple databases, or just multiple file paths, can be passed as arguments as well:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>../benchmarks/scripts/analyze.py<span class="w"> </span>--top<span class="o">=</span><span class="m">5</span><span class="w"> </span>&lt;path-to-databases&gt;/*.db
+</pre></div>
+</div>
+<p>In case the tuning database(s) store(s) results for several different benchmarks,
+the analysis can again be restricted using a regular expression via the <code class="code docutils literal notranslate"><span class="pre">-R</span></code> option:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>../benchmarks/scripts/analyze.py<span class="w"> </span>-R<span class="o">=</span><span class="s2">&quot;.*radix_sort.keys.*&quot;</span><span class="w">  </span>--top<span class="o">=</span><span class="m">5</span><span class="w"> </span>&lt;path-to-databases&gt;/*.db
+</pre></div>
+</div>
+</section>
+<section id="variant-plots">
+<h2>Variant plots<a class="headerlink" href="#variant-plots" title="Link to this heading">#</a></h2>
+<p>The reported score for a tuning aggregates the performance across all runtime workloads.
+Furthermore, NVBench collects and aggregates multiple samples for a single compile and runtime workload.
+So, even though the min, mean and max score are reported for a variant,
+it may be necessary to compare the distributions of raw speedups between the baseline and a variant across all runtime workloads and samples.
+This is achieved using variant plots.
+For more background information on this subject, we refer the reader to <a class="reference external" href="https://aakinshin.net/posts/shift-and-ratio-functions/">this article</a>.</p>
+<p>A variant plot can be generated for one or more variants using the <code class="code docutils literal notranslate"><span class="pre">--variants-ratio=</span></code> option and specifying the specific variant to plot.
+For example:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>../benchmarks/scripts/analyze.py<span class="w"> </span>-R<span class="o">=</span><span class="s2">&quot;.*radix_sort.keys.*&quot;</span><span class="w"> </span>--variants-ratio<span class="o">=</span><span class="s1">&#39;ipt_18.tpb_288&#39;</span><span class="w"> </span>&lt;path-to-databases&gt;/*.db
+</pre></div>
+</div>
+<p>May display a matrix of variant plots like:</p>
+<img alt="../_images/variant_plot.png" src="../_images/variant_plot.png" />
+<p>In the image above we see twelve diagrams for the Cartesian product of the <code class="code docutils literal notranslate"><span class="pre">Entropy</span></code> (horizontally) and <code class="code docutils literal notranslate"><span class="pre">Elements{io}</span></code> (vertically) runtime axes.
+The compile-time axes are fixed for one matrix of variant plots.
+Across each variant plot’s x-axis, the speedup over the baseline (y-axis) is represented.
+The baseline is shown as a straight horizontal red line at 1.
+The found tuning thus results in a slowdown for <code class="code docutils literal notranslate"><span class="pre">Elements{io}</span></code> 2^16 and 2^20 (orange line below red baseline),
+but a speedup for 2^24 and 2^28 (orange line above red baseline).
+In general, bigger axis values for plots for importance-ordered axes, like <code class="code docutils literal notranslate"><span class="pre">Elements{io}</span></code>,
+should be prioritized in evaluating a given tuning, because GPUs are optimized for large problem sizes.
+However, while the almost 4% slowdown for 2^16 elements at entropy 0.544 may be bearable,
+a close to 7% slowdown for 2^20 elements at entropy 1 is probably too large to accept this tuning,
+despite the solid 3.5-8% speedup for larger element counts.</p>
+<p>The shown ratios are generated by fitting an equal amount of quantiles into the samples of the baseline and the variant,
+and then showing the quotient for each corresponding quantile from baseline and variant.
+For background information on the quantile-respectful density estimation,
+we refer the reader to this <a class="reference external" href="https://aakinshin.net/posts/qrde-hd">article</a>.
+By default, a quantile corresponds to a percentile, and thus a ratio plot contains 100 data points
+expressing the speedup of the slowest 1% in the variant over the slowest 1% in the baseline (left),
+then the second slowest 1%, etc., until the speedup of the fastest 1% in the variant over the fastest 1% in the baseline (right).</p>
+<p>The detailed analysis via variant plots is needed,
+because a single aggregated score cannot represent the distribution of samples obtained from highly concurrent algorithms, such as those in CUB.
+Even though NVBench reruns a benchmark many times to gain statistical confidence in the result,
+the runtime of a CUB algorithm does not necessarily follow a normal distribution.
+For example, the concurrent nature of some algorithms may result in bimodal or even more complex distributions,
+as a consequence of how the hardware schedules and executes threads.
+Also, the kind of distribution may be different between baseline and variant.
+For all these reasons, comparing the distribution of samples is the only reliable way to determine,
+whether a tuning provides a consistent speedup for all runtime workloads.</p>
+</section>
+<section id="creating-tuning-policies">
+<h2>Creating tuning policies<a class="headerlink" href="#creating-tuning-policies" title="Link to this heading">#</a></h2>
+<p>Once a suitable tuning result has been selected, we have to translate it into C++ code that will be picked up by CUB.
+The tuning variant name shown by <code class="code docutils literal notranslate"><span class="pre">analyze.py</span></code> gives us all the information on the selected tuning values.
+Here is an example:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>../benchmarks/scripts/analyze.py<span class="w"> </span>--top<span class="o">=</span><span class="m">1</span>
+<span class="w">  </span>cub.bench.radix_sort.keys<span class="o">[</span>T<span class="o">{</span>ct<span class="o">}=</span>I8,<span class="w"> </span>OffsetT<span class="o">{</span>ct<span class="o">}=</span>I64<span class="o">]</span>:
+<span class="w">            </span>variant<span class="w">     </span>score<span class="w">      </span>mins<span class="w">     </span>means<span class="w">      </span>maxs
+<span class="w">  </span><span class="m">71</span><span class="w">  </span>ipt_19.tpb_512<span class="w">  </span><span class="m">1</span>.250941<span class="w">  </span><span class="m">1</span>.155738<span class="w">  </span><span class="m">1</span>.321665<span class="w">  </span><span class="m">1</span>.647868
+</pre></div>
+</div>
+<p>Assume we have determined this tuning to be the best one for sorting I8 keys using radix_sort using I64 offsets.
+The <code class="docutils literal notranslate"><span class="pre">variant</span></code> can be decoded using the <code class="docutils literal notranslate"><span class="pre">//</span> <span class="pre">%RANGE%</span></code> comments in the C++ source code of the benchmark,
+since the names of the reported parameters in the variant are derived from these:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1</span>
+<span class="c1">// %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32</span>
+</pre></div>
+</div>
+<p>The variant <code class="docutils literal notranslate"><span class="pre">ipt_19.tpb_512</span></code>, which stands for 19 items per thread (<code class="docutils literal notranslate"><span class="pre">ipt</span></code>) and 512 threads per block (<code class="docutils literal notranslate"><span class="pre">tpb</span></code>),
+was thus compiled with <code class="docutils literal notranslate"><span class="pre">-DTUNE_ITEMS_PER_THREAD=19</span> <span class="pre">-DTUNE_THREADS_PER_BLOCK=512</span></code>.
+The meaning of these values is specific to the benchmark definition,
+and we have to check the benchmark’s source code for how they are applied.
+Equally named tuning parameters may not translate to different benchmarks (please double check).
+These tuning parameters are then typically used to create a policy hub,
+which is passed to the algorithm’s dispatcher, as <a class="reference internal" href="#cub-tuning-authoring-benchmarks"><span class="std std-ref">sketched above</span></a>,
+and repeated here:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#if !TUNE_BASE</span>
+<span class="w">  </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">AccumT</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">OffsetT</span><span class="o">&gt;</span>
+<span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">policy_hub_t</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">MaxPolicy</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">ChainedPolicy</span><span class="o">&lt;</span><span class="mi">300</span><span class="p">,</span><span class="w"> </span><span class="n">policy_t</span><span class="p">,</span><span class="w"> </span><span class="n">policy_t</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">threads_per_block</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">TUNE_THREADS_PER_BLOCK</span><span class="p">;</span>
+<span class="w">      </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">items_per_thread</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">TUNE_ITEMS_PER_THREAD</span><span class="p">;</span>
+<span class="w">      </span><span class="k">using</span><span class="w"> </span><span class="n">AlgorithmPolicy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AgentAlgorithmPolicy</span><span class="o">&lt;</span><span class="n">threads_per_block</span><span class="p">,</span><span class="w"> </span><span class="n">items_per_thread</span><span class="p">,</span><span class="w"> </span><span class="p">...</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="w">    </span><span class="p">};</span>
+<span class="cp">#endif</span>
+</pre></div>
+</div>
+<p>The tunings defined in CUB’s source are similar.
+However, they take predefined tuning values based on the template arguments of a CUB algorithm
+to build an agent policy for the policy hub.
+The way tuning values are selected is different for each CUB algorithm and requires studying the corresponding code.
+The general principles of the policy hub and tunings are documented in the <a class="reference internal" href="developer/device_scope.html#cub-developer-policies"><span class="std std-ref">CUB device layer documentation</span></a>.
+There is typically a tuning class template specialization per variant or group of variants and per PTX version.
+For example, signed and unsigned integers of the same size are often represented by the same tuning.
+In general, variants for which the algorithmic behavior is expected to be the same
+(same arithmetic intensity, no special instructions for one of the data types, same amount of bytes to load/store, etc.)
+are covered by the same tuning.</p>
+<p>When new tuning values have been found and an existing tuning specialization exists for this variant,
+the tuning values can simply be updated in the corresponding CUB tuning header.
+This is usually the case when a CUB algorithm has been reengineered and shows different performance characteristics,
+or more tuning parameters are exposed (e.g., a new load algorithm is available).
+For example, this existing radix sort tuning may exist:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">ValueT</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">KeySize</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">ValueSize</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">OffsetSize</span><span class="o">&gt;</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">sm100_small_key_tuning</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">sm90_small_key_tuning</span><span class="o">&lt;</span><span class="n">KeySize</span><span class="p">,</span><span class="w"> </span><span class="n">ValueSize</span><span class="p">,</span><span class="w"> </span><span class="n">OffsetSize</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{};</span>
+<span class="p">...</span>
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">ValueT</span><span class="o">&gt;</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">sm100_small_key_tuning</span><span class="o">&lt;</span><span class="n">ValueT</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">threads</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">256</span><span class="p">;</span><span class="w"> </span><span class="c1">// better value from tuning analysis: 512</span>
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">14</span><span class="p">;</span><span class="w">    </span><span class="c1">// better value from tuning analysis: 19</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>The template specialization applies when sorting 1-byte keys without values 8-byte offsets.
+However, the concrete value type is disregarded.
+Since we have found that 512 threads per block and 19 items per thread is better, we can update the values in place.</p>
+<p>A different case is when we tune beyond what’s currently supported by CUB’s existing tunings.
+This may be because we tune for a new hardware architecture,
+in which case a new tuning class template and specializations should be added.
+Or we tune for new key, value or offset types, etc.,
+in which case the existing policy hub and tuning class templates may need to be extended.
+There is no general rule on how this extension is done, though.</p>
+<p>In the seldom case, that no tuning better than the existing one (baseline) has been found,
+it must be ensured that either the old tuning values are replicated in the new tuning specialization,
+or the new tuning specialization defers to the old one,
+or the tuning selection mechanism falls back accordingly.
+There is no general rule on how this is implemented.</p>
+</section>
+<section id="verification">
+<h2>Verification<a class="headerlink" href="#verification" title="Link to this heading">#</a></h2>
+<p>Once we have selected tunings and implemented them in CUB, we need to verify them.
+This process consists of two steps.</p>
+<p>Firstly, we need to ensure that adding new tunings and policies did not break existing tunings.
+This is most relevant when tunings for new PTX versions have been added.
+To verify this, compile the corresponding benchmarks for the previous architecture
+(excluding the new tunings) before and after modifying any tunings,
+and compare the generated SASS :code:(<cite>cuobjdump -sass</cite>).
+It should not have changed.</p>
+<p>Secondly, we must benchmark and compare the performance of the tuned algorithm before and after the tunings have been applied.
+This extra step is needed, because the score shown during the tuning analysis is just an aggregated result.
+Individual benchmarks may still have regressed for some compile-time workloads.
+Fortunately, this is no different than <a class="reference internal" href="benchmarking.html#cub-benchmarking-running"><span class="std std-ref">running</span></a> the corresponding CUB benchmark with and without the changes,
+and <a class="reference internal" href="benchmarking.html#cub-benchmarking-comparing"><span class="std std-ref">comparing</span></a> the resulting JSON files.
+Such a diff should be supplied to any request to change CUB tunings.</p>
+<p>If verification fails for some compile-time workloads (there are regressions), there are two options:</p>
+<ol class="arabic simple">
+<li><p>Discard the tuning entirely and ensure the tuning selection falls back to the baseline tuning.</p></li>
+<li><p>Narrow down the tuning template specialization to only apply to the workloads where it improves performance,
+and fallback where it regressed.</p></li>
+</ol>
+<p>The latter is more complex and may not be justified, if the improvements are small or the use case too narrow.
+Use your judgement. Good luck!</p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="benchmarking.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">CUB Benchmarks</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="developer_overview.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">CUB Developer Overview</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#terminology">Terminology</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#authoring-benchmarks">Authoring Benchmarks</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#headers">Headers</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#policy-hub">Policy Hub</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#main-body">Main Body</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nvbench-attributes">NVBench Attributes</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#search-process">Search Process</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tuning-on-multiple-gpus">Tuning on multiple GPUs</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#analyzing-the-results">Analyzing the results</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#variant-plots">Variant plots</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#creating-tuning-policies">Creating tuning policies</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#verification">Verification</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2026, NVIDIA Corporation.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

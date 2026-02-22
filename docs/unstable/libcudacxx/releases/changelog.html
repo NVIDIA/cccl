@@ -1,0 +1,1519 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Changelog &#8212; CUDA Core Compute Libraries</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+
+
+    <script src="../../_static/documentation_options.js?v=bbe6ed3a"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=5ceeb459"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'libcudacxx/releases/changelog';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://NVIDIA.github.io/cccl/nv-versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'unstable';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+
+    <link rel="canonical" href="https://NVIDIA.github.io/cccl/libcudacxx/releases/changelog.html" />
+    <link rel="icon" href="../../_static/favicon.png"/>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Versioning" href="versioning.html" />
+    <link rel="prev" title="Releases" href="../releases.html" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="unstable" />
+
+
+  </head>
+
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../../cpp.html">CUDA C++ Core Libraries</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="../index.html">libcu++</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../setup.html">Setup</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../setup/requirements.html">Requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../setup/getting.html">Getting libcu++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../setup/building_and_testing.html">Building &amp; Testing libcu++</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 current active has-children"><a class="reference internal" href="../releases.html">Releases</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l4 current active"><a class="current reference internal" href="#">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../standard_api.html">Standard API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/algorithms_library.html">Algorithms Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/c_library.html">C Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/concepts_library.html">Concepts Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/container_library.html">Container Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/execution_library.html">Execution Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/numerics_library.html">Numerics Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/ranges_library.html">Ranges Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/synchronization_library.html">Synchronization Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/time_library.html">Time Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/type_support.html">Type Support Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/utility_library.html">Utility Library</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../extended_api.html">Extended API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/bit.html">Bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/execution_model.html">Execution model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/exceptions.html">Exception Handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/memory_model.html">Memory model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/thread_groups.html">Thread Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/synchronization_primitives.html">Synchronization Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/asynchronous_operations.html">Asynchronous Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/memory_access_properties.html">Memory access properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/functional.html">Functional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/iterators.html">Fancy Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/type_traits.html">Type traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/vector_tuple_protocol.html">Vector Tuple Protocol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/numeric.html">Numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/random.html">Random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/memory.html">Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/memory_resource.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/math.html">Math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/mdspan.html">Mdspan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/warp.html">Warp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/utility.html">Utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/work_stealing.html">Work stealing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/stream.html">Streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/event.html">Events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/algorithm.html">Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/legacy_resources.html">Legacy resources</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../ptx/examples.html">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../ptx/instructions.html">PTX Instructions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../ptx/pragmas.html">PTX Pragmas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cub/index.html">CUB</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/test_overview.html">CUB Tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/benchmarking.html">CUB Benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/tuning.html">CUB Tunings</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/developer_overview.html">CUB Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/nvtx.html">NVTX</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/releases.html">CUB Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/releases/changelog.html">CUB 2.1.0</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/thread_level.html">Thread-level Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/warp_wide.html">Warp-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/block_wide.html">Block-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/device_wide.html">Device-Wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../thrust/index.html">Thrust</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/developer_overview.html">Thrust Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/systems.html">Thrust systems</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/release_process.html">Release Process</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/algorithms.html">Algorithms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/containers.html">Containers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/function_objects.html">Function Objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/iterators.html">Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/memory_management.html">Memory Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/numerics.html">Numerics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/random.html">Random Number Generators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/system.html">System</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/utility.html">Utility</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cudax/index.html">CUDA Experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/container.html">Containers library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1uninitialized__buffer.html">cuda::experimental::uninitialized_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/memory_resource.html">Memory Resources</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/classcuda_1_1mr_1_1basic__any__resource.html">cuda::mr::basic_any_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/structcuda_1_1memory__pool__properties.html">cuda::memory_pool_properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/structcuda_1_1device__memory__pool.html">cuda::device_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/structcuda_1_1pinned__memory__pool.html">cuda::pinned_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/structcuda_1_1managed__memory__pool.html">cuda::managed_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/classcuda_1_1mr_1_1legacy__pinned__memory__resource.html">cuda::mr::legacy_pinned_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/classcuda_1_1mr_1_1legacy__managed__memory__resource.html">cuda::mr::legacy_managed_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/structcuda_1_1mr_1_1shared__resource.html">cuda::mr::shared_resource</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/graph.html">Graphs library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph.html">cuda::experimental::graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__builder.html">cuda::experimental::graph_builder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__builder__ref.html">cuda::experimental::graph_builder_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__node__ref.html">cuda::experimental::graph_node_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of.html">cuda::experimental::stf::graphed_interface_of</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; mdspan&lt; T, P… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; void_interface &gt;</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/stf.html">CUDASTF</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/stf/custom_data_interface.html">Implementation of the <code class="docutils literal notranslate"><span class="pre">matrix</span></code> class</a></li>
+
+
+
+
+
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/stf/lower_level_api.html">Lower-level API</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/3.0_migration_guide.html">CCCL 2.x ‐ CCCL 3.0 migration guide</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/development/index.html">CCCL Development Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/macro.html">CCCL Internal Macros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/testing.html">CCCL Testing Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/contributing.html">Contributing to the CUDA Core Compute Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/contributing/code_of_conduct.html">Code of Conduct</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/license.html">License</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../python/index.html">CCCL Python Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../python/setup.html">Setup and Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/compute.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/coop.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>: Cooperative Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/resources.html">Resources</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../python/api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../python/compute_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../python/coop_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> API Reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../cpp.html" class="nav-link">CUDA C++ Core Libraries</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">libcu++</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../releases.html" class="nav-link">Releases</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Changelog</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="changelog">
+<span id="libcudacxx-releases-changelog"></span><h1>Changelog<a class="headerlink" href="#changelog" title="Link to this heading">#</a></h1>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This changelog is no longer maintained since Thrust was merged into the CCCL project.
+For the latest changes, see the release notes for each CCCL release
+on <a class="reference external" href="https://github.com/NVIDIA/cccl/releases">GitHub</a>.</p>
+</div>
+<section id="libcu-2-1-0">
+<h2>libcu++ 2.1.0<a class="headerlink" href="#libcu-2-1-0" title="Link to this heading">#</a></h2>
+<p>Adds <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/span&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/mdspan&gt;</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/concepts&gt;</span></code> to libcu++.</p>
+<p>We are excited to announce the release of libcudacxx 2.1. While there
+are no breaking changes in this release, we are increasing the semantic
+major version to better synchronize our release versions with
+<a class="reference external" href="https://github.com/NVIDIA/thrust">Thrust</a> and
+<a class="reference external" href="https://github.com/NVIDIA/cub">CUB</a> repositories. This effort aims
+to better unify our libraries, and ensure that users can more easily
+determine which versions of each library are compatible with one
+another. We are making this change because we want to start thinking
+about these three projects not as independent libraries, but as three
+parts of a single, <a class="reference external" href="https://github.com/NVIDIA/cccl">Core CUDA C++ Library
+(CCCL)</a>. In the near future, before
+the next release, we plan to merge the three libraries into a single
+monorepository at <a class="reference external" href="https://github.com/NVIDIA/cccl">nvidia/cccl</a>. We
+believe that this consolidation will make it even easier for users to
+take advantage of the powerful features and optimizations available in
+our CUDA libraries.</p>
+<p>In an effort to modernize our codebase and introduce new features, we
+have consolidated the list of supported compilers. For 2.1.0 we support
+as host compilers the GNU Compiler Collection (gcc) down to version
+<code class="docutils literal notranslate"><span class="pre">7.5</span></code> and LLVMs clang down to version <code class="docutils literal notranslate"><span class="pre">7.1.0</span></code>.</p>
+<p>Supported ABI Versions: 4 (default), 3, and 2.</p>
+<section id="new-features">
+<h3>New Features<a class="headerlink" href="#new-features" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>#313: Add <code class="docutils literal notranslate"><span class="pre">cuda/std/span</span></code> and backport it to C++14</p></li>
+<li><p>#299: Add <code class="docutils literal notranslate"><span class="pre">cuda/std/mdspan</span></code> and backport it to C++14.</p>
+<ul>
+<li><p>Thanks Yu You for this contribution.</p></li>
+</ul>
+</li>
+<li><p>#349: Add <code class="docutils literal notranslate"><span class="pre">cuda/std/concepts</span></code> and backport them to C++14. You will
+be able to utilize C++20 concepts already in C++14/17 through
+existing SFINAE techniques.</p></li>
+<li><p>#333: Add support for structured bindings for <code class="docutils literal notranslate"><span class="pre">cuda::std::tuple</span></code>,
+<code class="docutils literal notranslate"><span class="pre">cuda::std::pair</span></code> and <code class="docutils literal notranslate"><span class="pre">cuda::std::array</span></code>.</p></li>
+</ul>
+</section>
+<section id="issues-fixed">
+<h3>Issues Fixed<a class="headerlink" href="#issues-fixed" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>#328: Docs: Fix broken links.</p>
+<ul>
+<li><p>Thanks chaosink for this contribution.</p></li>
+</ul>
+</li>
+<li><p>#329: Block local memory tests on pascal.</p></li>
+<li><p>#332: Add support for clang-15.</p></li>
+<li><p>#317: Fix structured binding support.</p></li>
+<li><p>#331: Correct issues with CMake install rules.</p></li>
+<li><p>#301: Move and update “memory model” docs.</p></li>
+<li><p>#323: Fix broken links in documentation.</p></li>
+<li><p>#232: Document <code class="docutils literal notranslate"><span class="pre">&lt;nv/target&gt;</span></code> in an example.</p></li>
+<li><p>#257: Add documentation for atomic_ref.</p></li>
+<li><p>#336: Fetch host <code class="docutils literal notranslate"><span class="pre">&lt;utility&gt;</span></code> to populate <code class="docutils literal notranslate"><span class="pre">tuple_size</span></code>.</p></li>
+<li><p>#340: Add tests for host only TUs and fix several found issues.</p></li>
+<li><p>#335: Modularize <code class="docutils literal notranslate"><span class="pre">&lt;type_traits&gt;</span></code>.</p></li>
+<li><p>#330: Modularize <code class="docutils literal notranslate"><span class="pre">&lt;iterator&gt;</span></code>.</p></li>
+<li><p>#345: Fix warning about unqualified move.</p></li>
+<li><p>#342: Silence deprecation and attribute warnings when building
+libcu++.</p></li>
+<li><p>#344: Remove invalid qualification of <code class="docutils literal notranslate"><span class="pre">initializer_list</span></code>.</p></li>
+<li><p>#347: Fix errors in atomic with small aggregates and enum classes.</p></li>
+<li><p>#352: Make lerp usable on device.</p></li>
+<li><p>#346: Add more dialects to host only TU tests.</p></li>
+<li><p>#360: Add check for deduction guides macro to
+functional/reference_wrapper.h.</p></li>
+<li><p>#359: Fix definition of <code class="docutils literal notranslate"><span class="pre">disjunction</span></code> for MSVC.</p></li>
+<li><p>#364: Split memcpy_async tests into a few other tests.</p></li>
+<li><p>#365: Remove gcc-6 from the compose file.</p></li>
+<li><p>#350: Modularize <code class="docutils literal notranslate"><span class="pre">&lt;utility&gt;</span></code>.</p></li>
+<li><p>#107: Description of policy for backporting Standard C++ features.</p></li>
+<li><p>#128: Fix a typo in the <code class="docutils literal notranslate"><span class="pre">cuda::</span></code> heterogeneous policy.</p></li>
+<li><p>#369: Fix cuda::atomic_thread_fence example.</p></li>
+<li><p>#110: Fixed rename errors.</p></li>
+<li><p>#353: Update thread scope for synchronization domains.</p></li>
+<li><p>#367: Fix warnings in several headers.</p></li>
+<li><p>#379: Update atomics backend to be compatible with <code class="docutils literal notranslate"><span class="pre">atomic_ref</span></code>.</p></li>
+<li><p>#378: Prevent conflict with MSVC macros in 14.35.</p></li>
+<li><p>#355: Modularize <code class="docutils literal notranslate"><span class="pre">&lt;functional&gt;</span></code>.</p></li>
+<li><p>#309: Add an experimental <code class="docutils literal notranslate"><span class="pre">{async_}resource_ref</span></code>.</p></li>
+<li><p>#372: Improve handling of internal headers and modularization.</p></li>
+<li><p>#383: Fix various issues in CPOs and <code class="docutils literal notranslate"><span class="pre">tuple</span></code>.</p></li>
+<li><p>#386: Fix proclaim_return_type copy constructor.</p></li>
+<li><p>#389: Fix atomic_ref example in docs.</p>
+<ul>
+<li><p>Thanks Daniel Jünger for this contribution.</p></li>
+</ul>
+</li>
+<li><p>#388: Fix <code class="docutils literal notranslate"><span class="pre">_EnableConstructor</span></code> in <code class="docutils literal notranslate"><span class="pre">cuda::std::tuple</span></code> to be
+dependent on a template argument.</p></li>
+<li><p>#384: Move the <code class="docutils literal notranslate"><span class="pre">unused</span></code> helper function into <code class="docutils literal notranslate"><span class="pre">test_macros.h</span></code>.</p></li>
+<li><p>#391: Fix issues in mdspan found on MSVC.</p></li>
+</ul>
+</section>
+</section>
+<section id="libcu-1-9-0">
+<h2>libcu++ 1.9.0<a class="headerlink" href="#libcu-1-9-0" title="Link to this heading">#</a></h2>
+<p>Adds <code class="docutils literal notranslate"><span class="pre">float</span></code> and <code class="docutils literal notranslate"><span class="pre">double</span></code> support to <code class="docutils literal notranslate"><span class="pre">cuda::std::atomic</span></code> and
+<code class="docutils literal notranslate"><span class="pre">cuda::atomic</span></code>. This release also adds workflows for contributors
+based on Docker to improve testing and coverage.</p>
+<p>Supported ABI Versions: 4 (default), 3, and 2.</p>
+<section id="libcudacxx-new-features-1">
+<span id="id1"></span><h3>New Features<a class="headerlink" href="#libcudacxx-new-features-1" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>#286: Add atomics for floating point types.</p>
+<ul>
+<li><p>Thanks Daniel Jünger for this contribution.</p></li>
+</ul>
+</li>
+<li><p>#284: <code class="docutils literal notranslate"><span class="pre">cuda::proclaim_return_type</span></code> for use with extended lambda
+support in NVCC.</p></li>
+<li><p>#267: Docker refactor, parameterizes OS and compiler versions.</p></li>
+</ul>
+</section>
+<section id="issues-fixed-1">
+<span id="id2"></span><h3>Issues Fixed<a class="headerlink" href="#issues-fixed-1" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>#280: NVHPC: Disable macro code paths when compiled without
+<code class="docutils literal notranslate"><span class="pre">-stdpar</span></code>.</p></li>
+<li><p>#282: Prevent usage of cuda::atomic::fetch_max/min for non-integral
+types.</p></li>
+<li><p>#288: Fix shortcut in fetch_min CAS loop.</p>
+<ul>
+<li><p>Thanks Daniel Jünger for this contribution.</p></li>
+</ul>
+</li>
+<li><p>#291: Remove usage of find_path to locate cuda/std/detail/__config.</p>
+<ul>
+<li><p>Thanks Robert Maynard for this contribution.</p></li>
+</ul>
+</li>
+<li><p>#276: Delete tests for unsupported header <code class="docutils literal notranslate"><span class="pre">&lt;compare&gt;</span></code>.</p></li>
+<li><p>#293: Fix failures in several tests unsupportable by NVRTC.</p></li>
+<li><p>#303: Move the emission of atomic errors on unsupported platforms to
+<code class="docutils literal notranslate"><span class="pre">&lt;atomic&gt;</span></code>.</p></li>
+<li><p>#305: Add workflow to add issues/PRs to Project.</p></li>
+<li><p>#314: Remove SM_35 from testing.</p></li>
+<li><p>#312: Use escape hook for removal of <code class="docutils literal notranslate"><span class="pre">&lt;ciso646&gt;</span></code>.</p></li>
+<li><p>#310: <code class="docutils literal notranslate"><span class="pre">&lt;atomics&gt;</span></code> Remove defaulted copy constructor from
+__cxx_atomic_lock_impl.</p></li>
+<li><p>#300: Soundness bugfix for <code class="docutils literal notranslate"><span class="pre">barrier&lt;thread_scope_block&gt;</span></code> on sm_70.</p></li>
+<li><p>#319: Fix ubuntu18 failing in CI due to missing lit prereqs.</p></li>
+<li><p>#318: Fix gcc12 issues.</p></li>
+<li><p>#320: Use cache_from to speed up builds if local versions exist.</p></li>
+<li><p>#304: Fix <code class="docutils literal notranslate"><span class="pre">&lt;chrono&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">&lt;atomic&gt;</span></code> build errors with clang-cuda.</p></li>
+<li><p>#324: Also disable tests on <code class="docutils literal notranslate"><span class="pre">windows</span> <span class="pre">&amp;&amp;</span> <span class="pre">pre-sm-70</span></code>.</p></li>
+</ul>
+</section>
+</section>
+<section id="libcu-1-8-1">
+<h2>libcu++ 1.8.1<a class="headerlink" href="#libcu-1-8-1" title="Link to this heading">#</a></h2>
+<p>libcu++ 1.8.1 is a minor release. It fixes minor issues in source,
+tests, and documentation.</p>
+<p>Supported ABI Versions: 4 (default), 3, and 2.</p>
+<section id="issues-fixed-2">
+<span id="id3"></span><h3>Issues Fixed<a class="headerlink" href="#issues-fixed-2" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>#268: Remove NVIDIA internal paths from CMake includes.</p></li>
+<li><p>#265: Move pipeline into libcudacxx. Previously was a separate CTK
+component.</p></li>
+<li><p>#264: Fix builds using NVHPC by adding a new line.</p>
+<ul>
+<li><p>Thanks Chengjie Wang and Royil Damer for this contribution.</p></li>
+</ul>
+</li>
+<li><p>#261: Fix extra line in perform_tests.bash causing invalid test
+results.</p>
+<ul>
+<li><p>Thanks Chengjie Wang and Royil Damer for this contribution.</p></li>
+</ul>
+</li>
+<li><p>#246: Documentation fixes regarding atomics in GPU memory.</p>
+<ul>
+<li><p>Thanks Daniel Lustig for this contribution.</p></li>
+</ul>
+</li>
+<li><p>#258: Lock contrast of our documentation’s search text field.</p>
+<ul>
+<li><p>Thanks Bradley Dice for this contribution.</p></li>
+</ul>
+</li>
+<li><p>#259: Add system_header pragma to portions of</p></li>
+<li><p>#249: Documentation update for building libcudacxx.</p></li>
+<li><p>#247: Update godbolt links in examples.</p>
+<ul>
+<li><p>Thanks Asher Mancinelli for this contribution.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="libcu-1-8-0">
+<h2>libcu++ 1.8.0<a class="headerlink" href="#libcu-1-8-0" title="Link to this heading">#</a></h2>
+<p>libcu++ 1.8.0 is a major release. It adds several <code class="docutils literal notranslate"><span class="pre">constexpr</span></code> bit
+manipulation functions from C++20’s <code class="docutils literal notranslate"><span class="pre">&lt;bit&gt;</span></code> to C++11 and up. Also
+added is <code class="docutils literal notranslate"><span class="pre">cuda::std::array</span></code> providing fixed size arrays and iterators
+for both host and device code.</p>
+<p>Supported ABI Versions: 4 (default), 3, and 2.</p>
+<section id="libcudacxx-new-features-2">
+<span id="id4"></span><h3>New Features<a class="headerlink" href="#libcudacxx-new-features-2" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>#237: Add <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/bit&gt;</span></code> and enable backports to C++11.</p></li>
+<li><p>#243: Add <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/array&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/iterator&gt;</span></code>.</p></li>
+</ul>
+</section>
+<section id="issues-fixed-3">
+<span id="id5"></span><h3>Issues Fixed<a class="headerlink" href="#issues-fixed-3" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>#234: Fix building with GCC/Clang when NVCC was not being used.</p></li>
+<li><p>#240: Create a config for lit to generate a JSON output of the build
+status.</p>
+<ul>
+<li><p>Thanks Royil Damer for this contribution.</p></li>
+</ul>
+</li>
+<li><p>#241: Fix octal notation of libcudacxx version number.</p></li>
+<li><p>#242: Add support for <code class="docutils literal notranslate"><span class="pre">find_package</span></code> and <code class="docutils literal notranslate"><span class="pre">add_subdirectory</span></code> in
+CMake.</p></li>
+<li><p>#244: Merge build system improvements from NVC++ branch.</p></li>
+<li><p>#250: Fix pragma typo on MSVC.</p></li>
+<li><p>#251: Add several new compilers versions to our docker suite.</p></li>
+<li><p>#252: Fix several deprecations in Clang 13.</p></li>
+<li><p>#253: Fix truncations and warnings in numerics.</p></li>
+<li><p>#254: Fix warnings in <code class="docutils literal notranslate"><span class="pre">&lt;array&gt;</span></code> tests and move <code class="docutils literal notranslate"><span class="pre">__cuda_std__</span></code>
+escapes in <code class="docutils literal notranslate"><span class="pre">&lt;algorithm&gt;</span></code></p></li>
+<li><p>#255: Fix deprecated copy ctor warnings in <code class="docutils literal notranslate"><span class="pre">__annotated_ptr</span></code> for
+Clang 13.</p></li>
+<li><p>#256: Fix SM detection in the <code class="docutils literal notranslate"><span class="pre">perform_tests</span></code> script.</p></li>
+</ul>
+</section>
+</section>
+<section id="libcu-1-7-0">
+<h2>libcu++ 1.7.0<a class="headerlink" href="#libcu-1-7-0" title="Link to this heading">#</a></h2>
+<p>libcu++ 1.7.0 is a major release. It adds <code class="docutils literal notranslate"><span class="pre">cuda::std::atomic_ref</span></code> for
+integral types. <code class="docutils literal notranslate"><span class="pre">cuda::std::atomic_ref</span></code> may potentially replace uses
+of CUDA specific <code class="docutils literal notranslate"><span class="pre">atomicOperator(_Scope)</span></code> calls and provides a
+singular API for host and device code.</p>
+<p>Supported ABI Versions: 4 (default), 3, and 2.</p>
+<section id="libcudacxx-new-features-3">
+<span id="id6"></span><h3>New Features<a class="headerlink" href="#libcudacxx-new-features-3" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>#203 Implements <code class="docutils literal notranslate"><span class="pre">cuda::std::atomic_ref</span></code> for integral types.</p></li>
+</ul>
+</section>
+<section id="issues-fixed-4">
+<span id="id7"></span><h3>Issues Fixed<a class="headerlink" href="#issues-fixed-4" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>#204: Fallback macro backend in <code class="docutils literal notranslate"><span class="pre">&lt;nv/target&gt;</span></code> when C or pre-C++11
+dialects are used.</p></li>
+<li><p>#206: Fix compilation with ASAN enabled.</p>
+<ul>
+<li><p>Thanks Janusz Lisiecki for this contribution.</p></li>
+</ul>
+</li>
+<li><p>#207: Fix compilation of <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/atomic&gt;</span></code> for GCC/Clang.</p></li>
+<li><p>#208: Flip an internal directory symlink, fixes packaging issues for
+internal tools.</p></li>
+<li><p>#212: Fix <code class="docutils literal notranslate"><span class="pre">&lt;nv/target&gt;</span></code> on MSVC, fallback macros would always
+choose pre-C++11 backend.</p></li>
+<li><p>#216: Annotated Pointer documentation.</p>
+<ul>
+<li><p>Thanks Gonzalo Brito for this contribution.</p></li>
+</ul>
+</li>
+<li><p>#215: Add SM87 awareness to <code class="docutils literal notranslate"><span class="pre">&lt;nv/target&gt;</span></code>.</p></li>
+<li><p>#217: Fix how CUDACC version is calculated for <code class="docutils literal notranslate"><span class="pre">__int128</span></code> support.</p></li>
+<li><p>#228: Fix LLVM lit pattern matching in test score calculation.</p></li>
+<li><p>#227: Silence 4296 for type_traits.</p></li>
+<li><p>#225: Fix calculation of <code class="docutils literal notranslate"><span class="pre">_LIBCUDACXX_CUDACC_VER</span></code> broken from #217.</p>
+<ul>
+<li><p>Thanks Robert Maynard for this contribution.</p></li>
+</ul>
+</li>
+<li><p>#220: <code class="docutils literal notranslate"><span class="pre">memcpy_async</span></code> should cache only in L2 when possible.</p></li>
+<li><p>#219: Change <code class="docutils literal notranslate"><span class="pre">atomic/atomic_ref</span></code> ctors to prevent copy
+construction.</p></li>
+</ul>
+</section>
+</section>
+<section id="libcu-1-6-0-cuda-toolkit-11-5">
+<h2>libcu++ 1.6.0 (CUDA Toolkit 11.5)<a class="headerlink" href="#libcu-1-6-0-cuda-toolkit-11-5" title="Link to this heading">#</a></h2>
+<p>libcu++ 1.6.0 is a major release. It changes the default alignment of
+<code class="docutils literal notranslate"><span class="pre">cuda::std::complex</span></code> for better code generation and changes
+<code class="docutils literal notranslate"><span class="pre">cuda::std::atomic</span></code> to use <code class="docutils literal notranslate"><span class="pre">&lt;nv/target&gt;</span></code> as the primary dispatch
+mechanism.</p>
+<p>This release adds <code class="docutils literal notranslate"><span class="pre">cuda::annotated_ptr</span></code> and <code class="docutils literal notranslate"><span class="pre">cuda::access_property</span></code>,
+two APIs that allow associating an address space and an explicit caching
+policy with a pointer, and the related <code class="docutils literal notranslate"><span class="pre">cuda::apply_access_property</span></code>,
+<code class="docutils literal notranslate"><span class="pre">cuda::associate_access_property</span></code> and <code class="docutils literal notranslate"><span class="pre">cuda::discard_memory</span></code> APIs.</p>
+<p>This release introduces ABI version 4, which is now the default.</p>
+<p>Supported ABI Versions: 4 (default), 3, and 2.</p>
+<p>Included in: CUDA Toolkit 11.5.</p>
+<section id="issues-fixed-5">
+<span id="id8"></span><h3>Issues Fixed<a class="headerlink" href="#issues-fixed-5" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>#197: Rework <code class="docutils literal notranslate"><span class="pre">cuda::atomic::fetch_max/min</span></code> so that it is RMW and
+actually works.</p></li>
+<li><p>#196: Fix missing path host atomic path for NVC++.</p></li>
+<li><p>#195: Fix missing <code class="docutils literal notranslate"><span class="pre">inline</span></code> specifier on internal atomic functions.</p></li>
+<li><p>#194: <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/barrier&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/atomic&gt;</span></code> failed to
+compile with NVRTC.</p></li>
+<li><p>#179: Refactors the atomic layer to allow for layering the host
+device/host abstractions.</p></li>
+<li><p>#189: Changed pragmas for silencing chrono long double warnings.</p></li>
+<li><p>#186: Allows <code class="docutils literal notranslate"><span class="pre">&lt;nv/target&gt;</span></code> to be used under NVRTC.</p></li>
+<li><p>#177: Allows <code class="docutils literal notranslate"><span class="pre">&lt;nv/target&gt;</span></code> to build when compiled under C and
+C++98.</p>
+<ul>
+<li><p>Thanks to David Olsen for this contribution.</p></li>
+</ul>
+</li>
+<li><p>#172: Introduces ABI version 4.</p>
+<ul>
+<li><p>Forces <code class="docutils literal notranslate"><span class="pre">cuda::std::complex</span></code> alignment for enhanced performance.</p></li>
+<li><p>Sets the internal representation of <code class="docutils literal notranslate"><span class="pre">cuda::std::chrono</span></code> literals
+to <code class="docutils literal notranslate"><span class="pre">double</span></code>.</p></li>
+</ul>
+</li>
+<li><p>#165: For tests on some older distributions keep using Python 3, but
+downgrade lit.</p></li>
+<li><p>#164: Fixes testing issues related to Python 2/3 switch for lit.</p>
+<ul>
+<li><p>Thanks to Royil Damer for this contribution.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="libcu-1-5-0-cuda-toolkit-11-4">
+<h2>libcu++ 1.5.0 (CUDA Toolkit 11.4)<a class="headerlink" href="#libcu-1-5-0-cuda-toolkit-11-4" title="Link to this heading">#</a></h2>
+<p>libcu++ 1.5.0 is a major release. It adds <code class="docutils literal notranslate"><span class="pre">&lt;nv/target&gt;</span></code>, the library
+support header for the new <code class="docutils literal notranslate"><span class="pre">if</span> <span class="pre">target</span></code> target specialization
+mechanism.</p>
+<p>Supported ABI Versions: 3 (default) and 2.</p>
+<p>Included in: CUDA Toolkit 11.4.</p>
+<section id="libcudacxx-new-features-4">
+<span id="id9"></span><h3>New Features<a class="headerlink" href="#libcudacxx-new-features-4" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;nv/target&gt;</span></code> - Portability macros for NVCC/NVC++ and other
+compilers.</p></li>
+</ul>
+</section>
+<section id="issues-fixed-6">
+<span id="id10"></span><h3>Issues Fixed<a class="headerlink" href="#issues-fixed-6" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><a class="reference external" href="https://nvidia.github.io/libcudacxx">Documentation</a>: Several typo
+fixes.</p></li>
+<li><p>#126: Compiler warnings in .</p>
+<ul>
+<li><p>Thanks to anstellaire for this contribution.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="libcu-1-4-1-cuda-toolkit-11-3">
+<h2>libcu++ 1.4.1 (CUDA Toolkit 11.3)<a class="headerlink" href="#libcu-1-4-1-cuda-toolkit-11-3" title="Link to this heading">#</a></h2>
+<p>libcu++ 1.4.1 is a minor bugfix release.</p>
+<p>Supported ABI versions: 3 (default) and 2.</p>
+<p>Included in: CUDA Toolkit 11.3.</p>
+<section id="other-enhancements">
+<h3>Other Enhancements<a class="headerlink" href="#other-enhancements" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><a class="reference external" href="https://nvidia.github.io/libcudacxx">Documentation</a>: Several
+enhancements and fixed a few broken links.</p></li>
+<li><p>#108: Added <code class="docutils literal notranslate"><span class="pre">constexpr</span></code> to synchronization object constructors.</p>
+<ul>
+<li><p>Thanks to Olivier Giroux for this contribution.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="issues-fixed-7">
+<span id="id12"></span><h3>Issues Fixed<a class="headerlink" href="#issues-fixed-7" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>#106: Fixed host code atomics on VS 2019 Version 16.5 / MSVC 1925 and
+above.</p></li>
+<li><p>#101: Fixed <code class="docutils literal notranslate"><span class="pre">cuda::std::complex</span></code> for NVRTC.</p></li>
+<li><p>#118: Renamed <code class="docutils literal notranslate"><span class="pre">__is_convertible</span></code>, which NVCC treats as a context
+sensitive keyword.</p></li>
+</ul>
+</section>
+</section>
+<section id="libcu-1-4-0">
+<h2>libcu++ 1.4.0<a class="headerlink" href="#libcu-1-4-0" title="Link to this heading">#</a></h2>
+<p>libcu++ 1.4.0 adds <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/complex&gt;</span></code>, NVCC + MSVC support for
+<code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/tuple&gt;</span></code>, and backports of C++20 <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/chrono&gt;</span></code> and
+C++17 <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/type_traits&gt;</span></code> features to C++14.</p>
+<p>Supported ABI versions: 3 (default) and 2.</p>
+<section id="libcudacxx-new-features-5">
+<span id="id13"></span><h3>New Features<a class="headerlink" href="#libcudacxx-new-features-5" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>#32: <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/complex&gt;</span></code>.</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">long</span> <span class="pre">double</span></code> is not supported and disabled when building with
+NVCC.</p></li>
+</ul>
+</li>
+<li><p>#34: C++17/20 <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/chrono&gt;</span></code> backported to C++14.</p>
+<ul>
+<li><p>Thanks to Jake Hemstad and Paul Taylor for this contribution.</p></li>
+</ul>
+</li>
+<li><p>#44: C++17 <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/type_traits&gt;</span></code> backported to C++14.</p>
+<ul>
+<li><p>Thanks to Jake Hemstad and Paul Taylor for this contribution.</p></li>
+</ul>
+</li>
+<li><p>#66: C++17 <code class="docutils literal notranslate"><span class="pre">cuda::std::byte</span></code> (in <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/cstddef&gt;</span></code>) backported
+to C++14.</p>
+<ul>
+<li><p>Thanks to Jake Hemstad and Paul Taylor for this contribution.</p></li>
+</ul>
+</li>
+<li><p>#76: C++20 <code class="docutils literal notranslate"><span class="pre">cuda::std::is_constant_evaluated</span></code> backported to C++11.</p>
+<ul>
+<li><p>Thanks to Jake Hemstad and Paul Taylor for this contribution.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="libcudacxx-other-enhancements-1">
+<span id="id14"></span><h3>Other Enhancements<a class="headerlink" href="#libcudacxx-other-enhancements-1" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><a class="reference external" href="https://nvidia.github.io/libcudacxx">Documentation</a> has been
+improved and reorganized.</p></li>
+<li><p>#43: Atomics on MSVC have been decoupled from host Standard Library.</p></li>
+<li><p>#78: Fixed header licensing.</p></li>
+<li><p>#31: Revamped <a class="reference external" href="https://github.com/NVIDIA/libcudacxx/tree/main/examples">examples and
+benchmarks</a>.</p>
+<ul>
+<li><p>Thanks to Jake Hemstad for this contribution.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="issues-fixed-8">
+<span id="id16"></span><h3>Issues Fixed<a class="headerlink" href="#issues-fixed-8" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>#53, #80, #81: Improved documentation for <code class="docutils literal notranslate"><span class="pre">&lt;cuda/pipeline&gt;</span></code> and the
+asynchronous operations API.</p></li>
+<li><p>#14: NVRTC missing definitions for several macros.</p>
+<ul>
+<li><p>Thanks to Ben Barsdell for this contribution.</p></li>
+</ul>
+</li>
+<li><p>#56: <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/tuple&gt;</span></code> now works on a set of most recent MSVC
+compilers.</p></li>
+<li><p>#66, #82: <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/chrono&gt;</span></code>/<code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/type_traits&gt;</span></code> backports.</p>
+<ul>
+<li><p>Thanks to Jake Hemstad and Paul Taylor for this contribution.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="libcu-1-3-0-cuda-toolkit-11-2">
+<h2>libcu++ 1.3.0 (CUDA Toolkit 11.2)<a class="headerlink" href="#libcu-1-3-0-cuda-toolkit-11-2" title="Link to this heading">#</a></h2>
+<p>libcu++ 1.3.0 adds <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/tuple&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">cuda::std::pair</span></code>,
+although they are not supported with NVCC + MSVC. It also adds
+<a class="reference external" href="https://nvidia.github.io/libcudacxx">documentation</a>.</p>
+<p>Supported ABI versions: 3 (default) and 2.</p>
+<p>Included in: CUDA Toolkit 11.2.</p>
+<section id="libcudacxx-new-features-6">
+<span id="id18"></span><h3>New Features<a class="headerlink" href="#libcudacxx-new-features-6" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>#17: <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/tuple&gt;</span></code>: <code class="docutils literal notranslate"><span class="pre">cuda::std::tuple</span></code>, a fixed-size
+collection of heterogeneous values. Not supported with NVCC + MSVC.</p></li>
+<li><p>#17: <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/utility&gt;</span></code>: <code class="docutils literal notranslate"><span class="pre">cuda::std::pair</span></code>, a collection of two
+heterogeneous values. The only <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/utility&gt;</span></code> facilities
+supported are <code class="docutils literal notranslate"><span class="pre">cuda::std::pair</span></code>. Not supported with NVCC + MSVC.</p></li>
+</ul>
+</section>
+<section id="libcudacxx-other-enhancements-2">
+<span id="id19"></span><h3>Other Enhancements<a class="headerlink" href="#libcudacxx-other-enhancements-2" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><a class="reference external" href="https://nvidia.github.io/libcudacxx">Documentation</a>.</p></li>
+</ul>
+</section>
+<section id="issues-fixed-9">
+<span id="id21"></span><h3>Issues Fixed<a class="headerlink" href="#issues-fixed-9" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>#21: Disable <code class="docutils literal notranslate"><span class="pre">__builtin_is_constant_evaluated</span></code> usage with NVCC in
+C++11 mode because it’s broken.</p></li>
+<li><p>#25: Fix some declarations/definitions in <code class="docutils literal notranslate"><span class="pre">__threading_support</span></code>
+which have inconsistent qualifiers. Thanks to Gonzalo Brito Gadeschi
+for this contribution.</p></li>
+</ul>
+</section>
+</section>
+<section id="libcu-1-2-0-cuda-toolkit-11-1">
+<h2>libcu++ 1.2.0 (CUDA Toolkit 11.1)<a class="headerlink" href="#libcu-1-2-0-cuda-toolkit-11-1" title="Link to this heading">#</a></h2>
+<p>libcu++ 1.2.0 adds <code class="docutils literal notranslate"><span class="pre">&lt;cuda/pipeline&gt;</span></code>/<code class="docutils literal notranslate"><span class="pre">cuda::pipeline</span></code>, a facility
+for coordinating <code class="docutils literal notranslate"><span class="pre">cuda::memcpy_async</span></code> operations. This release
+introduces ABI version 3, which is now the default.</p>
+<p>Supported ABI versions: 3 (default) and 2.</p>
+<p>Included in: CUDA Toolkit 11.1.</p>
+<section id="abi-breaking-changes">
+<h3>ABI Breaking Changes<a class="headerlink" href="#abi-breaking-changes" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>ABI version 3 has been introduced and is now the default. A new ABI
+version was necessary to improve the performance of
+<code class="docutils literal notranslate"><span class="pre">cuda::[std::]barrier</span></code> by changing its alignment. Users may define
+<code class="docutils literal notranslate"><span class="pre">_LIBCUDACXX_CUDA_ABI_VERSION=2</span></code> before including any libcu++ or
+CUDA headers to use ABI version 2, which was the default for the
+1.1.0 / CUDA 11.0 release. Both ABI version 3 and ABI version 2 will
+be supported until the next major CUDA release.</p></li>
+</ul>
+</section>
+<section id="libcudacxx-new-features-7">
+<span id="id22"></span><h3>New Features<a class="headerlink" href="#libcudacxx-new-features-7" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;cuda/pipeline&gt;</span></code>: <code class="docutils literal notranslate"><span class="pre">cuda::pipeline</span></code>, a facility for coordinating
+<code class="docutils literal notranslate"><span class="pre">cuda::memcpy_async</span></code> operations.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/version&gt;</span></code>: API version macros
+<code class="docutils literal notranslate"><span class="pre">_LIBCUDACXX_CUDA_API_VERSION</span></code>,
+<code class="docutils literal notranslate"><span class="pre">_LIBCUDACXX_CUDA_API_VERSION_MAJOR</span></code>,
+<code class="docutils literal notranslate"><span class="pre">_LIBCUDACXX_CUDA_API_VERSION_MINOR</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">_LIBCUDACXX_CUDA_API_VERSION_PATCH</span></code>.</p></li>
+<li><p>ABI version switching: users can define
+<code class="docutils literal notranslate"><span class="pre">_LIBCUDACXX_CUDA_ABI_VERSION</span></code> to request a particular supported
+ABI version. <code class="docutils literal notranslate"><span class="pre">_LIBCUDACXX_CUDA_ABI_VERSION_LATEST</span></code> is set to the
+latest ABI version, which is always the default.</p></li>
+</ul>
+</section>
+<section id="libcudacxx-other-enhancements-3">
+<span id="id23"></span><h3>Other Enhancements<a class="headerlink" href="#libcudacxx-other-enhancements-3" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;cuda/latch&gt;</span></code>/<code class="docutils literal notranslate"><span class="pre">&lt;cuda/semaphore&gt;</span></code>: <code class="docutils literal notranslate"><span class="pre">&lt;cuda/*&gt;</span></code> headers added for
+<code class="docutils literal notranslate"><span class="pre">cuda::latch</span></code>, <code class="docutils literal notranslate"><span class="pre">cuda::counting_semaphore</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">cuda::binary_semaphore</span></code>. These features were available in prior
+releases, but you had to include <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/latch&gt;</span></code> and
+<code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/semaphore&gt;</span></code> to access them.</p></li>
+<li><p>NVCC + GCC 10 support.</p></li>
+<li><p>NVCC + Clang 10 support.</p></li>
+</ul>
+</section>
+</section>
+<section id="libcu-1-1-0-cuda-toolkit-11-0">
+<h2>libcu++ 1.1.0 (CUDA Toolkit 11.0)<a class="headerlink" href="#libcu-1-1-0-cuda-toolkit-11-0" title="Link to this heading">#</a></h2>
+<p>libcu++ 1.1.0 introduces the world’s first implementation of the
+<a class="reference external" href="https://wg21.link/P1135">Standard C++20 synchronization library</a>:
+<code class="docutils literal notranslate"><span class="pre">&lt;cuda/[std/]barrier&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/latch&gt;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/semaphore&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">cuda::[std::]atomic_flag::test</span></code>,
+<code class="docutils literal notranslate"><span class="pre">cuda::[std::]atomic::wait</span></code>, and <code class="docutils literal notranslate"><span class="pre">cuda::[std::]atomic::notify*</span></code>. An
+extension for managing asynchronous local copies, <code class="docutils literal notranslate"><span class="pre">cuda::memcpy_async</span></code>
+is introduced as well. It also adds <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/chrono&gt;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/ratio&gt;</span></code>, and most of <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/functional&gt;</span></code>.</p>
+<p>Supported ABI versions: 2.</p>
+<p>Included in: CUDA Toolkit 11.0.</p>
+<section id="abi-breaking-changes-1">
+<span id="id24"></span><h3>ABI Breaking Changes<a class="headerlink" href="#abi-breaking-changes-1" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>ABI version 2 has been introduced and is now the default. A new ABI
+version was introduced because it is our policy to do so in every
+major CUDA toolkit release. ABI version 1 is no longer supported.</p></li>
+</ul>
+</section>
+<section id="api-breaking-changes">
+<h3>API Breaking Changes<a class="headerlink" href="#api-breaking-changes" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Atomics on Pascal + Windows are disabled because the platform does
+not support them and on this platform the CUDA driver rejects
+binaries containing these operations.</p></li>
+</ul>
+</section>
+<section id="libcudacxx-new-features-8">
+<span id="id25"></span><h3>New Features<a class="headerlink" href="#libcudacxx-new-features-8" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;cuda/[std/]barrier&gt;</span></code>: C++20’s <code class="docutils literal notranslate"><span class="pre">cuda::[std::]barrier</span></code>, an
+asynchronous thread coordination mechanism whose lifetime consists of
+a sequence of barrier phases, where each phase allows at most an
+expected number of threads to block until the expected number of
+threads arrive at the barrier. It is backported to C++11. The
+<code class="docutils literal notranslate"><span class="pre">cuda::barrier</span></code> variant takes an additional <code class="docutils literal notranslate"><span class="pre">cuda::thread_scope</span></code>
+parameter.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;cuda/barrier&gt;</span></code>: <code class="docutils literal notranslate"><span class="pre">cuda::memcpy_async</span></code>, asynchronous local
+copies. This facility is NOT for transferring data between threads or
+transferring data between host and device; it is not a
+<code class="docutils literal notranslate"><span class="pre">cudaMemcpyAsync</span></code> replacement or abstraction. It uses
+<code class="docutils literal notranslate"><span class="pre">cuda::[std::]barrier</span></code>s objects to synchronize the copies.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/functional&gt;</span></code>: common function objects, such as
+<code class="docutils literal notranslate"><span class="pre">cuda::std::plus</span></code>, <code class="docutils literal notranslate"><span class="pre">cuda::std::minus</span></code>, etc.
+<code class="docutils literal notranslate"><span class="pre">cuda::std::function</span></code>, <code class="docutils literal notranslate"><span class="pre">cuda::std::bind</span></code>, <code class="docutils literal notranslate"><span class="pre">cuda::std::hash</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">cuda::std::reference_wrapper</span></code> are omitted.</p></li>
+</ul>
+</section>
+<section id="libcudacxx-other-enhancements-4">
+<span id="id26"></span><h3>Other Enhancements<a class="headerlink" href="#libcudacxx-other-enhancements-4" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Upgraded to a newer version of upstream libc++.</p></li>
+<li><p>Standalone NVRTC support.</p></li>
+<li><p>C++17 support.</p></li>
+<li><p>NVCC + GCC 9 support.</p></li>
+<li><p>NVCC + Clang 9 support.</p></li>
+<li><p>Build with warnings-as-errors.</p></li>
+</ul>
+</section>
+<section id="issues-fixed-10">
+<span id="id27"></span><h3>Issues Fixed<a class="headerlink" href="#issues-fixed-10" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Made <code class="docutils literal notranslate"><span class="pre">__cuda_memcmp</span></code> inline to fix ODR violations when compiling
+multiple translation units.</p></li>
+</ul>
+</section>
+</section>
+<section id="libcu-1-0-0-cuda-toolkit-10-2">
+<h2>libcu++ 1.0.0 (CUDA Toolkit 10.2)<a class="headerlink" href="#libcu-1-0-0-cuda-toolkit-10-2" title="Link to this heading">#</a></h2>
+<p>libcu++ 1.0.0 is the first release of libcu++, the C++ Standard Library
+for your entire system. It brings C++ atomics to CUDA:
+<code class="docutils literal notranslate"><span class="pre">&lt;cuda/[std/]atomic&gt;</span></code>. It also introduces <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/type_traits&gt;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/cassert&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/cfloat&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/cstddef&gt;</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/cstdint&gt;</span></code>.</p>
+<p>Supported ABI versions: 1.</p>
+<p>Included in: CUDA Toolkit 10.2.</p>
+<section id="libcudacxx-new-features-9">
+<span id="id28"></span><h3>New Features<a class="headerlink" href="#libcudacxx-new-features-9" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;cuda/[std/]atomic&gt;</span></code>:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">cuda::thread_scope</span></code>: An enumeration that specifies which group
+of threads can synchronize with each other using a concurrency
+primitive.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cuda::atomic&lt;T,</span> <span class="pre">Scope&gt;</span></code>: Scoped atomic objects.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cuda::std::atomic&lt;T&gt;</span></code>: Atomic objects.</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/type_traits&gt;</span></code>: Type traits and metaprogramming
+facilities.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/cassert&gt;</span></code>: <code class="docutils literal notranslate"><span class="pre">assert</span></code>, an error-reporting mechanism.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/cstddef&gt;</span></code>: Builtin fundamental types.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/cstdint&gt;</span></code>: Builtin integral types.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;cuda/std/cfloat&gt;</span></code>: Builtin floating point types.</p></li>
+</ul>
+</section>
+<section id="known-issues">
+<h3>Known Issues<a class="headerlink" href="#known-issues" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Due to circumstances beyond our control, the NVIDIA-provided Debian
+packages install libcu++ to the wrong path. This makes libcu++
+unusable if installed from the NVIDIA-provided Debian packages and
+may interfere with the operation of your host C++ Standard Library.</p></li>
+</ul>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../releases.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Releases</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="versioning.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Versioning</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#libcu-2-1-0">libcu++ 2.1.0</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#new-features">New Features</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#issues-fixed">Issues Fixed</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#libcu-1-9-0">libcu++ 1.9.0</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#libcudacxx-new-features-1">New Features</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#issues-fixed-1">Issues Fixed</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#libcu-1-8-1">libcu++ 1.8.1</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#issues-fixed-2">Issues Fixed</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#libcu-1-8-0">libcu++ 1.8.0</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#libcudacxx-new-features-2">New Features</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#issues-fixed-3">Issues Fixed</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#libcu-1-7-0">libcu++ 1.7.0</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#libcudacxx-new-features-3">New Features</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#issues-fixed-4">Issues Fixed</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#libcu-1-6-0-cuda-toolkit-11-5">libcu++ 1.6.0 (CUDA Toolkit 11.5)</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#issues-fixed-5">Issues Fixed</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#libcu-1-5-0-cuda-toolkit-11-4">libcu++ 1.5.0 (CUDA Toolkit 11.4)</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#libcudacxx-new-features-4">New Features</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#issues-fixed-6">Issues Fixed</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#libcu-1-4-1-cuda-toolkit-11-3">libcu++ 1.4.1 (CUDA Toolkit 11.3)</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#other-enhancements">Other Enhancements</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#issues-fixed-7">Issues Fixed</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#libcu-1-4-0">libcu++ 1.4.0</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#libcudacxx-new-features-5">New Features</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#libcudacxx-other-enhancements-1">Other Enhancements</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#issues-fixed-8">Issues Fixed</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#libcu-1-3-0-cuda-toolkit-11-2">libcu++ 1.3.0 (CUDA Toolkit 11.2)</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#libcudacxx-new-features-6">New Features</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#libcudacxx-other-enhancements-2">Other Enhancements</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#issues-fixed-9">Issues Fixed</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#libcu-1-2-0-cuda-toolkit-11-1">libcu++ 1.2.0 (CUDA Toolkit 11.1)</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#abi-breaking-changes">ABI Breaking Changes</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#libcudacxx-new-features-7">New Features</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#libcudacxx-other-enhancements-3">Other Enhancements</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#libcu-1-1-0-cuda-toolkit-11-0">libcu++ 1.1.0 (CUDA Toolkit 11.0)</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#abi-breaking-changes-1">ABI Breaking Changes</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#api-breaking-changes">API Breaking Changes</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#libcudacxx-new-features-8">New Features</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#libcudacxx-other-enhancements-4">Other Enhancements</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#issues-fixed-10">Issues Fixed</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#libcu-1-0-0-cuda-toolkit-10-2">libcu++ 1.0.0 (CUDA Toolkit 10.2)</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#libcudacxx-new-features-9">New Features</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#known-issues">Known Issues</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2026, NVIDIA Corporation.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

@@ -1,0 +1,1252 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>thrust::set_union_by_key &#8212; CUDA Core Compute Libraries</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+
+
+    <script src="../../_static/documentation_options.js?v=bbe6ed3a"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=5ceeb459"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'thrust/api/group__set__operations_1ga6b495740c5481a347f79eefaa45d242e';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://NVIDIA.github.io/cccl/nv-versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'unstable';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+
+    <link rel="canonical" href="https://NVIDIA.github.io/cccl/thrust/api/group__set__operations_1ga6b495740c5481a347f79eefaa45d242e.html" />
+    <link rel="icon" href="../../_static/favicon.png"/>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Sorting" href="../api_docs/algorithms/sorting.html" />
+    <link rel="prev" title="thrust::set_symmetric_difference_by_key" href="group__set__operations_1ga1b867e6acb65f9667f979ad4871bfe14.html" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="unstable" />
+
+
+  </head>
+
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../../cpp.html">CUDA C++ Core Libraries</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../libcudacxx/index.html">libcu++</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/setup.html">Setup</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/requirements.html">Requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/getting.html">Getting libcu++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/building_and_testing.html">Building &amp; Testing libcu++</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/standard_api.html">Standard API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/algorithms_library.html">Algorithms Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/c_library.html">C Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/concepts_library.html">Concepts Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/container_library.html">Container Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/execution_library.html">Execution Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/numerics_library.html">Numerics Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/ranges_library.html">Ranges Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/synchronization_library.html">Synchronization Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/time_library.html">Time Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/type_support.html">Type Support Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/utility_library.html">Utility Library</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/extended_api.html">Extended API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/bit.html">Bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/execution_model.html">Execution model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/exceptions.html">Exception Handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_model.html">Memory model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/thread_groups.html">Thread Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/synchronization_primitives.html">Synchronization Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/asynchronous_operations.html">Asynchronous Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_access_properties.html">Memory access properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/functional.html">Functional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/iterators.html">Fancy Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/type_traits.html">Type traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/vector_tuple_protocol.html">Vector Tuple Protocol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/numeric.html">Numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/random.html">Random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory.html">Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_resource.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/math.html">Math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/mdspan.html">Mdspan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/warp.html">Warp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/utility.html">Utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/work_stealing.html">Work stealing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/stream.html">Streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/event.html">Events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/algorithm.html">Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/legacy_resources.html">Legacy resources</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/examples.html">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/instructions.html">PTX Instructions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/pragmas.html">PTX Pragmas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cub/index.html">CUB</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/test_overview.html">CUB Tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/benchmarking.html">CUB Benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/tuning.html">CUB Tunings</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/developer_overview.html">CUB Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/nvtx.html">NVTX</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/releases.html">CUB Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/releases/changelog.html">CUB 2.1.0</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/thread_level.html">Thread-level Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/warp_wide.html">Warp-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/block_wide.html">Block-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/device_wide.html">Device-Wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="../index.html">Thrust</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../developer_overview.html">Thrust Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../developer/cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../developer/systems.html">Thrust systems</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../release_process.html">Release Process</a></li>
+<li class="toctree-l3 current active has-children"><a class="reference internal" href="../api.html">API documentation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l4 current active"><a class="reference internal" href="../api_docs/algorithms.html">Algorithms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/containers.html">Containers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/function_objects.html">Function Objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/iterators.html">Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/memory_management.html">Memory Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/numerics.html">Numerics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/random.html">Random Number Generators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/system.html">System</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/utility.html">Utility</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cudax/index.html">CUDA Experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/container.html">Containers library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1uninitialized__buffer.html">cuda::experimental::uninitialized_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/memory_resource.html">Memory Resources</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1basic__any__resource.html">cuda::mr::basic_any_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1memory__pool__properties.html">cuda::memory_pool_properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1device__memory__pool.html">cuda::device_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1pinned__memory__pool.html">cuda::pinned_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1managed__memory__pool.html">cuda::managed_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1legacy__pinned__memory__resource.html">cuda::mr::legacy_pinned_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1legacy__managed__memory__resource.html">cuda::mr::legacy_managed_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1mr_1_1shared__resource.html">cuda::mr::shared_resource</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/graph.html">Graphs library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph.html">cuda::experimental::graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__builder.html">cuda::experimental::graph_builder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__builder__ref.html">cuda::experimental::graph_builder_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__node__ref.html">cuda::experimental::graph_node_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of.html">cuda::experimental::stf::graphed_interface_of</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; mdspan&lt; T, P… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; void_interface &gt;</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/stf.html">CUDASTF</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/stf/custom_data_interface.html">Implementation of the <code class="docutils literal notranslate"><span class="pre">matrix</span></code> class</a></li>
+
+
+
+
+
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/stf/lower_level_api.html">Lower-level API</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/3.0_migration_guide.html">CCCL 2.x ‐ CCCL 3.0 migration guide</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/development/index.html">CCCL Development Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/macro.html">CCCL Internal Macros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/testing.html">CCCL Testing Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/contributing.html">Contributing to the CUDA Core Compute Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/contributing/code_of_conduct.html">Code of Conduct</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/license.html">License</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../python/index.html">CCCL Python Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../python/setup.html">Setup and Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/compute.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/coop.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>: Cooperative Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/resources.html">Resources</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../python/api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../python/compute_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../python/coop_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> API Reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../cpp.html" class="nav-link">CUDA C++ Core Libraries</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Thrust</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../api.html" class="nav-link">Thrust API documentation</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../api_docs/algorithms.html" class="nav-link">Algorithms</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../api_docs/algorithms/set_operations.html" class="nav-link">Set Operations</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="group__set__operations.html" class="nav-link">Set Operations</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">thrust::set_union_by_key</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="thrust-set-union-by-key">
+<h1>thrust::set_union_by_key<a class="headerlink" href="#thrust-set-union-by-key" title="Link to this heading">#</a></h1>
+<section id="overloads">
+<h2>Overloads<a class="headerlink" href="#overloads" title="Link to this heading">#</a></h2>
+<section id="set-union-by-key-exec-keys-first1-keys-last1-keys-first2-keys-last2-values-first1-values-first2-keys-result-values-result">
+<h3><code class="docutils literal notranslate"><span class="pre">set_union_by_key(exec,</span> <span class="pre">keys_first1,</span> <span class="pre">keys_last1,</span> <span class="pre">keys_first2,</span> <span class="pre">keys_last2,</span> <span class="pre">values_first1,</span> <span class="pre">values_first2,</span> <span class="pre">keys_result,</span> <span class="pre">values_result)</span></code><a class="headerlink" href="#set-union-by-key-exec-keys-first1-keys-last1-keys-first2-keys-last2-values-first1-values-first2-keys-result-values-result" title="Link to this heading">#</a></h3>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">DerivedPolicy</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIterator1</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIterator2</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIterator3</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIterator4</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">OutputIterator1</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">OutputIterator2</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="group__set__operations_1ga6b495740c5481a347f79eefaa45d242e"></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">pair</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="thrust::set_union_by_key::OutputIterator1"><span class="n"><span class="pre">OutputIterator1</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="thrust::set_union_by_key::OutputIterator2"><span class="n"><span class="pre">OutputIterator2</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">thrust</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">set_union_by_key</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">thrust</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">execution_policy_base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="thrust::set_union_by_key::DerivedPolicy"><span class="n"><span class="pre">DerivedPolicy</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">exec</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="thrust::set_union_by_key::InputIterator1"><span class="n"><span class="pre">InputIterator1</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">keys_first1</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="thrust::set_union_by_key::InputIterator1"><span class="n"><span class="pre">InputIterator1</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">keys_last1</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="thrust::set_union_by_key::InputIterator2"><span class="n"><span class="pre">InputIterator2</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">keys_first2</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="thrust::set_union_by_key::InputIterator2"><span class="n"><span class="pre">InputIterator2</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">keys_last2</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="thrust::set_union_by_key::InputIterator3"><span class="n"><span class="pre">InputIterator3</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">values_first1</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="thrust::set_union_by_key::InputIterator4"><span class="n"><span class="pre">InputIterator4</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">values_first2</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="thrust::set_union_by_key::OutputIterator1"><span class="n"><span class="pre">OutputIterator1</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">keys_result</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="thrust::set_union_by_key::OutputIterator2"><span class="n"><span class="pre">OutputIterator2</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">values_result</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="Link to this definition">#</a><br /></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">set_union_by_key</span></code> performs a key-value union operation from set theory. <code class="docutils literal notranslate"><span class="pre">set_union_by_key</span></code> constructs a sorted range that is the union of the sorted ranges <code class="docutils literal notranslate"><span class="pre">[keys_first1,</span> <span class="pre">keys_last1)</span></code> and <code class="docutils literal notranslate"><span class="pre">[keys_first2,</span> <span class="pre">keys_last2)</span></code>. Associated with each element from the input and output key ranges is a value element. The associated input value ranges need not be sorted.</p>
+<p>In the simplest case, <code class="docutils literal notranslate"><span class="pre">set_union_by_key</span></code> performs the “union” operation from set theory: the output range contains a copy of every element that is contained in <code class="docutils literal notranslate"><span class="pre">[keys_first1,</span> <span class="pre">keys_last1)</span></code>, <code class="docutils literal notranslate"><span class="pre">[keys_first2,</span> <span class="pre">keys_last1)</span></code>, or both. The general case is more complicated, because the input ranges may contain duplicate elements. The generalization is that if <code class="docutils literal notranslate"><span class="pre">[keys_first1,</span> <span class="pre">keys_last1)</span></code> contains <code class="docutils literal notranslate"><span class="pre">m</span></code> elements that are equivalent to each other and if <code class="docutils literal notranslate"><span class="pre">[keys_first2,</span> <span class="pre">keys_last2)</span></code> contains <code class="docutils literal notranslate"><span class="pre">n</span></code> elements that are equivalent to them, then all <code class="docutils literal notranslate"><span class="pre">m</span></code> elements from the first range shall be copied to the output range, in order, and then <code class="docutils literal notranslate"><span class="pre">max(n</span> <span class="pre">-</span> <span class="pre">m,</span> <span class="pre">0)</span></code> elements from the second range shall be copied to the output, in order.</p>
+<p>Each time a key element is copied from <code class="docutils literal notranslate"><span class="pre">[keys_first1,</span> <span class="pre">keys_last1)</span></code> or <code class="docutils literal notranslate"><span class="pre">[keys_first2,</span> <span class="pre">keys_last2)</span></code> is copied to the keys output range, the corresponding value element is copied from the corresponding values input range (beginning at <code class="docutils literal notranslate"><span class="pre">values_first1</span></code> or <code class="docutils literal notranslate"><span class="pre">values_first2</span></code>) to the values output range.</p>
+<p>This version of <code class="docutils literal notranslate"><span class="pre">set_union_by_key</span></code> compares key elements using <code class="docutils literal notranslate"><span class="pre">operator&lt;</span></code>.</p>
+<p>The algorithm’s execution is parallelized as determined by <code class="docutils literal notranslate"><span class="pre">exec</span></code>.</p>
+<p>
+The following code snippet demonstrates how to use <code class="docutils literal notranslate"><span class="pre">set_symmetric_difference_by_key</span></code> to compute the symmetric difference of two sets of integers sorted in ascending order with their values using the <code class="docutils literal notranslate"><a class="reference internal" href="group__execution__policies_1gaebabcc1c0958344babfccdcf379915e5.html#group__execution__policies_1gaebabcc1c0958344babfccdcf379915e5"><span class="std std-ref"><span class="pre">thrust::host</span></span></a></code> execution policy for parallelization:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="c1">#include &lt;thrust/set_operations.h&gt;</span>
+ <span class="c1">#include &lt;thrust/execution_policy.h&gt;</span>
+ <span class="o">...</span>
+ <span class="nb">int</span> <span class="n">A_keys</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">12</span><span class="p">};</span>
+ <span class="nb">int</span> <span class="n">A_vals</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>  <span class="mi">0</span><span class="p">,</span>  <span class="mi">0</span><span class="p">};</span>
+
+ <span class="nb">int</span> <span class="n">B_keys</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">9</span><span class="p">};</span>
+ <span class="nb">int</span> <span class="n">B_vals</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">};</span>
+
+ <span class="nb">int</span> <span class="n">keys_result</span><span class="p">[</span><span class="mi">11</span><span class="p">];</span>
+ <span class="nb">int</span> <span class="n">vals_result</span><span class="p">[</span><span class="mi">11</span><span class="p">];</span>
+
+ <span class="n">cuda</span><span class="p">::</span><span class="n">std</span><span class="p">::</span><span class="n">pair</span><span class="o">&lt;</span><span class="nb">int</span><span class="o">*</span><span class="p">,</span><span class="nb">int</span><span class="o">*&gt;</span> <span class="n">end</span> <span class="o">=</span> <span class="n">thrust</span><span class="p">::</span><span class="n">set_symmetric_difference_by_key</span><span class="p">(</span><span class="n">thrust</span><span class="p">::</span><span class="n">host</span><span class="p">,</span> <span class="n">A_keys</span><span class="p">,</span> <span class="n">A_keys</span> <span class="o">+</span> <span class="mi">6</span><span class="p">,</span>
+<span class="n">B_keys</span><span class="p">,</span> <span class="n">B_keys</span> <span class="o">+</span> <span class="mi">5</span><span class="p">,</span> <span class="n">A_vals</span><span class="p">,</span> <span class="n">B_vals</span><span class="p">,</span> <span class="n">keys_result</span><span class="p">,</span> <span class="n">vals_result</span><span class="p">);</span>
+ <span class="o">//</span> <span class="n">keys_result</span> <span class="ow">is</span> <span class="n">now</span> <span class="p">{</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">12</span><span class="p">}</span>
+ <span class="o">//</span> <span class="n">vals_result</span> <span class="ow">is</span> <span class="n">now</span> <span class="p">{</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>  <span class="mi">0</span><span class="p">,</span>  <span class="mi">0</span><span class="p">}</span>
+</pre></div>
+</div>
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0.</span></p>
+</div>
+</p>
+ <div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="docutils literal notranslate"><a class="reference internal" href="group__set__operations_1ga1b867e6acb65f9667f979ad4871bfe14.html#group__set__operations_1ga1b867e6acb65f9667f979ad4871bfe14"><span class="std std-ref"><span class="pre">set_symmetric_difference_by_key</span></span></a></code></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="docutils literal notranslate"><a class="reference internal" href="group__set__operations_1gac4dd7e9d6d9a971a8d048212855c4fd9.html#group__set__operations_1gac4dd7e9d6d9a971a8d048212855c4fd9"><span class="std std-ref"><span class="pre">set_intersection_by_key</span></span></a></code></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="docutils literal notranslate"><a class="reference internal" href="group__set__operations_1ga4ab94f796b3df5bbf82594f27429ab0d.html#group__set__operations_1ga4ab94f796b3df5bbf82594f27429ab0d"><span class="std std-ref"><span class="pre">set_difference_by_key</span></span></a></code></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="docutils literal notranslate"><a class="reference internal" href="group__sorting_1ga667333ee2e067bb7da3fb1b8ab6d348c.html#group__sorting_1ga667333ee2e067bb7da3fb1b8ab6d348c"><span class="std std-ref"><span class="pre">sort_by_key</span></span></a></code></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="docutils literal notranslate"><a class="reference internal" href="group__predicates_1ga06a2b6225f76986d2861b435c2e1f7f9.html#group__predicates_1ga06a2b6225f76986d2861b435c2e1f7f9"><span class="std std-ref"><span class="pre">is_sorted</span></span></a></code></p>
+</div>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>exec</strong> – The execution policy to use for parallelization. </p></li>
+<li><p><strong>keys_first1</strong> – The beginning of the first input range of keys. </p></li>
+<li><p><strong>keys_last1</strong> – The end of the first input range of keys. </p></li>
+<li><p><strong>keys_first2</strong> – The beginning of the second input range of keys. </p></li>
+<li><p><strong>keys_last2</strong> – The end of the second input range of keys. </p></li>
+<li><p><strong>values_first1</strong> – The beginning of the first input range of values. </p></li>
+<li><p><strong>values_first2</strong> – The beginning of the first input range of values. </p></li>
+<li><p><strong>keys_result</strong> – The beginning of the output range of keys. </p></li>
+<li><p><strong>values_result</strong> – The beginning of the output range of values. </p></li>
+</ul>
+</dd>
+<dt class="field-even">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>DerivedPolicy</strong> – The name of the derived execution policy. </p></li>
+<li><p><strong>InputIterator1</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, <code class="docutils literal notranslate"><span class="pre">InputIterator1</span></code> and <code class="docutils literal notranslate"><span class="pre">InputIterator2</span></code> have the same <code class="docutils literal notranslate"><span class="pre">value_type</span></code>, <code class="docutils literal notranslate"><span class="pre">InputIterator1's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on <code class="docutils literal notranslate"><span class="pre">InputIterator1's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is a strict weak ordering, as defined in the <a class="reference external" href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and <code class="docutils literal notranslate"><span class="pre">InputIterator1's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is convertible to a type in <code class="docutils literal notranslate"><span class="pre">OutputIterator's</span></code> set of <code class="docutils literal notranslate"><span class="pre">value_types</span></code>. </p></li>
+<li><p><strong>InputIterator2</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, <code class="docutils literal notranslate"><span class="pre">InputIterator2</span></code> and <code class="docutils literal notranslate"><span class="pre">InputIterator1</span></code> have the same <code class="docutils literal notranslate"><span class="pre">value_type</span></code>, <code class="docutils literal notranslate"><span class="pre">InputIterator2's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on <code class="docutils literal notranslate"><span class="pre">InputIterator2's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is a strict weak ordering, as defined in the <a class="reference external" href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and <code class="docutils literal notranslate"><span class="pre">InputIterator2's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is convertible to a type in <code class="docutils literal notranslate"><span class="pre">OutputIterator's</span></code> set of <code class="docutils literal notranslate"><span class="pre">value_types</span></code>. </p></li>
+<li><p><strong>InputIterator3</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and <code class="docutils literal notranslate"><span class="pre">InputIterator3's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is convertible to a type in <code class="docutils literal notranslate"><span class="pre">OutputIterator2's</span></code> set of <code class="docutils literal notranslate"><span class="pre">value_types</span></code>. </p></li>
+<li><p><strong>InputIterator4</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and <code class="docutils literal notranslate"><span class="pre">InputIterator4's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is convertible to a type in <code class="docutils literal notranslate"><span class="pre">OutputIterator2's</span></code> set of <code class="docutils literal notranslate"><span class="pre">value_types</span></code>. </p></li>
+<li><p><strong>OutputIterator1</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. </p></li>
+<li><p><strong>OutputIterator2</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A <code class="docutils literal notranslate"><span class="pre">pair</span></code> <code class="docutils literal notranslate"><span class="pre">p</span></code> such that <code class="docutils literal notranslate"><span class="pre">p.first</span></code> is the end of the output range of keys, and such that <code class="docutils literal notranslate"><span class="pre">p.second</span></code> is the end of the output range of values.</p>
+</dd>
+<dt class="field-even">Pre<span class="colon">:</span></dt>
+<dd class="field-even"><p>The ranges <code class="docutils literal notranslate"><span class="pre">[keys_first1,</span> <span class="pre">keys_last1)</span></code> and <code class="docutils literal notranslate"><span class="pre">[keys_first2,</span> <span class="pre">keys_last2)</span></code> shall be sorted with respect to <code class="docutils literal notranslate"><span class="pre">operator&lt;</span></code>. </p>
+</dd>
+<dt class="field-odd">Pre<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The resulting ranges shall not overlap with any input range.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="set-union-by-key-keys-first1-keys-last1-keys-first2-keys-last2-values-first1-values-first2-keys-result-values-result">
+<h3><code class="docutils literal notranslate"><span class="pre">set_union_by_key(keys_first1,</span> <span class="pre">keys_last1,</span> <span class="pre">keys_first2,</span> <span class="pre">keys_last2,</span> <span class="pre">values_first1,</span> <span class="pre">values_first2,</span> <span class="pre">keys_result,</span> <span class="pre">values_result)</span></code><a class="headerlink" href="#set-union-by-key-keys-first1-keys-last1-keys-first2-keys-last2-values-first1-values-first2-keys-result-values-result" title="Link to this heading">#</a></h3>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIterator1</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIterator2</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIterator3</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIterator4</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">OutputIterator1</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">OutputIterator2</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="group__set__operations_1ga58b6d2d44f05bab32f72c4594bb77d52"></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">pair</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="thrust::set_union_by_key::OutputIterator1"><span class="n"><span class="pre">OutputIterator1</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="thrust::set_union_by_key::OutputIterator2"><span class="n"><span class="pre">OutputIterator2</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">thrust</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">set_union_by_key</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="thrust::set_union_by_key::InputIterator1"><span class="n"><span class="pre">InputIterator1</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">keys_first1</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="thrust::set_union_by_key::InputIterator1"><span class="n"><span class="pre">InputIterator1</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">keys_last1</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="thrust::set_union_by_key::InputIterator2"><span class="n"><span class="pre">InputIterator2</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">keys_first2</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="thrust::set_union_by_key::InputIterator2"><span class="n"><span class="pre">InputIterator2</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">keys_last2</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="thrust::set_union_by_key::InputIterator3"><span class="n"><span class="pre">InputIterator3</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">values_first1</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="thrust::set_union_by_key::InputIterator4"><span class="n"><span class="pre">InputIterator4</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">values_first2</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="thrust::set_union_by_key::OutputIterator1"><span class="n"><span class="pre">OutputIterator1</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">keys_result</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="thrust::set_union_by_key::OutputIterator2"><span class="n"><span class="pre">OutputIterator2</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">values_result</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2" title="Link to this definition">#</a><br /></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">set_union_by_key</span></code> performs a key-value union operation from set theory. <code class="docutils literal notranslate"><span class="pre">set_union_by_key</span></code> constructs a sorted range that is the union of the sorted ranges <code class="docutils literal notranslate"><span class="pre">[keys_first1,</span> <span class="pre">keys_last1)</span></code> and <code class="docutils literal notranslate"><span class="pre">[keys_first2,</span> <span class="pre">keys_last2)</span></code>. Associated with each element from the input and output key ranges is a value element. The associated input value ranges need not be sorted.</p>
+<p>In the simplest case, <code class="docutils literal notranslate"><span class="pre">set_union_by_key</span></code> performs the “union” operation from set theory: the output range contains a copy of every element that is contained in <code class="docutils literal notranslate"><span class="pre">[keys_first1,</span> <span class="pre">keys_last1)</span></code>, <code class="docutils literal notranslate"><span class="pre">[keys_first2,</span> <span class="pre">keys_last1)</span></code>, or both. The general case is more complicated, because the input ranges may contain duplicate elements. The generalization is that if <code class="docutils literal notranslate"><span class="pre">[keys_first1,</span> <span class="pre">keys_last1)</span></code> contains <code class="docutils literal notranslate"><span class="pre">m</span></code> elements that are equivalent to each other and if <code class="docutils literal notranslate"><span class="pre">[keys_first2,</span> <span class="pre">keys_last2)</span></code> contains <code class="docutils literal notranslate"><span class="pre">n</span></code> elements that are equivalent to them, then all <code class="docutils literal notranslate"><span class="pre">m</span></code> elements from the first range shall be copied to the output range, in order, and then <code class="docutils literal notranslate"><span class="pre">max(n</span> <span class="pre">-</span> <span class="pre">m,</span> <span class="pre">0)</span></code> elements from the second range shall be copied to the output, in order.</p>
+<p>Each time a key element is copied from <code class="docutils literal notranslate"><span class="pre">[keys_first1,</span> <span class="pre">keys_last1)</span></code> or <code class="docutils literal notranslate"><span class="pre">[keys_first2,</span> <span class="pre">keys_last2)</span></code> is copied to the keys output range, the corresponding value element is copied from the corresponding values input range (beginning at <code class="docutils literal notranslate"><span class="pre">values_first1</span></code> or <code class="docutils literal notranslate"><span class="pre">values_first2</span></code>) to the values output range.</p>
+<p>This version of <code class="docutils literal notranslate"><span class="pre">set_union_by_key</span></code> compares key elements using <code class="docutils literal notranslate"><span class="pre">operator&lt;</span></code>.</p>
+<p>
+The following code snippet demonstrates how to use <code class="docutils literal notranslate"><span class="pre">set_symmetric_difference_by_key</span></code> to compute the symmetric difference of two sets of integers sorted in ascending order with their values.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="c1">#include &lt;thrust/set_operations.h&gt;</span>
+ <span class="o">...</span>
+ <span class="nb">int</span> <span class="n">A_keys</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">12</span><span class="p">};</span>
+ <span class="nb">int</span> <span class="n">A_vals</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>  <span class="mi">0</span><span class="p">,</span>  <span class="mi">0</span><span class="p">};</span>
+
+ <span class="nb">int</span> <span class="n">B_keys</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">9</span><span class="p">};</span>
+ <span class="nb">int</span> <span class="n">B_vals</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">};</span>
+
+ <span class="nb">int</span> <span class="n">keys_result</span><span class="p">[</span><span class="mi">11</span><span class="p">];</span>
+ <span class="nb">int</span> <span class="n">vals_result</span><span class="p">[</span><span class="mi">11</span><span class="p">];</span>
+
+ <span class="n">cuda</span><span class="p">::</span><span class="n">std</span><span class="p">::</span><span class="n">pair</span><span class="o">&lt;</span><span class="nb">int</span><span class="o">*</span><span class="p">,</span><span class="nb">int</span><span class="o">*&gt;</span> <span class="n">end</span> <span class="o">=</span> <span class="n">thrust</span><span class="p">::</span><span class="n">set_symmetric_difference_by_key</span><span class="p">(</span><span class="n">A_keys</span><span class="p">,</span> <span class="n">A_keys</span> <span class="o">+</span> <span class="mi">6</span><span class="p">,</span> <span class="n">B_keys</span><span class="p">,</span> <span class="n">B_keys</span> <span class="o">+</span> <span class="mi">5</span><span class="p">,</span>
+<span class="n">A_vals</span><span class="p">,</span> <span class="n">B_vals</span><span class="p">,</span> <span class="n">keys_result</span><span class="p">,</span> <span class="n">vals_result</span><span class="p">);</span>
+ <span class="o">//</span> <span class="n">keys_result</span> <span class="ow">is</span> <span class="n">now</span> <span class="p">{</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">12</span><span class="p">}</span>
+ <span class="o">//</span> <span class="n">vals_result</span> <span class="ow">is</span> <span class="n">now</span> <span class="p">{</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>  <span class="mi">0</span><span class="p">,</span>  <span class="mi">0</span><span class="p">}</span>
+</pre></div>
+</div>
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0.</span></p>
+</div>
+</p>
+ <div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="docutils literal notranslate"><a class="reference internal" href="group__set__operations_1ga1b867e6acb65f9667f979ad4871bfe14.html#group__set__operations_1ga1b867e6acb65f9667f979ad4871bfe14"><span class="std std-ref"><span class="pre">set_symmetric_difference_by_key</span></span></a></code></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="docutils literal notranslate"><a class="reference internal" href="group__set__operations_1gac4dd7e9d6d9a971a8d048212855c4fd9.html#group__set__operations_1gac4dd7e9d6d9a971a8d048212855c4fd9"><span class="std std-ref"><span class="pre">set_intersection_by_key</span></span></a></code></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="docutils literal notranslate"><a class="reference internal" href="group__set__operations_1ga4ab94f796b3df5bbf82594f27429ab0d.html#group__set__operations_1ga4ab94f796b3df5bbf82594f27429ab0d"><span class="std std-ref"><span class="pre">set_difference_by_key</span></span></a></code></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="docutils literal notranslate"><a class="reference internal" href="group__sorting_1ga667333ee2e067bb7da3fb1b8ab6d348c.html#group__sorting_1ga667333ee2e067bb7da3fb1b8ab6d348c"><span class="std std-ref"><span class="pre">sort_by_key</span></span></a></code></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="docutils literal notranslate"><a class="reference internal" href="group__predicates_1ga06a2b6225f76986d2861b435c2e1f7f9.html#group__predicates_1ga06a2b6225f76986d2861b435c2e1f7f9"><span class="std std-ref"><span class="pre">is_sorted</span></span></a></code></p>
+</div>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>keys_first1</strong> – The beginning of the first input range of keys. </p></li>
+<li><p><strong>keys_last1</strong> – The end of the first input range of keys. </p></li>
+<li><p><strong>keys_first2</strong> – The beginning of the second input range of keys. </p></li>
+<li><p><strong>keys_last2</strong> – The end of the second input range of keys. </p></li>
+<li><p><strong>values_first1</strong> – The beginning of the first input range of values. </p></li>
+<li><p><strong>values_first2</strong> – The beginning of the first input range of values. </p></li>
+<li><p><strong>keys_result</strong> – The beginning of the output range of keys. </p></li>
+<li><p><strong>values_result</strong> – The beginning of the output range of values. </p></li>
+</ul>
+</dd>
+<dt class="field-even">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>InputIterator1</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, <code class="docutils literal notranslate"><span class="pre">InputIterator1</span></code> and <code class="docutils literal notranslate"><span class="pre">InputIterator2</span></code> have the same <code class="docutils literal notranslate"><span class="pre">value_type</span></code>, <code class="docutils literal notranslate"><span class="pre">InputIterator1's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on <code class="docutils literal notranslate"><span class="pre">InputIterator1's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is a strict weak ordering, as defined in the <a class="reference external" href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and <code class="docutils literal notranslate"><span class="pre">InputIterator1's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is convertible to a type in <code class="docutils literal notranslate"><span class="pre">OutputIterator's</span></code> set of <code class="docutils literal notranslate"><span class="pre">value_types</span></code>. </p></li>
+<li><p><strong>InputIterator2</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, <code class="docutils literal notranslate"><span class="pre">InputIterator2</span></code> and <code class="docutils literal notranslate"><span class="pre">InputIterator1</span></code> have the same <code class="docutils literal notranslate"><span class="pre">value_type</span></code>, <code class="docutils literal notranslate"><span class="pre">InputIterator2's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on <code class="docutils literal notranslate"><span class="pre">InputIterator2's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is a strict weak ordering, as defined in the <a class="reference external" href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and <code class="docutils literal notranslate"><span class="pre">InputIterator2's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is convertible to a type in <code class="docutils literal notranslate"><span class="pre">OutputIterator's</span></code> set of <code class="docutils literal notranslate"><span class="pre">value_types</span></code>. </p></li>
+<li><p><strong>InputIterator3</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and <code class="docutils literal notranslate"><span class="pre">InputIterator3's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is convertible to a type in <code class="docutils literal notranslate"><span class="pre">OutputIterator2's</span></code> set of <code class="docutils literal notranslate"><span class="pre">value_types</span></code>. </p></li>
+<li><p><strong>InputIterator4</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and <code class="docutils literal notranslate"><span class="pre">InputIterator4's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is convertible to a type in <code class="docutils literal notranslate"><span class="pre">OutputIterator2's</span></code> set of <code class="docutils literal notranslate"><span class="pre">value_types</span></code>. </p></li>
+<li><p><strong>OutputIterator1</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. </p></li>
+<li><p><strong>OutputIterator2</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A <code class="docutils literal notranslate"><span class="pre">pair</span></code> <code class="docutils literal notranslate"><span class="pre">p</span></code> such that <code class="docutils literal notranslate"><span class="pre">p.first</span></code> is the end of the output range of keys, and such that <code class="docutils literal notranslate"><span class="pre">p.second</span></code> is the end of the output range of values.</p>
+</dd>
+<dt class="field-even">Pre<span class="colon">:</span></dt>
+<dd class="field-even"><p>The ranges <code class="docutils literal notranslate"><span class="pre">[keys_first1,</span> <span class="pre">keys_last1)</span></code> and <code class="docutils literal notranslate"><span class="pre">[keys_first2,</span> <span class="pre">keys_last2)</span></code> shall be sorted with respect to <code class="docutils literal notranslate"><span class="pre">operator&lt;</span></code>. </p>
+</dd>
+<dt class="field-odd">Pre<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The resulting ranges shall not overlap with any input range.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="set-union-by-key-exec-keys-first1-keys-last1-keys-first2-keys-last2-values-first1-values-first2-keys-result-values-result-comp">
+<h3><code class="docutils literal notranslate"><span class="pre">set_union_by_key(exec,</span> <span class="pre">keys_first1,</span> <span class="pre">keys_last1,</span> <span class="pre">keys_first2,</span> <span class="pre">keys_last2,</span> <span class="pre">values_first1,</span> <span class="pre">values_first2,</span> <span class="pre">keys_result,</span> <span class="pre">values_result,</span> <span class="pre">comp)</span></code><a class="headerlink" href="#set-union-by-key-exec-keys-first1-keys-last1-keys-first2-keys-last2-values-first1-values-first2-keys-result-values-result-comp" title="Link to this heading">#</a></h3>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I00000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">DerivedPolicy</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIterator1</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIterator2</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIterator3</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIterator4</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">OutputIterator1</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">OutputIterator2</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">StrictWeakCompare</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="group__set__operations_1gaf9221c3b2fcfe2230f13503c429a52ff"></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">pair</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::OutputIterator1"><span class="n"><span class="pre">OutputIterator1</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::OutputIterator2"><span class="n"><span class="pre">OutputIterator2</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">thrust</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">set_union_by_key</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">thrust</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">execution_policy_base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::DerivedPolicy"><span class="n"><span class="pre">DerivedPolicy</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">exec</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I00000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::InputIterator1"><span class="n"><span class="pre">InputIterator1</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">keys_first1</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I00000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::InputIterator1"><span class="n"><span class="pre">InputIterator1</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">keys_last1</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I00000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::InputIterator2"><span class="n"><span class="pre">InputIterator2</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">keys_first2</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I00000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::InputIterator2"><span class="n"><span class="pre">InputIterator2</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">keys_last2</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I00000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::InputIterator3"><span class="n"><span class="pre">InputIterator3</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">values_first1</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I00000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::InputIterator4"><span class="n"><span class="pre">InputIterator4</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">values_first2</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I00000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::OutputIterator1"><span class="n"><span class="pre">OutputIterator1</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">keys_result</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I00000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::OutputIterator2"><span class="n"><span class="pre">OutputIterator2</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">values_result</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I00000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::StrictWeakCompare"><span class="n"><span class="pre">StrictWeakCompare</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">comp</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I00000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="Link to this definition">#</a><br /></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">set_union_by_key</span></code> performs a key-value union operation from set theory. <code class="docutils literal notranslate"><span class="pre">set_union_by_key</span></code> constructs a sorted range that is the union of the sorted ranges <code class="docutils literal notranslate"><span class="pre">[keys_first1,</span> <span class="pre">keys_last1)</span></code> and <code class="docutils literal notranslate"><span class="pre">[keys_first2,</span> <span class="pre">keys_last2)</span></code>. Associated with each element from the input and output key ranges is a value element. The associated input value ranges need not be sorted.</p>
+<p>In the simplest case, <code class="docutils literal notranslate"><span class="pre">set_union_by_key</span></code> performs the “union” operation from set theory: the output range contains a copy of every element that is contained in <code class="docutils literal notranslate"><span class="pre">[keys_first1,</span> <span class="pre">keys_last1)</span></code>, <code class="docutils literal notranslate"><span class="pre">[keys_first2,</span> <span class="pre">keys_last1)</span></code>, or both. The general case is more complicated, because the input ranges may contain duplicate elements. The generalization is that if <code class="docutils literal notranslate"><span class="pre">[keys_first1,</span> <span class="pre">keys_last1)</span></code> contains <code class="docutils literal notranslate"><span class="pre">m</span></code> elements that are equivalent to each other and if <code class="docutils literal notranslate"><span class="pre">[keys_first2,</span> <span class="pre">keys_last2)</span></code> contains <code class="docutils literal notranslate"><span class="pre">n</span></code> elements that are equivalent to them, then all <code class="docutils literal notranslate"><span class="pre">m</span></code> elements from the first range shall be copied to the output range, in order, and then <code class="docutils literal notranslate"><span class="pre">max(n</span> <span class="pre">-</span> <span class="pre">m,</span> <span class="pre">0)</span></code> elements from the second range shall be copied to the output, in order.</p>
+<p>Each time a key element is copied from <code class="docutils literal notranslate"><span class="pre">[keys_first1,</span> <span class="pre">keys_last1)</span></code> or <code class="docutils literal notranslate"><span class="pre">[keys_first2,</span> <span class="pre">keys_last2)</span></code> is copied to the keys output range, the corresponding value element is copied from the corresponding values input range (beginning at <code class="docutils literal notranslate"><span class="pre">values_first1</span></code> or <code class="docutils literal notranslate"><span class="pre">values_first2</span></code>) to the values output range.</p>
+<p>This version of <code class="docutils literal notranslate"><span class="pre">set_union_by_key</span></code> compares key elements using a function object <code class="docutils literal notranslate"><span class="pre">comp</span></code>.</p>
+<p>The algorithm’s execution is parallelized as determined by <code class="docutils literal notranslate"><span class="pre">exec</span></code>.</p>
+<p>
+The following code snippet demonstrates how to use <code class="docutils literal notranslate"><span class="pre">set_symmetric_difference_by_key</span></code> to compute the symmetric difference of two sets of integers sorted in descending order with their values using the <code class="docutils literal notranslate"><a class="reference internal" href="group__execution__policies_1gaebabcc1c0958344babfccdcf379915e5.html#group__execution__policies_1gaebabcc1c0958344babfccdcf379915e5"><span class="std std-ref"><span class="pre">thrust::host</span></span></a></code> execution policy for parallelization:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="c1">#include &lt;thrust/set_operations.h&gt;</span>
+ <span class="c1">#include &lt;thrust/functional.h&gt;</span>
+ <span class="c1">#include &lt;thrust/execution_policy.h&gt;</span>
+ <span class="o">...</span>
+ <span class="nb">int</span> <span class="n">A_keys</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">12</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">};</span>
+ <span class="nb">int</span> <span class="n">A_vals</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="mi">0</span><span class="p">,</span>  <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">};</span>
+
+ <span class="nb">int</span> <span class="n">B_keys</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">9</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">};</span>
+ <span class="nb">int</span> <span class="n">B_vals</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">};</span>
+
+ <span class="nb">int</span> <span class="n">keys_result</span><span class="p">[</span><span class="mi">11</span><span class="p">];</span>
+ <span class="nb">int</span> <span class="n">vals_result</span><span class="p">[</span><span class="mi">11</span><span class="p">];</span>
+
+ <span class="n">cuda</span><span class="p">::</span><span class="n">std</span><span class="p">::</span><span class="n">pair</span><span class="o">&lt;</span><span class="nb">int</span><span class="o">*</span><span class="p">,</span><span class="nb">int</span><span class="o">*&gt;</span> <span class="n">end</span> <span class="o">=</span> <span class="n">thrust</span><span class="p">::</span><span class="n">set_symmetric_difference_by_key</span><span class="p">(</span><span class="n">thrust</span><span class="p">::</span><span class="n">host</span><span class="p">,</span> <span class="n">A_keys</span><span class="p">,</span> <span class="n">A_keys</span> <span class="o">+</span> <span class="mi">6</span><span class="p">,</span>
+<span class="n">B_keys</span><span class="p">,</span> <span class="n">B_keys</span> <span class="o">+</span> <span class="mi">5</span><span class="p">,</span> <span class="n">A_vals</span><span class="p">,</span> <span class="n">B_vals</span><span class="p">,</span> <span class="n">keys_result</span><span class="p">,</span> <span class="n">vals_result</span><span class="p">,</span> <span class="p">::</span><span class="n">cuda</span><span class="p">::</span><span class="n">std</span><span class="p">::</span><span class="n">greater</span><span class="o">&lt;</span><span class="nb">int</span><span class="o">&gt;</span><span class="p">());</span>
+ <span class="o">//</span> <span class="n">keys_result</span> <span class="ow">is</span> <span class="n">now</span> <span class="p">{</span><span class="mi">12</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">}</span>
+ <span class="o">//</span> <span class="n">vals_result</span> <span class="ow">is</span> <span class="n">now</span> <span class="p">{</span> <span class="mi">0</span><span class="p">,</span>  <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">}</span>
+</pre></div>
+</div>
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0.</span></p>
+</div>
+</p>
+ <div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="docutils literal notranslate"><a class="reference internal" href="group__set__operations_1ga1b867e6acb65f9667f979ad4871bfe14.html#group__set__operations_1ga1b867e6acb65f9667f979ad4871bfe14"><span class="std std-ref"><span class="pre">set_symmetric_difference_by_key</span></span></a></code></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="docutils literal notranslate"><a class="reference internal" href="group__set__operations_1gac4dd7e9d6d9a971a8d048212855c4fd9.html#group__set__operations_1gac4dd7e9d6d9a971a8d048212855c4fd9"><span class="std std-ref"><span class="pre">set_intersection_by_key</span></span></a></code></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="docutils literal notranslate"><a class="reference internal" href="group__set__operations_1ga4ab94f796b3df5bbf82594f27429ab0d.html#group__set__operations_1ga4ab94f796b3df5bbf82594f27429ab0d"><span class="std std-ref"><span class="pre">set_difference_by_key</span></span></a></code></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="docutils literal notranslate"><a class="reference internal" href="group__sorting_1ga667333ee2e067bb7da3fb1b8ab6d348c.html#group__sorting_1ga667333ee2e067bb7da3fb1b8ab6d348c"><span class="std std-ref"><span class="pre">sort_by_key</span></span></a></code></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="docutils literal notranslate"><a class="reference internal" href="group__predicates_1ga06a2b6225f76986d2861b435c2e1f7f9.html#group__predicates_1ga06a2b6225f76986d2861b435c2e1f7f9"><span class="std std-ref"><span class="pre">is_sorted</span></span></a></code></p>
+</div>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>exec</strong> – The execution policy to use for parallelization. </p></li>
+<li><p><strong>keys_first1</strong> – The beginning of the first input range of keys. </p></li>
+<li><p><strong>keys_last1</strong> – The end of the first input range of keys. </p></li>
+<li><p><strong>keys_first2</strong> – The beginning of the second input range of keys. </p></li>
+<li><p><strong>keys_last2</strong> – The end of the second input range of keys. </p></li>
+<li><p><strong>values_first1</strong> – The beginning of the first input range of values. </p></li>
+<li><p><strong>values_first2</strong> – The beginning of the first input range of values. </p></li>
+<li><p><strong>keys_result</strong> – The beginning of the output range of keys. </p></li>
+<li><p><strong>values_result</strong> – The beginning of the output range of values. </p></li>
+<li><p><strong>comp</strong> – Comparison operator. </p></li>
+</ul>
+</dd>
+<dt class="field-even">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>DerivedPolicy</strong> – The name of the derived execution policy. </p></li>
+<li><p><strong>InputIterator1</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, <code class="docutils literal notranslate"><span class="pre">InputIterator1</span></code> and <code class="docutils literal notranslate"><span class="pre">InputIterator2</span></code> have the same <code class="docutils literal notranslate"><span class="pre">value_type</span></code>, <code class="docutils literal notranslate"><span class="pre">InputIterator1's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on <code class="docutils literal notranslate"><span class="pre">InputIterator1's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is a strict weak ordering, as defined in the <a class="reference external" href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and <code class="docutils literal notranslate"><span class="pre">InputIterator1's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is convertible to a type in <code class="docutils literal notranslate"><span class="pre">OutputIterator's</span></code> set of <code class="docutils literal notranslate"><span class="pre">value_types</span></code>. </p></li>
+<li><p><strong>InputIterator2</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, <code class="docutils literal notranslate"><span class="pre">InputIterator2</span></code> and <code class="docutils literal notranslate"><span class="pre">InputIterator1</span></code> have the same <code class="docutils literal notranslate"><span class="pre">value_type</span></code>, <code class="docutils literal notranslate"><span class="pre">InputIterator2's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on <code class="docutils literal notranslate"><span class="pre">InputIterator2's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is a strict weak ordering, as defined in the <a class="reference external" href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and <code class="docutils literal notranslate"><span class="pre">InputIterator2's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is convertible to a type in <code class="docutils literal notranslate"><span class="pre">OutputIterator's</span></code> set of <code class="docutils literal notranslate"><span class="pre">value_types</span></code>. </p></li>
+<li><p><strong>InputIterator3</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and <code class="docutils literal notranslate"><span class="pre">InputIterator3's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is convertible to a type in <code class="docutils literal notranslate"><span class="pre">OutputIterator2's</span></code> set of <code class="docutils literal notranslate"><span class="pre">value_types</span></code>. </p></li>
+<li><p><strong>InputIterator4</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and <code class="docutils literal notranslate"><span class="pre">InputIterator4's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is convertible to a type in <code class="docutils literal notranslate"><span class="pre">OutputIterator2's</span></code> set of <code class="docutils literal notranslate"><span class="pre">value_types</span></code>. </p></li>
+<li><p><strong>OutputIterator1</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. </p></li>
+<li><p><strong>OutputIterator2</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. </p></li>
+<li><p><strong>StrictWeakCompare</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A <code class="docutils literal notranslate"><span class="pre">pair</span></code> <code class="docutils literal notranslate"><span class="pre">p</span></code> such that <code class="docutils literal notranslate"><span class="pre">p.first</span></code> is the end of the output range of keys, and such that <code class="docutils literal notranslate"><span class="pre">p.second</span></code> is the end of the output range of values.</p>
+</dd>
+<dt class="field-even">Pre<span class="colon">:</span></dt>
+<dd class="field-even"><p>The ranges <code class="docutils literal notranslate"><span class="pre">[keys_first1,</span> <span class="pre">keys_last1)</span></code> and <code class="docutils literal notranslate"><span class="pre">[keys_first2,</span> <span class="pre">keys_last2)</span></code> shall be sorted with respect to <code class="docutils literal notranslate"><span class="pre">comp</span></code>. </p>
+</dd>
+<dt class="field-odd">Pre<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The resulting ranges shall not overlap with any input range.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="set-union-by-key-keys-first1-keys-last1-keys-first2-keys-last2-values-first1-values-first2-keys-result-values-result-comp">
+<h3><code class="docutils literal notranslate"><span class="pre">set_union_by_key(keys_first1,</span> <span class="pre">keys_last1,</span> <span class="pre">keys_first2,</span> <span class="pre">keys_last2,</span> <span class="pre">values_first1,</span> <span class="pre">values_first2,</span> <span class="pre">keys_result,</span> <span class="pre">values_result,</span> <span class="pre">comp)</span></code><a class="headerlink" href="#set-union-by-key-keys-first1-keys-last1-keys-first2-keys-last2-values-first1-values-first2-keys-result-values-result-comp" title="Link to this heading">#</a></h3>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIterator1</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIterator2</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIterator3</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">InputIterator4</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">OutputIterator1</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">OutputIterator2</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">StrictWeakCompare</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="group__set__operations_1gaffd0b3420d35603202cbe1130c04f5d4"></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">pair</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::OutputIterator1"><span class="n"><span class="pre">OutputIterator1</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::OutputIterator2"><span class="n"><span class="pre">OutputIterator2</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">thrust</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">set_union_by_key</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::InputIterator1"><span class="n"><span class="pre">InputIterator1</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">keys_first1</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::InputIterator1"><span class="n"><span class="pre">InputIterator1</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">keys_last1</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::InputIterator2"><span class="n"><span class="pre">InputIterator2</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">keys_first2</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::InputIterator2"><span class="n"><span class="pre">InputIterator2</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">keys_last2</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::InputIterator3"><span class="n"><span class="pre">InputIterator3</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">values_first1</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::InputIterator4"><span class="n"><span class="pre">InputIterator4</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">values_first2</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::OutputIterator1"><span class="n"><span class="pre">OutputIterator1</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">keys_result</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::OutputIterator2"><span class="n"><span class="pre">OutputIterator2</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">values_result</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="thrust::set_union_by_key::StrictWeakCompare"><span class="n"><span class="pre">StrictWeakCompare</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">comp</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare" title="Link to this definition">#</a><br /></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">set_union_by_key</span></code> performs a key-value union operation from set theory. <code class="docutils literal notranslate"><span class="pre">set_union_by_key</span></code> constructs a sorted range that is the union of the sorted ranges <code class="docutils literal notranslate"><span class="pre">[keys_first1,</span> <span class="pre">keys_last1)</span></code> and <code class="docutils literal notranslate"><span class="pre">[keys_first2,</span> <span class="pre">keys_last2)</span></code>. Associated with each element from the input and output key ranges is a value element. The associated input value ranges need not be sorted.</p>
+<p>In the simplest case, <code class="docutils literal notranslate"><span class="pre">set_union_by_key</span></code> performs the “union” operation from set theory: the output range contains a copy of every element that is contained in <code class="docutils literal notranslate"><span class="pre">[keys_first1,</span> <span class="pre">keys_last1)</span></code>, <code class="docutils literal notranslate"><span class="pre">[keys_first2,</span> <span class="pre">keys_last1)</span></code>, or both. The general case is more complicated, because the input ranges may contain duplicate elements. The generalization is that if <code class="docutils literal notranslate"><span class="pre">[keys_first1,</span> <span class="pre">keys_last1)</span></code> contains <code class="docutils literal notranslate"><span class="pre">m</span></code> elements that are equivalent to each other and if <code class="docutils literal notranslate"><span class="pre">[keys_first2,</span> <span class="pre">keys_last2)</span></code> contains <code class="docutils literal notranslate"><span class="pre">n</span></code> elements that are equivalent to them, then all <code class="docutils literal notranslate"><span class="pre">m</span></code> elements from the first range shall be copied to the output range, in order, and then <code class="docutils literal notranslate"><span class="pre">max(n</span> <span class="pre">-</span> <span class="pre">m,</span> <span class="pre">0)</span></code> elements from the second range shall be copied to the output, in order.</p>
+<p>Each time a key element is copied from <code class="docutils literal notranslate"><span class="pre">[keys_first1,</span> <span class="pre">keys_last1)</span></code> or <code class="docutils literal notranslate"><span class="pre">[keys_first2,</span> <span class="pre">keys_last2)</span></code> is copied to the keys output range, the corresponding value element is copied from the corresponding values input range (beginning at <code class="docutils literal notranslate"><span class="pre">values_first1</span></code> or <code class="docutils literal notranslate"><span class="pre">values_first2</span></code>) to the values output range.</p>
+<p>This version of <code class="docutils literal notranslate"><span class="pre">set_union_by_key</span></code> compares key elements using a function object <code class="docutils literal notranslate"><span class="pre">comp</span></code>.</p>
+<p>
+The following code snippet demonstrates how to use <code class="docutils literal notranslate"><span class="pre">set_symmetric_difference_by_key</span></code> to compute the symmetric difference of two sets of integers sorted in descending order with their values.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="c1">#include &lt;thrust/set_operations.h&gt;</span>
+ <span class="c1">#include &lt;thrust/functional.h&gt;</span>
+ <span class="o">...</span>
+ <span class="nb">int</span> <span class="n">A_keys</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">12</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">};</span>
+ <span class="nb">int</span> <span class="n">A_vals</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="mi">0</span><span class="p">,</span>  <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">};</span>
+
+ <span class="nb">int</span> <span class="n">B_keys</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">9</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">};</span>
+ <span class="nb">int</span> <span class="n">B_vals</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">};</span>
+
+ <span class="nb">int</span> <span class="n">keys_result</span><span class="p">[</span><span class="mi">11</span><span class="p">];</span>
+ <span class="nb">int</span> <span class="n">vals_result</span><span class="p">[</span><span class="mi">11</span><span class="p">];</span>
+
+ <span class="n">cuda</span><span class="p">::</span><span class="n">std</span><span class="p">::</span><span class="n">pair</span><span class="o">&lt;</span><span class="nb">int</span><span class="o">*</span><span class="p">,</span><span class="nb">int</span><span class="o">*&gt;</span> <span class="n">end</span> <span class="o">=</span> <span class="n">thrust</span><span class="p">::</span><span class="n">set_symmetric_difference_by_key</span><span class="p">(</span><span class="n">A_keys</span><span class="p">,</span> <span class="n">A_keys</span> <span class="o">+</span> <span class="mi">6</span><span class="p">,</span> <span class="n">B_keys</span><span class="p">,</span> <span class="n">B_keys</span> <span class="o">+</span> <span class="mi">5</span><span class="p">,</span>
+<span class="n">A_vals</span><span class="p">,</span> <span class="n">B_vals</span><span class="p">,</span> <span class="n">keys_result</span><span class="p">,</span> <span class="n">vals_result</span><span class="p">,</span> <span class="p">::</span><span class="n">cuda</span><span class="p">::</span><span class="n">std</span><span class="p">::</span><span class="n">greater</span><span class="o">&lt;</span><span class="nb">int</span><span class="o">&gt;</span><span class="p">());</span>
+ <span class="o">//</span> <span class="n">keys_result</span> <span class="ow">is</span> <span class="n">now</span> <span class="p">{</span><span class="mi">12</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">}</span>
+ <span class="o">//</span> <span class="n">vals_result</span> <span class="ow">is</span> <span class="n">now</span> <span class="p">{</span> <span class="mi">0</span><span class="p">,</span>  <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">}</span>
+</pre></div>
+</div>
+<p><p><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.0.</span></p>
+</div>
+</p>
+ <div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="docutils literal notranslate"><a class="reference internal" href="group__set__operations_1ga1b867e6acb65f9667f979ad4871bfe14.html#group__set__operations_1ga1b867e6acb65f9667f979ad4871bfe14"><span class="std std-ref"><span class="pre">set_symmetric_difference_by_key</span></span></a></code></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="docutils literal notranslate"><a class="reference internal" href="group__set__operations_1gac4dd7e9d6d9a971a8d048212855c4fd9.html#group__set__operations_1gac4dd7e9d6d9a971a8d048212855c4fd9"><span class="std std-ref"><span class="pre">set_intersection_by_key</span></span></a></code></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="docutils literal notranslate"><a class="reference internal" href="group__set__operations_1ga4ab94f796b3df5bbf82594f27429ab0d.html#group__set__operations_1ga4ab94f796b3df5bbf82594f27429ab0d"><span class="std std-ref"><span class="pre">set_difference_by_key</span></span></a></code></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="docutils literal notranslate"><a class="reference internal" href="group__sorting_1ga667333ee2e067bb7da3fb1b8ab6d348c.html#group__sorting_1ga667333ee2e067bb7da3fb1b8ab6d348c"><span class="std std-ref"><span class="pre">sort_by_key</span></span></a></code></p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="docutils literal notranslate"><a class="reference internal" href="group__predicates_1ga06a2b6225f76986d2861b435c2e1f7f9.html#group__predicates_1ga06a2b6225f76986d2861b435c2e1f7f9"><span class="std std-ref"><span class="pre">is_sorted</span></span></a></code></p>
+</div>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>keys_first1</strong> – The beginning of the first input range of keys. </p></li>
+<li><p><strong>keys_last1</strong> – The end of the first input range of keys. </p></li>
+<li><p><strong>keys_first2</strong> – The beginning of the second input range of keys. </p></li>
+<li><p><strong>keys_last2</strong> – The end of the second input range of keys. </p></li>
+<li><p><strong>values_first1</strong> – The beginning of the first input range of values. </p></li>
+<li><p><strong>values_first2</strong> – The beginning of the first input range of values. </p></li>
+<li><p><strong>keys_result</strong> – The beginning of the output range of keys. </p></li>
+<li><p><strong>values_result</strong> – The beginning of the output range of values. </p></li>
+<li><p><strong>comp</strong> – Comparison operator. </p></li>
+</ul>
+</dd>
+<dt class="field-even">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>InputIterator1</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, <code class="docutils literal notranslate"><span class="pre">InputIterator1</span></code> and <code class="docutils literal notranslate"><span class="pre">InputIterator2</span></code> have the same <code class="docutils literal notranslate"><span class="pre">value_type</span></code>, <code class="docutils literal notranslate"><span class="pre">InputIterator1's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on <code class="docutils literal notranslate"><span class="pre">InputIterator1's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is a strict weak ordering, as defined in the <a class="reference external" href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and <code class="docutils literal notranslate"><span class="pre">InputIterator1's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is convertible to a type in <code class="docutils literal notranslate"><span class="pre">OutputIterator's</span></code> set of <code class="docutils literal notranslate"><span class="pre">value_types</span></code>. </p></li>
+<li><p><strong>InputIterator2</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, <code class="docutils literal notranslate"><span class="pre">InputIterator2</span></code> and <code class="docutils literal notranslate"><span class="pre">InputIterator1</span></code> have the same <code class="docutils literal notranslate"><span class="pre">value_type</span></code>, <code class="docutils literal notranslate"><span class="pre">InputIterator2's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>, the ordering on <code class="docutils literal notranslate"><span class="pre">InputIterator2's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is a strict weak ordering, as defined in the <a class="reference external" href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a> requirements, and <code class="docutils literal notranslate"><span class="pre">InputIterator2's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is convertible to a type in <code class="docutils literal notranslate"><span class="pre">OutputIterator's</span></code> set of <code class="docutils literal notranslate"><span class="pre">value_types</span></code>. </p></li>
+<li><p><strong>InputIterator3</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and <code class="docutils literal notranslate"><span class="pre">InputIterator3's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is convertible to a type in <code class="docutils literal notranslate"><span class="pre">OutputIterator2's</span></code> set of <code class="docutils literal notranslate"><span class="pre">value_types</span></code>. </p></li>
+<li><p><strong>InputIterator4</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and <code class="docutils literal notranslate"><span class="pre">InputIterator4's</span></code> <code class="docutils literal notranslate"><span class="pre">value_type</span></code> is convertible to a type in <code class="docutils literal notranslate"><span class="pre">OutputIterator2's</span></code> set of <code class="docutils literal notranslate"><span class="pre">value_types</span></code>. </p></li>
+<li><p><strong>OutputIterator1</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. </p></li>
+<li><p><strong>OutputIterator2</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. </p></li>
+<li><p><strong>StrictWeakCompare</strong> – is a model of <a class="reference external" href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A <code class="docutils literal notranslate"><span class="pre">pair</span></code> <code class="docutils literal notranslate"><span class="pre">p</span></code> such that <code class="docutils literal notranslate"><span class="pre">p.first</span></code> is the end of the output range of keys, and such that <code class="docutils literal notranslate"><span class="pre">p.second</span></code> is the end of the output range of values.</p>
+</dd>
+<dt class="field-even">Pre<span class="colon">:</span></dt>
+<dd class="field-even"><p>The ranges <code class="docutils literal notranslate"><span class="pre">[keys_first1,</span> <span class="pre">keys_last1)</span></code> and <code class="docutils literal notranslate"><span class="pre">[keys_first2,</span> <span class="pre">keys_last2)</span></code> shall be sorted with respect to <code class="docutils literal notranslate"><span class="pre">comp</span></code>. </p>
+</dd>
+<dt class="field-odd">Pre<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The resulting ranges shall not overlap with any input range.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="group__set__operations_1ga1b867e6acb65f9667f979ad4871bfe14.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">thrust::set_symmetric_difference_by_key</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../api_docs/algorithms/sorting.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Sorting</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overloads">Overloads</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#set-union-by-key-exec-keys-first1-keys-last1-keys-first2-keys-last2-values-first1-values-first2-keys-result-values-result"><code class="docutils literal notranslate"><span class="pre">set_union_by_key(exec,</span> <span class="pre">keys_first1,</span> <span class="pre">keys_last1,</span> <span class="pre">keys_first2,</span> <span class="pre">keys_last2,</span> <span class="pre">values_first1,</span> <span class="pre">values_first2,</span> <span class="pre">keys_result,</span> <span class="pre">values_result)</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2"><code class="docutils literal notranslate"><span class="pre">set_union_by_key()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#set-union-by-key-keys-first1-keys-last1-keys-first2-keys-last2-values-first1-values-first2-keys-result-values-result"><code class="docutils literal notranslate"><span class="pre">set_union_by_key(keys_first1,</span> <span class="pre">keys_last1,</span> <span class="pre">keys_first2,</span> <span class="pre">keys_last2,</span> <span class="pre">values_first1,</span> <span class="pre">values_first2,</span> <span class="pre">keys_result,</span> <span class="pre">values_result)</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator2"><code class="docutils literal notranslate"><span class="pre">set_union_by_key()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#set-union-by-key-exec-keys-first1-keys-last1-keys-first2-keys-last2-values-first1-values-first2-keys-result-values-result-comp"><code class="docutils literal notranslate"><span class="pre">set_union_by_key(exec,</span> <span class="pre">keys_first1,</span> <span class="pre">keys_last1,</span> <span class="pre">keys_first2,</span> <span class="pre">keys_last2,</span> <span class="pre">values_first1,</span> <span class="pre">values_first2,</span> <span class="pre">keys_result,</span> <span class="pre">values_result,</span> <span class="pre">comp)</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I00000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EERKN6thrust6detail21execution_policy_baseI13DerivedPolicyEE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare"><code class="docutils literal notranslate"><span class="pre">set_union_by_key()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#set-union-by-key-keys-first1-keys-last1-keys-first2-keys-last2-values-first1-values-first2-keys-result-values-result-comp"><code class="docutils literal notranslate"><span class="pre">set_union_by_key(keys_first1,</span> <span class="pre">keys_last1,</span> <span class="pre">keys_first2,</span> <span class="pre">keys_last2,</span> <span class="pre">values_first1,</span> <span class="pre">values_first2,</span> <span class="pre">keys_result,</span> <span class="pre">values_result,</span> <span class="pre">comp)</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0000000EN6thrust16set_union_by_keyEN4cudaSt4pairI15OutputIterator115OutputIterator2EE14InputIterator114InputIterator114InputIterator214InputIterator214InputIterator314InputIterator415OutputIterator115OutputIterator217StrictWeakCompare"><code class="docutils literal notranslate"><span class="pre">set_union_by_key()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2026, NVIDIA Corporation.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

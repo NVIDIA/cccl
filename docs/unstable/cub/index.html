@@ -1,0 +1,1260 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>CUB &#8212; CUDA Core Compute Libraries</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+
+
+    <script src="../_static/documentation_options.js?v=bbe6ed3a"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=5ceeb459"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'cub/index';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://NVIDIA.github.io/cccl/nv-versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'unstable';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+
+    <link rel="canonical" href="https://NVIDIA.github.io/cccl/cub/index.html" />
+    <link rel="icon" href="../_static/favicon.png"/>
+
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="CUB Tests" href="test_overview.html" />
+    <link rel="prev" title="LIBCUDACXX API Reference" href="../libcudacxx/api/index.html" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="unstable" />
+
+
+  </head>
+
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../cpp.html">CUDA C++ Core Libraries</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="../libcudacxx/index.html">libcu++</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../libcudacxx/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/setup.html">Setup</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/setup/requirements.html">Requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/setup/getting.html">Getting libcu++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/setup/building_and_testing.html">Building &amp; Testing libcu++</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/standard_api.html">Standard API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/algorithms_library.html">Algorithms Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/c_library.html">C Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/concepts_library.html">Concepts Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/container_library.html">Container Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/execution_library.html">Execution Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/numerics_library.html">Numerics Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/ranges_library.html">Ranges Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/synchronization_library.html">Synchronization Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/time_library.html">Time Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/type_support.html">Type Support Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/standard_api/utility_library.html">Utility Library</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/extended_api.html">Extended API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/bit.html">Bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/execution_model.html">Execution model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/exceptions.html">Exception Handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/memory_model.html">Memory model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/thread_groups.html">Thread Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/synchronization_primitives.html">Synchronization Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/asynchronous_operations.html">Asynchronous Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/memory_access_properties.html">Memory access properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/functional.html">Functional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/iterators.html">Fancy Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/type_traits.html">Type traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/vector_tuple_protocol.html">Vector Tuple Protocol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/numeric.html">Numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/random.html">Random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/memory.html">Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/memory_resource.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/math.html">Math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/mdspan.html">Mdspan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/warp.html">Warp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/utility.html">Utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/extended_api/work_stealing.html">Work stealing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/stream.html">Streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/event.html">Events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/algorithm.html">Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/runtime/legacy_resources.html">Legacy resources</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../libcudacxx/ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/ptx/examples.html">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/ptx/instructions.html">PTX Instructions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/ptx/pragmas.html">PTX Pragmas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../libcudacxx/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 current active has-children"><a class="current reference internal" href="#">CUB</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test_overview.html">CUB Tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="benchmarking.html">CUB Benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tuning.html">CUB Tunings</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="developer_overview.html">CUB Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="developer/nvtx.html">NVTX</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="releases.html">CUB Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="releases/changelog.html">CUB 2.1.0</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="api_docs/thread_level.html">Thread-level Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_docs/warp_wide.html">Warp-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_docs/block_wide.html">Block-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="api_docs/device_wide.html">Device-Wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="api/index.html">API reference</a></li>
+</ul>
+</details></li>
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2 has-children"><a class="reference internal" href="../thrust/index.html">Thrust</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../thrust/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../thrust/developer_overview.html">Thrust Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/developer/cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/developer/systems.html">Thrust systems</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../thrust/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../thrust/release_process.html">Release Process</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../thrust/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/algorithms.html">Algorithms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/containers.html">Containers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/function_objects.html">Function Objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/iterators.html">Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/memory_management.html">Memory Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/numerics.html">Numerics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/random.html">Random Number Generators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/system.html">System</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thrust/api_docs/utility.html">Utility</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../thrust/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../cudax/index.html">CUDA Experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../cudax/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cudax/container.html">Containers library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/classcuda_1_1experimental_1_1uninitialized__buffer.html">cuda::experimental::uninitialized_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cudax/memory_resource.html">Memory Resources</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/classcuda_1_1mr_1_1basic__any__resource.html">cuda::mr::basic_any_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/structcuda_1_1memory__pool__properties.html">cuda::memory_pool_properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/structcuda_1_1device__memory__pool.html">cuda::device_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/structcuda_1_1pinned__memory__pool.html">cuda::pinned_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/structcuda_1_1managed__memory__pool.html">cuda::managed_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/classcuda_1_1mr_1_1legacy__pinned__memory__resource.html">cuda::mr::legacy_pinned_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/classcuda_1_1mr_1_1legacy__managed__memory__resource.html">cuda::mr::legacy_managed_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../libcudacxx/api/structcuda_1_1mr_1_1shared__resource.html">cuda::mr::shared_resource</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cudax/graph.html">Graphs library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1graph.html">cuda::experimental::graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1graph__builder.html">cuda::experimental::graph_builder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1graph__builder__ref.html">cuda::experimental::graph_builder_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1graph__node__ref.html">cuda::experimental::graph_node_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of.html">cuda::experimental::stf::graphed_interface_of</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; mdspan&lt; T, P… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; void_interface &gt;</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cudax/stf.html">CUDASTF</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../cudax/stf/custom_data_interface.html">Implementation of the <code class="docutils literal notranslate"><span class="pre">matrix</span></code> class</a></li>
+
+
+
+
+
+<li class="toctree-l4"><a class="reference internal" href="../cudax/stf/lower_level_api.html">Lower-level API</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../cudax/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../cccl/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cccl/3.0_migration_guide.html">CCCL 2.x ‐ CCCL 3.0 migration guide</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../cccl/development/index.html">CCCL Development Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../cccl/development/macro.html">CCCL Internal Macros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cccl/development/testing.html">CCCL Testing Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../cccl/contributing.html">Contributing to the CUDA Core Compute Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../cccl/contributing/code_of_conduct.html">Code of Conduct</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../cccl/license.html">License</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../python/index.html">CCCL Python Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../python/setup.html">Setup and Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../python/compute.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../python/coop.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>: Cooperative Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../python/resources.html">Resources</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../python/api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../python/compute_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../python/coop_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> API Reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../cpp.html" class="nav-link">CUDA C++ Core Libraries</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">CUB</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="cub">
+<span id="cub-module"></span><h1>CUB<a class="headerlink" href="#cub" title="Link to this heading">#</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="what-is-cub">
+<h1>What is CUB?<a class="headerlink" href="#what-is-cub" title="Link to this heading">#</a></h1>
+<p>CUB provides state-of-the-art, reusable software components for every layer
+of the CUDA programming model:</p>
+<ul class="simple">
+<li><p><strong>Parallel primitives</strong></p>
+<ul>
+<li><p><a class="reference internal" href="api_docs/thread_level.html#thread-module"><span class="std std-ref">Thread</span></a> primitives</p>
+<ul>
+<li><p>Thread-level reduction, etc.</p></li>
+<li><p>Safely specialized for each underlying CUDA architecture</p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="api_docs/warp_wide.html#warp-module"><span class="std std-ref">Warp-wide</span></a> “collective” primitives</p>
+<ul>
+<li><p>Cooperative warp-wide prefix scan, reduction, etc.</p></li>
+<li><p>Safely specialized for each underlying CUDA architecture</p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="api_docs/block_wide.html#block-module"><span class="std std-ref">Block-wide</span></a> “collective” primitives</p>
+<ul>
+<li><p>Cooperative I/O, sort, scan, reduction, histogram, etc.</p></li>
+<li><p>Compatible with arbitrary thread block sizes and types</p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="api_docs/device_wide.html#device-module"><span class="std std-ref">Device-wide</span></a> primitives</p>
+<ul>
+<li><p>Parallel sort, prefix scan, reduction, histogram, etc.</p></li>
+<li><p>Compatible with CUDA dynamic parallelism</p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><strong>Utilities</strong></p>
+<ul>
+<li><p><strong>Fancy iterators</strong></p></li>
+<li><p><strong>Thread and thread block I/O</strong></p></li>
+<li><p><strong>PTX intrinsics</strong></p></li>
+<li><p><strong>Device, kernel, and storage management</strong></p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="cub-s-collective-primitives">
+<span id="collective-primitives"></span><h1>CUB’s collective primitives<a class="headerlink" href="#cub-s-collective-primitives" title="Link to this heading">#</a></h1>
+<p>Collective software primitives are essential for constructing high-performance,
+maintainable CUDA kernel code.  Collectives allow complex parallel code to be
+re-used rather than re-implemented, and to be re-compiled rather than
+hand-ported.</p>
+<figure class="align-center" id="fig-cub-overview">
+<img alt="Orientation of collective primitives within the CUDA software stack" src="../_images/cub_overview.png" />
+<figcaption>
+<p><span class="caption-text">Orientation of collective primitives within the CUDA software stack</span><a class="headerlink" href="#fig-cub-overview" title="Link to this image">#</a></p>
+</figcaption>
+</figure>
+<p>As a SIMT programming model, CUDA engenders both <strong>scalar</strong> and
+<strong>collective</strong> software interfaces. Traditional software
+interfaces are <em>scalar</em> : a single thread invokes a library routine to perform some
+operation (which may include spawning parallel subtasks). Alternatively, a <em>collective</em>
+interface is entered simultaneously by a group of parallel threads to perform
+some cooperative operation.</p>
+<p>CUB’s collective primitives are not bound to any particular width of parallelism
+or data type. This flexibility makes them:</p>
+<ul class="simple">
+<li><p><strong>Adaptable</strong> to fit the needs of the enclosing kernel computation</p></li>
+<li><p><strong>Trivially tunable</strong> to different grain sizes (threads per block, items per thread, etc.)</p></li>
+</ul>
+<p>Thus CUB is <em>CUDA Unbound</em>.</p>
+</section>
+<section id="an-example-block-wide-sorting">
+<h1>An example (block-wide sorting)<a class="headerlink" href="#an-example-block-wide-sorting" title="Link to this heading">#</a></h1>
+<p>The following code snippet presents a CUDA kernel in which each block of <code class="docutils literal notranslate"><span class="pre">BLOCK_THREADS</span></code> threads
+will collectively load, sort, and store its own segment of (<code class="docutils literal notranslate"><span class="pre">BLOCK_THREADS</span> <span class="pre">*</span> <span class="pre">ITEMS_PER_THREAD</span></code>)
+integer keys:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cub/cub.cuh&gt;</span>
+
+<span class="c1">//</span>
+<span class="c1">// Block-sorting CUDA kernel</span>
+<span class="c1">//</span>
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="kt">int</span><span class="w"> </span><span class="n">BLOCK_THREADS</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">ITEMS_PER_THREAD</span><span class="o">&gt;</span>
+<span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">BlockSortKernel</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">d_in</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">d_out</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="c1">// Specialize BlockLoad, BlockStore, and BlockRadixSort collective types</span>
+<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="n">BlockLoadT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">BlockLoad</span><span class="o">&lt;</span>
+<span class="w">      </span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="n">BLOCK_THREADS</span><span class="p">,</span><span class="w"> </span><span class="n">ITEMS_PER_THREAD</span><span class="p">,</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">BLOCK_LOAD_TRANSPOSE</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="n">BlockStoreT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">BlockStore</span><span class="o">&lt;</span>
+<span class="w">      </span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="n">BLOCK_THREADS</span><span class="p">,</span><span class="w"> </span><span class="n">ITEMS_PER_THREAD</span><span class="p">,</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">BLOCK_STORE_TRANSPOSE</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="n">BlockRadixSortT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">BlockRadixSort</span><span class="o">&lt;</span>
+<span class="w">      </span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="n">BLOCK_THREADS</span><span class="p">,</span><span class="w"> </span><span class="n">ITEMS_PER_THREAD</span><span class="o">&gt;</span><span class="p">;</span>
+
+<span class="w">    </span><span class="c1">// Allocate type-safe, repurposable shared memory for collectives</span>
+<span class="w">    </span><span class="n">__shared__</span><span class="w"> </span><span class="k">union</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">typename</span><span class="w"> </span><span class="nc">BlockLoadT</span><span class="o">::</span><span class="n">TempStorage</span><span class="w">       </span><span class="n">load</span><span class="p">;</span>
+<span class="w">        </span><span class="k">typename</span><span class="w"> </span><span class="nc">BlockStoreT</span><span class="o">::</span><span class="n">TempStorage</span><span class="w">      </span><span class="n">store</span><span class="p">;</span>
+<span class="w">        </span><span class="k">typename</span><span class="w"> </span><span class="nc">BlockRadixSortT</span><span class="o">::</span><span class="n">TempStorage</span><span class="w">  </span><span class="n">sort</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="n">temp_storage</span><span class="p">;</span>
+
+<span class="w">    </span><span class="c1">// Obtain this block&#39;s segment of consecutive keys (blocked across threads)</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">thread_keys</span><span class="p">[</span><span class="n">ITEMS_PER_THREAD</span><span class="p">];</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">block_offset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">blockIdx</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">BLOCK_THREADS</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">ITEMS_PER_THREAD</span><span class="p">);</span>
+<span class="w">    </span><span class="n">BlockLoadT</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">.</span><span class="n">load</span><span class="p">).</span><span class="n">Load</span><span class="p">(</span><span class="n">d_in</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">block_offset</span><span class="p">,</span><span class="w"> </span><span class="n">thread_keys</span><span class="p">);</span>
+
+<span class="w">    </span><span class="n">__syncthreads</span><span class="p">();</span><span class="w">        </span><span class="c1">// Barrier for smem reuse</span>
+
+<span class="w">    </span><span class="c1">// Collectively sort the keys</span>
+<span class="w">    </span><span class="n">BlockRadixSortT</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">.</span><span class="n">sort</span><span class="p">).</span><span class="n">Sort</span><span class="p">(</span><span class="n">thread_keys</span><span class="p">);</span>
+
+<span class="w">    </span><span class="n">__syncthreads</span><span class="p">();</span><span class="w">        </span><span class="c1">// Barrier for smem reuse</span>
+
+<span class="w">    </span><span class="c1">// Store the sorted segment</span>
+<span class="w">    </span><span class="n">BlockStoreT</span><span class="p">(</span><span class="n">temp_storage</span><span class="p">.</span><span class="n">store</span><span class="p">).</span><span class="n">Store</span><span class="p">(</span><span class="n">d_out</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">block_offset</span><span class="p">,</span><span class="w"> </span><span class="n">thread_keys</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// Elsewhere in the host program: parameterize and launch a block-sorting</span>
+<span class="c1">// kernel in which blocks of 128 threads each sort segments of 2048 keys</span>
+<span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">d_in</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">...;</span>
+<span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">d_out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">...;</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">num_blocks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">...;</span>
+<span class="n">BlockSortKernel</span><span class="o">&lt;</span><span class="mi">128</span><span class="p">,</span><span class="w"> </span><span class="mi">16</span><span class="o">&gt;&lt;&lt;&lt;</span><span class="n">num_blocks</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="o">&gt;&gt;&gt;</span><span class="p">(</span><span class="n">d_in</span><span class="p">,</span><span class="w"> </span><span class="n">d_out</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>In this example, threads use <code class="docutils literal notranslate"><span class="pre">cub::BlockLoad</span></code>, <code class="docutils literal notranslate"><span class="pre">cub::BlockRadixSort</span></code>, and <code class="docutils literal notranslate"><span class="pre">cub::BlockStore</span></code>
+to collectively load, sort and store the block’s segment of input items.  Because these operations
+are cooperative, each primitive requires an allocation of shared memory for threads to communicate
+through. The typical usage pattern for a CUB collective is:</p>
+<ol class="arabic simple">
+<li><p>Statically specialize the primitive for the specific problem setting at hand, e.g.,
+the data type being sorted, the number of threads per block, the number of keys per
+thread, optional algorithmic alternatives, etc. (CUB primitives are also implicitly
+specialized by the targeted compilation architecture.)</p></li>
+<li><p>Allocate (or alias) an instance of the specialized primitive’s nested <code class="docutils literal notranslate"><span class="pre">TempStorage</span></code>
+type within a shared memory space.</p></li>
+<li><p>Specify communication details (e.g., the <code class="docutils literal notranslate"><span class="pre">TempStorage</span></code> allocation) to
+construct an instance of the primitive.</p></li>
+<li><p>Invoke methods on the primitive instance.</p></li>
+</ol>
+<p>In particular, <code class="docutils literal notranslate"><span class="pre">cub::BlockRadixSort</span></code> is used to collectively sort the segment of data items
+that have been partitioned across the thread block. To provide coalesced accesses
+to device memory,  we configure the <code class="docutils literal notranslate"><span class="pre">cub::BlockLoad</span></code> and <code class="docutils literal notranslate"><span class="pre">cub::BlockStore</span></code> primitives
+to access memory using a striped access pattern (where consecutive threads
+simultaneously access consecutive items) and then <em>transpose</em> the keys into
+a <a class="reference internal" href="#flexible-data-arrangement"><span class="std std-ref">blocked arrangement</span></a> of elements across threads.
+To reuse shared memory across all three primitives, the thread block statically
+allocates a union of their <code class="docutils literal notranslate"><span class="pre">TempStorage</span></code> types.</p>
+</section>
+<section id="why-do-you-need-cub">
+<h1>Why do you need CUB?<a class="headerlink" href="#why-do-you-need-cub" title="Link to this heading">#</a></h1>
+<p>Writing, tuning, and maintaining kernel code is perhaps the most challenging,
+time-consuming aspect of CUDA programming.  Kernel software is where
+the complexity of parallelism is expressed. Programmers must reason about
+deadlock, livelock, synchronization, race conditions, shared memory layout,
+plurality of state, granularity, throughput, latency, memory bottlenecks, etc.</p>
+<p>With the exception of CUB, however, there are few (if any) software libraries of
+<em>reusable</em> kernel primitives. In the CUDA ecosystem, CUB is unique in this regard.
+As a <a class="reference external" href="http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#hardware-implementation">SIMT</a>
+library and software abstraction layer, CUB provides:</p>
+<ol class="arabic">
+<li><p><strong>Simplicity of composition</strong>. CUB enhances programmer productivity by
+allowing complex parallel operations to be easily sequenced and nested.
+For example, <code class="docutils literal notranslate"><span class="pre">cub::BlockRadixSort</span></code> is constructed from <code class="docutils literal notranslate"><span class="pre">cub::BlockExchange</span></code> and
+<code class="docutils literal notranslate"><span class="pre">cub::BlockRadixRank</span></code>. The latter is composed of <code class="docutils literal notranslate"><span class="pre">cub::BlockScan</span></code>
+which incorporates <code class="docutils literal notranslate"><span class="pre">cub::WarpScan</span></code>.</p>
+<figure class="align-center">
+<img alt="../_images/nested_composition.png" src="../_images/nested_composition.png" />
+</figure>
+</li>
+<li><p><strong>High performance</strong>. CUB simplifies high-performance program and kernel
+development by taking care to implement the state-of-the-art in parallel algorithms.</p></li>
+<li><p><strong>Performance portability</strong>.
+CUB primitives are specialized to match the diversity of NVIDIA hardware, continuously
+evolving to accommodate new architecture-specific features and instructions.  And
+because CUB’s device-wide primitives are implemented using flexible block-wide and
+warp-wide collectives, we are able to performance-tune them to match the processor
+resources provided by each CUDA processor architecture.</p></li>
+<li><p><strong>Simplicity of performance tuning</strong>:</p>
+<ul class="simple">
+<li><p><strong>Resource utilization</strong>.  CUB primitives allow developers to quickly
+change grain sizes (threads per block, items per thread, etc.) to best match
+the processor resources of their target architecture</p></li>
+<li><p><strong>Variant tuning</strong>.  Most CUB primitives support alternative algorithmic
+strategies. For example, <code class="docutils literal notranslate"><span class="pre">cub::BlockHistogram</span></code> is parameterized to implement either
+an atomic-based approach or a sorting-based approach. (The latter provides uniform
+performance regardless of input distribution.)</p></li>
+<li><p><strong>Co-optimization</strong>.  When the enclosing kernel
+is similarly parameterizable, a tuning configuration can be found that optimally
+accommodates their combined register and shared memory pressure.</p></li>
+</ul>
+</li>
+<li><p><strong>Robustness and durability</strong>. CUB just works. CUB primitives
+are designed to function properly for arbitrary data types and widths of
+parallelism (not just for the built-in C++ types or for powers-of-two threads
+per block).</p></li>
+<li><p><strong>Reduced maintenance burden</strong>. CUB provides a SIMT software abstraction layer
+over the diversity of CUDA hardware. With CUB, applications can enjoy
+performance-portability without intensive and costly rewriting or porting efforts.</p></li>
+<li><p><strong>A path for language evolution</strong>. CUB primitives are designed
+to easily accommodate new features in the CUDA programming model, e.g., thread
+subgroups and named barriers, dynamic shared memory allocators, etc.</p></li>
+</ol>
+</section>
+<section id="how-do-cub-collectives-work">
+<h1>How do CUB collectives work?<a class="headerlink" href="#how-do-cub-collectives-work" title="Link to this heading">#</a></h1>
+<p>Four programming idioms are central to the design of CUB:</p>
+<ol class="arabic simple">
+<li><p><a class="reference internal" href="#generic-programming"><span class="std std-ref">Generic programming</span></a>. C++ templates provide the flexibility
+and adaptive code generation needed for CUB primitives to be useful, reusable, and
+fast in arbitrary kernel settings.</p></li>
+<li><p><a class="reference internal" href="#reflective-class-interfaces"><span class="std std-ref">Reflective class interfaces</span></a>.
+CUB collectives statically export their their resource requirements
+(e.g., shared memory size and layout) for a given specialization, which allows compile-time
+tuning decisions and resource allocation.</p></li>
+<li><p><a class="reference internal" href="#flexible-data-arrangement"><span class="std std-ref">Flexible data arrangement across threads</span></a>.
+CUB collectives operate on data that is logically partitioned across a group of threads.
+For most collective operations, efficiency is increased with increased granularity
+(i.e., items per thread).</p></li>
+<li><p><a class="reference internal" href="#static-tuning-and-co-tuning"><span class="std std-ref">Static tuning and co-tuning</span></a>. Simple constants and static
+types dictate the granularities and algorithmic alternatives to be employed by CUB collectives.
+When the enclosing kernel is similarly parameterized, an optimal configuration can be determined
+that best accommodates the combined behavior and resource consumption of all primitives within
+the kernel.</p></li>
+</ol>
+<section id="generic-programming">
+<span id="id1"></span><h2>Generic programming<a class="headerlink" href="#generic-programming" title="Link to this heading">#</a></h2>
+<p>We use template parameters to specialize CUB primitives for the particular
+problem setting at hand.  Until compile time, CUB primitives are not bound
+to any particular:</p>
+<ul class="simple">
+<li><p>Data type (int, float, double, etc.)</p></li>
+<li><p>Width of parallelism (threads per thread block)</p></li>
+<li><p>Grain size (data items per thread)</p></li>
+<li><p>Underlying processor (special instructions, warp size, rules for bank conflicts, etc.)</p></li>
+<li><p>Tuning configuration (e.g., latency vs. throughput, algorithm selection, etc.)</p></li>
+</ul>
+</section>
+<section id="reflective-class-interfaces">
+<span id="id2"></span><h2>Reflective class interfaces<a class="headerlink" href="#reflective-class-interfaces" title="Link to this heading">#</a></h2>
+<p>Unlike traditional function-oriented interfaces, CUB exposes its collective
+primitives as templated C++ classes. The resource requirements for a specific
+parameterization are reflectively advertised as members of the class. The
+resources can then be statically or dynamically allocated, aliased
+to global or shared memory, etc.  The following illustrates a CUDA kernel
+fragment performing a collective prefix sum across the threads of a thread block:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cub/cub.cuh&gt;</span>
+
+<span class="n">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">SomeKernelFoo</span><span class="p">(...)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="c1">// Specialize BlockScan for 128 threads on integer types</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">BlockScan</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cub</span><span class="o">::</span><span class="n">BlockScan</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="o">&gt;</span><span class="p">;</span>
+
+<span class="w">  </span><span class="c1">// Allocate shared memory for BlockScan</span>
+<span class="w">  </span><span class="n">__shared__</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">BlockScan</span><span class="o">::</span><span class="n">TempStorage</span><span class="w"> </span><span class="n">scan_storage</span><span class="p">;</span>
+
+<span class="w">  </span><span class="p">...</span>
+
+<span class="w">  </span><span class="c1">// Obtain a segment of consecutive items that are blocked across threads</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">thread_data_in</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">thread_data_out</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
+<span class="w">  </span><span class="p">...</span>
+
+<span class="w">  </span><span class="c1">// Perform an exclusive block-wide prefix sum</span>
+<span class="w">  </span><span class="n">BlockScan</span><span class="p">(</span><span class="n">scan_storage</span><span class="p">).</span><span class="n">ExclusiveSum</span><span class="p">(</span><span class="n">thread_data_in</span><span class="p">,</span><span class="w"> </span><span class="n">thread_data_out</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Furthermore, the CUB interface is designed to separate parameter
+fields by concerns. CUB primitives have three distinct parameter fields:</p>
+<ol class="arabic simple">
+<li><p><em>Static template parameters</em>. These are constants that will
+dictate the storage layout and the unrolling of algorithmic steps (e.g.,
+the input data type and the number of block threads), and are used to specialize the class.</p></li>
+<li><p><em>Constructor parameters</em>. These are optional parameters regarding
+inter-thread communication (e.g., storage allocation, thread-identifier mapping,
+named barriers, etc.), and are orthogonal to the functions exposed by the class.</p></li>
+<li><p><em>Formal method parameters</em>. These are the operational inputs/outputs
+for the various functions exposed by the class.</p></li>
+</ol>
+<p>This allows CUB types to easily accommodate new
+programming model features (e.g., named barriers, memory allocators, etc.)
+without incurring a combinatorial growth of interface methods.</p>
+</section>
+<section id="flexible-data-arrangement-across-threads">
+<span id="flexible-data-arrangement"></span><h2>Flexible data arrangement across threads<a class="headerlink" href="#flexible-data-arrangement-across-threads" title="Link to this heading">#</a></h2>
+<p>CUDA kernels are often designed such that each thread block is assigned a
+segment of data items for processing.</p>
+<figure class="align-center" id="fig-tile">
+<img alt="Segment of eight ordered data items" src="../_images/tile.png" />
+<figcaption>
+<p><span class="caption-text">Segment of eight ordered data items</span><a class="headerlink" href="#fig-tile" title="Link to this image">#</a></p>
+</figcaption>
+</figure>
+<p>When the tile size equals the thread block size, the
+mapping of data onto threads is straightforward (one datum per thread).
+However, there are often performance advantages for processing more
+than one datum per thread. Increased granularity corresponds to
+decreased communication overhead. For these scenarios, CUB primitives
+will specify which of the following partitioning alternatives they
+accommodate:</p>
+<div class="pst-scrollable-table-container"><table class="table-no-stripes table">
+<colgroup>
+<col style="width: 70.0%" />
+<col style="width: 30.0%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>Blocked arrangement</strong>.  The aggregate tile of items is partitioned
+evenly across threads in “blocked” fashion with <em>thread</em><sub>i</sub>
+owning the <em>i</em><sup>th</sup> segment of consecutive elements.
+Blocked arrangements are often desirable for algorithmic benefits (where
+long sequences of items can be processed sequentially within each thread).</p></td>
+<td><figure class="align-center" id="fig-blocked">
+<img alt="*Blocked* arrangement across four threads" src="../_images/blocked.png" />
+<figcaption>
+<p><span class="caption-text"><em>Blocked</em> arrangement across four threads</span><a class="headerlink" href="#fig-blocked" title="Link to this image">#</a></p>
+<div class="legend">
+<p>(emphasis on items owned by <em>thread</em><sub>0</sub>)</p>
+</div>
+</figcaption>
+</figure>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>Striped arrangement</strong>. The aggregate tile of items is partitioned across threads in “striped”
+fashion, i.e., the <code class="docutils literal notranslate"><span class="pre">ITEMS_PER_THREAD</span></code> items owned by each thread have logical stride
+<code class="docutils literal notranslate"><span class="pre">BLOCK_THREADS</span></code> between them. Striped arrangements are often desirable for data movement through
+global memory (where
+<a class="reference external" href="https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#coalesced-access-to-global-memory">read/write coalescing</a>
+is an important performance consideration).</p></td>
+<td><figure class="align-center" id="fig-striped">
+<img alt="*Striped* arrangement across four threads" src="../_images/striped.png" />
+<figcaption>
+<p><span class="caption-text"><em>Striped</em> arrangement across four threads</span><a class="headerlink" href="#fig-striped" title="Link to this image">#</a></p>
+<div class="legend">
+<p>(emphasis on items owned by <em>thread</em><sub>0</sub>)</p>
+</div>
+</figcaption>
+</figure>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The benefits of processing multiple items per thread (a.k.a., <em>register blocking</em>,
+<em>granularity coarsening</em>, etc.) include:</p>
+<ul class="simple">
+<li><p>Algorithmic efficiency.  Sequential work over multiple items in
+thread-private registers is cheaper than synchronized, cooperative
+work through shared memory spaces.</p></li>
+<li><p>Data occupancy.  The number of items that can be resident on-chip in
+thread-private register storage is often greater than the number of
+schedulable threads.</p></li>
+<li><p>Instruction-level parallelism.  Multiple items per thread also
+facilitates greater ILP for improved throughput and utilization.</p></li>
+</ul>
+<p>Finally, <code class="docutils literal notranslate"><span class="pre">cub::BlockExchange</span></code> provides operations for converting between blocked
+and striped arrangements.</p>
+</section>
+<section id="static-tuning-and-co-tuning">
+<span id="id3"></span><h2>Static tuning and co-tuning<a class="headerlink" href="#static-tuning-and-co-tuning" title="Link to this heading">#</a></h2>
+<p>This style of flexible interface simplifies performance tuning. Most CUB
+primitives support alternative algorithmic strategies that can be
+statically targeted by a compiler-based or JIT-based autotuner. (For
+example, <code class="docutils literal notranslate"><span class="pre">cub::BlockHistogram</span></code> is parameterized to implement either an
+atomic-based approach or a sorting-based approach.) Algorithms are also
+tunable over parameters such as thread count and grain size as well.
+Taken together, each of the CUB algorithms provides a fairly rich tuning
+space.</p>
+<p>Whereas conventional libraries are optimized offline and in isolation, CUB
+provides interesting opportunities for whole-program optimization. For
+example, each CUB primitive is typically parameterized by threads-per-block
+and items-per-thread, both of which affect the underlying algorithm’s
+efficiency and resource requirements. When the enclosing kernel is similarly
+parameterized, the coupled CUB primitives adjust accordingly. This enables
+autotuners to search for a single configuration that maximizes the performance
+of the entire kernel for a given set of hardware resources.</p>
+</section>
+</section>
+<section id="how-do-i-get-started-using-cub">
+<h1>How do I get started using CUB?<a class="headerlink" href="#how-do-i-get-started-using-cub" title="Link to this heading">#</a></h1>
+<p>CUB is implemented as a C++ header library. There is no need to build CUB
+separately. To use CUB primitives in your code, simply:</p>
+<ol class="arabic simple">
+<li><p>Download and unzip the latest CUB distribution</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">#include</span></code> the “umbrella” <code class="docutils literal notranslate"><span class="pre">&lt;cub/cub.cuh&gt;</span></code> header file in
+your CUDA C++ sources.  (Or <code class="docutils literal notranslate"><span class="pre">#include</span></code> the particular
+header files that define the CUB primitives you wish to use.)</p></li>
+<li><p>Compile your program with NVIDIA’s <code class="docutils literal notranslate"><span class="pre">nvcc</span></code> CUDA compiler,
+specifying a <code class="docutils literal notranslate"><span class="pre">-I&lt;path-to-CUB&gt;</span></code> include-path flag to reference
+the location of the CUB header library.</p></li>
+</ol>
+<p>We also have a collection of simple CUB example programs.</p>
+</section>
+<section id="how-is-cub-different-than-thrust-and-modern-gpu">
+<h1>How is CUB different than Thrust and Modern GPU?<a class="headerlink" href="#how-is-cub-different-than-thrust-and-modern-gpu" title="Link to this heading">#</a></h1>
+<section id="cub-and-thrust">
+<h2>CUB and Thrust<a class="headerlink" href="#cub-and-thrust" title="Link to this heading">#</a></h2>
+<p>CUB and <a class="reference external" href="https://nvidia.github.io/cccl/thrust/">Thrust</a> share some
+similarities in that they both provide similar device-wide primitives for CUDA.
+However, they target different abstraction layers for parallel computing.
+Thrust abstractions are agnostic of any particular parallel framework (e.g.,
+CUDA, TBB, OpenMP, sequential  CPU, etc.).  While Thrust has a “backend”
+for CUDA devices, Thrust interfaces themselves are not CUDA-specific and
+do not explicitly expose CUDA-specific details (e.g., <code class="docutils literal notranslate"><span class="pre">cudaStream_t</span></code> parameters).</p>
+<p>CUB, on the other hand, is slightly lower-level than Thrust. CUB is specific
+to CUDA C++ and its interfaces explicitly accommodate CUDA-specific features.
+Furthermore, CUB is also a library of SIMT collective primitives for block-wide
+and warp-wide kernel programming.</p>
+<p>CUB and Thrust are complementary and can be used together. In fact, the CUB
+project arose out of a maintenance need to achieve better performance-portability
+within Thrust by using reusable block-wide primitives to reduce maintenance and
+tuning effort.</p>
+</section>
+<section id="cub-and-modern-gpu">
+<h2>CUB and Modern GPU<a class="headerlink" href="#cub-and-modern-gpu" title="Link to this heading">#</a></h2>
+<p>CUB and <a class="reference external" href="https://github.com/moderngpu/moderngpu">Modern GPU</a> also
+share some similarities in that they both implement similar device-wide primitives for CUDA.
+However, they serve different purposes for the CUDA programming community.  MGPU
+is a pedagogical tool for high-performance GPU computing, providing clear and concise
+exemplary code and accompanying commentary.  It serves as an excellent source of
+educational, tutorial, CUDA-by-example material.  The MGPU source code is intended
+to be read and studied, and often favors simplicity at the expense of portability and
+flexibility.</p>
+<p>CUB, on the other hand, is a production-quality library whose sources are complicated
+by support for every version of CUDA architecture, and is validated by an extensive
+suite of regression tests.  Although well-documented, the CUB source text is verbose
+and relies heavily on C++ template metaprogramming for situational specialization.</p>
+<p>CUB and MGPU are complementary in that MGPU serves as an excellent descriptive source
+for many of the algorithmic techniques used by CUB.</p>
+</section>
+</section>
+<section id="stable-releases">
+<h1>Stable releases<a class="headerlink" href="#stable-releases" title="Link to this heading">#</a></h1>
+<p>CUB releases are labeled using version identifiers having three fields:
+<code class="docutils literal notranslate"><span class="pre">&lt;epoch&gt;.&lt;feature&gt;.&lt;update&gt;</span></code>. The <em>epoch</em> field
+corresponds to support for a major change or update to the CUDA programming model.
+The <em>feature</em> field corresponds to a stable set of features,
+functionality, and interface. The <em>update</em> field corresponds to a
+bug-fix or performance update for that feature set.  At the moment, we do
+not publicly provide non-stable releases such as development snapshots,
+beta releases or rolling releases. (Feel free to contact us if you would
+like access to such things.)</p>
+</section>
+<section id="contributors">
+<h1>Contributors<a class="headerlink" href="#contributors" title="Link to this heading">#</a></h1>
+<p>CUB is developed as open-source as part of the CUDA Core Compute Libraries (CCCL) by NVIDIA.</p>
+</section>
+<section id="open-source-license">
+<h1>Open Source License<a class="headerlink" href="#open-source-license" title="Link to this heading">#</a></h1>
+<p>CUB is available under the <a class="reference external" href="https://github.com/NVIDIA/cub/blob/main/LICENSE.TXT">BSD 3-Clause “New” or “Revised” License</a></p>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../libcudacxx/api/index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">LIBCUDACXX API Reference</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="test_overview.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">CUB Tests</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">CUB</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#what-is-cub">What is CUB?</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#cub-s-collective-primitives">CUB’s collective primitives</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#an-example-block-wide-sorting">An example (block-wide sorting)</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#why-do-you-need-cub">Why do you need CUB?</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#how-do-cub-collectives-work">How do CUB collectives work?</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#generic-programming">Generic programming</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#reflective-class-interfaces">Reflective class interfaces</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#flexible-data-arrangement-across-threads">Flexible data arrangement across threads</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#static-tuning-and-co-tuning">Static tuning and co-tuning</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#how-do-i-get-started-using-cub">How do I get started using CUB?</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#how-is-cub-different-than-thrust-and-modern-gpu">How is CUB different than Thrust and Modern GPU?</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cub-and-thrust">CUB and Thrust</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cub-and-modern-gpu">CUB and Modern GPU</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#stable-releases">Stable releases</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#contributors">Contributors</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#open-source-license">Open Source License</a></li>
+</ul>
+
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2026, NVIDIA Corporation.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

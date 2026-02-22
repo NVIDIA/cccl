@@ -1,0 +1,1909 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>PTX Instructions &#8212; CUDA Core Compute Libraries</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+
+
+    <script src="../../_static/documentation_options.js?v=bbe6ed3a"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=5ceeb459"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'libcudacxx/ptx/instructions';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://NVIDIA.github.io/cccl/nv-versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'unstable';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+
+    <link rel="canonical" href="https://NVIDIA.github.io/cccl/libcudacxx/ptx/instructions.html" />
+    <link rel="icon" href="../../_static/favicon.png"/>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="ld" href="instructions/ld.html" />
+    <link rel="prev" title="How to initialize a tensor map on device" href="examples/device_tensormap_initialization.html" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="unstable" />
+
+
+  </head>
+
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../../cpp.html">CUDA C++ Core Libraries</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="../index.html">libcu++</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../setup.html">Setup</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../setup/requirements.html">Requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../setup/getting.html">Getting libcu++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../setup/building_and_testing.html">Building &amp; Testing libcu++</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../standard_api.html">Standard API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/algorithms_library.html">Algorithms Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/c_library.html">C Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/concepts_library.html">Concepts Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/container_library.html">Container Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/execution_library.html">Execution Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/numerics_library.html">Numerics Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/ranges_library.html">Ranges Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/synchronization_library.html">Synchronization Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/time_library.html">Time Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/type_support.html">Type Support Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../standard_api/utility_library.html">Utility Library</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../extended_api.html">Extended API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/bit.html">Bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/execution_model.html">Execution model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/exceptions.html">Exception Handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/memory_model.html">Memory model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/thread_groups.html">Thread Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/synchronization_primitives.html">Synchronization Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/asynchronous_operations.html">Asynchronous Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/memory_access_properties.html">Memory access properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/functional.html">Functional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/iterators.html">Fancy Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/type_traits.html">Type traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/vector_tuple_protocol.html">Vector Tuple Protocol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/numeric.html">Numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/random.html">Random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/memory.html">Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/memory_resource.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/math.html">Math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/mdspan.html">Mdspan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/warp.html">Warp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/utility.html">Utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../extended_api/work_stealing.html">Work stealing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/stream.html">Streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/event.html">Events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/algorithm.html">Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../runtime/legacy_resources.html">Legacy resources</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 current active has-children"><a class="reference internal" href="../ptx_api.html">PTX API</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l4 current active"><a class="current reference internal" href="#">PTX Instructions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="pragmas.html">PTX Pragmas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cub/index.html">CUB</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/test_overview.html">CUB Tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/benchmarking.html">CUB Benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/tuning.html">CUB Tunings</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/developer_overview.html">CUB Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/nvtx.html">NVTX</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/releases.html">CUB Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/releases/changelog.html">CUB 2.1.0</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/thread_level.html">Thread-level Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/warp_wide.html">Warp-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/block_wide.html">Block-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/device_wide.html">Device-Wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../thrust/index.html">Thrust</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/developer_overview.html">Thrust Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/systems.html">Thrust systems</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/release_process.html">Release Process</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/algorithms.html">Algorithms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/containers.html">Containers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/function_objects.html">Function Objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/iterators.html">Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/memory_management.html">Memory Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/numerics.html">Numerics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/random.html">Random Number Generators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/system.html">System</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/utility.html">Utility</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cudax/index.html">CUDA Experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/container.html">Containers library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1uninitialized__buffer.html">cuda::experimental::uninitialized_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/memory_resource.html">Memory Resources</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api/classcuda_1_1mr_1_1basic__any__resource.html">cuda::mr::basic_any_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/structcuda_1_1memory__pool__properties.html">cuda::memory_pool_properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/structcuda_1_1device__memory__pool.html">cuda::device_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/structcuda_1_1pinned__memory__pool.html">cuda::pinned_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/structcuda_1_1managed__memory__pool.html">cuda::managed_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/classcuda_1_1mr_1_1legacy__pinned__memory__resource.html">cuda::mr::legacy_pinned_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/classcuda_1_1mr_1_1legacy__managed__memory__resource.html">cuda::mr::legacy_managed_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api/structcuda_1_1mr_1_1shared__resource.html">cuda::mr::shared_resource</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/graph.html">Graphs library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph.html">cuda::experimental::graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__builder.html">cuda::experimental::graph_builder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__builder__ref.html">cuda::experimental::graph_builder_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__node__ref.html">cuda::experimental::graph_node_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of.html">cuda::experimental::stf::graphed_interface_of</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; mdspan&lt; T, P… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; void_interface &gt;</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/stf.html">CUDASTF</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/stf/custom_data_interface.html">Implementation of the <code class="docutils literal notranslate"><span class="pre">matrix</span></code> class</a></li>
+
+
+
+
+
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/stf/lower_level_api.html">Lower-level API</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/3.0_migration_guide.html">CCCL 2.x ‐ CCCL 3.0 migration guide</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/development/index.html">CCCL Development Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/macro.html">CCCL Internal Macros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/testing.html">CCCL Testing Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/contributing.html">Contributing to the CUDA Core Compute Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/contributing/code_of_conduct.html">Code of Conduct</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/license.html">License</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../python/index.html">CCCL Python Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../python/setup.html">Setup and Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/compute.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/coop.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>: Cooperative Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/resources.html">Resources</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../python/api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../python/compute_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../python/coop_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> API Reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../cpp.html" class="nav-link">CUDA C++ Core Libraries</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">libcu++</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../ptx_api.html" class="nav-link">PTX API</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">PTX Instructions</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="ptx-instructions">
+<span id="libcudacxx-ptx-instructions"></span><h1>PTX Instructions<a class="headerlink" href="#ptx-instructions" title="Link to this heading">#</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="instructions/ld.html">ld</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/st.html">st</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/shr.html">shr</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/shl.html">shl</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/bmsk.html">bmsk</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/elect_sync.html">elect.sync</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/prmt.html">prmt</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/barrier_cluster.html">barrier.cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/bfind.html">bfind</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/clusterlaunchcontrol.html">clusterlaunchcontrol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/cp_async_bulk.html">cp.async.bulk</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/cp_async_bulk_commit_group.html">cp.async.bulk.commit_group</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/cp_async_bulk_wait_group.html">cp.async.bulk.wait_group</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/cp_async_bulk_tensor.html">cp.async.bulk.tensor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/cp_async_mbarrier_arrive.html">cp.async.mbarrier.arrive</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/cp_reduce_async_bulk.html">cp.reduce.async.bulk</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/cp_reduce_async_bulk_tensor.html">cp.reduce.async.bulk.tensor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/exit.html">exit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/fence.html">fence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/getctarank.html">getctarank</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/mapa.html">mapa</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/mbarrier_init.html">mbarrier.init</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/mbarrier_inval.html">mbarrier.inval</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/mbarrier_arrive.html">mbarrier.arrive</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/mbarrier_expect_tx.html">mbarrier.expect_tx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/mbarrier_test_wait.html">mbarrier.test_wait</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/mbarrier_try_wait.html">mbarrier.try_wait</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/multimem_ld_reduce.html">multimem.ld_reduce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/multimem_red.html">multimem.red</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/multimem_st.html">multimem.st</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/red_async.html">red.async</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/shfl_sync.html">shfl.sync</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/st_async.html">st.async</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/st_bulk.html">st.bulk</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/tcgen05_alloc.html">tcgen05.alloc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/tcgen05_commit.html">tcgen05.commit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/tcgen05_cp.html">tcgen05.cp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/tcgen05_fence.html">tcgen05.fence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/tcgen05_ld.html">tcgen05.ld</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/tcgen05_mma.html">tcgen05.mma</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/tcgen05_mma_ws.html">tcgen05.mma.ws</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/tcgen05_shift.html">tcgen05.shift</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/tcgen05_st.html">tcgen05.st</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/tcgen05_wait.html">tcgen05.wait</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/tensormap_replace.html">tensormap.replace</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/tensormap_cp_fenceproxy.html">tensormap.cp_fenceproxy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/trap.html">trap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/setmaxnreg.html">setmaxnreg</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instructions/special_registers.html">Special registers</a></li>
+</ul>
+</div>
+<section id="instructions-by-section">
+<h2>Instructions by section<a class="headerlink" href="#instructions-by-section" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table" id="id1">
+<caption><span class="caption-text"><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions">Integer Arithmetic Instructions</a></span><a class="headerlink" href="#id1" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-sad">sad</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-div">div</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-rem">rem</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-abs">abs</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-neg">neg</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-min">min</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-max">max</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-popc">popc</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-clz">clz</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-bfind">bfind</a></p></td>
+<td><p>CCCL 3.0.0</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-fns">fns</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-brev">brev</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-bfe">bfe</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-bfi">bfi</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-szext">szext</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-bmsk">bmsk</a></p></td>
+<td><p>Yes, CCCL 3.0.0 / CUDA 13.0</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-dp4a">dp4a</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-dp2a">dp2a</a></p></td>
+<td><p>No</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id2">
+<caption><span class="caption-text"><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#extended-precision-integer-arithmetic-instructions">Extended-Precision Integer Arithmetic Instructions</a></span><a class="headerlink" href="#id2" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#extended-precision-arithmetic-instructions-add-cc">add.cc</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#extended-precision-arithmetic-instructions-addc">addc</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#extended-precision-arithmetic-instructions-sub-cc">sub.cc</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#extended-precision-arithmetic-instructions-subc">subc</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#extended-precision-arithmetic-instructions-mad-cc">mad.cc</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#extended-precision-arithmetic-instructions-madc">madc</a></p></td>
+<td><p>No</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id3">
+<caption><span class="caption-text"><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions">Floating-Point Instructions</a></span><a class="headerlink" href="#id3" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-testp">testp</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-copysign">copysign</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-add">add</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-sub">sub</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-mul">mul</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-fma">fma</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-mad">mad</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-div">div</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-abs">abs</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-neg">neg</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-min">min</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-max">max</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-rcp">rcp</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-rcp-approx-ftz-f64">rcp.approx.ftz.f64</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-sqrt">sqrt</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-rsqrt">rsqrt</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-rsqrt-approx-ftz-f64">rsqrt.approx.ftz.f64</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-sin">sin</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-cos">cos</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-lg2">lg2</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-ex2">ex2</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-tanh">tanh</a></p></td>
+<td><p>No</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id4">
+<caption><span class="caption-text"><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions">Half Precision Floating-Point Instructions</a></span><a class="headerlink" href="#id4" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-add">add</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-sub">sub</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-mul">mul</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-fma">fma</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-neg">neg</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-abs">abs</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-min">min</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-max">max</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-tanh">tanh</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-ex2">ex2</a></p></td>
+<td><p>No</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id5">
+<caption><span class="caption-text"><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#comparison-and-selection-instructions">Comparison and Selection Instructions</a></span><a class="headerlink" href="#id5" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#comparison-and-selection-instructions-set">set</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#comparison-and-selection-instructions-setp">setp</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#comparison-and-selection-instructions-selp">selp</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#comparison-and-selection-instructions-slct">slct</a></p></td>
+<td><p>No</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id6">
+<caption><span class="caption-text"><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-comparison-instructions">Half Precision Comparison Instructions</a></span><a class="headerlink" href="#id6" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-comparison-instructions-set">set</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-comparison-instructions-setp">setp</a></p></td>
+<td><p>No</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id7">
+<caption><span class="caption-text"><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions">Logic and Shift Instructions</a></span><a class="headerlink" href="#id7" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-and">and</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-or">or</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-xor">xor</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-not">not</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-cnot">cnot</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-lop3">lop3</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-shf">shf</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-shl">shl</a></p></td>
+<td><p>Yes, CCCL 3.0.0 / CUDA 13.0</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-shr">shr</a></p></td>
+<td><p>Yes, CCCL 3.0.0 / CUDA 13.0</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id8">
+<caption><span class="caption-text"><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions">Data Movement and Conversion Instructions</a></span><a class="headerlink" href="#id8" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-mov-2">mov</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-deprecated">shfl</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-sync">shfl.sync</a></p></td>
+<td><p>Yes, CCCL 2.9.0 / CUDA 12.9</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-prmt">prmt</a></p></td>
+<td><p>Yes, CCCL 3.0.0 / CUDA 13.0</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ld">ld</a></p></td>
+<td><p>Yes, CCCL 3.0.0 / CUDA 13.0</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ld-global-nc">ld.global.nc</a></p></td>
+<td><p>Yes, CCCL 3.0.0 / CUDA 13.0</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ldu">ldu</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-st">st</a></p></td>
+<td><p>Yes, CCCL 3.0.0 / CUDA 13.0</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="instructions/st_async.html#libcudacxx-ptx-instructions-st-async"><span class="std std-ref">st.async</span></a></p></td>
+<td><p>CCCL 2.3.0 / CUDA 12.4</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="instructions/st_bulk.html#libcudacxx-ptx-instructions-st-bulk"><span class="std std-ref">st.bulk</span></a></p></td>
+<td><p>CCCL 2.8 / CUDA 12.9</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-multimem-ld-reduce-multimem-st-multimem-red">multimem.ld_reduce, multimem.st, multimem.red</a></p></td>
+<td><p>CCCL 2.8 / CUDA 12.9</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-prefetch-prefetchu">prefetch, prefetchu</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-applypriority">applypriority</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-discard">discard</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-createpolicy">createpolicy</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-isspacep">isspacep</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvta">cvta</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvt">cvt</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvt-pack">cvt.pack</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="instructions/mapa.html#libcudacxx-ptx-instructions-mapa"><span class="std std-ref">mapa</span></a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="instructions/getctarank.html#libcudacxx-ptx-instructions-getctarank"><span class="std std-ref">getctarank</span></a></p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id9">
+<caption><span class="caption-text"><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-asynchronous-copy">Data Movement and Conversion Instructions: Asynchronous copy</a></span><a class="headerlink" href="#id9" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async">cp.async</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-commit-group">cp.async.commit_group</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-wait-group-cp-async-wait-all">cp.async.wait_group</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="instructions/cp_async_bulk.html#libcudacxx-ptx-instructions-cp-async-bulk"><span class="std std-ref">cp.async.bulk</span></a></p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="instructions/cp_reduce_async_bulk.html#libcudacxx-ptx-instructions-cp-reduce-async-bulk"><span class="std std-ref">cp.reduce.async.bulk</span></a></p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-prefetch">cp.async.bulk.prefetch</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="instructions/cp_async_bulk_tensor.html#libcudacxx-ptx-instructions-cp-async-bulk-tensor"><span class="std std-ref">cp.reduce.async.bulk</span></a></p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="instructions/cp_reduce_async_bulk_tensor.html#libcudacxx-ptx-instructions-cp-reduce-async-bulk-tensor"><span class="std std-ref">cp.reduce.async.bulk.tensor</span></a></p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-prefetch-tensor">cp.async.bulk.prefetch.tensor</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="instructions/cp_async_bulk_commit_group.html#libcudacxx-ptx-instructions-cp-async-bulk-commit-group"><span class="std std-ref">cp.async.bulk.commit_group</span></a></p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="instructions/cp_async_bulk_wait_group.html#libcudacxx-ptx-instructions-cp-async-bulk-wait-group"><span class="std std-ref">cp.async.bulk.wait_group</span></a></p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="instructions/tensormap_replace.html#libcudacxx-ptx-instructions-tensormap-replace"><span class="std std-ref">tensormap.replace</span></a></p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id10">
+<caption><span class="caption-text"><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#texture-instructions">Texture Instructions</a></span><a class="headerlink" href="#id10" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#texture-instructions-tex">tex</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#texture-instructions-tld4">tld4</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#texture-instructions-txq">txq</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#texture-instructions-istypep">istypep</a></p></td>
+<td><p>No</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id11">
+<caption><span class="caption-text"><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#surface-instructions">Surface Instructions</a></span><a class="headerlink" href="#id11" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#surface-instructions-suld">suld</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#surface-instructions-sust">sust</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#surface-instructions-sured">sured</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#surface-instructions-suq">suq</a></p></td>
+<td><p>No</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id12">
+<caption><span class="caption-text"><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions">Control Flow Instructions</a></span><a class="headerlink" href="#id12" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions-curly-braces">{}</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions-at">&#64;</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions-bra">bra</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions-bra">bra</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions-call">call</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions-ret">ret</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions-exit">exit</a></p></td>
+<td><p>CCCL 3.0.0</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id13">
+<caption><span class="caption-text"><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions">Parallel Synchronization and Communication Instructions</a></span><a class="headerlink" href="#id13" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-bar-barrier">bar, barrier</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-bar-warp-sync">bar.warp.sync</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="instructions/barrier_cluster.html#libcudacxx-ptx-instructions-barrier-cluster"><span class="std std-ref">barrier.cluster</span></a></p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-membar-fence">membar</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="instructions/fence.html#libcudacxx-ptx-instructions-fence"><span class="std std-ref">fence</span></a></p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-atom">atom</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-red">red</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="instructions/red_async.html#libcudacxx-ptx-instructions-mbarrier-red-async"><span class="std std-ref">red.async</span></a></p></td>
+<td><p>CCCL 2.3.0 / CUDA 12.4</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-vote-deprecated">vote</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-vote-sync">vote.sync</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-match-sync">match.sync</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-activemask">activemask</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-redux-sync">redux.sync</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-griddepcontrol">griddepcontrol</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-elect-sync">elect.sync</a></p></td>
+<td><p>CCCL 3.1.0 / CUDA 13.1</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id14">
+<caption><span class="caption-text"><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier">Parallel Synchronization and Communication Instructions: mbarrier</a></span><a class="headerlink" href="#id14" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference internal" href="instructions/mbarrier_init.html#libcudacxx-ptx-instructions-mbarrier-init"><span class="std std-ref">mbarrier.init</span></a></p></td>
+<td><p>CCCL 2.5.0 / CUDA Future</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-inval">mbarrier.inval</a></p></td>
+<td><p>CCCL 3.2.0 / CUDA 13.2</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-complete-tx">mbarrier.complete_tx</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="instructions/mbarrier_arrive.html#libcudacxx-ptx-instructions-mbarrier-arrive"><span class="std std-ref">mbarrier.arrive</span></a></p></td>
+<td><p>CCCL 2.3.0 / CUDA 12.4</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive-drop">mbarrier.arrive_drop</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-cp-async-mbarrier-arrive">cp.async.mbarrier.arrive</a></p></td>
+<td><p>CCCL 2.8 / CUDA 12.9</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-expect-tx">mbarrier.expect_tx</a></p></td>
+<td><p>CCCL 2.8 / CUDA 12.9</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="instructions/mbarrier_test_wait.html#libcudacxx-ptx-instructions-mbarrier-test-wait"><span class="std std-ref">mbarrier.test_wait</span></a></p></td>
+<td><p>CCCL 2.3.0 / CUDA 12.4</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="instructions/mbarrier_try_wait.html#libcudacxx-ptx-instructions-mbarrier-try-wait"><span class="std std-ref">mbarrier.try_wait</span></a></p></td>
+<td><p>CCCL 2.3.0 / CUDA 12.4</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-pending-count">mbarrier.pending_count</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="instructions/tensormap_cp_fenceproxy.html#libcudacxx-ptx-instructions-tensormap-cp-fenceproxy"><span class="std std-ref">tensormap.cp_fenceproxy</span></a></p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="instructions/clusterlaunchcontrol.html#libcudacxx-ptx-instructions-clusterlaunchcontrol"><span class="std std-ref">clusterlaunchcontrol.try_cancel</span></a></p></td>
+<td><p>CCCL 2.8 / CUDA 12.9</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="instructions/clusterlaunchcontrol.html#libcudacxx-ptx-instructions-clusterlaunchcontrol"><span class="std std-ref">clusterlaunchcontrol.query_cancel</span></a></p></td>
+<td><p>CCCL 2.8 / CUDA 12.9</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id15">
+<caption><span class="caption-text"><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-multiply-accumulate-instructions">Warp Level Matrix Multiply-Accumulate Instructions</a></span><a class="headerlink" href="#id15" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-load-instruction-wmma-load">wmma.load</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-store-instruction-wmma-store">wmma.store</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-instructions-wmma-mma">wmma.mma</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-instructions-mma">mma</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-load-instruction-ldmatrix">ldmatrix</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-store-instruction-stmatrix">stmatrix</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-transpose-instruction-movmatrix">movmatrix</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-instructions-for-sparse-mma">mma.sp</a></p></td>
+<td><p>No</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id16">
+<caption><span class="caption-text"><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-multiply-accumulate-instructions">Asynchronous Warpgroup Level Matrix Multiply-Accumulate Instructions</a></span><a class="headerlink" href="#id16" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-multiply-and-accumulate-instruction-wgmma-mma-async">wgmma.mma_async</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-multiply-and-accumulate-instruction-wgmma-mma-async-sp">wgmma.mma_async.sp</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-multiply-and-accumulate-instruction-wgmma-fence">wgmma.fence</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-multiply-and-accumulate-instruction-wgmma-commit-group">wgmma.commit_group</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-multiply-and-accumulate-instruction-wgmma-wait-group">wgmma.wait_group</a></p></td>
+<td><p>No</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id17">
+<caption><span class="caption-text"><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensorcore-5th-generation-family-instructions">TensorCore 5th Generation Family Instructions</a></span><a class="headerlink" href="#id17" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensorcore-5th-generation-instructions-tcgen05-alloc-tcgen05-dealloc-tcgen05-relinquish-alloc-permit">tcgen05.alloc</a></p></td>
+<td><p>CCCL 2.8 / CUDA 12.9</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensorcore-5th-generation-instructions-tcgen05-alloc-tcgen05-commit">tcgen05.commit</a></p></td>
+<td><p>CCCL 2.8 / CUDA 12.9</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensorcore-5th-generation-instructions-tcgen05-alloc-tcgen05-cp">tcgen05.cp</a></p></td>
+<td><p>CCCL 2.8 / CUDA 12.9</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensorcore-5th-generation-instructions-tcgen05-alloc-tcgen05-fence">tcgen05.fence</a></p></td>
+<td><p>CCCL 2.8 / CUDA 12.9</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensorcore-5th-generation-instructions-tcgen05-alloc-tcgen05-ld">tcgen05.ld</a></p></td>
+<td><p>CCCL 2.8 / CUDA 12.9</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensorcore-5th-generation-instructions-tcgen05-alloc-tcgen05-mma">tcgen05.mma</a></p></td>
+<td><p>CCCL 2.8 / CUDA 12.9</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensorcore-5th-generation-instructions-tcgen05-alloc-tcgen05-mma-ws">tcgen05.mma.ws</a></p></td>
+<td><p>CCCL 2.8 / CUDA 12.9</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensorcore-5th-generation-instructions-tcgen05-alloc-tcgen05-shift">tcgen05.shift</a></p></td>
+<td><p>CCCL 2.8 / CUDA 12.9</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensorcore-5th-generation-instructions-tcgen05-alloc-tcgen05-st">tcgen05.st</a></p></td>
+<td><p>CCCL 2.8 / CUDA 12.9</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tensorcore-5th-generation-instructions-tcgen05-alloc-tcgen05-wait">tcgen05.wait</a></p></td>
+<td><p>CCCL 2.8 / CUDA 12.9</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id18">
+<caption><span class="caption-text"><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#stack-manipulation-instructions">Stack Manipulation Instructions</a></span><a class="headerlink" href="#id18" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#stack-manipulation-instructions-stacksave">stacksave</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#stack-manipulation-instructions-stackrestore">stackrestore</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#stack-manipulation-instructions-alloca">alloca</a></p></td>
+<td><p>No</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id19">
+<caption><span class="caption-text"><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#video-instructions">Video Instructions</a></span><a class="headerlink" href="#id19" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#scalar-video-instructions-vadd-vsub-vabsdiff-vmin-vmax">vadd, vsub, vabsdiff, vmin, vmax</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#scalar-video-instructions-vshl-vshr">vshl, vshr</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#scalar-video-instructions-vmad">vmad</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#scalar-video-instructions-vset">vset</a></p></td>
+<td><p>No</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id20">
+<caption><span class="caption-text"><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#simd-video-instructions">SIMD Video Instructions</a></span><a class="headerlink" href="#id20" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#simd-video-instructions-vadd2-vsub2-vavrg2-vabsdiff2-vmin2-vmax2">vadd2, vsub2, vavrg2, vabsdiff2, vmin2, vmax2</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#simd-video-instructions-vset2">vset2</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#simd-video-instructions-vadd4-vsub4-vavrg4-vabsdiff4-vmin4-vmax4">vadd4, vsub4, vavrg4, vabsdiff4, vmin4, vmax4</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#simd-video-instructions-vset4">vset4</a></p></td>
+<td><p>No</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id21">
+<caption><span class="caption-text"><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions">Miscellaneous Instructions</a></span><a class="headerlink" href="#id21" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-brkpt">brkpt</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-nanosleep">nanosleep</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-pmevent">pmevent</a></p></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-trap">trap</a></p></td>
+<td><p>CCCL 3.0.0</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-setmaxnreg">setmaxnreg</a></p></td>
+<td><p>CCCL 3.2.0 / CUDA 13.2</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="pst-scrollable-table-container"><table class="table" id="id22">
+<caption><span class="caption-text"><cite>Special registers &lt;libcudacxx-ptx-instructions-special-registers&gt;</cite></span><a class="headerlink" href="#id22" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 25.0%" />
+<col style="width: 25.0%" />
+<col style="width: 25.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Instruction</p></th>
+<th class="head"><p>PTX ISA</p></th>
+<th class="head"><p>SM Version</p></th>
+<th class="head"><p>Available in libcu++</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-tid">tid</a></p></td>
+<td><p>20</p></td>
+<td><p>All</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-ntid">ntid</a></p></td>
+<td><p>20</p></td>
+<td><p>All</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-laneid">laneid</a></p></td>
+<td><p>13</p></td>
+<td><p>All</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-warpid">warpid</a></p></td>
+<td><p>13</p></td>
+<td><p>All</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-nwarpid">nwarpid</a></p></td>
+<td><p>20</p></td>
+<td><p>20</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-ctaid">ctaid</a></p></td>
+<td><p>20</p></td>
+<td><p>All</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-nctaid">nctaid</a></p></td>
+<td><p>20</p></td>
+<td><p>All</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-smid">smid</a></p></td>
+<td><p>13</p></td>
+<td><p>All</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-nsmid">nsmid</a></p></td>
+<td><p>20</p></td>
+<td><p>20</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-gridid">gridid</a></p></td>
+<td><p>30</p></td>
+<td><p>30</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-is-explicit-cluster">is_explicit_cluster</a></p></td>
+<td><p>78</p></td>
+<td><p>90</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-clusterid">clusterid</a></p></td>
+<td><p>78</p></td>
+<td><p>90</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-nclusterid">nclusterid</a></p></td>
+<td><p>78</p></td>
+<td><p>90</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-cluster-ctaid">cluster_ctaid</a></p></td>
+<td><p>78</p></td>
+<td><p>90</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-cluster-nctaid">cluster_nctaid</a></p></td>
+<td><p>78</p></td>
+<td><p>90</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-cluster-ctarank">cluster_ctarank</a></p></td>
+<td><p>78</p></td>
+<td><p>90</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-cluster-nctarank">cluster_nctarank</a></p></td>
+<td><p>78</p></td>
+<td><p>90</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-lanemask-eq">lanemask_eq</a></p></td>
+<td><p>20</p></td>
+<td><p>20</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-lanemask-le">lanemask_le</a></p></td>
+<td><p>20</p></td>
+<td><p>20</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-lanemask-lt">lanemask_lt</a></p></td>
+<td><p>20</p></td>
+<td><p>20</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-lanemask-ge">lanemask_ge</a></p></td>
+<td><p>20</p></td>
+<td><p>20</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-lanemask-gt">lanemask_gt</a></p></td>
+<td><p>20</p></td>
+<td><p>20</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-clock-clock-hi">clock, clock_hi</a></p></td>
+<td><p>10</p></td>
+<td><p>All</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-clock64">clock64</a></p></td>
+<td><p>20</p></td>
+<td><p>20</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-pm0-pm7">pm0</a></p></td>
+<td></td>
+<td></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-pm0-64-pm7-64">pm0_64</a></p></td>
+<td></td>
+<td></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-envreg-32">envreg</a></p></td>
+<td></td>
+<td></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-globaltimer-globaltimer-lo-globaltimer-hi">globaltimer, globaltimer_lo, globaltimer_hi</a></p></td>
+<td><p>31</p></td>
+<td><p>31</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-reserved-smem-offset-begin-reserved-smem-offset-end-reserved-smem-offset-cap-reserved-smem-offset-2">reserved_smem_offset_begin, reserved_smem_offset_end, reserved_smem_offset_cap, reserved_smem_offset_2</a></p></td>
+<td></td>
+<td></td>
+<td><p>No</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-total-smem-size">total_smem_size</a></p></td>
+<td><p>41</p></td>
+<td><p>20</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-aggr-smem-size">aggr_smem_size</a></p></td>
+<td><p>81</p></td>
+<td><p>90</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-dynamic-smem-size">dynamic_smem_size</a></p></td>
+<td><p>41</p></td>
+<td><p>20</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-current-graph-exec">current_graph_exec</a></p></td>
+<td><p>80</p></td>
+<td><p>50</p></td>
+<td><p>CCCL 2.4.0 / CUDA 12.5</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="examples/device_tensormap_initialization.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">How to initialize a tensor map on device</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="instructions/ld.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">ld</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#instructions-by-section">Instructions by section</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2026, NVIDIA Corporation.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

@@ -1,0 +1,1248 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>cuda::experimental::stf::stream_task&lt;&gt; &#8212; CUDA Core Compute Libraries</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+
+
+    <script src="../../_static/documentation_options.js?v=bbe6ed3a"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=5ceeb459"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__task_3_4';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://NVIDIA.github.io/cccl/nv-versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'unstable';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+
+    <link rel="canonical" href="https://NVIDIA.github.io/cccl/cudax/api/classcuda_1_1experimental_1_1stf_1_1stream__task_3_4.html" />
+    <link rel="icon" href="../../_static/favicon.png"/>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="unstable" />
+
+
+  </head>
+
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../cpp.html">CUDA C++ Core Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../libcudacxx/index.html">libcu++</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/setup.html">Setup</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/requirements.html">Requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/getting.html">Getting libcu++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/building_and_testing.html">Building &amp; Testing libcu++</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/standard_api.html">Standard API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/algorithms_library.html">Algorithms Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/c_library.html">C Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/concepts_library.html">Concepts Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/container_library.html">Container Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/execution_library.html">Execution Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/numerics_library.html">Numerics Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/ranges_library.html">Ranges Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/synchronization_library.html">Synchronization Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/time_library.html">Time Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/type_support.html">Type Support Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/utility_library.html">Utility Library</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/extended_api.html">Extended API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/bit.html">Bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/execution_model.html">Execution model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/exceptions.html">Exception Handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_model.html">Memory model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/thread_groups.html">Thread Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/synchronization_primitives.html">Synchronization Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/asynchronous_operations.html">Asynchronous Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_access_properties.html">Memory access properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/functional.html">Functional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/iterators.html">Fancy Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/type_traits.html">Type traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/vector_tuple_protocol.html">Vector Tuple Protocol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/numeric.html">Numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/random.html">Random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory.html">Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_resource.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/math.html">Math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/mdspan.html">Mdspan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/warp.html">Warp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/utility.html">Utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/work_stealing.html">Work stealing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/stream.html">Streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/event.html">Events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/algorithm.html">Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/legacy_resources.html">Legacy resources</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/examples.html">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/instructions.html">PTX Instructions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/pragmas.html">PTX Pragmas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cub/index.html">CUB</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/test_overview.html">CUB Tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/benchmarking.html">CUB Benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/tuning.html">CUB Tunings</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/developer_overview.html">CUB Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/developer/nvtx.html">NVTX</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/releases.html">CUB Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/releases/changelog.html">CUB 2.1.0</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cub/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/thread_level.html">Thread-level Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/warp_wide.html">Warp-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/block_wide.html">Block-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cub/api_docs/device_wide.html">Device-Wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cub/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../thrust/index.html">Thrust</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/developer_overview.html">Thrust Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/systems.html">Thrust systems</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/release_process.html">Release Process</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/algorithms.html">Algorithms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/containers.html">Containers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/function_objects.html">Function Objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/iterators.html">Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/memory_management.html">Memory Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/numerics.html">Numerics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/random.html">Random Number Generators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/system.html">System</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/utility.html">Utility</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../index.html">CUDA Experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../container.html">Containers library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="classcuda_1_1experimental_1_1uninitialized__buffer.html">cuda::experimental::uninitialized_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../memory_resource.html">Memory Resources</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1basic__any__resource.html">cuda::mr::basic_any_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1memory__pool__properties.html">cuda::memory_pool_properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1device__memory__pool.html">cuda::device_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1pinned__memory__pool.html">cuda::pinned_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1managed__memory__pool.html">cuda::managed_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1legacy__pinned__memory__resource.html">cuda::mr::legacy_pinned_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1legacy__managed__memory__resource.html">cuda::mr::legacy_managed_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1mr_1_1shared__resource.html">cuda::mr::shared_resource</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../graph.html">Graphs library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1graph.html">cuda::experimental::graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1graph__builder.html">cuda::experimental::graph_builder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1graph__builder__ref.html">cuda::experimental::graph_builder_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1graph__node__ref.html">cuda::experimental::graph_node_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1graphed__interface__of.html">cuda::experimental::stf::graphed_interface_of</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; mdspan&lt; T, P… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; void_interface &gt;</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../stf.html">CUDASTF</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../stf/custom_data_interface.html">Implementation of the <code class="docutils literal notranslate"><span class="pre">matrix</span></code> class</a></li>
+
+
+
+
+
+<li class="toctree-l4"><a class="reference internal" href="../stf/lower_level_api.html">Lower-level API</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/3.0_migration_guide.html">CCCL 2.x ‐ CCCL 3.0 migration guide</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/development/index.html">CCCL Development Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/macro.html">CCCL Internal Macros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/testing.html">CCCL Testing Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/contributing.html">Contributing to the CUDA Core Compute Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/contributing/code_of_conduct.html">Code of Conduct</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/license.html">License</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../python/index.html">CCCL Python Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../python/setup.html">Setup and Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/compute.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/coop.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>: Cooperative Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/resources.html">Resources</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../python/api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../python/compute_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../python/coop_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> API Reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">cuda::experimental::stf::stream_task&lt;&gt;</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="cuda-experimental-stf-stream-task">
+<h1>cuda::experimental::stf::stream_task&lt;&gt;<a class="headerlink" href="#cuda-experimental-stf-stream-task" title="Link to this heading">#</a></h1>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4IEN4cuda12experimental3stf11stream_taskIEE">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classcuda_1_1experimental_1_1stf_1_1stream__task_3_4"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">stream_task</span></span></span><span class="p"><span class="pre">&lt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><span class="n"><span class="pre">cuda</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">experimental</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">stf</span></span><span class="p"><span class="pre">::</span></span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1task.html#_CPPv4N4cuda12experimental3stf4taskE" title="cuda::experimental::stf::task"><span class="n"><span class="pre">task</span></span></a><a class="headerlink" href="#_CPPv4IEN4cuda12experimental3stf11stream_taskIEE" title="Link to this definition">#</a><br /></dt>
+<dd><p>Task with dynamic dependencies that uses CUDA streams (and events) to synchronize between the different tasks. </p>
+<p><code class="docutils literal notranslate"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1stream__task.html#classcuda_1_1experimental_1_1stf_1_1stream__task"><span class="std std-ref"><span class="pre">stream_task</span></span></a><span class="pre">&lt;&gt;</span></code> automatically selects a stream from an internal pool if needed, or take a user-provided stream (by calling <code class="docutils literal notranslate"><span class="pre">set_stream</span></code>). All operations in a task are expected to be executed asynchronously with respect to that task’s stream.</p>
+<p>This task type accepts dynamic dependencies, i.e. dependencies can be added at runtime by calling <code class="docutils literal notranslate"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1task.html#classcuda_1_1experimental_1_1stf_1_1task_1a936995c8439be99532de4c4ae4eee8dd"><span class="std std-ref"><span class="pre">add_deps()</span></span></a></code> or <code class="docutils literal notranslate"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1task.html#classcuda_1_1experimental_1_1stf_1_1task_1a936995c8439be99532de4c4ae4eee8dd"><span class="std std-ref"><span class="pre">add_deps()</span></span></a></code> prior to starting the task with <code class="docutils literal notranslate"><a class="reference internal" href="#classcuda_1_1experimental_1_1stf_1_1stream__task_3_4_1a67350bb8341b3f69742bb692ea127d29"><span class="std std-ref"><span class="pre">start()</span></span></a></code>. In turn, the added dependencies have dynamic types. It is the caller’s responsibility to access the correct types for each dependency by calling <code class="docutils literal notranslate"><span class="pre">get&lt;T&gt;(index)</span></code>. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-types">Public Types</p>
+<dl class="cpp enum-class">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE5phaseE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1aecee92965c5b6ca232026537f0f8ae39"></span><span class="k"><span class="pre">enum</span></span><span class="w"> </span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">phase</span></span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE5phaseE" title="Link to this definition">#</a><br /></dt>
+<dd><p>current task status </p>
+<p>We keep track of the status of task so that we do not make API calls at an inappropriate time, such as setting the symbol once the task has already started, or releasing a task that was not started yet. </p>
+<p><em>Values:</em></p>
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE5phase5setupE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1aecee92965c5b6ca232026537f0f8ae39aa0f848942ce863cf53c0fa6cc684007d"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">setup</span></span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE5phase5setupE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE5phase7runningE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1aecee92965c5b6ca232026537f0f8ae39a75101dcdfc88455bcafc9e53e0b06689"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">running</span></span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE5phase7runningE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE5phase8finishedE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1aecee92965c5b6ca232026537f0f8ae39aa5d7ceb2c59b8cee46c2953fec9abc19"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">finished</span></span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE5phase8finishedE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE11stream_taskE19backend_ctx_untyped10exec_place">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1stream__task_3_4_1aa89e00b453ead82a7c4c5409ee11cca4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">stream_task</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped.html#_CPPv4N4cuda12experimental3stf19backend_ctx_untypedE" title="cuda::experimental::stf::backend_ctx_untyped"><span class="n"><span class="pre">backend_ctx_untyped</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">ctx_</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_placeE" title="cuda::experimental::stf::exec_place"><span class="n"><span class="pre">exec_place</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">e_place</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_placeE" title="cuda::experimental::stf::exec_place"><span class="n"><span class="pre">exec_place</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_place14current_deviceEv" title="cuda::experimental::stf::exec_place::current_device"><span class="n"><span class="pre">current_device</span></span></a><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">)</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE11stream_taskE19backend_ctx_untyped10exec_place" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE11stream_taskERK11stream_taskIE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1stream__task_3_4_1aa36fb2e5c6e23999e67b2ef9d7f09c56"></span><span class="sig-name descname"><span class="n"><span class="pre">stream_task</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE11stream_taskERK11stream_taskIE" title="cuda::experimental::stf::stream_task&lt;&gt;::stream_task"><span class="n"><span class="pre">stream_task</span></span></a><span class="p"><span class="pre">&lt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&amp;</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">default</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE11stream_taskERK11stream_taskIE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIEaSERK11stream_taskIE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1stream__task_3_4_1a451667325e7219359d16ef2130c9422f"></span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE11stream_taskE19backend_ctx_untyped10exec_place" title="cuda::experimental::stf::stream_task&lt;&gt;::stream_task"><span class="n"><span class="pre">stream_task</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">=</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4IEN4cuda12experimental3stf11stream_taskIEE" title="cuda::experimental::stf::stream_task&lt;&gt;"><span class="n"><span class="pre">stream_task</span></span></a><span class="p"><span class="pre">&lt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&amp;</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">default</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIEaSERK11stream_taskIE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIED0Ev">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1stream__task_3_4_1aaf92078138d179d10d460d63a189c2af"></span><span class="sig-name descname"><span class="n"><span class="pre">~stream_task</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">default</span></span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIED0Ev" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf11stream_taskIE10get_streamEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1stream__task_3_4_1a534cd6ddac8c76259434c08ed5b35e19"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">cudaStream_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_stream</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE10get_streamEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf11stream_taskIE10get_streamE6size_t">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1stream__task_3_4_1ab61fd461767d759b9d9b1580c4f35800"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">cudaStream_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_stream</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">pos</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE10get_streamE6size_t" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE10set_streamE12cudaStream_t">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1stream__task_3_4_1a643283fb889e31f191b0fa6c6d3a3af2"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE11stream_taskE19backend_ctx_untyped10exec_place" title="cuda::experimental::stf::stream_task&lt;&gt;::stream_task"><span class="n"><span class="pre">stream_task</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">set_stream</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cudaStream_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">s</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE10set_streamE12cudaStream_t" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE5startEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1stream__task_3_4_1a67350bb8341b3f69742bb692ea127d29"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE11stream_taskE19backend_ctx_untyped10exec_place" title="cuda::experimental::stf::stream_task&lt;&gt;::stream_task"><span class="n"><span class="pre">stream_task</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">start</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE5startEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE17set_current_placeE4pos4">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1stream__task_3_4_1a8d3543c2a3728ee8a00caa0d6830fcf4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_current_place</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1pos4.html#_CPPv4N4cuda12experimental3stf4pos4E" title="cuda::experimental::stf::pos4"><span class="n"><span class="pre">pos4</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE17set_current_placeE4pos4" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE19unset_current_placeEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1stream__task_3_4_1a90c9dbe6027892502552b4ad8057ba8c"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">unset_current_place</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE19unset_current_placeEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE17get_current_placeEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1stream__task_3_4_1ac457362f11a3838f701cefa9fd428663"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_placeE" title="cuda::experimental::stf::exec_place"><span class="n"><span class="pre">exec_place</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_current_place</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE17get_current_placeEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE13end_unclearedEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1stream__task_3_4_1ab3e032568fcb5a7cc2614340e43a477d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE11stream_taskE19backend_ctx_untyped10exec_place" title="cuda::experimental::stf::stream_task&lt;&gt;::stream_task"><span class="n"><span class="pre">stream_task</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">end_uncleared</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE13end_unclearedEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE3endEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1stream__task_3_4_1a26fcc46cc3abeb68635f61eec141b2e8"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE11stream_taskE19backend_ctx_untyped10exec_place" title="cuda::experimental::stf::stream_task&lt;&gt;::stream_task"><span class="n"><span class="pre">stream_task</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">end</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE3endEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN4cuda12experimental3stf11stream_taskIEpmEvRR3Fun">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">Fun</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classcuda_1_1experimental_1_1stf_1_1stream__task_3_4_1a50699e771cb124ce6821fe96463b647c"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">-&gt;*</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4I0EN4cuda12experimental3stf11stream_taskIEpmEvRR3Fun" title="cuda::experimental::stf::stream_task&lt;&gt;::operator-&gt;*::Fun"><span class="n"><span class="pre">Fun</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">fun</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN4cuda12experimental3stf11stream_taskIEpmEvRR3Fun" title="Link to this definition">#</a><br /></dt>
+<dd><p>Run lambda function on the specified device. </p>
+<p>
+The lambda must accept exactly one argument. If the type of the lambda’s argument is one of <code class="docutils literal notranslate"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1stream__task.html#classcuda_1_1experimental_1_1stf_1_1stream__task"><span class="std std-ref"><span class="pre">stream_task</span></span></a><span class="pre">&lt;&gt;</span></code>, <code class="docutils literal notranslate"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1stream__task.html#classcuda_1_1experimental_1_1stf_1_1stream__task"><span class="std std-ref"><span class="pre">stream_task</span></span></a><span class="pre">&lt;&gt;&amp;</span></code>, <code class="docutils literal notranslate"><span class="pre">auto</span></code>, <code class="docutils literal notranslate"><span class="pre">auto&amp;</span></code>, or <code class="docutils literal notranslate"><span class="pre">auto&amp;&amp;</span></code>, then <code class="docutils literal notranslate"><span class="pre">*this</span></code> is passed to the lambda. Otherwise, <code class="docutils literal notranslate"><span class="pre">this-&gt;</span><a class="reference internal" href="#classcuda_1_1experimental_1_1stf_1_1stream__task_3_4_1a534cd6ddac8c76259434c08ed5b35e19"><span class="std std-ref"><span class="pre">get_stream()</span></span></a></code> is passed to the lambda. Dependencies would need to be accessed separately. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Fun</strong> – Type of lambda </p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>fun</strong> – Lambda function taking either a <code class="docutils literal notranslate"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1stream__task.html#classcuda_1_1experimental_1_1stf_1_1stream__task"><span class="std std-ref"><span class="pre">stream_task</span></span></a><span class="pre">&lt;&gt;</span></code> or a <code class="docutils literal notranslate"><span class="pre">cudaStream_t</span></code> as the only argument</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf11stream_taskIE29populate_deps_scheduling_infoEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1stream__task_3_4_1ae469725e08f51c5147d27ff5feb40584"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">populate_deps_scheduling_info</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE29populate_deps_scheduling_infoEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE13schedule_taskEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1stream__task_3_4_1af41e187adf10b7721c23ac367d3df0ba"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">schedule_task</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE13schedule_taskEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Use the scheduler to assign a device to this task. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>returns true if the task’s time needs to be recorded </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf11stream_taskIEcvbEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1aacd88017b1679164020ab83ab5de8a92"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIEcvbEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf11stream_taskIEeqERK4task">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1ac6a7a5dafb5ba396b8156add3159b55c"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">==</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1task.html#_CPPv4N4cuda12experimental3stf4taskE" title="cuda::experimental::stf::task"><span class="n"><span class="pre">task</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIEeqERK4task" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf11stream_taskIE10get_symbolEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a321165177de0c25991c3bb4e93af0b97"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_symbol</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE10get_symbolEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Get the string attached to the task for debugging purposes. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE10set_symbolENSt6stringE">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1af0dfb0499069c3e91e3b374198e6b27b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_symbol</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">new_symbol</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE10set_symbolENSt6stringE" title="Link to this definition">#</a><br /></dt>
+<dd><p>Attach a string to this task, which can be useful for debugging purposes, or in tracing tools. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE7add_depE16task_dep_untyped">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a758ecb8fa448a184e5060f473fa78582"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">add_dep</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1task__dep__untyped.html#_CPPv4N4cuda12experimental3stf16task_dep_untypedE" title="cuda::experimental::stf::task_dep_untyped"><span class="n"><span class="pre">task_dep_untyped</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">d</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE7add_depE16task_dep_untyped" title="Link to this definition">#</a><br /></dt>
+<dd><p>Add one dependency. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE8add_depsE23task_dep_vector_untyped">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a936995c8439be99532de4c4ae4eee8dd"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">add_deps</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a3e15e8ae386f7f07da8d7503a0046b62.html#_CPPv4N4cuda12experimental3stf23task_dep_vector_untypedE" title="cuda::experimental::stf::task_dep_vector_untyped"><span class="n"><span class="pre">task_dep_vector_untyped</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">input_deps</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE8add_depsE23task_dep_vector_untyped" title="Link to this definition">#</a><br /></dt>
+<dd><p>Add a set of dependencies. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4IDpEN4cuda12experimental3stf11stream_taskIE8add_depsEv16task_dep_untypedDpRR4Pack">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">Pack</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a2e34c4a7122fe3646dd83c3b59124cfe"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">add_deps</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1task__dep__untyped.html#_CPPv4N4cuda12experimental3stf16task_dep_untypedE" title="cuda::experimental::stf::task_dep_untyped"><span class="n"><span class="pre">task_dep_untyped</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">first</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="#_CPPv4IDpEN4cuda12experimental3stf11stream_taskIE8add_depsEv16task_dep_untypedDpRR4Pack" title="cuda::experimental::stf::stream_task&lt;&gt;::add_deps::Pack"><span class="n"><span class="pre">Pack</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">...</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">pack</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4IDpEN4cuda12experimental3stf11stream_taskIE8add_depsEv16task_dep_untypedDpRR4Pack" title="Link to this definition">#</a><br /></dt>
+<dd><p>Add a set of dependencies. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4IDpEN4cuda12experimental3stf11stream_taskIE8add_depsEvRNSt5tupleIDp4ArgsEE">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">Args</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a02a2bcfce39fdde609e233e87cb98574"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">add_deps</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">tuple</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4IDpEN4cuda12experimental3stf11stream_taskIE8add_depsEvRNSt5tupleIDp4ArgsEE" title="cuda::experimental::stf::stream_task&lt;&gt;::add_deps::Args"><span class="n"><span class="pre">Args</span></span></a><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">deps_tuple</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4IDpEN4cuda12experimental3stf11stream_taskIE8add_depsEvRNSt5tupleIDp4ArgsEE" title="Link to this definition">#</a><br /></dt>
+<dd><p>Add a tuple of dependencies. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf11stream_taskIE13get_task_depsEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a3dacd9d3c032ad5100e8f143c55c38d1"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a3e15e8ae386f7f07da8d7503a0046b62.html#_CPPv4N4cuda12experimental3stf23task_dep_vector_untypedE" title="cuda::experimental::stf::task_dep_vector_untyped"><span class="n"><span class="pre">task_dep_vector_untyped</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_task_deps</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE13get_task_depsEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Get the dependencies of the task. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE2onE10exec_place">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a9b9a99fd24a4e405166658e4e95842f3"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1task.html#_CPPv4N4cuda12experimental3stf4taskE" title="cuda::experimental::stf::task"><span class="n"><span class="pre">task</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">on</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_placeE" title="cuda::experimental::stf::exec_place"><span class="n"><span class="pre">exec_place</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE2onE10exec_place" title="Link to this definition">#</a><br /></dt>
+<dd><p>Specify where the task should run. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf11stream_taskIE14get_exec_placeEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a891fbd73525a900ee644be40c66fad86"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_placeE" title="cuda::experimental::stf::exec_place"><span class="n"><span class="pre">exec_place</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_exec_place</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE14get_exec_placeEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Get and set the execution place of the task. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE14get_exec_placeEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a25d41c61561d17519d92ea858eaec21e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_placeE" title="cuda::experimental::stf::exec_place"><span class="n"><span class="pre">exec_place</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_exec_place</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE14get_exec_placeEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE14set_exec_placeERK10exec_place">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a2b0ba557b28cbc9dcf4ee84848264f0a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_exec_place</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place.html#_CPPv4N4cuda12experimental3stf10exec_placeE" title="cuda::experimental::stf::exec_place"><span class="n"><span class="pre">exec_place</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">place</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE14set_exec_placeERK10exec_place" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf11stream_taskIE21get_affine_data_placeEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a88988f0613d637ea23f3eb41ac7867d0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_affine_data_place</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE21get_affine_data_placeEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Get and Set the affine data place of the task. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE21set_affine_data_placeE10data_place">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a254ede1ba3b7d4273581ccad5e7a026e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_affine_data_place</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1data__place.html#_CPPv4N4cuda12experimental3stf10data_placeE" title="cuda::experimental::stf::data_place"><span class="n"><span class="pre">data_place</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">affine_data_place</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE21set_affine_data_placeE10data_place" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf11stream_taskIE9grid_dimsEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1ae0e5dabf6f627116b3e1c606f4646155"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1dim4.html#_CPPv4N4cuda12experimental3stf4dim4E" title="cuda::experimental::stf::dim4"><span class="n"><span class="pre">dim4</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">grid_dims</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE9grid_dimsEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf11stream_taskIE16get_done_prereqsEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a69d1efa51c4554f47f8017914bb7b6fb"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1event__list.html#_CPPv4N4cuda12experimental3stf10event_listE" title="cuda::experimental::stf::event_list"><span class="n"><span class="pre">event_list</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_done_prereqs</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE16get_done_prereqsEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Get the list of events which mean that the task was executed. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN4cuda12experimental3stf11stream_taskIE16merge_event_listEvRR1T">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a5204043a5778328891f5ce809fba55fc"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">merge_event_list</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="#_CPPv4I0EN4cuda12experimental3stf11stream_taskIE16merge_event_listEvRR1T" title="cuda::experimental::stf::stream_task&lt;&gt;::merge_event_list::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">tail</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN4cuda12experimental3stf11stream_taskIE16merge_event_listEvRR1T" title="Link to this definition">#</a><br /></dt>
+<dd><p>Add an event list to the list of events which mean that the task was executed. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf11stream_taskIE21find_data_instance_idERK20logical_data_untyped">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1ab32af0e481988dbad9e948d4c6256310"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="namespacecuda_1_1experimental_1_1stf_1a0aecbcdcde59511ead903c663bd205da.html#_CPPv4N4cuda12experimental3stf13instance_id_tE" title="cuda::experimental::stf::instance_id_t"><span class="n"><span class="pre">instance_id_t</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">find_data_instance_id</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1logical__data__untyped.html#_CPPv4N4cuda12experimental3stf20logical_data_untypedE" title="cuda::experimental::stf::logical_data_untyped"><span class="n"><span class="pre">logical_data_untyped</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">d</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE21find_data_instance_idERK20logical_data_untyped" title="Link to this definition">#</a><br /></dt>
+<dd><p>Get the identifier of a data instance used by a task. </p>
+<p>We here find the instance id used by a given piece of data in a task. Note that this incurs a certain overhead because it searches through the list of logical data in the task. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I00ENK4cuda12experimental3stf11stream_taskIE3getEDc6size_t">
+<span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname sig-name-template"><span class="n"><span class="pre">logical_data_untyped</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00ENK4cuda12experimental3stf11stream_taskIE3getEDc6size_t" title="cuda::experimental::stf::stream_task&lt;&gt;::get::logical_data_untyped"><span class="n"><span class="pre">logical_data_untyped</span></span></a><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1ae052cd147495073ccbdce5cd9643a9af"></span><span class="k"><span class="pre">decltype</span></span><span class="p"><span class="pre">(</span></span><span class="k"><span class="pre">auto</span></span><span class="p"><span class="pre">)</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">submitted_index</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4I00ENK4cuda12experimental3stf11stream_taskIE3getEDc6size_t" title="Link to this definition">#</a><br /></dt>
+<dd><p>Generic method to retrieve the data instance associated to an index in a task. </p>
+<p>If <code class="docutils literal notranslate"><span class="pre">T</span></code> is the exact type stored, this returns a reference to a valid data instance in the task. If <code class="docutils literal notranslate"><span class="pre">T</span></code> is <code class="docutils literal notranslate"><span class="pre">constify&lt;U&gt;</span></code>, where <code class="docutils literal notranslate"><span class="pre">U</span></code> is the type stored, this returns an rvalue of type <code class="docutils literal notranslate"><span class="pre">T</span></code>.</p>
+<p>Calling this outside the start()/end() section will result in undefined behaviour.</p>
+<p><div class="remark admonition">
+<p class="admonition-title">Remark</p>
+<p>One should not forget the “template” keyword when using this API with a task <code class="docutils literal notranslate"><span class="pre">t</span></code> <code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">&amp;res</span> <span class="pre">=</span> <span class="pre">t.template</span> <span class="pre">get&lt;T&gt;(index);</span></code></p>
+</div>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE16set_input_eventsE10event_list">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a08ddd33703266a82e2aacc8e52323e94"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_input_events</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1event__list.html#_CPPv4N4cuda12experimental3stf10event_listE" title="cuda::experimental::stf::event_list"><span class="n"><span class="pre">event_list</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">_input_events</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE16set_input_eventsE10event_list" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf11stream_taskIE16get_input_eventsEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1aa4a4251491daff537dfb9dc47cc35afa"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1event__list.html#_CPPv4N4cuda12experimental3stf10event_listE" title="cuda::experimental::stf::event_list"><span class="n"><span class="pre">event_list</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_input_events</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE16get_input_eventsEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE17set_ready_prereqsE10event_list">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1aa3c290536340bd358665e67a595bb0cc"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_ready_prereqs</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1event__list.html#_CPPv4N4cuda12experimental3stf10event_listE" title="cuda::experimental::stf::event_list"><span class="n"><span class="pre">event_list</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">_ready_prereqs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE17set_ready_prereqsE10event_list" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf11stream_taskIE17get_ready_prereqsEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a3e1d0b2c74f402bec511043058aac58a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1event__list.html#_CPPv4N4cuda12experimental3stf10event_listE" title="cuda::experimental::stf::event_list"><span class="n"><span class="pre">event_list</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_ready_prereqs</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE17get_ready_prereqsEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf11stream_taskIE13get_unique_idEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a66a62f05934253d7ae0282b669d738e0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_unique_id</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE13get_unique_idEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf11stream_taskIE14get_mapping_idEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a085fc2d3bdd68e7a8f29d28786842545"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_mapping_id</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE14get_mapping_idEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf11stream_taskIE4hashEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a37162e2608b7ad68c918f7fa75906e46"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">hash</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE4hashEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE14enable_captureEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1aec82d847f1dd767374effaf841bd87e4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">enable_capture</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE14enable_captureEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf11stream_taskIE18is_capture_enabledEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1ac59d14527771553739effed781956e97"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">is_capture_enabled</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE18is_capture_enabledEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE7acquireER19backend_ctx_untyped">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a6292dc44f2c88ce19c0c7e9b7f69de2e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1event__list.html#_CPPv4N4cuda12experimental3stf10event_listE" title="cuda::experimental::stf::event_list"><span class="n"><span class="pre">event_list</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">acquire</span></span></span><span class="sig-paren">(</span><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped.html#_CPPv4N4cuda12experimental3stf19backend_ctx_untypedE" title="cuda::experimental::stf::backend_ctx_untyped"><span class="n"><span class="pre">backend_ctx_untyped</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">ctx</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE7acquireER19backend_ctx_untyped" title="Link to this definition">#</a><br /></dt>
+<dd><p>Start a task. </p>
+<p>Acquires necessary resources and dependencies for a task to run.</p>
+<p>SUBMIT = acquire + release at the same time …</p>
+<p>This function prepares a task for execution by setting up its execution context, sorting its dependencies to avoid deadlocks, and ensuring all necessary data dependencies are fulfilled. It handles both small and large tasks by checking the task size and adjusting its behavior accordingly. Dependencies are processed to mark data usage, allocate necessary resources, and update data instances for task execution. This function also handles the task’s transition from the setup phase to the running phase.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The function <code class="docutils literal notranslate"><span class="pre">EXPECT</span></code>s the task to be in the setup phase and the execution place not to be <code class="docutils literal notranslate"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1exec__place__host.html#classcuda_1_1experimental_1_1stf_1_1exec__place_1aca053b97a9271ffab0de370bae60713b"><span class="std std-ref"><span class="pre">exec_place::device_auto()</span></span></a></code>. </p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Dependencies are sorted by logical data addresses to prevent deadlocks. </p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For tasks with multiple dependencies on the same logical data, only one instance of the data is used, and its access mode is determined by combining the access modes of all dependencies on that data. </p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ctx</strong> – The backend context in which the task is executed. This context contains the execution stack and other execution-related information. </p></li>
+<li><p><strong>tsk</strong> – The task to be prepared for execution. The task must be in the setup phase before calling this function. </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An <a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1event__list.html#classcuda_1_1experimental_1_1stf_1_1event__list"><span class="std std-ref">event_list</span></a> containing all the input events and any additional events generated during the acquisition of dependencies. This list represents the prerequisites for the task to start execution.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE7releaseER19backend_ctx_untypedR10event_list">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a0ec4ef28d068e2a8829799b07adf5c05"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">release</span></span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1backend__ctx__untyped.html#_CPPv4N4cuda12experimental3stf19backend_ctx_untypedE" title="cuda::experimental::stf::backend_ctx_untyped"><span class="n"><span class="pre">backend_ctx_untyped</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">ctx</span></span></em>,</dd>
+<dd><em class="sig-param"><a class="reference internal" href="classcuda_1_1experimental_1_1stf_1_1event__list.html#_CPPv4N4cuda12experimental3stf10event_listE" title="cuda::experimental::stf::event_list"><span class="n"><span class="pre">event_list</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">done_prereqs</span></span></em></dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE7releaseER19backend_ctx_untypedR10event_list" title="Link to this definition">#</a><br /></dt>
+<dd><p>Releases resources associated with a task and transitions it to the finished phase. </p>
+<p>This function releases a task after it has completed its execution. It merges the list of prerequisites (events) that are marked as done, updates the dependencies for the task’s logical data, resets the execution context to its original configuration, and marks the task as finished.</p>
+<p>After calling this function, the task is considered “over” and is transitioned from the <code class="docutils literal notranslate"><span class="pre">running</span></code> phase to the <code class="docutils literal notranslate"><span class="pre">finished</span></code> phase. All associated resources are unlocked.</p>
+<p>
+The function performs the following actions:<ul class="simple">
+<li><p>Merges the provided list of <code class="docutils literal notranslate"><span class="pre">done_prereqs</span></code> into the task’s list of prerequisites.</p></li>
+<li><p>Updates logical data dependencies based on the access mode (read or write).</p></li>
+<li><p>Ensures proper synchronization by setting reader/writer prerequisites on the logical data.</p></li>
+<li><p>Updates internal structures to reflect that the task has become a new “leaf task.”</p></li>
+<li><p>Resets the execution context (device, SM affinity, etc.) to its previous state.</p></li>
+<li><p>Unlocks mutexes for the logical data that were locked during task execution.</p></li>
+<li><p>Releases any references to logical data, preventing potential memory leaks.</p></li>
+</ul>
+</p>
+<p>The function also interacts with tracing and debugging tools, marking the task’s completion and declaring the task as a prerequisite for future tasks in the trace.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>After calling this function, the task is no longer in the <code class="docutils literal notranslate"><span class="pre">running</span></code> phase and cannot be modified.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The task must have completed all its work before calling this function. Failure to follow the task’s lifecycle correctly may lead to undefined behavior. </p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ctx</strong> – The context of the backend, which manages the execution environment. </p></li>
+<li><p><strong>done_prereqs</strong> – A list of events that must be marked as complete before the task can be released.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Pre<span class="colon">:</span></dt>
+<dd class="field-even"><p>The task must be in the <code class="docutils literal notranslate"><span class="pre">running</span></code> phase. </p>
+</dd>
+<dt class="field-odd">Pre<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The task’s list of prerequisites (dependencies) must be empty at the time of calling.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cuda12experimental3stf11stream_taskIE14get_task_phaseEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a08cfa334f9051a878b94a551acfade67"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE5phaseE" title="cuda::experimental::stf::stream_task&lt;&gt;::phase"><span class="n"><span class="pre">phase</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_task_phase</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE14get_task_phaseEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N4cuda12experimental3stf11stream_taskIE5clearEv">
+<span class="target" id="classcuda_1_1experimental_1_1stf_1_1task_1a1a3de9160fd8d5abb43de3eb73df17af"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">clear</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE5clearEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4IEN4cuda12experimental3stf11stream_taskIEE"><code class="docutils literal notranslate"><span class="pre">cuda::experimental::stf::stream_task&lt;&gt;</span></code></a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE5phaseE"><code class="docutils literal notranslate"><span class="pre">phase</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE5phase5setupE"><code class="docutils literal notranslate"><span class="pre">setup</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE5phase7runningE"><code class="docutils literal notranslate"><span class="pre">running</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE5phase8finishedE"><code class="docutils literal notranslate"><span class="pre">finished</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE11stream_taskE19backend_ctx_untyped10exec_place"><code class="docutils literal notranslate"><span class="pre">stream_task()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE11stream_taskERK11stream_taskIE"><code class="docutils literal notranslate"><span class="pre">stream_task()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIEaSERK11stream_taskIE"><code class="docutils literal notranslate"><span class="pre">operator=()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIED0Ev"><code class="docutils literal notranslate"><span class="pre">~stream_task()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE10get_streamEv"><code class="docutils literal notranslate"><span class="pre">get_stream()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE10get_streamE6size_t"><code class="docutils literal notranslate"><span class="pre">get_stream()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE10set_streamE12cudaStream_t"><code class="docutils literal notranslate"><span class="pre">set_stream()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE5startEv"><code class="docutils literal notranslate"><span class="pre">start()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE17set_current_placeE4pos4"><code class="docutils literal notranslate"><span class="pre">set_current_place()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE19unset_current_placeEv"><code class="docutils literal notranslate"><span class="pre">unset_current_place()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE17get_current_placeEv"><code class="docutils literal notranslate"><span class="pre">get_current_place()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE13end_unclearedEv"><code class="docutils literal notranslate"><span class="pre">end_uncleared()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE3endEv"><code class="docutils literal notranslate"><span class="pre">end()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0EN4cuda12experimental3stf11stream_taskIEpmEvRR3Fun"><code class="docutils literal notranslate"><span class="pre">operator-&gt;*()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE29populate_deps_scheduling_infoEv"><code class="docutils literal notranslate"><span class="pre">populate_deps_scheduling_info()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE13schedule_taskEv"><code class="docutils literal notranslate"><span class="pre">schedule_task()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIEcvbEv"><code class="docutils literal notranslate"><span class="pre">operator</span> <span class="pre">bool()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIEeqERK4task"><code class="docutils literal notranslate"><span class="pre">operator==()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE10get_symbolEv"><code class="docutils literal notranslate"><span class="pre">get_symbol()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE10set_symbolENSt6stringE"><code class="docutils literal notranslate"><span class="pre">set_symbol()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE7add_depE16task_dep_untyped"><code class="docutils literal notranslate"><span class="pre">add_dep()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE8add_depsE23task_dep_vector_untyped"><code class="docutils literal notranslate"><span class="pre">add_deps()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4IDpEN4cuda12experimental3stf11stream_taskIE8add_depsEv16task_dep_untypedDpRR4Pack"><code class="docutils literal notranslate"><span class="pre">add_deps()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4IDpEN4cuda12experimental3stf11stream_taskIE8add_depsEvRNSt5tupleIDp4ArgsEE"><code class="docutils literal notranslate"><span class="pre">add_deps()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE13get_task_depsEv"><code class="docutils literal notranslate"><span class="pre">get_task_deps()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE2onE10exec_place"><code class="docutils literal notranslate"><span class="pre">on()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE14get_exec_placeEv"><code class="docutils literal notranslate"><span class="pre">get_exec_place()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE14get_exec_placeEv"><code class="docutils literal notranslate"><span class="pre">get_exec_place()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE14set_exec_placeERK10exec_place"><code class="docutils literal notranslate"><span class="pre">set_exec_place()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE21get_affine_data_placeEv"><code class="docutils literal notranslate"><span class="pre">get_affine_data_place()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE21set_affine_data_placeE10data_place"><code class="docutils literal notranslate"><span class="pre">set_affine_data_place()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE9grid_dimsEv"><code class="docutils literal notranslate"><span class="pre">grid_dims()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE16get_done_prereqsEv"><code class="docutils literal notranslate"><span class="pre">get_done_prereqs()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0EN4cuda12experimental3stf11stream_taskIE16merge_event_listEvRR1T"><code class="docutils literal notranslate"><span class="pre">merge_event_list()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE21find_data_instance_idERK20logical_data_untyped"><code class="docutils literal notranslate"><span class="pre">find_data_instance_id()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I00ENK4cuda12experimental3stf11stream_taskIE3getEDc6size_t"><code class="docutils literal notranslate"><span class="pre">get()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE16set_input_eventsE10event_list"><code class="docutils literal notranslate"><span class="pre">set_input_events()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE16get_input_eventsEv"><code class="docutils literal notranslate"><span class="pre">get_input_events()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE17set_ready_prereqsE10event_list"><code class="docutils literal notranslate"><span class="pre">set_ready_prereqs()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE17get_ready_prereqsEv"><code class="docutils literal notranslate"><span class="pre">get_ready_prereqs()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE13get_unique_idEv"><code class="docutils literal notranslate"><span class="pre">get_unique_id()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE14get_mapping_idEv"><code class="docutils literal notranslate"><span class="pre">get_mapping_id()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE4hashEv"><code class="docutils literal notranslate"><span class="pre">hash()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE14enable_captureEv"><code class="docutils literal notranslate"><span class="pre">enable_capture()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE18is_capture_enabledEv"><code class="docutils literal notranslate"><span class="pre">is_capture_enabled()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE7acquireER19backend_ctx_untyped"><code class="docutils literal notranslate"><span class="pre">acquire()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE7releaseER19backend_ctx_untypedR10event_list"><code class="docutils literal notranslate"><span class="pre">release()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK4cuda12experimental3stf11stream_taskIE14get_task_phaseEv"><code class="docutils literal notranslate"><span class="pre">get_task_phase()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N4cuda12experimental3stf11stream_taskIE5clearEv"><code class="docutils literal notranslate"><span class="pre">clear()</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2026, NVIDIA Corporation.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

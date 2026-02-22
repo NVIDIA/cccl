@@ -1,0 +1,1000 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>CUB API Reference &#8212; CUDA Core Compute Libraries</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+
+
+    <script src="../../_static/documentation_options.js?v=bbe6ed3a"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=5ceeb459"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'cub/api/index';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://NVIDIA.github.io/cccl/nv-versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'unstable';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+
+    <link rel="canonical" href="https://NVIDIA.github.io/cccl/cub/api/index.html" />
+    <link rel="icon" href="../../_static/favicon.png"/>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Thrust" href="../../thrust/index.html" />
+    <link rel="prev" title="cub::DeviceTransform" href="structcub_1_1DeviceTransform.html" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="unstable" />
+
+
+  </head>
+
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../../cpp.html">CUDA C++ Core Libraries</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../libcudacxx/index.html">libcu++</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/setup.html">Setup</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/requirements.html">Requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/getting.html">Getting libcu++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/setup/building_and_testing.html">Building &amp; Testing libcu++</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/standard_api.html">Standard API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/algorithms_library.html">Algorithms Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/c_library.html">C Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/concepts_library.html">Concepts Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/container_library.html">Container Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/execution_library.html">Execution Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/numerics_library.html">Numerics Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/ranges_library.html">Ranges Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/synchronization_library.html">Synchronization Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/time_library.html">Time Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/type_support.html">Type Support Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/standard_api/utility_library.html">Utility Library</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/extended_api.html">Extended API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/bit.html">Bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/execution_model.html">Execution model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/exceptions.html">Exception Handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_model.html">Memory model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/thread_groups.html">Thread Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/synchronization_primitives.html">Synchronization Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/asynchronous_operations.html">Asynchronous Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_access_properties.html">Memory access properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/functional.html">Functional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/iterators.html">Fancy Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/type_traits.html">Type traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/vector_tuple_protocol.html">Vector Tuple Protocol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/numeric.html">Numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/random.html">Random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory.html">Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/memory_resource.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/math.html">Math</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/mdspan.html">Mdspan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/warp.html">Warp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/utility.html">Utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/extended_api/work_stealing.html">Work stealing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/stream.html">Streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/event.html">Events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/algorithm.html">Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/runtime/legacy_resources.html">Legacy resources</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../libcudacxx/ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/examples.html">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/instructions.html">PTX Instructions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/ptx/pragmas.html">PTX Pragmas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../libcudacxx/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="../index.html">CUB</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../test_overview.html">CUB Tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../benchmarking.html">CUB Benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tuning.html">CUB Tunings</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../developer_overview.html">CUB Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../developer/nvtx.html">NVTX</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../releases.html">CUB Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../releases/changelog.html">CUB 2.1.0</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/thread_level.html">Thread-level Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/warp_wide.html">Warp-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/block_wide.html">Block-Wide “Collective” Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../api_docs/device_wide.html">Device-Wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">API reference</a></li>
+</ul>
+</details></li>
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../thrust/index.html">Thrust</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/developer_overview.html">Thrust Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/developer/systems.html">Thrust systems</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/releases.html">Releases</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/releases/changelog.html">Changelog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/releases/versioning.html">Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/release_process.html">Release Process</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../thrust/api.html">API documentation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/algorithms.html">Algorithms</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/containers.html">Containers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/function_objects.html">Function Objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/iterators.html">Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/memory_management.html">Memory Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/numerics.html">Numerics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/parallel_execution_policies.html">Parallel Execution Policies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/random.html">Random Number Generators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/system.html">System</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../thrust/api_docs/utility.html">Utility</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../thrust/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cudax/index.html">CUDA Experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/container.html">Containers library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/classcuda_1_1experimental_1_1uninitialized__buffer.html">cuda::experimental::uninitialized_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/memory_resource.html">Memory Resources</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1basic__any__resource.html">cuda::mr::basic_any_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1memory__pool__properties.html">cuda::memory_pool_properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1device__memory__pool.html">cuda::device_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1pinned__memory__pool.html">cuda::pinned_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1managed__memory__pool.html">cuda::managed_memory_pool</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1legacy__pinned__memory__resource.html">cuda::mr::legacy_pinned_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/classcuda_1_1mr_1_1legacy__managed__memory__resource.html">cuda::mr::legacy_managed_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../libcudacxx/api/structcuda_1_1mr_1_1shared__resource.html">cuda::mr::shared_resource</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/graph.html">Graphs library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph.html">cuda::experimental::graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__builder.html">cuda::experimental::graph_builder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__builder__ref.html">cuda::experimental::graph_builder_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1graph__node__ref.html">cuda::experimental::graph_node_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of.html">cuda::experimental::stf::graphed_interface_of</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; mdspan&lt; T, P… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; void_interface &gt;</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cudax/stf.html">CUDASTF</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/stf/custom_data_interface.html">Implementation of the <code class="docutils literal notranslate"><span class="pre">matrix</span></code> class</a></li>
+
+
+
+
+
+<li class="toctree-l4"><a class="reference internal" href="../../cudax/stf/lower_level_api.html">Lower-level API</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cudax/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/3.0_migration_guide.html">CCCL 2.x ‐ CCCL 3.0 migration guide</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/development/index.html">CCCL Development Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/macro.html">CCCL Internal Macros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/testing.html">CCCL Testing Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../cccl/contributing.html">Contributing to the CUDA Core Compute Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../cccl/contributing/code_of_conduct.html">Code of Conduct</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../cccl/license.html">License</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../python/index.html">CCCL Python Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../python/setup.html">Setup and Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/compute.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/coop.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code>: Cooperative Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../python/resources.html">Resources</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../python/api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../python/compute_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../python/coop_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.coop</span></code> API Reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../cpp.html" class="nav-link">CUDA C++ Core Libraries</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">CUB</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">CUB API Reference</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="cub-api-reference">
+<h1>CUB API Reference<a class="headerlink" href="#cub-api-reference" title="Link to this heading">#</a></h1>
+<section id="namespace-cub">
+<h2>Namespace <code class="docutils literal notranslate"><span class="pre">cub</span></code><a class="headerlink" href="#namespace-cub" title="Link to this heading">#</a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="classcub_1_1ArgIndexInputIterator.html"><span class="doc">cub::ArgIndexInputIterator</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1BlockAdjacentDifference.html"><span class="doc">cub::BlockAdjacentDifference</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1BlockDiscontinuity.html"><span class="doc">cub::BlockDiscontinuity</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1BlockExchange.html"><span class="doc">cub::BlockExchange</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1BlockHistogram.html"><span class="doc">cub::BlockHistogram</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1BlockLoad.html"><span class="doc">cub::BlockLoad</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1BlockMergeSort.html"><span class="doc">cub::BlockMergeSort</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1BlockMergeSortStrategy.html"><span class="doc">cub::BlockMergeSortStrategy</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1BlockRadixRank.html"><span class="doc">cub::BlockRadixRank</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1BlockRadixRankMatch.html"><span class="doc">cub::BlockRadixRankMatch</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1BlockRadixSort.html"><span class="doc">cub::BlockRadixSort</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1BlockReduce.html"><span class="doc">cub::BlockReduce</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1BlockRunLengthDecode.html"><span class="doc">cub::BlockRunLengthDecode</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1BlockScan.html"><span class="doc">cub::BlockScan</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1BlockShuffle.html"><span class="doc">cub::BlockShuffle</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1BlockStore.html"><span class="doc">cub::BlockStore</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1CacheModifiedInputIterator.html"><span class="doc">cub::CacheModifiedInputIterator</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1CacheModifiedOutputIterator.html"><span class="doc">cub::CacheModifiedOutputIterator</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1GridQueue.html"><span class="doc">cub::GridQueue</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1SwizzleScanOp.html"><span class="doc">cub::SwizzleScanOp</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1WarpExchange.html"><span class="doc">cub::WarpExchange</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1WarpLoad.html"><span class="doc">cub::WarpLoad</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1WarpMergeSort.html"><span class="doc">cub::WarpMergeSort</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1WarpReduce.html"><span class="doc">cub::WarpReduce</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1WarpScan.html"><span class="doc">cub::WarpScan</span></a></p></li>
+<li><p><a class="reference internal" href="classcub_1_1WarpStore.html"><span class="doc">cub::WarpStore</span></a></p></li>
+</ul>
+</section>
+<section id="structs">
+<h3>Structs<a class="headerlink" href="#structs" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="structcub_1_1AgentAdjacentDifferencePolicy.html"><span class="doc">cub::AgentAdjacentDifferencePolicy</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1AgentHistogramPolicy.html"><span class="doc">cub::AgentHistogramPolicy</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1AgentMergeSortPolicy.html"><span class="doc">cub::AgentMergeSortPolicy</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1AgentRadixSortDownsweepPolicy.html"><span class="doc">cub::AgentRadixSortDownsweepPolicy</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1AgentRadixSortExclusiveSumPolicy.html"><span class="doc">cub::AgentRadixSortExclusiveSumPolicy</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1AgentRadixSortHistogramPolicy.html"><span class="doc">cub::AgentRadixSortHistogramPolicy</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1AgentRadixSortOnesweepPolicy.html"><span class="doc">cub::AgentRadixSortOnesweepPolicy</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1AgentRadixSortUpsweepPolicy.html"><span class="doc">cub::AgentRadixSortUpsweepPolicy</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1AgentReduceByKeyPolicy.html"><span class="doc">cub::AgentReduceByKeyPolicy</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1AgentReducePolicy.html"><span class="doc">cub::AgentReducePolicy</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1AgentRlePolicy.html"><span class="doc">cub::AgentRlePolicy</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1AgentScanByKeyPolicy.html"><span class="doc">cub::AgentScanByKeyPolicy</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1AgentScanPolicy.html"><span class="doc">cub::AgentScanPolicy</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1AgentSelectIfPolicy.html"><span class="doc">cub::AgentSelectIfPolicy</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1AgentSubWarpMergeSortPolicy.html"><span class="doc">cub::AgentSubWarpMergeSortPolicy</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1AgentThreeWayPartitionPolicy.html"><span class="doc">cub::AgentThreeWayPartitionPolicy</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1AgentUniqueByKeyPolicy.html"><span class="doc">cub::AgentUniqueByKeyPolicy</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1AgentWarpReducePolicy.html"><span class="doc">cub::AgentWarpReducePolicy</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1ArgMax.html"><span class="doc">cub::ArgMax</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1ArgMin.html"><span class="doc">cub::ArgMin</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1BaseDigitExtractor.html"><span class="doc">cub::BaseDigitExtractor</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1BaseDigitExtractor_3_01KeyT_00_01true_01_4.html"><span class="doc">cub::BaseDigitExtractor&lt; KeyT, true &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1BFEDigitExtractor.html"><span class="doc">cub::BFEDigitExtractor</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1BlockLoadType.html"><span class="doc">cub::BlockLoadType</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1BlockRadixRankEmptyCallback.html"><span class="doc">cub::BlockRadixRankEmptyCallback</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1BlockRadixRankMatchEarlyCounts.html"><span class="doc">cub::BlockRadixRankMatchEarlyCounts</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1BlockRakingLayout.html"><span class="doc">cub::BlockRakingLayout</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1BlockScanRunningPrefixOp.html"><span class="doc">cub::BlockScanRunningPrefixOp</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1CachingDeviceAllocator.html"><span class="doc">cub::CachingDeviceAllocator</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1CastOp.html"><span class="doc">cub::CastOp</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1ChainedPolicy.html"><span class="doc">cub::ChainedPolicy</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DeviceAdjacentDifference.html"><span class="doc">cub::DeviceAdjacentDifference</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DeviceCopy.html"><span class="doc">cub::DeviceCopy</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DeviceFind.html"><span class="doc">cub::DeviceFind</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DeviceFor.html"><span class="doc">cub::DeviceFor</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DeviceHistogram.html"><span class="doc">cub::DeviceHistogram</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DeviceMemcpy.html"><span class="doc">cub::DeviceMemcpy</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DeviceMerge.html"><span class="doc">cub::DeviceMerge</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DeviceMergeSort.html"><span class="doc">cub::DeviceMergeSort</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DevicePartition.html"><span class="doc">cub::DevicePartition</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DeviceRadixSort.html"><span class="doc">cub::DeviceRadixSort</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DeviceReduce.html"><span class="doc">cub::DeviceReduce</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DeviceRleDispatch.html"><span class="doc">cub::DeviceRleDispatch</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DeviceRunLengthEncode.html"><span class="doc">cub::DeviceRunLengthEncode</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DeviceScan.html"><span class="doc">cub::DeviceScan</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DeviceSegmentedRadixSort.html"><span class="doc">cub::DeviceSegmentedRadixSort</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DeviceSegmentedReduce.html"><span class="doc">cub::DeviceSegmentedReduce</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DeviceSegmentedScan.html"><span class="doc">cub::DeviceSegmentedScan</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DeviceSegmentedSort.html"><span class="doc">cub::DeviceSegmentedSort</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DeviceSelect.html"><span class="doc">cub::DeviceSelect</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DeviceTopK.html"><span class="doc">cub::DeviceTopK</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DeviceTransform.html"><span class="doc">cub::DeviceTransform</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DispatchAdjacentDifference.html"><span class="doc">cub::DispatchAdjacentDifference</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DispatchHistogram.html"><span class="doc">cub::DispatchHistogram</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DispatchMergeSort.html"><span class="doc">cub::DispatchMergeSort</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DispatchRadixSort.html"><span class="doc">cub::DispatchRadixSort</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DispatchReduce.html"><span class="doc">cub::DispatchReduce</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DispatchReduceByKey.html"><span class="doc">cub::DispatchReduceByKey</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DispatchScan.html"><span class="doc">cub::DispatchScan</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DispatchScanByKey.html"><span class="doc">cub::DispatchScanByKey</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DispatchSegmentedRadixSort.html"><span class="doc">cub::DispatchSegmentedRadixSort</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DispatchSegmentedReduce.html"><span class="doc">cub::DispatchSegmentedReduce</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DispatchSegmentedSort.html"><span class="doc">cub::DispatchSegmentedSort</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DispatchSelectIf.html"><span class="doc">cub::DispatchSelectIf</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DispatchThreeWayPartitionIf.html"><span class="doc">cub::DispatchThreeWayPartitionIf</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1DispatchUniqueByKey.html"><span class="doc">cub::DispatchUniqueByKey</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1GridEvenShare.html"><span class="doc">cub::GridEvenShare</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1InequalityWrapper.html"><span class="doc">cub::InequalityWrapper</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1PtxVersionCacheTag.html"><span class="doc">cub::PtxVersionCacheTag</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1RadixSortTwiddle.html"><span class="doc">cub::RadixSortTwiddle</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1ReduceByKeyOp.html"><span class="doc">cub::ReduceByKeyOp</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1ReduceByKeyScanTileState.html"><span class="doc">cub::ReduceByKeyScanTileState</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1ReduceByKeyScanTileState_3_01ValueT_00_01KeyT_00_01false_01_4.html"><span class="doc">cub::ReduceByKeyScanTileState&lt; ValueT, KeyT, false &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1ReduceBySegmentOp.html"><span class="doc">cub::ReduceBySegmentOp</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1ScanTileState.html"><span class="doc">cub::ScanTileState</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1ScanTileState_3_01T_00_01false_01_4.html"><span class="doc">cub::ScanTileState&lt; T, false &gt;</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1ShiftDigitExtractor.html"><span class="doc">cub::ShiftDigitExtractor</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1SmVersionCacheTag.html"><span class="doc">cub::SmVersionCacheTag</span></a></p></li>
+<li><p><a class="reference internal" href="structcub_1_1TilePrefixCallbackOp.html"><span class="doc">cub::TilePrefixCallbackOp</span></a></p></li>
+</ul>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="namespacecub_1a1d58d7c9bdbebe3c8ce82f47c881c418.html"><span class="doc">BFE</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a85689ccce38dd4ad9213842690d9fbf9.html"><span class="doc">CurrentDevice</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a5c28713a19b9cecbe5491a11ba26b100.html"><span class="doc">Debug</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1aa96d0281d6dff12b954587c912da3f57.html"><span class="doc">DeviceCount</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1adee0a9b46d5bc13981fda7697bf6e071.html"><span class="doc">DeviceCountCachedValue</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1aafc45f51af4861d80b27569b7df319a4.html"><span class="doc">DeviceCountUncached</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a52c685e4755c10f3ec27da259f2f0220.html"><span class="doc">GetPerDeviceAttributeCache</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1aed3ef1ea20cb1223becaf5321ed09332.html"><span class="doc">LoadDirectBlocked</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a7176fcab5c0799c88f17efd62971588e.html"><span class="doc">LoadDirectBlockedVectorized</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a064eccad9bc8fdb3c5db25e0a4d19da2.html"><span class="doc">LoadDirectStriped</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1aeaa261355c6637a70bfc4067ea57bb42.html"><span class="doc">LoadDirectWarpStriped</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a8dac1b15322b4ce6b75df7e1ef1a98ce.html"><span class="doc">LowerBound</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1ad69972e79ff49330e9a69ef2cc916ea3.html"><span class="doc">MatchAny</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a3855abd619d80468337b76cff16f4bc4.html"><span class="doc">MaxPotentialDynamicSmemBytes</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a8b6177c635dcc16dd321af6da3e538db.html"><span class="doc">MaxSmOccupancy</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a1b6e2aaf857cfd72861cf2499bf9acb3.html"><span class="doc">MergePath</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1ae5dc63782e74ff9978bec0ef1d12f2f8.html"><span class="doc">MergePathSearch</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a19c9696ebd3b66c361dd9abcafae2f3a.html"><span class="doc">MidPoint</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a92146627fb9025cf631ce6894da54068.html"><span class="doc">Nominal4BItemsToItems</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a91f7ed12997a1c479e6c40039816e94c.html"><span class="doc">Nominal4BItemsToItemsCombined</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a0152e6fc2c5fb16bcc72078fc97dc4c2.html"><span class="doc">Nominal8BItemsToItems</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1adbc412e91b5a1ac2cef94a77bc4f776d.html"><span class="doc">PtxVersion</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a9c18197e2ddb2106f71ab0735abc60e5.html"><span class="doc">PtxVersionUncached</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a767f6bb0f696ac8264755e2c5549ba52.html"><span class="doc">RowMajorTid</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1aed5ce3db2c0ebfafd33d5ef6a1eb71a8.html"><span class="doc">SerialMerge</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a1d7023c04c3d5f501a83dd2992c550bf.html"><span class="doc">ShuffleDown</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a896be0f0cb8ed423fb9e413143cf8e91.html"><span class="doc">ShuffleIndex</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a626277ec32b01a9d7a48f8ea945cd4d7.html"><span class="doc">ShuffleUp</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a75d6eade310f187ff42915ae82e963d0.html"><span class="doc">SmVersion</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1ad79fa34a6d206203d5a611b450c4225a.html"><span class="doc">SmVersionUncached</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a7fbefdee9a2b826e71ea84be34d81c95.html"><span class="doc">StableOddEvenSort</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a7875fce2f13b4feabfeb73fc86209420.html"><span class="doc">StoreDirectBlocked</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a161e3b7115aa10ae54875a24b19586a0.html"><span class="doc">StoreDirectBlockedVectorized</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1ac18cc1cef16c17c1eb740de10b7ccefd.html"><span class="doc">StoreDirectStriped</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a03d07a1e0e455128713337bc38992ec6.html"><span class="doc">StoreDirectWarpStriped</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1abd7ca1c640b97afa0183c61e7970b316.html"><span class="doc">SyncStream</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a1b975318a8f3f7a19769fa51121bb288.html"><span class="doc">ThreadExit</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1af987f4650f9ab899588513632a7a335c.html"><span class="doc">ThreadLoad</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a5bc54df3b7da4260d8c1d8579f63f0c0.html"><span class="doc">ThreadReduce</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a553633b74da5b2b77992aa60c1f278f3.html"><span class="doc">ThreadStore</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a9ce53dad7978b7158b23949f6cc959ee.html"><span class="doc">UpperBound</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1af9131ab69bf1e693ca5dfdb7b98178a9.html"><span class="doc">WarpMask</span></a></p></li>
+</ul>
+</section>
+<section id="type-definitions">
+<h3>Type Definitions<a class="headerlink" href="#type-definitions" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="namespacecub_1ae27130dceefcdc47f0d92a1a34d89c4d.html"><span class="doc">DispatchTransformReduce</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a70b7d70856624fb3e76bb7775deca303.html"><span class="doc">TexObjInputIterator</span></a></p></li>
+</ul>
+</section>
+<section id="enumerations">
+<h3>Enumerations<a class="headerlink" href="#enumerations" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="namespacecub_1a845ca81ef9b346ef7429a35d4fdc80d2.html"><span class="doc">BlockHistogramAlgorithm</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a4026d26205ac783e686edc635e92ea3e.html"><span class="doc">BlockHistogramMemoryPreference</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a9d7e37497fdd99864c57adecda710401.html"><span class="doc">BlockLoadAlgorithm</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1add0251c713859b8974806079e498d10a.html"><span class="doc">BlockReduceAlgorithm</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1abec44bba36037c547e7e84906d0d23ab.html"><span class="doc">BlockScanAlgorithm</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a839b145451e9eec3d44172e3c3619700.html"><span class="doc">BlockStoreAlgorithm</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1ac5f2805ad56fdd0f2860a5421d76d9b9.html"><span class="doc">CacheLoadModifier</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a648d25a92a50ca41cf73e93a35f21f37.html"><span class="doc">CacheStoreModifier</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1af09e9a2e82556cb3f7cd6afbf8c3df9a.html"><span class="doc">CopyAlg</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a5b5b7f65a86c474c881882f0c50524c4.html"><span class="doc">ForceInclusive</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1ab0872c68bb2f2deba92ae650a9aa3e97.html"><span class="doc">GridMappingStrategy</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a9d9f7888422ba494507b798eead3ab71.html"><span class="doc">MayAlias</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a277fe03e36404e7290a94a13e382b369.html"><span class="doc">MemoryOrder</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a2c368203492792b87069aa553cddcc1f.html"><span class="doc">RadixRankAlgorithm</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a063f8bddc3979e1cfeace53339434122.html"><span class="doc">RadixSortStoreAlgorithm</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1abb27bd14e08948ee1505e33d2f5dbc91.html"><span class="doc">ReadOption</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1ad9cb0a0fd604c5e0a58016174d767b56.html"><span class="doc">ScanTileStatus</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a4181c84c1a10177951320eaa930fb04e.html"><span class="doc">SelectImpl</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1aea28b743fef88186fe3f6674cdce07ff.html"><span class="doc">SortOrder</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a7cd3a577f1a3742f265863144cd69a04.html"><span class="doc">WarpExchangeAlgorithm</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1a4eeeb4ce5215aa8f6f394db9b3ff0de1.html"><span class="doc">WarpLoadAlgorithm</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1aba00cdd73e8ef7f441861282dbc52f1c.html"><span class="doc">WarpMatchAlgorithm</span></a></p></li>
+<li><p><a class="reference internal" href="namespacecub_1ab9f09b230f6c6566d12470872db88048.html"><span class="doc">WarpStoreAlgorithm</span></a></p></li>
+</ul>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="structcub_1_1DeviceTransform.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">cub::DeviceTransform</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../../thrust/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Thrust</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#namespace-cub">Namespace <code class="docutils literal notranslate"><span class="pre">cub</span></code></a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#structs">Structs</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#type-definitions">Type Definitions</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#enumerations">Enumerations</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2026, NVIDIA Corporation.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
