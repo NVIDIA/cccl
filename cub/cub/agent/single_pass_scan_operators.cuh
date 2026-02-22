@@ -558,7 +558,7 @@ template <class KeyT, class ValueT>
 using default_reduce_by_key_delay_constructor_t =
   // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
   ::cuda::std::conditional_t<(is_primitive<ValueT>::value || ::cuda::std::is_trivially_copyable_v<ValueT>)
-                               && (sizeof(ValueT) + sizeof(KeyT) < largest_atomic_word_size),
+                               && (sizeof(ValueT) + sizeof(KeyT) < largest_atomic_message_size),
                              reduce_by_key_delay_constructor_t<350, 450>,
                              default_delay_constructor_t<KeyValuePair<KeyT, ValueT>>>;
 
@@ -657,7 +657,7 @@ template <typename T,
           // TODO(bgruber): remove the check for is_primitive<T> in CCCL 4.0
           bool SingleWord = detail::is_primitive<T>::value
                          || (::cuda::std::is_trivially_copyable_v<T>
-                             && sizeof(T) < detail::largest_atomic_word_size
+                             && sizeof(T) < detail::largest_atomic_message_size
                              // TODO(bgruber): a power of two size is not strictly necessary, but the implementation
                              // cannot handle it currently. For example, we could support status word + int3.
                              && ::cuda::is_power_of_two(sizeof(T)))>
@@ -682,7 +682,7 @@ struct ScanTileState<T, true>
 
   // Unit word type
   using TxnWord = ::cuda::std::_If<sizeof(T) == 8, ulonglong2, ::cuda::std::_If<sizeof(T) == 4, uint2, unsigned int>>;
-  static_assert(sizeof(TxnWord) <= detail::largest_atomic_word_size);
+  static_assert(sizeof(TxnWord) <= detail::largest_atomic_message_size);
 
   // Device word type
   struct TileDescriptor
@@ -690,7 +690,7 @@ struct ScanTileState<T, true>
     StatusWord status;
     T value;
   };
-  static_assert(sizeof(TileDescriptor) <= detail::largest_atomic_word_size);
+  static_assert(sizeof(TileDescriptor) <= detail::largest_atomic_message_size);
 
   static constexpr int TILE_STATUS_PADDING = detail::warp_threads;
 
@@ -1035,7 +1035,7 @@ template <typename ValueT,
           typename KeyT,
           // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
           bool SingleWord = (detail::is_primitive<ValueT>::value || ::cuda::std::is_trivially_copyable_v<ValueT>)
-                         && (sizeof(ValueT) + sizeof(KeyT) < detail::largest_atomic_word_size)>
+                         && (sizeof(ValueT) + sizeof(KeyT) < detail::largest_atomic_message_size)>
 struct ReduceByKeyScanTileState;
 
 /**
