@@ -31,7 +31,7 @@ using namespace cub;
 // Globals, constants and aliases
 //---------------------------------------------------------------------
 
-bool g_verbose = false; // Whether to display input/output to console
+bool                   g_verbose = false; // Whether to display input/output to console
 CachingDeviceAllocator g_allocator(true); // Caching allocator for device memory
 
 /// Selection functor type
@@ -183,7 +183,7 @@ int main(int argc, char** argv)
   CubDebugExit(g_allocator.DeviceAllocate((void**) &d_num_selected_out, sizeof(int)));
 
   // Allocate temporary storage
-  void* d_temp_storage      = nullptr;
+  void*  d_temp_storage     = nullptr;
   size_t temp_storage_bytes = 0;
   CubDebugExit(
     DeviceSelect::If(d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, select_op));

@@ -53,8 +53,8 @@ template <typename Key,
           int BLOCK_THREADS,
           int ITEMS_PER_THREAD>
 __launch_bounds__(BLOCK_THREADS) __global__
-  void BlockSortKernel(Key* d_in, // Tile of input
-                       Key* d_out, // Tile of output
+  void BlockSortKernel(Key*     d_in, // Tile of input
+                       Key*     d_out, // Tile of output
                        clock_t* d_elapsed) // Elapsed cycle count of block scan
 {
   static constexpr int TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD;
@@ -69,7 +69,7 @@ __launch_bounds__(BLOCK_THREADS) __global__
   // Shared memory
   __shared__ union TempStorage
   {
-    typename BlockLoadT::TempStorage load;
+    typename BlockLoadT::TempStorage      load;
     typename BlockRadixSortT::TempStorage sort;
   } temp_storage;
 
@@ -140,16 +140,16 @@ void Test()
   constexpr int TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   // Allocate host arrays
-  Key* h_in          = new Key[TILE_SIZE * g_grid_size];
-  Key* h_reference   = new Key[TILE_SIZE * g_grid_size];
-  clock_t* h_elapsed = new clock_t[g_grid_size];
+  Key*     h_in        = new Key[TILE_SIZE * g_grid_size];
+  Key*     h_reference = new Key[TILE_SIZE * g_grid_size];
+  clock_t* h_elapsed   = new clock_t[g_grid_size];
 
   // Initialize problem and reference output on host
   Initialize(h_in, h_reference, TILE_SIZE * g_grid_size, TILE_SIZE);
 
   // Initialize device arrays
-  Key* d_in          = nullptr;
-  Key* d_out         = nullptr;
+  Key*     d_in      = nullptr;
+  Key*     d_out     = nullptr;
   clock_t* d_elapsed = nullptr;
   CubDebugExit(cudaMalloc((void**) &d_in, sizeof(Key) * TILE_SIZE * g_grid_size));
   CubDebugExit(cudaMalloc((void**) &d_out, sizeof(Key) * TILE_SIZE * g_grid_size));
@@ -198,8 +198,8 @@ void Test()
   fflush(stdout);
 
   // Run this several times and average the performance results
-  GpuTimer timer;
-  float elapsed_millis              = 0.0;
+  GpuTimer           timer;
+  float              elapsed_millis = 0.0;
   unsigned long long elapsed_clocks = 0;
 
   for (int i = 0; i < g_timing_iterations; ++i)
@@ -224,8 +224,8 @@ void Test()
   CubDebugExit(cudaDeviceSynchronize());
 
   // Display timing results
-  float avg_millis           = elapsed_millis / g_timing_iterations;
-  float avg_items_per_sec    = float(TILE_SIZE * g_grid_size) / avg_millis / 1000.0f;
+  float  avg_millis          = elapsed_millis / g_timing_iterations;
+  float  avg_items_per_sec   = float(TILE_SIZE * g_grid_size) / avg_millis / 1000.0f;
   double avg_clocks          = double(elapsed_clocks) / g_timing_iterations / g_grid_size;
   double avg_clocks_per_item = avg_clocks / TILE_SIZE;
 

@@ -54,7 +54,7 @@ __global__ void BlockReduceKernel(int* d_in, // Tile of input
   union ShmemLayout
   {
     TempStorageT reduce;
-    int aggregate;
+    int          aggregate;
   };
 
   // shared memory byte-array
@@ -98,7 +98,7 @@ int Initialize(int* h_in, int num_items)
 
   for (int i = 0; i < num_items; ++i)
   {
-    h_in[i] = i % 17;
+    h_in[i]    = i % 17;
     inclusive += h_in[i];
   }
 

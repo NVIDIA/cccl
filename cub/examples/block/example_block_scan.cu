@@ -45,11 +45,11 @@ int g_grid_size = 1;
 /**
  * Simple kernel for performing a block-wide exclusive prefix sum over integers
  */
-template <int BLOCK_THREADS,
-          int ITEMS_PER_THREAD,
+template <int                BLOCK_THREADS,
+          int                ITEMS_PER_THREAD,
           BlockScanAlgorithm ALGORITHM>
-__global__ void BlockPrefixSumKernel(int* d_in, // Tile of input
-                                     int* d_out, // Tile of output
+__global__ void BlockPrefixSumKernel(int*     d_in, // Tile of input
+                                     int*     d_out, // Tile of output
                                      clock_t* d_elapsed) // Elapsed cycle count of block scan
 {
   // Specialize BlockLoad type for our thread block (uses warp-striped loads for coalescing, then transposes in shared
@@ -66,9 +66,9 @@ __global__ void BlockPrefixSumKernel(int* d_in, // Tile of input
   // Shared memory
   __shared__ union TempStorage
   {
-    typename BlockLoadT::TempStorage load;
+    typename BlockLoadT::TempStorage  load;
     typename BlockStoreT::TempStorage store;
-    typename BlockScanT::TempStorage scan;
+    typename BlockScanT::TempStorage  scan;
   } temp_storage;
 
   // Per-thread tile data
@@ -120,8 +120,8 @@ int Initialize(int* h_in, int* h_reference, int num_items)
   {
     h_in[i] = i % 17;
 
-    h_reference[i] = inclusive;
-    inclusive += h_in[i];
+    h_reference[i]  = inclusive;
+    inclusive      += h_in[i];
   }
 
   return inclusive;
@@ -144,8 +144,8 @@ void Test()
   int h_aggregate = Initialize(h_in, h_reference, TILE_SIZE);
 
   // Initialize device arrays
-  int* d_in          = nullptr;
-  int* d_out         = nullptr;
+  int*     d_in      = nullptr;
+  int*     d_out     = nullptr;
   clock_t* d_elapsed = nullptr;
   cudaMalloc((void**) &d_in, sizeof(int) * TILE_SIZE);
   cudaMalloc((void**) &d_out, sizeof(int) * (TILE_SIZE + 1));
@@ -202,8 +202,8 @@ void Test()
 
   // Run this several times and average the performance results
   GpuTimer timer;
-  float elapsed_millis   = 0.0;
-  clock_t elapsed_clocks = 0;
+  float    elapsed_millis = 0.0;
+  clock_t  elapsed_clocks = 0;
 
   for (int i = 0; i < g_timing_iterations; ++i)
   {
@@ -356,8 +356,8 @@ struct BlockPrefixCallbackOp
   // Thread-0 is responsible for returning a value for seeding the block-wide scan.
   __device__ int operator()(int block_aggregate)
   {
-    int old_prefix = running_total;
-    running_total += block_aggregate;
+    int old_prefix  = running_total;
+    running_total  += block_aggregate;
     return old_prefix;
   }
 };
@@ -374,8 +374,8 @@ __global__ void ExclusiveSumPrefixCallbackKernel(int* d_data, int num_items)
   // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
   __shared__ union
   {
-    typename BlockLoadT::TempStorage load;
-    typename BlockScanT::TempStorage scan;
+    typename BlockLoadT::TempStorage  load;
+    typename BlockScanT::TempStorage  scan;
     typename BlockStoreT::TempStorage store;
   } temp_storage;
 
@@ -432,8 +432,8 @@ __global__ void InclusiveSumPrefixCallbackKernel(int* d_data, int num_items)
   // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
   __shared__ union
   {
-    typename BlockLoadT::TempStorage load;
-    typename BlockScanT::TempStorage scan;
+    typename BlockLoadT::TempStorage  load;
+    typename BlockScanT::TempStorage  scan;
     typename BlockStoreT::TempStorage store;
   } temp_storage;
 
@@ -589,8 +589,8 @@ __global__ void ExclusiveScanPrefixCallbackKernel(int* d_data, int num_items)
   // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
   __shared__ union
   {
-    typename BlockLoadT::TempStorage load;
-    typename BlockScanT::TempStorage scan;
+    typename BlockLoadT::TempStorage  load;
+    typename BlockScanT::TempStorage  scan;
     typename BlockStoreT::TempStorage store;
   } temp_storage;
 
@@ -730,8 +730,8 @@ __global__ void InclusiveScanPrefixCallbackKernel(int* d_data, int num_items)
   // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
   __shared__ union
   {
-    typename BlockLoadT::TempStorage load;
-    typename BlockScanT::TempStorage scan;
+    typename BlockLoadT::TempStorage  load;
+    typename BlockScanT::TempStorage  scan;
     typename BlockStoreT::TempStorage store;
   } temp_storage;
 
@@ -814,10 +814,10 @@ void TestDocumentationExamples()
   printf("Testing documentation example kernels...\n");
 
   const int num_items = 128 * 4; // 512 items for array examples, 128 for single-item examples
-  int* d_data;
-  int* h_data = new int[num_items];
-  int running_max;
-  bool all_passed = true;
+  int*      d_data;
+  int*      h_data = new int[num_items];
+  int       running_max;
+  bool      all_passed = true;
 
   cudaMalloc(&d_data, num_items * sizeof(int));
 

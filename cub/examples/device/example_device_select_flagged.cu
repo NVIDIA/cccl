@@ -31,7 +31,7 @@ using namespace cub;
 // Globals, constants and aliases
 //---------------------------------------------------------------------
 
-bool g_verbose = false; // Whether to display input/output to console
+bool                   g_verbose = false; // Whether to display input/output to console
 CachingDeviceAllocator g_allocator(true); // Caching allocator for device memory
 
 //---------------------------------------------------------------------
@@ -134,9 +134,9 @@ int main(int argc, char** argv)
   CubDebugExit(args.DeviceInit());
 
   // Allocate host arrays
-  int* h_in              = new int[num_items];
-  int* h_reference       = new int[num_items];
-  unsigned char* h_flags = new unsigned char[num_items];
+  int*           h_in        = new int[num_items];
+  int*           h_reference = new int[num_items];
+  unsigned char* h_flags     = new unsigned char[num_items];
 
   // Initialize problem and solution
   Initialize(h_in, h_flags, num_items, max_segment);
@@ -150,7 +150,7 @@ int main(int argc, char** argv)
   fflush(stdout);
 
   // Allocate problem device arrays
-  int* d_in              = nullptr;
+  int*           d_in    = nullptr;
   unsigned char* d_flags = nullptr;
 
   CubDebugExit(g_allocator.DeviceAllocate((void**) &d_in, sizeof(int) * num_items));
@@ -167,7 +167,7 @@ int main(int argc, char** argv)
   CubDebugExit(g_allocator.DeviceAllocate((void**) &d_num_selected_out, sizeof(int)));
 
   // Allocate temporary storage
-  void* d_temp_storage      = nullptr;
+  void*  d_temp_storage     = nullptr;
   size_t temp_storage_bytes = 0;
   CubDebugExit(
     DeviceSelect::Flagged(d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items));

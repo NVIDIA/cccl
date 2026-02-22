@@ -31,7 +31,7 @@ using namespace cub;
 // Globals, constants and aliases
 //---------------------------------------------------------------------
 
-bool g_verbose = false; // Whether to display input/output to console
+bool                   g_verbose = false; // Whether to display input/output to console
 CachingDeviceAllocator g_allocator(true); // Caching allocator for device memory
 
 //---------------------------------------------------------------------
@@ -44,7 +44,7 @@ CachingDeviceAllocator g_allocator(true); // Caching allocator for device memory
 template <typename Key, typename Value>
 struct Pair
 {
-  Key key;
+  Key   key;
   Value value;
 
   bool operator<(const Pair& b) const
@@ -196,10 +196,10 @@ int main(int argc, char** argv)
 
   // Allocate host arrays (problem and reference solution)
 
-  Key* h_keys              = new Key[num_items];
-  Value* h_values          = new Value[num_items];
-  int* h_offsets_reference = new int[num_items];
-  int* h_lengths_reference = new int[num_items];
+  Key*   h_keys              = new Key[num_items];
+  Value* h_values            = new Value[num_items];
+  int*   h_offsets_reference = new int[num_items];
+  int*   h_lengths_reference = new int[num_items];
 
   // Initialize key-value pairs and compute reference solution (sort them, and identify non-trivial runs)
   printf("Computing reference solution on CPU for %d items (max key %d)\n", num_items, max_key);
@@ -214,12 +214,12 @@ int main(int argc, char** argv)
   // Repeat for performance timing
   GpuTimer gpu_timer;
   GpuTimer gpu_rle_timer;
-  float elapsed_millis     = 0.0;
-  float elapsed_rle_millis = 0.0;
+  float    elapsed_millis     = 0.0;
+  float    elapsed_rle_millis = 0.0;
   for (int i = 0; i <= timing_iterations; ++i)
   {
     // Allocate and initialize device arrays for sorting
-    DoubleBuffer<Key> d_keys;
+    DoubleBuffer<Key>   d_keys;
     DoubleBuffer<Value> d_values;
     CubDebugExit(g_allocator.DeviceAllocate((void**) &d_keys.d_buffers[0], sizeof(Key) * num_items));
     CubDebugExit(g_allocator.DeviceAllocate((void**) &d_keys.d_buffers[1], sizeof(Key) * num_items));
@@ -236,7 +236,7 @@ int main(int argc, char** argv)
 
     // Allocate temporary storage for sorting
     size_t temp_storage_bytes = 0;
-    void* d_temp_storage      = nullptr;
+    void*  d_temp_storage     = nullptr;
     CubDebugExit(DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items));
     CubDebugExit(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
 
@@ -324,7 +324,7 @@ int main(int argc, char** argv)
     }
     else
     {
-      elapsed_millis += gpu_timer.ElapsedMillis();
+      elapsed_millis     += gpu_timer.ElapsedMillis();
       elapsed_rle_millis += gpu_rle_timer.ElapsedMillis();
     }
 

@@ -30,7 +30,7 @@ using namespace cub;
 // Globals, constants and aliases
 //---------------------------------------------------------------------
 
-bool g_verbose = false; // Whether to display input/output to console
+bool                   g_verbose = false; // Whether to display input/output to console
 CachingDeviceAllocator g_allocator(true); // Caching allocator for device memory
 
 //---------------------------------------------------------------------
@@ -44,7 +44,7 @@ CachingDeviceAllocator g_allocator(true); // Caching allocator for device memory
 struct Pair
 {
   float key;
-  int value;
+  int   value;
 
   bool operator<(const Pair& b) const
   {
@@ -127,17 +127,17 @@ int main(int argc, char** argv)
   fflush(stdout);
 
   // Allocate host arrays
-  float* h_keys           = new float[num_items];
-  float* h_reference_keys = new float[num_items];
-  int* h_values           = new int[num_items];
-  int* h_reference_values = new int[num_items];
+  float* h_keys             = new float[num_items];
+  float* h_reference_keys   = new float[num_items];
+  int*   h_values           = new int[num_items];
+  int*   h_reference_values = new int[num_items];
 
   // Initialize problem and solution on host
   Initialize(h_keys, h_values, h_reference_keys, h_reference_values, num_items);
 
   // Allocate device arrays
   DoubleBuffer<float> d_keys;
-  DoubleBuffer<int> d_values;
+  DoubleBuffer<int>   d_values;
   CubDebugExit(g_allocator.DeviceAllocate((void**) &d_keys.d_buffers[0], sizeof(float) * num_items));
   CubDebugExit(g_allocator.DeviceAllocate((void**) &d_keys.d_buffers[1], sizeof(float) * num_items));
   CubDebugExit(g_allocator.DeviceAllocate((void**) &d_values.d_buffers[0], sizeof(int) * num_items));
@@ -145,7 +145,7 @@ int main(int argc, char** argv)
 
   // Allocate temporary storage
   size_t temp_storage_bytes = 0;
-  void* d_temp_storage      = nullptr;
+  void*  d_temp_storage     = nullptr;
 
   CubDebugExit(DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items));
   CubDebugExit(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
