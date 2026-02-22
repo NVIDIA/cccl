@@ -1586,13 +1586,6 @@ class CoopNode:
             param_dtypes.append(dtype_fn() if callable(dtype_fn) else None)
         debug_print(f"param_dtypes: {param_dtypes}")
 
-        # if len(parameters) != len(self.runtime_arg_types):
-        #    import debugpy; debugpy.breakpoint()
-        #    raise RuntimeError(
-        #        f"Expected {len(self.runtime_arg_types)} parameters, "
-        #        f"but got {len(parameters)} for {self!r}."
-        #    )
-
         sig = Signature(
             return_type,
             args=runtime_arg_types,
