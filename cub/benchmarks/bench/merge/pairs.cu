@@ -21,7 +21,7 @@
 #if !TUNE_BASE
 struct bench_policy_selector
 {
-  constexpr auto operator()(::cuda::arch_id /*arch*/) const -> cub::detail::merge::merge_policy
+  _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> cub::detail::merge::merge_policy
   {
     return cub::detail::merge::merge_policy{
       TUNE_THREADS_PER_BLOCK,
