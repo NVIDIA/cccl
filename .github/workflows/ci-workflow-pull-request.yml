@@ -42,6 +42,8 @@ jobs:
       pr_number: ${{ steps.export-pr-info.outputs.pr_number }}
       workflow: ${{ steps.build-workflow.outputs.workflow }}
       matrix_enabled: ${{ steps.export-flags.outputs.matrix_enabled }}
+      bench_enabled: ${{ steps.build-bench-matrix.outputs.bench_enabled }}
+      bench_matrix: ${{ steps.build-bench-matrix.outputs.bench_matrix }}
       vdc_enabled: ${{ steps.export-flags.outputs.vdc_enabled }}
       docs_enabled: ${{ steps.export-flags.outputs.docs_enabled }}
       rapids_enabled: ${{ steps.export-flags.outputs.rapids_enabled }}
@@ -52,14 +54,13 @@ jobs:
       - name: Export workflow flags
         id: export-flags
         env:
-          skip_tpt: ${{ contains(github.event.head_commit.message, '[skip-tpt]') || contains(github.event.head_commit.message, '[skip-third-party-testing]') }}
-          skip_rapids: ${{ contains(github.event.head_commit.message, '[skip-rapids]') }}
+          skip_tpt: ${{ contains(github.event.head_commit.message, '[bench-only]') || contains(github.event.head_commit.message, '[skip-tpt]') || contains(github.event.head_commit.message, '[skip-third-party-testing]') }}
         run: |
           output() { echo "$1=$2" | tee -a "${GITHUB_OUTPUT}"; }
 
-          output matrix_enabled  "${{ !contains(github.event.head_commit.message, '[skip-matrix]') }}"
-          output vdc_enabled     "${{ !contains(github.event.head_commit.message, '[skip-vdc]') }}"
-          output docs_enabled    "${{ !contains(github.event.head_commit.message, '[skip-docs]') }}"
+          output matrix_enabled  "${{ !contains(github.event.head_commit.message, '[bench-only]') && !contains(github.event.head_commit.message, '[skip-matrix]') }}"
+          output vdc_enabled     "${{ !contains(github.event.head_commit.message, '[bench-only]') && !contains(github.event.head_commit.message, '[skip-vdc]') }}"
+          output docs_enabled    "${{ !contains(github.event.head_commit.message, '[bench-only]') && !contains(github.event.head_commit.message, '[skip-docs]') }}"
           output rapids_enabled  "${{ !contains(github.event.head_commit.message, '[skip-rapids]')  && !fromJSON(env.skip_tpt) }}"
           output matx_enabled    "${{ !contains(github.event.head_commit.message, '[skip-matx]')    && !fromJSON(env.skip_tpt) }}"
           output pytorch_enabled "${{ !contains(github.event.head_commit.message, '[skip-pytorch]') && !fromJSON(env.skip_tpt) }}"
@@ -75,6 +76,34 @@ jobs:
         run: |
           echo "base_sha=${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.sha }}" | tee -a "${GITHUB_OUTPUT}"
           echo "pr_number=${{ fromJSON(steps.get-pr-info.outputs.pr-info).number }}" | tee -a "${GITHUB_OUTPUT}"
+      - name: Build CUB benchmark dispatch matrix
+        id: build-bench-matrix
+        env:
+          BASE_SHA: ${{ steps.export-pr-info.outputs.base_sha }}
+        run: |
+          { # Defaults:
+            echo "bench_enabled=false"
+            echo 'bench_matrix={"include":[]}'
+          } >> "${GITHUB_OUTPUT}"
+
+          # Figure out the merge base to check for bench.yaml changes, not for benchmark comparison.
+          # The base ref/sha for benchmarking is defined in ci/bench.yaml.
+          git fetch origin --unshallow -q || true
+          git fetch origin "${BASE_SHA}" -q
+          merge_base_sha="$(git merge-base "${GITHUB_SHA}" "${BASE_SHA}")"
+
+          bench_matrix_dirt="$(git diff --name-only "${merge_base_sha}" "${GITHUB_SHA}" -- "ci/bench.yaml")"
+          if [[ -z "${bench_matrix_dirt}" ]]; then
+            echo "ci/bench.yaml unchanged; skipping CUB benchmark dispatch matrix."
+            exit 0
+          fi
+
+          bench_matrix_json="$(./ci/bench/parse_bench_matrix.sh "ci/bench.yaml")"
+
+          {
+            echo "bench_enabled=true"
+            echo "bench_matrix=${bench_matrix_json}"
+          } >> "${GITHUB_OUTPUT}"
       - name: Detect .branch_notes changes
         id: branch-notes-dirt
         env:
@@ -374,6 +403,31 @@ jobs:
           print('All CPU-only import tests passed!')
           "
 
+  dispatch-cub-bench:
+    name: CUB Bench Compare (${{ matrix.gpu }})
+    if: >-
+      ${{
+        needs.build-workflow.outputs.bench_enabled == 'true' &&
+        toJSON(fromJSON(needs.build-workflow.outputs.bench_matrix).include) != '[]'
+      }}
+    needs: build-workflow
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.build-workflow.outputs.bench_matrix) }}
+    uses: ./.github/workflows/bench_cub.yml
+    with:
+      gpu: ${{ matrix.gpu }}
+      launch_args: ${{ matrix.launch_args }}
+      arch: ${{ matrix.arch }}
+      base_ref: ${{ matrix.base_ref }}
+      test_ref: ${{ matrix.test_ref }}
+      filters: ${{ matrix.filters }}
+      nvbench_args: ${{ matrix.nvbench_args }}
+      nvbench_compare_args: ${{ matrix.nvbench_compare_args }}
+
   # Check all other job statuses. This job gates branch protection checks.
   ci:
     name: CI
@@ -388,6 +442,7 @@ jobs:
       - verify-devcontainers
       - docs-build
       - test-cpu-import
+      - dispatch-cub-bench
     runs-on: ubuntu-latest
     steps:
       - name: Check results
@@ -411,6 +466,19 @@ jobs:
           check_result "verify-devcontainers" "success" "${{needs.verify-devcontainers.result}}"
           check_result "docs-build"           "success" "${{needs.docs-build.result}}"
           check_result "test-cpu-import"      "success" "${{needs.test-cpu-import.result}}"
+
+          expected_cub_bench_result="skipped"
+          if [[ "${{ needs.build-workflow.outputs.bench_enabled }}" == "true" ]] \
+            && [[ "${{ toJSON(fromJSON(needs.build-workflow.outputs.bench_matrix).include) }}" != "[]" ]]; then
+            expected_cub_bench_result="success"
+          fi
+          check_result "dispatch-cub-bench" "${expected_cub_bench_result}" "${{needs.dispatch-cub-bench.result}}"
+
+          bench_enabled="${{ needs.build-workflow.outputs.bench_enabled }}"
+          if [[ "${bench_enabled}" == "true" ]]; then
+            echo "::error::The ci/bench.yaml file was modified in this PR. Benchmark requests are temporary and must not merge to main."
+            status="failed"
+          fi
 
           branch_notes_dirt="${{ needs.build-workflow.outputs.branch_notes_dirt }}"
           branch_notes_dirt_trimmed=$(printf '%s' "${branch_notes_dirt}" | tr -d '\n' | tr -d ' ')

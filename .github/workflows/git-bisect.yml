@@ -255,7 +255,7 @@ jobs:
 
       - name: Run git bisect
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
           LAUNCH_ARGS: ${{ inputs.launch_args }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           # AWS credentials from the configure-aws-credentials action
@@ -304,6 +304,7 @@ jobs:
             --env "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" \
             --env "AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}" \
             --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" \
+            --env "GH_TOKEN=$GH_TOKEN" \
             --env "LAUNCH_ARGS=${LAUNCH_ARGS} ${GPU_ARGS}" \
             --env "STEP_SUMMARY_URL=${STEP_SUMMARY_URL}" \
             --env "GHA_LOG_URL=${GHA_LOG_URL}" \

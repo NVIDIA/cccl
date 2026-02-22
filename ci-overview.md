@@ -31,6 +31,7 @@ Special commands can be included in the most recent commit message to control wh
 These commands can be combined with the [override matrix](#temporarily-overriding-the-pull-request-matrix) for even more fine-grained control.
 
 - `[skip-<component>]`: Skips a subset of the CI jobs. These commands will block the PR from being merged while present in the last commit message of the branch. Recognized components are:
+  - `[bench-only]`: Benchmark-focused shortcut. Equivalent to `[skip-matrix][skip-vdc][skip-docs][skip-tpt]`.
   - `[skip-matrix]`: Skip all build and test jobs specified in `ci/matrix.yaml`.
   - `[skip-vdc]`: Skip all "Validate Devcontainer" jobs.
   - `[skip-docs]`: Skip the documentation verification build.
@@ -38,7 +39,7 @@ These commands can be combined with the [override matrix](#temporarily-overridin
   - `[skip-rapids]`: Skip all RAPIDS canary builds.
   - `[skip-matx]`: Skip all MatX canary builds.
   - `[skip-pytorch]`: Skip all PyTorch canary builds.
-  - **Example:** `git commit -m "README tidy-up [skip-matrix][skip-vdc][skip-docs][skip-third-party-testing]"`
+  - **Examples:** `git commit -m "Run PR benchmarks [bench-only]"`, `git commit -m "README tidy-up [skip-matrix][skip-vdc][skip-docs][skip-third-party-testing]"`
 
 ### Temporarily Overriding the Pull Request Matrix
 
@@ -69,6 +70,17 @@ CCCL's CI uses [`sccache`](https://github.com/mozilla/sccache) to cache compiler
 ### Build and Test Scripts
 
 CI jobs employ the build and test scripts in the `ci/` directory to build and run tests. These scripts provide a consistent entry point for building and testing in both local and CI environments. For more information on using these scripts, see the [CONTRIBUTING.md guide](CONTRIBUTING.md#building-and-testing).
+
+#### CUB Benchmark Comparison Workflow
+
+The standalone CUB benchmark comparison workflow is implemented in `.github/workflows/bench_cub.yml` and uses:
+
+- `ci/bench/cub.sh`
+- `ci/bench/compare_git_refs.sh`
+- `ci/bench/compare_paths.sh`
+
+For benchmark request usage and workflow behavior, see [`ci/bench.yaml`](ci/bench.yaml) first.
+For local usage, argument behavior, and artifact layout, see [`ci/bench/README.md`](ci/bench/README.md).
 
 ### Reproducing CI Failures Locally
 
