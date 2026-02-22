@@ -1,4 +1,4 @@
-# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
@@ -65,8 +65,8 @@ class discontinuity(BasePrimitive):
         node: "CoopNode" = None,
     ) -> None:
         """
-        Flags discontinuities across a block using the supplied comparison
-        operator.
+        Creates a block-wide discontinuity-flagging primitive backed by
+        ``cub::BlockDiscontinuity``.
 
         Example:
             The snippet below flags heads (changes) between adjacent items.
@@ -82,6 +82,54 @@ class discontinuity(BasePrimitive):
                 :dedent:
                 :start-after: example-begin flag-heads
                 :end-before: example-end flag-heads
+
+        :param dtype: Element dtype for the input item array.
+        :type dtype: DtypeType
+
+        :param threads_per_block: CUDA block dimensions as an int or
+            ``(x, y, z)`` tuple.
+        :type threads_per_block: DimType
+
+        :param items_per_thread: Number of items processed by each thread.
+            Must be greater than or equal to ``1``.
+        :type items_per_thread: int
+
+        :param flag_op: Binary callable that decides whether an adjacent pair
+            is discontinuous.
+        :type flag_op: Callable
+
+        :param flag_dtype: Output dtype for generated flag arrays.
+        :type flag_dtype: DtypeType
+
+        :param block_discontinuity_type: Selects which outputs are generated:
+            heads, tails, or both.
+        :type block_discontinuity_type: BlockDiscontinuityType
+
+        :param methods: Optional user-defined-type adapter methods.
+        :type methods: dict, optional
+
+        :param unique_id: Optional unique suffix used for generated symbols.
+        :type unique_id: int, optional
+
+        :param temp_storage: Optional explicit temporary storage argument.
+        :type temp_storage: Any, optional
+
+        :param tile_predecessor_item: Optional predecessor item for boundary
+            handling; supported by heads/heads-and-tails paths.
+        :type tile_predecessor_item: Any, optional
+
+        :param tile_successor_item: Optional successor item for boundary
+            handling; supported by tails/heads-and-tails paths.
+        :type tile_successor_item: Any, optional
+
+        :param node: Internal rewrite node used by single-phase rewriting.
+        :type node: CoopNode, optional
+
+        :raises ValueError: If ``block_discontinuity_type`` is invalid.
+        :raises ValueError: If ``items_per_thread < 1``.
+        :raises ValueError: If ``flag_op`` is not provided.
+        :raises ValueError: If a tile boundary argument is incompatible with
+            the selected discontinuity mode.
         """
         if block_discontinuity_type not in BlockDiscontinuityType:
             raise ValueError(

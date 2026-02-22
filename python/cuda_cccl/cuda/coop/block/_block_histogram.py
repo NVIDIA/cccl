@@ -1,4 +1,4 @@
-# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
@@ -43,6 +43,16 @@ class histogram_init(BasePrimitive):
         parent: "histogram",
         node: "CoopNode",
     ) -> None:
+        """
+        Create the ``InitHistogram`` child primitive for a parent histogram.
+
+        :param parent: Parent block-histogram primitive instance that owns this
+            child operation.
+        :type parent: histogram
+
+        :param node: Rewrite node for the child call site.
+        :type node: CoopNode
+        """
         self.node = node
         self.parent = parent
         self.struct_name = parent.struct_name
@@ -105,6 +115,20 @@ class histogram_composite(BasePrimitive):
         node: "CoopNode",
         items: numba.types.Array,
     ) -> None:
+        """
+        Create the ``Composite`` child primitive for a parent histogram.
+
+        :param parent: Parent block-histogram primitive instance that owns this
+            child operation.
+        :type parent: histogram
+
+        :param node: Rewrite node for the child call site.
+        :type node: CoopNode
+
+        :param items: Per-thread input items array argument type used by the
+            composite operation.
+        :type items: numba.types.Array
+        """
         self.node = node
         self.parent = parent
         self.struct_name = parent.struct_name
