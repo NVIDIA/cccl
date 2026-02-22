@@ -23,15 +23,12 @@
 
 using namespace cuda::experimental::stf;
 
-static std::unordered_map<int, cublasHandle_t> cublas_handles;
+static std::unordered_map<exec_place, cublasHandle_t, hash<exec_place>> cublas_handles;
 
-/* Get a CUBLAS handle valid on the current device, or initialize it lazily */
-cublasHandle_t get_cublas_handle()
+/* Get a CUBLAS handle valid on the current execution place, or initialize it lazily */
+cublasHandle_t get_cublas_handle(const exec_place& ep = exec_place::current_device())
 {
-  int dev;
-  cuda_safe_call(cudaGetDevice(&dev));
-
-  auto& result = cublas_handles[dev];
+  auto& result = cublas_handles[ep];
   if (result == cublasHandle_t())
   { // not found, default value inserted
     // Lazy initialization, and save the handle for future use
