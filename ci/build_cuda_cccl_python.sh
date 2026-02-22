@@ -20,15 +20,13 @@ if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
   # source directories because of docker-out-of-docker quirks.
   # The workflow-job GH actions make sure that they exist before running any
   # scripts.
-  action_mounts=$(cat <<EOF
-    --mount type=bind,source=${ARTIFACT_ARCHIVES},target=${ARTIFACT_ARCHIVES} \
-    --mount type=bind,source=${ARTIFACT_UPLOAD_STAGE},target=${ARTIFACT_UPLOAD_STAGE}
-EOF
-)
-
+  action_mounts=(
+    --mount "type=bind,source=${ARTIFACT_ARCHIVES},target=${ARTIFACT_ARCHIVES}"
+    --mount "type=bind,source=${ARTIFACT_UPLOAD_STAGE},target=${ARTIFACT_UPLOAD_STAGE}"
+  )
 else
   # If not running in GitHub Actions, we don't need to set up artifact mounts.
-  action_mounts=""
+  action_mounts=()
 fi
 
 # cuda_cccl must be built in a container that can produce manylinux wheels,
@@ -49,27 +47,32 @@ else
   readonly cuda13_image=rapidsai/ci-wheel:${devcontainer_version}-cuda${cuda13_version}-${devcontainer_distro}-py${py_version}
 fi
 
+if ${set_git_safe_directory:-false}; then
+    git config --global --add safe.directory "$(realpath -m "$ci_dir/..")"
+fi
+
 mkdir -p wheelhouse
 
 for ctk in 12 13; do
-  image=$(eval echo \$cuda${ctk}_image)
-  echo "::group::⚒️ Building CUDA ${ctk} wheel on ${image}"
+  image="cuda${ctk}_image"
+  echo "::group::⚒️ Building CUDA ${ctk} wheel on ${!image}"
   (
     set -x
-    docker pull $image
+    docker pull "${!image}"
     docker run --rm -i \
         --workdir /workspace/python/cuda_cccl \
         --mount type=bind,source=${HOST_WORKSPACE},target=/workspace/ \
-        ${action_mounts} \
-        --env py_version=${py_version} \
-        --env GITHUB_ACTIONS=${GITHUB_ACTIONS:-} \
-        --env GITHUB_RUN_ID=${GITHUB_RUN_ID:-} \
-        --env JOB_ID=${JOB_ID:-} \
-        $image \
+        "${action_mounts[@]}" \
+        --env "py_version=${py_version}" \
+        --env "set_git_safe_directory=${set_git_safe_directory}" \
+        --env "GITHUB_ACTIONS=${GITHUB_ACTIONS:-}" \
+        --env "GITHUB_RUN_ID=${GITHUB_RUN_ID:-}" \
+        --env "JOB_ID=${JOB_ID:-}" \
+        "${!image}" \
         /workspace/ci/build_cuda_cccl_wheel.sh
     # Prevent GHA runners from exhausting available storage with leftover images:
     if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-      docker rmi -f $image
+      docker rmi -f "${!image}"
     fi
   )
   echo "::endgroup::"

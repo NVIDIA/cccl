@@ -4,6 +4,7 @@
 parse_python_args() {
     # Initialize variables
     py_version=""
+    set_git_safe_directory="false"
 
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -19,6 +20,10 @@ parse_python_args() {
                 py_version="$2"
                 shift 2
                 ;;
+            -set-git-safe-directory)
+                set_git_safe_directory=true
+                shift
+                ;;
             *)
                 # Unknown argument, ignore
                 shift
@@ -28,6 +33,7 @@ parse_python_args() {
 
     # Export for use by calling script
     export py_version
+    export set_git_safe_directory
 }
 
 require_py_version() {

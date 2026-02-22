@@ -1,10 +1,12 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:26.02-cpp-gcc11-cuda12.9",
+  "image": "rapidsai/devcontainers:latest-cpp-gcc11-cuda12.9",
   "runArgs": [
     "--init",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda12.9-gcc11"
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-cuda12.9-gcc11",
+    "--ulimit",
+    "nofile=500000"
   ],
   "hostRequirements": {
     "gpu": "optional"
@@ -14,17 +16,29 @@
     "-c",
     "set -euo pipefail; mkdir -m 0755 -p \"${localWorkspaceFolder}\"/.{aws,cache,config}; mkdir -m 0755 -p \"${localWorkspaceFolder}\"/{build,wheelhouse}; if test -z \"${localEnv:WSLENV}\"; then docker volume create --driver local --opt type=none --opt \"device=${localWorkspaceFolder}/build\" --opt o=bind cccl-build >/dev/null; docker volume create --driver local --opt type=none --opt \"device=${localWorkspaceFolder}/wheelhouse\" --opt o=bind cccl-wheelhouse >/dev/null; else docker volume create cccl-build >/dev/null; docker volume create cccl-wheelhouse >/dev/null; fi;"
   ],
+  "postCreateCommand": [
+    "/bin/bash",
+    "-c",
+    "if test -z \"${DISABLE_SCCACHE:+x}\"; then echo \"export SCCACHE_DIST_URL='https://$(dpkg --print-architecture).$(uname -s | tr '[:upper:]' '[:lower:]').sccache.rapids.nvidia.com'\" >> /home/coder/.bashrc; fi"
+  ],
   "postAttachCommand": [
     "/bin/bash",
     "-c",
     "if [ ${CODESPACES:-false} = 'true' ]; then . devcontainer-utils-post-attach-command; fi"
   ],
   "containerEnv": {
-    "SCCACHE_REGION": "us-east-2",
-    "SCCACHE_BUCKET": "rapids-sccache-devs",
-    "SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE": "true",
-    "SCCACHE_S3_PREPROCESSOR_CACHE_KEY_PREFIX": "cccl-preprocessor-cache",
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
+    "CI": "${localEnv:CI}",
+    "NVCC_APPEND_FLAGS": "-t=100",
+    "SCCACHE_BUCKET": "rapids-sccache-devs",
+    "SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE": "${localEnv:SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE:true}",
+    "SCCACHE_DIST_MAX_RETRIES": "${localEnv:SCCACHE_DIST_MAX_RETRIES:4}",
+    "SCCACHE_DIST_REQUEST_TIMEOUT": "${localEnv:SCCACHE_DIST_REQUEST_TIMEOUT:7140}",
+    "SCCACHE_IDLE_TIMEOUT": "${localEnv:SCCACHE_IDLE_TIMEOUT:0}",
+    "SCCACHE_REGION": "us-east-2",
+    "SCCACHE_S3_PREPROCESSOR_CACHE_KEY_PREFIX": "cccl-preprocessor-cache",
+    "SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE": "true",
+    "SCCACHE_SERVER_LOG": "${localEnv:SCCACHE_SERVER_LOG:sccache=trace}",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
     "DEVCONTAINER_NAME": "cuda12.9-gcc11",
     "DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST": "1",
