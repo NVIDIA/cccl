@@ -105,6 +105,36 @@
 - [ ] Extend ThreadData inference (alignment/shape/dtype propagation from
       inputs/outputs and `coop.(shared|local).array`) and add tests.
 
+## PR #7214 @codex review follow-up (2026-02-22)
+
+- [ ] Add/expand docstrings for `coop.block.exchange` constructor and helper
+      makers (`_build_exchange_spec`, `_make_exchange_two_phase`,
+      `_make_exchange_rewrite`) so params/requirements are explicit.
+- [ ] Reconcile `coop.block.histogram(..., temp_storage=...)` API/docs with CUB
+      behavior: confirm whether to keep placeholder-only support vs implement
+      explicit temp storage, and make typing/rewrite/docs consistent.
+- [ ] Rename `_numba_extension.py` module globals to `CUDA_CCCL_*` naming while
+      preserving backward compatibility.
+- [ ] Resolve `_rewrite.py` primitive-type naming TODO (`Primitive` vs
+      `primitive_type`) by either implementing the rename or removing the stale
+      TODO with rationale.
+- [ ] Clean up `_rewrite.py` comment/dead-debug block cluster around
+      `CoopNode.do_rewrite()` (`:1573`, `:1593`) and replace with concise,
+      technical rationale.
+- [ ] Replace ad-hoc rewrite-details payloads (`SimpleNamespace`) with a typed
+      dataclass where practical, starting from `CoopNode.do_rewrite()`.
+- [ ] Reword load/store rewrite comments (`_rewrite.py:2063`, `:2094`) and
+      remove stray comments (`:2155`) to explain cache priming/wrapper reasons
+      without editorial tone.
+- [ ] Replace broad `ThreadDataType` import fallbacks (`except Exception`) with
+      a deterministic helper/failure mode in rewrite nodes.
+- [ ] Validate `CoopBlockRunLengthNode.rewrite_details` can defer to
+      `CoopNode.do_rewrite()` (or a shared helper) without regressing
+      parent-instance return typing and TempStorage prelude handling.
+- [ ] Validate `CoopBlockRunLengthDecodeNode.rewrite_details` can defer to
+      `CoopNode.do_rewrite()` (or a shared helper) while preserving child
+      no-linking behavior.
+
 ## Deferred / Not Planned
 
 - BlockRadixSort decomposer support (requires a C++ tuple-of-references adapter).
