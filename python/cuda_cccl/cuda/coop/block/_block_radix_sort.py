@@ -179,6 +179,51 @@ class _radix_sort_base(BasePrimitive):
         temp_storage=None,
         node: "CoopNode" = None,
     ) -> None:
+        """
+        Initialize a base block radix-sort primitive.
+
+        :param dtype: Key dtype used for sorting.
+        :type dtype: str | type | np.dtype | numba.types.Type
+
+        :param threads_per_block: CUDA block dimensions as an int or
+            ``(x, y, z)`` tuple.
+        :type threads_per_block: int | Tuple[int, int] | Tuple[int, int, int] | dim3
+
+        :param items_per_thread: Number of keys owned by each thread.
+        :type items_per_thread: int
+
+        :param descending: Sort order selector.
+        :type descending: bool
+
+        :param value_dtype: Optional value dtype for pair sorting.
+        :type value_dtype: str | type | np.dtype | numba.types.Type, optional
+
+        :param begin_bit: Optional inclusive start bit for partial-bit sorting.
+        :type begin_bit: int, optional
+
+        :param end_bit: Optional exclusive end bit for partial-bit sorting.
+        :type end_bit: int, optional
+
+        :param decomposer: Optional key decomposer. Not currently supported.
+        :type decomposer: Any, optional
+
+        :param blocked_to_striped: Whether to emit blocked-to-striped variants.
+        :type blocked_to_striped: bool, optional
+
+        :param unique_id: Optional unique suffix used for generated symbols.
+        :type unique_id: int, optional
+
+        :param temp_storage: Optional explicit temporary storage argument.
+        :type temp_storage: Any, optional
+
+        :param node: Internal rewrite node used by single-phase rewriting.
+        :type node: CoopNode, optional
+
+        :raises ValueError: If ``items_per_thread < 1``.
+        :raises ValueError: If exactly one of ``begin_bit`` or ``end_bit`` is
+            provided.
+        :raises ValueError: If ``decomposer`` is provided (unsupported path).
+        """
         if items_per_thread < 1:
             raise ValueError("items_per_thread must be >= 1")
         if (begin_bit is None) != (end_bit is None):
@@ -351,6 +396,21 @@ class radix_sort_keys(_radix_sort_base):
         temp_storage=None,
         node: "CoopNode" = None,
     ):
+        """
+        Initialize ascending key-only block radix sort.
+
+        :param dtype: Key dtype used for sorting.
+        :param threads_per_block: CUDA block dimensions.
+        :param items_per_thread: Number of keys owned by each thread.
+        :param value_dtype: Optional value dtype for pair sorting.
+        :param begin_bit: Optional inclusive start bit for partial sorting.
+        :param end_bit: Optional exclusive end bit for partial sorting.
+        :param decomposer: Optional key decomposer (unsupported).
+        :param blocked_to_striped: Emit blocked-to-striped variant when true.
+        :param unique_id: Optional unique suffix for generated symbols.
+        :param temp_storage: Optional explicit temporary storage argument.
+        :param node: Internal rewrite node used by single-phase rewriting.
+        """
         super().__init__(
             dtype=dtype,
             threads_per_block=threads_per_block,
@@ -451,6 +511,21 @@ class radix_sort_keys_descending(_radix_sort_base):
         temp_storage=None,
         node: "CoopNode" = None,
     ):
+        """
+        Initialize descending key-only block radix sort.
+
+        :param dtype: Key dtype used for sorting.
+        :param threads_per_block: CUDA block dimensions.
+        :param items_per_thread: Number of keys owned by each thread.
+        :param value_dtype: Optional value dtype for pair sorting.
+        :param begin_bit: Optional inclusive start bit for partial sorting.
+        :param end_bit: Optional exclusive end bit for partial sorting.
+        :param decomposer: Optional key decomposer (unsupported).
+        :param blocked_to_striped: Emit blocked-to-striped variant when true.
+        :param unique_id: Optional unique suffix for generated symbols.
+        :param temp_storage: Optional explicit temporary storage argument.
+        :param node: Internal rewrite node used by single-phase rewriting.
+        """
         super().__init__(
             dtype=dtype,
             threads_per_block=threads_per_block,
@@ -508,6 +583,21 @@ class radix_sort_pairs(radix_sort_keys):
         temp_storage=None,
         node: "CoopNode" = None,
     ):
+        """
+        Initialize ascending key-value pair block radix sort.
+
+        :param keys: Key dtype.
+        :param values: Value dtype.
+        :param threads_per_block: CUDA block dimensions.
+        :param items_per_thread: Number of items owned by each thread.
+        :param begin_bit: Optional inclusive start bit for partial sorting.
+        :param end_bit: Optional exclusive end bit for partial sorting.
+        :param decomposer: Optional key decomposer (unsupported).
+        :param blocked_to_striped: Emit blocked-to-striped variant when true.
+        :param unique_id: Optional unique suffix for generated symbols.
+        :param temp_storage: Optional explicit temporary storage argument.
+        :param node: Internal rewrite node used by single-phase rewriting.
+        """
         super().__init__(
             dtype=keys,
             threads_per_block=threads_per_block,
@@ -564,6 +654,21 @@ class radix_sort_pairs_descending(radix_sort_keys_descending):
         temp_storage=None,
         node: "CoopNode" = None,
     ):
+        """
+        Initialize descending key-value pair block radix sort.
+
+        :param keys: Key dtype.
+        :param values: Value dtype.
+        :param threads_per_block: CUDA block dimensions.
+        :param items_per_thread: Number of items owned by each thread.
+        :param begin_bit: Optional inclusive start bit for partial sorting.
+        :param end_bit: Optional exclusive end bit for partial sorting.
+        :param decomposer: Optional key decomposer (unsupported).
+        :param blocked_to_striped: Emit blocked-to-striped variant when true.
+        :param unique_id: Optional unique suffix for generated symbols.
+        :param temp_storage: Optional explicit temporary storage argument.
+        :param node: Internal rewrite node used by single-phase rewriting.
+        """
         super().__init__(
             dtype=keys,
             threads_per_block=threads_per_block,

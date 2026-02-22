@@ -46,7 +46,7 @@ class reduce(BasePrimitive):
         node: "CoopNode" = None,
     ) -> None:
         """
-        Reduces items across a block using the supplied binary operator.
+        Create a block-wide reduction primitive backed by ``cub::BlockReduce``.
 
         Example:
             The snippet below demonstrates a block reduction using a custom
@@ -63,6 +63,45 @@ class reduce(BasePrimitive):
                 :dedent:
                 :start-after: example-begin reduce
                 :end-before: example-end reduce
+
+        :param dtype: Element dtype for reduction inputs/outputs.
+        :type dtype: DtypeType
+
+        :param threads_per_block: CUDA block dimensions as an int or
+            ``(x, y, z)`` tuple.
+        :type threads_per_block: DimType
+
+        :param binary_op: Binary reduction operator. If ``None``, sum
+            reduction is used.
+        :type binary_op: Callable
+
+        :param items_per_thread: Number of items reduced per thread.
+        :type items_per_thread: int, optional
+
+        :param algorithm: Optional block-reduce algorithm selector.
+        :type algorithm: str | int | enum, optional
+
+        :param methods: Optional user-defined-type adapter methods.
+        :type methods: dict, optional
+
+        :param unique_id: Optional unique suffix used for generated symbols.
+        :type unique_id: int, optional
+
+        :param temp_storage: Optional explicit temporary storage argument.
+        :type temp_storage: Any, optional
+
+        :param num_valid: Optional valid-item count. Supported only for scalar
+            (non-array) inputs.
+        :type num_valid: Any, optional
+
+        :param use_array_inputs: Force array-input overload selection.
+        :type use_array_inputs: bool, optional
+
+        :param node: Internal rewrite node used by single-phase rewriting.
+        :type node: CoopNode, optional
+
+        :raises ValueError: If ``items_per_thread < 1``.
+        :raises ValueError: If ``num_valid`` is provided for array-input mode.
         """
         if items_per_thread < 1:
             raise ValueError("items_per_thread must be greater than or equal to 1")
