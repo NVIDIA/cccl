@@ -289,3 +289,17 @@ function(cccl_add_xfail_compile_target_test target_name)
     set_tests_properties(${test_name} PROPERTIES WILL_FAIL true)
   endif()
 endfunction()
+
+# Check for WSL. CMAKE_SYSTEM is "Linux-<kernelver>-microsoft-standard-WSL2" on WSLv2.
+if (CMAKE_SYSTEM MATCHES WSL)
+  set(_CCCL_WSL TRUE)
+else()
+  set(_CCCL_WSL FALSE)
+endif()
+
+# Check for Windows, including WSL:
+if (WIN32 OR _CCCL_WSL)
+  set(_CCCL_WINDOWS TRUE)
+else()
+  set(_CCCL_WINDOWS FALSE)
+endif()

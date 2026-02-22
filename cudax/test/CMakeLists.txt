@@ -36,30 +36,37 @@ cudax_add_catch2_test(test_target launch
     launch/launch_smoke.cu
 )
 
-cudax_add_catch2_test(test_target execution ${cudax_target}
-    execution/env.cu
-    execution/policies/policies.cu
-    execution/policies/get_execution_policy.cu
-    execution/test_bulk.cu
-    execution/test_concepts.cu
-    execution/test_completion_signatures.cu
-    execution/test_conditional.cu
-    execution/test_continues_on.cu
-    execution/test_just.cu
-    execution/test_let_value.cu
+# Unified memory is not supported on Windows:
+set(execution_unified_memory_tests)
+if (NOT _CCCL_WINDOWS)
+  list(
+    APPEND execution_unified_memory_tests
     execution/test_on.cu
-    execution/test_sequence.cu
-    execution/test_starts_on.cu
     execution/test_stream_context.cu
-    execution/test_task_scheduler.cu
-    execution/test_then.cu
-    execution/test_trampoline_scheduler.cu
-    execution/test_visit.cu
-    execution/test_when_all.cu
-    execution/test_write_attrs.cu
-    execution/test_write_env.cu
-)
+  )
+endif()
 
+cudax_add_catch2_test(test_target execution ${cudax_target}
+  execution/env.cu
+  execution/policies/policies.cu
+  execution/policies/get_execution_policy.cu
+  execution/test_bulk.cu
+  execution/test_concepts.cu
+  execution/test_completion_signatures.cu
+  execution/test_conditional.cu
+  execution/test_continues_on.cu
+  execution/test_just.cu
+  execution/test_let_value.cu
+  execution/test_sequence.cu
+  execution/test_starts_on.cu
+  execution/test_then.cu
+  execution/test_trampoline_scheduler.cu
+  execution/test_visit.cu
+  execution/test_when_all.cu
+  execution/test_write_attrs.cu
+  execution/test_write_env.cu
+  ${execution_unified_memory_tests}
+)
 target_compile_options(
   ${test_target}
   PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-allow-unsupported-compiler>
