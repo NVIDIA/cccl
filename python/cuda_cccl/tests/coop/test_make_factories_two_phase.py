@@ -181,6 +181,20 @@ def test_make_histogram_returns_stateful_instance():
     assert hasattr(histo, "composite")
 
 
+def test_make_histogram_rejects_explicit_temp_storage():
+    with pytest.raises(
+        NotImplementedError,
+        match="Explicit temp_storage is not yet supported for histogram.",
+    ):
+        coop.block.make_histogram(
+            numba.uint8,
+            numba.uint32,
+            threads_per_block=64,
+            items_per_thread=1,
+            temp_storage=object(),
+        )
+
+
 def test_make_run_length_returns_stateful_instance():
     rle = coop.block.make_run_length(
         numba.int32,
