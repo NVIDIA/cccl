@@ -143,6 +143,22 @@
       child, shuffle, adjacent difference, discontinuity, histogram children).
 - [x] Normalize copyright headers for newly-added python `cuda.coop` files to
       include year 2026.
+- [x] Expand warp primitive constructor docstrings (exchange, load/store,
+      merge sort keys/pairs, reduce, scan/sum family).
+- [x] Remove warp docs-stub path (`cuda.coop.warp.api` +
+      `CCCL_COOP_DOCS` branch in `warp.__init__`) and expose runtime
+      implementation directly.
+- [x] Remove unused `cuda.coop._base` module.
+- [x] Expand `gpu_dataclass()` docs and add additional `_decls.py` context
+      comments (TempStorage and Decomposer placeholder rationale).
+- [x] Clarify `_decls.py` rewrite-helper import intent for `impl_key` binding.
+- [x] Fix `_decls.py` ThreadData comment wording typo ("obviating the need").
+- [x] Fix CUDA vector-type normalization/codegen for coop block load/store and
+      add regression tests (`make_load`/`make_store` with vector dtypes).
+- [x] Add single-phase adjacent-difference test covering TempStorage getitem
+      sugar with ThreadData.
+- [x] Update coop docs for expanded TempStorage usage and add a new
+      `coop_thread_data.rst` guide wired into the toctree.
 
 ## Deferred / Not Planned
 
