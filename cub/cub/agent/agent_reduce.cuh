@@ -85,6 +85,17 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   (VECTOR_LOAD_LENGTH, VectorLoadLength, int),
   (BLOCK_ALGORITHM, BlockAlgorithm, cub::BlockReduceAlgorithm),
   (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier))
+
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  WarpReduceAgentPolicy,
+  (GenericAgentPolicy),
+  (BLOCK_THREADS, BlockThreads, int),
+  (WARP_THREADS, WarpThreads, int),
+  (ITEMS_PER_THREAD, ItemsPerThread, int),
+  (VECTOR_LOAD_LENGTH, VectorLoadLength, int),
+  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
+  (ITEMS_PER_TILE, ItemsPerTile, int),
+  (SEGMENTS_PER_BLOCK, SegmentsPerBlock, int) )
 } // namespace detail
 #endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 
