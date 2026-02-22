@@ -1,4 +1,4 @@
-# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
@@ -223,6 +223,19 @@ def _is_cuda_vector_type(obj) -> bool:
     return isinstance(obj, type) and issubclass(obj, CudaVectorTypeStub)
 
 
+def _resolve_cuda_vector_dtype(dtype):
+    """
+    Resolve a CUDA vector stub (e.g. ``numba.cuda.float2``) to the matching
+    Numba CUDA vector type used by typing/lowering internals.
+    """
+    try:
+        from numba.cuda.vector_types import vector_types
+    except Exception:
+        return dtype
+
+    return vector_types.get(dtype.__name__, dtype)
+
+
 def normalize_dtype_param(
     dtype: Union[str, type, "np.dtype", numba.types.Type, Type[CudaVectorTypeStub]],
 ) -> Union[numba.types.Type, Type[CudaVectorTypeStub]]:
@@ -232,7 +245,8 @@ def normalize_dtype_param(
     The logic for this routine is as follows:
 
     - If the dtype is already a numba type, return it as is.
-    - If the dtype is already a numba-cuda vector type, return it as is.
+    - If the dtype is a CUDA vector stub (for example, ``numba.cuda.float2``),
+      convert it to the corresponding Numba CUDA vector type.
     - If the dtype is a valid numpy dtype, convert it to the corresponding
       numba type.  Note that this applies to both `np.int32` and
       `np.dtype(np.int32)`.
@@ -250,8 +264,8 @@ def normalize_dtype_param(
         dtype: Supplies the dtype parameter to normalize.
 
     Returns:
-        The normalized dtype parameter as a numba type, or, in the case of
-        CUDA vector types, the original dtype parameter.
+        The normalized dtype parameter as a numba type. CUDA vector stubs are
+        resolved to their corresponding Numba CUDA vector types.
 
     Raises:
         ValueError: If the dtype is invalid.
@@ -263,9 +277,9 @@ def normalize_dtype_param(
     if isinstance(dtype, numba.types.Type):
         return dtype
 
-    # If dtype is a CUDA vector type, return it as is.
+    # Convert CUDA vector stubs to concrete Numba CUDA vector types.
     if _is_cuda_vector_type(dtype):
-        return dtype
+        return _resolve_cuda_vector_dtype(dtype)
 
     # Handle numpy dtype objects.
     if hasattr(np, "dtype") and isinstance(dtype, np.dtype):
