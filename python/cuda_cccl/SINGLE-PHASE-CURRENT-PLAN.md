@@ -178,3 +178,80 @@ Capture a concrete, thread-by-thread implementation plan for all unresolved
   - `pytest -q tests/coop/test_block_scan.py tests/coop/test_block_reduce.py`
   - `pytest -q tests/coop/test_warp_*`
 - Run `pre-commit run --files <changed files>`.
+
+## Follow-Up (2026-02-22, PR #7214 `@codex` round 2)
+
+### Goal
+Address newly-added unresolved `@codex` review threads for warp docs cleanup,
+docs-stub removal, ThreadData/TempStorage docs, and vector-type validation.
+
+### Thread-by-Thread Plan
+- [x] 1. `python/cuda_cccl/cuda/coop/warp/_warp_exchange.py:44`
+  - Expand constructor docstring with full arg/validation coverage.
+
+- [x] 2. `python/cuda_cccl/cuda/coop/warp/_warp_load_store.py:74`
+  - Expand `warp.load` constructor docstring.
+
+- [x] 3. `python/cuda_cccl/cuda/coop/warp/_warp_load_store.py:215`
+  - Expand `warp.store` constructor docstring.
+
+- [x] 4. `python/cuda_cccl/cuda/coop/warp/_warp_merge_sort.py:36`
+  - Expand `merge_sort_keys` constructor docstring.
+
+- [x] 5. `python/cuda_cccl/cuda/coop/warp/_warp_merge_sort.py:159`
+  - Add/expand `merge_sort_pairs` constructor docstring.
+
+- [x] 6. `python/cuda_cccl/cuda/coop/warp/_warp_reduce.py:36`
+  - Expand `reduce` constructor docstring.
+
+- [x] 7. `python/cuda_cccl/cuda/coop/warp/_warp_scan.py:53`
+  - Expand scan/sum warp constructor docs for argument parity.
+
+- [x] 8. `python/cuda_cccl/cuda/coop/warp/api.py:1`
+  - Remove warp docs-stub module and unwind `CCCL_COOP_DOCS` dependency in
+    `warp.__init__`.
+
+- [x] 9. `python/cuda_cccl/cuda/coop/_base.py:1`
+  - Remove dead/unused module.
+
+- [x] 10. `python/cuda_cccl/cuda/coop/_common.py:1`
+  - Update copyright header to include 2026.
+
+- [x] 11. `python/cuda_cccl/cuda/coop/_common.py:219`
+  - Independently validate CUDA vector dtype support for block load/store,
+    fix discovered `storage_t` codegen failure, and add regression tests.
+
+- [x] 12. `python/cuda_cccl/cuda/coop/_dataclass.py:20`
+  - Add full `gpu_dataclass()` docstring.
+
+- [x] 13. `python/cuda_cccl/cuda/coop/_decls.py:58`
+  - Evaluate import-list concern; keep direct private helper imports but add
+    explicit rationale comment about `impl_key` usage and why `__all__` is not
+    applicable.
+
+- [x] 14. `python/cuda_cccl/cuda/coop/_decls.py:509`
+  - Fix wording typo (“obviating the need”).
+
+- [x] 15. `python/cuda_cccl/cuda/coop/_decls.py:294`
+  - Add TempStorage context comments.
+
+- [x] 16. `python/cuda_cccl/cuda/coop/_decls.py:459`
+  - Add Decomposer placeholder-context comments.
+
+- [x] 17. `python/cuda_cccl/tests/coop/test_block_adjacent_difference.py:165`
+  - Add single-phase ThreadData + TempStorage getitem-sugar test.
+
+- [x] 18. `docs/python/coop_faq.rst:18`
+  - Update TempStorage/two-phase FAQ narrative to cover inference/getitem
+    workflows and pipeline sharing use-cases.
+
+- [x] 19. `docs/python/coop.rst:6`
+  - Add `coop_thread_data.rst` guide and wire it into docs toctree.
+
+### Validation
+- `pytest -q tests/coop/test_common.py -k numba_cuda_vector_type`
+- `pytest -q tests/coop/test_block_load_store_api.py -k vector_dtypes`
+- `pytest -q tests/coop/test_block_adjacent_difference.py`
+- `pytest -q tests/coop/test_warp_*_api.py`
+- `CCCL_COOP_DOCS=1 python -c "import cuda.coop as coop; import cuda.coop.block; import cuda.coop.warp; print('ok')"`
+- `pre-commit run --files ../../docs/python/coop.rst ../../docs/python/coop_faq.rst ../../docs/python/coop_thread_data.rst cuda/coop/_common.py cuda/coop/_dataclass.py cuda/coop/_decls.py cuda/coop/_types.py cuda/coop/warp/__init__.py cuda/coop/warp/_warp_exchange.py cuda/coop/warp/_warp_load_store.py cuda/coop/warp/_warp_merge_sort.py cuda/coop/warp/_warp_reduce.py cuda/coop/warp/_warp_scan.py tests/coop/test_block_adjacent_difference.py tests/coop/test_block_load_store_api.py tests/coop/test_common.py`
