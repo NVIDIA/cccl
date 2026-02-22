@@ -19,13 +19,36 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/env_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
 
+#include <cuda/__execution/require.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
+
+namespace detail::radix_sort
+{
+struct get_tuning_query_t
+{};
+
+template <class Derived>
+struct tuning
+{
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const get_tuning_query_t&) const noexcept -> Derived
+  {
+    return static_cast<const Derived&>(*this);
+  }
+};
+
+struct default_tuning : tuning<default_tuning>
+{};
+} // namespace detail::radix_sort
 
 //! @rst
 //! DeviceRadixSort provides device-wide, parallel operations for
@@ -171,6 +194,66 @@ private:
       is_overwrite_okay,
       stream,
       decomposer);
+  }
+
+  template <typename TuningEnvT, SortOrder Order, typename KeyT, typename ValueT, typename OffsetT>
+  CUB_RUNTIME_FUNCTION static cudaError_t sort_pairs_impl(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    OffsetT num_items,
+    int begin_bit,
+    int end_bit,
+    cudaStream_t stream)
+  {
+    // We cast away const-ness, but will *not* write to these arrays.
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
+    // is not set.
+    constexpr bool is_overwrite_okay = false;
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
+
+    return DispatchRadixSort<Order, KeyT, ValueT, OffsetT>::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      static_cast<OffsetT>(num_items),
+      begin_bit,
+      end_bit,
+      is_overwrite_okay,
+      stream);
+  }
+
+  template <typename TuningEnvT, SortOrder Order, typename KeyT, typename OffsetT>
+  CUB_RUNTIME_FUNCTION static cudaError_t sort_keys_impl(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    OffsetT num_items,
+    int begin_bit,
+    int end_bit,
+    cudaStream_t stream)
+  {
+    constexpr bool is_overwrite_okay = false;
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<NullType> d_values;
+
+    return DispatchRadixSort<Order, KeyT, NullType, OffsetT>::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      static_cast<OffsetT>(num_items),
+      begin_bit,
+      end_bit,
+      is_overwrite_okay,
+      stream);
   }
 
   // Name reported for NVTX ranges
@@ -332,6 +415,115 @@ public:
   //!
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The contents of the input data are not altered by the sorting operation.
+  //! - Pointers to contiguous memory must be used; iterators are not currently
+  //!   supported.
+  //! - In-place operations are not supported. There must be no overlap between
+  //!   any of the provided ranges:
+  //!
+  //!   - ``[d_keys_in,    d_keys_in    + num_items)``
+  //!   - ``[d_keys_out,   d_keys_out   + num_items)``
+  //!   - ``[d_values_in,  d_values_in  + num_items)``
+  //!   - ``[d_values_out, d_values_out + num_items)``
+  //!
+  //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
+  //!   bits can be specified. This can reduce overall sorting overhead and
+  //!   yield a corresponding performance improvement.
+  //!
+  //! Snippet
+  //! --------------------------------------------------
+  //!
+  //! The code snippet below illustrates the env-based sorting of key-value pairs:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin radix-sort-pairs-env
+  //!     :end-before: example-end radix-sort-pairs-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyT
+  //!   **[inferred]** KeyT type
+  //!
+  //! @tparam ValueT
+  //!   **[inferred]** ValueT type
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] d_keys_in
+  //!   Pointer to the input data of key data to sort
+  //!
+  //! @param[out] d_keys_out
+  //!   Pointer to the sorted output sequence of key data
+  //!
+  //! @param[in] d_values_in
+  //!   Pointer to the corresponding input sequence of associated value items
+  //!
+  //! @param[out] d_values_out
+  //!   Pointer to the correspondingly-reordered output sequence of associated
+  //!   value items
+  //!
+  //! @param[in] num_items
+  //!   Number of items to sort
+  //!
+  //! @param[in] begin_bit
+  //!   The least-significant bit index (inclusive) needed for key comparison
+  //!
+  //! @param[in] end_bit
+  //!   The most-significant bit index (exclusive) needed for key comparison
+  //!   (e.g., ``sizeof(unsigned int) * 8``)
+  //!
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <typename KeyT,
+            typename ValueT,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            typename ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairs(
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    NumItemsT num_items,
+    int begin_bit,
+    int end_bit,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+
+    // Dispatch with environment - handles all boilerplate
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using tuning_t = decltype(tuning);
+      return sort_pairs_impl<tuning_t, SortOrder::Ascending>(
+        storage,
+        bytes,
+        d_keys_in,
+        d_keys_out,
+        d_values_in,
+        d_values_out,
+        static_cast<offset_t>(num_items),
+        begin_bit,
+        end_bit,
+        stream);
+    });
+  }
+
+  //! @rst
+  //! Sorts key-value pairs into ascending order using :math:`\approx 2N` auxiliary storage.
   //!
   //! * The contents of the input data are not altered by the sorting operation.
   //! * Pointers to contiguous memory must be used; iterators are not currently
@@ -1204,6 +1396,115 @@ public:
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The contents of the input data are not altered by the sorting operation.
+  //! - Pointers to contiguous memory must be used; iterators are not currently
+  //!   supported.
+  //! - In-place operations are not supported. There must be no overlap between
+  //!   any of the provided ranges:
+  //!
+  //!   - ``[d_keys_in,    d_keys_in    + num_items)``
+  //!   - ``[d_keys_out,   d_keys_out   + num_items)``
+  //!   - ``[d_values_in,  d_values_in  + num_items)``
+  //!   - ``[d_values_out, d_values_out + num_items)``
+  //!
+  //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
+  //!   bits can be specified. This can reduce overall sorting overhead and
+  //!   yield a corresponding performance improvement.
+  //!
+  //! Snippet
+  //! --------------------------------------------------
+  //!
+  //! The code snippet below illustrates the env-based descending sort of key-value pairs:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin radix-sort-pairs-descending-env
+  //!     :end-before: example-end radix-sort-pairs-descending-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyT
+  //!   **[inferred]** KeyT type
+  //!
+  //! @tparam ValueT
+  //!   **[inferred]** ValueT type
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] d_keys_in
+  //!   Pointer to the input data of key data to sort
+  //!
+  //! @param[out] d_keys_out
+  //!   Pointer to the sorted output sequence of key data
+  //!
+  //! @param[in] d_values_in
+  //!   Pointer to the corresponding input sequence of associated value items
+  //!
+  //! @param[out] d_values_out
+  //!   Pointer to the correspondingly-reordered output sequence of associated
+  //!   value items
+  //!
+  //! @param[in] num_items
+  //!   Number of items to sort
+  //!
+  //! @param[in] begin_bit
+  //!   The least-significant bit index (inclusive) needed for key comparison
+  //!
+  //! @param[in] end_bit
+  //!   The most-significant bit index (exclusive) needed for key comparison
+  //!   (e.g., ``sizeof(unsigned int) * 8``)
+  //!
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <typename KeyT,
+            typename ValueT,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            typename ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairsDescending(
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    NumItemsT num_items,
+    int begin_bit,
+    int end_bit,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+
+    // Dispatch with environment - handles all boilerplate
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using tuning_t = decltype(tuning);
+      return sort_pairs_impl<tuning_t, SortOrder::Descending>(
+        storage,
+        bytes,
+        d_keys_in,
+        d_keys_out,
+        d_values_in,
+        d_values_out,
+        static_cast<offset_t>(num_items),
+        begin_bit,
+        end_bit,
+        stream);
+    });
+  }
+
+  //! @rst
+  //! Sorts key-value pairs into descending order using :math:`\approx 2N` auxiliary storage.
+  //!
   //! * The contents of the input data are not altered by the sorting operation.
   //! * Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
@@ -2070,6 +2371,89 @@ public:
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The contents of the input data are not altered by the sorting operation.
+  //! - Pointers to contiguous memory must be used; iterators are not currently
+  //!   supported.
+  //! - In-place operations are not supported. There must be no overlap between
+  //!   any of the provided ranges:
+  //!
+  //!   - ``[d_keys_in,  d_keys_in  + num_items)``
+  //!   - ``[d_keys_out, d_keys_out + num_items)``
+  //!
+  //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
+  //!   bits can be specified. This can reduce overall sorting overhead and
+  //!   yield a corresponding performance improvement.
+  //!
+  //! Snippet
+  //! --------------------------------------------------
+  //!
+  //! The code snippet below illustrates the env-based sorting of keys:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin radix-sort-keys-env
+  //!     :end-before: example-end radix-sort-keys-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyT
+  //!   **[inferred]** KeyT type
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] d_keys_in
+  //!   Pointer to the input data of key data to sort
+  //!
+  //! @param[out] d_keys_out
+  //!   Pointer to the sorted output sequence of key data
+  //!
+  //! @param[in] num_items
+  //!   Number of items to sort
+  //!
+  //! @param[in] begin_bit
+  //!   The least-significant bit index (inclusive) needed for key comparison
+  //!
+  //! @param[in] end_bit
+  //!   The most-significant bit index (exclusive) needed for key comparison
+  //!   (e.g., ``sizeof(unsigned int) * 8``)
+  //!
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <typename KeyT,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            typename ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  SortKeys(const KeyT* d_keys_in, KeyT* d_keys_out, NumItemsT num_items, int begin_bit, int end_bit, EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+
+    // Dispatch with environment - handles all boilerplate
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using tuning_t = decltype(tuning);
+      return sort_keys_impl<tuning_t, SortOrder::Ascending>(
+        storage, bytes, d_keys_in, d_keys_out, static_cast<offset_t>(num_items), begin_bit, end_bit, stream);
+    });
+  }
+
+  //! @rst
+  //! Sorts keys into ascending order using :math:`\approx 2N` auxiliary storage.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! * The contents of the input data are not altered by the sorting operation.
   //! * Pointers to contiguous memory must be used; iterators are not currently
   //!   supported.
@@ -2857,6 +3241,89 @@ public:
       end_bit,
       is_overwrite_okay,
       stream);
+  }
+
+  //! @rst
+  //! Sorts keys into descending order using :math:`\approx 2N` auxiliary storage.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The contents of the input data are not altered by the sorting operation.
+  //! - Pointers to contiguous memory must be used; iterators are not currently
+  //!   supported.
+  //! - In-place operations are not supported. There must be no overlap between
+  //!   any of the provided ranges:
+  //!
+  //!   - ``[d_keys_in,  d_keys_in  + num_items)``
+  //!   - ``[d_keys_out, d_keys_out + num_items)``
+  //!
+  //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
+  //!   bits can be specified. This can reduce overall sorting overhead and
+  //!   yield a corresponding performance improvement.
+  //!
+  //! Snippet
+  //! --------------------------------------------------
+  //!
+  //! The code snippet below illustrates the env-based descending sort of keys:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin radix-sort-keys-descending-env
+  //!     :end-before: example-end radix-sort-keys-descending-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyT
+  //!   **[inferred]** KeyT type
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] d_keys_in
+  //!   Pointer to the input data of key data to sort
+  //!
+  //! @param[out] d_keys_out
+  //!   Pointer to the sorted output sequence of key data
+  //!
+  //! @param[in] num_items
+  //!   Number of items to sort
+  //!
+  //! @param[in] begin_bit
+  //!   The least-significant bit index (inclusive) needed for key comparison
+  //!
+  //! @param[in] end_bit
+  //!   The most-significant bit index (exclusive) needed for key comparison
+  //!   (e.g., ``sizeof(unsigned int) * 8``)
+  //!
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <typename KeyT,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            typename ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeysDescending(
+    const KeyT* d_keys_in, KeyT* d_keys_out, NumItemsT num_items, int begin_bit, int end_bit, EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+
+    // Dispatch with environment - handles all boilerplate
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using tuning_t = decltype(tuning);
+      return sort_keys_impl<tuning_t, SortOrder::Descending>(
+        storage, bytes, d_keys_in, d_keys_out, static_cast<offset_t>(num_items), begin_bit, end_bit, stream);
+    });
   }
 
   //! @rst
