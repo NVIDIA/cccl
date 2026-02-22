@@ -47,18 +47,12 @@ merge(execution_policy<Derived>& policy,
      const auto num_keys_out = num_keys1 + num_keys2;
      if (num_keys_out == 0) { return result_begin; }
 
-     using dispatch32_t = cub::detail::merge::
-       dispatch_t<KeysIt1, cub::NullType*, KeysIt2, cub::NullType*, ResultIt, cub::NullType*, std::int32_t, CompareOp>;
-     using dispatch64_t = cub::detail::merge::
-       dispatch_t<KeysIt1, cub::NullType*, KeysIt2, cub::NullType*, ResultIt, cub::NullType*, std::int64_t, CompareOp>;
-
      const auto stream = cuda_cub::stream(policy);
      cudaError_t status;
      size_t storage_size = 0;
-     THRUST_DOUBLE_INDEX_TYPE_DISPATCH2(
+     THRUST_DOUBLE_INDEX_TYPE_DISPATCH(
        status,
-       dispatch32_t::dispatch,
-       dispatch64_t::dispatch,
+       cub::detail::merge::dispatch,
        num_keys1,
        num_keys2,
        (nullptr,
@@ -76,10 +70,9 @@ merge(execution_policy<Derived>& policy,
      throw_on_error(status, "merge: failed on 1st step");
 
      thrust::detail::temporary_array<char, Derived> temp_storage(policy, storage_size);
-     THRUST_DOUBLE_INDEX_TYPE_DISPATCH2(
+     THRUST_DOUBLE_INDEX_TYPE_DISPATCH(
        status,
-       dispatch32_t::dispatch,
-       dispatch64_t::dispatch,
+       cub::detail::merge::dispatch,
        num_keys1,
        num_keys2,
        (temp_storage.data().get(),
@@ -135,18 +128,12 @@ template <class Derived,
      const auto num_keys_out = num_keys1 + num_keys2;
      if (num_keys_out == 0) { return {keys_out_begin, items_out_begin}; }
 
-     using dispatch32_t = cub::detail::merge::
-       dispatch_t<KeysIt1, ItemsIt1, KeysIt2, ItemsIt2, KeysOutputIt, ItemsOutputIt, std::int32_t, CompareOp>;
-     using dispatch64_t = cub::detail::merge::
-       dispatch_t<KeysIt1, ItemsIt1, KeysIt2, ItemsIt2, KeysOutputIt, ItemsOutputIt, std::int64_t, CompareOp>;
-
      const auto stream = cuda_cub::stream(policy);
      cudaError_t status;
      size_t storage_size = 0;
-     THRUST_DOUBLE_INDEX_TYPE_DISPATCH2(
+     THRUST_DOUBLE_INDEX_TYPE_DISPATCH(
        status,
-       dispatch32_t::dispatch,
-       dispatch64_t::dispatch,
+       cub::detail::merge::dispatch,
        num_keys1,
        num_keys2,
        (nullptr,
@@ -164,10 +151,9 @@ template <class Derived,
      throw_on_error(status, "merge: failed on 1st step");
 
      thrust::detail::temporary_array<char, Derived> temp_storage(policy, storage_size);
-     THRUST_DOUBLE_INDEX_TYPE_DISPATCH2(
+     THRUST_DOUBLE_INDEX_TYPE_DISPATCH(
        status,
-       dispatch32_t::dispatch,
-       dispatch64_t::dispatch,
+       cub::detail::merge::dispatch,
        num_keys1,
        num_keys2,
        (temp_storage.data().get(),

@@ -87,11 +87,6 @@ THRUST_NAMESPACE_END
     _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)                            \
     _THRUST_INDEX_TYPE_DISPATCH(std::int64_t, status, call_64, count, arguments)
 
-//! Like \ref THRUST_INDEX_TYPE_DISPATCH2 but uses two counts.
-#  define THRUST_DOUBLE_INDEX_TYPE_DISPATCH2(status, call_32, call_64, count1, count2, arguments) \
-    _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW2(count1, count2)                                  \
-    _THRUST_INDEX_TYPE_DISPATCH2(std::int64_t, status, call_64, count1, count2, arguments)
-
 //! Like \ref THRUST_INDEX_TYPE_DISPATCH2 but always dispatching to uint64_t. `count` must not be negative.
 #  define THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(status, call_32, call_64, count, arguments) \
     _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)                                     \
@@ -140,12 +135,6 @@ THRUST_NAMESPACE_END
     _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)                            \
     _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW(std::int32_t, count)               \
     _THRUST_INDEX_TYPE_DISPATCH(std::int32_t, status, call_32, count, arguments)
-
-//! Like \ref THRUST_INDEX_TYPE_DISPATCH2 but uses two counts.
-#  define THRUST_DOUBLE_INDEX_TYPE_DISPATCH2(status, call_32, call_64, count1, count2, arguments) \
-    _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW2(count1, count2)                                  \
-    _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW2(std::int32_t, count1, count2)                     \
-    _THRUST_INDEX_TYPE_DISPATCH2(std::int32_t, status, call_32, count1, count2, arguments)
 
 //! Like \ref THRUST_INDEX_TYPE_DISPATCH but always dispatching to uint64_t. `count` must not be negative.
 #  define THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(status, call_32, call_64, count, arguments) \
@@ -197,14 +186,6 @@ THRUST_NAMESPACE_END
       _THRUST_INDEX_TYPE_DISPATCH(std::int32_t, status, call_32, count, arguments) \
     else                                                                           \
       _THRUST_INDEX_TYPE_DISPATCH(std::int64_t, status, call_64, count, arguments)
-
-//! Like \ref THRUST_INDEX_TYPE_DISPATCH2 but uses two counts.
-#  define THRUST_DOUBLE_INDEX_TYPE_DISPATCH2(status, call_32, call_64, count1, count2, arguments) \
-    _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW2(count1, count2)                                  \
-    if _THRUST_INDEX_TYPE_DISPATCH_SELECT2 (std::int32_t, count1, count2)                         \
-      _THRUST_INDEX_TYPE_DISPATCH2(std::int32_t, status, call_32, count1, count2, arguments)      \
-    else                                                                                          \
-      _THRUST_INDEX_TYPE_DISPATCH2(std::int64_t, status, call_64, count1, count2, arguments)
 
 //! Like \ref THRUST_INDEX_TYPE_DISPATCH2 but dispatching to uint32_t and uint64_t, respectively, depending on the
 //! `count` argument. `count` must not be negative.
