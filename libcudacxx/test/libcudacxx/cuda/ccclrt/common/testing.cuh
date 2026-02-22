@@ -25,9 +25,9 @@
 
 #define CUDART(call) REQUIRE((call) == cudaSuccess)
 
-// There is a problem with clang-cuda and nv/target, but we don't need the device side macros yet,
+// There is a problem with clang-cuda and NVHPC and nv/target, but we don't need the device side macros yet,
 // disable them for now
-#if _CCCL_CUDA_COMPILER(CLANG)
+#if _CCCL_CUDA_COMPILER(CLANG) || _CCCL_CUDA_COMPILER(NVHPC)
 #  define CCCLRT_REQUIRE(condition)     REQUIRE(condition)
 #  define CCCLRT_CHECK(condition)       CHECK(condition)
 #  define CCCLRT_FAIL(message)          FAIL(message)
