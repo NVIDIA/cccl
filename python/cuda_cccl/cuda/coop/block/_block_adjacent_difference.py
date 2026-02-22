@@ -1,4 +1,4 @@
-# Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
@@ -58,8 +58,8 @@ class adjacent_difference(BasePrimitive):
         node: "CoopNode" = None,
     ) -> None:
         """
-        Computes adjacent differences across a block with the specified
-        difference operator.
+        Creates a block-wide adjacent-difference primitive backed by
+        ``cub::BlockAdjacentDifference``.
 
         Example:
             The snippet below computes left-differences for scalar inputs.
@@ -75,6 +75,56 @@ class adjacent_difference(BasePrimitive):
                 :dedent:
                 :start-after: example-begin subtract-left
                 :end-before: example-end subtract-left
+
+        :param block_adjacent_difference_type: Selects whether adjacent
+            differences are computed against the left or right neighbor.
+        :type block_adjacent_difference_type: BlockAdjacentDifferenceType
+
+        :param dtype: Element dtype for the per-thread input/output item arrays.
+        :type dtype: DtypeType
+
+        :param threads_per_block: CUDA block dimensions as an int or
+            ``(x, y, z)`` tuple.
+        :type threads_per_block: DimType
+
+        :param items_per_thread: Number of items processed by each thread.
+            Must be greater than or equal to ``1``.
+        :type items_per_thread: int
+
+        :param difference_op: Binary callable used to compute adjacent
+            differences.
+        :type difference_op: Callable
+
+        :param methods: Optional user-defined-type adapter methods.
+        :type methods: dict, optional
+
+        :param unique_id: Optional unique suffix used for generated symbols.
+        :type unique_id: int, optional
+
+        :param valid_items: Optional count of valid items for partial-tile
+            APIs.
+        :type valid_items: Any, optional
+
+        :param tile_predecessor_item: Optional tile predecessor item for
+            boundary handling; valid only for ``SubtractLeft``.
+        :type tile_predecessor_item: Any, optional
+
+        :param tile_successor_item: Optional tile successor item for boundary
+            handling; valid only for ``SubtractRight``.
+        :type tile_successor_item: Any, optional
+
+        :param temp_storage: Optional explicit temporary storage argument.
+        :type temp_storage: Any, optional
+
+        :param node: Internal rewrite node used by single-phase rewriting.
+        :type node: CoopNode, optional
+
+        :raises ValueError: If ``block_adjacent_difference_type`` is invalid.
+        :raises ValueError: If ``items_per_thread < 1``.
+        :raises ValueError: If ``difference_op`` is not provided.
+        :raises ValueError: If both tile boundary items are provided.
+        :raises ValueError: If a tile boundary argument is incompatible with
+            the selected adjacent-difference direction.
         """
         if block_adjacent_difference_type not in BlockAdjacentDifferenceType:
             raise ValueError(
