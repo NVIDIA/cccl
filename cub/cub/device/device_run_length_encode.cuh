@@ -327,8 +327,8 @@ struct DeviceRunLengthEncode
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::NonTrivialRuns");
 
-    using offset_t    = detail::choose_signed_offset_t<NumItemsT>;
-    using equality_op = ::cuda::std::equal_to<>;
+    using global_offset_t = detail::choose_signed_offset_t<NumItemsT>;
+    using equality_op     = ::cuda::std::equal_to<>;
     return detail::rle::dispatch(
       d_temp_storage,
       temp_storage_bytes,
@@ -337,7 +337,7 @@ struct DeviceRunLengthEncode
       d_lengths_out,
       d_num_runs_out,
       equality_op{},
-      static_cast<offset_t>(num_items),
+      static_cast<global_offset_t>(num_items),
       stream);
   }
 };

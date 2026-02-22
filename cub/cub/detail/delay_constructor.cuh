@@ -45,8 +45,6 @@ inline ::std::ostream& operator<<(::std::ostream& os, delay_constructor_kind kin
       return os << "delay_constructor_kind::no_delay";
     case delay_constructor_kind::fixed_delay:
       return os << "delay_constructor_kind::fixed_delay";
-    case delay_constructor_kind::reduce_by_key:
-      return os << "delay_constructor_kind::reduce_by_key";
     case delay_constructor_kind::exponential_backoff:
       return os << "delay_constructor_kind::exponential_backoff";
     case delay_constructor_kind::exponential_backoff_jitter:
@@ -59,6 +57,8 @@ inline ::std::ostream& operator<<(::std::ostream& os, delay_constructor_kind kin
       return os << "delay_constructor_kind::exponential_backon_jitter";
     case delay_constructor_kind::exponential_backon:
       return os << "delay_constructor_kind::exponential_backon";
+    case delay_constructor_kind::reduce_by_key:
+      return os << "delay_constructor_kind::reduce_by_key";
     default:
       return os << "<unknown delay_constructor_kind: " << static_cast<int>(kind) << ">";
   }
@@ -149,12 +149,6 @@ struct delay_constructor_for<delay_constructor_kind::fixed_delay, Delay, L2Write
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
-struct delay_constructor_for<delay_constructor_kind::reduce_by_key, Delay, L2WriteLatency>
-{
-  using type = reduce_by_key_delay_constructor_t<Delay, L2WriteLatency>;
-};
-
-template <unsigned int Delay, unsigned int L2WriteLatency>
 struct delay_constructor_for<delay_constructor_kind::exponential_backoff, Delay, L2WriteLatency>
 {
   using type = exponential_backoff_constructor_t<Delay, L2WriteLatency>;
@@ -188,6 +182,12 @@ template <unsigned int Delay, unsigned int L2WriteLatency>
 struct delay_constructor_for<delay_constructor_kind::exponential_backon, Delay, L2WriteLatency>
 {
   using type = exponential_backon_constructor_t<Delay, L2WriteLatency>;
+};
+
+template <unsigned int Delay, unsigned int L2WriteLatency>
+struct delay_constructor_for<delay_constructor_kind::reduce_by_key, Delay, L2WriteLatency>
+{
+  using type = reduce_by_key_delay_constructor_t<Delay, L2WriteLatency>;
 };
 
 template <delay_constructor_kind Kind, unsigned int Delay, unsigned int L2WriteLatency>
