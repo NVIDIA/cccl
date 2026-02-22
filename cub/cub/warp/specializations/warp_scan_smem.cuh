@@ -176,7 +176,7 @@ struct WarpScanSmem
   {
     if constexpr (::cuda::has_identity_element_v<ScanOp, T>)
     {
-      T identity = ::cuda::identity_element<ScanOp, T>();
+      constexpr T identity = ::cuda::identity_element<ScanOp, T>();
       ThreadStore<STORE_VOLATILE>(&temp_storage[lane_id], identity);
       __syncwarp(member_mask);
     }
