@@ -3,12 +3,6 @@
 
 #include <cub/device/device_radix_sort.cuh>
 
-// %//RANGE//% TUNE_RADIX_BITS bits 8:9:1
-#define TUNE_RADIX_BITS 8
-
-// %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
-// %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
-
 #if !TUNE_BASE
 template <typename KeyT, typename ValueT, typename OffsetT>
 struct policy_selector
