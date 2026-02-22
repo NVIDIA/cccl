@@ -208,6 +208,85 @@ def test_block_exchange_two_phase_striped_to_blocked():
     np.testing.assert_array_equal(h_output, expected)
 
 
+def test_block_exchange_scatter_to_blocked_thread_data_ranks_infers_items_per_thread():
+    threads_per_block = 64
+    items_per_thread = 4
+    total_items = threads_per_block * items_per_thread
+
+    @cuda.jit
+    def kernel(d_in, d_ranks, d_out):
+        input_items = coop.ThreadData(items_per_thread, dtype=d_in.dtype)
+        output_items = coop.ThreadData(items_per_thread, dtype=d_in.dtype)
+        ranks = coop.ThreadData(items_per_thread, dtype=d_ranks.dtype)
+
+        coop.block.load(d_in, input_items)
+        coop.block.load(d_ranks, ranks)
+
+        coop.block.exchange(
+            input_items,
+            output_items,
+            ranks=ranks,
+            block_exchange_type=scatter_to_blocked,
+        )
+
+        coop.block.store(d_out, output_items)
+
+    h_input = np.arange(total_items, dtype=np.int32)
+    h_ranks = np.arange(total_items, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_ranks = cuda.to_device(h_ranks)
+    d_output = cuda.device_array_like(d_input)
+
+    kernel[1, threads_per_block](d_input, d_ranks, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    np.testing.assert_array_equal(h_output, h_input)
+
+
+def test_block_exchange_scatter_to_striped_flagged_thread_data_infers_items_per_thread():
+    threads_per_block = 64
+    items_per_thread = 4
+    total_items = threads_per_block * items_per_thread
+
+    @cuda.jit
+    def kernel(d_in, d_ranks, d_valid_flags, d_out):
+        tid = row_major_tid()
+        input_items = coop.ThreadData(items_per_thread, dtype=d_in.dtype)
+        output_items = coop.ThreadData(items_per_thread, dtype=d_in.dtype)
+        ranks = coop.ThreadData(items_per_thread, dtype=d_ranks.dtype)
+        valid_flags = coop.ThreadData(items_per_thread, dtype=d_valid_flags.dtype)
+
+        coop.block.load(d_in, input_items)
+        coop.block.load(d_ranks, ranks)
+        coop.block.load(d_valid_flags, valid_flags)
+
+        coop.block.exchange(
+            input_items,
+            output_items,
+            ranks=ranks,
+            valid_flags=valid_flags,
+            block_exchange_type=scatter_to_striped_flagged,
+        )
+
+        for i in range(items_per_thread):
+            d_out[tid + i * threads_per_block] = output_items[i]
+
+    h_input = random_int(total_items, np.int32)
+    h_ranks = np.arange(total_items, dtype=np.int32)
+    h_valid_flags = np.ones(total_items, dtype=np.uint8)
+    d_input = cuda.to_device(h_input)
+    d_ranks = cuda.to_device(h_ranks)
+    d_valid_flags = cuda.to_device(h_valid_flags)
+    d_output = cuda.device_array_like(d_input)
+
+    kernel[1, threads_per_block](d_input, d_ranks, d_valid_flags, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    np.testing.assert_array_equal(h_output, h_input)
+
+
 def test_block_exchange_temp_storage():
     threads_per_block = 64
     items_per_thread = 2

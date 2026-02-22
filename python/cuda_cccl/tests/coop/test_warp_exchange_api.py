@@ -7,6 +7,7 @@ import numpy as np
 from numba import cuda
 
 from cuda import coop
+from cuda.coop import WarpLoadAlgorithm, WarpStoreAlgorithm
 from cuda.coop.warp import WarpExchangeType
 
 # example-begin imports
@@ -226,6 +227,52 @@ def test_warp_exchange_striped_to_blocked_single_phase():
             d_out[tid * items_per_thread + i] = output_items[i]
 
     total_items = threads_in_warp * items_per_thread
+    h_input = np.random.randint(0, 64, total_items, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(total_items, dtype=np.int32)
+
+    kernel[1, threads_in_warp](d_input, d_output)
+    h_output = d_output.copy_to_host()
+
+    h_reference = np.zeros_like(h_output)
+    for blocked_idx in range(total_items):
+        source_thread = blocked_idx % threads_in_warp
+        source_item = blocked_idx // threads_in_warp
+        source_idx = source_thread + source_item * threads_in_warp
+        h_reference[blocked_idx] = h_input[source_idx]
+
+    np.testing.assert_array_equal(h_output, h_reference)
+
+
+def test_warp_exchange_striped_to_blocked_single_phase_thread_data_infers_items_per_thread():
+    threads_in_warp = 32
+    items_per_thread = 4
+    total_items = threads_in_warp * items_per_thread
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        input_items = coop.ThreadData(items_per_thread, dtype=d_in.dtype)
+        output_items = coop.ThreadData(items_per_thread, dtype=d_in.dtype)
+        coop.warp.load(
+            d_in,
+            input_items,
+            threads_in_warp=threads_in_warp,
+            algorithm=WarpLoadAlgorithm.STRIPED,
+        )
+
+        coop.warp.exchange(
+            input_items,
+            output_items,
+            warp_exchange_type=WarpExchangeType.StripedToBlocked,
+            threads_in_warp=threads_in_warp,
+        )
+        coop.warp.store(
+            d_out,
+            output_items,
+            threads_in_warp=threads_in_warp,
+            algorithm=WarpStoreAlgorithm.DIRECT,
+        )
+
     h_input = np.random.randint(0, 64, total_items, dtype=np.int32)
     d_input = cuda.to_device(h_input)
     d_output = cuda.device_array(total_items, dtype=np.int32)
