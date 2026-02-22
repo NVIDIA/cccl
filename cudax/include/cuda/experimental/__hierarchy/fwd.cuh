@@ -25,45 +25,19 @@
 
 namespace cuda::experimental
 {
-// hierarchy group kinds
-
-class __this_hierarchy_group_kind
-{};
-
-// hierarchy group base
-
-template <class _Level, class _Hierarchy, class _Kind>
-class __hierarchy_group_base;
 template <class _Level, class _Hierarchy>
-using __this_hierarchy_group_base = __hierarchy_group_base<_Level, _Hierarchy, __this_hierarchy_group_kind>;
+class __this_group_base;
 
-// hierarchy groups
-
-template <class _Hierarchy, class _Kind>
-class thread_group;
-template <class _Hierarchy, class _Kind>
-class warp_group;
-template <class _Hierarchy, class _Kind>
-class block_group;
-template <class _Hierarchy, class _Kind>
-class cluster_group;
-template <class _Hierarchy, class _Kind>
-class grid_group;
-
-// traits
-
-template <class _Tp>
-inline constexpr bool __is_this_hierarchy_group_v = false;
 template <class _Hierarchy>
-inline constexpr bool __is_this_hierarchy_group_v<thread_group<_Hierarchy, __this_hierarchy_group_kind>> = true;
+class this_thread;
 template <class _Hierarchy>
-inline constexpr bool __is_this_hierarchy_group_v<warp_group<_Hierarchy, __this_hierarchy_group_kind>> = true;
+class this_warp;
 template <class _Hierarchy>
-inline constexpr bool __is_this_hierarchy_group_v<block_group<_Hierarchy, __this_hierarchy_group_kind>> = true;
+class this_block;
 template <class _Hierarchy>
-inline constexpr bool __is_this_hierarchy_group_v<cluster_group<_Hierarchy, __this_hierarchy_group_kind>> = true;
+class this_cluster;
 template <class _Hierarchy>
-inline constexpr bool __is_this_hierarchy_group_v<grid_group<_Hierarchy, __this_hierarchy_group_kind>> = true;
+class this_grid;
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
