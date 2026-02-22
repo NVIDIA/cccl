@@ -47,21 +47,23 @@ __cccl_strcpy_impl_constexpr(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_R
   return __dst;
 }
 
+#if !_CCCL_COMPILER(NVRTC)
 template <class _CharT>
 _CCCL_HIDE_FROM_ABI _CCCL_HOST _CharT*
 __cccl_strcpy_impl_host(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src) noexcept
 {
-#if _CCCL_HOSTED()
+#  if _CCCL_HOSTED()
   if constexpr (sizeof(_CharT) == 1)
   {
     return reinterpret_cast<_CharT*>(::strcpy(reinterpret_cast<char*>(__dst), reinterpret_cast<const char*>(__src)));
   }
   else
-#endif // _CCCL_HOSTED()
+#  endif // _CCCL_HOSTED()
   {
     return ::cuda::std::__cccl_strcpy_impl_constexpr(__dst, __src);
   }
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT>
 _CCCL_API constexpr _CharT* __cccl_strcpy(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src) noexcept
@@ -94,22 +96,24 @@ __cccl_strncpy_impl_constexpr(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_
   return __dst;
 }
 
+#if !_CCCL_COMPILER(NVRTC)
 template <class _CharT>
 _CCCL_HIDE_FROM_ABI _CCCL_HOST _CharT*
 __cccl_strncpy_impl_host(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src, size_t __n) noexcept
 {
-#if _CCCL_HOSTED()
+#  if _CCCL_HOSTED()
   if constexpr (sizeof(_CharT) == 1)
   {
     return reinterpret_cast<_CharT*>(
       ::strncpy(reinterpret_cast<char*>(__dst), reinterpret_cast<const char*>(__src), __n));
   }
   else
-#endif // _CCCL_HOSTED()
+#  endif // _CCCL_HOSTED()
   {
     return ::cuda::std::__cccl_strncpy_impl_constexpr(__dst, __src, __n);
   }
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT>
 _CCCL_API constexpr _CharT*
@@ -135,20 +139,22 @@ template <class _CharT>
   return __len;
 }
 
+#if !_CCCL_COMPILER(NVRTC)
 template <class _CharT>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST size_t __cccl_strlen_impl_host(const _CharT* __ptr) noexcept
 {
-#if _CCCL_HOSTED()
+#  if _CCCL_HOSTED()
   if constexpr (sizeof(_CharT) == 1)
   {
     return ::strlen(reinterpret_cast<const char*>(__ptr));
   }
   else
-#endif // _CCCL_HOSTED()
+#  endif // _CCCL_HOSTED()
   {
     return ::cuda::std::__cccl_strlen_impl_constexpr(__ptr);
   }
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT>
 [[nodiscard]] _CCCL_API constexpr size_t __cccl_strlen(const _CharT* __ptr) noexcept
@@ -180,21 +186,23 @@ template <class _CharT>
   return (static_cast<_UCharT>(*__lhs) < static_cast<_UCharT>(*__rhs)) ? -1 : 1;
 }
 
+#if !_CCCL_COMPILER(NVRTC)
 template <class _CharT>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST int
 __cccl_strcmp_impl_host(const _CharT* __lhs, const _CharT* __rhs) noexcept
 {
-#if _CCCL_HOSTED()
+#  if _CCCL_HOSTED()
   if constexpr (sizeof(_CharT) == 1)
   {
     return ::strcmp(reinterpret_cast<const char*>(__lhs), reinterpret_cast<const char*>(__rhs));
   }
   else
-#endif // _CCCL_HOSTED()
+#  endif // _CCCL_HOSTED()
   {
     return ::cuda::std::__cccl_strcmp_impl_constexpr(__lhs, __rhs);
   }
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT>
 [[nodiscard]] _CCCL_API constexpr int __cccl_strcmp(const _CharT* __lhs, const _CharT* __rhs) noexcept
@@ -232,21 +240,23 @@ __cccl_strncmp_impl_constexpr(const _CharT* __lhs, const _CharT* __rhs, size_t _
   return 0;
 }
 
+#if !_CCCL_COMPILER(NVRTC)
 template <class _CharT>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST int
 __cccl_strncmp_impl_host(const _CharT* __lhs, const _CharT* __rhs, size_t __n) noexcept
 {
-#if _CCCL_HOSTED()
+#  if _CCCL_HOSTED()
   if constexpr (sizeof(_CharT) == 1)
   {
     return ::strncmp(reinterpret_cast<const char*>(__lhs), reinterpret_cast<const char*>(__rhs), __n);
   }
   else
-#endif // _CCCL_HOSTED()
+#  endif // _CCCL_HOSTED()
   {
     return ::cuda::std::__cccl_strncmp_impl_constexpr(__lhs, __rhs, __n);
   }
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT>
 [[nodiscard]] _CCCL_API constexpr int __cccl_strncmp(const _CharT* __lhs, const _CharT* __rhs, size_t __n) noexcept
@@ -274,10 +284,11 @@ template <class _CharT>
   return __ptr;
 }
 
+#if !_CCCL_COMPILER(NVRTC)
 template <class _CharT>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST _CharT* __cccl_strchr_impl_host(_CharT* __ptr, _CharT __c) noexcept
 {
-#if _CCCL_HOSTED()
+#  if _CCCL_HOSTED()
   if constexpr (sizeof(_CharT) == 1)
   {
     using _Up = remove_const_t<_CharT>;
@@ -285,11 +296,12 @@ template <class _CharT>
       reinterpret_cast<_Up*>(::strchr(reinterpret_cast<char*>(const_cast<_Up*>(__ptr)), static_cast<int>(__c))));
   }
   else
-#endif // _CCCL_HOSTED()
+#  endif // _CCCL_HOSTED()
   {
     return ::cuda::std::__cccl_strchr_impl_constexpr<_CharT>(__ptr, __c);
   }
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT>
 [[nodiscard]] _CCCL_API constexpr _CharT* __cccl_strchr(_CharT* __ptr, _CharT __c) noexcept
@@ -323,10 +335,11 @@ template <class _CharT>
   return __last;
 }
 
+#if !_CCCL_COMPILER(NVRTC)
 template <class _CharT>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST _CharT* __cccl_strrchr_impl_host(_CharT* __ptr, _CharT __c) noexcept
 {
-#if _CCCL_HOSTED()
+#  if _CCCL_HOSTED()
   if constexpr (sizeof(_CharT) == 1)
   {
     using _Up = remove_const_t<_CharT>;
@@ -334,11 +347,12 @@ template <class _CharT>
       reinterpret_cast<_Up*>(::strrchr(reinterpret_cast<char*>(const_cast<_Up*>(__ptr)), static_cast<int>(__c))));
   }
   else
-#endif // _CCCL_HOSTED()
+#  endif // _CCCL_HOSTED()
   {
     return ::cuda::std::__cccl_strrchr_impl_constexpr<_CharT>(__ptr, __c);
   }
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT>
 [[nodiscard]] _CCCL_API constexpr _CharT* __cccl_strrchr(_CharT* __ptr, _CharT __c) noexcept
@@ -366,21 +380,23 @@ template <class _Tp>
   return nullptr;
 }
 
+#if !_CCCL_COMPILER(NVRTC)
 template <class _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST _Tp* __cccl_memchr_impl_host(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
-#if _CCCL_HOSTED()
+#  if _CCCL_HOSTED()
   if constexpr (sizeof(_Tp) == 1)
   {
     using _Up = remove_const_t<_Tp>;
     return const_cast<_Tp*>(reinterpret_cast<_Up*>(::memchr(const_cast<_Up*>(__ptr), static_cast<int>(__c), __n)));
   }
   else
-#endif // _CCCL_HOSTED()
+#  endif // _CCCL_HOSTED()
   {
     return ::cuda::std::__cccl_memchr_impl_constexpr<_Tp>(__ptr, __c, __n);
   }
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp* __cccl_memchr(_Tp* __ptr, _Tp __c, size_t __n) noexcept
@@ -462,21 +478,23 @@ __cccl_memcmp_impl_constexpr(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noe
   return 0;
 }
 
+#if !_CCCL_COMPILER(NVRTC)
 template <class _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST int
 __cccl_memcmp_impl_host(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noexcept
 {
-#if _CCCL_HOSTED()
+#  if _CCCL_HOSTED()
   if constexpr (sizeof(_Tp) == 1)
   {
     return ::memcmp(__lhs, __rhs, __n);
   }
   else
-#endif // _CCCL_HOSTED()
+#  endif // _CCCL_HOSTED()
   {
     return ::cuda::std::__cccl_memcmp_impl_constexpr(__lhs, __rhs, __n);
   }
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr int __cccl_memcmp(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noexcept
@@ -544,20 +562,22 @@ template <class _Tp>
   return __ptr_copy;
 }
 
+#if !_CCCL_COMPILER(NVRTC)
 template <class _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST _Tp* __cccl_memset_impl_host(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
-#if _CCCL_HOSTED()
+#  if _CCCL_HOSTED()
   if constexpr (sizeof(_Tp) == 1)
   {
     return reinterpret_cast<_Tp*>(::memset(__ptr, static_cast<int>(__c), __n));
   }
   else
-#endif // _CCCL_HOSTED()
+#  endif // _CCCL_HOSTED()
   {
     return ::cuda::std::__cccl_memset_impl_constexpr(__ptr, __c, __n);
   }
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _Tp>
 _CCCL_API constexpr _Tp* __cccl_memset(_Tp* __ptr, _Tp __c, size_t __n) noexcept
