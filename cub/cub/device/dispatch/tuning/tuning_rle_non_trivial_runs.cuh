@@ -378,23 +378,24 @@ struct policy_selector
   bool length_is_primitive;
   bool key_is_primitive; // TODO(bgruber): can probably be derived from key_type
 
+  _CCCL_API constexpr auto
+  make_default_policy(BlockLoadAlgorithm block_load_alg, int delay_ctor_key_size, CacheLoadModifier load_mod) const
+  {
+    const int nominal_4B_items_per_thread = 15;
+    const int items_per_thread =
+      ::cuda::std::clamp(nominal_4B_items_per_thread * 4 / key_size, 1, nominal_4B_items_per_thread);
+    return rle_non_trivial_runs_policy{
+      96,
+      items_per_thread,
+      block_load_alg,
+      load_mod,
+      true,
+      BLOCK_SCAN_WARP_SCANS,
+      default_reduce_by_key_delay_constructor_policy(delay_ctor_key_size, sizeof(int), true)};
+  }
+
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> rle_non_trivial_runs_policy
   {
-    auto make_default_policy =
-      [&](BlockLoadAlgorithm block_load_alg, int delay_ctor_key_size, CacheLoadModifier load_mod) {
-        const int nominal_4B_items_per_thread = 15;
-        const int items_per_thread =
-          ::cuda::std::clamp(nominal_4B_items_per_thread * 4 / key_size, 1, nominal_4B_items_per_thread);
-        return rle_non_trivial_runs_policy{
-          96,
-          items_per_thread,
-          block_load_alg,
-          load_mod,
-          true,
-          BLOCK_SCAN_WARP_SCANS,
-          default_reduce_by_key_delay_constructor_policy(delay_ctor_key_size, sizeof(int), true)};
-      };
-
     if (arch >= ::cuda::arch_id::sm_100)
     {
       if (length_is_primitive && key_is_primitive && length_size == 4)
