@@ -9,6 +9,7 @@
 
 #include <thrust/count.h>
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/fill.h>
 #include <thrust/sort.h>
 
 #include <cuda/iterator>
@@ -110,6 +111,9 @@ using key_types =
 >;
 // clang-format on
 
+// Unsigned integer types used for the radix-pass boundary distribution test
+using uint_key_types = c2h::type_list<cuda::std::uint8_t, cuda::std::uint16_t, cuda::std::uint64_t>;
+
 // Consistency check: ensures values remain associated with their corresponding keys
 template <typename KeyT, typename ValueT>
 bool verify_pairs_consistency(const c2h::device_vector<KeyT>& keys_in,
@@ -148,7 +152,7 @@ bool verify_unique_indices(c2h::device_vector<ValueT>& values_out, cuda::std::in
 }
 
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments",
-         "[keys][segmented][topk][device]",
+         "[pairs][segmented][topk][device]",
          key_types,
          max_segment_size_list,
          max_num_k_list)
@@ -239,14 +243,184 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments"
   // This catches the case where we just returned a valid value multiple times
   REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k) == true);
 
-  // Verify keys are sorted correctly
+  // Verify keys are returned correctly
   fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
   compact_sorted_keys_to_topk(expected_keys, segment_size, k);
 
   // Since the results of top-k are unordered, sort output segments before comparison.
   fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
 
-  segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+  REQUIRE(expected_keys == keys_out_buffer);
+}
+
+// Randomly permutes elements within each fixed-size segment using a single segmented sort-by-random-keys
+template <typename KeyT>
+void segmented_shuffle(
+  c2h::device_vector<KeyT>& d_data, cuda::std::int64_t num_segments, cuda::std::int64_t segment_size)
+{
+  const auto num_items = static_cast<cuda::std::int64_t>(d_data.size());
+
+  c2h::device_vector<cuda::std::uint32_t> rand_keys(num_items, thrust::no_init);
+  c2h::gen(c2h::seed_t{42}, rand_keys);
+  c2h::device_vector<cuda::std::uint32_t> rand_keys_alt(num_items, thrust::no_init);
+
+  c2h::device_vector<KeyT> d_data_alt(num_items, thrust::no_init);
+
+  cub::DoubleBuffer<cuda::std::uint32_t> d_rand(
+    thrust::raw_pointer_cast(rand_keys.data()), thrust::raw_pointer_cast(rand_keys_alt.data()));
+  cub::DoubleBuffer<KeyT> d_vals(thrust::raw_pointer_cast(d_data.data()), thrust::raw_pointer_cast(d_data_alt.data()));
+
+  auto seg_offsets = cuda::make_strided_iterator(cuda::make_counting_iterator<cuda::std::int64_t>(0), segment_size);
+
+  size_t temp_bytes = 0;
+  cub::DeviceSegmentedSort::SortPairs(
+    nullptr, temp_bytes, d_rand, d_vals, num_items, num_segments, seg_offsets, seg_offsets + 1);
+  c2h::device_vector<cuda::std::uint8_t> d_temp(temp_bytes);
+  cub::DeviceSegmentedSort::SortPairs(
+    thrust::raw_pointer_cast(d_temp.data()),
+    temp_bytes,
+    d_rand,
+    d_vals,
+    num_items,
+    num_segments,
+    seg_offsets,
+    seg_offsets + 1);
+
+  if (d_vals.Current() != thrust::raw_pointer_cast(d_data.data()))
+  {
+    thrust::copy(d_vals.Current(), d_vals.Current() + num_items, d_data.begin());
+  }
+}
+
+C2H_TEST("DeviceBatchedTopK::MinPairs radix-pass short-circuiting distributions",
+         "[pairs][segmented][topk][device]",
+         uint_key_types)
+{
+  using key_t          = c2h::get<0, TestType>;
+  using val_t          = cuda::std::int32_t;
+  using segment_size_t = cuda::std::int64_t;
+
+  // The algorithm currently uses 11 radix bits per pass (MSB to LSB)
+  constexpr int radix_bits = 11;
+  constexpr int key_bits   = sizeof(key_t) * 8;
+  constexpr int shift      = (key_bits > radix_bits) ? (key_bits - radix_bits) : 0;
+
+  // Stride between adjacent first-pass buckets
+  constexpr auto bucket_stride = static_cast<cuda::std::uint64_t>(1) << shift;
+
+  constexpr segment_size_t static_max_segment_size = 4 * 1024;
+  constexpr segment_size_t static_max_k            = 4 * 1024;
+
+  // Generate segment size
+  constexpr segment_size_t min_segment_size = 1;
+  constexpr auto max_segment_size           = static_max_segment_size;
+  const segment_size_t segment_size = GENERATE_COPY(values({min_segment_size, segment_size_t{3}, max_segment_size}),
+                                                    take(4, random(min_segment_size, max_segment_size)));
+  const segment_size_t max_k        = cuda::std::min(static_max_k, segment_size);
+
+  // Skip invalid combinations
+  if (segment_size > max_segment_size)
+  {
+    SKIP("The given segment size may not exceed the maximum segment size, we statically constrained the algorithm on.");
+  }
+
+  // Set the k value
+  const segment_size_t k = GENERATE_COPY(values({segment_size_t{1}, max_k}), take(3, random(segment_size_t{1}, max_k)));
+
+  // Generate number of segments
+  const segment_size_t num_segments = GENERATE_COPY(
+    values({segment_size_t{1}, segment_size_t{42}}), take(4, random(segment_size_t{1}, segment_size_t{10000})));
+
+  // Capture test parameters
+  CAPTURE(c2h::type_name<key_t>(),
+          c2h::type_name<val_t>(),
+          c2h::type_name<segment_size_t>(),
+          static_max_segment_size,
+          static_max_k,
+          segment_size,
+          k,
+          num_segments);
+
+  const auto val_bucket0 = key_t{0};
+  const auto val_bucket1 = static_cast<key_t>(bucket_stride);
+  const auto val_large   = cuda::std::numeric_limits<key_t>::max();
+
+  c2h::device_vector<key_t> keys_in_buffer(num_segments * segment_size, thrust::no_init);
+
+  SECTION("Bucket 0 holds exactly k items")
+  {
+    thrust::fill(keys_in_buffer.begin(), keys_in_buffer.end(), val_large);
+    for (cuda::std::int64_t seg = 0; seg < num_segments; ++seg)
+    {
+      thrust::fill_n(keys_in_buffer.begin() + seg * segment_size, k, val_bucket0);
+    }
+  }
+
+  SECTION("Bucket 0 + bucket 1 together hold exactly k items")
+  {
+    thrust::fill(keys_in_buffer.begin(), keys_in_buffer.end(), val_large);
+    const auto n0 = k / 2;
+    for (cuda::std::int64_t seg = 0; seg < num_segments; ++seg)
+    {
+      auto seg_begin = keys_in_buffer.begin() + seg * segment_size;
+      thrust::fill_n(seg_begin, n0, val_bucket0);
+      thrust::fill_n(seg_begin + n0, k - n0, val_bucket1);
+    }
+  }
+
+  SECTION("All zeros - ties persist through every pass")
+  {
+    thrust::fill(keys_in_buffer.begin(), keys_in_buffer.end(), key_t{0});
+  }
+
+  // Shuffle each segment so top-k items are scattered randomly (single device-wide call)
+  segmented_shuffle(keys_in_buffer, num_segments, segment_size);
+
+  // Prepare key output
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  auto d_keys_in_ptr  = thrust::raw_pointer_cast(keys_in_buffer.data());
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_in      = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+
+  // Prepare value input (counting indices) & output
+  auto values_in_it = cuda::make_counting_iterator(val_t{0});
+  auto d_values_in  = cuda::make_strided_iterator(cuda::make_counting_iterator(values_in_it), segment_size);
+  c2h::device_vector<val_t> values_out_buffer(num_segments * k, thrust::no_init);
+  auto d_values_out_ptr = thrust::raw_pointer_cast(values_out_buffer.data());
+  auto d_values_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_values_out_ptr), k);
+
+  // Save input for verification
+  c2h::device_vector<key_t> expected_keys(keys_in_buffer);
+
+  // Run top-k (min direction only)
+  batched_topk_pairs(
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    cub::detail::batched_topk::segment_size_uniform<1, static_max_segment_size>{segment_size},
+    cub::detail::batched_topk::k_uniform<1, static_max_k>{k},
+    cub::detail::batched_topk::select_direction_uniform{cub::detail::topk::select::min},
+    cub::detail::batched_topk::num_segments_uniform<>{num_segments},
+    cub::detail::batched_topk::total_num_items_guarantee{num_segments * segment_size});
+
+  // Verification:
+  // - We verify correct top-k selection through the keys
+  // - We verify that values were permuted along correctly by making sure values remain associated with their keys and
+  // making sure we do not duplicate values Verify values remain associated with their corresponding keys
+  REQUIRE(verify_pairs_consistency(expected_keys, keys_out_buffer, values_out_buffer) == true);
+
+  // Verify values don't appear more than once in the returned results
+  // This catches the case where we just returned a valid value multiple times
+  REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k) == true);
+
+  // Verify keys are returned correctly
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, cub::detail::topk::select::min);
+  compact_sorted_keys_to_topk(expected_keys, segment_size, k);
+
+  // Since the results of top-k are unordered, sort output segments before comparison.
+  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, cub::detail::topk::select::min);
 
   REQUIRE(expected_keys == keys_out_buffer);
 }
