@@ -94,15 +94,6 @@ private:
 };
 #endif // !_CCCL_COMPILER(NVRTC)
 
-[[noreturn]] _CCCL_API inline void __throw_cuda_error(
-  [[maybe_unused]] const __cuda_error_t __status,
-  [[maybe_unused]] const char* __msg,
-  [[maybe_unused]] const char* __api                  = nullptr,
-  [[maybe_unused]] ::cuda::std::source_location __loc = ::cuda::std::source_location::current())
-{
-  _CCCL_THROW(cuda::cuda_error, __status, __msg, __api, __loc);
-}
-
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>

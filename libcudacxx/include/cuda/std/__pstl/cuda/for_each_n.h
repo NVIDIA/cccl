@@ -38,11 +38,12 @@ _CCCL_DIAG_POP
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__algorithm/for_each_n.h>
 #  include <cuda/std/__exception/cuda_error.h>
+#  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__exception/terminate.h>
 #  include <cuda/std/__execution/env.h>
 #  include <cuda/std/__execution/policy.h>
+#  include <cuda/std/__host_stdlib/new>
 #  include <cuda/std/__iterator/iterator_traits.h>
-#  include <cuda/std/__new/bad_alloc.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__utility/convert_to_integral.h>
@@ -92,7 +93,7 @@ struct __pstl_dispatch<__pstl_algorithm::__for_each_n, __execution_backend::__cu
       {
         if (__err.status() == ::cudaErrorMemoryAllocation)
         {
-          ::cuda::std::__throw_bad_alloc();
+          _CCCL_THROW(std::bad_alloc);
         }
         else
         {
