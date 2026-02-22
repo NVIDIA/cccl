@@ -111,17 +111,17 @@ def test_block_run_length_total_decoded_size_none_raises():
         kernel[1, 32](d_run_values, d_run_lengths)
 
 
-def test_warp_exchange_thread_data_requires_array():
+def test_warp_exchange_thread_data_items_per_thread_mismatch_raises():
     items_per_thread = 4
 
     @cuda.jit
     def kernel(d_out):
         thread_data = coop.ThreadData(items_per_thread, dtype=numba.int32)
-        output_items = cuda.local.array(items_per_thread, dtype=numba.int32)
+        output_items = coop.ThreadData(items_per_thread, dtype=numba.int32)
         coop.warp.exchange(
             thread_data,
             output_items,
-            items_per_thread=items_per_thread,
+            items_per_thread=5,
             warp_exchange_type=WarpExchangeType.StripedToBlocked,
             threads_in_warp=32,
         )
@@ -131,6 +131,6 @@ def test_warp_exchange_thread_data_requires_array():
     d_output = cuda.device_array(32 * items_per_thread, dtype=np.int32)
     with pytest.raises(
         Exception,
-        match="coop.warp.exchange requires items to be a local array",
+        match="coop.warp.exchange items_per_thread must match array shape",
     ):
         kernel[1, 32](d_output)
