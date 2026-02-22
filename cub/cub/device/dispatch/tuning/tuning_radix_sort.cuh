@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 #pragma once
@@ -20,6 +20,7 @@
 #include <cub/agent/agent_scan.cuh>
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/util_device.cuh>
 
 #include <cuda/__device/arch_id.h>
@@ -32,6 +33,9 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::radix_sort
 {
+using detail::scan::make_mem_scaled_scan_policy;
+using detail::scan::scan_policy;
+
 struct radix_sort_histogram_policy
 {
   int block_threads;
@@ -143,63 +147,6 @@ _CCCL_API constexpr auto make_reg_scaled_radix_sort_onesweep_policy(
     rank_algorith,
     scan_algorithm,
     store_algorithm};
-}
-
-// TODO(bgruber): move this into the scan tuning header
-struct scan_policy
-{
-  int block_threads;
-  int items_per_thread;
-  BlockLoadAlgorithm load_algorithm;
-  CacheLoadModifier load_modifier;
-  BlockStoreAlgorithm store_algorithm;
-  BlockScanAlgorithm scan_algorithm;
-  delay_constructor_policy delay_constructor;
-
-  _CCCL_API constexpr friend bool operator==(const scan_policy& lhs, const scan_policy& rhs)
-  {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
-        && lhs.store_algorithm == rhs.store_algorithm && lhs.scan_algorithm == rhs.scan_algorithm
-        && lhs.delay_constructor == rhs.delay_constructor;
-  }
-
-  _CCCL_API constexpr friend bool operator!=(const scan_policy& lhs, const scan_policy& rhs)
-  {
-    return !(lhs == rhs);
-  }
-
-#if !_CCCL_COMPILER(NVRTC)
-  friend ::std::ostream& operator<<(::std::ostream& os, const scan_policy& p)
-  {
-    return os
-        << "scan_policy { .block_threads = " << p.block_threads << ", .items_per_thread = " << p.items_per_thread
-        << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
-        << ", .store_algorithm = " << p.store_algorithm << ", .scan_algorithm = " << p.scan_algorithm
-        << ", .delay_constructor = " << p.delay_constructor << " }";
-  }
-#endif // !_CCCL_COMPILER(NVRTC)
-};
-
-_CCCL_API constexpr auto make_mem_scaled_scan_policy(
-  int nominal_4b_block_threads,
-  int nominal_4b_items_per_thread,
-  int compute_t_size,
-  BlockLoadAlgorithm load_algorithm,
-  CacheLoadModifier load_modifier,
-  BlockStoreAlgorithm store_algorithm,
-  BlockScanAlgorithm scan_algorithm,
-  delay_constructor_policy delay_constructor = {delay_constructor_kind::fixed_delay, 350, 450}) -> scan_policy
-{
-  const auto scaled = scale_mem_bound(nominal_4b_block_threads, nominal_4b_items_per_thread, compute_t_size);
-  return scan_policy{
-    scaled.block_threads,
-    scaled.items_per_thread,
-    load_algorithm,
-    load_modifier,
-    store_algorithm,
-    scan_algorithm,
-    delay_constructor};
 }
 
 struct radix_sort_downsweep_policy

@@ -53,7 +53,11 @@ union tile_state_kernel_arg_t
  * @param[in] num_tiles
  *   Number of tiles
  */
-template <typename ChainedPolicyT, typename InputIteratorT, typename OutputIteratorT, typename ScanTileState, typename AccumT>
+template <typename PolicySelectorT,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename ScanTileState,
+          typename AccumT>
 CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
   tile_state_kernel_arg_t<ScanTileState, AccumT> tile_state, int num_tiles)
 {
@@ -61,8 +65,9 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // beneficial for all problem sizes in cub.bench.scan.exclusive.sum.base
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-  if constexpr (detail::scan::
-                  scan_use_warpspeed<typename ChainedPolicyT::ActivePolicy, InputIteratorT, OutputIteratorT, AccumT>)
+  constexpr scan_policy policy = PolicySelectorT{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  if constexpr (policy.warpspeed
+                && detail::scan::use_warpspeed<InputIteratorT, OutputIteratorT, AccumT>(policy.warpspeed))
   {
     device_scan_init_lookahead_body(tile_state.lookahead, num_tiles);
   }
@@ -106,28 +111,26 @@ DeviceCompactInitKernel(ScanTileStateT tile_state, int num_tiles, NumSelectedIte
     *d_num_selected_out = 0;
   }
 }
-template <typename ChainedPolicyT, typename InputIteratorT, typename OutputIteratorT, typename AccumT>
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_CONSTEVAL int get_device_scan_launch_bounds() noexcept
+template <typename PolicySelector, typename InputIteratorT, typename OutputIteratorT, typename AccumT>
+_CCCL_DEVICE constexpr int get_device_scan_launch_bounds() noexcept
 {
+  constexpr scan_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-  if constexpr (detail::scan::
-                  scan_use_warpspeed<typename ChainedPolicyT::ActivePolicy, InputIteratorT, OutputIteratorT, AccumT>)
+  if constexpr (policy.warpspeed
+                && detail::scan::use_warpspeed<InputIteratorT, OutputIteratorT, AccumT>(policy.warpspeed))
   {
-    return get_scan_block_threads<typename ChainedPolicyT::ActivePolicy>;
+    return policy.warpspeed.num_total_threads;
   }
-  else
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
-  {
-    return static_cast<int>(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS);
-  }
+  return policy.block_threads;
 }
 
 /**
  * @brief Scan kernel entry point (multi-block)
  *
  *
- * @tparam ChainedPolicyT
- *   Chained tuning policy
+ * @tparam PolicySelector
+ *   Policy selector for tuning
  *
  * @tparam InputIteratorT
  *   Random-access input iterator type for reading scan inputs @iterator
@@ -167,7 +170,7 @@ template <typename ChainedPolicyT, typename InputIteratorT, typename OutputItera
  * @paramTotal num_items
  *   number of scan items for the entire problem
  */
-template <typename ChainedPolicyT,
+template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename ScanTileState,
@@ -177,7 +180,7 @@ template <typename ChainedPolicyT,
           typename AccumT,
           bool ForceInclusive,
           typename RealInitValueT = typename InitValueT::value_type>
-__launch_bounds__(get_device_scan_launch_bounds<ChainedPolicyT, InputIteratorT, OutputIteratorT, AccumT>(), 1)
+__launch_bounds__(get_device_scan_launch_bounds<PolicySelector, InputIteratorT, OutputIteratorT, AccumT>())
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanKernel(
     _CCCL_GRID_CONSTANT const InputIteratorT d_in,
     _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
@@ -192,23 +195,52 @@ __launch_bounds__(get_device_scan_launch_bounds<ChainedPolicyT, InputIteratorT, 
     _CCCL_GRID_CONSTANT const OffsetT num_items,
     _CCCL_GRID_CONSTANT const int num_stages)
 {
-  using ActivePolicy = typename ChainedPolicyT::ActivePolicy;
+  static constexpr scan_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static_assert(policy.load_modifier != CacheLoadModifier::LOAD_LDG,
+                "The memory consistency model does not apply to texture "
+                "accesses");
+
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-  if constexpr (detail::scan::scan_use_warpspeed<ActivePolicy, InputIteratorT, OutputIteratorT, AccumT>)
+  if constexpr (policy.warpspeed
+                && detail::scan::use_warpspeed<InputIteratorT, OutputIteratorT, AccumT>(policy.warpspeed))
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_100, ({
-                   auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
-                     d_in, d_out, tile_state.lookahead, num_items, num_stages};
-                   device_scan_lookahead_body<typename ActivePolicy::WarpspeedPolicy, ForceInclusive, RealInitValueT>(
-                     scan_params, scan_op, init_value);
-                 }));
+    using WarpspeedPolicyT [[maybe_unused]] = warpspeedKernelPolicy<
+      scan_warpspeed_policy::num_squads,
+      policy.warpspeed.num_reduce_warps,
+      policy.warpspeed.num_scan_stor_warps,
+      policy.warpspeed.num_load_warps,
+      policy.warpspeed.num_sched_warps,
+      policy.warpspeed.num_look_ahead_warps,
+      policy.warpspeed.num_look_ahead_items,
+      policy.warpspeed.num_total_threads,
+      policy.warpspeed.items_per_thread,
+      policy.warpspeed.tile_size>;
+    NV_IF_TARGET(
+      NV_PROVIDES_SM_100, ({
+        auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
+          d_in, d_out, tile_state.lookahead, num_items, num_stages};
+        device_scan_lookahead_body<WarpspeedPolicyT, ForceInclusive, RealInitValueT>(scan_params, scan_op, init_value);
+      }));
   }
   else
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
   {
+    using ScanPolicyT = AgentScanPolicy<
+      policy.block_threads,
+      policy.items_per_thread,
+      AccumT,
+      policy.load_algorithm,
+      policy.load_modifier,
+      policy.store_algorithm,
+      policy.scan_algorithm,
+      NoScaling<policy.block_threads, policy.items_per_thread>,
+      delay_constructor_t<policy.delay_constructor.kind,
+                          policy.delay_constructor.delay,
+                          policy.delay_constructor.l2_write_latency>>;
+
     // Thread block type for scanning input tiles
     using AgentScanT = detail::scan::AgentScan<
-      typename ActivePolicy::ScanPolicyT,
+      ScanPolicyT,
       InputIteratorT,
       OutputIteratorT,
       ScanOpT,
