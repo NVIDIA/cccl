@@ -37,6 +37,31 @@ class merge_sort_keys(BasePrimitive):
         """
         Performs a warp-wide merge sort over blocked keys.
 
+        :param dtype: Supplies the key dtype.
+        :type  dtype: DtypeType
+
+        :param items_per_thread: Supplies the number of keys owned by each lane.
+        :type  items_per_thread: int
+
+        :param compare_op: Supplies a binary comparison callable used to order
+            keys (and values, if present).
+        :type  compare_op: Callable
+
+        :param value_dtype: Optionally supplies a value dtype for key/value
+            sorting. If omitted, only keys are sorted.
+        :type  value_dtype: DtypeType, optional
+
+        :param threads_in_warp: Supplies the logical warp size.
+        :type  threads_in_warp: int, optional
+
+        :param methods: Optionally supplies UDT helper methods
+            (``construct``/``assign``) when key/value dtypes are user-defined.
+        :type  methods: dict, optional
+
+        :param temp_storage: Optionally supplies explicit cooperative temporary
+            storage (e.g. via ``coop.TempStorage``).
+        :type  temp_storage: Any, optional
+
         Example:
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_merge_sort_api.py
                 :language: python
@@ -156,6 +181,41 @@ class merge_sort_pairs(merge_sort_keys):
         temp_storage=None,
         node=None,
     ):
+        """
+        Performs a warp-wide merge sort over blocked key/value pairs.
+
+        :param keys: Supplies the key dtype.
+        :type  keys: DtypeType
+
+        :param values: Supplies the value dtype.
+        :type  values: DtypeType
+
+        :param items_per_thread: Supplies the number of key/value pairs owned
+            by each lane.
+        :type  items_per_thread: int
+
+        :param compare_op: Supplies a binary comparison callable used to order
+            keys.
+        :type  compare_op: Callable
+
+        :param threads_in_warp: Supplies the logical warp size.
+        :type  threads_in_warp: int, optional
+
+        :param methods: Optionally supplies UDT helper methods
+            (``construct``/``assign``) when key/value dtypes are user-defined.
+        :type  methods: dict, optional
+
+        :param temp_storage: Optionally supplies explicit cooperative temporary
+            storage (e.g. via ``coop.TempStorage``).
+        :type  temp_storage: Any, optional
+
+        Example:
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_merge_sort_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin merge-sort
+                :end-before: example-end merge-sort
+        """
         super().__init__(
             dtype=keys,
             items_per_thread=items_per_thread,

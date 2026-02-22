@@ -37,6 +37,27 @@ class reduce(BasePrimitive):
         Computes a warp-wide reduction for lane :sub:`0` using the specified
         binary reduction functor.
 
+        :param dtype: Supplies the reduction item dtype.
+        :type  dtype: DtypeType
+
+        :param binary_op: Supplies a binary callable used to combine two items.
+        :type  binary_op: Callable
+
+        :param threads_in_warp: Supplies the logical warp size.
+        :type  threads_in_warp: int, optional
+
+        :param valid_items: Optionally limits how many items in the warp are
+            considered valid for partial-tile reductions.
+        :type  valid_items: int, optional
+
+        :param methods: Optionally supplies UDT helper methods
+            (``construct``/``assign``) when ``dtype`` is user-defined.
+        :type  methods: dict, optional
+
+        :param temp_storage: Optionally supplies explicit cooperative temporary
+            storage (e.g. via ``coop.TempStorage``).
+        :type  temp_storage: Any, optional
+
         Example:
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
                 :language: python
