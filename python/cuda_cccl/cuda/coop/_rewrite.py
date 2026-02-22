@@ -2073,10 +2073,9 @@ class CoopLoadStoreNode(CoopNode):
 
         func_ty = types.Function(ImplDecl)
 
-        # This nonsense appears to be required because, without it, a
-        # `KeyError` gets hit because func_ty's _impl_keys dict is empty.
-        # I can't imagine any of this is the canonical (or even correct) way
-        # to do this.
+        # Prime the function-type implementation cache after dynamic
+        # registration. Without this explicit type query, `_impl_keys` can
+        # remain empty and the later lookup by `sig.args` fails.
         typingctx = self.typingctx
         func_ty.get_call_type(
             typingctx,
