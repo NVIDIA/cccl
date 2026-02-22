@@ -1567,12 +1567,11 @@ class CoopNode:
             return_type = types.void
         existing_type = self.typemap[assign.target.name]
         if existing_type != return_type:
-            # I don't fully understand or appreciate why some primitives need
-            # this but others don't, i.e. load/store will have a void return
-            # type in the typemap... but coop.block.scan() calls will have a
-            # `coop.block.scan` return type.  Regardless, if the existing type
-            # differs, we need to clear it and set the new return type; if we
-            # don't, we'll hit a numba casting error.
+            # The target variable was typed against the original high-level
+            # call before rewrite. After call substitution, this IR assignment
+            # now receives the lowered synthetic invocable return. If typemap
+            # still advertises the old type, Numba will attempt an invalid cast
+            # at this assignment and fail compilation.
             del self.typemap[assign.target.name]
             self.typemap[assign.target.name] = return_type
 
