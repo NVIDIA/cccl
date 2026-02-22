@@ -2165,8 +2165,6 @@ class CoopLoadStoreNode(CoopNode):
             loc=self.instr.loc,
         )
 
-        # Determine argument types
-
         sig = Signature(
             types.none,
             args=self.runtime_arg_types,
