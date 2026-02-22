@@ -253,7 +253,7 @@ private:
     const int total_bits = end_bit - begin_bit;
 
     // TODO (elstehle): Short-circuit if k is greater than the number of items in the tile
-    if ((!IsFullTile && k > /*=*/num_valid) || k >= tile_items)
+    if ((!IsFullTile && k >= num_valid) || k >= tile_items)
     {
       return;
     }
