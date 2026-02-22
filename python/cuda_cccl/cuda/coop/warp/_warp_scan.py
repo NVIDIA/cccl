@@ -53,6 +53,20 @@ class exclusive_sum(BasePrimitive):
         """
         Computes an exclusive warp-wide prefix sum using addition (+).
 
+        :param dtype: Supplies the scan item dtype.
+        :type  dtype: DtypeType
+
+        :param threads_in_warp: Supplies the logical warp size.
+        :type  threads_in_warp: int, optional
+
+        :param warp_aggregate: Optionally supplies a single-element output that
+            receives the warp aggregate.
+        :type  warp_aggregate: Any, optional
+
+        :param temp_storage: Optionally supplies explicit cooperative temporary
+            storage (e.g. via ``coop.TempStorage``).
+        :type  temp_storage: Any, optional
+
         Example:
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_scan_api.py
                 :language: python
@@ -135,6 +149,20 @@ class inclusive_sum(BasePrimitive):
     ):
         """
         Computes an inclusive warp-wide prefix sum using addition (+).
+
+        :param dtype: Supplies the scan item dtype.
+        :type  dtype: DtypeType
+
+        :param threads_in_warp: Supplies the logical warp size.
+        :type  threads_in_warp: int, optional
+
+        :param warp_aggregate: Optionally supplies a single-element output that
+            receives the warp aggregate.
+        :type  warp_aggregate: Any, optional
+
+        :param temp_storage: Optionally supplies explicit cooperative temporary
+            storage (e.g. via ``coop.TempStorage``).
+        :type  temp_storage: Any, optional
 
         Example:
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_scan_api.py
@@ -220,11 +248,40 @@ class exclusive_scan(BasePrimitive):
         temp_storage=None,
     ):
         """
-        Computes an exclusive warp-wide prefix scan using the specified scan operator.
+        Computes an exclusive warp-wide prefix scan.
 
-        Example (explicit temp storage):
-            temp_storage = coop.TempStorage(bytes, alignment)
-            out = warp_exclusive_scan(x, temp_storage=temp_storage)
+        :param dtype: Supplies the scan item dtype.
+        :type  dtype: DtypeType
+
+        :param scan_op: Supplies the scan operator (known-op string, callable,
+            or ``ScanOp`` instance).
+        :type  scan_op: ScanOpType
+
+        :param initial_value: Optionally supplies an initial value for
+            ``ExclusiveScan`` overloads.
+        :type  initial_value: Any, optional
+
+        :param threads_in_warp: Supplies the logical warp size.
+        :type  threads_in_warp: int, optional
+
+        :param valid_items: Optionally limits how many items in the warp are
+            valid for partial-tile scans.
+        :type  valid_items: int, optional
+
+        :param warp_aggregate: Optionally supplies a single-element output that
+            receives the warp aggregate.
+        :type  warp_aggregate: Any, optional
+
+        :param temp_storage: Optionally supplies explicit cooperative temporary
+            storage (e.g. via ``coop.TempStorage``).
+        :type  temp_storage: Any, optional
+
+        Example:
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_scan_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin exclusive-scan
+                :end-before: example-end exclusive-scan
         """
         self.temp_storage = temp_storage
         self.dtype = normalize_dtype_param(dtype)
@@ -337,11 +394,40 @@ class inclusive_scan(BasePrimitive):
         temp_storage=None,
     ):
         """
-        Computes an inclusive warp-wide prefix scan using the specified scan operator.
+        Computes an inclusive warp-wide prefix scan.
 
-        Example (explicit temp storage):
-            temp_storage = coop.TempStorage(bytes, alignment)
-            out = warp_inclusive_scan(x, temp_storage=temp_storage)
+        :param dtype: Supplies the scan item dtype.
+        :type  dtype: DtypeType
+
+        :param scan_op: Supplies the scan operator (known-op string, callable,
+            or ``ScanOp`` instance).
+        :type  scan_op: ScanOpType
+
+        :param initial_value: Optionally supplies an initial value for
+            ``InclusiveScan`` overloads.
+        :type  initial_value: Any, optional
+
+        :param threads_in_warp: Supplies the logical warp size.
+        :type  threads_in_warp: int, optional
+
+        :param valid_items: Optionally limits how many items in the warp are
+            valid for partial-tile scans.
+        :type  valid_items: int, optional
+
+        :param warp_aggregate: Optionally supplies a single-element output that
+            receives the warp aggregate.
+        :type  warp_aggregate: Any, optional
+
+        :param temp_storage: Optionally supplies explicit cooperative temporary
+            storage (e.g. via ``coop.TempStorage``).
+        :type  temp_storage: Any, optional
+
+        Example:
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_scan_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin inclusive-scan
+                :end-before: example-end inclusive-scan
         """
         self.temp_storage = temp_storage
         self.dtype = normalize_dtype_param(dtype)
