@@ -20,6 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__fwd/array.h>
+#include <cuda/std/__fwd/complex.h>
+#include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -71,6 +74,25 @@ tuple_size<__tuple_types<_Tp...>> : public integral_constant<size_t, sizeof...(_
 
 template <class _Tp>
 inline constexpr size_t tuple_size_v = tuple_size<_Tp>::value;
+
+#if _CCCL_HAS_HOST_STD_LIB()
+template <class _Tp, size_t _Np>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<::std::array<_Tp, _Np>> : public integral_constant<size_t, _Np>
+{};
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<::std::complex<_Tp>> : integral_constant<size_t, 2>
+{};
+
+template <class _T1, class _T2>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<::std::pair<_T1, _T2>> : public integral_constant<size_t, 2>
+{};
+
+template <class... _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<::std::tuple<_Tp...>> : public integral_constant<size_t, sizeof...(_Tp)>
+{};
+
+#endif // _CCCL_HAS_HOST_STD_LIB()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

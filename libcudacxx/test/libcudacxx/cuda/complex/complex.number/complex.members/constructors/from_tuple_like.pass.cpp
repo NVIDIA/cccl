@@ -182,22 +182,6 @@ __host__ __device__ constexpr bool test()
 
 #if !_CCCL_COMPILER(NVRTC)
 
-template <class... Args>
-struct cuda::std::tuple_size<std::tuple<Args...>> : cuda::std::integral_constant<cuda::std::size_t, sizeof...(Args)>
-{};
-
-template <std::size_t I, class... Args>
-struct cuda::std::tuple_element<I, std::tuple<Args...>> : std::tuple_element<I, cuda::std::tuple<Args...>>
-{};
-
-template <class A, class B>
-struct cuda::std::tuple_size<std::pair<A, B>> : cuda::std::integral_constant<cuda::std::size_t, 2>
-{};
-
-template <cuda::std::size_t I, class A, class B>
-struct cuda::std::tuple_element<I, std::pair<A, B>> : cuda::std::conditional<I == 0, A, B>
-{};
-
 template <class T>
 void test_constructor_from_host_tuple_like()
 {
