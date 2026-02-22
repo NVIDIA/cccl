@@ -55,6 +55,11 @@ from ._types import Invocable
 from ._typing import (
     ScanOpType,
 )
+
+# These rewrite helpers are intentionally imported directly and bound as
+# `impl_key` on decl classes below. They are private implementation hooks (not
+# public API symbols), so `__all__` exports from `cuda.coop.block/warp` do not
+# cover this use case.
 from .block._block_adjacent_difference import (
     _make_adjacent_difference_rewrite as _make_block_adjacent_difference_rewrite,
 )
@@ -292,6 +297,12 @@ class CoopInstanceTemplate(AbstractTemplate):
 # =============================================================================
 # Temp Storage
 # =============================================================================
+
+
+# TempStorage is a compile-time placeholder that lets kernels request explicit
+# cooperative temporary storage without forcing users to hand-write shared-array
+# declarations. Rewrite inserts the concrete shared-memory allocation and wires
+# it to primitive calls.
 class TempStorageType(types.Type):
     def __init__(self):
         super().__init__(name="coop.TempStorage")
@@ -457,6 +468,11 @@ class CoopTempStorageGetItemDecl(AbstractTemplate):
 # =============================================================================
 # Decomposer
 # =============================================================================
+
+
+# Decomposer support is currently placeholder-only in coop typing. We model it
+# as an opaque compile-time token so public APIs can accept it while full UDT
+# decomposer lowering support is still under development.
 class DecomposerType(types.Type):
     def __init__(self):
         super().__init__(name="coop.Decomposer")
@@ -506,7 +522,7 @@ def lower_constant_decomposer(context, builder, typ, value):
 # the need to specify it explicitly to the ThreadData constructor. If
 # inference is ambiguous, users can pass `dtype` directly. Additionally, we
 # can obtain the `items_per_thread` value from the ThreadData object,
-# obviating need to pass it explicitly to the load/store functions.
+# obviating the need to pass it explicitly to the load/store functions.
 
 
 class ThreadDataType(types.Array):
