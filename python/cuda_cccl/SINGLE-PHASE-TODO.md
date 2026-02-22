@@ -9,6 +9,9 @@
 - [x] Support `coop.ThreadData` inputs for scan (dtype inference).
 - [x] Support `coop.ThreadData` inputs for load/store/exchange (rewrite items_per_thread + dtype inference).
 - [x] Support `coop.ThreadData` inputs for block radix/merge sort (rewrite items_per_thread + dtype inference).
+- [x] Infer `items_per_thread` from `coop.ThreadData` for block reduce/sum and
+      warp load/store/exchange/merge sort; support ThreadData ranks/flags in
+      block exchange scatter variants.
 - [x] Decide how to handle scalar scan inputs (return semantics) if needed.
 - [x] Verify explicit `temp_storage` handling for scan (single-phase).
 - [x] Implement `coop.TempStorage` placeholder handling (allocate shared uint8 buffer from size/alignment).

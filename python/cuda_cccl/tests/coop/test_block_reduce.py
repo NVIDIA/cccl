@@ -540,6 +540,42 @@ def test_block_sum_array_global(T, threads_per_block, items_per_thread, algorith
     assert "STL" not in sass
 
 
+def test_block_reduce_sum_thread_data_infers_items_per_thread():
+    threads_per_block = 128
+    items_per_thread = 4
+    total_items = threads_per_block * items_per_thread
+
+    @cuda.jit(device=True)
+    def min_op(a, b):
+        return a if a < b else b
+
+    @cuda.jit
+    def kernel(d_in, d_out_reduce, d_out_sum):
+        tid = cuda.threadIdx.x
+        thread_data = coop.ThreadData(items_per_thread, dtype=d_in.dtype)
+        coop.block.load(d_in, thread_data)
+        block_reduce = coop.block.reduce(thread_data, binary_op=min_op)
+        block_sum = coop.block.sum(thread_data)
+        if tid == 0:
+            d_out_reduce[0] = block_reduce
+            d_out_sum[0] = block_sum
+
+    h_input = np.random.randint(0, 256, total_items, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output_reduce = cuda.device_array(1, dtype=np.int32)
+    d_output_sum = cuda.device_array(1, dtype=np.int32)
+
+    kernel[1, threads_per_block](d_input, d_output_reduce, d_output_sum)
+    cuda.synchronize()
+
+    np.testing.assert_array_equal(
+        d_output_reduce.copy_to_host(), np.array([h_input.min()], dtype=np.int32)
+    )
+    np.testing.assert_array_equal(
+        d_output_sum.copy_to_host(), np.array([h_input.sum()], dtype=np.int32)
+    )
+
+
 @pytest.mark.parametrize(
     "threads_per_block", [32, 64, 128, 256, 512, 1024, (4, 8), (2, 4, 8)]
 )
