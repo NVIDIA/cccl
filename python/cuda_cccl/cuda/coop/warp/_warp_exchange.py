@@ -42,7 +42,39 @@ class exchange(BasePrimitive):
         node=None,
     ):
         """
-        Performs a warp-wide exchange of items.
+        Performs a warp-wide exchange of per-thread items.
+
+        :param dtype: Supplies the input/output item dtype.
+        :type  dtype: DtypeType
+
+        :param items_per_thread: Supplies the number of items carried by each
+            lane. Must be >= 1.
+        :type  items_per_thread: int
+
+        :param threads_in_warp: Supplies the logical warp size.
+        :type  threads_in_warp: int, optional
+
+        :param warp_exchange_type: Supplies the exchange mode:
+            ``StripedToBlocked``, ``BlockedToStriped``, or
+            ``ScatterToStriped``.
+        :type  warp_exchange_type: WarpExchangeType, optional
+
+        :param offset_dtype: Optionally supplies the rank dtype used by
+            ``ScatterToStriped``.
+        :type  offset_dtype: numba.types.Type, optional
+
+        :param methods: Optionally supplies UDT helper methods
+            (``construct``/``assign``) when ``dtype`` is user-defined.
+        :type  methods: dict, optional
+
+        :param temp_storage: Optionally supplies explicit cooperative temporary
+            storage (e.g. via ``coop.TempStorage``).
+        :type  temp_storage: Any, optional
+
+        :raises ValueError: If ``warp_exchange_type`` is invalid.
+        :raises ValueError: If ``items_per_thread < 1``.
+        :raises ValueError: If ``offset_dtype`` is provided for non-scatter
+            exchange modes.
 
         Example:
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_exchange_api.py
