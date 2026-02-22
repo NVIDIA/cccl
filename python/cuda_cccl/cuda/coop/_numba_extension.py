@@ -9,19 +9,26 @@ by `numba.njit`/`cuda.jit`.
 
 import os
 
-NUMBA_CCCL_COOP_DEBUG = False
-NUMBA_CCCL_COOP_INJECT_PRINTFS = False
-NUMBA_CCCL_COOP_SOURCE_CODE_REWRITER = None
+CUDA_CCCL_COOP_DEBUG = False
+CUDA_CCCL_COOP_INJECT_PRINTFS = False
+CUDA_CCCL_COOP_SOURCE_CODE_REWRITER = None
+
+# Backward-compatible aliases.
+NUMBA_CCCL_COOP_DEBUG = CUDA_CCCL_COOP_DEBUG
+NUMBA_CCCL_COOP_INJECT_PRINTFS = CUDA_CCCL_COOP_INJECT_PRINTFS
+NUMBA_CCCL_COOP_SOURCE_CODE_REWRITER = CUDA_CCCL_COOP_SOURCE_CODE_REWRITER
 
 
 def _set_source_code_rewriter(rewriter) -> None:
+    global CUDA_CCCL_COOP_SOURCE_CODE_REWRITER
     global NUMBA_CCCL_COOP_SOURCE_CODE_REWRITER
+    CUDA_CCCL_COOP_SOURCE_CODE_REWRITER = rewriter
     NUMBA_CCCL_COOP_SOURCE_CODE_REWRITER = rewriter
 
 
 def _get_source_code_rewriter():
-    global NUMBA_CCCL_COOP_SOURCE_CODE_REWRITER
-    return NUMBA_CCCL_COOP_SOURCE_CODE_REWRITER
+    global CUDA_CCCL_COOP_SOURCE_CODE_REWRITER
+    return CUDA_CCCL_COOP_SOURCE_CODE_REWRITER
 
 
 def _get_env_boolean(name: str, default: bool = False) -> bool:
@@ -60,11 +67,15 @@ def _init_extension() -> None:
     if hasattr(driver, "target_context"):
         driver.target_context.install_registry(registry)
 
+    global CUDA_CCCL_COOP_DEBUG
+    global CUDA_CCCL_COOP_INJECT_PRINTFS
     global NUMBA_CCCL_COOP_DEBUG
     global NUMBA_CCCL_COOP_INJECT_PRINTFS
 
-    NUMBA_CCCL_COOP_DEBUG = _get_env_boolean("NUMBA_CCCL_COOP_DEBUG")
-    NUMBA_CCCL_COOP_INJECT_PRINTFS = _get_env_boolean("NUMBA_CCCL_COOP_INJECT_PRINTFS")
-    if NUMBA_CCCL_COOP_DEBUG:
+    CUDA_CCCL_COOP_DEBUG = _get_env_boolean("NUMBA_CCCL_COOP_DEBUG")
+    CUDA_CCCL_COOP_INJECT_PRINTFS = _get_env_boolean("NUMBA_CCCL_COOP_INJECT_PRINTFS")
+    NUMBA_CCCL_COOP_DEBUG = CUDA_CCCL_COOP_DEBUG
+    NUMBA_CCCL_COOP_INJECT_PRINTFS = CUDA_CCCL_COOP_INJECT_PRINTFS
+    if CUDA_CCCL_COOP_DEBUG:
         msg = "cuda.coop Numba extension initialized."
         print(msg)
