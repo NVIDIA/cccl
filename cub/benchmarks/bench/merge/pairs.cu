@@ -18,26 +18,25 @@
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK_POW2 tpb 6:10:1
 
+#if !TUNE_BASE
+struct bench_policy_selector
+{
+  _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> cub::detail::merge::merge_policy
+  {
+    return cub::detail::merge::merge_policy{
+      TUNE_THREADS_PER_BLOCK,
+      cub::Nominal4BItemsToItems<KeyT>(TUNE_ITEMS_PER_THREAD),
+      TUNE_LOAD_MODIFIER,
+      TUNE_STORE_ALGORITHM,
+      TUNE_USE_BL2SH};
+  }
+};
+#endif // !TUNE_BASE
+
 template <typename KeyT, typename ValueT, typename OffsetT>
 void pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
-  using key_t            = KeyT;
-  using value_t          = ValueT;
-  using key_input_it_t   = key_t*;
-  using value_input_it_t = value_t*;
-  using key_it_t         = key_t*;
-  using value_it_t       = value_t*;
-  using offset_t         = OffsetT;
-  using compare_op_t     = less_t;
-
-#if !TUNE_BASE
-  using policy_t   = policy_hub_t<key_t>;
-  using dispatch_t = cub::cub::detail::merge::
-    dispatch_t<key_it_t, value_it_t, key_it_t, value_it_t, key_it_t, value_it_t, offset_t, compare_op_t, policy_t>;
-#else // TUNE_BASE
-  using dispatch_t = cub::detail::merge::
-    dispatch_t<key_it_t, value_it_t, key_it_t, value_it_t, key_it_t, value_it_t, offset_t, compare_op_t>;
-#endif // TUNE_BASE
+  using compare_op_t = less_t;
 
   // Retrieve axis parameters
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
@@ -46,19 +45,19 @@ void pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
   const auto num_items_lhs = elements / 2;
   const auto num_items_rhs = elements - num_items_lhs;
 
-  thrust::device_vector<key_t> keys_out(elements);
-  thrust::device_vector<value_t> values_lhs(num_items_lhs);
-  thrust::device_vector<value_t> values_rhs(num_items_rhs);
-  thrust::device_vector<value_t> values_out(elements);
+  thrust::device_vector<KeyT> keys_out(elements);
+  thrust::device_vector<ValueT> values_lhs(num_items_lhs);
+  thrust::device_vector<ValueT> values_rhs(num_items_rhs);
+  thrust::device_vector<ValueT> values_out(elements);
 
   auto [keys_lhs, keys_rhs] = generate_lhs_rhs<KeyT>(num_items_lhs, num_items_rhs, entropy);
 
-  key_t* d_keys_lhs     = thrust::raw_pointer_cast(keys_lhs.data());
-  key_t* d_keys_rhs     = thrust::raw_pointer_cast(keys_rhs.data());
-  key_t* d_keys_out     = thrust::raw_pointer_cast(keys_out.data());
-  value_t* d_values_lhs = thrust::raw_pointer_cast(values_lhs.data());
-  value_t* d_values_rhs = thrust::raw_pointer_cast(values_rhs.data());
-  value_t* d_values_out = thrust::raw_pointer_cast(values_out.data());
+  KeyT* d_keys_lhs     = thrust::raw_pointer_cast(keys_lhs.data());
+  KeyT* d_keys_rhs     = thrust::raw_pointer_cast(keys_rhs.data());
+  KeyT* d_keys_out     = thrust::raw_pointer_cast(keys_out.data());
+  ValueT* d_values_lhs = thrust::raw_pointer_cast(values_lhs.data());
+  ValueT* d_values_rhs = thrust::raw_pointer_cast(values_rhs.data());
+  ValueT* d_values_out = thrust::raw_pointer_cast(values_out.data());
 
   // Enable throughput calculations and add "Size" column to results.
   state.add_element_count(elements);
@@ -69,37 +68,47 @@ void pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 
   // Allocate temporary storage:
   std::size_t temp_size{};
-  dispatch_t::dispatch(
+  cub::detail::merge::dispatch(
     nullptr,
     temp_size,
     d_keys_lhs,
     d_values_lhs,
-    num_items_lhs,
+    static_cast<OffsetT>(num_items_lhs),
     d_keys_rhs,
     d_values_rhs,
-    num_items_rhs,
+    static_cast<OffsetT>(num_items_rhs),
     d_keys_out,
     d_values_out,
     compare_op_t{},
-    cudaStream_t{});
+    cudaStream_t{}
+#if !TUNE_BASE
+    ,
+    bench_policy_selector{}
+#endif // !TUNE_BASE
+  );
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::dispatch(
+    cub::detail::merge::dispatch(
       temp_storage,
       temp_size,
       d_keys_lhs,
       d_values_lhs,
-      num_items_lhs,
+      static_cast<OffsetT>(num_items_lhs),
       d_keys_rhs,
       d_values_rhs,
-      num_items_rhs,
+      static_cast<OffsetT>(num_items_rhs),
       d_keys_out,
       d_values_out,
       compare_op_t{},
-      launch.get_stream());
+      launch.get_stream()
+#if !TUNE_BASE
+        ,
+      bench_policy_selector{}
+#endif // !TUNE_BASE
+    );
   });
 }
 
