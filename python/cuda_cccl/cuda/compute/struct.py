@@ -144,7 +144,7 @@ def _coerce_value(field_type, value: Any) -> Any:
         return field_type.type(value)
 
     if isinstance(field_type, type) and issubclass(field_type, np.generic):
-        return field_type(value)
+        return field_type(value)  # type: ignore[call-arg]
 
     if isinstance(value, tuple):
         return field_type(*value)
