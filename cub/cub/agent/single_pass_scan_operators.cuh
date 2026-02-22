@@ -655,12 +655,12 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_init(
  */
 template <typename T,
           // TODO(bgruber): remove the check for is_primitive<T> in CCCL 4.0
-          bool single_word = detail::is_primitive<T>::value
-                          || (::cuda::std::is_trivially_copyable_v<T>
-                              && sizeof(T) < detail::largest_atomic_word_size
-                              // TODO(bgruber): a power of two size is not strictly necessary, but the implementation
-                              // cannot handle it currently. For example, we could support status word + int3.
-                              && ::cuda::is_power_of_two(sizeof(T)))>
+          bool SingleWord = detail::is_primitive<T>::value
+                         || (::cuda::std::is_trivially_copyable_v<T>
+                             && sizeof(T) < detail::largest_atomic_word_size
+                             // TODO(bgruber): a power of two size is not strictly necessary, but the implementation
+                             // cannot handle it currently. For example, we could support status word + int3.
+                             && ::cuda::is_power_of_two(sizeof(T)))>
 struct ScanTileState;
 
 /**
@@ -1034,8 +1034,8 @@ struct ScanTileState<T, false>
 template <typename ValueT,
           typename KeyT,
           // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
-          bool single_word = (detail::is_primitive<ValueT>::value || ::cuda::std::is_trivially_copyable_v<ValueT>)
-                          && (sizeof(ValueT) + sizeof(KeyT) < detail::largest_atomic_word_size)>
+          bool SingleWord = (detail::is_primitive<ValueT>::value || ::cuda::std::is_trivially_copyable_v<ValueT>)
+                         && (sizeof(ValueT) + sizeof(KeyT) < detail::largest_atomic_word_size)>
 struct ReduceByKeyScanTileState;
 
 /**
