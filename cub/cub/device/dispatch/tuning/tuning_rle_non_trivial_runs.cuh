@@ -382,7 +382,7 @@ struct policy_selector
   {
     auto make_default_policy =
       [&](BlockLoadAlgorithm block_load_alg, int delay_ctor_key_size, CacheLoadModifier load_mod) {
-        constexpr int nominal_4B_items_per_thread = 15;
+        const int nominal_4B_items_per_thread = 15;
         const int items_per_thread =
           ::cuda::std::clamp(nominal_4B_items_per_thread * 4 / key_size, 1, nominal_4B_items_per_thread);
         return rle_non_trivial_runs_policy{
