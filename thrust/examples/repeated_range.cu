@@ -21,19 +21,14 @@ class repeated_range
 public:
   using difference_type = typename cuda::std::iterator_traits<Iterator>::difference_type;
 
-  struct repeat_functor
+  // lambda that implements the repeat operation
+  __device__ auto create_repeat_functor(difference_type repeats)
   {
-    difference_type repeats;
-
-    repeat_functor(difference_type repeats)
-        : repeats(repeats)
-    {}
-
-    __host__ __device__ difference_type operator()(const difference_type& i) const
-    {
+    return [=] __device__(const difference_type& i) {
       return i / repeats;
     }
-  };
+  }
+  using repeat_functor = decltype(create_repeat_functor(difference_type{}));
 
   using CountingIterator    = typename thrust::counting_iterator<difference_type>;
   using TransformIterator   = typename thrust::transform_iterator<repeat_functor, CountingIterator>;
@@ -51,7 +46,10 @@ public:
 
   iterator begin() const
   {
-    return PermutationIterator(first, TransformIterator(CountingIterator(0), repeat_functor(repeats)));
+    auto repeat_fn = [repeats = this->repeats] __device__(const difference_type& i) {
+      return i / repeats;
+    };
+    return PermutationIterator(first, TransformIterator(CountingIterator(0), repeat_fn));
   }
 
   iterator end() const

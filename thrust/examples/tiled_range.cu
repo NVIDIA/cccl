@@ -21,19 +21,12 @@ class tiled_range
 public:
   using difference_type = typename cuda::std::iterator_traits<Iterator>::difference_type;
 
-  struct tile_functor
-  {
-    difference_type tile_size;
-
-    tile_functor(difference_type tile_size)
-        : tile_size(tile_size)
-    {}
-
-    __host__ __device__ difference_type operator()(const difference_type& i) const
-    {
+  // lambda that implements the tile operation
+  using tile_functor = decltype([](difference_type tile_size) {
+    return [=] __device__(const difference_type& i) {
       return i % tile_size;
-    }
-  };
+    };
+  }(difference_type{}));
 
   using CountingIterator    = typename thrust::counting_iterator<difference_type>;
   using TransformIterator   = typename thrust::transform_iterator<tile_functor, CountingIterator>;
@@ -51,7 +44,10 @@ public:
 
   iterator begin() const
   {
-    return PermutationIterator(first, TransformIterator(CountingIterator(0), tile_functor(last - first)));
+    auto tile_fn = [tile_size = last - first] __device__(const difference_type& i) {
+      return i % tile_size;
+    };
+    return PermutationIterator(first, TransformIterator(CountingIterator(0), tile_fn));
   }
 
   iterator end() const
