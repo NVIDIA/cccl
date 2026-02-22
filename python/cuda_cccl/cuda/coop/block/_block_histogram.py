@@ -229,9 +229,11 @@ class histogram(BasePrimitive):
             primitive that can be used to create unique names in translation
             units.
 
-        :param temp_storage: Optionally supplies temporary storage.  Not
-            yet implemented.  Will raise ``NotImplementedError`` if a non-None
-            value is provided.
+        :param temp_storage: Optionally supplies explicit temporary storage.
+            CUB ``BlockHistogram`` does use temp storage internally, but this
+            Python API currently manages that storage internally and does not
+            yet accept an explicit storage argument. A non-``None`` value will
+            raise ``NotImplementedError``.
 
         :raises ValueError: If ``items_per_thread`` is less than 1.
 
@@ -258,7 +260,7 @@ class histogram(BasePrimitive):
 
         if temp_storage is not None:
             raise NotImplementedError(
-                "Temporary storage is not yet supported for histogram."
+                "Explicit temp_storage is not yet supported for histogram."
             )
 
         # Validation complete, continue with algorithm creation.
