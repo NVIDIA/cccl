@@ -940,9 +940,6 @@ class Granularity(IntEnum):
     OTHER = auto()
 
 
-# TODO: Rename to PrimitiveType and the attributes to primitive_type to
-#       avoid confusion with the `primitive` usage where the underlying
-#       instance is a derived class of `BasePrimitive`.
 class Primitive(IntEnum):
     """
     Enum for the primitive type of the cooperative operation.
