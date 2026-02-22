@@ -40,58 +40,51 @@ The following :class:`cub.BlockScan` C++ APIs are supported:
     InclusiveScan(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, ScanOp scan_op, BlockPrefixCallbackOp &prefix_op)
     InclusiveScanT(&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, T initial_value, ScanOp scan_op)
 
-Unsupported C++ APIs
-++++++++++++++++++++
+Block-aggregate outputs
++++++++++++++++++++++++
 
-This module does not support any of the :class:`cub.BlockScan` C++ APIs
-that take a block aggregate reference as an argument.  That being said, the
-`BlockPrefixCallbackOp` callable is supported, and thus, block aggregates can
-be obtained using those measures.
-
-The reason the `T &block_aggregate` pattern is not supported as it will usually
-result in two output parameters, which we don't support in our underlying type
-machinery (i.e. _types.py).
-
-The unsupported APIs are as follows:
-
-    ExclusiveSum(T input, T &output, T &block_aggregate)
-    ExclusiveSum(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, T &block_aggregate)
-
-    InclusiveSum(T input, T &output, T &block_aggregate)
-    InclusiveSum(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, T &block_aggregate)
-
-    ExclusiveScan(T input, T &output, ScanOp scan_op, T &block_aggregate)
-    ExclusiveScan(T input, T &output, T initial_value, ScanOp scan_op, T &block_aggregate)
-    ExclusiveScan(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, ScanOp scan_op, T &block_aggregate)
-    ExclusiveScan(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, T initial_value, ScanOp scan_op, T &block_aggregate)
-
-    InclusiveScan(T input, T &output, ScanOp scan_op, T &block_aggregate)
-    InclusiveScan(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, T initial_value, ScanOp scan_op, T &block_aggregate)
+This module supports the block-aggregate out-parameter overloads for
+Exclusive/Inclusive Sum and Scan variants (scalar and array forms) via the
+optional ``block_aggregate`` argument. The block aggregate is written into a
+1-element array. Tuple-style multi-output returns are not used.
 """
 
+import enum
 from typing import Any, Callable, Literal
 
 import numba
+import numpy as np
+from numba.np.numpy_support import as_dtype
 
 from .._common import (
     CUB_BLOCK_SCAN_ALGOS,
-    make_binary_tempfile,
     normalize_dim_param,
     normalize_dtype_param,
 )
+from .._enums import (
+    BlockScanAlgorithm,
+)
 from .._scan_op import (
+    CUDA_MAXIMUM,
+    CUDA_MINIMUM,
+    CUDA_STD_BIT_AND,
+    CUDA_STD_BIT_OR,
+    CUDA_STD_BIT_XOR,
+    CUDA_STD_MULTIPLIES,
     ScanOp,
 )
 from .._types import (
     Algorithm,
+    BasePrimitive,
     Dependency,
     DependentArray,
     DependentCxxOperator,
+    DependentPointerReference,
     DependentPythonOperator,
     DependentReference,
     Invocable,
-    Pointer,
     TemplateParameter,
+    TempStoragePointer,
     numba_type_to_wrapper,
 )
 from .._typing import (
@@ -101,126 +94,18 @@ from .._typing import (
 )
 
 
-def make_scan(
+def _validate_initial_value(
+    initial_value: Any,
     dtype: DtypeType,
-    threads_per_block: DimType,
     items_per_thread: int,
-    initial_value: Any = None,
-    mode: Literal["exclusive", "inclusive"] = "exclusive",
-    scan_op: ScanOpType = "+",
+    mode: Literal["exclusive", "inclusive"],
+    scan_op: ScanOpType,
     block_prefix_callback_op: Callable = None,
-    algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
-    methods: dict = None,
-) -> Callable:
+) -> Any:
     """
-    Creates a block-wide prefix scan primitive based on CUB's BlockScan
-    APIs.
-
-    The returned primitive is callable from a Numba CUDA kernel and
-    supports sum and generic scan operators in inclusive and exclusive
-    modes.
-
-    Example:
-        The snippet below creates a scan primitive and invokes the
-        returned ``block_scan`` primitive inside a kernel.
-
-        .. code-block:: python
-
-           block_scan = coop.block.make_scan(
-               dtype=numba.int32,
-               threads_per_block=128,
-               items_per_thread=4,
-               mode="exclusive",
-               scan_op="+",
-           )
-
-           @cuda.jit(link=block_scan.files)
-           def kernel(input_arr, output_arr):
-               tid = cuda.threadIdx.x
-               thread_data = cuda.local.array(4, dtype=numba.int32)
-               for i in range(4):
-                   thread_data[i] = input_arr[tid * 4 + i]
-               block_scan(thread_data, thread_data)
-               for i in range(4):
-                   output_arr[tid * 4 + i] = thread_data[i]
-
-    :param dtype: Data type of the input and output values.
-    :type dtype: DtypeType
-
-    :param threads_per_block: Number of threads in the block. Can be an
-        integer for 1D blocks or a tuple of two or three integers for 2D
-        and 3D blocks.
-    :type threads_per_block: DimType
-
-    :param items_per_thread: Number of items owned by each thread.
-        Must be greater than or equal to 1.
-    :type items_per_thread: int, optional
-
-    :param initial_value: Optional initial value for scan variants that
-        support it.
-    :type initial_value: Any, optional
-
-    :param mode: Scan mode. Must be ``"exclusive"`` or ``"inclusive"``.
-    :type mode: Literal["exclusive", "inclusive"], optional
-
-    :param scan_op: Scan operator. The default is ``"+"``.
-    :type scan_op: ScanOpType, optional
-
-    :param block_prefix_callback_op: Optional block prefix callback
-        operator invoked by the first warp.
-    :type block_prefix_callback_op: Callable, optional
-
-    :param algorithm: Scan algorithm. Must be ``"raking"``,
-        ``"raking_memoize"``, or ``"warp_scans"``.
-    :type algorithm:
-        Literal["raking", "raking_memoize", "warp_scans"], optional
-
-    :param methods: Optional method dictionary used for user-defined
-        types.
-    :type methods: dict, optional
-
-    :raises ValueError: If ``algorithm`` is unsupported.
-    :raises ValueError: If ``items_per_thread < 1``.
-    :raises ValueError: If ``mode`` is not ``"exclusive"`` or
-        ``"inclusive"``.
-    :raises ValueError: If ``scan_op`` is unsupported.
-    :raises ValueError: If ``initial_value`` is provided for sum scans.
-    :raises ValueError: If ``initial_value`` is used with inclusive scans
-        and ``items_per_thread == 1``.
-    :raises ValueError: If ``initial_value`` is used with exclusive scans
-        and ``items_per_thread == 1`` while
-        ``block_prefix_callback_op`` is provided.
-    :raises ValueError: If an initial value is required but cannot be
-        inferred from ``dtype``.
-
-    :returns: Callable primitive object that can be linked to and
-        invoked from a CUDA kernel.
-    :rtype: Callable
+    Validates the initial value for a block scan operation.  Returns the
+    initial value with any defaulting or type casting applied.
     """
-    if algorithm not in CUB_BLOCK_SCAN_ALGOS:
-        raise ValueError(f"Unsupported algorithm: {algorithm}")
-
-    if items_per_thread < 1:
-        raise ValueError("items_per_thread must be greater than or equal to 1")
-
-    dim = normalize_dim_param(threads_per_block)
-    dtype = normalize_dtype_param(dtype)
-
-    if mode == "exclusive":
-        cpp_func_prefix = "Exclusive"
-    else:
-        if mode != "inclusive":
-            raise ValueError(f"Unsupported mode: {mode}")
-        cpp_func_prefix = "Inclusive"
-
-    # This will raise an error if scan_op is invalid.
-    scan_op = ScanOp(scan_op)
-    if scan_op.is_sum:
-        # Make sure we specialize the correct CUB API for exclusive sum.
-        cpp_function_name = f"{cpp_func_prefix}Sum"
-    else:
-        cpp_function_name = f"{cpp_func_prefix}Scan"
-
     # An initial value is not supported for inclusive and exclusive sums.
     if initial_value is not None and scan_op.is_sum:
         raise ValueError(
@@ -260,9 +145,46 @@ def make_scan(
         # We require an initial value, but one was not supplied.
         # Attempt to create a default value for the given dtype.
         # If we can't, raise an error.
+        if scan_op.is_known:
+            try:
+                dtype_np = as_dtype(dtype)
+            except Exception as e:
+                msg = (
+                    "initial_value is required for both inclusive and "
+                    "exclusive scans when items_per_thread > 1 and no "
+                    "block prefix callback operator has been supplied; "
+                    "attempted to create a default value for the given "
+                    f"dtype, but failed: {e}"
+                )
+                raise ValueError(msg) from e
+            if scan_op.op_cpp == CUDA_MINIMUM:
+                if dtype_np.kind == "f":
+                    default_value = float("inf")
+                else:
+                    default_value = np.iinfo(dtype_np).max
+            elif scan_op.op_cpp == CUDA_MAXIMUM:
+                if dtype_np.kind == "f":
+                    default_value = float("-inf")
+                else:
+                    default_value = np.iinfo(dtype_np).min
+            elif scan_op.op_cpp == CUDA_STD_MULTIPLIES:
+                default_value = 1
+            elif scan_op.op_cpp == CUDA_STD_BIT_AND:
+                if dtype_np.kind == "u":
+                    default_value = np.iinfo(dtype_np).max
+                elif dtype_np.kind == "b":
+                    default_value = True
+                else:
+                    default_value = -1
+            elif scan_op.op_cpp in (CUDA_STD_BIT_OR, CUDA_STD_BIT_XOR):
+                default_value = 0
+            else:
+                default_value = 0
+        else:
+            default_value = 0
         try:
-            initial_value = dtype.cast_python_value(0)
-        except (TypeError, NotImplementedError) as e:
+            initial_value = dtype.cast_python_value(default_value)
+        except (TypeError, NotImplementedError, ValueError) as e:
             # We can't create a default value for the given dtype.
             # Raise an error.
             msg = (
@@ -274,149 +196,461 @@ def make_scan(
             )
             raise ValueError(msg) from e
 
-    specialization_kwds = {
-        "T": dtype,
-        "BLOCK_DIM_X": dim[0],
-        "ALGORITHM": CUB_BLOCK_SCAN_ALGOS[algorithm],
-        "BLOCK_DIM_Y": dim[1],
-        "BLOCK_DIM_Z": dim[2],
-    }
+    return initial_value
 
-    template_parameters = [
-        TemplateParameter("T"),
-        TemplateParameter("BLOCK_DIM_X"),
-        TemplateParameter("ALGORITHM"),
-        TemplateParameter("BLOCK_DIM_Y"),
-        TemplateParameter("BLOCK_DIM_Z"),
-    ]
 
-    if items_per_thread == 1:
-        fake_return = True
-    else:
-        specialization_kwds["ITEMS_PER_THREAD"] = items_per_thread
-        fake_return = False
+class scan(BasePrimitive):
+    is_one_shot = True
+    default_algorithm = BlockScanAlgorithm.RAKING
+    cub_algorithm_map = CUB_BLOCK_SCAN_ALGOS
 
-    # A "known" scan op is the standard set of associative operators,
-    # e.g. ::cuda::std::plus<>, etc.  A "callable" scan op is a Python
-    # callable that has been furnished by the caller.  Thus, we need to
-    # generate different parameters for each case.
-    if scan_op.is_known:
+    def __init__(
+        self,
+        dtype: DtypeType,
+        threads_per_block: DimType,
+        items_per_thread: int,
+        mode: Literal["exclusive", "inclusive"] = "exclusive",
+        scan_op: ScanOpType = "+",
+        initial_value: Any = None,
+        block_prefix_callback_op: Callable = None,
+        block_aggregate: Any = None,
+        algorithm=None,
+        methods: dict = None,
+        unique_id: int = None,
+        temp_storage: Any = None,
+        use_array_inputs: bool = False,
+    ) -> None:
+        """
+        Creates a block-wide prefix scan primitive based on the CUB library's
+        BlockScan functionality.
 
-        def make_dependent_scan_op():
-            return DependentCxxOperator(
-                dep=Dependency("T"),
-                cpp=scan_op.op_cpp,
-            )
+        This function is the low-level implementation used by the higher-level
+        APIs such as ``exclusive_sum``, ``inclusive_sum``, ``exclusive_scan``,
+        and ``inclusive_scan``.
 
-    elif scan_op.is_callable:
+        :param dtype: Supplies the data type of the input and output arrays.
+        :type  dtype: DtypeType
 
-        def make_dependent_scan_op():
-            return DependentPythonOperator(
-                ret_dtype=Dependency("T"),
-                arg_dtypes=[Dependency("T"), Dependency("T")],
-                op=Dependency("ScanOp"),
-            )
+        :param threads_per_block: Supplies the number of threads in the block,
+            either as an integer for a 1D block or a tuple of two or three integers
+            for a 2D or 3D block, respectively.
+        :type  threads_per_block: DimType
 
-    if block_prefix_callback_op is not None:
+        :param items_per_thread: Supplies the number of items partitioned onto
+            each thread.  This parameter must be greater than or equal to 1.
+        :type  items_per_thread: int, optional
 
-        def make_dependent_block_prefix_callback_op():
-            return DependentPythonOperator(
-                ret_dtype=Dependency("T"),
-                arg_dtypes=[Dependency("T")],
-                op=Dependency("BlockPrefixCallbackOp"),
-            )
+        :param initial_value: Optionally supplies the initial value to use for the
+            block-wide scan.
+        :type  initial_value: Any, optional
 
-    if scan_op.is_sum:
-        if items_per_thread == 1:
-            if block_prefix_callback_op is None:
-                parameters = [
-                    # Signature:
-                    # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                    #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                    #     temp_storage
-                    # ).<Inclusive|Exclusive>Sum(
-                    #     T, # input
-                    #     T& # output
-                    # )
-                    [
-                        # temp_storage
-                        Pointer(numba.uint8),
-                        # T input
-                        DependentReference(Dependency("T")),
-                        # T& output
-                        DependentReference(Dependency("T"), is_output=True),
-                    ],
-                ]
-            else:
-                parameters = [
-                    # Signature:
-                    # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                    #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                    #     temp_storage
-                    # ).<Inclusive|Exclusive>Sum(
-                    #     T,                     # input
-                    #     T&,                    # output
-                    #     BlockPrefixCallbackOp& # block_prefix_callback_op
-                    # )
-                    [
-                        # temp_storage
-                        Pointer(numba.uint8),
-                        # T input
-                        DependentReference(Dependency("T")),
-                        # T& output
-                        DependentReference(Dependency("T"), is_output=True),
-                        # BlockPrefixCallbackOp& block_prefix_callback_op
-                        make_dependent_block_prefix_callback_op(),
-                    ],
-                ]
+        :param mode: Supplies the scan mode to use. Must be one of ``"exclusive"``
+            or ``"inclusive"``. The default is ``"exclusive"``.
+        :type  mode: Literal["exclusive", "inclusive"], optional
 
+        :param scan_op: Supplies the scan operator to use for the block-wide scan.
+            The default is the sum operator (``+``).
+        :type  scan_op: ScanOpType, optional
+
+        :param block_prefix_callback_op: Optionally supplies a callable that will be
+            invoked by the first warp of threads in a block with the block aggregate
+            value; only the return value of the first lane in the warp is applied as
+            the prefix value.
+        :type  block_prefix_callback_op: Callable, optional
+
+        :param algorithm: Supplies the algorithm to use for the block-wide scan.
+            Must be one of ``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``.
+            The default is ``"raking"``.
+        :type  algorithm: Literal["raking", "raking_memoize", "warp_scans"], optional
+
+        :param methods: Optionally supplies a dictionary of methods to use for
+            user-defined types.  The default is *None*.
+        :type  methods: dict, optional
+
+        :raises ValueError: If ``algorithm`` is not one of the supported algorithms
+            (``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``).
+
+        :raises ValueError: If ``items_per_thread`` is less than 1.
+
+        :raises ValueError: If ``mode`` is not one of the supported modes
+            (``"exclusive"`` or ``"inclusive"``).
+
+        :raises ValueError: If ``scan_op`` is an unsupported operator type.
+
+        :raises ValueError: If ``initial_value`` is provided but the ``scan_op``
+            is a sum operator (sum operators do not support initial values).
+
+        :raises ValueError: If ``initial_value`` is provided with an inclusive scan
+            (``mode="inclusive"``) and ``items_per_thread=1`` (initial values are
+            not supported for inclusive scans with a single item per thread).
+
+        :raises ValueError: If ``initial_value`` is provided with an exclusive scan
+            (``mode="exclusive"``), ``items_per_thread=1``, and
+            ``block_prefix_callback_op`` is not *None* (this combination is not
+            supported).
+
+        :raises ValueError: If ``initial_value`` is required but not provided.
+            An initial value is required when ``items_per_thread > 1`` and
+            ``block_prefix_callback_op`` is *None*.  If not provided, the function
+            will attempt to create a default value (``0``) for the given data type,
+            but will raise an error if this is not possible.
+
+        :returns: A callable that can be linked to a CUDA kernel and invoked to
+            perform the block-wide prefix scan.
+        :rtype: Callable
+        """
+        if callable(items_per_thread) and not callable(scan_op):
+            scan_op, items_per_thread = items_per_thread, scan_op
+
+        if items_per_thread < 1:
+            raise ValueError("items_per_thread must be greater than or equal to 1")
+
+        self.items_per_thread = items_per_thread
+        self.dim = dim = normalize_dim_param(threads_per_block)
+        self.dtype = dtype = normalize_dtype_param(dtype)
+        self.unique_id = unique_id
+
+        (algorithm_cub, algorithm_enum) = self.resolve_cub_algorithm(
+            algorithm,
+        )
+
+        if mode == "exclusive":
+            cpp_func_prefix = "Exclusive"
         else:
-            assert items_per_thread > 1, items_per_thread
-            if block_prefix_callback_op is not None:
-                parameters = [
-                    # Signature:
-                    # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                    #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                    #     temp_storage
-                    # ).<Inclusive|Exclusive>Sum(
-                    #     T (&)[ITEMS_PER_THREAD], # input
-                    #     T (&)[ITEMS_PER_THREAD], # output
-                    #     BlockPrefixCallbackOp&   # block_prefix_callback_op
-                    # )
-                    [
-                        # temp_storage
-                        Pointer(numba.uint8),
-                        # T (&)[ITEMS_PER_THREAD] input
-                        DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                        # T (&)[ITEMS_PER_THREAD] output
-                        DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                        # BlockPrefixCallbackOp& block_prefix_callback_op
-                        make_dependent_block_prefix_callback_op(),
-                    ],
-                ]
-            else:
-                parameters = [
-                    # Signature:
-                    # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                    #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                    #     temp_storage
-                    # ).<Inclusive|Exclusive>Sum(
-                    #     T (&)[ITEMS_PER_THREAD], # input
-                    #     T (&)[ITEMS_PER_THREAD]  # output
-                    # )
-                    [
-                        # temp_storage
-                        Pointer(numba.uint8),
-                        # T (&)[ITEMS_PER_THREAD] input
-                        DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                        # T (&)[ITEMS_PER_THREAD] output
-                        DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                    ],
-                ]
+            if mode != "inclusive":
+                raise ValueError(f"Unsupported mode: {mode}")
+            cpp_func_prefix = "Inclusive"
 
-    elif scan_op.is_known or scan_op.is_callable:
-        if items_per_thread == 1:
-            if mode == "exclusive":
+        # This will raise an error if scan_op is invalid.
+        scan_op = ScanOp(scan_op)
+        if scan_op.is_sum:
+            # Make sure we specialize the correct CUB API for exclusive sum.
+            cpp_function_name = f"{cpp_func_prefix}Sum"
+        else:
+            cpp_function_name = f"{cpp_func_prefix}Scan"
+
+        initial_value = _validate_initial_value(
+            initial_value,
+            dtype,
+            items_per_thread,
+            mode,
+            scan_op,
+            block_prefix_callback_op,
+        )
+        self.mode = mode
+        self.scan_op = scan_op
+        if algorithm_enum is None:
+            if isinstance(algorithm, enum.IntEnum):
+                algorithm_enum = algorithm
+            elif isinstance(algorithm, int):
+                algorithm_enum = self.default_algorithm.__class__(algorithm)
+            else:
+                algorithm_enum = self.default_algorithm
+        self.algorithm_enum = algorithm_enum
+        self.algorithm_id = int(algorithm_enum)
+        self.algorithm = algorithm_enum
+        self.initial_value = initial_value
+        self.block_prefix_callback_op = block_prefix_callback_op
+        self.block_aggregate = block_aggregate
+
+        if block_aggregate is not None and block_prefix_callback_op is not None:
+            raise ValueError(
+                "block_aggregate is not supported when block_prefix_callback_op is provided"
+            )
+
+        specialization_kwds = {
+            "T": dtype,
+            "BLOCK_DIM_X": dim[0],
+            "ALGORITHM": algorithm_cub,
+            "BLOCK_DIM_Y": dim[1],
+            "BLOCK_DIM_Z": dim[2],
+        }
+
+        template_parameters = [
+            TemplateParameter("T"),
+            TemplateParameter("BLOCK_DIM_X"),
+            TemplateParameter("ALGORITHM"),
+            TemplateParameter("BLOCK_DIM_Y"),
+            TemplateParameter("BLOCK_DIM_Z"),
+        ]
+
+        use_array_inputs = use_array_inputs or items_per_thread > 1
+        if block_aggregate is not None:
+            use_array_inputs = True
+        self.use_array_inputs = use_array_inputs
+
+        if use_array_inputs:
+            specialization_kwds["ITEMS_PER_THREAD"] = items_per_thread
+        fake_return = not use_array_inputs
+
+        # A "known" scan op is the standard set of associative operators,
+        # e.g. ::cuda::std::plus<>, etc.  A "callable" scan op is a Python
+        # callable that has been furnished by the caller.  Thus, we need to
+        # generate different parameters for each case.
+        if scan_op.is_known:
+
+            def make_dependent_scan_op():
+                return DependentCxxOperator(
+                    dep=Dependency("T"),
+                    cpp=scan_op.op_cpp,
+                    name="scan_op",
+                )
+
+        elif scan_op.is_callable:
+
+            def make_dependent_scan_op():
+                return DependentPythonOperator(
+                    ret_dtype=Dependency("T"),
+                    arg_dtypes=[Dependency("T"), Dependency("T")],
+                    op=Dependency("ScanOp"),
+                    name="scan_op",
+                )
+
+        if block_prefix_callback_op is not None:
+
+            def make_dependent_block_prefix_callback_op():
+                return DependentPythonOperator(
+                    ret_dtype=Dependency("T"),
+                    arg_dtypes=[Dependency("T")],
+                    op=Dependency("BlockPrefixCallbackOp"),
+                    name="block_prefix_callback_op",
+                )
+
+        if scan_op.is_sum:
+            if not use_array_inputs:
+                if block_prefix_callback_op is None:
+                    parameters = [
+                        # Signature:
+                        # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                        #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                        #     temp_storage
+                        # ).<Inclusive|Exclusive>Sum(
+                        #     T, # input
+                        #     T& # output
+                        # )
+                        [
+                            # T input
+                            DependentReference(Dependency("T"), name="input"),
+                            # T& output
+                            DependentReference(
+                                Dependency("T"),
+                                is_output=True,
+                                name="output",
+                            ),
+                        ],
+                    ]
+                else:
+                    parameters = [
+                        # Signature:
+                        # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                        #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                        #     temp_storage
+                        # ).<Inclusive|Exclusive>Sum(
+                        #     T,                     # input
+                        #     T&,                    # output
+                        #     BlockPrefixCallbackOp& # block_prefix_callback_op
+                        # )
+                        [
+                            # T input
+                            DependentReference(Dependency("T"), name="input"),
+                            # T& output
+                            DependentReference(
+                                Dependency("T"), is_output=True, name="output"
+                            ),
+                            # BlockPrefixCallbackOp& block_prefix_callback_op
+                            make_dependent_block_prefix_callback_op(),
+                        ],
+                    ]
+
+            else:
+                if block_prefix_callback_op is not None:
+                    parameters = [
+                        # Signature:
+                        # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                        #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                        #     temp_storage
+                        # ).<Inclusive|Exclusive>Sum(
+                        #     T (&)[ITEMS_PER_THREAD], # input
+                        #     T (&)[ITEMS_PER_THREAD], # output
+                        #     BlockPrefixCallbackOp&   # block_prefix_callback_op
+                        # )
+                        [
+                            # T (&)[ITEMS_PER_THREAD] input
+                            DependentArray(
+                                Dependency("T"),
+                                Dependency("ITEMS_PER_THREAD"),
+                                name="input",
+                            ),
+                            # T (&)[ITEMS_PER_THREAD] output
+                            DependentArray(
+                                Dependency("T"),
+                                Dependency("ITEMS_PER_THREAD"),
+                                name="output",
+                            ),
+                            # BlockPrefixCallbackOp& block_prefix_callback_op
+                            make_dependent_block_prefix_callback_op(),
+                        ],
+                    ]
+                else:
+                    parameters = [
+                        # Signature:
+                        # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                        #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                        #     temp_storage
+                        # ).<Inclusive|Exclusive>Sum(
+                        #     T (&)[ITEMS_PER_THREAD], # input
+                        #     T (&)[ITEMS_PER_THREAD]  # output
+                        # )
+                        [
+                            # T (&)[ITEMS_PER_THREAD] input
+                            DependentArray(
+                                Dependency("T"),
+                                Dependency("ITEMS_PER_THREAD"),
+                                name="input",
+                            ),
+                            # T (&)[ITEMS_PER_THREAD] output
+                            DependentArray(
+                                Dependency("T"),
+                                Dependency("ITEMS_PER_THREAD"),
+                                name="output",
+                            ),
+                        ],
+                    ]
+
+        elif scan_op.is_known or scan_op.is_callable:
+            if not use_array_inputs:
+                if mode == "exclusive":
+                    if block_prefix_callback_op is not None:
+                        assert initial_value is None
+                        parameters = [
+                            # Signature:
+                            # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                            #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                            #     temp_storage
+                            # )<ScanOp>ExclusiveScan(
+                            #     T,                     # input
+                            #     T&,                    # output
+                            #     ScanOp,                # scan_op
+                            #     BlockPrefixCallbackOp& # block_prefix_callback_op
+                            # )
+                            [
+                                # T input
+                                DependentReference(
+                                    Dependency("T"),
+                                    name="input",
+                                ),
+                                # T& output
+                                DependentReference(
+                                    Dependency("T"),
+                                    is_output=True,
+                                    name="output",
+                                ),
+                                # ScanOp scan_op
+                                make_dependent_scan_op(),
+                                # BlockPrefixCallbackOp& block_prefix_callback_op
+                                make_dependent_block_prefix_callback_op(),
+                            ],
+                        ]
+                    else:
+                        if initial_value is None:
+                            parameters = [
+                                # Signature:
+                                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                                #     temp_storage
+                                # )<ScanOp>ExclusiveScan(
+                                #     T,     # input
+                                #     T&,    # output
+                                #     ScanOp # scan_op
+                                # )
+                                [
+                                    # T input
+                                    DependentReference(Dependency("T"), name="input"),
+                                    # T& output
+                                    DependentReference(
+                                        Dependency("T"), is_output=True, name="output"
+                                    ),
+                                    # ScanOp scan_op
+                                    make_dependent_scan_op(),
+                                ],
+                            ]
+                        else:
+                            # Signature:
+                            # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                            #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                            #     temp_storage
+                            # )<ScanOp>ExclusiveScan(
+                            #     T,     # input
+                            #     T&,    # output
+                            #     T,     # initial_value
+                            #     ScanOp # scan_op
+                            # )
+                            parameters = [
+                                # T input
+                                DependentReference(Dependency("T"), name="input"),
+                                # T& output
+                                DependentReference(
+                                    Dependency("T"), is_output=True, name="output"
+                                ),
+                                # T initial_value
+                                DependentReference(
+                                    Dependency("T"), name="initial_value"
+                                ),
+                                # ScanOp scan_op
+                                make_dependent_scan_op(),
+                            ]
+
+                else:
+                    assert mode == "inclusive" or initial_value is None
+                    if block_prefix_callback_op is not None:
+                        parameters = [
+                            # Signature:
+                            # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                            #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                            #     temp_storage
+                            # )<ScanOp><Inclusive|Exclusive>Scan(
+                            #     T,                     # input
+                            #     T&,                    # output
+                            #     ScanOp,                # scan_op
+                            #     BlockPrefixCallbackOp& # block_prefix_callback_op
+                            # )
+                            [
+                                # T input
+                                DependentReference(Dependency("T"), name="input"),
+                                # T& output
+                                DependentReference(
+                                    Dependency("T"), is_output=True, name="output"
+                                ),
+                                # ScanOp scan_op
+                                make_dependent_scan_op(),
+                                # BlockPrefixCallbackOp& block_prefix_callback_op
+                                make_dependent_block_prefix_callback_op(),
+                            ],
+                        ]
+                    else:
+                        parameters = [
+                            # Signature:
+                            # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                            #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                            #     temp_storage
+                            # )<ScanOp><Inclusive|Exclusive>Scan(
+                            #     T,     # input
+                            #     T&,    # output
+                            #     ScanOp # scan_op
+                            # )
+                            [
+                                # T input
+                                DependentReference(Dependency("T"), name="input"),
+                                # T& output
+                                DependentReference(
+                                    Dependency("T"), is_output=True, name="output"
+                                ),
+                                # ScanOp scan_op
+                                make_dependent_scan_op(),
+                            ],
+                        ]
+
+            else:
                 if block_prefix_callback_op is not None:
                     assert initial_value is None
                     parameters = [
@@ -424,19 +658,25 @@ def make_scan(
                         # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
                         #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
                         #     temp_storage
-                        # )<ScanOp>ExclusiveScan(
-                        #     T,                     # input
-                        #     T&,                    # output
-                        #     ScanOp,                # scan_op
-                        #     BlockPrefixCallbackOp& # block_prefix_callback_op
+                        # )<ITEMS_PER_THREAD, ScanOp><Inclusive|Exclusive>Scan(
+                        #     T (&)[ITEMS_PER_THREAD], # input
+                        #     T (&)[ITEMS_PER_THREAD], # output
+                        #     ScanOp,                  # scan_op
+                        #     BlockPrefixCallbackOp&   # block_prefix_callback_op
                         # )
                         [
-                            # temp_storage
-                            Pointer(numba.uint8),
-                            # T input
-                            DependentReference(Dependency("T")),
-                            # T& output
-                            DependentReference(Dependency("T"), is_output=True),
+                            # T (&)[ITEMS_PER_THREAD] input
+                            DependentArray(
+                                Dependency("T"),
+                                Dependency("ITEMS_PER_THREAD"),
+                                name="input",
+                            ),
+                            # T (&)[ITEMS_PER_THREAD] output
+                            DependentArray(
+                                Dependency("T"),
+                                Dependency("ITEMS_PER_THREAD"),
+                                name="output",
+                            ),
                             # ScanOp scan_op
                             make_dependent_scan_op(),
                             # BlockPrefixCallbackOp& block_prefix_callback_op
@@ -444,465 +684,889 @@ def make_scan(
                         ],
                     ]
                 else:
-                    parameters = [
-                        # Signature:
-                        # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                        #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                        #     temp_storage
-                        # )<ScanOp>ExclusiveScan(
-                        #     T,     # input
-                        #     T&,    # output
-                        #     ScanOp # scan_op
-                        # )
-                        [
-                            # temp_storage
-                            Pointer(numba.uint8),
-                            # T input
-                            DependentReference(Dependency("T")),
-                            # T& output
-                            DependentReference(Dependency("T"), is_output=True),
-                            # ScanOp scan_op
-                            make_dependent_scan_op(),
-                        ],
-                        # Signature:
-                        # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                        #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                        #     temp_storage
-                        # )<ScanOp>ExclusiveScan(
-                        #     T,     # input
-                        #     T&,    # output
-                        #     T,     # initial_value
-                        #     ScanOp # scan_op
-                        # )
-                        [
-                            # temp_storage
-                            Pointer(numba.uint8),
-                            # T input
-                            DependentReference(Dependency("T")),
-                            # T& output
-                            DependentReference(Dependency("T"), is_output=True),
-                            # T initial_value
-                            DependentReference(Dependency("T")),
-                            # ScanOp scan_op
-                            make_dependent_scan_op(),
-                        ],
-                    ]
-
-            else:
-                assert mode == "inclusive" or initial_value is None
-                if block_prefix_callback_op is not None:
-                    parameters = [
-                        # Signature:
-                        # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                        #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                        #     temp_storage
-                        # )<ScanOp><Inclusive|Exclusive>Scan(
-                        #     T,                     # input
-                        #     T&,                    # output
-                        #     ScanOp,                # scan_op
-                        #     BlockPrefixCallbackOp& # block_prefix_callback_op
-                        # )
-                        [
-                            # temp_storage
-                            Pointer(numba.uint8),
-                            # T input
-                            DependentReference(Dependency("T")),
-                            # T& output
-                            DependentReference(Dependency("T"), is_output=True),
-                            # ScanOp scan_op
-                            make_dependent_scan_op(),
-                            # BlockPrefixCallbackOp& block_prefix_callback_op
-                            make_dependent_block_prefix_callback_op(),
-                        ],
-                    ]
-                else:
-                    parameters = [
-                        # Signature:
-                        # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                        #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                        #     temp_storage
-                        # )<ScanOp><Inclusive|Exclusive>Scan(
-                        #     T,     # input
-                        #     T&,    # output
-                        #     ScanOp # scan_op
-                        # )
-                        [
-                            # temp_storage
-                            Pointer(numba.uint8),
-                            # T input
-                            DependentReference(Dependency("T")),
-                            # T& output
-                            DependentReference(Dependency("T"), is_output=True),
-                            # ScanOp scan_op
-                            make_dependent_scan_op(),
-                        ],
-                    ]
+                    if initial_value is None:
+                        parameters = [
+                            # Signature:
+                            # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                            #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                            #     temp_storage
+                            # )<ITEMS_PER_THREAD, ScanOp><Inclusive|Exclusive>Scan(
+                            #     T (&)[ITEMS_PER_THREAD], # input
+                            #     T (&)[ITEMS_PER_THREAD], # output
+                            #     ScanOp                   # scan_op
+                            # )
+                            [
+                                # T (&)[ITEMS_PER_THREAD] input
+                                DependentArray(
+                                    Dependency("T"), Dependency("ITEMS_PER_THREAD")
+                                ),
+                                # T (&)[ITEMS_PER_THREAD] output
+                                DependentArray(
+                                    Dependency("T"), Dependency("ITEMS_PER_THREAD")
+                                ),
+                                # ScanOp scan_op
+                                make_dependent_scan_op(),
+                            ],
+                        ]
+                    else:
+                        parameters = [
+                            # Signature:
+                            # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                            #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                            #     temp_storage
+                            # )<ITEMS_PER_THREAD, ScanOp><Inclusive|Exclusive>Scan(
+                            #     T (&)[ITEMS_PER_THREAD], # input
+                            #     T (&)[ITEMS_PER_THREAD], # output
+                            #     T,                       # initial_value
+                            #     ScanOp                   # scan_op
+                            # )
+                            [
+                                # T (&)[ITEMS_PER_THREAD] input
+                                DependentArray(
+                                    Dependency("T"), Dependency("ITEMS_PER_THREAD")
+                                ),
+                                # T (&)[ITEMS_PER_THREAD] output
+                                DependentArray(
+                                    Dependency("T"), Dependency("ITEMS_PER_THREAD")
+                                ),
+                                # T initial_value
+                                DependentReference(Dependency("T")),
+                                # ScanOp scan_op
+                                make_dependent_scan_op(),
+                            ],
+                        ]
 
         else:
-            assert items_per_thread > 1, items_per_thread
-            if block_prefix_callback_op is not None:
-                assert initial_value is None
-                parameters = [
-                    # Signature:
-                    # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                    #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                    #     temp_storage
-                    # )<ITEMS_PER_THREAD, ScanOp><Inclusive|Exclusive>Scan(
-                    #     T (&)[ITEMS_PER_THREAD], # input
-                    #     T (&)[ITEMS_PER_THREAD], # output
-                    #     ScanOp,                  # scan_op
-                    #     BlockPrefixCallbackOp&   # block_prefix_callback_op
-                    # )
-                    [
-                        # temp_storage
-                        Pointer(numba.uint8),
-                        # T (&)[ITEMS_PER_THREAD] input
-                        DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                        # T (&)[ITEMS_PER_THREAD] output
-                        DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                        # ScanOp scan_op
-                        make_dependent_scan_op(),
-                        # BlockPrefixCallbackOp& block_prefix_callback_op
-                        make_dependent_block_prefix_callback_op(),
-                    ],
-                ]
-            else:
-                parameters = [
-                    # Signature:
-                    # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                    #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                    #     temp_storage
-                    # )<ITEMS_PER_THREAD, ScanOp><Inclusive|Exclusive>Scan(
-                    #     T (&)[ITEMS_PER_THREAD], # input
-                    #     T (&)[ITEMS_PER_THREAD], # output
-                    #     ScanOp                   # scan_op
-                    # )
-                    [
-                        # temp_storage
-                        Pointer(numba.uint8),
-                        # T (&)[ITEMS_PER_THREAD] input
-                        DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                        # T (&)[ITEMS_PER_THREAD] output
-                        DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                        # ScanOp scan_op
-                        make_dependent_scan_op(),
-                    ],
-                    # Signature:
-                    # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                    #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                    #     temp_storage
-                    # )<ITEMS_PER_THREAD, ScanOp><Inclusive|Exclusive>Scan(
-                    #     T (&)[ITEMS_PER_THREAD], # input
-                    #     T (&)[ITEMS_PER_THREAD], # output
-                    #     T,                       # initial_value
-                    #     ScanOp                   # scan_op
-                    # )
-                    [
-                        # temp_storage
-                        Pointer(numba.uint8),
-                        # T (&)[ITEMS_PER_THREAD] input
-                        DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                        # T (&)[ITEMS_PER_THREAD] output
-                        DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                        # T initial_value
-                        DependentReference(Dependency("T")),
-                        # ScanOp scan_op
-                        make_dependent_scan_op(),
-                    ],
-                ]
+            # We shouldn't ever hit this; there are only three types of scan ops
+            # supported: sum, known, and callable.
+            raise RuntimeError("Unreachable code")
 
-    else:
-        # We shouldn't ever hit this; there are only three types of scan ops
-        # supported: sum, known, and callable.
-        raise RuntimeError("Unreachable code")
+        # Invariant check: if we get here, parameters should have one element.
+        assert len(parameters) == 1, "parameters should have one element"
 
-    # Invariant check: if we get here, parameters shouldn't be empty.
-    assert parameters, "parameters should not be empty"
+        if block_aggregate is not None:
+            parameters[0].append(
+                DependentPointerReference(
+                    Dependency("T"),
+                    name="block_aggregate",
+                    is_array_pointer=True,
+                )
+            )
 
-    # If we have a non-None `methods`, we're dealing with user-defined types.
-    if methods is not None:
-        type_definitions = [
-            numba_type_to_wrapper(dtype, methods=methods),
-        ]
-    else:
-        type_definitions = None
+        if temp_storage is not None:
+            parameters[0].insert(
+                0,
+                TempStoragePointer(
+                    numba.types.uint8, is_array_pointer=True, name="temp_storage"
+                ),
+            )
 
-    template = Algorithm(
-        "BlockScan",
-        cpp_function_name,
-        "block_scan",
-        ["cub/block/block_scan.cuh"],
-        template_parameters,
-        parameters,
-        fake_return=fake_return,
-        type_definitions=type_definitions,
+        # If we have a non-None `methods`, we're dealing with user-defined types.
+        if methods is not None:
+            type_definitions = [
+                numba_type_to_wrapper(dtype, methods=methods),
+            ]
+        else:
+            type_definitions = None
+
+        self.algorithm = Algorithm(
+            "BlockScan",
+            cpp_function_name,
+            "block_scan",
+            ["cub/block/block_scan.cuh"],
+            template_parameters,
+            parameters,
+            primitive=self,
+            unique_id=unique_id,
+            fake_return=fake_return,
+            type_definitions=type_definitions,
+        )
+
+        if scan_op.is_callable:
+            specialization_kwds["ScanOp"] = scan_op.op
+
+        if block_prefix_callback_op is not None:
+            specialization_kwds["BlockPrefixCallbackOp"] = block_prefix_callback_op
+
+        self.specialization = self.algorithm.specialize(specialization_kwds)
+        self.temp_storage = temp_storage
+
+    @classmethod
+    def create(
+        cls,
+        dtype: DtypeType,
+        threads_per_block: DimType,
+        items_per_thread: int,
+        initial_value: Any = None,
+        mode: Literal["exclusive", "inclusive"] = "exclusive",
+        scan_op: ScanOpType = "+",
+        block_prefix_callback_op: Callable = None,
+        algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
+        methods: dict = None,
+        temp_storage: Any = None,
+    ):
+        algo = cls(
+            dtype=dtype,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+            initial_value=initial_value,
+            mode=mode,
+            scan_op=scan_op,
+            block_prefix_callback_op=block_prefix_callback_op,
+            block_aggregate=None,
+            algorithm=algorithm,
+            methods=methods,
+            temp_storage=temp_storage,
+        )
+        specialization = algo.specialization
+        return Invocable(
+            ltoir_files=specialization.get_lto_ir(),
+            temp_storage_bytes=specialization.temp_storage_bytes,
+            temp_storage_alignment=specialization.temp_storage_alignment,
+            algorithm=specialization,
+        )
+
+
+class exclusive_sum(scan):
+    @classmethod
+    def create(
+        cls,
+        dtype: DtypeType,
+        threads_per_block: DimType,
+        items_per_thread: int,
+        prefix_op: Callable = None,
+        algorithm=None,
+        methods: dict = None,
+        unique_id: int = None,
+        temp_storage: Any = None,
+    ):
+        algo = cls(
+            dtype=dtype,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+            prefix_op=prefix_op,
+            algorithm=algorithm,
+            methods=methods,
+            unique_id=unique_id,
+            temp_storage=temp_storage,
+        )
+        specialization = algo.specialization
+        return Invocable(
+            ltoir_files=specialization.get_lto_ir(),
+            temp_storage_bytes=specialization.temp_storage_bytes,
+            temp_storage_alignment=specialization.temp_storage_alignment,
+            algorithm=specialization,
+        )
+
+    def __init__(
+        self,
+        dtype: DtypeType,
+        threads_per_block: DimType,
+        items_per_thread: int,
+        prefix_op: Callable = None,
+        algorithm=None,
+        methods: dict = None,
+        unique_id: int = None,
+        temp_storage: Any = None,
+    ) -> Callable:
+        """
+        Computes an exclusive block-wide prefix scan using addition (+) as the
+        scan operator.  The value of 0 is applied as the initial value, and is
+        assigned to the first output element in the first thread.
+
+        Example:
+            The code snippet below illustrates an exclusive prefix sum of 512
+            integer items that are partitioned in a
+            :ref:`blocked arrangement <coop-flexible-data-arrangement>` across 128
+            threads where each thread owns 4 consecutive items.
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_scan_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
+
+            Below is the code snippet that demonstrates the usage of the
+            ``exclusive_sum`` API:
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_scan_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin exclusive-sum
+                :end-before: example-end exclusive-sum
+
+            Suppose the set of input ``thread_data`` across the block of threads is
+            ``{ [1, 1, 1, 1], [1, 1, 1, 1], ..., [1, 1, 1, 1] }``.
+
+            The corresponding output ``thread_data`` in those threads will be
+            ``{ [0, 1, 2, 3], [4, 5, 6, 7], ..., [508, 509, 510, 511] }``.
+
+        :param dtype: Supplies the data type of the input and output arrays.
+        :type  dtype: DtypeType
+
+        :param threads_per_block: Supplies the number of threads in the block,
+            either as an integer for a 1D block or a tuple of two or three integers
+            for a 2D or 3D block, respectively.
+        :type  threads_per_block: DimType
+
+        :param items_per_thread: Supplies the number of items partitioned onto
+            each thread.  This parameter must be greater than or equal to 1.
+        :type  items_per_thread: int, optional
+
+        :param prefix_op: Optionally supplies a callable that will be invoked by the
+            first warp of threads in a block with the block aggregate value;
+            only the return value of the first lane in the warp is applied as
+            the prefix value.
+        :type  prefix_op: Callable, optional
+
+        :param algorithm: Optionally supplies the algorithm to use for the block-wide
+            scan.  Must be one of the following: ``"raking"``,
+            ``"raking_memoize"``, or ``"warp_scans"``.  The default is
+            ``"raking"``.
+        :type  algorithm: Literal["raking", "raking_memoize", "warp_scans"],
+            optional
+
+        :param methods: Optionally supplies a dictionary of methods to use for
+            user-defined types.  The default is *None*.  Not supported if
+            ``items_per_thread > 1``.
+        :type  methods: dict, optional
+
+        :raises ValueError: If ``algorithm`` is not one of the supported algorithms
+            (``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``).
+
+        :raises ValueError: If ``items_per_thread`` is less than 1.
+
+        :raises ValueError: If ``items_per_thread`` is greater than 1 and ``methods``
+            is not *None* (i.e. a user-defined type is being used).
+
+        :returns: A callable that can be linked to a CUDA kernel and invoked to perform
+            the block-wide exclusive prefix scan.
+        :rtype: Callable
+        """
+        return super().__init__(
+            dtype=dtype,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+            mode="exclusive",
+            scan_op="+",
+            block_prefix_callback_op=prefix_op,
+            algorithm=algorithm,
+            methods=methods,
+            unique_id=unique_id,
+            temp_storage=temp_storage,
+        )
+
+
+class inclusive_sum(scan):
+    @classmethod
+    def create(
+        cls,
+        dtype: DtypeType,
+        threads_per_block: DimType,
+        items_per_thread: int,
+        prefix_op: Callable = None,
+        algorithm=None,
+        methods: dict = None,
+        unique_id: int = None,
+        temp_storage: Any = None,
+    ):
+        algo = cls(
+            dtype=dtype,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+            prefix_op=prefix_op,
+            algorithm=algorithm,
+            methods=methods,
+            unique_id=unique_id,
+            temp_storage=temp_storage,
+        )
+        specialization = algo.specialization
+        return Invocable(
+            ltoir_files=specialization.get_lto_ir(),
+            temp_storage_bytes=specialization.temp_storage_bytes,
+            temp_storage_alignment=specialization.temp_storage_alignment,
+            algorithm=specialization,
+        )
+
+    def __init__(
+        self,
+        dtype: DtypeType,
+        threads_per_block: DimType,
+        items_per_thread: int,
+        prefix_op: Callable = None,
+        algorithm=None,
+        methods: dict = None,
+        unique_id: int = None,
+        temp_storage: Any = None,
+    ) -> None:
+        """
+        Computes an inclusive block-wide prefix scan using addition (+) as the
+        scan operator.
+
+        :param dtype: Supplies the data type of the input and output arrays.
+        :type  dtype: DtypeType
+
+        :param threads_per_block: Supplies the number of threads in the block,
+            either as an integer for a 1D block or a tuple of two or three integers
+            for a 2D or 3D block, respectively.
+        :type  threads_per_block: DimType
+
+        :param items_per_thread: Supplies the number of items partitioned onto
+            each thread.  This parameter must be greater than or equal to 1.
+        :type  items_per_thread: int, optional
+
+        :param prefix_op: Optionally supplies a callable that will be invoked by the
+            first warp of threads in a block with the block aggregate value;
+            only the return value of the first lane in the warp is applied as
+            the prefix value.
+        :type  prefix_op: Callable, optional
+
+        :param algorithm: Optionally supplies the algorithm to use for the block-wide
+            scan.  Must be one of the following: ``"raking"``,
+            ``"raking_memoize"``, or ``"warp_scans"``.  The default is
+            ``"raking"``.
+        :type  algorithm: Literal["raking", "raking_memoize", "warp_scans"],
+            optional
+
+        :param methods: Optionally supplies a dictionary of methods to use for
+            user-defined types.  The default is *None*.  Not supported if
+            ``items_per_thread > 1``.
+        :type  methods: dict, optional
+
+        :raises ValueError: If ``algorithm`` is not one of the supported algorithms
+            (``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``).
+
+        :raises ValueError: If ``items_per_thread`` is less than 1.
+        """
+        return super().__init__(
+            dtype=dtype,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+            mode="inclusive",
+            scan_op="+",
+            block_prefix_callback_op=prefix_op,
+            algorithm=algorithm,
+            methods=methods,
+            unique_id=unique_id,
+            temp_storage=temp_storage,
+        )
+
+
+class exclusive_scan(scan):
+    @classmethod
+    def create(
+        cls,
+        dtype: DtypeType,
+        threads_per_block: DimType,
+        scan_op: ScanOpType,
+        items_per_thread: int,
+        initial_value: Any = None,
+        prefix_op: Callable = None,
+        algorithm=None,
+        methods: dict = None,
+        unique_id: int = None,
+        temp_storage: Any = None,
+    ):
+        algo = cls(
+            dtype=dtype,
+            threads_per_block=threads_per_block,
+            scan_op=scan_op,
+            items_per_thread=items_per_thread,
+            initial_value=initial_value,
+            prefix_op=prefix_op,
+            algorithm=algorithm,
+            methods=methods,
+            unique_id=unique_id,
+            temp_storage=temp_storage,
+        )
+        specialization = algo.specialization
+        return Invocable(
+            ltoir_files=specialization.get_lto_ir(),
+            temp_storage_bytes=specialization.temp_storage_bytes,
+            temp_storage_alignment=specialization.temp_storage_alignment,
+            algorithm=specialization,
+        )
+
+    def __init__(
+        self,
+        dtype: DtypeType,
+        threads_per_block: DimType,
+        scan_op: ScanOpType,
+        items_per_thread: int,
+        initial_value: Any = None,
+        prefix_op: Callable = None,
+        algorithm=None,
+        methods: dict = None,
+        unique_id: int = None,
+        temp_storage: Any = None,
+    ) -> None:
+        """
+        Computes an exclusive block-wide prefix scan using the specified scan
+        operator.
+
+        :param dtype: Supplies the data type of the input and output arrays.
+        :type  dtype: DtypeType
+
+        :param threads_per_block: Supplies the number of threads in the block,
+            either as an integer for a 1-D block or a tuple of two or three
+            integers for a 2-D or 3-D block, respectively.
+        :type  threads_per_block: DimType
+
+        :param scan_op: Supplies the scan operator to use for the block-wide scan.
+        :type  scan_op: ScanOpType
+
+        :param items_per_thread: Supplies the number of items partitioned onto
+            each thread.  This parameter must be greater than or equal to 1.
+        :type  items_per_thread: int, optional
+
+        :param initial_value: Optionally supplies the initial value to use for the
+            block-wide scan.  If a non-None value is supplied, ``prefix_op`` must
+            be *None*.
+        :type  initial_value: Any, optional
+
+        :param prefix_op: Optionally supplies a callable that will be invoked by
+            the first warp of threads in a block with the block aggregate value;
+            only the return value of the first lane in the warp is applied as the
+            prefix value.  If a non-None value is supplied, ``initial_value`` must
+            be *None*.
+        :type  prefix_op: Callable, optional
+
+        :param algorithm: Optionally supplies the algorithm to use for the
+            block-wide scan. Must be one of ``"raking"``, ``"raking_memoize"``,
+            or ``"warp_scans"``. The default is ``"raking"``.
+        :type  algorithm: Literal["raking", "raking_memoize", "warp_scans"],
+            optional
+
+        :param methods: Optionally supplies a dictionary of methods to use for
+            user-defined types.  The default is *None*.  Not supported if
+            ``items_per_thread > 1``.
+        :type  methods: dict, optional
+
+        :raises ValueError: If ``algorithm`` is not one of the supported algorithms
+            (``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``).
+
+        :raises ValueError: If ``items_per_thread`` is less than 1.
+
+        :raises ValueError: If ``items_per_thread`` is greater than 1 and ``methods``
+            is not *None* (i.e. a user-defined type is being used).
+
+        :raises ValueError: If ``scan_op`` is an unsupported operator type.
+
+        :raises ValueError: If ``initial_value`` is provided but the ``scan_op``
+            is a sum operator (sum operators do not support initial values).
+
+        :raises ValueError: If ``initial_value`` is provided with
+            ``items_per_thread=1``, and ``block_prefix_callback_op`` is not *None*
+            (this combination is not supported).
+
+        :raises ValueError: If ``initial_value`` is required but not provided.
+            An initial value is required when ``items_per_thread > 1`` and
+            ``block_prefix_callback_op`` is *None*.  If not provided, the function
+            will attempt to create a default value (``0``) for the given data type,
+            but will raise an error if this is not possible.
+
+        :returns: A callable that can be linked to a CUDA kernel and invoked to
+            perform the block-wide exclusive prefix scan.
+        :rtype: Callable
+        """
+        return super().__init__(
+            dtype=dtype,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+            initial_value=initial_value,
+            mode="exclusive",
+            scan_op=scan_op,
+            block_prefix_callback_op=prefix_op,
+            algorithm=algorithm,
+            methods=methods,
+            unique_id=unique_id,
+            temp_storage=temp_storage,
+        )
+
+
+class inclusive_scan(scan):
+    @classmethod
+    def create(
+        cls,
+        dtype: DtypeType,
+        threads_per_block: DimType,
+        scan_op: ScanOpType,
+        items_per_thread: int,
+        initial_value: Any = None,
+        prefix_op: Callable = None,
+        algorithm=None,
+        methods: dict = None,
+        unique_id: int = None,
+        temp_storage: Any = None,
+    ):
+        algo = cls(
+            dtype=dtype,
+            threads_per_block=threads_per_block,
+            scan_op=scan_op,
+            items_per_thread=items_per_thread,
+            initial_value=initial_value,
+            prefix_op=prefix_op,
+            algorithm=algorithm,
+            methods=methods,
+            unique_id=unique_id,
+            temp_storage=temp_storage,
+        )
+        specialization = algo.specialization
+        return Invocable(
+            ltoir_files=specialization.get_lto_ir(),
+            temp_storage_bytes=specialization.temp_storage_bytes,
+            temp_storage_alignment=specialization.temp_storage_alignment,
+            algorithm=specialization,
+        )
+
+    def __init__(
+        self,
+        dtype: DtypeType,
+        threads_per_block: DimType,
+        scan_op: ScanOpType,
+        items_per_thread: int,
+        initial_value: Any = None,
+        prefix_op: Callable = None,
+        algorithm=None,
+        methods: dict = None,
+        unique_id: int = None,
+        temp_storage: Any = None,
+    ) -> None:
+        """
+        Computes an inclusive block-wide prefix scan using the specified scan
+        operator.
+
+        :param dtype: Supplies the data type of the input and output arrays.
+        :type  dtype: DtypeType
+
+        :param threads_per_block: Supplies the number of threads in the block,
+            either as an integer for a 1-D block or a tuple of two or three
+            integers for a 2-D or 3-D block, respectively.
+        :type  threads_per_block: DimType
+
+        :param scan_op: Supplies the scan operator to use for the block-wide scan.
+        :type  scan_op: ScanOpType
+
+        :param items_per_thread: Supplies the number of items partitioned onto
+            each thread.  This parameter must be greater than or equal to 1.
+        :type  items_per_thread: int, optional
+
+        :param initial_value: Optionally supplies the initial value to use for the
+            block-wide scan.  If a non-None value is supplied, ``prefix_op`` must
+            be *None*.  Only supported when ``items_per_thread > 1``; a
+            ``ValueError`` will be raised if this is not the case.
+        :type  initial_value: Any, optional
+
+        :param prefix_op: Optionally supplies a callable that will be invoked by
+            the first warp of threads in a block with the block aggregate value;
+            only the return value of the first lane in the warp is applied as the
+            prefix value.  If a non-None value is supplied, ``initial_value`` must
+            be *None*; a ``ValueError`` will be raised if this is not the case.
+        :type  prefix_op: Callable, optional
+
+        :param algorithm: Optionally supplies the algorithm to use for the
+            block-wide scan. Must be one of ``"raking"``, ``"raking_memoize"``,
+            or ``"warp_scans"``. The default is ``"raking"``.
+        :type  algorithm: Literal["raking", "raking_memoize", "warp_scans"],
+            optional
+
+        :param methods: Optionally supplies a dictionary of methods to use for
+            user-defined types.  The default is *None*.  Not supported if
+            ``items_per_thread > 1``.
+        :type  methods: dict, optional
+
+        :raises ValueError: If ``algorithm`` is not one of the supported algorithms
+            (``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``).
+
+        :raises ValueError: If ``items_per_thread`` is less than 1.
+
+        :raises ValueError: If ``scan_op`` is an unsupported operator type.
+
+        :raises ValueError: If ``initial_value`` is provided but the ``scan_op``
+            is a sum operator (sum operators do not support initial values).
+
+        :raises ValueError: If ``initial_value`` is provided with
+            ``items_per_thread=1`` (initial values are not supported for inclusive
+            scans with a single item per thread).
+
+        :returns: A callable that can be linked to a CUDA kernel and invoked to
+            perform the block-wide inclusive prefix scan.
+        :rtype: Callable
+        """
+        return super().__init__(
+            dtype=dtype,
+            threads_per_block=threads_per_block,
+            items_per_thread=items_per_thread,
+            initial_value=initial_value,
+            mode="inclusive",
+            scan_op=scan_op,
+            block_prefix_callback_op=prefix_op,
+            algorithm=algorithm,
+            methods=methods,
+            unique_id=unique_id,
+            temp_storage=temp_storage,
+        )
+
+
+def _normalize_threads_per_block(kwargs, threads_per_block):
+    kw = dict(kwargs)
+    if threads_per_block is None:
+        threads_per_block = kw.pop("dim", None)
+    return kw, threads_per_block
+
+
+def _normalize_scan_prefix(kwargs, prefix_op, target_name):
+    kw = dict(kwargs)
+    if prefix_op is None:
+        prefix_op = kw.pop("prefix_op", None)
+    if prefix_op is None:
+        prefix_op = kw.pop("block_prefix_callback_op", None)
+    if prefix_op is not None:
+        kw[target_name] = prefix_op
+    return kw
+
+
+def _build_scan_spec(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    initial_value=None,
+    mode="exclusive",
+    scan_op="+",
+    block_prefix_callback_op=None,
+    **kwargs,
+):
+    kw, threads_per_block = _normalize_threads_per_block(kwargs, threads_per_block)
+    kw = _normalize_scan_prefix(
+        kw,
+        block_prefix_callback_op,
+        target_name="block_prefix_callback_op",
     )
-
-    if scan_op.is_callable:
-        specialization_kwds["ScanOp"] = scan_op.op
-
-    if block_prefix_callback_op is not None:
-        specialization_kwds["BlockPrefixCallbackOp"] = block_prefix_callback_op
-
-    specialization = template.specialize(specialization_kwds)
-    return Invocable(
-        temp_files=[
-            make_binary_tempfile(ltoir, ".ltoir")
-            for ltoir in specialization.get_lto_ir()
-        ],
-        temp_storage_bytes=specialization.temp_storage_bytes,
-        temp_storage_alignment=specialization.temp_storage_alignment,
-        algorithm=specialization,
-    )
+    spec = {
+        "dtype": dtype,
+        "threads_per_block": threads_per_block,
+        "items_per_thread": items_per_thread,
+        "initial_value": initial_value,
+        "mode": mode,
+        "scan_op": scan_op,
+    }
+    spec.update(kw)
+    return spec
 
 
-def make_exclusive_sum(
-    dtype: DtypeType,
-    threads_per_block: DimType,
-    items_per_thread: int,
-    prefix_op: Callable = None,
-    algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
-    methods: dict = None,
-) -> Callable:
-    """
-    Creates an exclusive block-wide prefix sum primitive using addition
-    (+) as the scan operator.
-
-    Example:
-        The code snippet below illustrates an exclusive prefix sum of
-        512 integer items in a
-        :ref:`blocked arrangement <flexible-data-arrangement>` across
-        128 threads where each thread owns 4 consecutive items.
-
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_scan_api.py
-            :language: python
-            :dedent:
-            :start-after: example-begin imports
-            :end-before: example-end imports
-
-        The following snippet shows how to invoke the returned
-        ``block_exclusive_sum`` primitive:
-
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_scan_api.py
-            :language: python
-            :dedent:
-            :start-after: example-begin exclusive-sum
-            :end-before: example-end exclusive-sum
-
-        Suppose the set of input ``thread_data`` across the block of
-        threads is
-        ``{ [1, 1, 1, 1], [1, 1, 1, 1], ..., [1, 1, 1, 1] }``.
-
-        The corresponding output ``thread_data`` in those threads will be
-        ``{ [0, 1, 2, 3], [4, 5, 6, 7], ..., [508, 509, 510, 511] }``.
-
-    :param dtype: Data type of the input and output values.
-    :type dtype: DtypeType
-    :param threads_per_block: Number of threads in the block.
-    :type threads_per_block: DimType
-    :param items_per_thread: Number of items owned by each thread.
-    :type items_per_thread: int, optional
-    :param prefix_op: Optional block prefix callback operator.
-    :type prefix_op: Callable, optional
-    :param algorithm: Scan algorithm.
-    :type algorithm:
-        Literal["raking", "raking_memoize", "warp_scans"], optional
-    :param methods: Optional method dictionary for user-defined types.
-    :type methods: dict, optional
-    :returns: Callable primitive object for exclusive prefix sum.
-    :rtype: Callable
-    """
-    return make_scan(
-        dtype=dtype,
-        threads_per_block=threads_per_block,
-        items_per_thread=items_per_thread,
-        mode="exclusive",
-        scan_op="+",
-        block_prefix_callback_op=prefix_op,
-        algorithm=algorithm,
-        methods=methods,
-    )
+def _build_exclusive_sum_spec(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    prefix_op=None,
+    algorithm=None,
+    **kwargs,
+):
+    kw, threads_per_block = _normalize_threads_per_block(kwargs, threads_per_block)
+    kw = _normalize_scan_prefix(kw, prefix_op, target_name="prefix_op")
+    spec = {
+        "dtype": dtype,
+        "threads_per_block": threads_per_block,
+        "items_per_thread": items_per_thread,
+        "algorithm": algorithm,
+    }
+    spec.update(kw)
+    return spec
 
 
-def make_inclusive_sum(
-    dtype: DtypeType,
-    threads_per_block: DimType,
-    items_per_thread: int,
-    prefix_op: Callable = None,
-    algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
-    methods: dict = None,
-) -> Callable:
-    """
-    Creates an inclusive block-wide prefix sum primitive using addition
-    (+) as the scan operator.
-
-    Example:
-        The snippet below shows how to create and invoke the returned
-        ``block_inclusive_sum`` primitive.
-
-        .. code-block:: python
-
-           block_inclusive_sum = coop.block.make_inclusive_sum(
-               dtype=numba.int32,
-               threads_per_block=128,
-               items_per_thread=4,
-           )
-
-           @cuda.jit(link=block_inclusive_sum.files)
-           def kernel(thread_data):
-               block_inclusive_sum(thread_data, thread_data)
-
-    :param dtype: Data type of the input and output values.
-    :type dtype: DtypeType
-    :param threads_per_block: Number of threads in the block.
-    :type threads_per_block: DimType
-    :param items_per_thread: Number of items owned by each thread.
-    :type items_per_thread: int, optional
-    :param prefix_op: Optional block prefix callback operator.
-    :type prefix_op: Callable, optional
-    :param algorithm: Scan algorithm.
-    :type algorithm:
-        Literal["raking", "raking_memoize", "warp_scans"], optional
-    :param methods: Optional method dictionary for user-defined types.
-    :type methods: dict, optional
-    :returns: Callable primitive object for inclusive prefix sum.
-    :rtype: Callable
-    """
-    return make_scan(
-        dtype=dtype,
-        threads_per_block=threads_per_block,
-        items_per_thread=items_per_thread,
-        mode="inclusive",
-        scan_op="+",
-        block_prefix_callback_op=prefix_op,
-        algorithm=algorithm,
-        methods=methods,
-    )
+def _build_inclusive_sum_spec(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    prefix_op=None,
+    algorithm=None,
+    **kwargs,
+):
+    kw, threads_per_block = _normalize_threads_per_block(kwargs, threads_per_block)
+    kw = _normalize_scan_prefix(kw, prefix_op, target_name="prefix_op")
+    spec = {
+        "dtype": dtype,
+        "threads_per_block": threads_per_block,
+        "items_per_thread": items_per_thread,
+        "algorithm": algorithm,
+    }
+    spec.update(kw)
+    return spec
 
 
-def make_exclusive_scan(
-    dtype: DtypeType,
-    threads_per_block: DimType,
-    scan_op: ScanOpType,
-    items_per_thread: int,
-    initial_value: Any = None,
-    prefix_op: Callable = None,
-    algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
-    methods: dict = None,
-) -> Callable:
-    """
-    Creates an exclusive block-wide prefix scan primitive with the
-    specified scan operator.
+def _build_exclusive_scan_spec(
+    dtype,
+    threads_per_block=None,
+    scan_op="+",
+    items_per_thread=1,
+    initial_value=None,
+    prefix_op=None,
+    algorithm=None,
+    **kwargs,
+):
+    kw, threads_per_block = _normalize_threads_per_block(kwargs, threads_per_block)
+    kw = _normalize_scan_prefix(kw, prefix_op, target_name="prefix_op")
+    spec = {
+        "dtype": dtype,
+        "threads_per_block": threads_per_block,
+        "scan_op": scan_op,
+        "items_per_thread": items_per_thread,
+        "initial_value": initial_value,
+        "algorithm": algorithm,
+    }
+    spec.update(kw)
+    return spec
 
-    Example:
-        The snippet below shows how to create and invoke the returned
-        ``block_exclusive_scan`` primitive.
 
-        .. code-block:: python
+def _build_inclusive_scan_spec(
+    dtype,
+    threads_per_block=None,
+    scan_op="+",
+    items_per_thread=1,
+    initial_value=None,
+    prefix_op=None,
+    algorithm=None,
+    **kwargs,
+):
+    kw, threads_per_block = _normalize_threads_per_block(kwargs, threads_per_block)
+    kw = _normalize_scan_prefix(kw, prefix_op, target_name="prefix_op")
+    spec = {
+        "dtype": dtype,
+        "threads_per_block": threads_per_block,
+        "scan_op": scan_op,
+        "items_per_thread": items_per_thread,
+        "initial_value": initial_value,
+        "algorithm": algorithm,
+    }
+    spec.update(kw)
+    return spec
 
-           block_exclusive_scan = coop.block.make_exclusive_scan(
-               dtype=numba.int32,
-               threads_per_block=128,
-               scan_op="max",
-               items_per_thread=4,
-           )
 
-           @cuda.jit(link=block_exclusive_scan.files)
-           def kernel(thread_data):
-               block_exclusive_scan(thread_data, thread_data)
-
-    :param dtype: Data type of the input and output values.
-    :type dtype: DtypeType
-    :param threads_per_block: Number of threads in the block.
-    :type threads_per_block: DimType
-    :param scan_op: Scan operator.
-    :type scan_op: ScanOpType
-    :param items_per_thread: Number of items owned by each thread.
-    :type items_per_thread: int, optional
-    :param initial_value: Optional initial value when supported.
-    :type initial_value: Any, optional
-    :param prefix_op: Optional block prefix callback operator.
-    :type prefix_op: Callable, optional
-    :param algorithm: Scan algorithm.
-    :type algorithm:
-        Literal["raking", "raking_memoize", "warp_scans"], optional
-    :param methods: Optional method dictionary for user-defined types.
-    :type methods: dict, optional
-    :returns: Callable primitive object for exclusive prefix scan.
-    :rtype: Callable
-    """
-    return make_scan(
+def _make_scan_two_phase(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    initial_value=None,
+    mode="exclusive",
+    scan_op="+",
+    block_prefix_callback_op=None,
+    **kwargs,
+):
+    spec = _build_scan_spec(
         dtype=dtype,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
         initial_value=initial_value,
-        mode="exclusive",
+        mode=mode,
         scan_op=scan_op,
-        block_prefix_callback_op=prefix_op,
-        algorithm=algorithm,
-        methods=methods,
+        block_prefix_callback_op=block_prefix_callback_op,
+        **kwargs,
     )
+    return scan.create(**spec)
 
 
-def make_inclusive_scan(
-    dtype: DtypeType,
-    threads_per_block: DimType,
-    scan_op: ScanOpType,
-    items_per_thread: int,
-    initial_value: Any = None,
-    prefix_op: Callable = None,
-    algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
-    methods: dict = None,
-) -> Callable:
-    """
-    Creates an inclusive block-wide prefix scan primitive with the
-    specified scan operator.
-
-    Example:
-        The snippet below shows how to create and invoke the returned
-        ``block_inclusive_scan`` primitive.
-
-        .. code-block:: python
-
-           block_inclusive_scan = coop.block.make_inclusive_scan(
-               dtype=numba.int32,
-               threads_per_block=128,
-               scan_op="min",
-               items_per_thread=4,
-           )
-
-           @cuda.jit(link=block_inclusive_scan.files)
-           def kernel(thread_data):
-               block_inclusive_scan(thread_data, thread_data)
-
-    :param dtype: Data type of the input and output values.
-    :type dtype: DtypeType
-    :param threads_per_block: Number of threads in the block.
-    :type threads_per_block: DimType
-    :param scan_op: Scan operator.
-    :type scan_op: ScanOpType
-    :param items_per_thread: Number of items owned by each thread.
-    :type items_per_thread: int, optional
-    :param initial_value: Optional initial value when supported.
-    :type initial_value: Any, optional
-    :param prefix_op: Optional block prefix callback operator.
-    :type prefix_op: Callable, optional
-    :param algorithm: Scan algorithm.
-    :type algorithm:
-        Literal["raking", "raking_memoize", "warp_scans"], optional
-    :param methods: Optional method dictionary for user-defined types.
-    :type methods: dict, optional
-    :returns: Callable primitive object for inclusive prefix scan.
-    :rtype: Callable
-    """
-    return make_scan(
+def _make_scan_rewrite(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    initial_value=None,
+    mode="exclusive",
+    scan_op="+",
+    block_prefix_callback_op=None,
+    **kwargs,
+):
+    spec = _build_scan_spec(
         dtype=dtype,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
         initial_value=initial_value,
-        mode="inclusive",
+        mode=mode,
         scan_op=scan_op,
-        block_prefix_callback_op=prefix_op,
-        algorithm=algorithm,
-        methods=methods,
+        block_prefix_callback_op=block_prefix_callback_op,
+        **kwargs,
     )
+    return scan(**spec)
+
+
+def _make_exclusive_sum_two_phase(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    prefix_op=None,
+    algorithm=None,
+    **kwargs,
+):
+    spec = _build_exclusive_sum_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        prefix_op=prefix_op,
+        algorithm=algorithm,
+        **kwargs,
+    )
+    return exclusive_sum.create(**spec)
+
+
+def _make_inclusive_sum_two_phase(
+    dtype,
+    threads_per_block=None,
+    items_per_thread=1,
+    prefix_op=None,
+    algorithm=None,
+    **kwargs,
+):
+    spec = _build_inclusive_sum_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        prefix_op=prefix_op,
+        algorithm=algorithm,
+        **kwargs,
+    )
+    return inclusive_sum.create(**spec)
+
+
+def _make_exclusive_scan_two_phase(
+    dtype,
+    threads_per_block=None,
+    scan_op="+",
+    items_per_thread=1,
+    initial_value=None,
+    prefix_op=None,
+    algorithm=None,
+    **kwargs,
+):
+    spec = _build_exclusive_scan_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        scan_op=scan_op,
+        items_per_thread=items_per_thread,
+        initial_value=initial_value,
+        prefix_op=prefix_op,
+        algorithm=algorithm,
+        **kwargs,
+    )
+    return exclusive_scan.create(**spec)
+
+
+def _make_inclusive_scan_two_phase(
+    dtype,
+    threads_per_block=None,
+    scan_op="+",
+    items_per_thread=1,
+    initial_value=None,
+    prefix_op=None,
+    algorithm=None,
+    **kwargs,
+):
+    spec = _build_inclusive_scan_spec(
+        dtype=dtype,
+        threads_per_block=threads_per_block,
+        scan_op=scan_op,
+        items_per_thread=items_per_thread,
+        initial_value=initial_value,
+        prefix_op=prefix_op,
+        algorithm=algorithm,
+        **kwargs,
+    )
+    return inclusive_scan.create(**spec)

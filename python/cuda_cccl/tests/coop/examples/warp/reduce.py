@@ -23,7 +23,7 @@ def custom_warp_reduce_example():
 
     warp_reduce = coop.warp.make_reduce(numba.int32, max_op)
 
-    @cuda.jit(link=warp_reduce.files)
+    @cuda.jit
     def kernel(input, output):
         # Each thread in the warp contributes one element
         warp_output = warp_reduce(input[cuda.threadIdx.x])
@@ -51,7 +51,7 @@ def warp_sum_example():
     """Demonstrate warp sum reduction using built-in sum operation."""
     warp_sum = coop.warp.make_sum(numba.int32)
 
-    @cuda.jit(link=warp_sum.files)
+    @cuda.jit
     def kernel(input, output):
         # Each thread in the warp contributes one element
         warp_output = warp_sum(input[cuda.threadIdx.x])
@@ -82,7 +82,7 @@ def multi_warp_example():
 
     warp_reduce = coop.warp.make_reduce(numba.int32, add_op)
 
-    @cuda.jit(link=warp_reduce.files)
+    @cuda.jit
     def kernel(input, output):
         # Each thread contributes one element
         thread_idx = cuda.threadIdx.x
@@ -125,7 +125,7 @@ def partial_warp_example():
 
     warp_reduce = coop.warp.make_reduce(numba.int32, add_op)
 
-    @cuda.jit(link=warp_reduce.files)
+    @cuda.jit
     def kernel(input, output, num_threads):
         thread_idx = cuda.threadIdx.x
 

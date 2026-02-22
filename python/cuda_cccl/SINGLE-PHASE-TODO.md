@@ -1,0 +1,166 @@
+# Single-Phase TODO
+
+- [x] Enable array-based scan inputs when `items_per_thread == 1` (single-phase).
+- [x] Accept string-literal `mode`/`scan_op` in single-phase typing.
+- [x] Convert core block scan tests to single-phase (`test_block_sum`, `test_block_scan_known_ops`).
+- [x] Support prefix callback ops in single-phase scan.
+- [x] Support callable scan ops in single-phase scan.
+- [x] Support user-defined types in single-phase scan.
+- [x] Support `coop.ThreadData` inputs for scan (dtype inference).
+- [x] Support `coop.ThreadData` inputs for load/store/exchange (rewrite items_per_thread + dtype inference).
+- [x] Support `coop.ThreadData` inputs for block radix/merge sort (rewrite items_per_thread + dtype inference).
+- [x] Infer `items_per_thread` from `coop.ThreadData` for block reduce/sum and
+      warp load/store/exchange/merge sort; support ThreadData ranks/flags in
+      block exchange scatter variants.
+- [x] Decide how to handle scalar scan inputs (return semantics) if needed.
+- [x] Verify explicit `temp_storage` handling for scan (single-phase).
+- [x] Implement `coop.TempStorage` placeholder handling (allocate shared uint8 buffer from size/alignment).
+- [x] Add tests for `coop.TempStorage` placeholder reuse across primitives.
+- [x] Re-enable/convert skipped block scan tests once features land.
+- [x] Fix array-based known-op scan codegen (items_per_thread > 1 initial value handling).
+- [x] Run targeted GPU tests for block scan (block_sum, block_scan_known_ops).
+- [x] Run targeted GPU tests for block scan (prefix callbacks, callable ops, user-defined types).
+- [x] Port block reduce/sum to single-phase (typing, rewrite, tests).
+- [x] Support explicit temp_storage for single-phase block reduce/sum.
+- [x] Port block exchange StripedToBlocked to single-phase (typing, rewrite, tests).
+- [x] Port block exchange BlockedToStriped variants.
+- [x] Port block exchange BlockedToWarpStriped variants.
+- [x] Port block exchange ScatterToBlocked variants.
+- [x] Port block exchange ScatterToStriped / Flagged / Guarded variants.
+- [x] Port block exchange WarpStripedToBlocked variants.
+- [x] Port block run-length decode to single-phase (total_decoded_size handling).
+- [x] Add single-phase tests for block run-length decode.
+- [x] Port block merge sort to single-phase (typing, rewrite, tests).
+- [x] Port block radix sort to single-phase (typing, rewrite, tests).
+- [x] Add single-phase block adjacent difference (typing, rewrite, tests).
+- [x] Add warp load/store/exchange invocables and targeted tests.
+- [x] Add single-phase tests for BlockLoad/BlockStore shared-memory algorithms:
+  TRANSPOSE, WARP_TRANSPOSE, WARP_TRANSPOSE_TIMESLICED.
+- [x] Add single-phase tests for BlockLoad/BlockStore VECTORIZE (alignment
+  requirements + fallback behavior).
+- [x] Document BlockLoad/Store algorithm constraints and shared-memory
+  behavior (no separate BlockLoadToShared API; algorithms handle smem).
+- [x] Evaluate numba-cuda `280-launch-config-v2` branch for coop launch config needs.
+- [x] Port block shuffle to single-phase (typing, rewrite, tests).
+- [x] Port block radix rank to single-phase (typing, rewrite, tests).
+- [x] Add warp exchange scatter-to-striped coverage/tests (including ranks dtype).
+- [x] Add warp load/store num_valid + oob_default coverage/tests.
+- [x] Fix gpu_dataclass kernel-traits argument handling and add test coverage.
+- [x] Allow two-phase coop.block.scan instance calls to omit mode/scan_op/items_per_thread (kernel-traits defaulting).
+- [x] Switch coop primitives to AbstractTemplate so two-phase instance calls accept kwargs.
+- [x] Port warp primitives to single-phase (typing, rewrite, tests).
+- [x] Add two-phase instance typing for remaining block/warp primitives.
+- [x] Store instance constructor parameters needed for two-phase inference.
+- [x] Remove `.create()`/`link=` usage from coop tests and examples.
+- [x] Keep public two-phase `make_*` factories returning Invocable/stateful
+      objects and keep single-phase rewrite instantiation on primitive
+      constructors.
+- [x] Add private internal factory helpers for rewrite-time construction
+      (starting with block scan) to centralize alias/default normalization
+      without using public `make_*` wrappers.
+- [x] Roll out private internal factory helpers for warp primitives
+      (`_make_*_two_phase` + `_make_*_rewrite`) and wire decl `impl_key`
+      to rewrite helpers.
+- [x] Define and adopt a shared normalization pattern for each primitive family
+      (`dim` vs `threads_per_block`, prefix-op aliases, enum/string algorithm
+      normalization) while keeping semantic validation in primitive constructors.
+- [x] Migrate rewrite nodes to internal factory helpers incrementally and add
+      parity tests ensuring no behavior drift versus direct constructor paths.
+- [x] Add missing two-phase tests for block primitives.
+- [ ] Audit CUB block/warp overload coverage and fill gaps.
+- [x] Add literalinclude examples for coop API overloads (doc stubs + tests).
+- [x] Add warp reduce/sum valid-items overloads.
+- [x] Add WarpScan warp_aggregate/valid_items/temp_storage overloads and tests.
+- [x] Add block load oob_default overload.
+- [x] Add block discontinuity tile predecessor/successor overloads.
+- [x] Add block shuffle prefix/suffix overloads (block_prefix/block_suffix).
+- [x] Add block scan block-aggregate overloads (multi-output).
+- [x] Add block merge/radix sort key/value + valid-items/oob_default/decomposer overloads.
+- [x] Add block radix rank exclusive_digit_prefix output overloads.
+- [ ] Enable BlockRadixSort decomposer for user-defined types (blocked: CUB expects tuple-of-references; prototype confirms current lowering emits tuple-by-value and fails CUB deduction; need C++ adapter or alternate lowering).
+- [x] Add warp merge sort key/value overloads.
+- [x] Add single-phase parity tests for warp primitives (reduce/scan/exchange/load-store/merge sort).
+- [x] Support block-aggregate scan out-params (no tuple-style multi-output return).
+- [x] Expand single-phase `temp_storage=` support across all primitives and
+      keep `TempStorage` getitem syntax compatible; add coverage.
+- [x] Add omission-driven TempStorage inference (`size_in_bytes`/`alignment`)
+      plus `sharing={"shared","exclusive"}` behavior and validate with
+      unit/stress/mamba coverage.
+- [x] Add GPU tests that use `gpu_dataclass` with multiple primitives sharing
+      temp storage (load/scan/reduce/store pipelines, mixed parent/child).
+- [x] Add/upgrade docstrings for every public primitive with
+      `literalinclude`-based examples in `tests/coop/*_api.py`; remove any
+      mention of `.create()` from public docs.
+- [x] Fix coop FAQ indentation issues (Sphinx).
+- [x] Add coop-local flexible data arrangement doc section and update docstring refs.
+- [x] Add coop block/warp API doc stub modules and update coop_api docs.
+- [x] Add decoupled-lookback exclusive sum device function + tests.
+- [ ] Expand stress tests: overlapping carved smem slices, mixed auto_sync usage,
+      partial tiles with num_valid/oob_default, 2D/3D block dims, mixed warp+block
+      primitives, and ThreadData inference conflicts.
+- [ ] Investigate/implement detection of redundant user `cuda.syncthreads()`
+      when TempStorage auto-sync has already inserted synchronization.
+- [ ] Improve kwarg validation and error messages for primitives with many
+      overloads (match CUB API supersets; fail early with friendly errors).
+- [ ] Extend ThreadData inference (alignment/shape/dtype propagation from
+      inputs/outputs and `coop.(shared|local).array`) and add tests.
+
+## PR #7214 @codex review follow-up (2026-02-22)
+
+- [x] Add/expand docstrings for `coop.block.exchange` constructor and helper
+      makers (`_build_exchange_spec`, `_make_exchange_two_phase`,
+      `_make_exchange_rewrite`) so params/requirements are explicit.
+- [x] Reconcile `coop.block.histogram(..., temp_storage=...)` API/docs with CUB
+      behavior: confirm whether to keep placeholder-only support vs implement
+      explicit temp storage, and make typing/rewrite/docs consistent.
+- [x] Rename `_numba_extension.py` module globals to `CUDA_CCCL_*` naming while
+      preserving backward compatibility.
+- [x] Resolve `_rewrite.py` primitive-type naming TODO (`Primitive` vs
+      `primitive_type`) by either implementing the rename or removing the stale
+      TODO with rationale.
+- [x] Clean up `_rewrite.py` comment/dead-debug block cluster around
+      `CoopNode.do_rewrite()` (`:1573`, `:1593`) and replace with concise,
+      technical rationale.
+- [x] Replace ad-hoc rewrite-details payloads (`SimpleNamespace`) with a typed
+      dataclass where practical, starting from `CoopNode.do_rewrite()`.
+- [x] Reword load/store rewrite comments (`_rewrite.py:2063`, `:2094`) and
+      remove stray comments (`:2155`) to explain cache priming/wrapper reasons
+      without editorial tone.
+- [x] Replace broad `ThreadDataType` import fallbacks (`except Exception`) with
+      a deterministic helper/failure mode in rewrite nodes.
+- [x] Validate `CoopBlockRunLengthNode.rewrite_details` can defer to
+      `CoopNode.do_rewrite()` (or a shared helper) without regressing
+      parent-instance return typing and TempStorage prelude handling.
+- [x] Validate `CoopBlockRunLengthDecodeNode.rewrite_details` can defer to
+      `CoopNode.do_rewrite()` (or a shared helper) while preserving child
+      no-linking behavior.
+- [x] Remove duplicated `make_*` wrapper bodies from `cuda.coop.block.__init__`
+      and bind public factories directly to module-level two-phase builders.
+- [x] Remove `cuda.coop.block.api` docs-stub path and associated
+      `CCCL_COOP_DOCS` block-mode branch usage.
+- [x] Expand constructor docstrings for newly-added block primitives
+      (load/store, radix rank, radix sort variants, reduce, run-length decode
+      child, shuffle, adjacent difference, discontinuity, histogram children).
+- [x] Normalize copyright headers for newly-added python `cuda.coop` files to
+      include year 2026.
+- [x] Expand warp primitive constructor docstrings (exchange, load/store,
+      merge sort keys/pairs, reduce, scan/sum family).
+- [x] Remove warp docs-stub path (`cuda.coop.warp.api` +
+      `CCCL_COOP_DOCS` branch in `warp.__init__`) and expose runtime
+      implementation directly.
+- [x] Remove unused `cuda.coop._base` module.
+- [x] Expand `gpu_dataclass()` docs and add additional `_decls.py` context
+      comments (TempStorage and Decomposer placeholder rationale).
+- [x] Clarify `_decls.py` rewrite-helper import intent for `impl_key` binding.
+- [x] Fix `_decls.py` ThreadData comment wording typo ("obviating the need").
+- [x] Fix CUDA vector-type normalization/codegen for coop block load/store and
+      add regression tests (`make_load`/`make_store` with vector dtypes).
+- [x] Add single-phase adjacent-difference test covering TempStorage getitem
+      sugar with ThreadData.
+- [x] Update coop docs for expanded TempStorage usage and add a new
+      `coop_thread_data.rst` guide wired into the toctree.
+
+## Deferred / Not Planned
+
+- BlockRadixSort decomposer support (requires a C++ tuple-of-references adapter).
+- Multi-channel BlockHistogram outputs (not exposed via current CUB BlockHistogram API).
