@@ -66,41 +66,32 @@ template <class _From, class _To>
 _CCCL_CONCEPT __span_array_convertible = is_convertible_v<_From (*)[], _To (*)[]>;
 
 template <class _Range, class _ElementType>
-_CCCL_CONCEPT __span_compatible_range = _CCCL_REQUIRES_EXPR((_Range, _ElementType)) //
-  ( //
-    requires(::cuda::std::ranges::contiguous_range<_Range>), //
-    requires(::cuda::std::ranges::sized_range<_Range>), //
-    requires(::cuda::std::ranges::borrowed_range<_Range> || is_const_v<_ElementType>), //
-    requires(!is_array_v<remove_cvref_t<_Range>>), //
-    requires(!__is_cuda_std_span_v<remove_cvref_t<_Range>>), //
-    requires(!__is_cuda_std_array_v<remove_cvref_t<_Range>>), //
-    requires(
-      is_convertible_v<remove_reference_t<::cuda::std::ranges::range_reference_t<_Range>> (*)[], _ElementType (*)[]>));
+_CCCL_CONCEPT __span_compatible_range = _CCCL_REQUIRES_EXPR((_Range, _ElementType))(
+  requires(::cuda::std::ranges::contiguous_range<_Range>),
+  requires(::cuda::std::ranges::sized_range<_Range>),
+  requires((::cuda::std::ranges::borrowed_range<_Range> || is_const_v<_ElementType>) ),
+  requires((!is_array_v<remove_cvref_t<_Range>>) ),
+  requires((!__is_std_span_v<remove_cvref_t<_Range>> && !__is_std_array_v<remove_cvref_t<_Range>>) ),
+  requires(
+    is_convertible_v<remove_reference_t<::cuda::std::ranges::range_reference_t<_Range>> (*)[], _ElementType (*)[]>));
 
 template <class _It, class _Tp>
 _CCCL_CONCEPT __span_compatible_iterator = _CCCL_REQUIRES_EXPR((_It, _Tp)) //
-  ( //
-    requires(contiguous_iterator<_It>), //
-    requires(__span_array_convertible<remove_reference_t<iter_reference_t<_It>>, _Tp>) //
-  );
+  (requires(contiguous_iterator<_It>),
+   requires(__span_array_convertible<remove_reference_t<iter_reference_t<_It>>, _Tp>));
 
 template <class _Sentinel, class _It>
 _CCCL_CONCEPT __span_compatible_sentinel_for = _CCCL_REQUIRES_EXPR((_Sentinel, _It)) //
-  ( //
-    requires(sized_sentinel_for<_Sentinel, _It>), //
-    requires(!is_convertible_v<_Sentinel, size_t>) //
-  );
+  (requires(sized_sentinel_for<_Sentinel, _It>), requires(!is_convertible_v<_Sentinel, size_t>));
 
 template <class _Tp>
-_CCCL_CONCEPT __integral_constant_like = _CCCL_REQUIRES_EXPR((_Tp)) //
-  ( //
-    requires(is_integral_v<decltype(_Tp::value)>), //
-    requires(!is_same_v<bool, remove_const_t<decltype(_Tp::value)>>), //
-    requires(convertible_to<_Tp, decltype(_Tp::value)>), //
-    requires(equality_comparable_with<_Tp, decltype(_Tp::value)>), //
-    requires(_Tp() == _Tp::value), //
-    requires(static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value) //
-  );
+_CCCL_CONCEPT __integral_constant_like = _CCCL_REQUIRES_EXPR((_Tp))(
+  requires(is_integral_v<decltype(_Tp::value)>),
+  requires(!is_same_v<bool, remove_const_t<decltype(_Tp::value)>>),
+  requires(convertible_to<_Tp, decltype(_Tp::value)>),
+  requires(equality_comparable_with<_Tp, decltype(_Tp::value)>),
+  (integral_constant<bool, _Tp() == _Tp::value>::value),
+  (integral_constant<bool, static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value>::value));
 
 template <class _Tp, bool = __integral_constant_like<_Tp>>
 inline constexpr size_t __maybe_static_ext = dynamic_extent;
@@ -144,6 +135,7 @@ public:
   _CCCL_HIDE_FROM_ABI span(const span&) noexcept            = default;
   _CCCL_HIDE_FROM_ABI span& operator=(const span&) noexcept = default;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _It)
   _CCCL_REQUIRES(__span_compatible_iterator<_It, element_type>)
   _CCCL_API constexpr explicit span(_It __first, [[maybe_unused]] size_type __count)
@@ -152,6 +144,7 @@ public:
     _CCCL_ASSERT(_Extent == __count, "size mismatch in span's constructor (iterator, len)");
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _It, class _End)
   _CCCL_REQUIRES(__span_compatible_iterator<_It, element_type> _CCCL_AND __span_compatible_sentinel_for<_End, _It>)
   _CCCL_API constexpr explicit span(_It __first, [[maybe_unused]] _End __last)
@@ -180,6 +173,23 @@ public:
       : __data_{__arr.data()}
   {}
 
+#if _CCCL_HAS_HOST_STD_LIB()
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _OtherElementType)
+  _CCCL_REQUIRES(__span_array_convertible<_OtherElementType, element_type>)
+  _CCCL_HOST_API constexpr span(::std::array<_OtherElementType, _Extent>& __arr) noexcept
+      : __data_{__arr.data()}
+  {}
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _OtherElementType)
+  _CCCL_REQUIRES(__span_array_convertible<const _OtherElementType, element_type>)
+  _CCCL_HOST_API constexpr span(const ::std::array<_OtherElementType, _Extent>& __arr) noexcept
+      : __data_{__arr.data()}
+  {}
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__span_compatible_range<_Range, element_type>)
   _CCCL_API constexpr explicit span(_Range&& __r)
@@ -367,6 +377,7 @@ public:
   _CCCL_HIDE_FROM_ABI span(const span&) noexcept            = default;
   _CCCL_HIDE_FROM_ABI span& operator=(const span&) noexcept = default;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _It)
   _CCCL_REQUIRES(__span_compatible_iterator<_It, element_type>)
   _CCCL_API constexpr span(_It __first, size_type __count)
@@ -374,6 +385,7 @@ public:
       , __size_{__count}
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _It, class _End)
   _CCCL_REQUIRES(__span_compatible_iterator<_It, element_type> _CCCL_AND __span_compatible_sentinel_for<_End, _It>)
   _CCCL_API constexpr span(_It __first, _End __last)
@@ -403,6 +415,23 @@ public:
       , __size_{_Sz}
   {}
 
+#if _CCCL_HAS_HOST_STD_LIB()
+  _CCCL_TEMPLATE(class _OtherElementType, size_t _Sz)
+  _CCCL_REQUIRES(__span_array_convertible<_OtherElementType, element_type>)
+  _CCCL_HOST_API constexpr span(::std::array<_OtherElementType, _Sz>& __arr) noexcept
+      : __data_{__arr.data()}
+      , __size_{_Sz}
+  {}
+
+  _CCCL_TEMPLATE(class _OtherElementType, size_t _Sz)
+  _CCCL_REQUIRES(__span_array_convertible<const _OtherElementType, element_type>)
+  _CCCL_HOST_API constexpr span(const ::std::array<_OtherElementType, _Sz>& __arr) noexcept
+      : __data_{__arr.data()}
+      , __size_{_Sz}
+  {}
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__span_compatible_range<_Range, element_type>)
   _CCCL_API constexpr span(_Range&& __r)
@@ -574,6 +603,14 @@ _CCCL_HOST_DEVICE span(array<_Tp, _Sz>&) -> span<_Tp, _Sz>;
 
 template <class _Tp, size_t _Sz>
 _CCCL_HOST_DEVICE span(const array<_Tp, _Sz>&) -> span<const _Tp, _Sz>;
+
+#if _CCCL_HAS_HOST_STD_LIB()
+template <class _Tp, size_t _Sz>
+_CCCL_HOST_DEVICE span(::std::array<_Tp, _Sz>&) -> span<_Tp, _Sz>;
+
+template <class _Tp, size_t _Sz>
+_CCCL_HOST_DEVICE span(const ::std::array<_Tp, _Sz>&) -> span<const _Tp, _Sz>;
+#endif // _CCCL_HAS_HOST_STD_LIB()
 
 _CCCL_TEMPLATE(class _It, class _EndOrSize)
 _CCCL_REQUIRES(contiguous_iterator<_It>)
