@@ -23,20 +23,20 @@
 
 #ifndef _CCCL_DISABLE_CMATH
 
-#include <cuda/std/__cmath/isnan.h>
-#include <cuda/std/__floating_point/cuda_fp_types.h>
-#include <cuda/std/__host_stdlib/math.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_arithmetic.h>
-#include <cuda/std/__type_traits/is_extended_arithmetic.h>
-#include <cuda/std/__type_traits/is_extended_floating_point.h>
-#include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__type_traits/promote.h>
+#  include <cuda/std/__cmath/isnan.h>
+#  include <cuda/std/__floating_point/cuda_fp_types.h>
+#  include <cuda/std/__host_stdlib/math.h>
+#  include <cuda/std/__type_traits/enable_if.h>
+#  include <cuda/std/__type_traits/is_arithmetic.h>
+#  include <cuda/std/__type_traits/is_extended_arithmetic.h>
+#  include <cuda/std/__type_traits/is_extended_floating_point.h>
+#  include <cuda/std/__type_traits/is_integral.h>
+#  include <cuda/std/__type_traits/is_signed.h>
+#  include <cuda/std/__type_traits/promote.h>
 
-#include <nv/target>
+#  include <nv/target>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -52,21 +52,21 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
   return __x > __y;
 }
 
-#if _CCCL_CHECK_BUILTIN(builtin_isgreater) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_ISGREATER(...) __builtin_isgreater(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_isgreater)
+#  if _CCCL_CHECK_BUILTIN(builtin_isgreater) || _CCCL_COMPILER(GCC)
+#    define _CCCL_BUILTIN_ISGREATER(...) __builtin_isgreater(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_isgreater)
 
-#if !_CCCL_COMPILER(NVRTC)
+#  if !_CCCL_COMPILER(NVRTC)
 template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_HOST_API bool __host_isgreater(_A1 __x, _A1 __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ISGREATER)
+#    if defined(_CCCL_BUILTIN_ISGREATER)
   return _CCCL_BUILTIN_ISGREATER(__x, __y);
-#  else // ^^^ _CCCL_BUILTIN_ISGREATER ^^^ / vvv !_CCCL_BUILTIN_ISGREATER vvv
+#    else // ^^^ _CCCL_BUILTIN_ISGREATER ^^^ / vvv !_CCCL_BUILTIN_ISGREATER vvv
   return ::isgreater(__x, __y);
-#  endif // !_CCCL_BUILTIN_ISGREATER
+#    endif // !_CCCL_BUILTIN_ISGREATER
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#  endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && __is_extended_arithmetic_v<_A2>, int> = 0>
 [[nodiscard]] _CCCL_API bool isgreater(_A1 __x, _A2 __y) noexcept
@@ -89,21 +89,21 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
   return __x >= __y;
 }
 
-#if _CCCL_CHECK_BUILTIN(builtin_isgreaterequal) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_ISGREATEREQUAL(...) __builtin_isgreaterequal(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_isgreaterequal)
+#  if _CCCL_CHECK_BUILTIN(builtin_isgreaterequal) || _CCCL_COMPILER(GCC)
+#    define _CCCL_BUILTIN_ISGREATEREQUAL(...) __builtin_isgreaterequal(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_isgreaterequal)
 
-#if !_CCCL_COMPILER(NVRTC)
+#  if !_CCCL_COMPILER(NVRTC)
 template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_HOST_API bool __host_isgreaterequal(_A1 __x, _A1 __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ISGREATEREQUAL)
+#    if defined(_CCCL_BUILTIN_ISGREATEREQUAL)
   return _CCCL_BUILTIN_ISGREATEREQUAL(__x, __y);
-#  else // ^^^ _CCCL_BUILTIN_ISGREATEREQUAL ^^^ / vvv !_CCCL_BUILTIN_ISGREATEREQUAL vvv
+#    else // ^^^ _CCCL_BUILTIN_ISGREATEREQUAL ^^^ / vvv !_CCCL_BUILTIN_ISGREATEREQUAL vvv
   return ::isgreaterequal(__x, __y);
-#  endif // !_CCCL_BUILTIN_ISGREATEREQUAL
+#    endif // !_CCCL_BUILTIN_ISGREATEREQUAL
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#  endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && __is_extended_arithmetic_v<_A2>, int> = 0>
 [[nodiscard]] _CCCL_API bool isgreaterequal(_A1 __x, _A2 __y) noexcept
@@ -126,21 +126,21 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
   return __x < __y;
 }
 
-#if _CCCL_CHECK_BUILTIN(builtin_isless) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_ISLESS(...) __builtin_isless(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_isless)
+#  if _CCCL_CHECK_BUILTIN(builtin_isless) || _CCCL_COMPILER(GCC)
+#    define _CCCL_BUILTIN_ISLESS(...) __builtin_isless(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_isless)
 
-#if !_CCCL_COMPILER(NVRTC)
+#  if !_CCCL_COMPILER(NVRTC)
 template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_HOST_API bool __host_isless(_A1 __x, _A1 __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ISLESS)
+#    if defined(_CCCL_BUILTIN_ISLESS)
   return _CCCL_BUILTIN_ISLESS(__x, __y);
-#  else // ^^^ _CCCL_BUILTIN_ISLESS ^^^ / vvv !_CCCL_BUILTIN_ISLESS vvv
+#    else // ^^^ _CCCL_BUILTIN_ISLESS ^^^ / vvv !_CCCL_BUILTIN_ISLESS vvv
   return ::isless(__x, __y);
-#  endif // !_CCCL_BUILTIN_ISLESS
+#    endif // !_CCCL_BUILTIN_ISLESS
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#  endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && __is_extended_arithmetic_v<_A2>, int> = 0>
 [[nodiscard]] _CCCL_API bool isless(_A1 __x, _A2 __y) noexcept
@@ -163,21 +163,21 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
   return __x <= __y;
 }
 
-#if _CCCL_CHECK_BUILTIN(builtin_islessequal) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_ISLESSEQUAL(...) __builtin_islessequal(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_islessequal)
+#  if _CCCL_CHECK_BUILTIN(builtin_islessequal) || _CCCL_COMPILER(GCC)
+#    define _CCCL_BUILTIN_ISLESSEQUAL(...) __builtin_islessequal(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_islessequal)
 
-#if !_CCCL_COMPILER(NVRTC)
+#  if !_CCCL_COMPILER(NVRTC)
 template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_HOST_API bool __host_islessequal(_A1 __x, _A1 __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ISLESSEQUAL)
+#    if defined(_CCCL_BUILTIN_ISLESSEQUAL)
   return _CCCL_BUILTIN_ISLESSEQUAL(__x, __y);
-#  else // ^^^ _CCCL_BUILTIN_ISLESSEQUAL ^^^ / vvv !_CCCL_BUILTIN_ISLESSEQUAL vvv
+#    else // ^^^ _CCCL_BUILTIN_ISLESSEQUAL ^^^ / vvv !_CCCL_BUILTIN_ISLESSEQUAL vvv
   return ::islessequal(__x, __y);
-#  endif // !_CCCL_BUILTIN_ISLESSEQUAL
+#    endif // !_CCCL_BUILTIN_ISLESSEQUAL
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#  endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && __is_extended_arithmetic_v<_A2>, int> = 0>
 [[nodiscard]] _CCCL_API bool islessequal(_A1 __x, _A2 __y) noexcept
@@ -200,21 +200,21 @@ template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
   return __x < __y || __x > __y;
 }
 
-#if _CCCL_CHECK_BUILTIN(builtin_islessgreater) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_ISLESSGREATER(...) __builtin_islessgreater(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_islessgreater)
+#  if _CCCL_CHECK_BUILTIN(builtin_islessgreater) || _CCCL_COMPILER(GCC)
+#    define _CCCL_BUILTIN_ISLESSGREATER(...) __builtin_islessgreater(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_islessgreater)
 
-#if !_CCCL_COMPILER(NVRTC)
+#  if !_CCCL_COMPILER(NVRTC)
 template <class _A1, enable_if_t<__is_extended_arithmetic_v<_A1>, int> = 0>
 [[nodiscard]] _CCCL_HOST_API bool __host_islessgreater(_A1 __x, _A1 __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ISLESSGREATER)
+#    if defined(_CCCL_BUILTIN_ISLESSGREATER)
   return _CCCL_BUILTIN_ISLESSGREATER(__x, __y);
-#  else // ^^^ _CCCL_BUILTIN_ISLESSGREATER ^^^ / vvv !_CCCL_BUILTIN_ISLESSGREATER vvv
+#    else // ^^^ _CCCL_BUILTIN_ISLESSGREATER ^^^ / vvv !_CCCL_BUILTIN_ISLESSGREATER vvv
   return ::islessgreater(__x, __y);
-#  endif // !_CCCL_BUILTIN_ISLESSGREATER
+#    endif // !_CCCL_BUILTIN_ISLESSGREATER
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#  endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && __is_extended_arithmetic_v<_A2>, int> = 0>
 [[nodiscard]] _CCCL_API bool islessgreater(_A1 __x, _A2 __y) noexcept
@@ -236,7 +236,7 @@ template <class _A1, class _A2, enable_if_t<__is_extended_arithmetic_v<_A1> && _
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CCCL_DISABLE_CMATH
 

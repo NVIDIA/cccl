@@ -28,9 +28,9 @@
 #  include <cuda/__fwd/devices.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__host_stdlib/memory>
+#  include <cuda/std/__memory/unique_ptr.h>
 #  include <cuda/std/span>
 #  include <cuda/std/string_view>
-#  include <cuda/std/__memory/unique_ptr.h>
 
 #  if _CCCL_HOSTED()
 #    include <cassert>
@@ -55,22 +55,22 @@ class __physical_device
 
   ::CUdevice __device_{};
 
-  #if _CCCL_HOSTED()
+#  if _CCCL_HOSTED()
   ::std::once_flag __primary_ctx_once_flag_{};
-  #endif // _CCCL_HOSTED()
+#  endif // _CCCL_HOSTED()
   ::CUcontext __primary_ctx_{};
 
   static constexpr ::cuda::std::size_t __max_name_length{256};
-  #if _CCCL_HOSTED()
+#  if _CCCL_HOSTED()
   ::std::once_flag __name_once_flag_{};
-  #endif // _CCCL_HOSTED()
+#  endif // _CCCL_HOSTED()
   char __name_[__max_name_length]{};
   ::cuda::std::size_t __name_length_{};
 
 #  if _CCCL_HOSTED()
   ::std::once_flag __peers_once_flag_{};
   ::std::vector<device_ref> __peers_{};
-# endif // _CCCL_HOSTED()
+#  endif // _CCCL_HOSTED()
 
 public:
   _CCCL_HIDE_FROM_ABI __physical_device() = default;
@@ -91,13 +91,14 @@ public:
     auto __f = [this]() {
       __primary_ctx_ = ::cuda::__driver::__primaryCtxRetain(__device_);
     };
-    #if _CCCL_HOSTED()
+#  if _CCCL_HOSTED()
     ::std::call_once(__primary_ctx_once_flag_, __f);
-    #else
-    if (__primary_ctx_ == nullptr) {
+#  else
+    if (__primary_ctx_ == nullptr)
+    {
       __f();
     }
-    #endif // _CCCL_HOSTED()
+#  endif // _CCCL_HOSTED()
     return __primary_ctx_;
   }
 
@@ -108,13 +109,14 @@ public:
       ::cuda::__driver::__deviceGetName(__name_, __max_name_length, __id);
       __name_length_ = ::cuda::std::char_traits<char>::length(__name_);
     };
-    #if _CCCL_HOSTED()
+#  if _CCCL_HOSTED()
     ::std::call_once(__name_once_flag_, __f);
-    #else
-    if (__name_length_ == 0) {
+#  else
+    if (__name_length_ == 0)
+    {
       __f();
     }
-    #endif // _CCCL_HOSTED()
+#  endif // _CCCL_HOSTED()
     return ::cuda::std::string_view{__name_, __name_length_};
   }
 
@@ -150,7 +152,7 @@ public:
     });
     return ::cuda::std::span<const device_ref>{__peers_};
   }
-# endif // _CCCL_HOSTED()
+#  endif // _CCCL_HOSTED()
 };
 
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::std::unique_ptr<__physical_device[]>
@@ -190,11 +192,11 @@ _CCCL_HOST_API inline void device_ref::init() const
 
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::std::span<const device_ref> device_ref::peers() const
 {
-  #if _CCCL_HOSTED()
+#  if _CCCL_HOSTED()
   return ::cuda::__physical_devices()[__id_].__peers();
-  #else
+#  else
   return ::cuda::std::span<const device_ref>{};
-  #endif // _CCCL_HOSTED()
+#  endif // _CCCL_HOSTED()
 }
 
 _CCCL_END_NAMESPACE_CUDA

@@ -23,98 +23,98 @@
 
 #ifndef _CCCL_DISABLE_CMATH
 
-#include <cuda/std/__cmath/abs.h>
-#include <cuda/std/__cmath/exponential_functions.h>
-#include <cuda/std/__cmath/min_max.h>
-#include <cuda/std/__cmath/roots.h>
-#include <cuda/std/__floating_point/cuda_fp_types.h>
-#include <cuda/std/__host_stdlib/math.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_arithmetic.h>
-#include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/promote.h>
-#include <cuda/std/limits>
+#  include <cuda/std/__cmath/abs.h>
+#  include <cuda/std/__cmath/exponential_functions.h>
+#  include <cuda/std/__cmath/min_max.h>
+#  include <cuda/std/__cmath/roots.h>
+#  include <cuda/std/__floating_point/cuda_fp_types.h>
+#  include <cuda/std/__host_stdlib/math.h>
+#  include <cuda/std/__type_traits/enable_if.h>
+#  include <cuda/std/__type_traits/is_arithmetic.h>
+#  include <cuda/std/__type_traits/is_integral.h>
+#  include <cuda/std/__type_traits/promote.h>
+#  include <cuda/std/limits>
 
-#include <nv/target>
+#  include <nv/target>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // hypot
 
-#if _CCCL_CHECK_BUILTIN(builtin_hypot) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_HYPOTF(...) __builtin_hypotf(__VA_ARGS__)
-#  define _CCCL_BUILTIN_HYPOT(...)  __builtin_hypot(__VA_ARGS__)
-#  define _CCCL_BUILTIN_HYPOTL(...) __builtin_hypotl(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_hypot)
+#  if _CCCL_CHECK_BUILTIN(builtin_hypot) || _CCCL_COMPILER(GCC)
+#    define _CCCL_BUILTIN_HYPOTF(...) __builtin_hypotf(__VA_ARGS__)
+#    define _CCCL_BUILTIN_HYPOT(...)  __builtin_hypot(__VA_ARGS__)
+#    define _CCCL_BUILTIN_HYPOTL(...) __builtin_hypotl(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_hypot)
 
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  undef _CCCL_BUILTIN_HYPOTF
-#  undef _CCCL_BUILTIN_HYPOT
-#  undef _CCCL_BUILTIN_HYPOTL
-#endif // _CCCL_CUDA_COMPILER(CLANG)
+#  if _CCCL_CUDA_COMPILER(CLANG)
+#    undef _CCCL_BUILTIN_HYPOTF
+#    undef _CCCL_BUILTIN_HYPOT
+#    undef _CCCL_BUILTIN_HYPOTL
+#  endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float hypot(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_HYPOTF)
+#  if defined(_CCCL_BUILTIN_HYPOTF)
   return _CCCL_BUILTIN_HYPOTF(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_HYPOTF ^^^ // vvv !_CCCL_BUILTIN_HYPOTF vvv
+#  else // ^^^ _CCCL_BUILTIN_HYPOTF ^^^ // vvv !_CCCL_BUILTIN_HYPOTF vvv
   return ::hypotf(__x, __y);
-#endif // !_CCCL_BUILTIN_HYPOTF
+#  endif // !_CCCL_BUILTIN_HYPOTF
 }
 
 [[nodiscard]] _CCCL_API inline float hypotf(float __x, float __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_HYPOTF)
+#  if defined(_CCCL_BUILTIN_HYPOTF)
   return _CCCL_BUILTIN_HYPOTF(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_HYPOTF ^^^ // vvv !_CCCL_BUILTIN_HYPOTF vvv
+#  else // ^^^ _CCCL_BUILTIN_HYPOTF ^^^ // vvv !_CCCL_BUILTIN_HYPOTF vvv
   return ::hypotf(__x, __y);
-#endif // !_CCCL_BUILTIN_HYPOTF
+#  endif // !_CCCL_BUILTIN_HYPOTF
 }
 
 [[nodiscard]] _CCCL_API inline double hypot(double __x, double __y) noexcept
 {
-#if defined(_CCCL_BUILTIN_HYPOT)
+#  if defined(_CCCL_BUILTIN_HYPOT)
   return _CCCL_BUILTIN_HYPOT(__x, __y);
-#else // ^^^ _CCCL_BUILTIN_HYPOT ^^^ // vvv !_CCCL_BUILTIN_HYPOT vvv
+#  else // ^^^ _CCCL_BUILTIN_HYPOT ^^^ // vvv !_CCCL_BUILTIN_HYPOT vvv
   return ::hypot(__x, __y);
-#endif // !_CCCL_BUILTIN_HYPOT
+#  endif // !_CCCL_BUILTIN_HYPOT
 }
 
-#if _CCCL_HAS_LONG_DOUBLE()
+#  if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double hypot(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_HYPOTL)
+#    if defined(_CCCL_BUILTIN_HYPOTL)
   return _CCCL_BUILTIN_HYPOTL(__x, __y);
-#  else // ^^^ _CCCL_BUILTIN_HYPOTL ^^^ // vvv !_CCCL_BUILTIN_HYPOTL vvv
+#    else // ^^^ _CCCL_BUILTIN_HYPOTL ^^^ // vvv !_CCCL_BUILTIN_HYPOTL vvv
   return ::hypotl(__x, __y);
-#  endif // !_CCCL_BUILTIN_HYPOTL
+#    endif // !_CCCL_BUILTIN_HYPOTL
 }
 
 [[nodiscard]] _CCCL_API inline long double hypotl(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_HYPOTL)
+#    if defined(_CCCL_BUILTIN_HYPOTL)
   return _CCCL_BUILTIN_HYPOTL(__x, __y);
-#  else // ^^^ _CCCL_BUILTIN_HYPOTL ^^^ // vvv !_CCCL_BUILTIN_HYPOTL vvv
+#    else // ^^^ _CCCL_BUILTIN_HYPOTL ^^^ // vvv !_CCCL_BUILTIN_HYPOTL vvv
   return ::hypotl(__x, __y);
-#  endif // !_CCCL_BUILTIN_HYPOTL
+#    endif // !_CCCL_BUILTIN_HYPOTL
 }
-#endif // _CCCL_HAS_LONG_DOUBLE()
+#  endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if _LIBCUDACXX_HAS_NVFP16()
+#  if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half hypot(__half __x, __half __y) noexcept
 {
   return __float2half(::cuda::std::hypotf(__half2float(__x), __half2float(__y)));
 }
-#endif // _LIBCUDACXX_HAS_NVFP16()
+#  endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if _LIBCUDACXX_HAS_NVBF16()
+#  if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 hypot(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
 {
   return __float2bfloat16(::cuda::std::hypotf(__bfloat162float(__x), __bfloat162float(__y)));
 }
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#  endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmetic_v<_A2>, int> = 0>
 [[nodiscard]] _CCCL_API inline __promote_t<_A1, _A2> hypot(_A1 __x, _A2 __y) noexcept
@@ -177,7 +177,7 @@ template <class _Tp>
   return ::cuda::std::__hypot(__x, __y, __z);
 }
 
-#if _CCCL_HAS_LONG_DOUBLE()
+#  if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double hypot(long double __x, long double __y, long double __z) noexcept
 {
   return ::cuda::std::__hypot(__x, __y, __z);
@@ -187,21 +187,21 @@ template <class _Tp>
 {
   return ::cuda::std::__hypot(__x, __y, __z);
 }
-#endif // _CCCL_HAS_LONG_DOUBLE()
+#  endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if _LIBCUDACXX_HAS_NVFP16()
+#  if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half hypot(__half __x, __half __y, __half __z) noexcept
 {
   return __float2half(::cuda::std::__hypot(__half2float(__x), __half2float(__y), __half2float(__z)));
 }
-#endif // _LIBCUDACXX_HAS_NVFP16()
+#  endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if _LIBCUDACXX_HAS_NVBF16()
+#  if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 hypot(__nv_bfloat16 __x, __nv_bfloat16 __y, __nv_bfloat16 __z) noexcept
 {
   return __float2bfloat16(::cuda::std::__hypot(__bfloat162float(__x), __bfloat162float(__y), __bfloat162float(__z)));
 }
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#  endif // _LIBCUDACXX_HAS_NVBF16()
 
 _CCCL_TEMPLATE(class _A1, class _A2, class _A3)
 _CCCL_REQUIRES(is_arithmetic_v<_A1> _CCCL_AND is_arithmetic_v<_A2> _CCCL_AND is_arithmetic_v<_A3>)
@@ -214,7 +214,7 @@ _CCCL_REQUIRES(is_arithmetic_v<_A1> _CCCL_AND is_arithmetic_v<_A2> _CCCL_AND is_
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CCCL_DISABLE_CMATH
 

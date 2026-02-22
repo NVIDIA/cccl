@@ -55,10 +55,9 @@ public:
       (return time_point(duration_cast<duration>(nanoseconds(::cuda::ptx::get_sreg_globaltimer())));))
 #else
     // host-side `now` is not supported in freestanding
-    NV_IF_ELSE_TARGET(
-      NV_IS_HOST,
-      (::cuda::std::terminate();),
-      (return time_point(duration_cast<duration>(nanoseconds(::cuda::ptx::get_sreg_globaltimer())));))
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      (::cuda::std::terminate();),
+                      (return time_point(duration_cast<duration>(nanoseconds(::cuda::ptx::get_sreg_globaltimer())));))
 #endif
   }
 

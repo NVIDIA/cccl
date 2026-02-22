@@ -23,89 +23,89 @@
 
 #ifndef _CCCL_DISABLE_CMATH
 
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__floating_point/fp.h>
-#include <cuda/std/__host_stdlib/math.h>
-#include <cuda/std/__type_traits/is_integral.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__floating_point/fp.h>
+#  include <cuda/std/__host_stdlib/math.h>
+#  include <cuda/std/__type_traits/is_integral.h>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // erf
 
-#if _CCCL_CHECK_BUILTIN(builtin_erf) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_ERFF(...) __builtin_erff(__VA_ARGS__)
-#  define _CCCL_BUILTIN_ERF(...)  __builtin_erf(__VA_ARGS__)
-#  define _CCCL_BUILTIN_ERFL(...) __builtin_erfl(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_erf)
+#  if _CCCL_CHECK_BUILTIN(builtin_erf) || _CCCL_COMPILER(GCC)
+#    define _CCCL_BUILTIN_ERFF(...) __builtin_erff(__VA_ARGS__)
+#    define _CCCL_BUILTIN_ERF(...)  __builtin_erf(__VA_ARGS__)
+#    define _CCCL_BUILTIN_ERFL(...) __builtin_erfl(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_erf)
 
-#if _CCCL_CUDA_COMPILER(CLANG) // Unresolved extern function 'erf'
-#  undef _CCCL_BUILTIN_ERFF
-#  undef _CCCL_BUILTIN_ERF
-#  undef _CCCL_BUILTIN_ERFL
-#endif // _CCCL_CUDA_COMPILER(CLANG)
+#  if _CCCL_CUDA_COMPILER(CLANG) // Unresolved extern function 'erf'
+#    undef _CCCL_BUILTIN_ERFF
+#    undef _CCCL_BUILTIN_ERF
+#    undef _CCCL_BUILTIN_ERFL
+#  endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float erf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ERFF)
+#  if defined(_CCCL_BUILTIN_ERFF)
   return _CCCL_BUILTIN_ERFF(__x);
-#else // ^^^ _CCCL_BUILTIN_ERFF ^^^ / vvv !_CCCL_BUILTIN_ERFF vvv
+#  else // ^^^ _CCCL_BUILTIN_ERFF ^^^ / vvv !_CCCL_BUILTIN_ERFF vvv
   return ::erff(__x);
-#endif // ^^^ !_CCCL_BUILTIN_ERFF ^^^
+#  endif // ^^^ !_CCCL_BUILTIN_ERFF ^^^
 }
 
 [[nodiscard]] _CCCL_API inline float erff(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ERFF)
+#  if defined(_CCCL_BUILTIN_ERFF)
   return _CCCL_BUILTIN_ERFF(__x);
-#else // ^^^ _CCCL_BUILTIN_ERFF ^^^ / vvv !_CCCL_BUILTIN_ERFF vvv
+#  else // ^^^ _CCCL_BUILTIN_ERFF ^^^ / vvv !_CCCL_BUILTIN_ERFF vvv
   return ::erff(__x);
-#endif // ^^^ !_CCCL_BUILTIN_ERFF ^^^
+#  endif // ^^^ !_CCCL_BUILTIN_ERFF ^^^
 }
 
 [[nodiscard]] _CCCL_API inline double erf(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ERF)
+#  if defined(_CCCL_BUILTIN_ERF)
   return _CCCL_BUILTIN_ERF(__x);
-#else // ^^^ _CCCL_BUILTIN_ERF ^^^ / vvv !_CCCL_BUILTIN_ERF vvv
+#  else // ^^^ _CCCL_BUILTIN_ERF ^^^ / vvv !_CCCL_BUILTIN_ERF vvv
   return ::erf(__x);
-#endif // ^^^ !_CCCL_BUILTIN_ERF ^^^
+#  endif // ^^^ !_CCCL_BUILTIN_ERF ^^^
 }
 
-#if _CCCL_HAS_LONG_DOUBLE()
+#  if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double erf(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ERFL)
+#    if defined(_CCCL_BUILTIN_ERFL)
   return _CCCL_BUILTIN_ERFL(__x);
-#  else // ^^^ _CCCL_BUILTIN_ERFL ^^^ / vvv !_CCCL_BUILTIN_ERFL vvv
+#    else // ^^^ _CCCL_BUILTIN_ERFL ^^^ / vvv !_CCCL_BUILTIN_ERFL vvv
   return ::erfl(__x);
-#  endif // ^^^ !_CCCL_BUILTIN_ERFL ^^^
+#    endif // ^^^ !_CCCL_BUILTIN_ERFL ^^^
 }
 
 [[nodiscard]] _CCCL_API inline long double erfl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ERFL)
+#    if defined(_CCCL_BUILTIN_ERFL)
   return _CCCL_BUILTIN_ERFL(__x);
-#  else // ^^^ _CCCL_BUILTIN_ERFL ^^^ / vvv !_CCCL_BUILTIN_ERFL vvv
+#    else // ^^^ _CCCL_BUILTIN_ERFL ^^^ / vvv !_CCCL_BUILTIN_ERFL vvv
   return ::erfl(__x);
-#  endif // ^^^ !_CCCL_BUILTIN_ERFL ^^^
+#    endif // ^^^ !_CCCL_BUILTIN_ERFL ^^^
 }
-#endif // _CCCL_HAS_LONG_DOUBLE()
+#  endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if _LIBCUDACXX_HAS_NVFP16()
+#  if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half erf(__half __x) noexcept
 {
   return ::__float2half(::cuda::std::erf(::__half2float(__x)));
 }
-#endif // _LIBCUDACXX_HAS_NVFP16()
+#  endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if _LIBCUDACXX_HAS_NVBF16()
+#  if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 erf(__nv_bfloat16 __x) noexcept
 {
   return ::__float2bfloat16(::cuda::std::erf(::__bfloat162float(__x)));
 }
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#  endif // _LIBCUDACXX_HAS_NVBF16()
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_integral_v<_Tp>)
@@ -116,78 +116,78 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
 
 // erfc
 
-#if _CCCL_CHECK_BUILTIN(builtin_ercf) || _CCCL_COMPILER(GCC)
-#  define _CCCL_BUILTIN_ERFCF(...) __builtin_erfcf(__VA_ARGS__)
-#  define _CCCL_BUILTIN_ERFC(...)  __builtin_erfc(__VA_ARGS__)
-#  define _CCCL_BUILTIN_ERFCL(...) __builtin_erfcl(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_ercf)
+#  if _CCCL_CHECK_BUILTIN(builtin_ercf) || _CCCL_COMPILER(GCC)
+#    define _CCCL_BUILTIN_ERFCF(...) __builtin_erfcf(__VA_ARGS__)
+#    define _CCCL_BUILTIN_ERFC(...)  __builtin_erfc(__VA_ARGS__)
+#    define _CCCL_BUILTIN_ERFCL(...) __builtin_erfcl(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_ercf)
 
-#if _CCCL_CUDA_COMPILER(CLANG) // Unresolved extern function 'erfc'
-#  undef _CCCL_BUILTIN_ERFCF
-#  undef _CCCL_BUILTIN_ERFC
-#  undef _CCCL_BUILTIN_ERFCL
-#endif // _CCCL_CUDA_COMPILER(CLANG)
+#  if _CCCL_CUDA_COMPILER(CLANG) // Unresolved extern function 'erfc'
+#    undef _CCCL_BUILTIN_ERFCF
+#    undef _CCCL_BUILTIN_ERFC
+#    undef _CCCL_BUILTIN_ERFCL
+#  endif // _CCCL_CUDA_COMPILER(CLANG)
 
 [[nodiscard]] _CCCL_API inline float erfc(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ERFCF)
+#  if defined(_CCCL_BUILTIN_ERFCF)
   return _CCCL_BUILTIN_ERFCF(__x);
-#else // ^^^ _CCCL_BUILTIN_ERFCF ^^^ / vvv !_CCCL_BUILTIN_ERFCF vvv
+#  else // ^^^ _CCCL_BUILTIN_ERFCF ^^^ / vvv !_CCCL_BUILTIN_ERFCF vvv
   return ::erfcf(__x);
-#endif // ^^^ !_CCCL_BUILTIN_ERFCF ^^^
+#  endif // ^^^ !_CCCL_BUILTIN_ERFCF ^^^
 }
 
 [[nodiscard]] _CCCL_API inline float erfcf(float __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ERFCF)
+#  if defined(_CCCL_BUILTIN_ERFCF)
   return _CCCL_BUILTIN_ERFCF(__x);
-#else // ^^^ _CCCL_BUILTIN_ERFCF ^^^ / vvv !_CCCL_BUILTIN_ERFCF vvv
+#  else // ^^^ _CCCL_BUILTIN_ERFCF ^^^ / vvv !_CCCL_BUILTIN_ERFCF vvv
   return ::erfcf(__x);
-#endif // ^^^ !_CCCL_BUILTIN_ERFCF ^^^
+#  endif // ^^^ !_CCCL_BUILTIN_ERFCF ^^^
 }
 
 [[nodiscard]] _CCCL_API inline double erfc(double __x) noexcept
 {
-#if defined(_CCCL_BUILTIN_ERFC)
+#  if defined(_CCCL_BUILTIN_ERFC)
   return _CCCL_BUILTIN_ERFC(__x);
-#else // ^^^ _CCCL_BUILTIN_ERFC ^^^ / vvv !_CCCL_BUILTIN_ERFC vvv
+#  else // ^^^ _CCCL_BUILTIN_ERFC ^^^ / vvv !_CCCL_BUILTIN_ERFC vvv
   return ::erfc(__x);
-#endif // ^^^ !_CCCL_BUILTIN_ERFC ^^^
+#  endif // ^^^ !_CCCL_BUILTIN_ERFC ^^^
 }
 
-#if _CCCL_HAS_LONG_DOUBLE()
+#  if _CCCL_HAS_LONG_DOUBLE()
 [[nodiscard]] _CCCL_API inline long double erfc(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ERFCL)
+#    if defined(_CCCL_BUILTIN_ERFCL)
   return _CCCL_BUILTIN_ERFCL(__x);
-#  else // ^^^ _CCCL_BUILTIN_ERFCL ^^^ / vvv !_CCCL_BUILTIN_ERFCL vvv
+#    else // ^^^ _CCCL_BUILTIN_ERFCL ^^^ / vvv !_CCCL_BUILTIN_ERFCL vvv
   return ::erfcl(__x);
-#  endif // ^^^ !_CCCL_BUILTIN_ERFCL ^^^
+#    endif // ^^^ !_CCCL_BUILTIN_ERFCL ^^^
 }
 
 [[nodiscard]] _CCCL_API inline long double erfcl(long double __x) noexcept
 {
-#  if defined(_CCCL_BUILTIN_ERFCL)
+#    if defined(_CCCL_BUILTIN_ERFCL)
   return _CCCL_BUILTIN_ERFCL(__x);
-#  else // ^^^ _CCCL_BUILTIN_ERFCL ^^^ / vvv !_CCCL_BUILTIN_ERFCL vvv
+#    else // ^^^ _CCCL_BUILTIN_ERFCL ^^^ / vvv !_CCCL_BUILTIN_ERFCL vvv
   return ::erfcl(__x);
-#  endif // ^^^ !_CCCL_BUILTIN_ERFCL ^^^
+#    endif // ^^^ !_CCCL_BUILTIN_ERFCL ^^^
 }
-#endif // _CCCL_HAS_LONG_DOUBLE()
+#  endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if _LIBCUDACXX_HAS_NVFP16()
+#  if _LIBCUDACXX_HAS_NVFP16()
 [[nodiscard]] _CCCL_API inline __half erfc(__half __x) noexcept
 {
   return ::__float2half(::cuda::std::erfc(::__half2float(__x)));
 }
-#endif // _LIBCUDACXX_HAS_NVFP16()
+#  endif // _LIBCUDACXX_HAS_NVFP16()
 
-#if _LIBCUDACXX_HAS_NVBF16()
+#  if _LIBCUDACXX_HAS_NVBF16()
 [[nodiscard]] _CCCL_API inline __nv_bfloat16 erfc(__nv_bfloat16 __x) noexcept
 {
   return ::__float2bfloat16(::cuda::std::erfc(::__bfloat162float(__x)));
 }
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#  endif // _LIBCUDACXX_HAS_NVBF16()
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_integral_v<_Tp>)
@@ -198,7 +198,7 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CCCL_DISABLE_CMATH
 

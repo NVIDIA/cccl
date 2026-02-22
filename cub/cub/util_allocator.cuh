@@ -24,11 +24,11 @@
 
 #if _CCCL_HOSTED()
 
-#include <cuda/std/__host_stdlib/math.h>
+#  include <cuda/std/__host_stdlib/math.h>
 
-#include <map>
-#include <mutex>
-#include <set>
+#  include <map>
+#  include <mutex>
+#  include <set>
 
 CUB_NAMESPACE_BEGIN
 
@@ -87,7 +87,7 @@ struct CachingDeviceAllocator
   /// Invalid size
   static constexpr size_t INVALID_SIZE = (size_t) -1;
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
   /// Invalid device ordinal
   static constexpr int INVALID_DEVICE_ORDINAL = -1;
@@ -276,7 +276,7 @@ struct CachingDeviceAllocator
   /// Set of live device allocations currently in use
   BusyBlocks live_blocks;
 
-#endif // _CCCL_DOXYGEN_INVOKED
+#  endif // _CCCL_DOXYGEN_INVOKED
 
   //---------------------------------------------------------------------
   // Methods
@@ -359,10 +359,10 @@ struct CachingDeviceAllocator
     // Lock
     mutex.lock();
 
-#ifdef CUB_DEBUG_LOG
+#  ifdef CUB_DEBUG_LOG
     _CubLog(
       "Changing max_cached_bytes (%lld -> %lld)\n", (long long) this->max_cached_bytes, (long long) max_cached_bytes_);
-#endif
+#  endif
 
     this->max_cached_bytes = max_cached_bytes_;
 
@@ -470,7 +470,7 @@ struct CachingDeviceAllocator
           cached_bytes[device].free -= search_key.bytes;
           cached_bytes[device].live += search_key.bytes;
 
-#ifdef CUB_DEBUG_LOG
+#  ifdef CUB_DEBUG_LOG
           _CubLog("\tDevice %d reused cached block at %p (%lld bytes) for stream %lld (previously associated with "
                   "stream %lld).\n",
                   device,
@@ -478,7 +478,7 @@ struct CachingDeviceAllocator
                   (long long) search_key.bytes,
                   (long long) search_key.associated_stream,
                   (long long) block_itr->associated_stream);
-#endif
+#  endif
 
           cached_blocks.erase(block_itr);
 
@@ -515,12 +515,12 @@ struct CachingDeviceAllocator
       if (error == cudaErrorMemoryAllocation)
       {
         // The allocation attempt failed: free all cached blocks on device and retry
-#ifdef CUB_DEBUG_LOG
+#  ifdef CUB_DEBUG_LOG
         _CubLog("\tDevice %d failed to allocate %lld bytes for stream %lld, retrying after freeing cached allocations",
                 device,
                 (long long) search_key.bytes,
                 (long long) search_key.associated_stream);
-#endif
+#  endif
 
         error = cudaSuccess; // Reset the error we will return
         cudaGetLastError(); // Reset CUDART's error
@@ -554,7 +554,7 @@ struct CachingDeviceAllocator
           // Reduce balance and erase entry
           cached_bytes[device].free -= block_itr->bytes;
 
-#ifdef CUB_DEBUG_LOG
+#  ifdef CUB_DEBUG_LOG
           _CubLog("\tDevice %d freed %lld bytes.\n\t\t  %lld available blocks cached (%lld bytes), %lld live blocks "
                   "(%lld bytes) outstanding.\n",
                   device,
@@ -563,7 +563,7 @@ struct CachingDeviceAllocator
                   (long long) cached_bytes[device].free,
                   (long long) live_blocks.size(),
                   (long long) cached_bytes[device].live);
-#endif
+#  endif
 
           block_itr = cached_blocks.erase(block_itr);
         }
@@ -599,13 +599,13 @@ struct CachingDeviceAllocator
       cached_bytes[device].live += search_key.bytes;
       mutex.unlock();
 
-#ifdef CUB_DEBUG_LOG
+#  ifdef CUB_DEBUG_LOG
       _CubLog("\tDevice %d allocated new device block at %p (%lld bytes associated with stream %lld).\n",
               device,
               search_key.d_ptr,
               (long long) search_key.bytes,
               (long long) search_key.associated_stream);
-#endif
+#  endif
 
       // Attempt to revert back to previous device if necessary
       if ((entrypoint_device != INVALID_DEVICE_ORDINAL) && (entrypoint_device != device))
@@ -621,7 +621,7 @@ struct CachingDeviceAllocator
     // Copy device pointer to output parameter
     *d_ptr = search_key.d_ptr;
 
-#ifdef CUB_DEBUG_LOG
+#  ifdef CUB_DEBUG_LOG
     if (debug)
     {
       _CubLog("\t\t%lld available blocks cached (%lld bytes), %lld live blocks outstanding(%lld bytes).\n",
@@ -630,7 +630,7 @@ struct CachingDeviceAllocator
               (long long) live_blocks.size(),
               (long long) cached_bytes[device].live);
     }
-#endif
+#  endif
 
     return error;
   }
@@ -704,7 +704,7 @@ struct CachingDeviceAllocator
         cached_blocks.insert(search_key);
         cached_bytes[device].free += search_key.bytes;
 
-#ifdef CUB_DEBUG_LOG
+#  ifdef CUB_DEBUG_LOG
         _CubLog("\tDevice %d returned %lld bytes from associated stream %lld.\n\t\t %lld available blocks cached (%lld "
                 "bytes), %lld live blocks outstanding. (%lld bytes)\n",
                 device,
@@ -714,7 +714,7 @@ struct CachingDeviceAllocator
                 (long long) cached_bytes[device].free,
                 (long long) live_blocks.size(),
                 (long long) cached_bytes[device].live);
-#endif
+#  endif
       }
     }
 
@@ -762,7 +762,7 @@ struct CachingDeviceAllocator
         return error;
       }
 
-#ifdef CUB_DEBUG_LOG
+#  ifdef CUB_DEBUG_LOG
       _CubLog("\tDevice %d freed %lld bytes from associated stream %lld.\n\t\t  %lld available blocks cached (%lld "
               "bytes), %lld live blocks (%lld bytes) outstanding.\n",
               device,
@@ -772,7 +772,7 @@ struct CachingDeviceAllocator
               (long long) cached_bytes[device].free,
               (long long) live_blocks.size(),
               (long long) cached_bytes[device].live);
-#endif
+#  endif
     }
 
     // Reset device
@@ -857,7 +857,7 @@ struct CachingDeviceAllocator
       cached_bytes[current_device].free -= block_bytes;
       cached_blocks.erase(begin);
 
-#ifdef CUB_DEBUG_LOG
+#  ifdef CUB_DEBUG_LOG
       _CubLog("\tDevice %d freed %lld bytes.\n\t\t  %lld available blocks cached (%lld bytes), %lld live blocks (%lld "
               "bytes) outstanding.\n",
               current_device,
@@ -866,7 +866,7 @@ struct CachingDeviceAllocator
               (long long) cached_bytes[current_device].free,
               (long long) live_blocks.size(),
               (long long) cached_bytes[current_device].live);
-#endif
+#  endif
     }
 
     mutex.unlock();

@@ -70,7 +70,8 @@ using ::timespec;
   NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::clock();), (return static_cast<clock_t>(::cuda::ptx::get_sreg_clock64());))
 #else
   // host-side `clock` is not supported in freestanding
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (::cuda::std::terminate();), (return static_cast<clock_t>(::cuda::ptx::get_sreg_clock64());))
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST, (::cuda::std::terminate();), (return static_cast<clock_t>(::cuda::ptx::get_sreg_clock64());))
 #endif
 }
 
@@ -153,16 +154,15 @@ template <int = 0>
 #    undef _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
 #  endif // _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
 {
-#if _CCCL_HOSTED()
+#  if _CCCL_HOSTED()
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (return ::timespec_get(__ts, __base);),
                     (return ::cuda::std::__cccl_timespec_get_impl_device(__ts, __base);))
-#else
+#  else
   // host-side `timespec_get` is not supported in freestanding
-  NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (::cuda::std::terminate();),
-                    (return ::cuda::std::__cccl_timespec_get_impl_device(__ts, __base);))
-#endif
+  NV_IF_ELSE_TARGET(
+    NV_IS_HOST, (::cuda::std::terminate();), (return ::cuda::std::__cccl_timespec_get_impl_device(__ts, __base);))
+#  endif
 }
 
 #endif // !defined(__ANDROID_API__) || __ANDROID_API__ >= 29
