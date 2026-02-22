@@ -111,61 +111,61 @@ Capture a concrete, thread-by-thread implementation plan for all unresolved
 `@codex` review comments on `NVIDIA/cccl#7214` before making code changes.
 
 ### Thread-by-Thread Plan
-- [ ] 1. `python/cuda_cccl/cuda/coop/block/_block_exchange.py:116`
+- [x] 1. `python/cuda_cccl/cuda/coop/block/_block_exchange.py:116`
   - Expand `exchange.__init__` docs with parameter/behavior details for
     in-place vs out-of-place calls, scatter-only arguments, and
     `warp_time_slicing`.
   - Add short docstrings for `_build_exchange_spec`,
     `_make_exchange_two_phase`, and `_make_exchange_rewrite`.
 
-- [ ] 2. `python/cuda_cccl/cuda/coop/block/_block_histogram.py:232`
+- [x] 2. `python/cuda_cccl/cuda/coop/block/_block_histogram.py:232`
   - Reconcile `temp_storage` docs with CUB reality (`BlockHistogram` does have
     `TempStorage`) and current Python behavior (`NotImplementedError`).
   - Decide whether this PR should keep explicit temp storage unsupported (with
     clear messaging/tests) or wire support end-to-end.
 
-- [ ] 3. `python/cuda_cccl/cuda/coop/_numba_extension.py:12`
+- [x] 3. `python/cuda_cccl/cuda/coop/_numba_extension.py:12`
   - Rename module globals from `NUMBA_CCCL_*` to `CUDA_CCCL_*` for internal
     consistency, with compatibility aliases as needed.
 
-- [ ] 4. `python/cuda_cccl/cuda/coop/_rewrite.py:943`
+- [x] 4. `python/cuda_cccl/cuda/coop/_rewrite.py:943`
   - Evaluate the `Primitive`/`primitive_type` TODO and either implement the
     rename or remove the TODO if churn outweighs value.
 
-- [ ] 5. `python/cuda_cccl/cuda/coop/_rewrite.py:1573`
+- [x] 5. `python/cuda_cccl/cuda/coop/_rewrite.py:1573`
   - Replace the current return-type reconciliation comment with a concrete
     explanation of typemap mismatch after rewrite-time call substitution.
 
-- [ ] 6. `python/cuda_cccl/cuda/coop/_rewrite.py:1593`
+- [x] 6. `python/cuda_cccl/cuda/coop/_rewrite.py:1593`
   - Remove stale commented debug/breakpoint code or convert it to a
     non-disruptive debug assertion with actionable failure text.
 
-- [ ] 7. `python/cuda_cccl/cuda/coop/_rewrite.py:1666`
+- [x] 7. `python/cuda_cccl/cuda/coop/_rewrite.py:1666`
   - Replace `SimpleNamespace` rewrite payload with a typed dataclass (fields:
     `g_var`, `g_assign`, `new_call`, `new_assign`, `sig`, `func_ty`,
     `prelude_instrs`) and migrate immediate call sites.
 
-- [ ] 8. `python/cuda_cccl/cuda/coop/_rewrite.py:2063`
+- [x] 8. `python/cuda_cccl/cuda/coop/_rewrite.py:2063`
   - Reword the cache-priming comment to explain why
     `func_ty.get_call_type(...)` is required (populate `_impl_keys` after
     rewrite-time registration).
 
-- [ ] 9. `python/cuda_cccl/cuda/coop/_rewrite.py:2094`
+- [x] 9. `python/cuda_cccl/cuda/coop/_rewrite.py:2094`
   - Reword the two-phase wrapper rationale in neutral, technical terms and
     note what would be needed to unify code paths later.
 
-- [ ] 10. `python/cuda_cccl/cuda/coop/_rewrite.py:2155`
+- [x] 10. `python/cuda_cccl/cuda/coop/_rewrite.py:2155`
   - Remove stray/no-op comment text.
 
-- [ ] 11. `python/cuda_cccl/cuda/coop/_rewrite.py:4435`
+- [x] 11. `python/cuda_cccl/cuda/coop/_rewrite.py:4435`
   - Replace broad `except Exception` fallback around `ThreadDataType` lookup
     with a deterministic helper and tighter error mode.
 
-- [ ] 12. `python/cuda_cccl/cuda/coop/_rewrite.py:6533`
+- [x] 12. `python/cuda_cccl/cuda/coop/_rewrite.py:6533`
   - Validate whether `CoopBlockRunLengthDecodeNode.rewrite_details` can defer
     to `CoopNode.do_rewrite()` and remove duplicate logic if parity holds.
 
-- [ ] 13. `python/cuda_cccl/cuda/coop/_rewrite.py:6292`
+- [x] 13. `python/cuda_cccl/cuda/coop/_rewrite.py:6292`
   - Validate whether `CoopBlockRunLengthNode.rewrite_details` can defer to
     `CoopNode.do_rewrite()` (or a small shared helper) while preserving
     parent-instance return typing and TempStorage prelude insertion behavior.
