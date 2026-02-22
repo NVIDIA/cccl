@@ -28,7 +28,23 @@ constexpr bool passed_property =
 template <class Resource>
 constexpr bool same_properties =
   passed_property<Resource, cuda::mr::device_accessible> && passed_property<Resource, cuda::mr::host_accessible>
-  && passed_property<Resource, extra_property> && passed_property<Resource, get_data>;
+  && passed_property<Resource, extra_property> && passed_property<Resource, get_data>
+  && passed_property<Resource, cuda::mr::dynamic_accessibility_property>;
+
+struct explicit_dynamic_resource
+{
+  void* allocate_sync(size_t, size_t)
+  {
+    return nullptr;
+  }
+  void deallocate_sync(void*, size_t, size_t) noexcept {}
+  friend constexpr void get_property(const explicit_dynamic_resource&, cuda::mr::host_accessible) noexcept {}
+  friend constexpr cuda::mr::__memory_accessability
+  get_property(const explicit_dynamic_resource&, cuda::mr::dynamic_accessibility_property) noexcept
+  {
+    return cuda::mr::__memory_accessability::__device;
+  }
+};
 
 C2H_CCCLRT_TEST("synchronous_resource_adapter", "[memory_resource]")
 {
@@ -69,5 +85,13 @@ C2H_CCCLRT_TEST("synchronous_resource_adapter", "[memory_resource]")
     STATIC_CHECK(same_default_queries<cuda::device_memory_pool_ref>);
     STATIC_CHECK(same_default_queries<cuda::mr::legacy_pinned_memory_resource>);
     STATIC_CHECK(same_default_queries<small_resource>);
+  }
+
+  SECTION("explicit dynamic_accessibility_property overrides template")
+  {
+    cuda::mr::synchronous_resource_adapter<explicit_dynamic_resource> adapter{explicit_dynamic_resource{}};
+    STATIC_CHECK(cuda::has_property<decltype(adapter), cuda::mr::dynamic_accessibility_property>);
+    CHECK(get_property(adapter, cuda::mr::dynamic_accessibility_property{})
+          == cuda::mr::__memory_accessability::__device);
   }
 }

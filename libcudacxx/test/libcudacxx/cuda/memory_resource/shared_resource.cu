@@ -163,6 +163,12 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
     CHECK(this->counts == expected);
   }
 
+  SECTION("dynamic_accessibility_property forwards through shared_resource")
+  {
+    cuda::mr::shared_resource mr{cuda::std::in_place_type<TestResource>, 42, this};
+    CHECK(get_property(mr, cuda::mr::dynamic_accessibility_property{}) == cuda::mr::__memory_accessability::__host);
+  }
+
   // Reset the counters:
   this->counts = Counts();
 

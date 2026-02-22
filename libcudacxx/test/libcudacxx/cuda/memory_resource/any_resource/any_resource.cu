@@ -228,6 +228,34 @@ struct host_device_resource
 static_assert(cuda::has_property<host_device_resource, cuda::mr::device_accessible>);
 static_assert(cuda::has_property<host_device_resource, cuda::mr::host_accessible>);
 
+struct explicit_dynamic_resource
+{
+  void* allocate(cuda::stream_ref, size_t, size_t)
+  {
+    return nullptr;
+  }
+  void deallocate(cuda::stream_ref, void*, size_t, size_t) noexcept {}
+  void* allocate_sync(size_t, size_t)
+  {
+    return nullptr;
+  }
+  void deallocate_sync(void*, size_t, size_t) noexcept {}
+  friend bool operator==(const explicit_dynamic_resource&, const explicit_dynamic_resource&) noexcept
+  {
+    return true;
+  }
+  friend bool operator!=(const explicit_dynamic_resource&, const explicit_dynamic_resource&) noexcept
+  {
+    return false;
+  }
+  friend constexpr void get_property(const explicit_dynamic_resource&, cuda::mr::host_accessible) noexcept {}
+  friend constexpr cuda::mr::__memory_accessability
+  get_property(const explicit_dynamic_resource&, cuda::mr::dynamic_accessibility_property) noexcept
+  {
+    return cuda::mr::__memory_accessability::__device;
+  }
+};
+
 void requires_host(cuda::mr::resource_ref<cuda::mr::host_accessible>) {}
 void requires_device(cuda::mr::resource_ref<cuda::mr::device_accessible>) {}
 
@@ -263,6 +291,22 @@ TEST_CASE("resource_ref regression test for cccl#6839", "[container][resource]")
   cuda::mr::any_resource<cuda::mr::host_accessible> res = host_device_mr;
   CHECK(checks_device_runtime_any_resource(res)); // Test that we are device accessible
   CHECK(checks_device_runtime_resource_ref(ref)); // Test that we are device accessible
+}
+
+TEST_CASE("dynamic_accessibility_property in type-erased wrappers", "[container][resource]")
+{
+  cuda::mr::any_resource<cuda::mr::host_accessible> host_device_any{host_device_resource{}};
+  CHECK(get_property(host_device_any, cuda::mr::dynamic_accessibility_property{})
+        == cuda::mr::__memory_accessability::__host_device);
+
+  cuda::mr::any_resource<cuda::mr::host_accessible> explicit_any{explicit_dynamic_resource{}};
+  CHECK(get_property(explicit_any, cuda::mr::dynamic_accessibility_property{})
+        == cuda::mr::__memory_accessability::__device);
+
+  host_device_resource host_device_mr{};
+  cuda::mr::resource_ref<cuda::mr::host_accessible> host_device_ref{host_device_mr};
+  CHECK(get_property(host_device_ref, cuda::mr::dynamic_accessibility_property{})
+        == cuda::mr::__memory_accessability::__host_device);
 }
 
 TEMPLATE_TEST_CASE_METHOD(test_fixture, "Empty property set", "[container][resource]", big_resource, small_resource)

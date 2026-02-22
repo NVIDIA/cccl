@@ -23,6 +23,7 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/__memory_resource/properties.h>
 #  include <cuda/std/__concepts/same_as.h>
 #  include <cuda/std/__type_traits/remove_const_ref.h>
 #  include <cuda/std/__type_traits/void_t.h>
@@ -107,9 +108,19 @@ _CCCL_CONCEPT_FRAGMENT(
   __has_upstream_resource_,
   requires(const _Resource& __res)(
     requires(::cuda::std::same_as<::cuda::std::__remove_const_ref_t<decltype(__res.upstream_resource())>, _Upstream>)));
+
+template <class _Resource, class _Upstream>
+_CCCL_CONCEPT_FRAGMENT(__has_get_resource_,
+                       requires(const _Resource& __res)(requires(
+                         ::cuda::std::same_as<::cuda::std::__remove_const_ref_t<decltype(__res.get())>, _Upstream>)));
+template <class _Resource, class _Upstream>
+_CCCL_CONCEPT __has_get_resource = _CCCL_FRAGMENT(__has_get_resource_, _Resource, _Upstream);
+
 #  endif // ^^^ _CCCL_DOXYGEN_INVOKED ^^^
 template <class _Resource, class _Upstream>
-_CCCL_CONCEPT __has_upstream_resource = _CCCL_FRAGMENT(__has_upstream_resource_, _Resource, _Upstream);
+_CCCL_CONCEPT __has_forwarded_resource =
+  _CCCL_FRAGMENT(__has_upstream_resource_, _Resource, _Upstream)
+  || _CCCL_FRAGMENT(__has_get_resource_, _Resource, _Upstream);
 
 _CCCL_BEGIN_NAMESPACE_CPO(__forward_property)
 template <class _Derived, class _Upstream>
@@ -120,14 +131,35 @@ struct __fn
   _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND has_property<_Upstream, _Property>)
   _CCCL_API friend constexpr void get_property(const _Derived&, _Property) noexcept {}
 
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API friend constexpr auto
+  get_property(const _Derived& __res, ::cuda::mr::dynamic_accessibility_property __prop) noexcept
+  {
+    if constexpr (_CCCL_FRAGMENT(__has_upstream_resource_, _Derived, _Upstream))
+    {
+      return get_property(__res.upstream_resource(), __prop);
+    }
+    else
+    {
+      return get_property(__res.get(), __prop);
+    }
+  }
+
   // The indirection is needed, otherwise the compiler might believe that _Derived is an incomplete type
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Property, class _Derived2 = _Derived)
   _CCCL_REQUIRES(property_with_value<_Property> _CCCL_AND has_property<_Upstream, _Property> _CCCL_AND
-                   __has_upstream_resource<_Derived2, _Upstream>)
+                   __has_forwarded_resource<_Derived2, _Upstream>)
   _CCCL_API friend constexpr __property_value_t<_Property> get_property(const _Derived& __res, _Property __prop)
   {
-    return get_property(__res.upstream_resource(), __prop);
+    if constexpr (_CCCL_FRAGMENT(__has_upstream_resource_, _Derived, _Upstream))
+    {
+      return get_property(__res.upstream_resource(), __prop);
+    }
+    else
+    {
+      return get_property(__res.get(), __prop);
+    }
   }
 };
 _CCCL_END_NAMESPACE_CPO
@@ -145,14 +177,35 @@ _CCCL_END_NAMESPACE_CPO
 //!
 //! .. note::
 //!
-//!    In order to forward stateful properties, a type needs do implement an `upstream_resource()` method that returns
-//!    an instance of the upstream.
+//!    In order to forward stateful properties, a type needs to implement either:
+//!    - an `upstream_resource()` method returning the upstream resource, or
+//!    - a `get()` method returning the upstream resource.
 //!
 //! @endrst
 template <class _Derived, class _Upstream>
 using forward_property = __forward_property::__fn<_Derived, _Upstream>;
 
 _CCCL_END_NAMESPACE_CUDA
+
+_CCCL_BEGIN_NAMESPACE_CUDA_MR
+
+template <class _Tp>
+inline constexpr bool __disable_default_dynamic_accessibility_property = false;
+
+//! Default implementation: infer from has_property<Resource, host_accessible> and
+//! has_property<Resource, device_accessible>. Resources can override by providing
+//! their own get_property(..., dynamic_accessibility_property).
+//! Excluded for type-erased wrappers (any_resource, resource_ref, etc.) so that
+//! get_property dispatches via their interface to the stored concrete resource.
+_CCCL_TEMPLATE(class _Resource)
+_CCCL_REQUIRES((!__disable_default_dynamic_accessibility_property<_Resource>) )
+_CCCL_API constexpr __memory_accessability
+get_property([[maybe_unused]] const _Resource& __res, dynamic_accessibility_property) noexcept
+{
+  return __memory_accessability_from_static_properties<::cuda::has_property<_Resource, host_accessible>,
+                                                       ::cuda::has_property<_Resource, device_accessible>>();
+}
+_CCCL_END_NAMESPACE_CUDA_MR
 
 #  include <cuda/std/__cccl/epilogue.h>
 
