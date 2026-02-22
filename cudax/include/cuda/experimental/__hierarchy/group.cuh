@@ -21,252 +21,146 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/pow2.h>
 #include <cuda/hierarchy>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/optional>
 
 #include <cuda/experimental/__hierarchy/fwd.cuh>
 #include <cuda/experimental/__hierarchy/grid_sync.cuh>
+#include <cuda/experimental/__hierarchy/traits.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
-template <class _HierarchyLike>
-using __hierarchy_type_of =
-  ::cuda::std::remove_cvref_t<decltype(::cuda::__unpack_hierarchy_if_needed(::cuda::std::declval<_HierarchyLike>()))>;
-
-// todo: use __hier_ in queries
-template <class _Level, class _Hierarchy>
-class __hierarchy_group_base<_Level, _Hierarchy, __this_hierarchy_group_kind>
+template <::cuda::std::size_t _Np>
+struct group_by_t
 {
-  static_assert(__is_hierarchy_level_v<_Level>);
-  static_assert(__is_hierarchy_v<_Hierarchy>);
-
-  const _Hierarchy& __hier_;
-
-public:
-  using hierarchy_type = _Hierarchy;
-
-  _CCCL_TEMPLATE(class _HierarchyLike)
-  _CCCL_REQUIRES(::cuda::std::is_same_v<_Hierarchy, __hierarchy_type_of<_HierarchyLike>>)
-  _CCCL_DEVICE_API __hierarchy_group_base(const _HierarchyLike& __hier_like) noexcept
-      : __hier_{::cuda::__unpack_hierarchy_if_needed(__hier_like)}
-  {}
-
-  [[nodiscard]] _CCCL_API const _Hierarchy& hierarchy() const noexcept
-  {
-    return __hier_;
-  }
-
-  _CCCL_TEMPLATE(class _Tp, class _InLevel, class _Level2 = _Level)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel> _CCCL_AND(
-    !::cuda::std::is_same_v<_Level2, grid_level>))
-  [[nodiscard]] _CCCL_API constexpr _Tp count_as(const _InLevel& __in_level) const noexcept
-  {
-    return _Level{}.template count_as<_Tp>(__in_level);
-  }
-
-  _CCCL_TEMPLATE(class _InLevel, class _Level2 = _Level)
-  _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND(!::cuda::std::is_same_v<_Level2, grid_level>))
-  [[nodiscard]] _CCCL_API constexpr auto count(const _InLevel& __in_level) const noexcept
-  {
-    return _Level{}.count(__in_level);
-  }
-
-#if _CCCL_CUDA_COMPILATION()
-  _CCCL_TEMPLATE(class _Tp, class _InLevel, class _Level2 = _Level)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel> _CCCL_AND(
-    !::cuda::std::is_same_v<_Level2, grid_level>))
-  [[nodiscard]] _CCCL_DEVICE_API _Tp rank_as(const _InLevel& __in_level) const noexcept
-  {
-    return _Level{}.template rank_as<_Tp>(__in_level);
-  }
-
-  _CCCL_TEMPLATE(class _InLevel, class _Level2 = _Level)
-  _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND(!::cuda::std::is_same_v<_Level2, grid_level>))
-  [[nodiscard]] _CCCL_DEVICE_API auto rank(const _InLevel& __in_level) const noexcept
-  {
-    return _Level{}.rank(__in_level);
-  }
-#endif // _CCCL_CUDA_COMPILATION()
+  _CCCL_HIDE_FROM_ABI explicit group_by_t() = default;
 };
 
+template <::cuda::std::size_t _Np>
+_CCCL_GLOBAL_CONSTANT group_by_t<_Np> group_by;
+
+template <class _InLevel, class _Hierarchy, class _Mapping = void>
+class thread_group;
+
 template <class _Hierarchy>
-class thread_group<_Hierarchy, __this_hierarchy_group_kind> : __this_hierarchy_group_base<thread_level, _Hierarchy>
+class thread_group<warp_level, _Hierarchy>
 {
-  using __base_type = __this_hierarchy_group_base<thread_level, _Hierarchy>;
+  unsigned __grank_;
+  unsigned __gcount_;
+  unsigned __mask_;
 
 public:
   using level_type = thread_level;
 
-  using __base_type::__base_type;
-  using __base_type::count;
-  using __base_type::count_as;
-  using __base_type::hierarchy;
-#if _CCCL_CUDA_COMPILATION()
-  using __base_type::rank;
-  using __base_type::rank_as;
+#if _CCCL_DEVICE_COMPILATION()
+  _CCCL_TEMPLATE(class _Mapping, class _HierarchyLike)
+  _CCCL_REQUIRES(::cuda::std::is_invocable_v<_Mapping, unsigned>
+                   _CCCL_AND ::cuda::__is_hierarchy_v<__hierarchy_type_of<_HierarchyLike>>)
+  _CCCL_DEVICE_API thread_group(const warp_level&, _Mapping&& __mapping, const _HierarchyLike& __hier) noexcept
+  {
+    ::cuda::std::optional __maybe_rank_in_warp(__mapping(gpu_thread.rank(warp)));
+    __grank_ = __maybe_rank_in_warp.value_or(~0u);
 
-  _CCCL_DEVICE_API void sync() noexcept {}
-#endif // _CCCL_CUDA_COMPILATION()
-};
+    __gcount_ = static_cast<unsigned>(::__reduce_max_sync(0xffff'ffffu, static_cast<int>(__grank_)));
+    if (__gcount_ != ~0u)
+    {
+      __gcount_ += 1;
+    }
 
-_CCCL_TEMPLATE(class _Hierarchy)
-_CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
-_CCCL_HOST_DEVICE thread_group(const _Hierarchy&)
-  -> thread_group<__hierarchy_type_of<_Hierarchy>, __this_hierarchy_group_kind>;
+    __mask_ = ::__match_any_sync(0xffff'ffffu, __grank_);
+    if (!__maybe_rank_in_warp.has_value())
+    {
+      __mask_ = 0u;
+    }
+  }
 
-template <class _Hierarchy>
-class warp_group<_Hierarchy, __this_hierarchy_group_kind> : __this_hierarchy_group_base<warp_level, _Hierarchy>
-{
-  using __base_type = __this_hierarchy_group_base<warp_level, _Hierarchy>;
+  _CCCL_TEMPLATE(::cuda::std::size_t _Np, class _HierarchyLike)
+  _CCCL_REQUIRES(::cuda::__is_hierarchy_v<__hierarchy_type_of<_HierarchyLike>>)
+  _CCCL_DEVICE_API thread_group(const warp_level&, const group_by_t<_Np>&, const _HierarchyLike& __hier) noexcept
+      : __grank_{gpu_thread.rank(warp) / static_cast<unsigned>(_Np)}
+      , __gcount_{::cuda::ceil_div(gpu_thread.count(warp), _Np)}
+      , __mask_{(_Np == 32) ? 0xffff'ffffu : (((1u << _Np) - 1) << (__grank_ * _Np))}
+  {
+    static_assert(_Np > 0 && _Np < 32 && ::cuda::is_power_of_two(_Np),
+                  "_Np must be greater than 0, less than or equal to 32 and a power of 2.");
+  }
 
-public:
-  using level_type = warp_level;
+  _CCCL_TEMPLATE(class _Tp, class _InLevel)
+  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel>)
+  [[nodiscard]] _CCCL_API constexpr _Tp count_as(const _InLevel& __in_level) const noexcept
+  {
+    if constexpr (::cuda::std::is_same_v<_InLevel, warp_level>)
+    {
+      return static_cast<_Tp>(__gcount_);
+    }
+    else
+    {
+      return static_cast<_Tp>(__gcount_) * warp.count_as<_Tp>(__in_level);
+    }
+  }
 
-  using __base_type::__base_type;
-  using __base_type::count;
-  using __base_type::count_as;
-  using __base_type::hierarchy;
-#if _CCCL_CUDA_COMPILATION()
-  using __base_type::rank;
-  using __base_type::rank_as;
+  _CCCL_TEMPLATE(class _InLevel)
+  _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
+  [[nodiscard]] _CCCL_API constexpr auto count(const _InLevel& __in_level) const noexcept
+  {
+    return count_as<unsigned>(__in_level); // todo: return correct type
+  }
+
+  _CCCL_TEMPLATE(class _Tp, class _InLevel)
+  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel>)
+  [[nodiscard]] _CCCL_DEVICE_API _Tp rank_as(const _InLevel& __in_level) const noexcept
+  {
+    _CCCL_ASSERT(is_part_of(gpu_thread), "Thread that is not a part of a group cannot query for the group rank.");
+
+    if constexpr (::cuda::std::is_same_v<_InLevel, warp_level>)
+    {
+      return static_cast<_Tp>(__grank_);
+    }
+    else
+    {
+      return static_cast<_Tp>(__grank_) + static_cast<_Tp>(__gcount_) * warp.rank_as<_Tp>(__in_level);
+    }
+  }
+
+  _CCCL_TEMPLATE(class _InLevel)
+  _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
+  [[nodiscard]] _CCCL_DEVICE_API auto rank(const _InLevel& __in_level) const noexcept
+  {
+    return rank_as<unsigned>(__in_level); // todo: return correct type
+  }
+#endif // _CCCL_DEVICE_COMPILATION()
+
+  [[nodiscard]] _CCCL_DEVICE_API bool is_part_of(const thread_level&) const noexcept
+  {
+    return __mask_ != 0u;
+  }
 
   _CCCL_DEVICE_API void sync() noexcept
   {
-    ::__syncwarp();
+    if (__mask_ != 0u)
+    {
+      ::__syncwarp(__mask_);
+    }
   }
-#endif // _CCCL_CUDA_COMPILATION()
 };
 
-_CCCL_TEMPLATE(class _Hierarchy)
-_CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
-_CCCL_HOST_DEVICE warp_group(const _Hierarchy&)
-  -> warp_group<__hierarchy_type_of<_Hierarchy>, __this_hierarchy_group_kind>;
+_CCCL_TEMPLATE(class _Mapping, class _HierarchyLike)
+_CCCL_REQUIRES(::cuda::std::is_invocable_v<_Mapping, unsigned>
+                 _CCCL_AND ::cuda::__is_hierarchy_v<__hierarchy_type_of<_HierarchyLike>>)
+_CCCL_HOST_DEVICE thread_group(const warp_level&, _Mapping&&, const _HierarchyLike&)
+  -> thread_group<warp_level, _HierarchyLike>;
 
-template <class _Hierarchy>
-class block_group<_Hierarchy, __this_hierarchy_group_kind> : __this_hierarchy_group_base<block_level, _Hierarchy>
-{
-  using __base_type = __this_hierarchy_group_base<block_level, _Hierarchy>;
-
-public:
-  using level_type = block_level;
-
-  using __base_type::__base_type;
-  using __base_type::count;
-  using __base_type::count_as;
-  using __base_type::hierarchy;
-
-#if _CCCL_CUDA_COMPILATION()
-  using __base_type::rank;
-  using __base_type::rank_as;
-
-  _CCCL_DEVICE_API void sync() noexcept
-  {
-    ::__syncthreads();
-  }
-#endif // _CCCL_CUDA_COMPILATION()
-};
-
-_CCCL_TEMPLATE(class _Hierarchy)
-_CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
-_CCCL_HOST_DEVICE block_group(const _Hierarchy&)
-  -> block_group<__hierarchy_type_of<_Hierarchy>, __this_hierarchy_group_kind>;
-
-template <class _Hierarchy>
-class cluster_group<_Hierarchy, __this_hierarchy_group_kind> : __this_hierarchy_group_base<cluster_level, _Hierarchy>
-{
-  using __base_type = __this_hierarchy_group_base<cluster_level, _Hierarchy>;
-
-public:
-  using level_type = cluster_level;
-
-  using __base_type::__base_type;
-  using __base_type::count;
-  using __base_type::count_as;
-  using __base_type::hierarchy;
-
-#if _CCCL_CUDA_COMPILATION()
-  using __base_type::rank;
-  using __base_type::rank_as;
-
-  _CCCL_DEVICE_API void sync() noexcept
-  {
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
-                      ({
-                        ::__cluster_barrier_arrive();
-                        ::__cluster_barrier_wait();
-                      }),
-                      ({ ::__syncthreads(); }))
-  }
-#endif // _CCCL_CUDA_COMPILATION()
-};
-
-_CCCL_TEMPLATE(class _Hierarchy)
-_CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
-_CCCL_HOST_DEVICE cluster_group(const _Hierarchy&)
-  -> cluster_group<__hierarchy_type_of<_Hierarchy>, __this_hierarchy_group_kind>;
-
-template <class _Hierarchy>
-class grid_group<_Hierarchy, __this_hierarchy_group_kind> : __this_hierarchy_group_base<grid_level, _Hierarchy>
-{
-  using __base_type = __this_hierarchy_group_base<grid_level, _Hierarchy>;
-
-public:
-  using level_type = grid_level;
-
-  using __base_type::__base_type;
-  using __base_type::hierarchy;
-
-#if _CCCL_CUDA_COMPILATION()
-  _CCCL_DEVICE_API void sync() noexcept
-  {
-    ::cuda::experimental::__cg_imported::__grid_sync();
-  }
-#endif // _CCCL_CUDA_COMPILATION()
-};
-
-_CCCL_TEMPLATE(class _Hierarchy)
-_CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
-_CCCL_HOST_DEVICE grid_group(const _Hierarchy&)
-  -> grid_group<__hierarchy_type_of<_Hierarchy>, __this_hierarchy_group_kind>;
-
-_CCCL_TEMPLATE(class _HierarchyLike)
-_CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
-[[nodiscard]] _CCCL_DEVICE_API auto this_thread(const _HierarchyLike& __hier_like) noexcept
-{
-  return thread_group{__hier_like};
-}
-
-_CCCL_TEMPLATE(class _HierarchyLike)
-_CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
-[[nodiscard]] _CCCL_DEVICE_API auto this_warp(const _HierarchyLike& __hier_like) noexcept
-{
-  return warp_group{__hier_like};
-}
-
-_CCCL_TEMPLATE(class _HierarchyLike)
-_CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
-[[nodiscard]] _CCCL_DEVICE_API auto this_block(const _HierarchyLike& __hier_like) noexcept
-{
-  return block_group{__hier_like};
-}
-
-_CCCL_TEMPLATE(class _HierarchyLike)
-_CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
-[[nodiscard]] _CCCL_DEVICE_API auto this_cluster(const _HierarchyLike& __hier_like) noexcept
-{
-  return cluster_group{__hier_like};
-}
-
-_CCCL_TEMPLATE(class _HierarchyLike)
-_CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
-[[nodiscard]] _CCCL_DEVICE_API auto this_grid(const _HierarchyLike& __hier_like) noexcept
-{
-  return grid_group{__hier_like};
-}
+_CCCL_TEMPLATE(::cuda::std::size_t _Np, class _HierarchyLike)
+_CCCL_REQUIRES(::cuda::__is_hierarchy_v<__hierarchy_type_of<_HierarchyLike>>)
+_CCCL_HOST_DEVICE thread_group(const warp_level&, const group_by_t<_Np>&, const _HierarchyLike&)
+  -> thread_group<warp_level, _HierarchyLike>;
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

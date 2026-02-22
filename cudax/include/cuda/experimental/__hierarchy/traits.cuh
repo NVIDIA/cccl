@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL_HIERARCHY
-#define _CUDA_EXPERIMENTAL_HIERARCHY
+#ifndef _CUDA_EXPERIMENTAL___HIERARCHY_TRAITS_CUH
+#define _CUDA_EXPERIMENTAL___HIERARCHY_TRAITS_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -21,10 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__hierarchy/concepts.cuh>
-#include <cuda/experimental/__hierarchy/fwd.cuh>
-#include <cuda/experimental/__hierarchy/grid_sync.cuh>
-#include <cuda/experimental/__hierarchy/group.cuh>
-#include <cuda/experimental/__hierarchy/this_group.cuh>
+#include <cuda/hierarchy>
 
-#endif // _CUDA_EXPERIMENTAL_HIERARCHY
+#include <cuda/std/__cccl/prologue.h>
+
+namespace cuda::experimental
+{
+template <class _HierarchyLike>
+using __hierarchy_type_of =
+  ::cuda::std::remove_cvref_t<decltype(::cuda::__unpack_hierarchy_if_needed(::cuda::std::declval<_HierarchyLike>()))>;
+} // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_EXPERIMENTAL___HIERARCHY_TRAITS_CUH

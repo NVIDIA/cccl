@@ -36,6 +36,7 @@
 #  include <cuda/std/array>
 
 #  if defined(_CUDAX_HIERARCHY)
+#    include <cuda/experimental/__hierarchy/concepts.cuh>
 #    include <cuda/experimental/__hierarchy/fwd.cuh>
 #  endif // _CUDAX_HIERARCHY
 
@@ -323,8 +324,7 @@ struct hierarchy_level_base
 
 #  if defined(_CUDAX_HIERARCHY)
   _CCCL_TEMPLATE(class _Tp, class _Group)
-  _CCCL_REQUIRES(
-    ::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::experimental::__is_this_hierarchy_group_v<_Group>)
+  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::experimental::hierarchy_group<_Group>)
   [[nodiscard]] _CCCL_API static constexpr _Tp count_as(const _Group& __group) noexcept
   {
     if constexpr (::cuda::std::is_same_v<_Level, typename _Group::level_type>)
@@ -339,7 +339,7 @@ struct hierarchy_level_base
   }
 
   _CCCL_TEMPLATE(class _Group)
-  _CCCL_REQUIRES(::cuda::experimental::__is_this_hierarchy_group_v<_Group>)
+  _CCCL_REQUIRES(::cuda::experimental::hierarchy_group<_Group>)
   [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t count(const _Group& __group) noexcept
   {
     if constexpr (::cuda::std::is_same_v<_Level, typename _Group::level_type>)
@@ -355,8 +355,7 @@ struct hierarchy_level_base
 
 #    if _CCCL_CUDA_COMPILATION()
   _CCCL_TEMPLATE(class _Tp, class _Group)
-  _CCCL_REQUIRES(
-    ::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::experimental::__is_this_hierarchy_group_v<_Group>)
+  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND ::cuda::experimental::hierarchy_group<_Group>)
   [[nodiscard]] _CCCL_API static constexpr _Tp rank_as(const _Group& __group) noexcept
   {
     if constexpr (::cuda::std::is_same_v<_Level, typename _Group::level_type>)
@@ -371,7 +370,7 @@ struct hierarchy_level_base
   }
 
   _CCCL_TEMPLATE(class _Group)
-  _CCCL_REQUIRES(::cuda::experimental::__is_this_hierarchy_group_v<_Group>)
+  _CCCL_REQUIRES(::cuda::experimental::hierarchy_group<_Group>)
   [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t rank(const _Group& __group) noexcept
   {
     if constexpr (::cuda::std::is_same_v<_Level, typename _Group::level_type>)

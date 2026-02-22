@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL_HIERARCHY
-#define _CUDA_EXPERIMENTAL_HIERARCHY
+#ifndef _CUDA_EXPERIMENTAL___HIERARCHY_CONCEPTS_CUH
+#define _CUDA_EXPERIMENTAL___HIERARCHY_CONCEPTS_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -21,10 +21,22 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__hierarchy/concepts.cuh>
-#include <cuda/experimental/__hierarchy/fwd.cuh>
-#include <cuda/experimental/__hierarchy/grid_sync.cuh>
-#include <cuda/experimental/__hierarchy/group.cuh>
-#include <cuda/experimental/__hierarchy/this_group.cuh>
+#include <cuda/std/__concepts/concept_macros.h>
 
-#endif // _CUDA_EXPERIMENTAL_HIERARCHY
+#include <cuda/std/__cccl/prologue.h>
+
+namespace cuda::experimental
+{
+// todo:
+//   - add check that level_type is actually a valid level type
+//   - check that at least level_type{}.count(__g) and level_type{}.rank(__g) are valid?
+template <class _Tp>
+_CCCL_CONCEPT hierarchy_group = _CCCL_REQUIRES_EXPR((_Tp), _Tp& __g)(
+  typename(typename _Tp::level_type), //
+  __g.sync() //
+);
+} // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_EXPERIMENTAL___HIERARCHY_CONCEPTS_CUH
