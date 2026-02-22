@@ -50,6 +50,17 @@ class cluster_group;
 template <class _Hierarchy, class _Kind>
 class grid_group;
 
+template <class _Hierarchy>
+using this_thread_group = thread_group<_Hierarchy, __this_hierarchy_group_kind>;
+template <class _Hierarchy>
+using this_warp_group = warp_group<_Hierarchy, __this_hierarchy_group_kind>;
+template <class _Hierarchy>
+using this_block_group = block_group<_Hierarchy, __this_hierarchy_group_kind>;
+template <class _Hierarchy>
+using this_cluster_group = cluster_group<_Hierarchy, __this_hierarchy_group_kind>;
+template <class _Hierarchy>
+using this_grid_group = grid_group<_Hierarchy, __this_hierarchy_group_kind>;
+
 // traits
 
 template <class _Tp>
