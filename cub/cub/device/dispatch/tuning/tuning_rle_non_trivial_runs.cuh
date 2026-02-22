@@ -560,8 +560,7 @@ struct policy_selector
       LOAD_LDG,
       true,
       BLOCK_SCAN_WARP_SCANS,
-      {delay_constructor_kind::fixed_delay, 350, 450},
-    };
+      default_reduce_by_key_delay_constructor_policy(key_type_size, sizeof(int), true)};
   }
 };
 
