@@ -25,6 +25,10 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+//! @brief Always evaluates to false, useful for static_assert in template code
+//! @details This variable template is used to create static_asserts that depend
+//!          on template parameters, allowing errors to only trigger when the
+//!          template is actually instantiated.
 template <class...>
 inline constexpr bool __always_false_v = false;
 
