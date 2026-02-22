@@ -1956,3 +1956,68 @@
     - Result: 8 passed, 1036 deselected.
   - `python -m py_compile cuda/coop/_rewrite.py`
     - Result: passed (multiple checkpoints during rewrite cleanup).
+
+## 2026-02-22 (PR #7214 @codex follow-up round 2)
+- Request: Ingest newly added `@codex` review threads, critically validate each
+  request, implement warranted changes, add tests/docs, and resolve threads with
+  commit-linked responses.
+- Changes:
+  - Warp docs + docs-stub removal:
+    - Expanded constructor docstrings in:
+      - `cuda/coop/warp/_warp_exchange.py`
+      - `cuda/coop/warp/_warp_load_store.py`
+      - `cuda/coop/warp/_warp_merge_sort.py`
+      - `cuda/coop/warp/_warp_reduce.py`
+      - `cuda/coop/warp/_warp_scan.py`
+    - Removed warp docs-stub plumbing:
+      - deleted `cuda/coop/warp/api.py`
+      - removed `CCCL_COOP_DOCS` branch from `cuda/coop/warp/__init__.py`
+  - Core cleanup + context docs:
+    - deleted dead `cuda/coop/_base.py`
+    - added full `gpu_dataclass()` docstring in `cuda/coop/_dataclass.py`
+    - added `_decls.py` comments for:
+      - why direct rewrite-helper imports are intentional (`impl_key`)
+      - TempStorage compile-time placeholder semantics
+      - Decomposer placeholder status pending full UDT decomposer lowering
+    - fixed wording typo in ThreadData comments ("obviating the need")
+  - Vector type bug fix:
+    - Reproduced NVRTC failure for CUDA vector stubs in block load/store
+      (`storage_t` undefined).
+    - Updated `normalize_dtype_param()` in `cuda/coop/_common.py` to resolve
+      CUDA vector stubs to concrete Numba CUDA vector types.
+    - Extended `numba_type_to_cpp()` in `cuda/coop/_types.py` with CUDA vector
+      C++ type mapping support (aliases/fallback).
+    - Added regression tests for block load/store factory creation with CUDA
+      vector dtypes.
+  - Tests/docs additions:
+    - Added single-phase adjacent-difference test using ThreadData plus
+      TempStorage getitem sugar in
+      `tests/coop/test_block_adjacent_difference.py`.
+    - Updated `docs/python/coop_faq.rst` TempStorage/two-phase narrative for
+      inference/getitem workflows.
+    - Added new `docs/python/coop_thread_data.rst` and included it in
+      `docs/python/coop.rst`.
+- Decisions:
+  - `_decls.py` import list is intentionally explicit: these are private
+    rewrite helpers used by `impl_key` binding and are not covered by public
+    module `__all__` exports.
+  - Vector-type support needed a real code fix (not docs only); review request
+    was valid and uncovered a concrete failure path.
+- Commits:
+  - `dee81b84da` Improve warp primitive docs and drop warp API stubs
+  - `2751919fd1` Document coop decl internals and remove dead _base module
+  - `d417732975` Fix CUDA vector dtype handling in coop load/store
+  - `c0999263e0` Expand ThreadData docs and add temp-storage sugar test
+- Tests:
+  - `pytest -q tests/coop/test_common.py -k numba_cuda_vector_type`
+    - Result: `6 passed, 77 deselected`
+  - `pytest -q tests/coop/test_block_load_store_api.py -k vector_dtypes`
+    - Result: `3 passed, 38 deselected`
+  - `pytest -q tests/coop/test_block_adjacent_difference.py`
+    - Result: `4 passed`
+  - `pytest -q tests/coop/test_warp_*_api.py`
+    - Result: `28 passed`
+  - `CCCL_COOP_DOCS=1 python -c "import cuda.coop as coop; import cuda.coop.block; import cuda.coop.warp; print('ok')"`
+    - Result: `ok`
+  - `pre-commit run --files ../../docs/python/coop.rst ../../docs/python/coop_faq.rst ../../docs/python/coop_thread_data.rst cuda/coop/_common.py cuda/coop/_dataclass.py cuda/coop/_decls.py cuda/coop/_types.py cuda/coop/warp/__init__.py cuda/coop/warp/_warp_exchange.py cuda/coop/warp/_warp_load_store.py cuda/coop/warp/_warp_merge_sort.py cuda/coop/warp/_warp_reduce.py cuda/coop/warp/_warp_scan.py tests/coop/test_block_adjacent_difference.py tests/coop/test_block_load_store_api.py tests/coop/test_common.py`
+    - Result: all hooks passed
