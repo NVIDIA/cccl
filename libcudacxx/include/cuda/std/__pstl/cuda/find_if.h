@@ -46,6 +46,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__new/bad_alloc.h>
+#  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_execution_policy.h>
@@ -62,36 +63,6 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__find_if, __execution_backend::__cuda>
 {
-  //! Ensures we properly deallocate the memory allocated for the result
-  template <class _Tp, class _Resource>
-  struct __allocation_guard
-  {
-    ::cuda::stream_ref __stream_;
-    _Resource& __resource_;
-    _Tp* __ptr_;
-
-    _CCCL_HOST_API __allocation_guard(::cuda::stream_ref __stream, _Resource& __resource, size_t __num_bytes)
-        : __stream_(__stream)
-        , __resource_(__resource)
-        , __ptr_(static_cast<_Tp*>(__resource_.allocate(__stream_, sizeof(_Tp) + __num_bytes, alignof(_Tp))))
-    {}
-
-    _CCCL_HOST_API ~__allocation_guard()
-    {
-      __resource_.deallocate(__stream_, __ptr_, sizeof(_Tp), alignof(_Tp));
-    }
-
-    [[nodiscard]] _CCCL_HOST_API _Tp* __get_result_iter()
-    {
-      return __ptr_;
-    }
-
-    [[nodiscard]] _CCCL_HOST_API void* __get_temp_storage()
-    {
-      return static_cast<void*>(__ptr_ + 1);
-    }
-  };
-
   template <class _Policy, class _Iter, class _UnaryOp>
   [[nodiscard]] _CCCL_HOST_API static _Iter
   __par_impl([[maybe_unused]] const _Policy& __policy, _Iter __first, _Iter __last, _UnaryOp __pred)
@@ -118,16 +89,16 @@ struct __pstl_dispatch<__pstl_algorithm::__find_if, __execution_backend::__cuda>
     auto __resource = ::cuda::__call_or(
       ::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(__stream.device()), __policy);
     {
-      __allocation_guard<__offset_type, decltype(__resource)> __guard{__stream, __resource, __num_bytes};
+      __temporary_storage<__offset_type, decltype(__resource)> __storage{__stream, __resource, __num_bytes};
 
       // Run the find operation
       _CCCL_TRY_CUDA_API(
         ::cub::DeviceFind::FindIf,
         "__pstl_cuda_find_if: cub::DeviceFind failed",
-        __guard.__get_temp_storage(),
+        __storage.__get_temp_storage(),
         __num_bytes,
         ::cuda::std::move(__first),
-        __guard.__get_result_iter(),
+        __storage.__get_result_iter(),
         ::cuda::std::move(__pred),
         __num_items,
         __stream.get());
@@ -137,7 +108,7 @@ struct __pstl_dispatch<__pstl_algorithm::__find_if, __execution_backend::__cuda>
         ::cudaMemcpyAsync,
         "__pstl_cuda_find_if: copy of result from device to host failed",
         ::cuda::std::addressof(__ret),
-        __guard.__ptr_,
+        __storage.__res_,
         sizeof(__offset_type),
         ::cudaMemcpyDefault,
         __stream.get());
