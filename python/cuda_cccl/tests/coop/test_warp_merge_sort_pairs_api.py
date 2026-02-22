@@ -127,3 +127,66 @@ def test_warp_merge_sort_pairs():
     np.testing.assert_array_equal(h_keys_single_phase, expected_keys)
     np.testing.assert_array_equal(h_vals_two_phase, expected_vals)
     np.testing.assert_array_equal(h_vals_single_phase, expected_vals)
+
+
+def test_warp_merge_sort_pairs_thread_data_infers_items_per_thread():
+    @cuda.jit(device=True)
+    def compare_op(a, b):
+        return a > b
+
+    items_per_thread = 4
+    threads_in_warp = 32
+
+    @cuda.jit
+    def kernel(keys_in, values_in, keys_out, values_out):
+        thread_keys = coop.ThreadData(items_per_thread, dtype=keys_in.dtype)
+        thread_vals = coop.ThreadData(items_per_thread, dtype=values_in.dtype)
+
+        coop.warp.load(
+            keys_in,
+            thread_keys,
+            threads_in_warp=threads_in_warp,
+            algorithm=WarpLoadAlgorithm.DIRECT,
+        )
+        coop.warp.load(
+            values_in,
+            thread_vals,
+            threads_in_warp=threads_in_warp,
+            algorithm=WarpLoadAlgorithm.DIRECT,
+        )
+        coop.warp.merge_sort_pairs(
+            thread_keys,
+            thread_vals,
+            compare_op=compare_op,
+            threads_in_warp=threads_in_warp,
+        )
+        coop.warp.store(
+            keys_out,
+            thread_keys,
+            threads_in_warp=threads_in_warp,
+            algorithm=WarpStoreAlgorithm.DIRECT,
+        )
+        coop.warp.store(
+            values_out,
+            thread_vals,
+            threads_in_warp=threads_in_warp,
+            algorithm=WarpStoreAlgorithm.DIRECT,
+        )
+
+    tile_size = threads_in_warp * items_per_thread
+    h_keys = np.arange(tile_size - 1, -1, -1, dtype=np.int32)
+    h_vals = np.arange(tile_size, dtype=np.int32)
+    d_keys = cuda.to_device(h_keys)
+    d_vals = cuda.to_device(h_vals)
+    d_keys_out = cuda.device_array_like(d_keys)
+    d_vals_out = cuda.device_array_like(d_vals)
+
+    kernel[1, threads_in_warp](d_keys, d_vals, d_keys_out, d_vals_out)
+    h_keys_out = d_keys_out.copy_to_host()
+    h_vals_out = d_vals_out.copy_to_host()
+
+    expected_order = np.argsort(-h_keys, kind="stable")
+    expected_keys = h_keys[expected_order]
+    expected_vals = h_vals[expected_order]
+    np.testing.assert_array_equal(h_keys_out, expected_keys)
+    np.testing.assert_array_equal(h_vals_out, expected_vals)

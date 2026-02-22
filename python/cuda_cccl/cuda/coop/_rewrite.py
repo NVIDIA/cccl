@@ -2255,16 +2255,34 @@ class CoopWarpLoadStoreNode(CoopNode):
             runtime_arg_names = ["dst", "src"]
             items_per_thread_array_var = src
 
+        try:
+            from ._decls import ThreadDataType
+        except Exception:
+            ThreadDataType = None
+
+        src_ty = self.typemap[src.name]
+        dst_ty = self.typemap[dst.name]
+        src_is_thread = ThreadDataType is not None and isinstance(
+            src_ty, ThreadDataType
+        )
+        dst_is_thread = ThreadDataType is not None and isinstance(
+            dst_ty, ThreadDataType
+        )
+
         array_root = rewriter.get_root_def(items_per_thread_array_var)
         array_leaf = array_root.leaf_constructor_call
         if isinstance(array_leaf, ArrayCallDefinition):
             items_per_thread = array_leaf.shape
+        elif isinstance(array_leaf, ThreadDataCallDefinition):
+            items_per_thread = rewriter.get_thread_data_info(
+                items_per_thread_array_var
+            ).items_per_thread
         else:
             raise RuntimeError(
-                "coop.warp.load/store requires array inputs in single-phase"
+                "Expected leaf constructor call to be an ArrayCallDefinition or "
+                f"ThreadDataCallDefinition, but got {array_leaf!r} for "
+                f"{items_per_thread_array_var!r}"
             )
-        if isinstance(items_per_thread, types.IntegerLiteral):
-            items_per_thread = items_per_thread.literal_value
         if isinstance(items_per_thread, types.IntegerLiteral):
             items_per_thread = items_per_thread.literal_value
         if not isinstance(items_per_thread, int):
@@ -2282,17 +2300,53 @@ class CoopWarpLoadStoreNode(CoopNode):
                 f"but got {items_per_thread_kwarg} for {self!r}"
             )
 
-        src_ty = self.typemap[src.name]
-        dst_ty = self.typemap[dst.name]
-        if not isinstance(src_ty, types.Array) or not isinstance(dst_ty, types.Array):
+        if src_is_thread and dst_is_thread:
             raise RuntimeError(
-                "coop.warp.load/store requires array inputs in single-phase"
+                "coop.warp.load/store requires at least one device array to infer "
+                "dtype when using ThreadData"
             )
-        if src_ty.dtype != dst_ty.dtype:
-            raise RuntimeError(
-                "coop.warp.load/store requires src and dst to have the same dtype"
-            )
-        dtype = src_ty.dtype
+
+        if src_is_thread:
+            if not isinstance(dst_ty, types.Array):
+                raise RuntimeError(
+                    "coop.warp.store requires destination array when source is "
+                    "ThreadData"
+                )
+            dtype = dst_ty.dtype
+            thread_info = rewriter.get_thread_data_info(src)
+            if thread_info.dtype != dtype:
+                raise RuntimeError(
+                    "ThreadData dtype does not match destination array dtype"
+                )
+        elif dst_is_thread:
+            if not isinstance(src_ty, types.Array):
+                raise RuntimeError(
+                    "coop.warp.load requires source array when destination is "
+                    "ThreadData"
+                )
+            dtype = src_ty.dtype
+            thread_info = rewriter.get_thread_data_info(dst)
+            if thread_info.dtype != dtype:
+                raise RuntimeError("ThreadData dtype does not match source array dtype")
+        else:
+            if not isinstance(src_ty, types.Array) or not isinstance(
+                dst_ty, types.Array
+            ):
+                raise RuntimeError(
+                    "coop.warp.load/store requires array inputs in single-phase"
+                )
+            if src_ty.dtype != dst_ty.dtype:
+                raise RuntimeError(
+                    "coop.warp.load/store requires src and dst to have the same dtype"
+                )
+            dtype = src_ty.dtype
+
+        if ThreadDataType is not None:
+            array_ty = types.Array(dtype, 1, "C")
+            if src_is_thread:
+                runtime_arg_types[0] = array_ty
+            if dst_is_thread:
+                runtime_arg_types[1] = array_ty
 
         methods = getattr(dtype, "methods", None)
         if methods is not None and not methods:
@@ -2663,6 +2717,8 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
         )
 
         ranks_ty = None
+        ranks_is_thread = False
+        ranks_dtype = None
         if uses_ranks:
             if ranks is None:
                 raise RuntimeError(
@@ -2671,20 +2727,30 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
             if not isinstance(ranks, ir.Var):
                 raise RuntimeError("coop.block.exchange ranks must be a variable")
             ranks_ty = self.typemap[ranks.name]
-            if not isinstance(ranks_ty, types.Array):
+            ranks_is_thread = ThreadDataType is not None and isinstance(
+                ranks_ty, ThreadDataType
+            )
+            if not ranks_is_thread and not isinstance(ranks_ty, types.Array):
                 raise RuntimeError("coop.block.exchange requires ranks to be an array")
-            if not isinstance(ranks_ty.dtype, types.Integer):
+            if ranks_is_thread:
+                ranks_info = rewriter.get_thread_data_info(ranks)
+                ranks_items_per_thread = ranks_info.items_per_thread
+                ranks_dtype = ranks_info.dtype
+            else:
+                ranks_root = rewriter.get_root_def(ranks)
+                ranks_leaf = ranks_root.leaf_constructor_call
+                if not isinstance(ranks_leaf, ArrayCallDefinition):
+                    raise RuntimeError(
+                        "Expected ranks constructor call to be an ArrayCallDefinition, "
+                        f"but got {ranks_leaf!r} for {ranks!r}"
+                    )
+                ranks_items_per_thread = ranks_leaf.shape
+                ranks_dtype = ranks_ty.dtype
+            if not isinstance(ranks_dtype, types.Integer):
                 raise RuntimeError(
                     "coop.block.exchange requires ranks to be an integer array"
                 )
-            ranks_root = rewriter.get_root_def(ranks)
-            ranks_leaf = ranks_root.leaf_constructor_call
-            if not isinstance(ranks_leaf, ArrayCallDefinition):
-                raise RuntimeError(
-                    "Expected ranks constructor call to be an ArrayCallDefinition, "
-                    f"but got {ranks_leaf!r} for {ranks!r}"
-                )
-            if ranks_leaf.shape != items_per_thread:
+            if ranks_items_per_thread != items_per_thread:
                 raise RuntimeError(
                     "coop.block.exchange requires ranks to have the same "
                     "items_per_thread as items"
@@ -2695,6 +2761,8 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
             )
 
         valid_flags_ty = None
+        valid_flags_is_thread = False
+        valid_flags_dtype = None
         if uses_valid_flags:
             if valid_flags is None:
                 raise RuntimeError(
@@ -2704,24 +2772,36 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
             if not isinstance(valid_flags, ir.Var):
                 raise RuntimeError("coop.block.exchange valid_flags must be a variable")
             valid_flags_ty = self.typemap[valid_flags.name]
-            if not isinstance(valid_flags_ty, types.Array):
+            valid_flags_is_thread = ThreadDataType is not None and isinstance(
+                valid_flags_ty, ThreadDataType
+            )
+            if not valid_flags_is_thread and not isinstance(
+                valid_flags_ty, types.Array
+            ):
                 raise RuntimeError(
                     "coop.block.exchange requires valid_flags to be an array"
                 )
-            if not isinstance(valid_flags_ty.dtype, (types.Integer, types.Boolean)):
+            if valid_flags_is_thread:
+                valid_flags_info = rewriter.get_thread_data_info(valid_flags)
+                valid_flags_items_per_thread = valid_flags_info.items_per_thread
+                valid_flags_dtype = valid_flags_info.dtype
+            else:
+                valid_flags_root = rewriter.get_root_def(valid_flags)
+                valid_flags_leaf = valid_flags_root.leaf_constructor_call
+                if not isinstance(valid_flags_leaf, ArrayCallDefinition):
+                    raise RuntimeError(
+                        "Expected valid_flags constructor call to be an "
+                        f"ArrayCallDefinition, but got {valid_flags_leaf!r} for "
+                        f"{valid_flags!r}"
+                    )
+                valid_flags_items_per_thread = valid_flags_leaf.shape
+                valid_flags_dtype = valid_flags_ty.dtype
+            if not isinstance(valid_flags_dtype, (types.Integer, types.Boolean)):
                 raise RuntimeError(
                     "coop.block.exchange requires valid_flags to be a boolean "
                     "or integer array"
                 )
-            valid_flags_root = rewriter.get_root_def(valid_flags)
-            valid_flags_leaf = valid_flags_root.leaf_constructor_call
-            if not isinstance(valid_flags_leaf, ArrayCallDefinition):
-                raise RuntimeError(
-                    "Expected valid_flags constructor call to be an "
-                    f"ArrayCallDefinition, but got {valid_flags_leaf!r} for "
-                    f"{valid_flags!r}"
-                )
-            if valid_flags_leaf.shape != items_per_thread:
+            if valid_flags_items_per_thread != items_per_thread:
                 raise RuntimeError(
                     "coop.block.exchange requires valid_flags to have the same "
                     "items_per_thread as items"
@@ -2771,6 +2851,10 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
                 items_ty = array_ty
             if output_items is not None and output_is_thread:
                 output_items_ty = array_ty
+            if uses_ranks and ranks_is_thread:
+                ranks_ty = types.Array(ranks_dtype, 1, "C")
+            if uses_valid_flags and valid_flags_is_thread:
+                valid_flags_ty = types.Array(valid_flags_dtype, 1, "C")
 
         if output_items is None:
             runtime_args.append(items)
@@ -2802,8 +2886,8 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
             "unique_id": self.unique_id,
             "temp_storage": temp_storage,
             "use_output_items": output_items is not None,
-            "offset_dtype": ranks_ty.dtype if uses_ranks else None,
-            "valid_flag_dtype": valid_flags_ty.dtype if uses_valid_flags else None,
+            "offset_dtype": ranks_dtype if uses_ranks else None,
+            "valid_flag_dtype": valid_flags_dtype if uses_valid_flags else None,
             "node": self,
         }
 
@@ -2869,24 +2953,47 @@ class CoopWarpExchangeNode(CoopNode, CoopNodeMixin):
         ranks = bound.get("ranks")
 
         items_ty = self.typemap[items.name]
-        if not isinstance(items_ty, types.Array):
-            raise RuntimeError("coop.warp.exchange requires items to be an array")
+        try:
+            from ._decls import ThreadDataType
+        except Exception:
+            ThreadDataType = None
+
+        items_is_thread = ThreadDataType is not None and isinstance(
+            items_ty, ThreadDataType
+        )
+        if not items_is_thread and not isinstance(items_ty, types.Array):
+            raise RuntimeError(
+                "coop.warp.exchange requires items to be an array or ThreadData"
+            )
 
         output_items_ty = None
+        output_is_thread = False
         if output_items is not None:
             if not isinstance(output_items, ir.Var):
                 raise RuntimeError("coop.warp.exchange output_items must be a variable")
             output_items_ty = self.typemap[output_items.name]
-            if not isinstance(output_items_ty, types.Array):
+            output_is_thread = ThreadDataType is not None and isinstance(
+                output_items_ty, ThreadDataType
+            )
+            if not output_is_thread and not isinstance(output_items_ty, types.Array):
                 raise RuntimeError(
-                    "coop.warp.exchange requires output_items to be an array"
+                    "coop.warp.exchange requires output_items to be an array or "
+                    "ThreadData"
                 )
 
-        items_root = rewriter.get_root_def(items)
-        items_leaf = items_root.leaf_constructor_call
-        if not isinstance(items_leaf, ArrayCallDefinition):
-            raise RuntimeError("coop.warp.exchange requires items to be a local array")
-        items_per_thread = items_leaf.shape
+        def _infer_items_per_thread(var, is_thread, name):
+            if is_thread:
+                return rewriter.get_thread_data_info(var).items_per_thread
+            root = rewriter.get_root_def(var)
+            leaf = root.leaf_constructor_call
+            if not isinstance(leaf, ArrayCallDefinition):
+                raise RuntimeError(
+                    "coop.warp.exchange requires "
+                    f"{name} to be a local array or ThreadData"
+                )
+            return leaf.shape
+
+        items_per_thread = _infer_items_per_thread(items, items_is_thread, "items")
         if isinstance(items_per_thread, types.IntegerLiteral):
             items_per_thread = items_per_thread.literal_value
         if not isinstance(items_per_thread, int):
@@ -2895,13 +3002,10 @@ class CoopWarpExchangeNode(CoopNode, CoopNodeMixin):
             )
 
         if output_items is not None:
-            output_root = rewriter.get_root_def(output_items)
-            output_leaf = output_root.leaf_constructor_call
-            if not isinstance(output_leaf, ArrayCallDefinition):
-                raise RuntimeError(
-                    "coop.warp.exchange requires output_items to be a local array"
-                )
-            if output_leaf.shape != items_per_thread:
+            output_items_per_thread = _infer_items_per_thread(
+                output_items, output_is_thread, "output_items"
+            )
+            if output_items_per_thread != items_per_thread:
                 raise RuntimeError(
                     "coop.warp.exchange requires items and output_items to have "
                     "the same items_per_thread"
@@ -2917,12 +3021,21 @@ class CoopWarpExchangeNode(CoopNode, CoopNodeMixin):
                 f"({items_per_thread}); got {items_per_thread_kwarg}"
             )
 
-        dtype = items_ty.dtype
-        if output_items_ty is not None and output_items_ty.dtype != dtype:
-            raise RuntimeError(
-                "coop.warp.exchange requires items and output_items to have "
-                "the same dtype"
-            )
+        if items_is_thread:
+            dtype = rewriter.get_thread_data_info(items).dtype
+        else:
+            dtype = items_ty.dtype
+
+        if output_items_ty is not None:
+            if output_is_thread:
+                output_dtype = rewriter.get_thread_data_info(output_items).dtype
+            else:
+                output_dtype = output_items_ty.dtype
+            if output_dtype != dtype:
+                raise RuntimeError(
+                    "coop.warp.exchange requires items and output_items to have "
+                    "the same dtype"
+                )
 
         methods = getattr(dtype, "methods", None)
         if methods is not None and not methods:
@@ -2963,6 +3076,8 @@ class CoopWarpExchangeNode(CoopNode, CoopNodeMixin):
         uses_ranks = warp_exchange_type == WarpExchangeType.ScatterToStriped
 
         ranks_ty = None
+        ranks_is_thread = False
+        ranks_dtype = None
         offset_dtype = None
         if uses_ranks:
             if ranks is None:
@@ -2972,24 +3087,30 @@ class CoopWarpExchangeNode(CoopNode, CoopNodeMixin):
             if not isinstance(ranks, ir.Var):
                 raise RuntimeError("coop.warp.exchange ranks must be a variable")
             ranks_ty = self.typemap[ranks.name]
-            if not isinstance(ranks_ty, types.Array):
-                raise RuntimeError("coop.warp.exchange requires ranks to be an array")
-            if not isinstance(ranks_ty.dtype, types.Integer):
+            ranks_is_thread = ThreadDataType is not None and isinstance(
+                ranks_ty, ThreadDataType
+            )
+            if not ranks_is_thread and not isinstance(ranks_ty, types.Array):
+                raise RuntimeError(
+                    "coop.warp.exchange requires ranks to be an array or ThreadData"
+                )
+            if ranks_is_thread:
+                ranks_dtype = rewriter.get_thread_data_info(ranks).dtype
+            else:
+                ranks_dtype = ranks_ty.dtype
+            if not isinstance(ranks_dtype, types.Integer):
                 raise RuntimeError(
                     "coop.warp.exchange requires ranks to be an integer array"
                 )
-            ranks_root = rewriter.get_root_def(ranks)
-            ranks_leaf = ranks_root.leaf_constructor_call
-            if not isinstance(ranks_leaf, ArrayCallDefinition):
-                raise RuntimeError(
-                    "coop.warp.exchange requires ranks to be a local array"
-                )
-            if ranks_leaf.shape != items_per_thread:
+            ranks_items_per_thread = _infer_items_per_thread(
+                ranks, ranks_is_thread, "ranks"
+            )
+            if ranks_items_per_thread != items_per_thread:
                 raise RuntimeError(
                     "coop.warp.exchange requires ranks to have the same "
                     "items_per_thread as items"
                 )
-            offset_dtype = ranks_ty.dtype
+            offset_dtype = ranks_dtype
         elif ranks is not None:
             raise RuntimeError(
                 "coop.warp.exchange ranks are only valid for ScatterToStriped"
@@ -3019,21 +3140,30 @@ class CoopWarpExchangeNode(CoopNode, CoopNodeMixin):
                 insert_pos=0,
             )
 
+        array_items_ty = types.Array(dtype, 1, "C")
+        runtime_items_ty = array_items_ty if items_is_thread else items_ty
+        runtime_output_items_ty = (
+            array_items_ty if output_is_thread else output_items_ty
+        )
+
         if output_items is None:
             runtime_args.append(items)
-            runtime_arg_types.append(items_ty)
+            runtime_arg_types.append(runtime_items_ty)
             runtime_arg_names.append("input_items")
         else:
             runtime_args.append(items)
-            runtime_arg_types.append(items_ty)
+            runtime_arg_types.append(runtime_items_ty)
             runtime_arg_names.append("input_items")
             runtime_args.append(output_items)
-            runtime_arg_types.append(output_items_ty)
+            runtime_arg_types.append(runtime_output_items_ty)
             runtime_arg_names.append("output_items")
 
         if uses_ranks:
+            runtime_ranks_ty = (
+                types.Array(ranks_dtype, 1, "C") if ranks_is_thread else ranks_ty
+            )
             runtime_args.append(ranks)
-            runtime_arg_types.append(ranks_ty)
+            runtime_arg_types.append(runtime_ranks_ty)
             runtime_arg_names.append("ranks")
 
         self.impl_kwds = {
@@ -3057,7 +3187,7 @@ class CoopWarpExchangeNode(CoopNode, CoopNodeMixin):
             temp_var = ir.Var(scope, temp_name, self.expr.loc)
             if temp_name in self.typemap:
                 raise RuntimeError(f"Variable {temp_name} already exists in typemap.")
-            self.typemap[temp_name] = items_ty
+            self.typemap[temp_name] = runtime_items_ty
             self.swap_assign = ir.Assign(
                 value=items, target=temp_var, loc=self.expr.loc
             )
@@ -4605,22 +4735,43 @@ class CoopWarpMergeSortNode(CoopNode, CoopNodeMixin):
             raise RuntimeError("coop.warp.merge_sort_keys requires keys")
 
         keys_ty = self.typemap[keys.name]
-        if not isinstance(keys_ty, types.Array):
-            raise RuntimeError("coop.warp.merge_sort_keys requires keys to be an array")
+        try:
+            from ._decls import ThreadDataType
+        except Exception:
+            ThreadDataType = None
+
+        keys_is_thread = ThreadDataType is not None and isinstance(
+            keys_ty, ThreadDataType
+        )
+        if not keys_is_thread and not isinstance(keys_ty, types.Array):
+            raise RuntimeError(
+                "coop.warp.merge_sort_keys requires keys to be an array or ThreadData"
+            )
 
         keys_root = rewriter.get_root_def(keys)
         keys_leaf = keys_root.leaf_constructor_call
-        if not isinstance(keys_leaf, ArrayCallDefinition):
-            raise RuntimeError(
-                "coop.warp.merge_sort_keys requires keys to be a local array"
-            )
-        items_per_thread = keys_leaf.shape
-        if isinstance(items_per_thread, types.IntegerLiteral):
-            items_per_thread = items_per_thread.literal_value
-        if not isinstance(items_per_thread, int):
-            raise RuntimeError(
-                f"Expected items_per_thread to be an int, got {items_per_thread!r}"
-            )
+        if keys_is_thread:
+            if not isinstance(keys_leaf, ThreadDataCallDefinition):
+                raise RuntimeError(
+                    "Expected keys constructor call to be a ThreadDataCallDefinition, "
+                    f"but got {keys_leaf!r} for {keys!r}"
+                )
+            keys_info = rewriter.get_thread_data_info(keys)
+            items_per_thread = keys_info.items_per_thread
+            dtype = keys_info.dtype
+        else:
+            if not isinstance(keys_leaf, ArrayCallDefinition):
+                raise RuntimeError(
+                    "coop.warp.merge_sort_keys requires keys to be a local array"
+                )
+            items_per_thread = keys_leaf.shape
+            if isinstance(items_per_thread, types.IntegerLiteral):
+                items_per_thread = items_per_thread.literal_value
+            if not isinstance(items_per_thread, int):
+                raise RuntimeError(
+                    f"Expected items_per_thread to be an int, got {items_per_thread!r}"
+                )
+            dtype = keys_ty.dtype
 
         items_per_thread_kwarg = self.get_arg_value_safe("items_per_thread")
         if items_per_thread_kwarg is None:
@@ -4644,30 +4795,46 @@ class CoopWarpMergeSortNode(CoopNode, CoopNodeMixin):
 
         value_dtype = None
         values_ty = None
+        values_is_thread = False
         if values is not None and compare_op is not values:
             if not isinstance(values, ir.Var):
                 raise RuntimeError(
                     "coop.warp.merge_sort_keys values must be a variable"
                 )
             values_ty = self.typemap[values.name]
-            if not isinstance(values_ty, types.Array):
+            values_is_thread = ThreadDataType is not None and isinstance(
+                values_ty, ThreadDataType
+            )
+            if not values_is_thread and not isinstance(values_ty, types.Array):
                 raise RuntimeError(
-                    "coop.warp.merge_sort_keys requires values to be an array"
+                    "coop.warp.merge_sort_keys requires values to be an array or "
+                    "ThreadData"
                 )
             values_root = rewriter.get_root_def(values)
             values_leaf = values_root.leaf_constructor_call
-            if not isinstance(values_leaf, ArrayCallDefinition):
-                raise RuntimeError(
-                    "Expected values constructor call to be an ArrayCallDefinition, "
-                    f"but got {values_leaf!r} for {values!r}"
-                )
-            values_items = values_leaf.shape
+            if values_is_thread:
+                if not isinstance(values_leaf, ThreadDataCallDefinition):
+                    raise RuntimeError(
+                        "Expected values constructor call to be a "
+                        "ThreadDataCallDefinition, but got "
+                        f"{values_leaf!r} for {values!r}"
+                    )
+                values_info = rewriter.get_thread_data_info(values)
+                values_items = values_info.items_per_thread
+                value_dtype = values_info.dtype
+            else:
+                if not isinstance(values_leaf, ArrayCallDefinition):
+                    raise RuntimeError(
+                        "Expected values constructor call to be an "
+                        f"ArrayCallDefinition, but got {values_leaf!r} for {values!r}"
+                    )
+                values_items = values_leaf.shape
+                value_dtype = values_ty.dtype
             if values_items != items_per_thread:
                 raise RuntimeError(
                     "coop.warp.merge_sort_keys requires keys and values to have the "
                     f"same items_per_thread; got {values_items} vs {items_per_thread}"
                 )
-            value_dtype = values_ty.dtype
 
         if compare_op is values:
             values = None
@@ -4682,7 +4849,6 @@ class CoopWarpMergeSortNode(CoopNode, CoopNodeMixin):
         if not isinstance(threads_in_warp, int) or threads_in_warp < 1:
             raise RuntimeError("threads_in_warp must be a positive integer")
 
-        dtype = keys_ty.dtype
         methods = getattr(dtype, "methods", None)
         if methods is not None and not methods:
             methods = None
@@ -4707,12 +4873,19 @@ class CoopWarpMergeSortNode(CoopNode, CoopNodeMixin):
                 insert_pos=0,
             )
 
+        runtime_keys_ty = types.Array(dtype, 1, "C") if keys_is_thread else keys_ty
+        runtime_values_ty = None
+        if values is not None:
+            runtime_values_ty = (
+                types.Array(value_dtype, 1, "C") if values_is_thread else values_ty
+            )
+
         runtime_args.append(keys)
-        runtime_arg_types.append(keys_ty)
+        runtime_arg_types.append(runtime_keys_ty)
         runtime_arg_names.append("keys")
         if values is not None:
             runtime_args.append(values)
-            runtime_arg_types.append(values_ty)
+            runtime_arg_types.append(runtime_values_ty)
             runtime_arg_names.append("values")
 
         alias_pairs = primitive_name.endswith("merge_sort_pairs")
@@ -7489,8 +7662,19 @@ class CoopBlockReduceNode(CoopNode, CoopNodeMixin):
             raise RuntimeError("coop.block.reduce requires a src argument")
 
         src_ty = self.typemap[src.name]
-        src_is_array = isinstance(src_ty, types.Array)
-        if src_is_array:
+        try:
+            from ._decls import ThreadDataType
+        except Exception:
+            ThreadDataType = None
+
+        src_is_thread = ThreadDataType is not None and isinstance(
+            src_ty, ThreadDataType
+        )
+        src_is_array = isinstance(src_ty, types.Array) or src_is_thread
+        src_info = rewriter.get_thread_data_info(src) if src_is_thread else None
+        if src_is_thread:
+            dtype = src_info.dtype
+        elif src_is_array:
             dtype = src_ty.dtype
         else:
             dtype = src_ty
@@ -7500,10 +7684,23 @@ class CoopBlockReduceNode(CoopNode, CoopNodeMixin):
             methods = None
 
         runtime_args.append(src)
-        runtime_arg_types.append(src_ty)
+        runtime_arg_types.append(
+            types.Array(dtype, 1, "C") if src_is_thread else src_ty
+        )
         runtime_arg_names.append("src")
 
-        items_per_thread = self.get_arg_value("items_per_thread")
+        items_per_thread = self.get_arg_value_safe("items_per_thread")
+        if src_is_thread:
+            src_items_per_thread = src_info.items_per_thread
+            if items_per_thread is None:
+                items_per_thread = src_items_per_thread
+            elif items_per_thread != src_items_per_thread:
+                raise RuntimeError(
+                    "coop.block.reduce items_per_thread must match the array "
+                    f"shape ({src_items_per_thread}); got {items_per_thread}"
+                )
+        if items_per_thread is None:
+            items_per_thread = 1
         if items_per_thread < 1:
             raise RuntimeError("items_per_thread must be >= 1")
         if items_per_thread > 1 and not src_is_array:
@@ -7954,8 +8151,19 @@ class CoopBlockSumNode(CoopNode, CoopNodeMixin):
             raise RuntimeError("coop.block.sum requires a src argument")
 
         src_ty = self.typemap[src.name]
-        src_is_array = isinstance(src_ty, types.Array)
-        if src_is_array:
+        try:
+            from ._decls import ThreadDataType
+        except Exception:
+            ThreadDataType = None
+
+        src_is_thread = ThreadDataType is not None and isinstance(
+            src_ty, ThreadDataType
+        )
+        src_is_array = isinstance(src_ty, types.Array) or src_is_thread
+        src_info = rewriter.get_thread_data_info(src) if src_is_thread else None
+        if src_is_thread:
+            dtype = src_info.dtype
+        elif src_is_array:
             dtype = src_ty.dtype
         else:
             dtype = src_ty
@@ -7965,10 +8173,23 @@ class CoopBlockSumNode(CoopNode, CoopNodeMixin):
             methods = None
 
         runtime_args.append(src)
-        runtime_arg_types.append(src_ty)
+        runtime_arg_types.append(
+            types.Array(dtype, 1, "C") if src_is_thread else src_ty
+        )
         runtime_arg_names.append("src")
 
-        items_per_thread = self.get_arg_value("items_per_thread")
+        items_per_thread = self.get_arg_value_safe("items_per_thread")
+        if src_is_thread:
+            src_items_per_thread = src_info.items_per_thread
+            if items_per_thread is None:
+                items_per_thread = src_items_per_thread
+            elif items_per_thread != src_items_per_thread:
+                raise RuntimeError(
+                    "coop.block.sum items_per_thread must match the array "
+                    f"shape ({src_items_per_thread}); got {items_per_thread}"
+                )
+        if items_per_thread is None:
+            items_per_thread = 1
         if items_per_thread < 1:
             raise RuntimeError("items_per_thread must be >= 1")
         if items_per_thread > 1 and not src_is_array:

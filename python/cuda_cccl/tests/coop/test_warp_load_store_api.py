@@ -188,6 +188,39 @@ def test_warp_load_store_single_phase():
     np.testing.assert_allclose(h_output, h_input)
 
 
+def test_warp_load_store_single_phase_thread_data_infers_items_per_thread():
+    threads_in_warp = 32
+    items_per_thread = 4
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        items = coop.ThreadData(items_per_thread, dtype=d_in.dtype)
+        coop.warp.load(
+            d_in,
+            items,
+            threads_in_warp=threads_in_warp,
+            algorithm=WarpLoadAlgorithm.STRIPED,
+        )
+        coop.warp.store(
+            d_out,
+            items,
+            threads_in_warp=threads_in_warp,
+            algorithm=WarpStoreAlgorithm.STRIPED,
+        )
+
+    h_input = np.random.randint(
+        0, 42, threads_in_warp * items_per_thread, dtype=np.int32
+    )
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    kernel[1, threads_in_warp](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    np.testing.assert_allclose(h_output, h_input)
+
+
 def test_warp_load_store_temp_storage_single_phase():
     threads_in_warp = 32
     items_per_thread = 4
