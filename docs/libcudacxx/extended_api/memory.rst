@@ -14,6 +14,7 @@ Memory
    memory/get_device_address
    memory/is_address_from
    memory/is_aligned
+   memory/ptr_alignment
    memory/ptr_rebind
    memory/ptr_in_range
    memory/ranges_overlap
@@ -52,6 +53,11 @@ Memory
      - Check if a pointer is aligned
      - CCCL 3.1.0
      - CUDA 13.1
+
+   * - :ref:`ptr_alignment <libcudacxx-extended-api-memory-ptr_alignment>`
+     - Get the alignment of a pointer
+     - CCCL 3.3.0
+     - CUDA 13.3
 
    * - :ref:`align_up <libcudacxx-extended-api-memory-align_up>`
      - Align up a pointer to the specified alignment
