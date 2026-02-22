@@ -7,6 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: windows
+
 // ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
 // ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
 
@@ -106,8 +108,8 @@ __host__ __device__ constexpr bool test()
 // Extended floating point types are not comparable in constexpr context
 __host__ __device__ void test_ext_fp()
 {
-#if !TEST_COMPILER(MSVC)
-  // MSVC errors here because of "error: A __device__ variable template cannot have a const qualified type on Windows"
+  // Disable on Windows because of "error: A __device__ variable template cannot have a const qualified type on Windows"
+#if !_CCCL_OS(WINDOWS)
 #  if _LIBCUDACXX_HAS_NVFP16()
   // __half constants
   assert(cuda::std::numbers::e_v<__half> == __half{2.7182817f});
@@ -140,7 +142,7 @@ __host__ __device__ void test_ext_fp()
   assert(cuda::std::numbers::egamma_v<__nv_bfloat16> == __nv_bfloat16{0.5772157f});
   assert(cuda::std::numbers::phi_v<__nv_bfloat16> == __nv_bfloat16{1.618034f});
 #  endif // _LIBCUDACXX_HAS_NVBF16()
-#endif // !TEST_COMPILER(MSVC)
+#endif // !_CCCL_OS(WINDOWS)
 }
 
 __global__ void test_kernel()
