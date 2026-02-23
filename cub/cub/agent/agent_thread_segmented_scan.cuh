@@ -359,10 +359,10 @@ struct agent_thread_segmented_scan
     using multi_segment_helpers::get_value;
     using multi_segment_helpers::make_value_flag;
 
-    using augmented_scan_op_t = multi_segment_helpers::schwarz_scan_op<AccumT, bool, ScanOpT>;
+    using augmented_scan_op_t = multi_segment_helpers::schwarz_scan_op<ScanOpT, AccumT>;
     using hv_t                = typename augmented_scan_op_t::fv_t;
 
-    static_assert(::cuda::std::is_same_v<hv_t, augmented_value_t<AccumT, bool>>);
+    static_assert(::cuda::std::is_same_v<hv_t, augmented_value_t<AccumT>>);
 
     augmented_scan_op_t augmented_scan_op{scan_op};
 
@@ -404,7 +404,7 @@ struct agent_thread_segmented_scan
       // compute scan
       if (chunk_id == 0)
       {
-        using augmented_init_value_t                = augmented_value_t<InitValueT, bool>;
+        using augmented_init_value_t                = augmented_value_t<InitValueT>;
         augmented_init_value_t augmented_init_value = make_value_flag(initial_value, false);
         scan_first_tile(items, augmented_init_value, augmented_scan_op, exclusive_prefix);
       }
