@@ -261,6 +261,10 @@ inline ::std::ostream& operator<<(::std::ostream& os, const BlockReduceAlgorithm
 //!
 //!        # kernel[1, threads_per_block](d_data, d_out)
 //!
+//! Suppose the set of input ``thread_data`` across the block of threads is
+//! ``{ [1,1,1,1], [1,1,1,1], ..., [1,1,1,1] }``.
+//! The value ``512`` will be written to ``d_out[0]``.
+//!
 //! Re-using dynamically allocating shared memory
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
@@ -428,6 +432,10 @@ public:
   //!
   //!        # kernel[1, threads_per_block](d_data, d_out)
   //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``0, -1, 2, -3, ..., 126, -127``.
+  //! The value ``126`` will be written to ``d_out[0]``.
+  //!
   //! @endrst
   //!
   //! @tparam ReductionOp
@@ -506,6 +514,10 @@ public:
   //!                d_out[0] = aggregate
   //!
   //!        # kernel[1, threads_per_block](d_data, d_out)
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``{ [0,-1,2,-3], [4,-5,6,-7], ..., [508,-509,510,-511] }``.
+  //! The value ``510`` will be written to ``d_out[0]``.
   //!
   //! @endrst
   //!
@@ -592,6 +604,10 @@ public:
   //!                d_out[0] = aggregate
   //!
   //!        # kernel[1, threads_per_block](d_data, d_out, num_valid)
+  //!
+  //! Suppose ``num_valid`` is ``100`` and the first 100 threads provide
+  //! ``thread_data = 0, 1, 2, ..., 99``.
+  //! The value ``99`` will be written to ``d_out[0]``.
   //!
   //! @endrst
   //!
@@ -682,6 +698,10 @@ public:
   //!
   //!        # kernel[1, threads_per_block](d_data, d_out)
   //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``1, 1, ..., 1``.
+  //! The value ``128`` will be written to ``d_out[0]``.
+  //!
   //! @endrst
   //!
   //! @param[in] input
@@ -749,6 +769,10 @@ public:
   //!                d_out[0] = aggregate
   //!
   //!        # kernel[1, threads_per_block](d_data, d_out)
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``{ [1,1,1,1], [1,1,1,1], ..., [1,1,1,1] }``.
+  //! The value ``512`` will be written to ``d_out[0]``.
   //!
   //! @endrst
   //!
@@ -825,6 +849,10 @@ public:
   //!                d_out[0] = aggregate
   //!
   //!        # kernel[1, threads_per_block](d_data, d_out, num_valid)
+  //!
+  //! Suppose ``num_valid`` is ``100`` and the first 100 threads provide ``thread_data = 1``
+  //! (all other threads contribute ``0``).
+  //! The value ``100`` will be written to ``d_out[0]``.
   //!
   //! @endrst
   //!
