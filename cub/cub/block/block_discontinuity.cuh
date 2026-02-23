@@ -53,26 +53,56 @@ CUB_NAMESPACE_BEGIN
 //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
 //! where each thread owns 4 consecutive items.
 //!
-//! .. code-block:: c++
+//! .. tab-set-code::
 //!
-//!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
+//!    .. code-block:: c++
 //!
-//!    __global__ void ExampleKernel(...)
-//!    {
-//!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-//!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
+//!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
 //!
-//!        // Allocate shared memory for BlockDiscontinuity
-//!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
+//!        __global__ void ExampleKernel(...)
+//!        {
+//!            // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
+//!            using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
 //!
-//!        // Obtain a segment of consecutive items that are blocked across threads
-//!        int thread_data[4];
-//!        ...
+//!            // Allocate shared memory for BlockDiscontinuity
+//!            __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
 //!
-//!        // Collectively compute head flags for discontinuities in the segment
-//!        int head_flags[4];
-//!        BlockDiscontinuity(temp_storage).FlagHeads(head_flags, thread_data, cub::Inequality());
-//!    }
+//!            // Obtain a segment of consecutive items that are blocked across threads
+//!            int thread_data[4];
+//!            ...
+//!
+//!            // Collectively compute head flags for discontinuities in the segment
+//!            int head_flags[4];
+//!            BlockDiscontinuity(temp_storage).FlagHeads(head_flags, thread_data, cub::Inequality());
+//!        }
+//!
+//!    .. code-block:: python
+//!
+//!        from numba import cuda
+//!        from cuda import coop
+//!
+//!        threads_per_block = 128
+//!        items_per_thread = 4
+//!
+//!        @cuda.jit(device=True)
+//!        def discontinuity_op(previous_item, current_item):
+//!            return previous_item != current_item
+//!
+//!        @cuda.jit
+//!        def kernel(d_in, d_head_flags):
+//!            temp_storage = coop.TempStorage()
+//!            thread_data = coop.ThreadData(items_per_thread)
+//!            head_flags = coop.ThreadData(items_per_thread)
+//!            coop.block.load(d_in, thread_data)
+//!            coop.block.discontinuity[temp_storage](
+//!                thread_data,
+//!                head_flags,
+//!                flag_op=discontinuity_op,
+//!                block_discontinuity_type=coop.block.BlockDiscontinuityType.HEADS,
+//!            )
+//!            coop.block.store(d_head_flags, head_flags)
+//!
+//!        # kernel[1, threads_per_block](d_in, d_head_flags)
 //!
 //! Suppose the set of input ``thread_data`` across the block of threads is
 //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], [3,4,4,4], ... }``.
@@ -355,26 +385,56 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
   //!
-  //!        // Allocate shared memory for BlockDiscontinuity
-  //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
+  //!            using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockDiscontinuity
+  //!            __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
   //!
-  //!        // Collectively compute head flags for discontinuities in the segment
-  //!        int head_flags[4];
-  //!        BlockDiscontinuity(temp_storage).FlagHeads(head_flags, thread_data, cub::Inequality());
-  //!    }
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
+  //!
+  //!            // Collectively compute head flags for discontinuities in the segment
+  //!            int head_flags[4];
+  //!            BlockDiscontinuity(temp_storage).FlagHeads(head_flags, thread_data, cub::Inequality());
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit(device=True)
+  //!        def discontinuity_op(previous_item, current_item):
+  //!            return previous_item != current_item
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_in, d_head_flags):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            head_flags = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_in, thread_data)
+  //!            coop.block.discontinuity[temp_storage](
+  //!                thread_data,
+  //!                head_flags,
+  //!                flag_op=discontinuity_op,
+  //!                block_discontinuity_type=coop.block.BlockDiscontinuityType.HEADS,
+  //!            )
+  //!            coop.block.store(d_head_flags, head_flags)
+  //!
+  //!        # kernel[1, threads_per_block](d_in, d_head_flags)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], [3,4,4,4], ... }``.
@@ -432,31 +492,62 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
   //!
-  //!        // Allocate shared memory for BlockDiscontinuity
-  //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
+  //!            using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockDiscontinuity
+  //!            __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
   //!
-  //!        // Have thread0 obtain the predecessor item for the entire tile
-  //!        int tile_predecessor_item;
-  //!        if (threadIdx.x == 0) tile_predecessor_item == ...
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
   //!
-  //!        // Collectively compute head flags for discontinuities in the segment
-  //!        int head_flags[4];
-  //!        BlockDiscontinuity(temp_storage).FlagHeads(head_flags, thread_data,
-  //!                                                   cub::Inequality(), tile_predecessor_item);
-  //!    }
+  //!            // Have thread0 obtain the predecessor item for the entire tile
+  //!            int tile_predecessor_item;
+  //!            if (threadIdx.x == 0) tile_predecessor_item == ...
+  //!
+  //!            // Collectively compute head flags for discontinuities in the segment
+  //!            int head_flags[4];
+  //!            BlockDiscontinuity(temp_storage).FlagHeads(head_flags, thread_data,
+  //!                                                       cub::Inequality(), tile_predecessor_item);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit(device=True)
+  //!        def discontinuity_op(previous_item, current_item):
+  //!            return previous_item != current_item
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_in, d_head_flags, tile_predecessor_item):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            head_flags = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_in, thread_data)
+  //!            coop.block.discontinuity[temp_storage](
+  //!                thread_data,
+  //!                head_flags,
+  //!                flag_op=discontinuity_op,
+  //!                block_discontinuity_type=coop.block.BlockDiscontinuityType.HEADS,
+  //!                tile_predecessor_item=tile_predecessor_item,
+  //!            )
+  //!            coop.block.store(d_head_flags, head_flags)
+  //!
+  //!        # kernel[1, threads_per_block](d_in, d_head_flags, tile_predecessor_item)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], [3,4,4,4], ... }``,
@@ -525,26 +616,56 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
   //!
-  //!        // Allocate shared memory for BlockDiscontinuity
-  //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
+  //!            using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockDiscontinuity
+  //!            __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
   //!
-  //!        // Collectively compute tail flags for discontinuities in the segment
-  //!        int tail_flags[4];
-  //!        BlockDiscontinuity(temp_storage).FlagTails(tail_flags, thread_data, cub::Inequality());
-  //!    }
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
+  //!
+  //!            // Collectively compute tail flags for discontinuities in the segment
+  //!            int tail_flags[4];
+  //!            BlockDiscontinuity(temp_storage).FlagTails(tail_flags, thread_data, cub::Inequality());
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit(device=True)
+  //!        def discontinuity_op(current_item, next_item):
+  //!            return current_item != next_item
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_in, d_tail_flags):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            tail_flags = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_in, thread_data)
+  //!            coop.block.discontinuity[temp_storage](
+  //!                thread_data,
+  //!                tail_flags,
+  //!                flag_op=discontinuity_op,
+  //!                block_discontinuity_type=coop.block.BlockDiscontinuityType.TAILS,
+  //!            )
+  //!            coop.block.store(d_tail_flags, tail_flags)
+  //!
+  //!        # kernel[1, threads_per_block](d_in, d_tail_flags)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }``.
@@ -617,31 +738,62 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
   //!
-  //!        // Allocate shared memory for BlockDiscontinuity
-  //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
+  //!            using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockDiscontinuity
+  //!            __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
   //!
-  //!        // Have thread127 obtain the successor item for the entire tile
-  //!        int tile_successor_item;
-  //!        if (threadIdx.x == 127) tile_successor_item == ...
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
   //!
-  //!        // Collectively compute tail flags for discontinuities in the segment
-  //!        int tail_flags[4];
-  //!        BlockDiscontinuity(temp_storage).FlagTails(tail_flags, thread_data,
-  //!                                                   cub::Inequality(), tile_successor_item);
-  //!    }
+  //!            // Have thread127 obtain the successor item for the entire tile
+  //!            int tile_successor_item;
+  //!            if (threadIdx.x == 127) tile_successor_item == ...
+  //!
+  //!            // Collectively compute tail flags for discontinuities in the segment
+  //!            int tail_flags[4];
+  //!            BlockDiscontinuity(temp_storage).FlagTails(tail_flags, thread_data,
+  //!                                                       cub::Inequality(), tile_successor_item);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit(device=True)
+  //!        def discontinuity_op(current_item, next_item):
+  //!            return current_item != next_item
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_in, d_tail_flags, tile_successor_item):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            tail_flags = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_in, thread_data)
+  //!            coop.block.discontinuity[temp_storage](
+  //!                thread_data,
+  //!                tail_flags,
+  //!                flag_op=discontinuity_op,
+  //!                block_discontinuity_type=coop.block.BlockDiscontinuityType.TAILS,
+  //!                tile_successor_item=tile_successor_item,
+  //!            )
+  //!            coop.block.store(d_tail_flags, tail_flags)
+  //!
+  //!        # kernel[1, threads_per_block](d_in, d_tail_flags, tile_successor_item)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }``
@@ -726,28 +878,61 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
   //!
-  //!        // Allocate shared memory for BlockDiscontinuity
-  //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
+  //!            using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockDiscontinuity
+  //!            __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
   //!
-  //!        // Collectively compute head and flags for discontinuities in the segment
-  //!        int head_flags[4];
-  //!        int tail_flags[4];
-  //!        BlockDiscontinuity(temp_storage).FlagHeadsAndTails(head_flags, tail_flags, thread_data,
-  //!                                                           cub::Inequality());
-  //!    }
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
+  //!
+  //!            // Collectively compute head and flags for discontinuities in the segment
+  //!            int head_flags[4];
+  //!            int tail_flags[4];
+  //!            BlockDiscontinuity(temp_storage).FlagHeadsAndTails(head_flags, tail_flags, thread_data,
+  //!                                                               cub::Inequality());
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit(device=True)
+  //!        def discontinuity_op(lhs, rhs):
+  //!            return lhs != rhs
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_in, d_head_flags, d_tail_flags):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            head_flags = coop.ThreadData(items_per_thread)
+  //!            tail_flags = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_in, thread_data)
+  //!            coop.block.discontinuity[temp_storage](
+  //!                thread_data,
+  //!                head_flags,
+  //!                tail_flags,
+  //!                flag_op=discontinuity_op,
+  //!                block_discontinuity_type=coop.block.BlockDiscontinuityType.HEADS_AND_TAILS,
+  //!            )
+  //!            coop.block.store(d_head_flags, head_flags)
+  //!            coop.block.store(d_tail_flags, tail_flags)
+  //!
+  //!        # kernel[1, threads_per_block](d_in, d_head_flags, d_tail_flags)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }``
@@ -848,33 +1033,67 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
   //!
-  //!        // Allocate shared memory for BlockDiscontinuity
-  //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
+  //!            using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockDiscontinuity
+  //!            __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
   //!
-  //!        // Have thread127 obtain the successor item for the entire tile
-  //!        int tile_successor_item;
-  //!        if (threadIdx.x == 127) tile_successor_item == ...
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
   //!
-  //!        // Collectively compute head and flags for discontinuities in the segment
-  //!        int head_flags[4];
-  //!        int tail_flags[4];
-  //!        BlockDiscontinuity(temp_storage).FlagHeadsAndTails(head_flags, tail_flags,
-  //!                                                           tile_successor_item, thread_data,
-  //!                                                           cub::Inequality());
-  //!    }
+  //!            // Have thread127 obtain the successor item for the entire tile
+  //!            int tile_successor_item;
+  //!            if (threadIdx.x == 127) tile_successor_item == ...
+  //!
+  //!            // Collectively compute head and flags for discontinuities in the segment
+  //!            int head_flags[4];
+  //!            int tail_flags[4];
+  //!            BlockDiscontinuity(temp_storage).FlagHeadsAndTails(head_flags, tail_flags,
+  //!                                                               tile_successor_item, thread_data,
+  //!                                                               cub::Inequality());
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit(device=True)
+  //!        def discontinuity_op(lhs, rhs):
+  //!            return lhs != rhs
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_in, d_head_flags, d_tail_flags, tile_successor_item):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            head_flags = coop.ThreadData(items_per_thread)
+  //!            tail_flags = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_in, thread_data)
+  //!            coop.block.discontinuity[temp_storage](
+  //!                thread_data,
+  //!                head_flags,
+  //!                tail_flags,
+  //!                flag_op=discontinuity_op,
+  //!                block_discontinuity_type=coop.block.BlockDiscontinuityType.HEADS_AND_TAILS,
+  //!                tile_successor_item=tile_successor_item,
+  //!            )
+  //!            coop.block.store(d_head_flags, head_flags)
+  //!            coop.block.store(d_tail_flags, tail_flags)
+  //!
+  //!        # kernel[1, threads_per_block](d_in, d_head_flags, d_tail_flags, tile_successor_item)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }``
@@ -982,37 +1201,73 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
   //!
-  //!        // Allocate shared memory for BlockDiscontinuity
-  //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
+  //!            using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockDiscontinuity
+  //!            __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
   //!
-  //!        // Have thread0 obtain the predecessor item for the entire tile
-  //!        int tile_predecessor_item;
-  //!        if (threadIdx.x == 0) tile_predecessor_item == ...
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
   //!
-  //!        // Have thread127 obtain the successor item for the entire tile
-  //!        int tile_successor_item;
-  //!        if (threadIdx.x == 127) tile_successor_item == ...
+  //!            // Have thread0 obtain the predecessor item for the entire tile
+  //!            int tile_predecessor_item;
+  //!            if (threadIdx.x == 0) tile_predecessor_item == ...
   //!
-  //!        // Collectively compute head and flags for discontinuities in the segment
-  //!        int head_flags[4];
-  //!        int tail_flags[4];
-  //!        BlockDiscontinuity(temp_storage).FlagHeadsAndTails(head_flags, tile_predecessor_item,
-  //!                                                           tail_flags, tile_successor_item,
-  //!                                                           thread_data, cub::Inequality());
-  //!    }
+  //!            // Have thread127 obtain the successor item for the entire tile
+  //!            int tile_successor_item;
+  //!            if (threadIdx.x == 127) tile_successor_item == ...
+  //!
+  //!            // Collectively compute head and flags for discontinuities in the segment
+  //!            int head_flags[4];
+  //!            int tail_flags[4];
+  //!            BlockDiscontinuity(temp_storage).FlagHeadsAndTails(head_flags, tile_predecessor_item,
+  //!                                                               tail_flags, tile_successor_item,
+  //!                                                               thread_data, cub::Inequality());
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit(device=True)
+  //!        def discontinuity_op(lhs, rhs):
+  //!            return lhs != rhs
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_in, d_head_flags, d_tail_flags, tile_predecessor_item, tile_successor_item):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            head_flags = coop.ThreadData(items_per_thread)
+  //!            tail_flags = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_in, thread_data)
+  //!            coop.block.discontinuity[temp_storage](
+  //!                thread_data,
+  //!                head_flags,
+  //!                tail_flags,
+  //!                flag_op=discontinuity_op,
+  //!                block_discontinuity_type=coop.block.BlockDiscontinuityType.HEADS_AND_TAILS,
+  //!                tile_predecessor_item=tile_predecessor_item,
+  //!                tile_successor_item=tile_successor_item,
+  //!            )
+  //!            coop.block.store(d_head_flags, head_flags)
+  //!            coop.block.store(d_tail_flags, tail_flags)
+  //!
+  //!        # kernel[1, threads_per_block](d_in, d_head_flags, d_tail_flags, tile_predecessor_item,
+  //!        tile_successor_item)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }``,
@@ -1115,37 +1370,73 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
-  //!        using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_discontinuity.cuh>
   //!
-  //!        // Allocate shared memory for BlockDiscontinuity
-  //!        __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockDiscontinuity for a 1D block of 128 threads of type int
+  //!            using BlockDiscontinuity = cub::BlockDiscontinuity<int, 128>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockDiscontinuity
+  //!            __shared__ typename BlockDiscontinuity::TempStorage temp_storage;
   //!
-  //!        // Have thread0 obtain the predecessor item for the entire tile
-  //!        int tile_predecessor_item;
-  //!        if (threadIdx.x == 0) tile_predecessor_item == ...
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
   //!
-  //!        // Have thread127 obtain the successor item for the entire tile
-  //!        int tile_successor_item;
-  //!        if (threadIdx.x == 127) tile_successor_item == ...
+  //!            // Have thread0 obtain the predecessor item for the entire tile
+  //!            int tile_predecessor_item;
+  //!            if (threadIdx.x == 0) tile_predecessor_item == ...
   //!
-  //!        // Collectively compute head and flags for discontinuities in the segment
-  //!        int head_flags[4];
-  //!        int tail_flags[4];
-  //!        BlockDiscontinuity(temp_storage).FlagHeadsAndTails(head_flags, tile_predecessor_item,
-  //!                                                           tail_flags, tile_successor_item,
-  //!                                                           thread_data, cub::Inequality());
-  //!    }
+  //!            // Have thread127 obtain the successor item for the entire tile
+  //!            int tile_successor_item;
+  //!            if (threadIdx.x == 127) tile_successor_item == ...
+  //!
+  //!            // Collectively compute head and flags for discontinuities in the segment
+  //!            int head_flags[4];
+  //!            int tail_flags[4];
+  //!            BlockDiscontinuity(temp_storage).FlagHeadsAndTails(head_flags, tile_predecessor_item,
+  //!                                                               tail_flags, tile_successor_item,
+  //!                                                               thread_data, cub::Inequality());
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit(device=True)
+  //!        def discontinuity_op(lhs, rhs):
+  //!            return lhs != rhs
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_in, d_head_flags, d_tail_flags, tile_predecessor_item, tile_successor_item):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            head_flags = coop.ThreadData(items_per_thread)
+  //!            tail_flags = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_in, thread_data)
+  //!            coop.block.discontinuity[temp_storage](
+  //!                thread_data,
+  //!                head_flags,
+  //!                tail_flags,
+  //!                flag_op=discontinuity_op,
+  //!                block_discontinuity_type=coop.block.BlockDiscontinuityType.HEADS_AND_TAILS,
+  //!                tile_predecessor_item=tile_predecessor_item,
+  //!                tile_successor_item=tile_successor_item,
+  //!            )
+  //!            coop.block.store(d_head_flags, head_flags)
+  //!            coop.block.store(d_tail_flags, tail_flags)
+  //!
+  //!        # kernel[1, threads_per_block](d_in, d_head_flags, d_tail_flags, tile_predecessor_item,
+  //!        tile_successor_item)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }``,
