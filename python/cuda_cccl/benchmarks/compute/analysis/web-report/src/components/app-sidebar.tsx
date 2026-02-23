@@ -11,6 +11,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
 
 type BenchmarkEntry = {
@@ -31,9 +32,11 @@ type BenchmarkEntry = {
 type AppSidebarProps = Omit<React.ComponentProps<typeof Sidebar>, "onSelect"> & {
   benchmarks: BenchmarkEntry[];
   selectedId: string | null;
+  showSummary: boolean;
   search: string;
   onSearch: (value: string) => void;
   onSelectBenchmark: (entry: BenchmarkEntry) => void;
+  onSelectSummary: () => void;
 };
 
 function groupByCategory(benchmarks: BenchmarkEntry[]) {
@@ -50,9 +53,11 @@ function groupByCategory(benchmarks: BenchmarkEntry[]) {
 export function AppSidebar({
   benchmarks,
   selectedId,
+  showSummary,
   search,
   onSearch,
   onSelectBenchmark,
+  onSelectSummary,
   ...props
 }: AppSidebarProps) {
   const grouped = groupByCategory(benchmarks);
@@ -70,6 +75,22 @@ export function AppSidebar({
         />
       </SidebarHeader>
       <SidebarContent className="pb-4">
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={onSelectSummary}
+                  isActive={showSummary}
+                  className="font-semibold"
+                >
+                  <span>Summary</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarSeparator />
         {grouped.map(([category, items]) => (
           <SidebarGroup key={category}>
             <SidebarGroupLabel>{category}</SidebarGroupLabel>

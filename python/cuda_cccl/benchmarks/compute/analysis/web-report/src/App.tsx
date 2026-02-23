@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { Badge } from "@/components/ui/badge";
@@ -74,6 +74,23 @@ type BenchmarkData = {
   py: Measurement[];
   cpp: Measurement[];
 };
+
+type SummaryRow = {
+  id: string;
+  label: string;
+  category: string;
+  medianPctSlower: number;
+  bestPctSlower: number;
+  worstPctSlower: number;
+  avgSpeedup: number;
+  numConfigs: number;
+};
+
+type SortKey = keyof Pick<
+  SummaryRow,
+  "label" | "category" | "medianPctSlower" | "bestPctSlower" | "worstPctSlower" | "avgSpeedup"
+>;
+type SortDir = "asc" | "desc";
 
 type AxisSelection = Record<string, string>;
 
@@ -419,6 +436,98 @@ function intersectAxes(a: Set<string>, b: Set<string>) {
   return result;
 }
 
+function median(values: number[]): number {
+  if (!values.length) {
+    return 0;
+  }
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0
+    ? sorted[mid]
+    : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+function geometricMean(values: number[]): number {
+  if (!values.length) {
+    return 1;
+  }
+  const positiveValues = values.filter((v) => v > 0);
+  if (!positiveValues.length) {
+    return 1;
+  }
+  const logSum = positiveValues.reduce((sum, v) => sum + Math.log(v), 0);
+  return Math.exp(logSum / positiveValues.length);
+}
+
+function computeSummaryRow(
+  entry: BenchmarkEntry,
+  data: BenchmarkData,
+  elementSize: string | null,
+): SummaryRow | null {
+  const pyAxes = getAxisSet(data.py);
+  const cppAxes = getAxisSet(data.cpp);
+  const commonAxes = intersectAxes(pyAxes, cppAxes);
+
+  let pyFiltered = filterMeasurements(data.py, FILTER_AXES, commonAxes);
+  let cppFiltered = filterMeasurements(data.cpp, FILTER_AXES, commonAxes);
+
+  if (elementSize) {
+    pyFiltered = pyFiltered.filter((m) => m.axes.Elements === elementSize);
+    cppFiltered = cppFiltered.filter((m) => m.axes.Elements === elementSize);
+  }
+
+  if (!pyFiltered.length || !cppFiltered.length) {
+    return null;
+  }
+
+  const typeAxis = getTypeAxisName([...pyFiltered, ...cppFiltered]);
+  const pyTypes = getAxisValues(pyFiltered, typeAxis);
+  const cppTypes = getAxisValues(cppFiltered, typeAxis);
+  const commonTypes =
+    pyTypes.length && cppTypes.length
+      ? intersect(pyTypes, cppTypes)
+      : ["All"];
+
+  const pctSlowerValues: number[] = [];
+  const speedupValues: number[] = [];
+
+  for (const t of commonTypes) {
+    const pyForType =
+      t === "All"
+        ? pyFiltered
+        : pyFiltered.filter((m) => m.axes[typeAxis] === t);
+    const cppForType =
+      t === "All"
+        ? cppFiltered
+        : cppFiltered.filter((m) => m.axes[typeAxis] === t);
+
+    const pyAvg = average(pyForType.map((m) => m.gpu_time));
+    const cppAvg = average(cppForType.map((m) => m.gpu_time));
+
+    if (pyAvg !== null && cppAvg !== null && cppAvg > 0) {
+      const pctSlower = (pyAvg - cppAvg) / cppAvg;
+      const speedup = cppAvg / pyAvg;
+      pctSlowerValues.push(pctSlower);
+      speedupValues.push(speedup);
+    }
+  }
+
+  if (!pctSlowerValues.length) {
+    return null;
+  }
+
+  return {
+    id: entry.id,
+    label: entry.label,
+    category: entry.category,
+    medianPctSlower: median(pctSlowerValues),
+    bestPctSlower: Math.min(...pctSlowerValues),
+    worstPctSlower: Math.max(...pctSlowerValues),
+    avgSpeedup: geometricMean(speedupValues),
+    numConfigs: pctSlowerValues.length,
+  };
+}
+
 function filterByAxisSelection(
   measurements: Measurement[],
   axisValues: AxisSelection,
@@ -439,6 +548,34 @@ function filterByAxisSelection(
   );
 }
 
+function SortableHead({
+  label,
+  sortKey,
+  currentKey,
+  currentDir,
+  onSort,
+  className,
+}: {
+  label: string;
+  sortKey: SortKey;
+  currentKey: SortKey;
+  currentDir: SortDir;
+  onSort: (key: SortKey) => void;
+  className?: string;
+}) {
+  const isActive = currentKey === sortKey;
+  const arrow = isActive ? (currentDir === "asc" ? " \u25B2" : " \u25BC") : "";
+  return (
+    <TableHead
+      className={`cursor-pointer select-none hover:bg-muted/50 ${className ?? ""}`}
+      onClick={() => onSort(sortKey)}
+    >
+      {label}
+      {arrow}
+    </TableHead>
+  );
+}
+
 export function App() {
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [resultsBaseUrl, setResultsBaseUrl] = useState<string | null>(null);
@@ -454,6 +591,15 @@ export function App() {
     {},
   );
   const [status, setStatus] = useState<string | null>(null);
+  const [showSummary, setShowSummary] = useState(true);
+  const [summaryData, setSummaryData] = useState<Map<
+    string,
+    BenchmarkData
+  > | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryElementSize, setSummaryElementSize] = useState<string>("");
+  const [summarySortKey, setSummarySortKey] = useState<SortKey>("medianPctSlower");
+  const [summarySortDir, setSummarySortDir] = useState<SortDir>("desc");
 
   useEffect(() => {
     const load = async () => {
@@ -486,7 +632,6 @@ export function App() {
 
           setManifest(manifestData);
           setResultsBaseUrl(resolvedResultsBase);
-          setSelected(manifestData.benchmarks[0] ?? null);
           loaded = true;
           break;
         }
@@ -535,6 +680,134 @@ export function App() {
     };
     loadBenchmark();
   }, [manifest, selected, resultsBaseUrl]);
+
+  // Load all benchmark data when summary view is activated
+  useEffect(() => {
+    if (!showSummary || !manifest || !resultsBaseUrl) {
+      return;
+    }
+    if (summaryData) {
+      return; // Already loaded
+    }
+    const loadAll = async () => {
+      setSummaryLoading(true);
+      const map = new Map<string, BenchmarkData>();
+      const entries = manifest.benchmarks;
+      const results = await Promise.allSettled(
+        entries.map(async (entry) => {
+          const pyUrl = resolveUrl(resultsBaseUrl, entry.py_path);
+          const cppUrl = resolveUrl(resultsBaseUrl, entry.cpp_path);
+          const [pyResp, cppResp] = await Promise.all([
+            fetch(pyUrl),
+            fetch(cppUrl),
+          ]);
+          if (!pyResp.ok || !cppResp.ok) {
+            return null;
+          }
+          const [pyJson, cppJson] = await Promise.all([
+            pyResp.json(),
+            cppResp.json(),
+          ]);
+          return {
+            id: entry.id,
+            py: parseMeasurements(pyJson),
+            cpp: parseMeasurements(cppJson),
+          };
+        }),
+      );
+      for (const result of results) {
+        if (result.status === "fulfilled" && result.value) {
+          map.set(result.value.id, {
+            py: result.value.py,
+            cpp: result.value.cpp,
+          });
+        }
+      }
+      setSummaryData(map);
+      setSummaryLoading(false);
+    };
+    loadAll();
+  }, [showSummary, manifest, resultsBaseUrl, summaryData]);
+
+  // Compute available element sizes across all summary data
+  const summaryElementSizes = useMemo(() => {
+    if (!summaryData) {
+      return [];
+    }
+    const sizes = new Set<string>();
+    for (const benchData of summaryData.values()) {
+      for (const m of [...benchData.py, ...benchData.cpp]) {
+        if (m.axes.Elements) {
+          sizes.add(m.axes.Elements);
+        }
+      }
+    }
+    return [...sizes]
+      .map((s) => Number(s))
+      .filter((n) => Number.isFinite(n))
+      .sort((a, b) => a - b)
+      .map((n) => String(n));
+  }, [summaryData]);
+
+  // Default to largest element size
+  useEffect(() => {
+    if (summaryElementSizes.length && !summaryElementSize) {
+      setSummaryElementSize(summaryElementSizes[summaryElementSizes.length - 1]);
+    }
+  }, [summaryElementSizes, summaryElementSize]);
+
+  // Compute summary rows
+  const summaryRows = useMemo(() => {
+    if (!manifest || !summaryData) {
+      return [];
+    }
+    const rows: SummaryRow[] = [];
+    for (const entry of manifest.benchmarks) {
+      const benchData = summaryData.get(entry.id);
+      if (!benchData) {
+        continue;
+      }
+      const row = computeSummaryRow(
+        entry,
+        benchData,
+        summaryElementSize || null,
+      );
+      if (row) {
+        rows.push(row);
+      }
+    }
+    return rows;
+  }, [manifest, summaryData, summaryElementSize]);
+
+  // Sort summary rows
+  const sortedSummaryRows = useMemo(() => {
+    const sorted = [...summaryRows];
+    sorted.sort((a, b) => {
+      const aVal = a[summarySortKey];
+      const bVal = b[summarySortKey];
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        return summarySortDir === "asc"
+          ? aVal.localeCompare(bVal)
+          : bVal.localeCompare(aVal);
+      }
+      const aNum = Number(aVal);
+      const bNum = Number(bVal);
+      return summarySortDir === "asc" ? aNum - bNum : bNum - aNum;
+    });
+    return sorted;
+  }, [summaryRows, summarySortKey, summarySortDir]);
+
+  const handleSummarySort = useCallback(
+    (key: SortKey) => {
+      if (key === summarySortKey) {
+        setSummarySortDir((prev) => (prev === "asc" ? "desc" : "asc"));
+      } else {
+        setSummarySortKey(key);
+        setSummarySortDir(key === "label" || key === "category" ? "asc" : "desc");
+      }
+    },
+    [summarySortKey],
+  );
 
   const filteredBenchmarks = useMemo(() => {
     if (!manifest) {
@@ -959,9 +1232,17 @@ export function App() {
       <AppSidebar
         benchmarks={filteredBenchmarks}
         selectedId={selected?.id ?? null}
+        showSummary={showSummary}
         search={search}
         onSearch={setSearch}
-        onSelectBenchmark={(entry) => setSelected(entry)}
+        onSelectBenchmark={(entry) => {
+          setShowSummary(false);
+          setSelected(entry);
+        }}
+        onSelectSummary={() => {
+          setShowSummary(true);
+          setSelected(null);
+        }}
       />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
@@ -970,13 +1251,15 @@ export function App() {
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbPage>
-                  {selected?.label ?? "Loading benchmarks"}
+                  {showSummary
+                    ? "Summary"
+                    : selected?.label ?? "Loading benchmarks"}
                 </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
           <div className="ml-auto hidden items-center gap-2 text-xs text-muted-foreground md:flex">
-            {selected?.device?.name ? (
+            {!showSummary && selected?.device?.name ? (
               <Badge variant="secondary">{selected.device.name}</Badge>
             ) : null}
             {manifest?.generated_at ? (
@@ -987,6 +1270,188 @@ export function App() {
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-6 p-4">
+          {showSummary ? (
+            <Card className="overflow-hidden rounded-none border-0 shadow-none">
+              <CardHeader className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-lg">
+                      All Benchmarks — C++ vs Python
+                    </CardTitle>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="min-w-[160px] space-y-1">
+                      <div className="text-xs font-medium text-muted-foreground">
+                        Element Count
+                      </div>
+                      <Select
+                        value={summaryElementSize}
+                        onValueChange={(value) => setSummaryElementSize(value ?? "")}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select size" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>Elements</SelectLabel>
+                            {summaryElementSizes.map((size) => (
+                              <SelectItem key={size} value={size}>
+                                {isPowerOfTwo(Number(size))
+                                  ? `2^${Math.log2(Number(size))}`
+                                  : Number(size).toLocaleString()}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6 pt-6">
+                {summaryLoading && (
+                  <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+                    Loading all benchmark results...
+                  </div>
+                )}
+                {!summaryLoading && sortedSummaryRows.length > 0 && (
+                  <>
+                    <div className="flex flex-wrap items-center gap-4 text-sm">
+                      <span>
+                        <span className="font-semibold">
+                          {
+                            sortedSummaryRows.filter(
+                              (r) => r.medianPctSlower <= 0.05,
+                            ).length
+                          }
+                        </span>
+                        /{sortedSummaryRows.length} benchmarks within 5% of C++
+                      </span>
+                      <span className="text-muted-foreground">|</span>
+                      <span>
+                        <span className="font-semibold">
+                          {
+                            sortedSummaryRows.filter(
+                              (r) => r.medianPctSlower <= 0.10,
+                            ).length
+                          }
+                        </span>
+                        /{sortedSummaryRows.length} within 10%
+                      </span>
+                    </div>
+                    <div className="overflow-hidden rounded-xl border border-border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <SortableHead
+                              label="Benchmark"
+                              sortKey="label"
+                              currentKey={summarySortKey}
+                              currentDir={summarySortDir}
+                              onSort={handleSummarySort}
+                            />
+                            <SortableHead
+                              label="Category"
+                              sortKey="category"
+                              currentKey={summarySortKey}
+                              currentDir={summarySortDir}
+                              onSort={handleSummarySort}
+                            />
+                            <SortableHead
+                              label="Median % Slower"
+                              sortKey="medianPctSlower"
+                              currentKey={summarySortKey}
+                              currentDir={summarySortDir}
+                              onSort={handleSummarySort}
+                              className="text-right"
+                            />
+                            <SortableHead
+                              label="Best %"
+                              sortKey="bestPctSlower"
+                              currentKey={summarySortKey}
+                              currentDir={summarySortDir}
+                              onSort={handleSummarySort}
+                              className="text-right"
+                            />
+                            <SortableHead
+                              label="Worst %"
+                              sortKey="worstPctSlower"
+                              currentKey={summarySortKey}
+                              currentDir={summarySortDir}
+                              onSort={handleSummarySort}
+                              className="text-right"
+                            />
+                            <SortableHead
+                              label="Avg Speedup"
+                              sortKey="avgSpeedup"
+                              currentKey={summarySortKey}
+                              currentDir={summarySortDir}
+                              onSort={handleSummarySort}
+                              className="text-right"
+                            />
+                            <TableHead className="text-right">
+                              Configs
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {sortedSummaryRows.map((row) => {
+                            const statusClass =
+                              row.medianPctSlower <= 0.05
+                                ? "bg-green-500/10"
+                                : row.medianPctSlower <= 0.1
+                                  ? "bg-yellow-500/10"
+                                  : "bg-destructive/10 text-destructive";
+                            return (
+                              <TableRow
+                                key={row.id}
+                                className={`cursor-pointer hover:bg-muted/50 ${statusClass}`}
+                                onClick={() => {
+                                  const entry = manifest?.benchmarks.find(
+                                    (b) => b.id === row.id,
+                                  );
+                                  if (entry) {
+                                    setShowSummary(false);
+                                    setSelected(entry);
+                                  }
+                                }}
+                              >
+                                <TableCell className="font-medium">
+                                  {row.label}
+                                </TableCell>
+                                <TableCell>{row.category}</TableCell>
+                                <TableCell className="text-right">
+                                  {formatPercentage(row.medianPctSlower)}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {formatPercentage(row.bestPctSlower)}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {formatPercentage(row.worstPctSlower)}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {formatRatio(row.avgSpeedup)}x
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {row.numConfigs}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </>
+                )}
+                {!summaryLoading && sortedSummaryRows.length === 0 && summaryData && (
+                  <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+                    No summary data available for the selected element size.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+          <>
           <Card className="overflow-hidden rounded-none border-0 shadow-none">
             <CardHeader className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1318,6 +1783,8 @@ export function App() {
               </div>
             </CardContent>
           </Card>
+          </>
+          )}
           <footer className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
             <div className="flex flex-wrap items-center gap-3" />
           </footer>
