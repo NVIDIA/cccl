@@ -54,7 +54,7 @@ void test_transform(const Policy& policy, thrust::device_vector<int>& output)
       cuda::counting_iterator{0ull},
       output.begin(),
       cuda::std::minus<>{});
-    CHECK(thrust::all_of(output.begin(), output.end(), cuda::equal_to_one{}));
+    CHECK(thrust::all_of(output.begin(), output.end(), cuda::equal_to_value{1}));
   }
 
   { // convertible transform arg
@@ -66,7 +66,7 @@ void test_transform(const Policy& policy, thrust::device_vector<int>& output)
       cuda::counting_iterator{0ull},
       output.begin(),
       cuda::std::minus<long long>{});
-    CHECK(thrust::all_of(output.begin(), output.end(), cuda::equal_to_one{}));
+    CHECK(thrust::all_of(output.begin(), output.end(), cuda::equal_to_value{1}));
   }
 
   { // convertible type
@@ -78,7 +78,7 @@ void test_transform(const Policy& policy, thrust::device_vector<int>& output)
       cuda::counting_iterator{0ull},
       output.begin(),
       cuda::std::minus<>{});
-    CHECK(thrust::all_of(output.begin(), output.end(), cuda::equal_to_one{}));
+    CHECK(thrust::all_of(output.begin(), output.end(), cuda::equal_to_value{1}));
   }
 
   { // convertible second range
@@ -90,7 +90,7 @@ void test_transform(const Policy& policy, thrust::device_vector<int>& output)
       cuda::counting_iterator<short>{0ull},
       output.begin(),
       cuda::std::minus<>{});
-    CHECK(thrust::all_of(output.begin(), output.end(), cuda::equal_to_one{}));
+    CHECK(thrust::all_of(output.begin(), output.end(), cuda::equal_to_value{1}));
   }
 }
 
