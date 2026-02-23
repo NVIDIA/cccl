@@ -4,7 +4,7 @@
 
 /**
  * @file
- * The cub::BlockRadixSort class provides [<em>collective</em>](../index.html#sec0) methods for radix
+ * The cub::BlockRadixSort class provides `collective <../index.html#sec0>`_ methods for radix
  * sorting of items partitioned across a CUDA thread block.
  */
 
@@ -122,7 +122,7 @@ CUB_NAMESPACE_BEGIN
 //! @blockcollective{BlockRadixSort}
 //!
 //! The code snippet below illustrates a sort of 512 integer keys that
-//! are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128 threads
+//! are partitioned in a `blocked arrangement <../index.html#sec5sec3>`_ across 128 threads
 //! where each thread owns 4 consecutive items.
 //!
 //! .. tab-set-code::
@@ -150,26 +150,27 @@ CUB_NAMESPACE_BEGIN
 //!
 //!    .. code-block:: python
 //!
+//!        from numba import cuda
 //!        from cuda import coop
-//!        from pynvjitlink import patch
-//!        patch.patch_numba_linker(lto=True)
 //!
-//!        # Specialize radix sort for a 1D block of 128 threads owning 4 integer items each
-//!        block_radix_sort = coop.block.radix_sort_keys(numba.int32, 128, 4)
-//!        temp_storage_bytes = block_radix_sort.temp_storage_bytes
+//!        items_per_thread = 4
 //!
-//!        @cuda.jit(link=block_radix_sort.files)
-//!        def kernel():
-//!            Allocate shared memory for radix sort
-//!            temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype='uint8')
+//!        @cuda.jit
+//!        def kernel(keys):
+//!            # Request temporary storage for radix sort.
+//!            temp_storage = coop.TempStorage()
 //!
-//!            # Obtain a segment of consecutive items that are blocked across threads
-//!            thread_keys = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
-//!            # ...
+//!            # Obtain a segment of consecutive items that are blocked across threads.
+//!            thread_keys = coop.ThreadData(items_per_thread)
+//!            coop.block.load(keys, thread_keys)
 //!
-//!            // Collectively sort the keys
-//!            block_radix_sort(temp_storage, thread_keys)
-//!            # ...
+//!            # Collectively sort the keys.
+//!            coop.block.radix_sort_keys[temp_storage](thread_keys)
+//!
+//!            # Store the sorted keys.
+//!            coop.block.store(keys, thread_keys)
+//!
+//!        # Launch with one block of 128 threads.
 //!
 //! Suppose the set of input ``thread_keys`` across the block of threads is
 //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
@@ -609,7 +610,6 @@ public:
   //!            coop.block.radix_sort_keys[temp_storage](thread_keys)
   //!            coop.block.store(d_keys, thread_keys)
   //!
-  //!        # kernel[1, threads_per_block](d_keys)
   //!
   //! Suppose the set of input ``thread_keys`` across the block of threads is
   //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
@@ -828,7 +828,6 @@ public:
   //!            coop.block.store(d_keys, thread_keys)
   //!            coop.block.store(d_values, thread_values)
   //!
-  //!        # kernel[1, threads_per_block](d_keys, d_values)
   //!
   //! @endcode
   //! @par
@@ -1016,7 +1015,7 @@ public:
   //! +++++++
   //!
   //! The code snippet below illustrates a sort of 512 integer keys that
-  //! are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128 threads
+  //! are partitioned in a `blocked arrangement <../index.html#sec5sec3>`_ across 128 threads
   //! where each thread owns 4 consecutive keys.
   //!
   //! .. tab-set-code::
@@ -1057,7 +1056,6 @@ public:
   //!            coop.block.radix_sort_keys_descending[temp_storage](thread_keys)
   //!            coop.block.store(d_keys, thread_keys)
   //!
-  //!        # kernel[1, threads_per_block](d_keys)
   //!
   //! Suppose the set of input ``thread_keys`` across the block of threads is
   //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
@@ -1286,7 +1284,6 @@ public:
   //!            coop.block.store(d_keys, thread_keys)
   //!            coop.block.store(d_values, thread_values)
   //!
-  //!        # kernel[1, threads_per_block](d_keys, d_values)
   //!
   //! Suppose the set of input ``thread_keys`` across the block of threads is
   //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``. The
@@ -1524,7 +1521,6 @@ public:
   //!            coop.block.radix_sort_keys[temp_storage](thread_keys, blocked_to_striped=True)
   //!            coop.block.store(d_keys, thread_keys, algorithm=coop.BlockStoreAlgorithm.STRIPED)
   //!
-  //!        # kernel[1, threads_per_block](d_keys)
   //!
   //! Suppose the set of input ``thread_keys`` across the block of threads is
   //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
@@ -1711,7 +1707,7 @@ public:
   //! +++++++
   //!
   //! The code snippet below illustrates a sort of 512 integer keys and values that
-  //! are initially partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128
+  //! are initially partitioned in a `blocked arrangement <../index.html#sec5sec3>`_ across 128
   //! threads where each thread owns 4 consecutive pairs.  The final partitioning is striped.
   //!
   //! .. tab-set-code::
@@ -1760,7 +1756,6 @@ public:
   //!            coop.block.store(d_keys, thread_keys, algorithm=coop.BlockStoreAlgorithm.STRIPED)
   //!            coop.block.store(d_values, thread_values, algorithm=coop.BlockStoreAlgorithm.STRIPED)
   //!
-  //!        # kernel[1, threads_per_block](d_keys, d_values)
   //!
   //! Suppose the set of input ``thread_keys`` across the block of threads is
   //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
@@ -1987,7 +1982,6 @@ public:
   //!            coop.block.radix_sort_keys_descending[temp_storage](thread_keys, blocked_to_striped=True)
   //!            coop.block.store(d_keys, thread_keys, algorithm=coop.BlockStoreAlgorithm.STRIPED)
   //!
-  //!        # kernel[1, threads_per_block](d_keys)
   //!
   //! Suppose the set of input ``thread_keys`` across the block of threads is
   //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
@@ -2222,7 +2216,6 @@ public:
   //!            coop.block.store(d_keys, thread_keys, algorithm=coop.BlockStoreAlgorithm.STRIPED)
   //!            coop.block.store(d_values, thread_values, algorithm=coop.BlockStoreAlgorithm.STRIPED)
   //!
-  //!        # kernel[1, threads_per_block](d_keys, d_values)
   //!
   //! Suppose the set of input ``thread_keys`` across the block of threads is
   //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.

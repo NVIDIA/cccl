@@ -828,7 +828,6 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadAlgorithm algo)
 //!                algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
 //!            )
 //!
-//!        # kernel[1, threads_per_block](d_data)
 //!
 //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, ...``. The set of ``thread_data`` across the block of threads in
 //! those threads will be ``{ [0,1,2,3], [4,5,6,7], ..., [508,509,510,511] }``.
@@ -1217,7 +1216,6 @@ public:
   //!                algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
   //!            )
   //!
-  //!        # kernel[1, threads_per_block](d_data)
   //!
   //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, ...``. The set of ``thread_data`` across the block of threads
   //! in those threads will be ``{ [0,1,2,3], [4,5,6,7], ..., [508,509,510,511] }``.
@@ -1290,7 +1288,6 @@ public:
   //!                num_valid_items=block_items_end,
   //!            )
   //!
-  //!        # kernel[1, threads_per_block](d_data, block_items_end)
   //!
   //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, 6...`` and ``block_items_end`` is ``5``. The set of
   //! ``thread_data`` across the block of threads in those threads will be ``{ [0,1,2,3], [4,?,?,?], ..., [?,?,?,?] }``,
@@ -1370,7 +1367,6 @@ public:
   //!                oob_default=-1,
   //!            )
   //!
-  //!        # kernel[1, threads_per_block](d_data, block_items_end)
   //!
   //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, 6...``, ``block_items_end`` is ``5``, and the out-of-bounds
   //! default is ``-1``. The set of ``thread_data`` across the block of threads in those threads will be

@@ -3,7 +3,7 @@
 
 /**
  * @file
- * The cub::WarpExchangeSmem class provides [<em>collective</em>](index.html#sec0)
+ * The cub::WarpExchangeSmem class provides `collective <index.html#sec0>`_
  * methods for rearranging data partitioned across a CUDA warp.
  */
 

@@ -845,7 +845,6 @@ public:
   //!                cuda.syncthreads()
   //!
   //!        # Launch with one block of 128 threads.
-  //!        # kernel[1, 128](d_data, num_items)
   //!
   //! Suppose the input ``d_data`` is ``0, -1, 2, -3, 4, -5, ...``.
   //! The corresponding output for the first segment will be ``INT_MIN, 0, 0, 2, ..., 124, 126``.
@@ -900,7 +899,7 @@ public:
   //! +++++++
   //!
   //! The code snippet below illustrates an exclusive prefix max scan of 512 integer
-  //! items that are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3)
+  //! items that are partitioned in a `blocked arrangement <../index.html#sec5sec3>`_
   //! across 128 threads where each thread owns 4 consecutive items.
   //!
   //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
@@ -1023,7 +1022,6 @@ public:
   //!                d_block_aggregates[cuda.blockIdx.x] = block_aggregate[0]
   //!
   //!        # Launch with one block of 128 threads.
-  //!        # kernel[1, 128](d_data, d_block_aggregates)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,-1,2,-3], [4,-5,6,-7], ..., [508,-509,510,-511] }``.
@@ -1512,7 +1510,6 @@ public:
   //!                cuda.syncthreads()
   //!
   //!        # Launch with one block of 128 threads.
-  //!        # kernel[1, 128](d_data, num_items)
   //!
   //! Suppose the input ``d_data`` is ``1, 1, 1, 1, 1, 1, 1, 1, ...``.
   //! The corresponding output for the first segment will be ``1, 2, ..., 128``.
@@ -1872,7 +1869,6 @@ public:
   //!                d_block_aggregates[cuda.blockIdx.x] = block_aggregate[0]
   //!
   //!        # Launch with one block of 128 threads.
-  //!        # kernel[1, 128](d_data, d_block_aggregates)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``0, -1, 2, -3, ..., 126, -127``. The corresponding output ``thread_data``
@@ -1993,7 +1989,7 @@ public:
   //! +++++++
   //!
   //! The code snippet below illustrates an inclusive prefix max scan of 512 integer items that
-  //! are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128 threads
+  //! are partitioned in a `blocked arrangement <../index.html#sec5sec3>`_ across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
   //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
@@ -2119,7 +2115,7 @@ public:
   //! +++++++
   //!
   //! The code snippet below illustrates an inclusive prefix max scan of 512 integer items that
-  //! are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128 threads
+  //! are partitioned in a `blocked arrangement <../index.html#sec5sec3>`_ across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
   //! .. tab-set-code::
@@ -2173,7 +2169,6 @@ public:
   //!                d_block_aggregates[cuda.blockIdx.x] = block_aggregate[0]
   //!
   //!        # Launch with one block of 128 threads.
-  //!        # kernel[1, 128](d_data, d_block_aggregates)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,-1,2,-3], [4,-5,6,-7], ..., [508,-509,510,-511] }``.
@@ -2422,7 +2417,6 @@ public:
   //!                cuda.syncthreads()
   //!
   //!        # Launch with one block of 128 threads.
-  //!        # kernel[1, 128](d_data, num_items)
   //!
   //! Suppose the input ``d_data`` is ``0, -1, 2, -3, 4, -5, ...``.
   //! The corresponding output for the first segment will be

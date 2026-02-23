@@ -127,7 +127,6 @@ CUB_NAMESPACE_BEGIN
 //!            )
 //!            coop.block.store(d_out, result)
 //!
-//!        # kernel[1, threads_per_block](d_in, d_out)
 //!
 //! Suppose the set of input `thread_data` across the block of threads is
 //! ``{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }``.
@@ -341,7 +340,6 @@ public:
   //!            )
   //!            coop.block.store(d_out, thread_data)
   //!
-  //!        # kernel[1, threads_per_block](d_in, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }``.
@@ -464,7 +462,6 @@ public:
   //!            )
   //!            coop.block.store(d_out, thread_data)
   //!
-  //!        # kernel[1, threads_per_block](d_in, d_out, tile_predecessor_item)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }``.
@@ -596,7 +593,6 @@ public:
   //!            )
   //!            coop.block.store(d_out, thread_data)
   //!
-  //!        # kernel[1, threads_per_block](d_in, d_out, valid_items)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }``.
@@ -744,7 +740,6 @@ public:
   //!            )
   //!            coop.block.store(d_out, thread_data)
   //!
-  //!        # kernel[1, threads_per_block](d_in, d_out, valid_items, tile_predecessor_item)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }``.
@@ -904,7 +899,6 @@ public:
   //!            )
   //!            coop.block.store(d_out, thread_data)
   //!
-  //!        # kernel[1, threads_per_block](d_in, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ ...3], [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4] }``.
@@ -1029,7 +1023,6 @@ public:
   //!            )
   //!            coop.block.store(d_out, thread_data)
   //!
-  //!        # kernel[1, threads_per_block](d_in, d_out, tile_successor_item)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ ...3], [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4] }``,
@@ -1158,7 +1151,6 @@ public:
   //!            )
   //!            coop.block.store(d_out, thread_data)
   //!
-  //!        # kernel[1, threads_per_block](d_in, d_out, valid_items)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ ...3], [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4] }``.
