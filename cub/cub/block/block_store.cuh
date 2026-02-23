@@ -612,25 +612,53 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockStoreAlgorithm algo)
 //! meaning items are locally reordered among threads so that memory references will be
 //! efficiently coalesced using a warp-striped access pattern.
 //!
-//! .. code-block:: c++
+//! .. tab-set-code::
 //!
-//!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_store.cuh>
+//!    .. code-block:: c++
 //!
-//!    __global__ void ExampleKernel(int *d_data, ...)
-//!    {
-//!        // Specialize BlockStore for a 1D block of 128 threads owning 4 integer items each
-//!        using BlockStore = cub::BlockStore<int, 128, 4, BLOCK_STORE_WARP_TRANSPOSE>;
+//!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_store.cuh>
 //!
-//!        // Allocate shared memory for BlockStore
-//!        __shared__ typename BlockStore::TempStorage temp_storage;
+//!        __global__ void ExampleKernel(int *d_data, ...)
+//!        {
+//!            // Specialize BlockStore for a 1D block of 128 threads owning 4 integer items each
+//!            using BlockStore = cub::BlockStore<int, 128, 4, BLOCK_STORE_WARP_TRANSPOSE>;
 //!
-//!        // Obtain a segment of consecutive items that are blocked across threads
-//!        int thread_data[4];
-//!        ...
+//!            // Allocate shared memory for BlockStore
+//!            __shared__ typename BlockStore::TempStorage temp_storage;
 //!
-//!        // Store items to linear memory
-//!        BlockStore(temp_storage).Store(d_data, thread_data);
-//!    }
+//!            // Obtain a segment of consecutive items that are blocked across threads
+//!            int thread_data[4];
+//!            ...
+//!
+//!            // Store items to linear memory
+//!            BlockStore(temp_storage).Store(d_data, thread_data);
+//!        }
+//!
+//!    .. code-block:: python
+//!
+//!        from numba import cuda
+//!        from cuda import coop
+//!
+//!        threads_per_block = 128
+//!        items_per_thread = 4
+//!
+//!        @cuda.jit
+//!        def kernel(d_data):
+//!            temp_storage = coop.TempStorage()
+//!            thread_data = coop.ThreadData(items_per_thread)
+//!
+//!            # Populate blocked per-thread items.
+//!            base = cuda.threadIdx.x * items_per_thread
+//!            for item in range(items_per_thread):
+//!                thread_data[item] = base + item
+//!
+//!            coop.block.store[temp_storage](
+//!                d_data,
+//!                thread_data,
+//!                algorithm=coop.BlockStoreAlgorithm.WARP_TRANSPOSE,
+//!            )
+//!
+//!        # kernel[1, threads_per_block](d_data)
 //!
 //! Suppose the set of ``thread_data`` across the block of threads is
 //! ``{ [0,1,2,3], [4,5,6,7], ..., [508,509,510,511] }``.
@@ -1158,25 +1186,53 @@ public:
   //! meaning items are locally reordered among threads so that memory references will be
   //! efficiently coalesced using a warp-striped access pattern.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_store.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(int *d_data, ...)
-  //!    {
-  //!        // Specialize BlockStore for a 1D block of 128 threads owning 4 integer items each
-  //!        using BlockStore = cub::BlockStore<int, 128, 4, BLOCK_STORE_WARP_TRANSPOSE>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_store.cuh>
   //!
-  //!        // Allocate shared memory for BlockStore
-  //!        __shared__ typename BlockStore::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(int *d_data, ...)
+  //!        {
+  //!            // Specialize BlockStore for a 1D block of 128 threads owning 4 integer items each
+  //!            using BlockStore = cub::BlockStore<int, 128, 4, BLOCK_STORE_WARP_TRANSPOSE>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockStore
+  //!            __shared__ typename BlockStore::TempStorage temp_storage;
   //!
-  //!        // Store items to linear memory
-  //!        BlockStore(temp_storage).Store(d_data, thread_data);
-  //!    }
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
+  //!
+  //!            // Store items to linear memory
+  //!            BlockStore(temp_storage).Store(d_data, thread_data);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!
+  //!            # Populate blocked per-thread items.
+  //!            base = cuda.threadIdx.x * items_per_thread
+  //!            for item in range(items_per_thread):
+  //!                thread_data[item] = base + item
+  //!
+  //!            coop.block.store[temp_storage](
+  //!                d_data,
+  //!                thread_data,
+  //!                algorithm=coop.BlockStoreAlgorithm.WARP_TRANSPOSE,
+  //!            )
+  //!
+  //!        # kernel[1, threads_per_block](d_data)
   //!
   //! Suppose the set of ``thread_data`` across the block of threads is
   //! ``{ [0,1,2,3], [4,5,6,7], ..., [508,509,510,511] }``.
@@ -1212,25 +1268,54 @@ public:
   //! meaning items are locally reordered among threads so that memory references will be
   //! efficiently coalesced using a warp-striped access pattern.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_store.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(int *d_data, int valid_items, ...)
-  //!    {
-  //!        // Specialize BlockStore for a 1D block of 128 threads owning 4 integer items each
-  //!        using BlockStore = cub::BlockStore<int, 128, 4, BLOCK_STORE_WARP_TRANSPOSE>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_store.cuh>
   //!
-  //!        // Allocate shared memory for BlockStore
-  //!        __shared__ typename BlockStore::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(int *d_data, int valid_items, ...)
+  //!        {
+  //!            // Specialize BlockStore for a 1D block of 128 threads owning 4 integer items each
+  //!            using BlockStore = cub::BlockStore<int, 128, 4, BLOCK_STORE_WARP_TRANSPOSE>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockStore
+  //!            __shared__ typename BlockStore::TempStorage temp_storage;
   //!
-  //!        // Store items to linear memory
-  //!        BlockStore(temp_storage).Store(d_data, thread_data, valid_items);
-  //!    }
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
+  //!
+  //!            // Store items to linear memory
+  //!            BlockStore(temp_storage).Store(d_data, thread_data, valid_items);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, valid_items):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!
+  //!            # Populate blocked per-thread items.
+  //!            base = cuda.threadIdx.x * items_per_thread
+  //!            for item in range(items_per_thread):
+  //!                thread_data[item] = base + item
+  //!
+  //!            coop.block.store[temp_storage](
+  //!                d_data,
+  //!                thread_data,
+  //!                algorithm=coop.BlockStoreAlgorithm.WARP_TRANSPOSE,
+  //!                num_valid_items=valid_items,
+  //!            )
+  //!
+  //!        # kernel[1, threads_per_block](d_data, valid_items)
   //!
   //! Suppose the set of ``thread_data`` across the block of threads is
   //! ``{ [0,1,2,3], [4,5,6,7], ..., [508,509,510,511] }`` and ``valid_items`` is ``5``.
