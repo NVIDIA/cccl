@@ -193,7 +193,6 @@ enum WarpLoadAlgorithm
 //!            )
 //!
 //!        # Launch with one logical warp.
-//!        # kernel[1, warp_threads](d_data)
 //!
 //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, ...``.
 //! The set of ``thread_data`` across the first logical warp of threads in those
@@ -515,7 +514,6 @@ public:
   //!                algorithm=coop.WarpLoadAlgorithm.TRANSPOSE,
   //!            )
   //!
-  //!        # kernel[1, threads_per_block](d_data)
   //!
   //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, ...``,
   //! The set of ``thread_data`` across the first logical warp of threads in those
@@ -594,7 +592,6 @@ public:
   //!                num_valid_items=valid_items,
   //!            )
   //!
-  //!        # kernel[1, threads_per_block](d_data, valid_items)
   //!
   //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, ...`` and ``valid_items`` is ``5``.
   //! The set of ``thread_data`` across the first logical warp of threads in those threads will be:
@@ -676,7 +673,6 @@ public:
   //!                oob_default=-1,
   //!            )
   //!
-  //!        # kernel[1, threads_per_block](d_data, valid_items)
   //!
   //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, ...``, ``valid_items`` is ``5``, and the
   //! out-of-bounds default is ``-1``. The set of ``thread_data`` across the first logical warp of

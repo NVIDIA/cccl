@@ -4,7 +4,7 @@
 
 /**
  * @file
- * The cub::BlockDiscontinuity class provides [<em>collective</em>](../index.html#sec0) methods for
+ * The cub::BlockDiscontinuity class provides `collective <../index.html#sec0>`_ methods for
  * flagging discontinuities within an ordered set of items partitioned across a CUDA thread block.
  */
 
@@ -102,7 +102,6 @@ CUB_NAMESPACE_BEGIN
 //!            )
 //!            coop.block.store(d_head_flags, head_flags)
 //!
-//!        # kernel[1, threads_per_block](d_in, d_head_flags)
 //!
 //! Suppose the set of input ``thread_data`` across the block of threads is
 //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], [3,4,4,4], ... }``.
@@ -434,7 +433,6 @@ public:
   //!            )
   //!            coop.block.store(d_head_flags, head_flags)
   //!
-  //!        # kernel[1, threads_per_block](d_in, d_head_flags)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], [3,4,4,4], ... }``.
@@ -547,7 +545,6 @@ public:
   //!            )
   //!            coop.block.store(d_head_flags, head_flags)
   //!
-  //!        # kernel[1, threads_per_block](d_in, d_head_flags, tile_predecessor_item)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], [3,4,4,4], ... }``,
@@ -665,7 +662,6 @@ public:
   //!            )
   //!            coop.block.store(d_tail_flags, tail_flags)
   //!
-  //!        # kernel[1, threads_per_block](d_in, d_tail_flags)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }``.
@@ -793,7 +789,6 @@ public:
   //!            )
   //!            coop.block.store(d_tail_flags, tail_flags)
   //!
-  //!        # kernel[1, threads_per_block](d_in, d_tail_flags, tile_successor_item)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }``
@@ -932,7 +927,6 @@ public:
   //!            coop.block.store(d_head_flags, head_flags)
   //!            coop.block.store(d_tail_flags, tail_flags)
   //!
-  //!        # kernel[1, threads_per_block](d_in, d_head_flags, d_tail_flags)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }``
@@ -1093,7 +1087,6 @@ public:
   //!            coop.block.store(d_head_flags, head_flags)
   //!            coop.block.store(d_tail_flags, tail_flags)
   //!
-  //!        # kernel[1, threads_per_block](d_in, d_head_flags, d_tail_flags, tile_successor_item)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,0,1,1], [1,1,1,1], [2,3,3,3], ..., [124,125,125,125] }``
@@ -1266,7 +1259,6 @@ public:
   //!            coop.block.store(d_head_flags, head_flags)
   //!            coop.block.store(d_tail_flags, tail_flags)
   //!
-  //!        # kernel[1, threads_per_block](d_in, d_head_flags, d_tail_flags, tile_predecessor_item,
   //!        tile_successor_item)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
@@ -1435,7 +1427,6 @@ public:
   //!            coop.block.store(d_head_flags, head_flags)
   //!            coop.block.store(d_tail_flags, tail_flags)
   //!
-  //!        # kernel[1, threads_per_block](d_in, d_head_flags, d_tail_flags, tile_predecessor_item,
   //!        tile_successor_item)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is

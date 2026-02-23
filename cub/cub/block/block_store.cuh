@@ -658,7 +658,6 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockStoreAlgorithm algo)
 //!                algorithm=coop.BlockStoreAlgorithm.WARP_TRANSPOSE,
 //!            )
 //!
-//!        # kernel[1, threads_per_block](d_data)
 //!
 //! Suppose the set of ``thread_data`` across the block of threads is
 //! ``{ [0,1,2,3], [4,5,6,7], ..., [508,509,510,511] }``.
@@ -1232,7 +1231,6 @@ public:
   //!                algorithm=coop.BlockStoreAlgorithm.WARP_TRANSPOSE,
   //!            )
   //!
-  //!        # kernel[1, threads_per_block](d_data)
   //!
   //! Suppose the set of ``thread_data`` across the block of threads is
   //! ``{ [0,1,2,3], [4,5,6,7], ..., [508,509,510,511] }``.
@@ -1315,7 +1313,6 @@ public:
   //!                num_valid_items=valid_items,
   //!            )
   //!
-  //!        # kernel[1, threads_per_block](d_data, valid_items)
   //!
   //! Suppose the set of ``thread_data`` across the block of threads is
   //! ``{ [0,1,2,3], [4,5,6,7], ..., [508,509,510,511] }`` and ``valid_items`` is ``5``.

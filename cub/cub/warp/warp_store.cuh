@@ -208,7 +208,6 @@ enum WarpStoreAlgorithm
 //!            )
 //!
 //!        # Launch with one logical warp.
-//!        # kernel[1, warp_threads](d_in, d_out)
 //!
 //! Suppose the set of ``thread_data`` across the warp threads is
 //! ``{ [0,1,2,3], [4,5,6,7], ..., [60,61,62,63] }``.
@@ -482,7 +481,6 @@ public:
   //!                algorithm=coop.WarpStoreAlgorithm.TRANSPOSE,
   //!            )
   //!
-  //!        # kernel[1, threads_per_block](d_in, d_out)
   //!
   //! Suppose the set of ``thread_data`` across the warp threads is
   //! ``{ [0,1,2,3], [4,5,6,7], ..., [60,61,62,63] }``.
@@ -579,7 +577,6 @@ public:
   //!                num_valid_items=valid_items,
   //!            )
   //!
-  //!        # kernel[1, threads_per_block](d_in, d_out, valid_items)
   //!
   //! Suppose the set of ``thread_data`` across the warp threads is
   //! ``{ [0,1,2,3], [4,5,6,7], ..., [60,61,62,63] }`` and ``valid_items``

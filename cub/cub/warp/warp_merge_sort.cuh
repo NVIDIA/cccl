@@ -114,7 +114,6 @@ CUB_NAMESPACE_BEGIN
 //!            )
 //!
 //!        # Launch with one logical warp.
-//!        # kernel[1, warp_threads](keys)
 //!
 //! Suppose the set of input ``thread_keys`` across a warp of threads is
 //! ``{ [0,64,1,63], [2,62,3,61], [4,60,5,59], ..., [31,34,32,33] }``.
