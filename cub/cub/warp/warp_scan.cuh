@@ -72,25 +72,54 @@ CUB_NAMESPACE_BEGIN
 //! The code snippet below illustrates four concurrent warp prefix sums within a block of
 //! 128 threads (one per each of the 32-thread warps).
 //!
-//! .. code-block:: c++
+//! .. tab-set-code::
 //!
-//!    #include <cub/cub.cuh>
+//!    .. code-block:: c++
 //!
-//!    __global__ void ExampleKernel(...)
-//!    {
-//!        // Specialize WarpScan for type int
-//!        using WarpScan = cub::WarpScan<int>;
+//!        #include <cub/cub.cuh>
 //!
-//!        // Allocate WarpScan shared memory for 4 warps
-//!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+//!        __global__ void ExampleKernel(...)
+//!        {
+//!            // Specialize WarpScan for type int
+//!            using WarpScan = cub::WarpScan<int>;
 //!
-//!        // Obtain one input item per thread
-//!        int thread_data = ...
+//!            // Allocate WarpScan shared memory for 4 warps
+//!            __shared__ typename WarpScan::TempStorage temp_storage[4];
 //!
-//!        // Compute warp-wide prefix sums
-//!        int warp_id = threadIdx.x / 32;
-//!        WarpScan(temp_storage[warp_id]).ExclusiveSum(thread_data, thread_data);
-//!    }
+//!            // Obtain one input item per thread
+//!            int thread_data = ...
+//!
+//!            // Compute warp-wide prefix sums
+//!            int warp_id = threadIdx.x / 32;
+//!            WarpScan(temp_storage[warp_id]).ExclusiveSum(thread_data, thread_data);
+//!        }
+//!
+//!    .. code-block:: python
+//!
+//!        from numba import cuda
+//!        from cuda import coop
+//!        from cuda.coop import WarpLoadAlgorithm
+//!
+//!        warp_threads = 32
+//!        threads_per_block = 128
+//!
+//!        @cuda.jit
+//!        def kernel(d_in, d_out):
+//!            temp_storage = coop.TempStorage()
+//!            warp_id = cuda.threadIdx.x // warp_threads
+//!            thread_data = coop.ThreadData(1, dtype=d_in.dtype)
+//!
+//!            coop.warp.load(
+//!                d_in[warp_id * warp_threads :],
+//!                thread_data,
+//!                threads_in_warp=warp_threads,
+//!                algorithm=WarpLoadAlgorithm.DIRECT,
+//!            )
+//!
+//!            d_out[cuda.threadIdx.x] = coop.warp.exclusive_sum[temp_storage](thread_data[0])
+//!
+//!        # Launch with four warps in one block.
+//!        # kernel[1, threads_per_block](d_in, d_out)
 //!
 //! Suppose the set of input ``thread_data`` across the block of threads is
 //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps of
@@ -99,29 +128,58 @@ CUB_NAMESPACE_BEGIN
 //! The code snippet below illustrates a single warp prefix sum within a block of
 //! 128 threads.
 //!
-//! .. code-block:: c++
+//! .. tab-set-code::
 //!
-//!    #include <cub/cub.cuh>
+//!    .. code-block:: c++
 //!
-//!    __global__ void ExampleKernel(...)
-//!    {
-//!        // Specialize WarpScan for type int
-//!        using WarpScan = cub::WarpScan<int>;
+//!        #include <cub/cub.cuh>
 //!
-//!        // Allocate WarpScan shared memory for one warp
-//!        __shared__ typename WarpScan::TempStorage temp_storage;
-//!        ...
-//!
-//!        // Only the first warp performs a prefix sum
-//!        if (threadIdx.x < 32)
+//!        __global__ void ExampleKernel(...)
 //!        {
-//!            // Obtain one input item per thread
-//!            int thread_data = ...
+//!            // Specialize WarpScan for type int
+//!            using WarpScan = cub::WarpScan<int>;
 //!
-//!            // Compute warp-wide prefix sums
-//!            WarpScan(temp_storage).ExclusiveSum(thread_data, thread_data);
+//!            // Allocate WarpScan shared memory for one warp
+//!            __shared__ typename WarpScan::TempStorage temp_storage;
+//!            ...
+//!
+//!            // Only the first warp performs a prefix sum
+//!            if (threadIdx.x < 32)
+//!            {
+//!                // Obtain one input item per thread
+//!                int thread_data = ...
+//!
+//!                // Compute warp-wide prefix sums
+//!                WarpScan(temp_storage).ExclusiveSum(thread_data, thread_data);
+//!            }
 //!        }
-//!    }
+//!
+//!    .. code-block:: python
+//!
+//!        from numba import cuda
+//!        from cuda import coop
+//!        from cuda.coop import WarpLoadAlgorithm
+//!
+//!        warp_threads = 32
+//!        threads_per_block = 128
+//!
+//!        @cuda.jit
+//!        def kernel(d_in, d_out):
+//!            if cuda.threadIdx.x < warp_threads:
+//!                temp_storage = coop.TempStorage()
+//!                thread_data = coop.ThreadData(1, dtype=d_in.dtype)
+//!                coop.warp.load(
+//!                    d_in,
+//!                    thread_data,
+//!                    threads_in_warp=warp_threads,
+//!                    algorithm=WarpLoadAlgorithm.DIRECT,
+//!                )
+//!                d_out[cuda.threadIdx.x] = coop.warp.exclusive_sum[temp_storage](
+//!                    thread_data[0]
+//!                )
+//!
+//!        # Launch with one block where only the first warp participates.
+//!        # kernel[1, threads_per_block](d_in, d_out)
 //!
 //! Suppose the set of input ``thread_data`` across the warp of threads is
 //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` will be
