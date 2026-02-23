@@ -106,6 +106,7 @@ _CCCL_REQUIRES(__has_forward_traversal<_InputIter1> _CCCL_AND __has_forward_trav
                 "cuda::std::mismatch: BinaryPred must satisfy "
                 "indirect_binary_predicate<BinaryPred, InputIter1, InputIter2>");
 
+  // Different than equal, if either range is empty we return {first1, first2}
   if (__first1 == __last1 || __first2 == __last2)
   {
     return pair<_InputIter1, _InputIter2>{__first1, __first2};
@@ -115,12 +116,10 @@ _CCCL_REQUIRES(__has_forward_traversal<_InputIter1> _CCCL_AND __has_forward_trav
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__find_if, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
-    auto __zip_first = ::cuda::zip_iterator{::cuda::std::move(__first1), ::cuda::std::move(__first2)};
-    auto __zip_last  = ::cuda::zip_iterator{::cuda::std::move(__last1), ::cuda::std::move(__last2)};
-    auto __result    = __dispatch(
+    auto __result = __dispatch(
       __policy,
-      ::cuda::std::move(__zip_first),
-      ::cuda::std::move(__zip_last),
+      ::cuda::zip_iterator{::cuda::std::move(__first1), ::cuda::std::move(__first2)},
+      ::cuda::zip_iterator{::cuda::std::move(__last1), ::cuda::std::move(__last2)},
       ::cuda::zip_function{::cuda::std::not_fn(::cuda::std::move(__pred))});
     return pair<_InputIter1, _InputIter2>{
       ::cuda::std::get<0>(__result.__iterators()), ::cuda::std::get<1>(__result.__iterators())};

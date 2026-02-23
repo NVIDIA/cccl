@@ -89,6 +89,16 @@ C2H_TEST("cuda::std::mismatch(first1, last1, first2)", "[parallel algorithm]")
 template <class Policy>
 void test_mismatch2(const Policy& policy)
 {
+  { // empty should not access anything, even if both empty
+    const auto res = cuda::std::mismatch(
+      policy,
+      static_cast<int*>(nullptr),
+      static_cast<int*>(nullptr),
+      cuda::counting_iterator{short{0}},
+      cuda::counting_iterator{short{0}});
+    CHECK(res == cuda::std::pair{static_cast<int*>(nullptr), cuda::counting_iterator<short>{short{0}}});
+  }
+
   { // empty should not access anything
     const auto res = cuda::std::mismatch(
       policy,

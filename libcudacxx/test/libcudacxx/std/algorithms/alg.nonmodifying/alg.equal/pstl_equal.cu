@@ -89,14 +89,24 @@ C2H_TEST("cuda::std::equal(first1, last1, first2)", "[parallel algorithm]")
 template <class Policy>
 void test_equal2(const Policy& policy)
 {
-  { // empty should not access anything
+  { // empty should not access anything, both empty returns true
+    const auto res = cuda::std::equal(
+      policy,
+      static_cast<int*>(nullptr),
+      static_cast<int*>(nullptr),
+      cuda::counting_iterator{short{0}},
+      cuda::counting_iterator{short{0}});
+    CHECK(res);
+  }
+
+  { // empty should not access anything, different sizes return false
     const auto res = cuda::std::equal(
       policy,
       static_cast<int*>(nullptr),
       static_cast<int*>(nullptr),
       cuda::counting_iterator{short{0}},
       cuda::counting_iterator{size});
-    CHECK(res);
+    CHECK(!res);
   }
 
   { // same type

@@ -103,24 +103,24 @@ _CCCL_REQUIRES(__has_forward_traversal<_InputIter1> _CCCL_AND __has_forward_trav
                 "cuda::std::equal: BinaryPred must satisfy "
                 "indirect_binary_predicate<BinaryPred, InputIter1, InputIter2>");
 
-  if (__first1 == __last1 || __first2 == __last2)
+  if (__first1 == __last1 && __first2 == __last2)
   {
     return true;
+  }
+
+  const auto __count1 = ::cuda::std::distance(__first1, __last1);
+  const auto __count2 = ::cuda::std::distance(__first2, __last2);
+  if (__count1 != __count2)
+  {
+    return false;
   }
 
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__find_if, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
-    const auto __count1 = ::cuda::std::distance(__first1, __last1);
-    const auto __count2 = ::cuda::std::distance(__first2, __last2);
-    if (__count1 != __count2)
-    {
-      return false;
-    }
-
     auto __zip_first      = ::cuda::zip_iterator{::cuda::std::move(__first1), ::cuda::std::move(__first2)};
-    const auto __zip_last = __zip_first + static_cast<iter_difference_t<decltype(__zip_first)>>(__count1);
+    const auto __zip_last = ::cuda::zip_iterator{::cuda::std::move(__last1), ::cuda::std::move(__last2)};
     const auto __result   = __dispatch(
       __policy,
       ::cuda::std::move(__zip_first),
