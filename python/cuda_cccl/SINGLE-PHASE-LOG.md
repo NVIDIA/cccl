@@ -2053,6 +2053,80 @@
   - `pre-commit run --files ../../docs/python/coop_thread_data.rst tests/coop/test_block_load_store_api.py`
     - Result: all hooks passed (after one auto-format pass by `ruff-format`)
 
+## 2026-02-23 (PR #7214 @codex follow-up round 4)
+- Request: Sync newly-added `@codex` review comments, plan, and implement
+  fixes across `_rewrite/__init__.py` plus histogram test consolidation.
+- Findings:
+  - Pulled PR thread data for `NVIDIA/cccl#7214`; found 11 unresolved
+    `@codex` threads (10 rewrite maintainability, 1 histogram-test merge).
+  - Reviewer concern about `_infer_thread_data_dtype_from_uses()` was valid:
+    hardcoded `if/elif` coverage was narrow and not scalable.
+  - Not all primitives are inferable by design; only primitives with a
+    same-dtype peer argument can safely infer ThreadData dtype.
+- Changes:
+  - `cuda/coop/_rewrite/__init__.py`:
+    - Added field-documented docstrings for:
+      - `CallDefinition`
+      - `ArrayCallDefinition`
+      - `GetAttrDefinition`
+      - `RootDefinition`
+    - Added documented TempStorage dataclasses:
+      - `TempStorageUseRequirementEntry`
+      - `TempStorageInfo`
+    - Replaced corresponding `SimpleNamespace` payloads with those dataclasses.
+    - Moved `get_coop_class_and_instance_maps()` into the helper section near
+      other top-level helper utilities.
+    - Removed stale commented code in `CoopNode.call_var_name`.
+    - Shortened the long `CUfunction_attribute` line in the temp-storage
+      launch callback setup.
+    - Refactored ThreadData dtype inference into a rule-table helper
+      (`THREAD_DATA_DTYPE_INFERENCE_ARG_PAIRS`) and extended peer-based
+      inference coverage to:
+      - `coop.block.load/store/exchange/scan`
+      - `coop.block.adjacent_difference/shuffle`
+      - `coop.warp.load/store/exchange`
+  - `cuda/coop/_decls/block/_block_shuffle.py`:
+    - Relaxed early dtype equality precheck when either array is ThreadData,
+      allowing rewrite-time inference/validation to determine final dtype
+      consistency.
+  - Tests:
+    - `tests/coop/test_warp_load_store_api.py`:
+      - switched ThreadData inference test to omit explicit dtype.
+    - `tests/coop/test_warp_exchange_api.py`:
+      - added ThreadData output-dtype inference compile-path test.
+    - `tests/coop/test_block_shuffle.py`:
+      - added ThreadData output-dtype inference compile-path test.
+    - `tests/coop/test_block_adjacent_difference.py`:
+      - added ThreadData output-dtype inference compile-path test.
+  - Histogram consolidation:
+    - Merged `test_block_histogram_histo_single_phase_2` into
+      `tests/coop/test_block_histogram.py`.
+    - Deleted `tests/coop/test_histo2.py`.
+    - Updated `AGENTS.md` entry-point note to reference consolidated histogram
+      coverage in `tests/coop/test_block_histogram.py`.
+- Decisions:
+  - Kept inference extension constrained to safe, peer-based primitives rather
+    than “all primitives” to avoid invalid dtype inference for APIs with
+    heterogeneous argument dtypes.
+  - For new inference coverage tests involving output ThreadData, used
+    compile-path kernels (without direct indexing into unknown ThreadData) to
+    avoid invalid pre-inference setitem/getitem lowering paths.
+- Tests:
+  - `pytest -q tests/coop/test_warp_load_store_api.py -k "infers_items_per_thread_and_dtype"`
+    - Result: `1 passed, 6 deselected`
+  - `pytest -q tests/coop/test_warp_exchange_api.py -k "infers_dtype_from_output_array"`
+    - Result: `1 passed, 9 deselected`
+  - `pytest -q tests/coop/test_block_shuffle.py -k "thread_data_infers_dtype_from_output_array"`
+    - Result: `1 passed, 8 deselected`
+  - `pytest -q tests/coop/test_block_adjacent_difference.py -k "infers_dtype_from_output_array"`
+    - Result: `1 passed, 4 deselected`
+  - `pytest -q tests/coop/test_thread_data_inference_edge_cases.py tests/coop/test_block_load_store_api.py -k "thread_data"`
+    - Result: `7 passed, 37 deselected`
+  - `pytest -q "tests/coop/test_block_histogram.py::test_block_histogram_histo_single_phase_2[::cub::BLOCK_HISTO_ATOMIC-1024-2-32-int32-uint8]"`
+    - Result: `1 passed`
+  - `pre-commit run --files AGENTS.md cuda/coop/_decls/block/_block_shuffle.py cuda/coop/_rewrite/__init__.py tests/coop/test_block_adjacent_difference.py tests/coop/test_block_histogram.py tests/coop/test_block_shuffle.py tests/coop/test_warp_exchange_api.py tests/coop/test_warp_load_store_api.py`
+    - Result: all hooks passed
+
 ## 2026-02-23 (single-phase reorg prototype: block scan extraction)
 - Request: Evaluate and prototype a low-risk reorganization for single-phase
   scaffolding by extracting block-scan-specific typing and rewrite logic out of

@@ -173,6 +173,26 @@
       a literalinclude mismatch example sourced from
       `tests/coop/test_block_load_store_api.py`.
 
+## PR #7214 @codex review follow-up (2026-02-23, round 4)
+
+- [x] Add field-rich docstrings for rewrite dataclasses:
+      `CallDefinition`, `ArrayCallDefinition`, `GetAttrDefinition`,
+      and `RootDefinition`.
+- [x] Replace TempStorage inference payload `SimpleNamespace` values with
+      documented dataclasses (`TempStorageUseRequirementEntry`,
+      `TempStorageInfo`) in `_rewrite/__init__.py`.
+- [x] Move `get_coop_class_and_instance_maps()` into helper section and remove
+      stale commented code in `CoopNode.call_var_name`.
+- [x] Refactor ThreadData dtype inference to a rule-table helper and extend
+      peer-based inference coverage for block/warp load-store/exchange and
+      block shuffle/adjacent-difference.
+- [x] Relax block-shuffle typing dtype precheck when ThreadData participates,
+      deferring final dtype consistency enforcement to rewrite.
+- [x] Merge `tests/coop/test_histo2.py` into
+      `tests/coop/test_block_histogram.py` and delete `test_histo2.py`.
+- [x] Update local agent notes (`AGENTS.md`) to reference consolidated
+      histogram test coverage in `tests/coop/test_block_histogram.py`.
+
 ## Deferred / Not Planned
 
 - BlockRadixSort decomposer support (requires a C++ tuple-of-references adapter).
