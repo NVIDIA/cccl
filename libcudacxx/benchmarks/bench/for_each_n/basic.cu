@@ -39,11 +39,10 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   square_t<T> op{};
 
   caching_allocator_t alloc{};
-  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               cuda::std::for_each_n(policy.with_stream(launch.get_stream().get_stream()), in.begin(), elements, op);
+               cuda::std::for_each_n(cuda_policy(alloc, launch), in.begin(), elements, op);
              });
 }
 

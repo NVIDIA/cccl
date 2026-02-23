@@ -28,10 +28,9 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(1);
 
   caching_allocator_t alloc{};
-  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    do_not_optimize(cuda::std::reduce(policy.with_stream(launch.get_stream().get_stream()), in.begin(), in.end()));
+    do_not_optimize(cuda::std::reduce(cuda_policy(alloc, launch), in.begin(), in.end()));
   });
 }
 

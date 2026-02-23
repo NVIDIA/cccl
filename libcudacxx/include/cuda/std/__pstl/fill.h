@@ -1,0 +1,99 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_STD___PSTL_FILL_H
+#define _CUDA_STD___PSTL_FILL_H
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#if !_CCCL_COMPILER(NVRTC)
+
+#  include <cuda/__iterator/counting_iterator.h>
+#  include <cuda/std/__algorithm/fill.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__execution/policy.h>
+#  include <cuda/std/__iterator/concepts.h>
+#  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__pstl/dispatch.h>
+#  include <cuda/std/__type_traits/always_false.h>
+#  include <cuda/std/__type_traits/is_execution_policy.h>
+#  include <cuda/std/__utility/move.h>
+
+#  if _CCCL_HAS_BACKEND_CUDA()
+#    include <cuda/std/__pstl/cuda/generate_n.h>
+#  endif // _CCCL_HAS_BACKEND_CUDA()
+
+#  include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+template <class _Tp>
+struct __fill_constant_value
+{
+  _Tp __val_;
+
+  _CCCL_API constexpr __fill_constant_value(const _Tp& __val) noexcept(is_nothrow_copy_constructible_v<_Tp>)
+      : __val_(__val)
+  {}
+
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr const _Tp& operator()() const noexcept
+  {
+    return __val_;
+  }
+};
+
+_CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
+
+_CCCL_TEMPLATE(class _Policy, class _InputIterator, class _Tp = iter_value_t<_InputIterator>)
+_CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND is_execution_policy_v<_Policy>)
+_CCCL_HOST_API void
+fill([[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, const _Tp& __value)
+{
+  static_assert(indirectly_writable<_InputIterator, const _Tp&>,
+                "cuda::std::fill requires InputIterator to be indirectly writable with const T&");
+
+  if (__first == __last)
+  {
+    return;
+  }
+
+  [[maybe_unused]] auto __dispatch =
+    ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__generate_n, _Policy>();
+  if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
+  {
+    // We do not want actually load anything, so pass a counting iterator instead
+    const auto __count = ::cuda::std::distance(__first, __last);
+    (void) __dispatch(__policy, ::cuda::std::move(__first), __count, __fill_constant_value{__value});
+  }
+  else
+  {
+    static_assert(__always_false_v<_Policy>, "Parallel cuda::std::fill requires at least one selected backend");
+    ::cuda::std::fill(::cuda::std::move(__first), ::cuda::std::move(__last), __value);
+  }
+}
+
+_CCCL_END_NAMESPACE_ARCH_DEPENDENT
+
+_CCCL_END_NAMESPACE_CUDA_STD
+
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // !_CCCL_COMPILER(NVRTC)
+
+#endif // _CUDA_STD___PSTL_FILL_H

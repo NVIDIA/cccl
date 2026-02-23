@@ -199,32 +199,16 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 {
   __ensure_current_device __dev_setter{__submitter};
   auto __combined = __conf.combine_with_default(__kernel);
-  if constexpr (::cuda::std::is_invocable_v<_Kernel,
-                                            kernel_config<_Dimensions, _Config...>,
-                                            ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>)
-  {
-    auto __launcher = ::cuda::
-      __kernel_launcher<decltype(__combined), _Kernel, ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>;
-    return ::cuda::experimental::__launch_impl(
-      ::cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)),
-      __combined,
-      ::cuda::__get_cufunction_of(__launcher),
-      __combined,
-      __kernel,
-      launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_Args>(__args))...);
-  }
-  else
-  {
-    static_assert(::cuda::std::is_invocable_v<_Kernel, ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>);
-    auto __launcher =
-      ::cuda::__kernel_launcher_no_config<_Kernel, ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>;
-    return ::cuda::experimental::__launch_impl(
-      ::cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)),
-      __combined,
-      ::cuda::__get_cufunction_of(__launcher),
-      __kernel,
-      launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_Args>(__args))...);
-  }
+  auto __launcher = ::cuda::__get_kernel_launcher<_Kernel,
+                                                  decltype(__combined),
+                                                  ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>();
+  return ::cuda::experimental::__launch_impl(
+    ::cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)),
+    __combined,
+    ::cuda::__get_cufunction_of(__launcher),
+    __combined,
+    __kernel,
+    launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_Args>(__args))...);
 }
 
 //! @brief Launch a kernel function with specified configuration and arguments

@@ -29,7 +29,7 @@ def test_block_merge_sort(T, threads_per_block, items_per_thread):
         else reduce(mul, threads_per_block)
     )
 
-    block_merge_sort = coop.block.merge_sort_keys(
+    block_merge_sort = coop.block.make_merge_sort_keys(
         dtype=T,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
@@ -81,7 +81,7 @@ def test_block_merge_sort_descending(T, threads_per_block, items_per_thread):
         else reduce(mul, threads_per_block)
     )
 
-    block_merge_sort = coop.block.merge_sort_keys(
+    block_merge_sort = coop.block.make_merge_sort_keys(
         dtype=T,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
@@ -128,7 +128,7 @@ def test_block_merge_sort_user_defined_type():
     def op(a, b):
         return a[0].real > b[0].real
 
-    block_merge_sort = coop.block.merge_sort_keys(
+    block_merge_sort = coop.block.make_merge_sort_keys(
         dtype=numba.complex128,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,

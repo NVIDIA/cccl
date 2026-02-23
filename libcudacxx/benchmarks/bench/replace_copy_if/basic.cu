@@ -38,12 +38,11 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(elements);
 
   caching_allocator_t alloc{};
-  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
 
   state.exec(
     nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-      cuda::std::replace_copy_if(
-        policy.with_stream(launch.get_stream().get_stream()), in.begin(), in.end(), out.begin(), equal_to_42{}, 1337);
+      do_not_optimize(
+        cuda::std::replace_copy_if(cuda_policy(alloc, launch), in.begin(), in.end(), out.begin(), equal_to_42{}, 1337));
     });
 }
 

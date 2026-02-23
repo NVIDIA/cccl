@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -261,9 +261,12 @@ struct hierarchy_level_base
     {
       using _CurrExts = decltype(_Level::template extents_as<_Tp>(_NextLevel{}, __hier_unpacked));
       auto __curr_idx = _Level::template index_as<_Tp>(_NextLevel{});
-      for (::cuda::std::size_t __i = _CurrExts::rank(); __i < 3; ++__i)
+      for (::cuda::std::size_t __i = 0; __i < 3; ++__i)
       {
-        __curr_idx[__i] = 0;
+        if (__i >= _CurrExts::rank() || _CurrExts::static_extent(__i) == 1)
+        {
+          __curr_idx[__i] = 0;
+        }
       }
       return __curr_idx;
     }

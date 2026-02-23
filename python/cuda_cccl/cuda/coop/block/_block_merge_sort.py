@@ -27,19 +27,22 @@ if TYPE_CHECKING:
     import numpy as np
 
 
-def merge_sort_keys(
+def make_merge_sort_keys(
     dtype: Union[str, type, "np.dtype", "numba.types.Type"],
     threads_per_block: int,
     items_per_thread: int,
     compare_op: Callable,
     methods: Literal["construct", "assign"] = None,
 ):
-    """Performs a block-wide merge sort over a :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
+    """
+    Creates a block-wide merge sort primitive over a
+    :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
 
     Example:
-        The code snippet below illustrates a sort of 512 integer keys that
-        are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
-        where each thread owns 4 consecutive keys. We start by importing necessary modules:
+        The code snippet below illustrates a sort of 512 integer keys
+        partitioned in a
+        :ref:`blocked arrangement <flexible-data-arrangement>` across
+        128 threads where each thread owns 4 consecutive keys.
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_merge_sort_api.py
             :language: python
@@ -47,7 +50,8 @@ def merge_sort_keys(
             :start-after: example-begin imports
             :end-before: example-end imports
 
-        Below is the code snippet that demonstrates the usage of the ``merge_sort_keys`` API:
+        The following snippet shows how to invoke the returned
+        ``block_merge_sort`` primitive:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_merge_sort_api.py
             :language: python
@@ -55,7 +59,8 @@ def merge_sort_keys(
             :start-after: example-begin merge-sort
             :end-before: example-end merge-sort
 
-        Suppose the set of input ``thread_keys`` across the block of threads is
+        Suppose the set of input ``thread_keys`` across the block of
+        threads is
         ``{ [0, 1, 2, 3], [4, 5, 6, 7], ..., [508, 509, 510, 511] }``.
         The corresponding output ``thread_keys`` in those threads will be
         ``{ [511, 510, 509, 508], [507, 506, 505, 504], ..., [3, 2, 1, 0] }``.
@@ -68,8 +73,8 @@ def merge_sort_keys(
 
         items_per_thread: The number of items each thread owns
 
-        compare_op: Comparison function object which returns true if the first
-            argument is ordered before the second one
+        compare_op: Comparison function object. Returns true if the first
+            argument is ordered before the second.
 
     Returns:
         A callable object that can be linked to and invoked from a CUDA kernel
