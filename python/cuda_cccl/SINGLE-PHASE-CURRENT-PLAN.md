@@ -255,3 +255,26 @@ docs-stub removal, ThreadData/TempStorage docs, and vector-type validation.
 - `pytest -q tests/coop/test_warp_*_api.py`
 - `CCCL_COOP_DOCS=1 python -c "import cuda.coop as coop; import cuda.coop.block; import cuda.coop.warp; print('ok')"`
 - `pre-commit run --files ../../docs/python/coop.rst ../../docs/python/coop_faq.rst ../../docs/python/coop_thread_data.rst cuda/coop/_common.py cuda/coop/_dataclass.py cuda/coop/_decls.py cuda/coop/_types.py cuda/coop/warp/__init__.py cuda/coop/warp/_warp_exchange.py cuda/coop/warp/_warp_load_store.py cuda/coop/warp/_warp_merge_sort.py cuda/coop/warp/_warp_reduce.py cuda/coop/warp/_warp_scan.py tests/coop/test_block_adjacent_difference.py tests/coop/test_block_load_store_api.py tests/coop/test_common.py`
+
+## Follow-Up (2026-02-23, PR #7214 `@codex` round 3)
+
+### Goal
+Address newly-added `@codex` docs feedback for `coop.ThreadData` by expanding
+conceptual guidance and clarifying rewrite-time dtype inference behavior.
+
+### Thread-by-Thread Plan
+- [x] 1. `docs/python/coop_thread_data.rst:6`
+  - Add narrative that maps `coop.ThreadData` to the idiomatic C++/CUB
+    `T thread_data[ITEMS_PER_THREAD]` mental model.
+  - Explain that rewrite lowers `ThreadData` to per-thread
+    `cuda.local.array(...)`, and clarify this is thread-private storage.
+
+- [x] 2. `docs/python/coop_thread_data.rst:42`
+  - Expand dtype inference section to describe candidate collection,
+    consistency requirements, and failure modes.
+  - Add a concrete mismatch example (sourced from test literalinclude markers)
+    showing compile-time failure text for inconsistent inferred dtypes.
+
+### Validation
+- `pytest -q tests/coop/test_block_load_store_api.py -k "block_load_store_single_phase_thread_data or thread_data_dtype_mismatch_raises"`
+- `pre-commit run --files ../../docs/python/coop_thread_data.rst tests/coop/test_block_load_store_api.py`
