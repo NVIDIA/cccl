@@ -200,7 +200,6 @@ inline ::std::ostream& operator<<(::std::ostream& os, WarpLoadAlgorithm algorith
 //!
 //!        from numba import cuda
 //!        from cuda import coop
-//!        from cuda.coop import WarpLoadAlgorithm
 //!
 //!        warp_threads = 16
 //!        items_per_thread = 4
@@ -213,7 +212,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, WarpLoadAlgorithm algorith
 //!                d_data,
 //!                thread_data,
 //!                threads_in_warp=warp_threads,
-//!                algorithm=WarpLoadAlgorithm.TRANSPOSE,
+//!                algorithm=coop.WarpLoadAlgorithm.TRANSPOSE,
 //!            )
 //!
 //!        # Launch with one logical warp.
@@ -487,33 +486,59 @@ public:
   //! Snippet
   //! +++++++
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_load.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(int *d_data, ...)
-  //!    {
-  //!        constexpr int warp_threads = 16;
-  //!        constexpr int block_threads = 256;
-  //!        constexpr int items_per_thread = 4;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_load.cuh>
   //!
-  //!        // Specialize WarpLoad for a warp of 16 threads owning 4 integer items each
-  //!        using WarpLoadT = WarpLoad<int,
-  //!                                   items_per_thread,
-  //!                                   cub::WARP_LOAD_TRANSPOSE,
-  //!                                   warp_threads>;
+  //!        __global__ void ExampleKernel(int *d_data, ...)
+  //!        {
+  //!            constexpr int warp_threads = 16;
+  //!            constexpr int block_threads = 256;
+  //!            constexpr int items_per_thread = 4;
   //!
-  //!        constexpr int warps_in_block = block_threads / warp_threads;
-  //!        constexpr int tile_size = items_per_thread * warp_threads;
-  //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
+  //!            // Specialize WarpLoad for a warp of 16 threads owning 4 integer items each
+  //!            using WarpLoadT = WarpLoad<int,
+  //!                                       items_per_thread,
+  //!                                       cub::WARP_LOAD_TRANSPOSE,
+  //!                                       warp_threads>;
   //!
-  //!        // Allocate shared memory for WarpLoad
-  //!        __shared__ typename WarpLoadT::TempStorage temp_storage[warps_in_block];
+  //!            constexpr int warps_in_block = block_threads / warp_threads;
+  //!            constexpr int tile_size = items_per_thread * warp_threads;
+  //!            const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
   //!
-  //!        // Load a segment of consecutive items that are blocked across threads
-  //!        int thread_data[items_per_thread];
-  //!        WarpLoadT(temp_storage[warp_id]).Load(d_data + warp_id * tile_size, thread_data);
-  //!    }
+  //!            // Allocate shared memory for WarpLoad
+  //!            __shared__ typename WarpLoadT::TempStorage temp_storage[warps_in_block];
+  //!
+  //!            // Load a segment of consecutive items that are blocked across threads
+  //!            int thread_data[items_per_thread];
+  //!            WarpLoadT(temp_storage[warp_id]).Load(d_data + warp_id * tile_size, thread_data);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        warp_threads = 16
+  //!        items_per_thread = 4
+  //!        threads_per_block = 256
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data):
+  //!            warp_id = cuda.threadIdx.x // warp_threads
+  //!            tile_offset = warp_id * warp_threads * items_per_thread
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            coop.warp.load[temp_storage](
+  //!                d_data[tile_offset:],
+  //!                thread_data,
+  //!                threads_in_warp=warp_threads,
+  //!                algorithm=coop.WarpLoadAlgorithm.TRANSPOSE,
+  //!            )
+  //!
+  //!        # kernel[1, threads_per_block](d_data)
   //!
   //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, ...``,
   //! The set of ``thread_data`` across the first logical warp of threads in those
@@ -539,34 +564,60 @@ public:
   //! Snippet
   //! +++++++
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_load.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(int *d_data, int valid_items, ...)
-  //!    {
-  //!        constexpr int warp_threads = 16;
-  //!        constexpr int block_threads = 256;
-  //!        constexpr int items_per_thread = 4;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_load.cuh>
   //!
-  //!        // Specialize WarpLoad for a warp of 16 threads owning 4 integer items each
-  //!        using WarpLoadT = WarpLoad<int,
-  //!                                   items_per_thread,
-  //!                                   cub::WARP_LOAD_TRANSPOSE,
-  //!                                   warp_threads>;
+  //!        __global__ void ExampleKernel(int *d_data, int valid_items, ...)
+  //!        {
+  //!            constexpr int warp_threads = 16;
+  //!            constexpr int block_threads = 256;
+  //!            constexpr int items_per_thread = 4;
   //!
-  //!        constexpr int warps_in_block = block_threads / warp_threads;
-  //!        constexpr int tile_size = items_per_thread * warp_threads;
-  //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
+  //!            // Specialize WarpLoad for a warp of 16 threads owning 4 integer items each
+  //!            using WarpLoadT = WarpLoad<int,
+  //!                                       items_per_thread,
+  //!                                       cub::WARP_LOAD_TRANSPOSE,
+  //!                                       warp_threads>;
   //!
-  //!        // Allocate shared memory for WarpLoad
-  //!        __shared__ typename WarpLoadT::TempStorage temp_storage[warps_in_block];
+  //!            constexpr int warps_in_block = block_threads / warp_threads;
+  //!            constexpr int tile_size = items_per_thread * warp_threads;
+  //!            const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
   //!
-  //!        // Load a segment of consecutive items that are blocked across threads
-  //!        int thread_data[items_per_thread];
-  //!        WarpLoadT(temp_storage[warp_id]).Load(d_data + warp_id * tile_size, thread_data,
-  //!                                              valid_items);
-  //!    }
+  //!            // Allocate shared memory for WarpLoad
+  //!            __shared__ typename WarpLoadT::TempStorage temp_storage[warps_in_block];
+  //!
+  //!            // Load a segment of consecutive items that are blocked across threads
+  //!            int thread_data[items_per_thread];
+  //!            WarpLoadT(temp_storage[warp_id]).Load(d_data + warp_id * tile_size, thread_data, valid_items);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        warp_threads = 16
+  //!        items_per_thread = 4
+  //!        threads_per_block = 256
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, valid_items):
+  //!            warp_id = cuda.threadIdx.x // warp_threads
+  //!            tile_offset = warp_id * warp_threads * items_per_thread
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            coop.warp.load[temp_storage](
+  //!                d_data[tile_offset:],
+  //!                thread_data,
+  //!                threads_in_warp=warp_threads,
+  //!                algorithm=coop.WarpLoadAlgorithm.TRANSPOSE,
+  //!                num_valid_items=valid_items,
+  //!            )
+  //!
+  //!        # kernel[1, threads_per_block](d_data, valid_items)
   //!
   //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, ...`` and ``valid_items`` is ``5``.
   //! The set of ``thread_data`` across the first logical warp of threads in those threads will be:
@@ -594,35 +645,61 @@ public:
   //! Snippet
   //! +++++++
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_load.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(int *d_data, int valid_items, ...)
-  //!    {
-  //!        constexpr int warp_threads = 16;
-  //!        constexpr int block_threads = 256;
-  //!        constexpr int items_per_thread = 4;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_load.cuh>
   //!
-  //!        // Specialize WarpLoad for a warp of 16 threads owning 4 integer items each
-  //!        using WarpLoadT = WarpLoad<int,
-  //!                                   items_per_thread,
-  //!                                   cub::WARP_LOAD_TRANSPOSE,
-  //!                                   warp_threads>;
+  //!        __global__ void ExampleKernel(int *d_data, int valid_items, ...)
+  //!        {
+  //!            constexpr int warp_threads = 16;
+  //!            constexpr int block_threads = 256;
+  //!            constexpr int items_per_thread = 4;
   //!
-  //!        constexpr int warps_in_block = block_threads / warp_threads;
-  //!        constexpr int tile_size = items_per_thread * warp_threads;
-  //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
+  //!            // Specialize WarpLoad for a warp of 16 threads owning 4 integer items each
+  //!            using WarpLoadT = WarpLoad<int,
+  //!                                       items_per_thread,
+  //!                                       cub::WARP_LOAD_TRANSPOSE,
+  //!                                       warp_threads>;
   //!
-  //!        // Allocate shared memory for WarpLoad
-  //!        __shared__ typename WarpLoadT::TempStorage temp_storage[warps_in_block];
+  //!            constexpr int warps_in_block = block_threads / warp_threads;
+  //!            constexpr int tile_size = items_per_thread * warp_threads;
+  //!            const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
   //!
-  //!        // Load a segment of consecutive items that are blocked across threads
-  //!        int thread_data[items_per_thread];
-  //!        WarpLoadT(temp_storage[warp_id]).Load(d_data + warp_id * tile_size,
-  //!                                              thread_data,
-  //!                                              valid_items,
-  //!                                              -1);
+  //!            // Allocate shared memory for WarpLoad
+  //!            __shared__ typename WarpLoadT::TempStorage temp_storage[warps_in_block];
+  //!
+  //!            // Load a segment of consecutive items that are blocked across threads
+  //!            int thread_data[items_per_thread];
+  //!            WarpLoadT(temp_storage[warp_id]).Load(d_data + warp_id * tile_size, thread_data, valid_items, -1);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        warp_threads = 16
+  //!        items_per_thread = 4
+  //!        threads_per_block = 256
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, valid_items):
+  //!            warp_id = cuda.threadIdx.x // warp_threads
+  //!            tile_offset = warp_id * warp_threads * items_per_thread
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            coop.warp.load[temp_storage](
+  //!                d_data[tile_offset:],
+  //!                thread_data,
+  //!                threads_in_warp=warp_threads,
+  //!                algorithm=coop.WarpLoadAlgorithm.TRANSPOSE,
+  //!                num_valid_items=valid_items,
+  //!                oob_default=-1,
+  //!            )
+  //!
+  //!        # kernel[1, threads_per_block](d_data, valid_items)
   //!
   //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, ...``, ``valid_items`` is ``5``, and the
   //! out-of-bounds default is ``-1``. The set of ``thread_data`` across the first logical warp of
