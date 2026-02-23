@@ -49,10 +49,10 @@ from numba.extending import (
 
 import cuda.coop as coop
 
-from ._common import CUB_BLOCK_REDUCE_ALGOS
-from ._scan_op import ScanOp
-from ._types import Invocable
-from ._typing import (
+from .._common import CUB_BLOCK_REDUCE_ALGOS
+from .._scan_op import ScanOp
+from .._types import Invocable
+from .._typing import (
     ScanOpType,
 )
 
@@ -60,62 +60,62 @@ from ._typing import (
 # `impl_key` on decl classes below. They are private implementation hooks (not
 # public API symbols), so `__all__` exports from `cuda.coop.block/warp` do not
 # cover this use case.
-from .block._block_adjacent_difference import (
+from ..block._block_adjacent_difference import (
     _make_adjacent_difference_rewrite as _make_block_adjacent_difference_rewrite,
 )
-from .block._block_discontinuity import (
+from ..block._block_discontinuity import (
     _make_discontinuity_rewrite as _make_block_discontinuity_rewrite,
 )
-from .block._block_exchange import (
+from ..block._block_exchange import (
     _make_exchange_rewrite as _make_block_exchange_rewrite,
 )
-from .block._block_load_store import (
+from ..block._block_load_store import (
     _make_load_rewrite as _make_block_load_rewrite,
 )
-from .block._block_load_store import (
+from ..block._block_load_store import (
     _make_store_rewrite as _make_block_store_rewrite,
 )
-from .block._block_merge_sort import (
+from ..block._block_merge_sort import (
     _make_merge_sort_keys_rewrite as _make_block_merge_sort_keys_rewrite,
 )
-from .block._block_merge_sort import (
+from ..block._block_merge_sort import (
     _make_merge_sort_pairs_rewrite as _make_block_merge_sort_pairs_rewrite,
 )
-from .block._block_radix_rank import (
+from ..block._block_radix_rank import (
     _make_radix_rank_rewrite as _make_block_radix_rank_rewrite,
 )
-from .block._block_radix_sort import (
+from ..block._block_radix_sort import (
     _make_radix_sort_keys_descending_rewrite as _make_block_radix_sort_keys_descending_rewrite,
 )
-from .block._block_radix_sort import (
+from ..block._block_radix_sort import (
     _make_radix_sort_keys_rewrite as _make_block_radix_sort_keys_rewrite,
 )
-from .block._block_reduce import (
+from ..block._block_reduce import (
     _make_reduce_rewrite as _make_block_reduce_rewrite,
 )
-from .block._block_reduce import (
+from ..block._block_reduce import (
     _make_sum_rewrite as _make_block_sum_rewrite,
 )
-from .block._block_scan import (
+from ..block._block_scan import (
     _make_scan_rewrite as _make_block_scan_rewrite,
 )
-from .block._block_shuffle import (
+from ..block._block_shuffle import (
     _make_shuffle_rewrite as _make_block_shuffle_rewrite,
 )
-from .warp._warp_exchange import _make_exchange_rewrite
-from .warp._warp_load_store import (
+from ..warp._warp_exchange import _make_exchange_rewrite
+from ..warp._warp_load_store import (
     _make_load_rewrite,
     _make_store_rewrite,
 )
-from .warp._warp_merge_sort import (
+from ..warp._warp_merge_sort import (
     _make_merge_sort_keys_rewrite,
     _make_merge_sort_pairs_rewrite,
 )
-from .warp._warp_reduce import (
+from ..warp._warp_reduce import (
     _make_reduce_rewrite,
     _make_sum_rewrite,
 )
-from .warp._warp_scan import (
+from ..warp._warp_scan import (
     _make_exclusive_scan_rewrite,
     _make_exclusive_sum_rewrite,
     _make_inclusive_scan_rewrite,
@@ -3276,7 +3276,7 @@ class CoopBlockRunLengthDecl(CoopAbstractTemplate, CoopDeclMixin):
         if decoded_offset_is_none_type:
             decoded_offset_dtype = None
         if decoded_offset_dtype is not None:
-            from ._common import normalize_dtype_param
+            from .._common import normalize_dtype_param
 
             decoded_offset_dtype = normalize_dtype_param(decoded_offset_dtype)
 
