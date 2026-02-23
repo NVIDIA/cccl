@@ -2282,3 +2282,25 @@
     - Result: `1 passed`.
   - `pytest -q tests/coop/test_thread_data_inference_edge_cases.py tests/coop/test_warp_load_store_api.py -k "thread_data_infers_items_per_thread" tests/coop/test_warp_exchange_api.py -k "thread_data_infers_items_per_thread" tests/coop/test_warp_merge_sort_api.py -k "thread_data_infers_items_per_thread" tests/coop/test_warp_merge_sort_pairs_api.py -k "thread_data_infers_items_per_thread" tests/coop/test_block_scan_single_phase_aliases.py -k "thread_data_infers_items_per_thread" tests/coop/test_block_reduce.py -k "thread_data_infers_items_per_thread"`
     - Result: `6 passed, 899 deselected`.
+
+## 2026-02-23 (CUB docs parity pass merged from worktree)
+- Request: Cherry-pick the CUB public docs single-phase parity work from
+  `/home/trentn/src/cccl-4776-cub-docs` into the main repo branch.
+- Applied:
+  - Added/expanded C++/Python tabbed examples across CUB warp and block headers
+    with single-phase `cuda.coop` patterns.
+  - Added missing class-level `BlockShuffle` example and strengthened
+    histogram/reduce before-after narratives.
+  - Ran cleanup pass removing commented launch snippets (`kernel[...]`) from
+    CUB block/warp examples and replacing markdown-style inline links
+    (`[<em>...</em>](...)`) with valid reST links.
+  - Updated `docs/libcudacxx/extended_api/asynchronous_operations/memcpy_async.rst`
+    to replace `[*Group*]` with a proper `ThreadGroup` reference.
+- Conflict handling:
+  - Intermediate ledger-only cherry-picks conflicted with newer local ledger
+    history and were resolved by preserving existing entries; this summary and
+    TODO update capture the merged docs-pass outcome.
+- Verification:
+  - `rg -n "kernel\\s*\\[" cub/cub/block cub/cub/warp --glob '*.cuh'` (no matches)
+  - `rg -n "\\[<em>.*</em>\\]\\([^)]*\\)|\\]\\(\\.?\\.?/index\\.html#[^)]+\\)" cub/cub --glob '*.cuh'` (no matches)
+  - `rg -n "\\[\\*Group\\*\\]" docs/libcudacxx/extended_api/asynchronous_operations/memcpy_async.rst` (no matches)
