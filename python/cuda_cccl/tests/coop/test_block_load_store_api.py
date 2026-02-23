@@ -157,11 +157,14 @@ def test_block_load_store_single_phase_thread_data():
 
 
 def test_thread_data_dtype_mismatch_raises():
+    # example-begin thread-data-dtype-mismatch-kernel
     @cuda.jit
     def kernel(d_in, d_out, items_per_thread):
         thread_data = coop.ThreadData(items_per_thread)
         coop.block.load(d_in, thread_data)
         coop.block.store(d_out, thread_data)
+
+    # example-end thread-data-dtype-mismatch-kernel
 
     threads_per_block = 128
     items_per_thread = 4
@@ -171,8 +174,10 @@ def test_thread_data_dtype_mismatch_raises():
     d_input = cuda.to_device(h_input)
     d_output = cuda.device_array(h_input.size, dtype=np.float32)
 
+    # example-begin thread-data-dtype-mismatch-usage
     with pytest.raises(Exception, match="consistent dtype for ThreadData"):
         kernel[1, threads_per_block](d_input, d_output, items_per_thread)
+    # example-end thread-data-dtype-mismatch-usage
 
 
 def test_block_load_store_single_phase_thread_data_temp_storage():
