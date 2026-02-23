@@ -55,7 +55,7 @@ _CCCL_HOST_API void __fill_bytes_impl(stream_ref __stream,
   // Check if the mdspan is exhaustive
   if (!__dst.is_exhaustive())
   {
-    _CCCL_THROW(std::invalid_argument, "fill_bytes supports only exhaustive mdspans");
+    _CCCL_THROW(::std::invalid_argument, "fill_bytes supports only exhaustive mdspans");
   }
 
   ::cuda::__detail::__fill_bytes_impl(

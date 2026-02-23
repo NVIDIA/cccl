@@ -155,7 +155,7 @@ public:
   {
     if (cnt > this->max_size())
     {
-      _CCCL_THROW(std::bad_alloc);
+      _CCCL_THROW(::std::bad_alloc);
     } // end if
 
     return pointer(device_malloc<T>(cnt));

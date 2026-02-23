@@ -90,18 +90,18 @@ public:
 };
 
 //! @brief Macro to call a cuFile API and throw a cufile_error or cuda_error if it fails.
-#define _CCCL_TRY_CUFILE_API(_NAME, _MSG, ...)                                                                 \
-  do                                                                                                           \
-  {                                                                                                            \
-    const ::CUfileError_t __cufile_error_status = _NAME(__VA_ARGS__);                                          \
-    switch (__cufile_error_status.err)                                                                         \
-    {                                                                                                          \
-      case ::CU_FILE_SUCCESS:                                                                                  \
-        break;                                                                                                 \
-      case ::CU_FILE_CUDA_DRIVER_ERROR:                                                                        \
-        _CCCL_THROW(cuda::cuda_error, static_cast<::cudaError_t>(__cufile_error_status.cu_err), _MSG, #_NAME); \
-      default:                                                                                                 \
-        _CCCL_THROW(cuda::experimental::cufile_error, __cufile_error_status.err, _MSG, #_NAME);                \
-    }                                                                                                          \
+#define _CCCL_TRY_CUFILE_API(_NAME, _MSG, ...)                                                                   \
+  do                                                                                                             \
+  {                                                                                                              \
+    const ::CUfileError_t __cufile_error_status = _NAME(__VA_ARGS__);                                            \
+    switch (__cufile_error_status.err)                                                                           \
+    {                                                                                                            \
+      case ::CU_FILE_SUCCESS:                                                                                    \
+        break;                                                                                                   \
+      case ::CU_FILE_CUDA_DRIVER_ERROR:                                                                          \
+        _CCCL_THROW(::cuda::cuda_error, static_cast<::cudaError_t>(__cufile_error_status.cu_err), _MSG, #_NAME); \
+      default:                                                                                                   \
+        _CCCL_THROW(::cuda::experimental::cufile_error, __cufile_error_status.err, _MSG, #_NAME);                \
+    }                                                                                                            \
   } while (0)
 } // namespace cuda::experimental

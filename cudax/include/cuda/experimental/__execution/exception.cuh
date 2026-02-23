@@ -97,7 +97,7 @@ public:
 
 [[noreturn]] _CCCL_API inline void rethrow_exception(const exception_ptr&)
 {
-  _CCCL_THROW(cuda::cuda_error, cudaErrorUnknown, "unknown exception");
+  _CCCL_THROW(::cuda::cuda_error, cudaErrorUnknown, "unknown exception");
 }
 
 // ^^^ _CCCL_COMPILER(NVRTC) || !_CCCL_HOST_COMPILATION() ^^^

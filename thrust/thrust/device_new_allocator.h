@@ -142,7 +142,7 @@ public:
   {
     if (cnt > this->max_size())
     {
-      _CCCL_THROW(std::bad_alloc);
+      _CCCL_THROW(::std::bad_alloc);
     } // end if
 
     // use "::operator new" rather than keyword new

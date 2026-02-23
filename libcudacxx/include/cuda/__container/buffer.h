@@ -650,7 +650,7 @@ __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, c
       ::cuda::__driver::__pointerGetAttributeNoThrow<CU_POINTER_ATTRIBUTE_IS_MANAGED>(__is_managed, __first);
     if (__status1 != ::cudaSuccess || __status2 != ::cudaSuccess)
     {
-      _CCCL_THROW(cuda::cuda_error, __status1, "Failed to get buffer memory attributes");
+      _CCCL_THROW(::cuda::cuda_error, __status1, "Failed to get buffer memory attributes");
     }
     if (__type == ::CU_MEMORYTYPE_HOST && !__is_managed)
     {

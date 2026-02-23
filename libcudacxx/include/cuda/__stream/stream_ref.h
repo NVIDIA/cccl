@@ -226,7 +226,7 @@ public:
       case ::cudaSuccess:
         return true;
       default:
-        _CCCL_THROW(cuda::cuda_error, __result, "Failed to query stream.");
+        _CCCL_THROW(::cuda::cuda_error, __result, "Failed to query stream.");
     }
   }
 

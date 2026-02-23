@@ -81,7 +81,7 @@ public:
     if (throw_after == 0)
     {
       throw_after = MemCounter_never_throw_value;
-      _CCCL_THROW(std::bad_alloc);
+      _CCCL_THROW(::std::bad_alloc);
     }
     else if (throw_after != MemCounter_never_throw_value)
     {
@@ -120,7 +120,7 @@ public:
     if (throw_after == 0)
     {
       throw_after = MemCounter_never_throw_value;
-      _CCCL_THROW(std::bad_alloc);
+      _CCCL_THROW(::std::bad_alloc);
     }
     else
     {
@@ -367,7 +367,7 @@ void* operator new(cuda::std::size_t s)
   void* ret = malloc(s);
   if (ret == nullptr)
   {
-    _CCCL_THROW(std::bad_alloc);
+    _CCCL_THROW(::std::bad_alloc);
   }
   return ret;
 }
@@ -423,7 +423,7 @@ void* operator new(cuda::std::size_t s, cuda::std::align_val_t av)
 #    endif
   if (ret == nullptr)
   {
-    _CCCL_THROW(std::bad_alloc);
+    _CCCL_THROW(::std::bad_alloc);
   }
   return ret;
 }

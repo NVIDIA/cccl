@@ -182,7 +182,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array
   {
     if (__n >= _Size)
     {
-      _CCCL_THROW(std::out_of_range, "array::at");
+      _CCCL_THROW(::std::out_of_range, "array::at");
     }
     return __elems_[__n];
   }
@@ -191,7 +191,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array
   {
     if (__n >= _Size)
     {
-      _CCCL_THROW(std::out_of_range, "array::at");
+      _CCCL_THROW(::std::out_of_range, "array::at");
     }
     return __elems_[__n];
   }
@@ -354,13 +354,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array<_Tp, 0>
 
   [[nodiscard]] _CCCL_API constexpr reference at(size_type)
   {
-    _CCCL_THROW(std::out_of_range, "array<T, 0>::at");
+    _CCCL_THROW(::std::out_of_range, "array<T, 0>::at");
     _CCCL_UNREACHABLE();
   }
 
   [[nodiscard]] _CCCL_API constexpr const_reference at(size_type) const
   {
-    _CCCL_THROW(std::out_of_range, "array<T, 0>::at");
+    _CCCL_THROW(::std::out_of_range, "array<T, 0>::at");
     _CCCL_UNREACHABLE();
   }
 

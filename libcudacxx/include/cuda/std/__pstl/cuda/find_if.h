@@ -163,7 +163,7 @@ struct __pstl_dispatch<__pstl_algorithm::__find_if, __execution_backend::__cuda>
       {
         if (__err.status() == cudaErrorMemoryAllocation)
         {
-          _CCCL_THROW(std::bad_alloc);
+          _CCCL_THROW(::std::bad_alloc);
         }
         else
         {

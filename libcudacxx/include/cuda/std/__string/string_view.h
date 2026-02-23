@@ -232,7 +232,7 @@ private:
   {
     if (__diff < 0 || static_cast<size_t>(__diff) > __len)
     {
-      _CCCL_THROW(std::out_of_range, "__string_view index out of range");
+      _CCCL_THROW(::std::out_of_range, "__string_view index out of range");
     }
     return static_cast<size_t>(__diff);
   }

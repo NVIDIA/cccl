@@ -25,18 +25,18 @@
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__exception/terminate.h>
 
-#define _CCCL_TRY_CUDA_API(_NAME, _MSG, ...)                   \
-  do                                                           \
-  {                                                            \
-    const ::cudaError_t __status = _NAME(__VA_ARGS__);         \
-    switch (__status)                                          \
-    {                                                          \
-      case ::cudaSuccess:                                      \
-        break;                                                 \
-      default:                                                 \
-        ::cudaGetLastError(); /* clear CUDA error state */     \
-        _CCCL_THROW(cuda::cuda_error, __status, _MSG, #_NAME); \
-    }                                                          \
+#define _CCCL_TRY_CUDA_API(_NAME, _MSG, ...)                     \
+  do                                                             \
+  {                                                              \
+    const ::cudaError_t __status = _NAME(__VA_ARGS__);           \
+    switch (__status)                                            \
+    {                                                            \
+      case ::cudaSuccess:                                        \
+        break;                                                   \
+      default:                                                   \
+        ::cudaGetLastError(); /* clear CUDA error state */       \
+        _CCCL_THROW(::cuda::cuda_error, __status, _MSG, #_NAME); \
+    }                                                            \
   } while (0)
 
 #define _CCCL_ASSERT_CUDA_API(_NAME, _MSG, ...)                         \

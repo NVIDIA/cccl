@@ -280,7 +280,7 @@ public:
   {
     if (__idx >= size())
     {
-      _CCCL_THROW(std::out_of_range, "span::at");
+      _CCCL_THROW(::std::out_of_range, "span::at");
     }
     return __data_[__idx];
   }
@@ -497,7 +497,7 @@ public:
   {
     if (__idx >= size())
     {
-      _CCCL_THROW(std::out_of_range, "span::at");
+      _CCCL_THROW(::std::out_of_range, "span::at");
     }
     return __data_[__idx];
   }

@@ -73,7 +73,7 @@ public:
   {
     if (__i >= size())
     {
-      _CCCL_THROW(std::out_of_range, "device index out of range");
+      _CCCL_THROW(::std::out_of_range, "device index out of range");
     }
     return ::cuda::__devices()[__i];
   }

@@ -103,7 +103,7 @@ public:
     }
     else
     {
-      _CCCL_THROW(cuda::cuda_error, __status, "Failed to query CUDA event");
+      _CCCL_THROW(::cuda::cuda_error, __status, "Failed to query CUDA event");
     }
   }
 

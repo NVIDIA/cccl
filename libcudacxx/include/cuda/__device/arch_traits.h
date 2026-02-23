@@ -473,9 +473,9 @@ template <>
 #undef _CCCL_ARCH_TRAITS_FOR_SPECIFIC_CASE
     default:
 #if _CCCL_HAS_CTK()
-      _CCCL_THROW(cuda::cuda_error, ::cudaErrorInvalidValue, "Traits requested for an unknown architecture");
+      _CCCL_THROW(::cuda::cuda_error, ::cudaErrorInvalidValue, "Traits requested for an unknown architecture");
 #else // ^^^ _CCCL_HAS_CTK() ^^^ / vvv !_CCCL_HAS_CTK() vvv
-      _CCCL_THROW(cuda::cuda_error, /*cudaErrorInvalidValue*/ 1, "Traits requested for an unknown architecture");
+      _CCCL_THROW(::cuda::cuda_error, /*cudaErrorInvalidValue*/ 1, "Traits requested for an unknown architecture");
 #endif // ^^^ !_CCCL_HAS_CTK() ^^^
       break;
   }

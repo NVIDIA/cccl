@@ -131,7 +131,7 @@ public:
   {
     if (__n > allocator_traits<allocator>::max_size(*this))
     {
-      _CCCL_THROW(std::bad_array_new_length);
+      _CCCL_THROW(::std::bad_array_new_length);
     }
 #if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION)
     _CCCL_IF_CONSTEVAL
@@ -234,7 +234,7 @@ public:
   {
     if (__n > allocator_traits<allocator>::max_size(*this))
     {
-      _CCCL_THROW(std::bad_array_new_length);
+      _CCCL_THROW(::std::bad_array_new_length);
     }
     _CCCL_IF_CONSTEVAL
     {

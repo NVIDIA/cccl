@@ -121,7 +121,7 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __k
   ::cudaError_t __status = cuda::__detail::apply_kernel_config(__conf, __config, __kernel);
   if (__status != ::cudaSuccess)
   {
-    _CCCL_THROW(cuda::cuda_error, __status, "Failed to prepare a launch configuration");
+    _CCCL_THROW(::cuda::cuda_error, __status, "Failed to prepare a launch configuration");
   }
 
   __config.gridDimX  = block.dims(grid, __conf).x;

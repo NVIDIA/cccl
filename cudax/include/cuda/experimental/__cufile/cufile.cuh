@@ -99,7 +99,7 @@ private:
     if (__fd == -1)
     {
       errno = 0; // clear errno
-      _CCCL_THROW(std::runtime_error, "Failed to open file.");
+      _CCCL_THROW(::std::runtime_error, "Failed to open file.");
     }
 
     return __fd;
@@ -113,7 +113,7 @@ private:
     if (__oflags == -1)
     {
       errno = 0; // clear errno
-      _CCCL_THROW(std::runtime_error, "Failed to retrieve open flags.");
+      _CCCL_THROW(::std::runtime_error, "Failed to retrieve open flags.");
     }
 
     cufile_open_mode __om{};
@@ -147,7 +147,7 @@ private:
     if (!__close_file_no_throw(__native_handle))
     {
       errno = 0; // clear errno
-      _CCCL_THROW(std::runtime_error, "Failed to close file.");
+      _CCCL_THROW(::std::runtime_error, "Failed to close file.");
     }
   }
 
@@ -258,7 +258,7 @@ public:
   {
     if (is_open())
     {
-      _CCCL_THROW(std::runtime_error, "File is already opened.");
+      _CCCL_THROW(::std::runtime_error, "File is already opened.");
     }
 
     __native_handle_ = __open_file(__filename, __make_oflags(__open_mode));

@@ -37,17 +37,17 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#  define _CCCL_THROW_OR_RETURN(_STATUS, _MSG)                                             \
-    if ((_STATUS) != ::cudaSuccess)                                                        \
-    {                                                                                      \
-      if constexpr (_IsNothrow)                                                            \
-      {                                                                                    \
-        return false;                                                                      \
-      }                                                                                    \
-      else                                                                                 \
-      {                                                                                    \
-        _CCCL_THROW(cuda::cuda_error, (_STATUS), (_MSG), _CCCL_BUILTIN_PRETTY_FUNCTION()); \
-      }                                                                                    \
+#  define _CCCL_THROW_OR_RETURN(_STATUS, _MSG)                                               \
+    if ((_STATUS) != ::cudaSuccess)                                                          \
+    {                                                                                        \
+      if constexpr (_IsNothrow)                                                              \
+      {                                                                                      \
+        return false;                                                                        \
+      }                                                                                      \
+      else                                                                                   \
+      {                                                                                      \
+        _CCCL_THROW(::cuda::cuda_error, (_STATUS), (_MSG), _CCCL_BUILTIN_PRETTY_FUNCTION()); \
+      }                                                                                      \
     }
 
 template <bool _IsNothrow>

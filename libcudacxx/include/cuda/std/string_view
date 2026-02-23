@@ -308,7 +308,7 @@ public:
   {
     if (__pos >= __size_)
     {
-      _CCCL_THROW(std::out_of_range, "string_view::at");
+      _CCCL_THROW(::std::out_of_range, "string_view::at");
     }
     return __data_[__pos];
   }
@@ -358,7 +358,7 @@ public:
   {
     if (__pos > __size_)
     {
-      _CCCL_THROW(std::out_of_range, "string_view::copy");
+      _CCCL_THROW(::std::out_of_range, "string_view::copy");
     }
     const auto __rlen = ::cuda::std::min(__n, __size_ - __pos);
     _Traits::copy(__s, __data_ + __pos, __rlen);
@@ -372,7 +372,7 @@ public:
     // new size is also smaller. See also https://github.com/llvm/llvm-project/issues/91634.
     if (__pos > __size_)
     {
-      _CCCL_THROW(std::out_of_range, "string_view::substr");
+      _CCCL_THROW(::std::out_of_range, "string_view::substr");
     }
     return basic_string_view{__assume_valid{}, __data_ + __pos, ::cuda::std::min(__n, __size_ - __pos)};
   }

@@ -66,7 +66,7 @@ template <class _To, class _From>
   const auto __converted = static_cast<_To>(__from);
   if (static_cast<_From>(__converted) != __from)
   {
-    _CCCL_THROW(cuda::narrowing_error);
+    _CCCL_THROW(::cuda::narrowing_error);
   }
 
   if constexpr (::cuda::std::is_arithmetic_v<_From>)
@@ -75,14 +75,14 @@ template <class _To, class _From>
     {
       if (__from < _From{})
       {
-        _CCCL_THROW(cuda::narrowing_error);
+        _CCCL_THROW(::cuda::narrowing_error);
       }
     }
     if constexpr (!::cuda::std::is_signed_v<_From> && ::cuda::std::is_signed_v<_To>)
     {
       if (__converted < _To{})
       {
-        _CCCL_THROW(cuda::narrowing_error);
+        _CCCL_THROW(::cuda::narrowing_error);
       }
     }
   }

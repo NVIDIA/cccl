@@ -417,7 +417,7 @@ _CCCL_REQUIRES(::cuda::std::is_unbounded_array_v<_Tp>)
   using value_type = typename dynamic_shared_memory_option<_Tp>::value_type;
   if (__n * sizeof(value_type) > __max_portable_dyn_smem_size)
   {
-    _CCCL_THROW(std::invalid_argument, "portable dynamic shared memory limit exceeded");
+    _CCCL_THROW(::std::invalid_argument, "portable dynamic shared memory limit exceeded");
   }
   return dynamic_shared_memory_option<_Tp>::__create(__n, false);
 }

@@ -294,7 +294,7 @@ struct expecter
     }
     else
     {
-      _CCCL_THROW(cuda::experimental::stf::expecter::failure, loc, msgs...);
+      _CCCL_THROW(::cuda::experimental::stf::expecter::failure, loc, msgs...);
     }
   }
 
@@ -313,7 +313,8 @@ struct expecter
     {
       return ::std::forward<L>(e.lhs);
     }
-    _CCCL_THROW(cuda::experimental::stf::expecter::failure, loc, e.lhs, ' ', e.op, ' ', e.rhs, " is false.\n", msgs...);
+    _CCCL_THROW(
+      ::cuda::experimental::stf::expecter::failure, loc, e.lhs, ' ', e.op, ' ', e.rhs, " is false.\n", msgs...);
   }
 };
 
