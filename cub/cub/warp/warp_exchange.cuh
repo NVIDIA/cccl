@@ -3,7 +3,7 @@
 
 /**
  * @file
- * The cub::WarpExchange class provides [<em>collective</em>](../index.html#sec0)
+ * The cub::WarpExchange class provides `collective <../index.html#sec0>`_
  * methods for rearranging data partitioned across a CUDA warp.
  */
 
@@ -44,7 +44,7 @@ using InternalWarpExchangeImpl =
 } // namespace detail
 
 /**
- * @brief The WarpExchange class provides [<em>collective</em>](../index.html#sec0)
+ * @brief The WarpExchange class provides `collective <../index.html#sec0>`_
  *        methods for rearranging data partitioned across a CUDA warp.
  *
  * @tparam T
@@ -67,10 +67,10 @@ using InternalWarpExchangeImpl =
  *   partitioning of items across threads (where consecutive items belong to a
  *   single thread).
  * - WarpExchange supports the following types of data exchanges:
- *   - Transposing between [<em>blocked</em>](../index.html#sec5sec3) and
- *     [<em>striped</em>](../index.html#sec5sec3) arrangements
+ *   - Transposing between `blocked <../index.html#sec5sec3>`_ and
+ *     `striped <../index.html#sec5sec3>`_ arrangements
  *   - Scattering ranked items to a
- *     [<em>striped arrangement</em>](../index.html#sec5sec3)
+ *     `striped arrangement <../index.html#sec5sec3>`_
  *
  * @par A Simple Example
  * @par
@@ -137,7 +137,6 @@ using InternalWarpExchangeImpl =
  *                warp_exchange_type=coop.warp.WarpExchangeType.StripedToBlocked,
  *            )
  *
- *        # kernel[1, threads_per_block](d_data)
  * @endrst
  * @par
  * Suppose the set of striped input @p thread_data across the block of threads
@@ -251,7 +250,6 @@ public:
    *                warp_exchange_type=coop.warp.WarpExchangeType.BlockedToStriped,
    *            )
    *
-   *        # kernel[1, threads_per_block](d_data)
    * @endrst
    * @par
    * Suppose the set of striped input @p thread_data across the block of threads
@@ -349,7 +347,6 @@ public:
    *                warp_exchange_type=coop.warp.WarpExchangeType.StripedToBlocked,
    *            )
    *
-   *        # kernel[1, threads_per_block](d_data)
    * @endrst
    * @par
    * Suppose the set of striped input @p thread_data across the block of threads
@@ -454,7 +451,6 @@ public:
    *                warp_exchange_type=coop.warp.WarpExchangeType.ScatterToStriped,
    *            )
    *
-   *        # kernel[1, threads_per_block](d_values, d_ranks)
    * @endrst
    * @par
    * Suppose the set of input @p thread_data across the block of threads
@@ -567,7 +563,6 @@ public:
    *                algorithm=coop.WarpStoreAlgorithm.STRIPED,
    *            )
    *
-   *        # kernel[1, threads_per_block](d_values, d_ranks, d_out)
    * @endrst
    * @par
    * Suppose the set of input @p thread_input across the block of threads
