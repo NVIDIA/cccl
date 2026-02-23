@@ -44,8 +44,8 @@ from numba.cuda.cudadecl import register_global
 from numba.cuda.cudadrv.devicearray import DeviceNDArray
 from numba.cuda.cudaimpl import lower
 
-from ._types import Algorithm as CoopAlgorithm
-from ._types import algo_coalesce_key
+from .._types import Algorithm as CoopAlgorithm
+from .._types import algo_coalesce_key
 
 try:
     from numba.cuda.launchconfig import (
@@ -78,7 +78,7 @@ except ModuleNotFoundError:
     )
     raise ModuleNotFoundError(msg) from None
 
-from ._common import (
+from .._common import (
     normalize_dtype_param,
 )
 
@@ -211,7 +211,7 @@ def get_thread_data_type():
 
     Rewrite-time typing relies on this symbol being available.
     """
-    from . import _decls
+    from .. import _decls
 
     thread_data_type = getattr(_decls, "ThreadDataType", None)
     if thread_data_type is None:
@@ -531,8 +531,8 @@ def get_root_definition(
     all_assignments = []
     definitions = []
 
-    from ._types import TempStorage as TempStorageClass
-    from ._types import ThreadData as ThreadDataClass
+    from .._types import TempStorage as TempStorageClass
+    from .._types import ThreadData as ThreadDataClass
 
     while instructions:
         counter += 1
@@ -830,7 +830,7 @@ def get_root_definition(
                     if instr_kws is None:
                         instr_kws = {}
 
-                    from ._decls import CoopArrayBaseTemplate
+                    from .._decls import CoopArrayBaseTemplate
 
                     bound = CoopArrayBaseTemplate.signature(*instr_args, **instr_kws)
 
@@ -1784,7 +1784,7 @@ class CoopLoadStoreNode(CoopNode):
         src_ty = self.typemap[src.name]
         dst_ty = self.typemap[dst.name]
         try:
-            from ._decls import ThreadDataType
+            from .._decls import ThreadDataType
         except Exception:
             ThreadDataType = None
 
@@ -1852,8 +1852,8 @@ class CoopLoadStoreNode(CoopNode):
                                 type(instance), "default_algorithm", None
                             )
                 if default_algorithm is None:
-                    from .block._block_load_store import load as block_load
-                    from .block._block_load_store import store as block_store
+                    from ..block._block_load_store import load as block_load
+                    from ..block._block_load_store import store as block_store
 
                     default_algorithm = (
                         block_load.default_algorithm
@@ -2282,7 +2282,7 @@ class CoopWarpLoadStoreNode(CoopNode):
             items_per_thread_array_var = src
 
         try:
-            from ._decls import ThreadDataType
+            from .._decls import ThreadDataType
         except Exception:
             ThreadDataType = None
 
@@ -2614,7 +2614,7 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
 
         items_ty = self.typemap[items.name]
         try:
-            from ._decls import ThreadDataType
+            from .._decls import ThreadDataType
         except Exception:
             ThreadDataType = None
 
@@ -2980,7 +2980,7 @@ class CoopWarpExchangeNode(CoopNode, CoopNodeMixin):
 
         items_ty = self.typemap[items.name]
         try:
-            from ._decls import ThreadDataType
+            from .._decls import ThreadDataType
         except Exception:
             ThreadDataType = None
 
@@ -3282,7 +3282,7 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
         items_ty = self.typemap[items.name]
 
         try:
-            from ._decls import ThreadDataType
+            from .._decls import ThreadDataType
         except Exception:
             ThreadDataType = None
 
@@ -3745,7 +3745,7 @@ class CoopBlockAdjacentDifferenceNode(CoopNode, CoopNodeMixin):
         output_items_ty = self.typemap[output_items.name]
 
         try:
-            from ._decls import ThreadDataType
+            from .._decls import ThreadDataType
         except Exception:
             ThreadDataType = None
 
@@ -4069,7 +4069,7 @@ class CoopBlockDiscontinuityNode(CoopNode, CoopNodeMixin):
         )
 
         try:
-            from ._decls import ThreadDataType
+            from .._decls import ThreadDataType
         except Exception:
             ThreadDataType = None
 
@@ -4755,7 +4755,7 @@ class CoopWarpMergeSortNode(CoopNode, CoopNodeMixin):
 
         keys_ty = self.typemap[keys.name]
         try:
-            from ._decls import ThreadDataType
+            from .._decls import ThreadDataType
         except Exception:
             ThreadDataType = None
 
@@ -5013,7 +5013,7 @@ class CoopBlockRadixSortNode(CoopNode, CoopNodeMixin):
             )
 
         try:
-            from ._decls import ThreadDataType
+            from .._decls import ThreadDataType
         except Exception:
             ThreadDataType = None
         keys_is_thread = ThreadDataType is not None and isinstance(
@@ -5171,7 +5171,7 @@ class CoopBlockRadixSortNode(CoopNode, CoopNodeMixin):
         decomposer_obj = None
         decomposer_ret_dtype = None
         if decomposer_value is not None:
-            from ._types import Decomposer
+            from .._types import Decomposer
 
             if isinstance(decomposer_value, Decomposer):
                 decomposer_obj = decomposer_value
@@ -5354,7 +5354,7 @@ class CoopBlockRadixRankNode(CoopNode, CoopNodeMixin):
         ranks_ty = self.typemap[ranks.name]
 
         try:
-            from ._decls import ThreadDataType
+            from .._decls import ThreadDataType
         except Exception:
             ThreadDataType = None
 
@@ -6486,7 +6486,7 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
         dst_ty = self.typemap[dst.name] if dst is not None else None
 
         try:
-            from ._decls import ThreadDataType
+            from .._decls import ThreadDataType
         except Exception:
             ThreadDataType = None
 
@@ -6656,8 +6656,8 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
             if instance_initial_value is not None:
                 initial_value_value = instance_initial_value
 
-        from ._scan_op import ScanOp
-        from .block._block_scan import _validate_initial_value
+        from .._scan_op import ScanOp
+        from ..block._block_scan import _validate_initial_value
 
         scan_op_obj = scan_op if isinstance(scan_op, ScanOp) else ScanOp(scan_op)
 
@@ -6700,7 +6700,7 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
 
             op = instance
 
-            from ._types import StatefulFunction
+            from .._types import StatefulFunction
 
             callback_name = f"block_scan_{self.unique_id}_callback"
             if callback_name in self.typemap:
@@ -7185,7 +7185,7 @@ def _refine_warp_scan_node(node, rewriter):
     if scan_op is None:
         raise RuntimeError(f"{node.primitive_name} requires scan_op to be provided")
 
-    from ._scan_op import ScanOp
+    from .._scan_op import ScanOp
 
     try:
         scan_op_obj = scan_op if isinstance(scan_op, ScanOp) else ScanOp(scan_op)
@@ -7461,7 +7461,7 @@ class CoopBlockReduceNode(CoopNode, CoopNodeMixin):
 
         src_ty = self.typemap[src.name]
         try:
-            from ._decls import ThreadDataType
+            from .._decls import ThreadDataType
         except Exception:
             ThreadDataType = None
 
@@ -7950,7 +7950,7 @@ class CoopBlockSumNode(CoopNode, CoopNodeMixin):
 
         src_ty = self.typemap[src.name]
         try:
-            from ._decls import ThreadDataType
+            from .._decls import ThreadDataType
         except Exception:
             ThreadDataType = None
 
@@ -8307,7 +8307,7 @@ class CoopNodeRewriter(Rewrite):
             return
 
         try:
-            from ._types import prepare_ltoir_bundle
+            from .._types import prepare_ltoir_bundle
 
             coalesce_keys = {algo_coalesce_key(algo) for algo in algorithms}
             allow_single = len(coalesce_keys) == 1 and len(algorithms) > 1
@@ -8441,7 +8441,7 @@ class CoopNodeRewriter(Rewrite):
             return None
 
         try:
-            from ._decls import TempStorageType
+            from .._decls import TempStorageType
         except Exception:
             TempStorageType = None
 
@@ -8628,7 +8628,7 @@ class CoopNodeRewriter(Rewrite):
             patched_typemap = False
             try:
                 try:
-                    from ._decls import TempStorageType
+                    from .._decls import TempStorageType
                 except Exception:
                     TempStorageType = None
 
@@ -9045,7 +9045,7 @@ class CoopNodeRewriter(Rewrite):
         temp_storage_info = None
 
         try:
-            from ._decls import TempStorageType
+            from .._decls import TempStorageType
         except Exception:
             TempStorageType = None
 
@@ -9206,7 +9206,7 @@ class CoopNodeRewriter(Rewrite):
 
         dtype = None
         if leaf.dtype is not None:
-            from ._common import normalize_dtype_param
+            from .._common import normalize_dtype_param
 
             try:
                 dtype = normalize_dtype_param(leaf.dtype)
