@@ -2052,3 +2052,125 @@
     - Result: `4 passed, 37 deselected`
   - `pre-commit run --files ../../docs/python/coop_thread_data.rst tests/coop/test_block_load_store_api.py`
     - Result: all hooks passed (after one auto-format pass by `ruff-format`)
+
+## 2026-02-23 (single-phase reorg prototype: block scan extraction)
+- Request: Evaluate and prototype a low-risk reorganization for single-phase
+  scaffolding by extracting block-scan-specific typing and rewrite logic out of
+  monolithic `_decls.py` and `_rewrite.py`, while preserving behavior.
+- Changes:
+  - Added `cuda/coop/_decls_block_scan.py` and moved block-scan typing
+    declarations/scaffolding into it:
+    - `CoopBlockScanDecl`
+    - `CoopBlockExclusiveSumDecl`
+    - `CoopBlockInclusiveSumDecl`
+    - `CoopBlockExclusiveScanDecl`
+    - `CoopBlockInclusiveScanDecl`
+    - `CoopBlockScanInstanceType` + instance decl/model + `typeof_impl`
+      registrations.
+  - Added `cuda/coop/_rewrite_block_scan.py` and moved
+    `CoopBlockScanNode` rewrite/refinement logic into it.
+  - Updated `cuda/coop/_decls.py`:
+    - replaced inline scan section with imports from
+      `cuda.coop._decls_block_scan`.
+    - kept downstream references (`CoopBlock*ScanDecl`,
+      `block_scan_instance_type`) intact for module-template resolution and
+      invocable-instance mapping.
+  - Updated `cuda/coop/_rewrite.py`:
+    - replaced inline `CoopBlockScanNode` class body with a dedicated-module
+      import (`from ._rewrite_block_scan import CoopBlockScanNode`).
+- Decisions:
+  - Kept `_decls.py` and `_rewrite.py` as compatibility facades in this pass.
+  - Scoped the prototype to one primitive family (block scan) to validate
+    import ordering, registration side effects, and rewrite discovery before any
+    broader extraction.
+- Validation:
+  - `python -m py_compile cuda/coop/_decls.py cuda/coop/_decls_block_scan.py cuda/coop/_rewrite.py cuda/coop/_rewrite_block_scan.py`
+    - Result: passed.
+  - `pytest -q tests/coop/test_block_scan.py tests/coop/test_block_scan_api.py`
+    - Result: `184 passed, 26 skipped, 2 warnings`.
+  - `pytest -q tests/coop/test_make_factories_two_phase.py`
+    - Result: `36 passed, 1 warning`.
+- Notes:
+  - An exploratory `-k scan` selection on `test_make_factories_two_phase.py`
+    matched no tests (`36 deselected`); full-file run was used for coverage.
+
+## 2026-02-23 (single-phase reorg prototype follow-up: import-order fix)
+- Request: Resolve prototype regression found during scan test collection.
+- Issue:
+  - Initial extraction triggered a circular-import failure while importing
+    `cuda.coop._decls` because `_decls_block_scan.py` referenced
+    `_decls._make_block_scan_rewrite` before `_decls` finished initialization.
+- Fix:
+  - Updated `cuda/coop/_decls_block_scan.py` to import
+    `_make_scan_rewrite` directly from `cuda.coop.block._block_scan`.
+  - Kept deferred/dynamic loading in parent facades (`_decls.py`, `_rewrite.py`)
+    so scan extraction remains import-order safe and lint-compliant.
+- Validation:
+  - `pre-commit run --files SINGLE-PHASE-TODO.md SINGLE-PHASE-LOG.md cuda/coop/_decls.py cuda/coop/_rewrite.py cuda/coop/_decls_block_scan.py cuda/coop/_rewrite_block_scan.py`
+    - Result: all hooks passed.
+  - `python -m py_compile cuda/coop/_decls.py cuda/coop/_decls_block_scan.py cuda/coop/_rewrite.py cuda/coop/_rewrite_block_scan.py`
+    - Result: passed.
+  - `pytest -q tests/coop/test_block_scan.py tests/coop/test_block_scan_api.py`
+    - Result: `184 passed, 26 skipped, 2 warnings`.
+  - `pytest -q tests/coop/test_make_factories_two_phase.py`
+    - Result: `36 passed, 1 warning`.
+
+## 2026-02-23 (single-phase reorg: module rollout completion)
+- Request: Replace the temporary block-scan shim prototype with the full
+  package-module approach for `_decls` and `_rewrite`, then finish all
+  remaining extraction items.
+- Changes:
+  - Reverted the shim-style prototype files:
+    - `cuda/coop/_decls_block_scan.py`
+    - `cuda/coop/_rewrite_block_scan.py`
+  - Converted monolith entry points to package modules:
+    - `cuda/coop/_decls.py` -> `cuda/coop/_decls/__init__.py`
+    - `cuda/coop/_rewrite.py` -> `cuda/coop/_rewrite/__init__.py`
+  - Added block/warp side-effect import registries under:
+    - `cuda/coop/_decls/block/__init__.py`
+    - `cuda/coop/_decls/warp/__init__.py`
+    - `cuda/coop/_rewrite/block/__init__.py`
+    - `cuda/coop/_rewrite/warp/__init__.py`
+  - Completed per-primitive extraction with naming parity against runtime
+    primitive modules:
+    - block: load/store, exchange, scan, reduce, histogram, run-length decode,
+      merge sort, radix sort, adjacent difference, discontinuity, shuffle,
+      radix rank.
+    - warp: load/store, exchange, merge sort, reduce/sum, scan/sum.
+  - Verified one-to-one file parity between:
+    - `cuda/coop/block/_block_*.py` and `cuda/coop/_decls/block/_block_*.py`
+    - `cuda/coop/block/_block_*.py` and `cuda/coop/_rewrite/block/_block_*.py`
+    - `cuda/coop/warp/_warp_*.py` and `cuda/coop/_decls/warp/_warp_*.py`
+    - `cuda/coop/warp/_warp_*.py` and `cuda/coop/_rewrite/warp/_warp_*.py`
+- Commits (in order):
+  - `11e64d671a` `cuda.coop: convert _decls and _rewrite to packages`
+  - `b5f20c21de` `cuda.coop: add decl/rewrite block+warp package scaffolding`
+  - `724ad9c11f` `cuda.coop: extract block load/store decls and rewrite nodes`
+  - `19c9868432` `cuda.coop: extract block exchange decls and rewrite node`
+  - `62ff5b3f7f` `cuda.coop: extract block scan decls and rewrite node`
+  - `15731935c8` `cuda.coop: extract block reduce decls and rewrite nodes`
+  - `399a497521` `cuda.coop: extract block histogram decls and rewrite nodes`
+  - `863e3d3752` `cuda.coop: extract block run-length decls and rewrite nodes`
+  - `720126323e` `cuda.coop: extract block merge sort decls and rewrite nodes`
+  - `7cf3440ff5` `cuda.coop: extract block radix sort decls and rewrite nodes`
+  - `c16ddfd12e` `cuda.coop: extract block adjacent difference decls and rewrite nodes`
+  - `74aeb90e1e` `cuda.coop: extract block shuffle decls and rewrite nodes`
+  - `c53a7ae2c0` `cuda.coop: extract block discontinuity decls and rewrite nodes`
+  - `e0ea50e978` `cuda.coop: extract block radix rank decls and rewrite nodes`
+  - `54080e28ea` `cuda.coop: extract warp load store decls and rewrite nodes`
+  - `9d3f8bc2c7` `cuda.coop: extract warp exchange decls and rewrite nodes`
+  - `0c26fa9171` `cuda.coop: extract warp merge sort decls and rewrite nodes`
+  - `abba89a8f4` `cuda.coop: extract warp reduce decls and rewrite nodes`
+  - `bdccceff46` `cuda.coop: extract warp scan decls and rewrite nodes`
+- Validation highlights:
+  - Warp extraction sequence:
+    - `pytest -q tests/coop/test_warp_exchange_api.py tests/coop/test_make_factories_two_phase.py`
+      - Result: `45 passed`.
+    - `pytest -q tests/coop/test_warp_merge_sort.py tests/coop/test_warp_merge_sort_api.py tests/coop/test_warp_merge_sort_pairs_api.py tests/coop/test_make_factories_two_phase.py`
+      - Result: `63 passed`.
+    - `pytest -q tests/coop/test_warp_reduce.py tests/coop/test_warp_reduce_api.py tests/coop/test_make_factories_two_phase.py`
+      - Result: `54 passed`.
+    - `pytest -q tests/coop/test_warp_scan.py tests/coop/test_warp_scan_api.py tests/coop/test_make_factories_two_phase.py`
+      - Result: `66 passed`.
+  - `pre-commit run --files ...` executed for each extraction commit’s touched
+    files; all hooks passed.
