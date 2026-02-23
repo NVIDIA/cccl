@@ -35,12 +35,20 @@ CUB_NAMESPACE_BEGIN
 //! Methods named SubtractLeft subtract left element ``i - 1`` of input sequence from current element ``i``.
 //! Methods named SubtractRight subtract the right element ``i + 1`` from the current one ``i``:
 //!
-//! .. code-block:: c++
+//! .. tab-set-code::
 //!
-//!    int values[4]; // [1, 2, 3, 4]
-//!    //...
-//!    int subtract_left_result[4];  <-- [  1,  1,  1,  1 ]
-//!    int subtract_right_result[4]; <-- [ -1, -1, -1,  4 ]
+//!    .. code-block:: c++
+//!
+//!        int values[4]; // [1, 2, 3, 4]
+//!        //...
+//!        int subtract_left_result[4];  <-- [  1,  1,  1,  1 ]
+//!        int subtract_right_result[4]; <-- [ -1, -1, -1,  4 ]
+//!
+//!    .. code-block:: python
+//!
+//!        values = [1, 2, 3, 4]
+//!        subtract_left_result = [values[0]] + [values[i] - values[i - 1] for i in range(1, 4)]
+//!        subtract_right_result = [values[i] - values[i + 1] for i in range(3)] + [values[3]]
 //!
 //! - For SubtractLeft, if the left element is out of bounds, the input value is assigned to ``output[0]``
 //!   without modification.
@@ -56,40 +64,70 @@ CUB_NAMESPACE_BEGIN
 //! The code snippet below illustrates how to use BlockAdjacentDifference to
 //! compute the left difference between adjacent elements.
 //!
-//! .. code-block:: c++
+//! .. tab-set-code::
 //!
-//!    #include <cub/cub.cuh>
-//!    // or equivalently <cub/block/block_adjacent_difference.cuh>
+//!    .. code-block:: c++
 //!
-//!    struct CustomDifference
-//!    {
-//!      template <typename DataType>
-//!      __host__ DataType operator()(DataType &lhs, DataType &rhs)
-//!      {
-//!        return lhs - rhs;
-//!      }
-//!    };
+//!        #include <cub/cub.cuh>
+//!        // or equivalently <cub/block/block_adjacent_difference.cuh>
 //!
-//!    __global__ void ExampleKernel(...)
-//!    {
-//!        // Specialize BlockAdjacentDifference for a 1D block of
-//!        // 128 threads of type int
-//!        using BlockAdjacentDifferenceT =
-//!           cub::BlockAdjacentDifference<int, 128>;
+//!        struct CustomDifference
+//!        {
+//!          template <typename DataType>
+//!          __host__ DataType operator()(DataType &lhs, DataType &rhs)
+//!          {
+//!            return lhs - rhs;
+//!          }
+//!        };
 //!
-//!        // Allocate shared memory for BlockAdjacentDifference
-//!        __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
+//!        __global__ void ExampleKernel(...)
+//!        {
+//!            // Specialize BlockAdjacentDifference for a 1D block of
+//!            // 128 threads of type int
+//!            using BlockAdjacentDifferenceT =
+//!               cub::BlockAdjacentDifference<int, 128>;
 //!
-//!        // Obtain a segment of consecutive items that are blocked across threads
-//!        int thread_data[4];
-//!        ...
+//!            // Allocate shared memory for BlockAdjacentDifference
+//!            __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
 //!
-//!        // Collectively compute adjacent_difference
-//!        int result[4];
+//!            // Obtain a segment of consecutive items that are blocked across threads
+//!            int thread_data[4];
+//!            ...
 //!
-//!        BlockAdjacentDifferenceT(temp_storage).SubtractLeft(thread_data, result,
-//!                                                            CustomDifference());
-//!    }
+//!            // Collectively compute adjacent_difference
+//!            int result[4];
+//!
+//!            BlockAdjacentDifferenceT(temp_storage).SubtractLeft(thread_data, result,
+//!                                                                CustomDifference());
+//!        }
+//!
+//!    .. code-block:: python
+//!
+//!        from numba import cuda
+//!        from cuda import coop
+//!
+//!        threads_per_block = 128
+//!        items_per_thread = 4
+//!
+//!        @cuda.jit(device=True)
+//!        def diff_op(lhs, rhs):
+//!            return lhs - rhs
+//!
+//!        @cuda.jit
+//!        def kernel(d_in, d_out):
+//!            temp_storage = coop.TempStorage()
+//!            thread_data = coop.ThreadData(items_per_thread)
+//!            result = coop.ThreadData(items_per_thread)
+//!            coop.block.load(d_in, thread_data)
+//!            coop.block.adjacent_difference[temp_storage](
+//!                thread_data,
+//!                result,
+//!                difference_op=diff_op,
+//!                block_adjacent_difference_type=coop.block.BlockAdjacentDifferenceType.SubtractLeft,
+//!            )
+//!            coop.block.store(d_out, result)
+//!
+//!        # kernel[1, threads_per_block](d_in, d_out)
 //!
 //! Suppose the set of input `thread_data` across the block of threads is
 //! ``{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }``.
@@ -243,38 +281,67 @@ public:
   //! The code snippet below illustrates how to use BlockAdjacentDifference to compute the left difference between
   //! adjacent elements.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
-  //!    // or equivalently <cub/block/block_adjacent_difference.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    struct CustomDifference
-  //!    {
-  //!      template <typename DataType>
-  //!      __host__ DataType operator()(DataType &lhs, DataType &rhs)
-  //!      {
-  //!        return lhs - rhs;
-  //!      }
-  //!    };
+  //!        #include <cub/cub.cuh>
+  //!        // or equivalently <cub/block/block_adjacent_difference.cuh>
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockAdjacentDifference for a 1D block
-  //!        // of 128 threads of type int
-  //!        using BlockAdjacentDifferenceT =
-  //!           cub::BlockAdjacentDifference<int, 128>;
+  //!        struct CustomDifference
+  //!        {
+  //!          template <typename DataType>
+  //!          __host__ DataType operator()(DataType &lhs, DataType &rhs)
+  //!          {
+  //!            return lhs - rhs;
+  //!          }
+  //!        };
   //!
-  //!        // Allocate shared memory for BlockAdjacentDifference
-  //!        __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockAdjacentDifference for a 1D block
+  //!            // of 128 threads of type int
+  //!            using BlockAdjacentDifferenceT =
+  //!               cub::BlockAdjacentDifference<int, 128>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockAdjacentDifference
+  //!            __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
   //!
-  //!        // Collectively compute adjacent_difference
-  //!        BlockAdjacentDifferenceT(temp_storage).SubtractLeft(thread_data, thread_data,
-  //!                                                            CustomDifference());
-  //!    }
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
+  //!
+  //!            // Collectively compute adjacent_difference
+  //!            BlockAdjacentDifferenceT(temp_storage).SubtractLeft(thread_data, thread_data,
+  //!                                                                CustomDifference());
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit(device=True)
+  //!        def diff_op(lhs, rhs):
+  //!            return lhs - rhs
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_in, d_out):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_in, thread_data)
+  //!            coop.block.adjacent_difference[temp_storage](
+  //!                thread_data,
+  //!                thread_data,
+  //!                difference_op=diff_op,
+  //!                block_adjacent_difference_type=coop.block.BlockAdjacentDifferenceType.SubtractLeft,
+  //!            )
+  //!            coop.block.store(d_out, thread_data)
+  //!
+  //!        # kernel[1, threads_per_block](d_in, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }``.
@@ -330,43 +397,74 @@ public:
   //! The code snippet below illustrates how to use BlockAdjacentDifference to compute the left difference between
   //! adjacent elements.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
-  //!    // or equivalently <cub/block/block_adjacent_difference.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    struct CustomDifference
-  //!    {
-  //!      template <typename DataType>
-  //!      __host__ DataType operator()(DataType &lhs, DataType &rhs)
-  //!      {
-  //!        return lhs - rhs;
-  //!      }
-  //!    };
+  //!        #include <cub/cub.cuh>
+  //!        // or equivalently <cub/block/block_adjacent_difference.cuh>
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockAdjacentDifference for a 1D block of
-  //!        // 128 threads of type int
-  //!        using BlockAdjacentDifferenceT =
-  //!           cub::BlockAdjacentDifference<int, 128>;
+  //!        struct CustomDifference
+  //!        {
+  //!          template <typename DataType>
+  //!          __host__ DataType operator()(DataType &lhs, DataType &rhs)
+  //!          {
+  //!            return lhs - rhs;
+  //!          }
+  //!        };
   //!
-  //!        // Allocate shared memory for BlockAdjacentDifference
-  //!        __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockAdjacentDifference for a 1D block of
+  //!            // 128 threads of type int
+  //!            using BlockAdjacentDifferenceT =
+  //!               cub::BlockAdjacentDifference<int, 128>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockAdjacentDifference
+  //!            __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
   //!
-  //!        // The last item in the previous tile:
-  //!        int tile_predecessor_item = ...;
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
   //!
-  //!        // Collectively compute adjacent_difference
-  //!        BlockAdjacentDifferenceT(temp_storage).SubtractLeft(
-  //!            thread_data,
-  //!            thread_data,
-  //!            CustomDifference(),
-  //!            tile_predecessor_item);
+  //!            // The last item in the previous tile:
+  //!            int tile_predecessor_item = ...;
+  //!
+  //!            // Collectively compute adjacent_difference
+  //!            BlockAdjacentDifferenceT(temp_storage).SubtractLeft(
+  //!                thread_data,
+  //!                thread_data,
+  //!                CustomDifference(),
+  //!                tile_predecessor_item);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit(device=True)
+  //!        def diff_op(lhs, rhs):
+  //!            return lhs - rhs
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_in, d_out, tile_predecessor_item):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_in, thread_data)
+  //!            coop.block.adjacent_difference[temp_storage](
+  //!                thread_data,
+  //!                thread_data,
+  //!                difference_op=diff_op,
+  //!                block_adjacent_difference_type=coop.block.BlockAdjacentDifferenceType.SubtractLeft,
+  //!                tile_predecessor_item=tile_predecessor_item,
+  //!            )
+  //!            coop.block.store(d_out, thread_data)
+  //!
+  //!        # kernel[1, threads_per_block](d_in, d_out, tile_predecessor_item)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }``.
@@ -433,41 +531,72 @@ public:
   //! The code snippet below illustrates how to use BlockAdjacentDifference to compute the left difference between
   //! adjacent elements.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
-  //!    // or equivalently <cub/block/block_adjacent_difference.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    struct CustomDifference
-  //!    {
-  //!      template <typename DataType>
-  //!      __host__ DataType operator()(DataType &lhs, DataType &rhs)
-  //!      {
-  //!        return lhs - rhs;
-  //!      }
-  //!    };
+  //!        #include <cub/cub.cuh>
+  //!        // or equivalently <cub/block/block_adjacent_difference.cuh>
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!      // Specialize BlockAdjacentDifference for a 1D block of
-  //!      // 128 threads of type int
-  //!      using BlockAdjacentDifferenceT =
-  //!         cub::BlockAdjacentDifference<int, 128>;
+  //!        struct CustomDifference
+  //!        {
+  //!          template <typename DataType>
+  //!          __host__ DataType operator()(DataType &lhs, DataType &rhs)
+  //!          {
+  //!            return lhs - rhs;
+  //!          }
+  //!        };
   //!
-  //!      // Allocate shared memory for BlockAdjacentDifference
-  //!      __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!          // Specialize BlockAdjacentDifference for a 1D block of
+  //!          // 128 threads of type int
+  //!          using BlockAdjacentDifferenceT =
+  //!             cub::BlockAdjacentDifference<int, 128>;
   //!
-  //!      // Obtain a segment of consecutive items that are blocked across threads
-  //!      int thread_data[4];
-  //!      ...
-  //!      int valid_items = 9;
+  //!          // Allocate shared memory for BlockAdjacentDifference
+  //!          __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
   //!
-  //!      // Collectively compute adjacent_difference
-  //!      BlockAdjacentDifferenceT(temp_storage).SubtractLeftPartialTile(
-  //!          thread_data,
-  //!          thread_data,
-  //!          CustomDifference(),
-  //!          valid_items);
+  //!          // Obtain a segment of consecutive items that are blocked across threads
+  //!          int thread_data[4];
+  //!          ...
+  //!          int valid_items = 9;
+  //!
+  //!          // Collectively compute adjacent_difference
+  //!          BlockAdjacentDifferenceT(temp_storage).SubtractLeftPartialTile(
+  //!              thread_data,
+  //!              thread_data,
+  //!              CustomDifference(),
+  //!              valid_items);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit(device=True)
+  //!        def diff_op(lhs, rhs):
+  //!            return lhs - rhs
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_in, d_out, valid_items):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_in, thread_data)
+  //!            coop.block.adjacent_difference[temp_storage](
+  //!                thread_data,
+  //!                thread_data,
+  //!                difference_op=diff_op,
+  //!                block_adjacent_difference_type=coop.block.BlockAdjacentDifferenceType.SubtractLeft,
+  //!                valid_items=valid_items,
+  //!            )
+  //!            coop.block.store(d_out, thread_data)
+  //!
+  //!        # kernel[1, threads_per_block](d_in, d_out, valid_items)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }``.
@@ -547,43 +676,75 @@ public:
   //! The code snippet below illustrates how to use BlockAdjacentDifference to compute the left difference between
   //! adjacent elements.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
-  //!    // or equivalently <cub/block/block_adjacent_difference.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    struct CustomDifference
-  //!    {
-  //!      template <typename DataType>
-  //!      __host__ DataType operator()(DataType &lhs, DataType &rhs)
-  //!      {
-  //!        return lhs - rhs;
-  //!      }
-  //!    };
+  //!        #include <cub/cub.cuh>
+  //!        // or equivalently <cub/block/block_adjacent_difference.cuh>
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!      // Specialize BlockAdjacentDifference for a 1D block of
-  //!      // 128 threads of type int
-  //!      using BlockAdjacentDifferenceT =
-  //!         cub::BlockAdjacentDifference<int, 128>;
+  //!        struct CustomDifference
+  //!        {
+  //!          template <typename DataType>
+  //!          __host__ DataType operator()(DataType &lhs, DataType &rhs)
+  //!          {
+  //!            return lhs - rhs;
+  //!          }
+  //!        };
   //!
-  //!      // Allocate shared memory for BlockAdjacentDifference
-  //!      __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!          // Specialize BlockAdjacentDifference for a 1D block of
+  //!          // 128 threads of type int
+  //!          using BlockAdjacentDifferenceT =
+  //!             cub::BlockAdjacentDifference<int, 128>;
   //!
-  //!      // Obtain a segment of consecutive items that are blocked across threads
-  //!      int thread_data[4];
-  //!      ...
-  //!      int valid_items = 9;
-  //!      int tile_predecessor_item = 4;
+  //!          // Allocate shared memory for BlockAdjacentDifference
+  //!          __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
   //!
-  //!      // Collectively compute adjacent_difference
-  //!      BlockAdjacentDifferenceT(temp_storage).SubtractLeftPartialTile(
-  //!          thread_data,
-  //!          thread_data,
-  //!          CustomDifference(),
-  //!          valid_items,
-  //!          tile_predecessor_item);
+  //!          // Obtain a segment of consecutive items that are blocked across threads
+  //!          int thread_data[4];
+  //!          ...
+  //!          int valid_items = 9;
+  //!          int tile_predecessor_item = 4;
+  //!
+  //!          // Collectively compute adjacent_difference
+  //!          BlockAdjacentDifferenceT(temp_storage).SubtractLeftPartialTile(
+  //!              thread_data,
+  //!              thread_data,
+  //!              CustomDifference(),
+  //!              valid_items,
+  //!              tile_predecessor_item);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit(device=True)
+  //!        def diff_op(lhs, rhs):
+  //!            return lhs - rhs
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_in, d_out, valid_items, tile_predecessor_item):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_in, thread_data)
+  //!            coop.block.adjacent_difference[temp_storage](
+  //!                thread_data,
+  //!                thread_data,
+  //!                difference_op=diff_op,
+  //!                block_adjacent_difference_type=coop.block.BlockAdjacentDifferenceType.SubtractLeft,
+  //!                valid_items=valid_items,
+  //!                tile_predecessor_item=tile_predecessor_item,
+  //!            )
+  //!            coop.block.store(d_out, thread_data)
+  //!
+  //!        # kernel[1, threads_per_block](d_in, d_out, valid_items, tile_predecessor_item)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4], ... }``.
@@ -681,39 +842,69 @@ public:
   //! The code snippet below illustrates how to use BlockAdjacentDifference to compute the right difference between
   //! adjacent elements.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
-  //!    // or equivalently <cub/block/block_adjacent_difference.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    struct CustomDifference
-  //!    {
-  //!      template <typename DataType>
-  //!      __host__ DataType operator()(DataType &lhs, DataType &rhs)
-  //!      {
-  //!        return lhs - rhs;
-  //!      }
-  //!    };
+  //!        #include <cub/cub.cuh>
+  //!        // or equivalently <cub/block/block_adjacent_difference.cuh>
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockAdjacentDifference for a 1D block of
-  //!        // 128 threads of type int
-  //!        using BlockAdjacentDifferenceT =
-  //!           cub::BlockAdjacentDifference<int, 128>;
+  //!        struct CustomDifference
+  //!        {
+  //!          template <typename DataType>
+  //!          __host__ DataType operator()(DataType &lhs, DataType &rhs)
+  //!          {
+  //!            return lhs - rhs;
+  //!          }
+  //!        };
   //!
-  //!        // Allocate shared memory for BlockAdjacentDifference
-  //!        __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockAdjacentDifference for a 1D block of
+  //!            // 128 threads of type int
+  //!            using BlockAdjacentDifferenceT =
+  //!               cub::BlockAdjacentDifference<int, 128>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockAdjacentDifference
+  //!            __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
   //!
-  //!        // Collectively compute adjacent_difference
-  //!        BlockAdjacentDifferenceT(temp_storage).SubtractRight(
-  //!            thread_data,
-  //!            thread_data,
-  //!            CustomDifference());
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
+  //!
+  //!            // Collectively compute adjacent_difference
+  //!            BlockAdjacentDifferenceT(temp_storage).SubtractRight(
+  //!                thread_data,
+  //!                thread_data,
+  //!                CustomDifference());
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit(device=True)
+  //!        def diff_op(lhs, rhs):
+  //!            return lhs - rhs
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_in, d_out):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_in, thread_data)
+  //!            coop.block.adjacent_difference[temp_storage](
+  //!                thread_data,
+  //!                thread_data,
+  //!                difference_op=diff_op,
+  //!                block_adjacent_difference_type=coop.block.BlockAdjacentDifferenceType.SubtractRight,
+  //!            )
+  //!            coop.block.store(d_out, thread_data)
+  //!
+  //!        # kernel[1, threads_per_block](d_in, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ ...3], [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4] }``.
@@ -771,43 +962,74 @@ public:
   //! adjacent elements.
   //!
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
-  //!    // or equivalently <cub/block/block_adjacent_difference.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    struct CustomDifference
-  //!    {
-  //!      template <typename DataType>
-  //!      __host__ DataType operator()(DataType &lhs, DataType &rhs)
-  //!      {
-  //!        return lhs - rhs;
-  //!      }
-  //!    };
+  //!        #include <cub/cub.cuh>
+  //!        // or equivalently <cub/block/block_adjacent_difference.cuh>
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockAdjacentDifference for a 1D block of
-  //!        // 128 threads of type int
-  //!        using BlockAdjacentDifferenceT =
-  //!           cub::BlockAdjacentDifference<int, 128>;
+  //!        struct CustomDifference
+  //!        {
+  //!          template <typename DataType>
+  //!          __host__ DataType operator()(DataType &lhs, DataType &rhs)
+  //!          {
+  //!            return lhs - rhs;
+  //!          }
+  //!        };
   //!
-  //!        // Allocate shared memory for BlockAdjacentDifference
-  //!        __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockAdjacentDifference for a 1D block of
+  //!            // 128 threads of type int
+  //!            using BlockAdjacentDifferenceT =
+  //!               cub::BlockAdjacentDifference<int, 128>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockAdjacentDifference
+  //!            __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
   //!
-  //!        // The first item in the next tile:
-  //!        int tile_successor_item = ...;
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
   //!
-  //!        // Collectively compute adjacent_difference
-  //!        BlockAdjacentDifferenceT(temp_storage).SubtractRight(
-  //!            thread_data,
-  //!            thread_data,
-  //!            CustomDifference(),
-  //!            tile_successor_item);
+  //!            // The first item in the next tile:
+  //!            int tile_successor_item = ...;
+  //!
+  //!            // Collectively compute adjacent_difference
+  //!            BlockAdjacentDifferenceT(temp_storage).SubtractRight(
+  //!                thread_data,
+  //!                thread_data,
+  //!                CustomDifference(),
+  //!                tile_successor_item);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit(device=True)
+  //!        def diff_op(lhs, rhs):
+  //!            return lhs - rhs
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_in, d_out, tile_successor_item):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_in, thread_data)
+  //!            coop.block.adjacent_difference[temp_storage](
+  //!                thread_data,
+  //!                thread_data,
+  //!                difference_op=diff_op,
+  //!                block_adjacent_difference_type=coop.block.BlockAdjacentDifferenceType.SubtractRight,
+  //!                tile_successor_item=tile_successor_item,
+  //!            )
+  //!            coop.block.store(d_out, thread_data)
+  //!
+  //!        # kernel[1, threads_per_block](d_in, d_out, tile_successor_item)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ ...3], [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4] }``,
@@ -872,40 +1094,71 @@ public:
   //! adjacent elements.
   //!
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
-  //!    // or equivalently <cub/block/block_adjacent_difference.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    struct CustomDifference
-  //!    {
-  //!      template <typename DataType>
-  //!      __host__ DataType operator()(DataType &lhs, DataType &rhs)
-  //!      {
-  //!        return lhs - rhs;
-  //!      }
-  //!    };
+  //!        #include <cub/cub.cuh>
+  //!        // or equivalently <cub/block/block_adjacent_difference.cuh>
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockAdjacentDifference for a 1D block of
-  //!        // 128 threads of type int
-  //!        using BlockAdjacentDifferenceT =
-  //!           cub::BlockAdjacentDifference<int, 128>;
+  //!        struct CustomDifference
+  //!        {
+  //!          template <typename DataType>
+  //!          __host__ DataType operator()(DataType &lhs, DataType &rhs)
+  //!          {
+  //!            return lhs - rhs;
+  //!          }
+  //!        };
   //!
-  //!        // Allocate shared memory for BlockAdjacentDifference
-  //!        __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockAdjacentDifference for a 1D block of
+  //!            // 128 threads of type int
+  //!            using BlockAdjacentDifferenceT =
+  //!               cub::BlockAdjacentDifference<int, 128>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockAdjacentDifference
+  //!            __shared__ typename BlockAdjacentDifferenceT::TempStorage temp_storage;
   //!
-  //!        // Collectively compute adjacent_difference
-  //!        BlockAdjacentDifferenceT(temp_storage).SubtractRightPartialTile(
-  //!            thread_data,
-  //!            thread_data,
-  //!            CustomDifference(),
-  //!            valid_items);
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
+  //!
+  //!            // Collectively compute adjacent_difference
+  //!            BlockAdjacentDifferenceT(temp_storage).SubtractRightPartialTile(
+  //!                thread_data,
+  //!                thread_data,
+  //!                CustomDifference(),
+  //!                valid_items);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit(device=True)
+  //!        def diff_op(lhs, rhs):
+  //!            return lhs - rhs
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_in, d_out, valid_items):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_in, thread_data)
+  //!            coop.block.adjacent_difference[temp_storage](
+  //!                thread_data,
+  //!                thread_data,
+  //!                difference_op=diff_op,
+  //!                block_adjacent_difference_type=coop.block.BlockAdjacentDifferenceType.SubtractRight,
+  //!                valid_items=valid_items,
+  //!            )
+  //!            coop.block.store(d_out, thread_data)
+  //!
+  //!        # kernel[1, threads_per_block](d_in, d_out, valid_items)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ ...3], [4,2,1,1], [1,1,1,1], [2,3,3,3], [3,4,1,4] }``.
