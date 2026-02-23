@@ -26,10 +26,9 @@
 #include <cuda/std/__type_traits/make_nbit_int.h>
 
 #include <cuda/experimental/__copy/types.cuh>
+#include <cuda/experimental/__copy/utils.cuh>
 #include <cuda/experimental/__copy_bytes/copy_bytes_naive.cuh>
 #include <cuda/experimental/__copy_bytes/layout_utils.cuh>
-
-#include <cuda/experimental/__copy/utils.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 #include <cute/algorithm/copy.hpp>
@@ -49,7 +48,7 @@ namespace cuda::experimental
 //!
 //! Otherwise (element-wise path), each thread copies elements via a strided
 //! loop using CuTe's linear index decomposition.
-template <typename Config, typename SrcTensor, typename DstTensor, int TileSize>
+template <typename Config, typename SrcTensor, typename DstTensor, int TileSize, int VecBitsInt>
 __global__ void copy_bytes_kernel(Config config, SrcTensor src, DstTensor dst, int inner_size, int tiles_per_row)
 {
   constexpr int NumThreads = ::cuda::gpu_thread.count(::cuda::block, config);
@@ -73,7 +72,7 @@ __global__ void copy_bytes_kernel(Config config, SrcTensor src, DstTensor dst, i
       const auto thr_layout = ::cute::make_layout(::cute::Int<EPT>{});
       auto thr_src          = make_gmem_tensor(&src(flat_offset + tid * EPT), thr_layout);
       auto thr_dst          = make_gmem_tensor(&dst(flat_offset + tid * EPT), thr_layout);
-      ::cute::copy(thr_src, thr_dst);
+      ::cute::copy(::cute::AutoVectorizingCopyWithAssumedAlignment<VecBitsInt>{}, thr_src, thr_dst);
       return;
     }
   }
@@ -84,7 +83,7 @@ __global__ void copy_bytes_kernel(Config config, SrcTensor src, DstTensor dst, i
 }
 
 //! @brief Launch the unified copy kernel with pre-built tensors.
-template <int TileSize, typename SrcTensor, typename DstTensor>
+template <int TileSize, int VecBitsInt, typename SrcTensor, typename DstTensor>
 void __launch_copy_bytes_kernel(
   ::cuda::stream_ref stream, SrcTensor src_tensor, DstTensor dst_tensor, int inner_size, int outer_size)
 {
@@ -95,7 +94,7 @@ void __launch_copy_bytes_kernel(
   ::cuda::launch(
     stream,
     config,
-    copy_bytes_kernel<decltype(config), SrcTensor, DstTensor, TileSize>,
+    copy_bytes_kernel<decltype(config), SrcTensor, DstTensor, TileSize, VecBitsInt>,
     src_tensor,
     dst_tensor,
     inner_size,
@@ -124,7 +123,7 @@ void __dispatch_vectorized_copy(
     const int vec_inner      = ::cute::size<0>(src_recast);
     const int vec_outer      = ::cute::size(src_recast) / vec_inner;
     constexpr int TileSize   = 256 * (16 / VecBytes);
-    __launch_copy_bytes_kernel<TileSize>(__stream, src_recast, dst_recast, vec_inner, vec_outer);
+    __launch_copy_bytes_kernel<TileSize, VecBitsInt>(__stream, src_recast, dst_recast, vec_inner, vec_outer);
   };
   switch (__common_vector_bytes)
   {
@@ -161,11 +160,8 @@ template <typename T, typename SrcLayout, typename DstLayout>
 void copy_bytes_registers(
   const T* src, const SrcLayout& src_layout, T* dst, const DstLayout& dst_layout, ::cuda::stream_ref stream)
 {
-  constexpr ::cuda::std::size_t MaxRank = 8;
-  constexpr int SrcR                    = decltype(::cute::rank(src_layout))::value;
-  constexpr int DstR                    = decltype(::cute::rank(dst_layout))::value;
-  static_assert(static_cast<::cuda::std::size_t>(SrcR) <= MaxRank && static_cast<::cuda::std::size_t>(DstR) <= MaxRank,
-                "Layout rank exceeds maximum supported rank");
+  constexpr int SrcR = decltype(::cute::rank(src_layout))::value;
+  constexpr int DstR = decltype(::cute::rank(dst_layout))::value;
   static_assert(SrcR == DstR, "Source and destination layouts must have the same rank");
   const int total_size = static_cast<int>(::cute::size(src_layout));
   if (total_size == 0)

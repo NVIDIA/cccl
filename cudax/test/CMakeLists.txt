@@ -122,6 +122,14 @@ cudax_add_catch2_test(test_target copy_bytes.vectorize
     copy_bytes/vectorize.cu
 )
 
+cudax_add_catch2_test(test_target copy_bytes.nvmath
+    copy_bytes/nvmath.cu
+)
+
+cudax_add_catch2_test(test_target copy_bytes.nvmath_transpose
+    copy_bytes/nvmath_transpose.cu
+)
+
 cudax_add_catch2_test(test_target hierarchy_groups
     hierarchy/group.cu
 )
