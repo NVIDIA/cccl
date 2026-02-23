@@ -2021,3 +2021,34 @@
     - Result: `ok`
   - `pre-commit run --files ../../docs/python/coop.rst ../../docs/python/coop_faq.rst ../../docs/python/coop_thread_data.rst cuda/coop/_common.py cuda/coop/_dataclass.py cuda/coop/_decls.py cuda/coop/_types.py cuda/coop/warp/__init__.py cuda/coop/warp/_warp_exchange.py cuda/coop/warp/_warp_load_store.py cuda/coop/warp/_warp_merge_sort.py cuda/coop/warp/_warp_reduce.py cuda/coop/warp/_warp_scan.py tests/coop/test_block_adjacent_difference.py tests/coop/test_block_load_store_api.py tests/coop/test_common.py`
     - Result: all hooks passed
+
+## 2026-02-23 (PR #7214 @codex follow-up round 3)
+- Request: Sync newly added `@codex` review comments, plan responses, and
+  implement warranted changes with independent validation of reviewer logic.
+- Findings:
+  - Pulled PR thread data for `NVIDIA/cccl#7214`; found 2 unresolved
+    `@codex` threads, both in `docs/python/coop_thread_data.rst`.
+  - Both requests were valid and aligned with current implementation behavior.
+  - Verified runtime mismatch behavior directly: mixed dtype inference currently
+    raises `RuntimeError("Could not infer a consistent dtype for ThreadData; ...")`.
+- Changes:
+  - Expanded `docs/python/coop_thread_data.rst`:
+    - Added C++/CUB mental model section (`T thread_data[ITEMS_PER_THREAD]`).
+    - Added lowering section describing rewrite conversion to per-thread
+      `cuda.local.array(...)` and thread-private storage semantics.
+    - Expanded automatic dtype inference narrative (candidate collection,
+      consistency rule, and explicit failure outcomes).
+    - Added literalinclude mismatch example.
+  - Added docs snippet anchors in
+    `tests/coop/test_block_load_store_api.py`:
+    - `thread-data-dtype-mismatch-kernel`
+    - `thread-data-dtype-mismatch-usage`
+- Decisions:
+  - Kept the mismatch example anchored in tests to minimize docs drift.
+  - Documented concrete `RuntimeError` failure text because behavior was
+    confirmed against current code path.
+- Tests:
+  - `pytest -q tests/coop/test_block_load_store_api.py -k "block_load_store_single_phase_thread_data or thread_data_dtype_mismatch_raises"`
+    - Result: `4 passed, 37 deselected`
+  - `pre-commit run --files ../../docs/python/coop_thread_data.rst tests/coop/test_block_load_store_api.py`
+    - Result: all hooks passed (after one auto-format pass by `ruff-format`)
