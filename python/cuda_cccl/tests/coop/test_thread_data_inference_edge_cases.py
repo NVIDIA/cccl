@@ -24,6 +24,33 @@ def _exclusive_scan_host(values):
     return output
 
 
+def test_thread_data_direct_setitem_getitem_supported():
+    threads_per_block = 32
+    items_per_thread = 4
+    total_items = threads_per_block * items_per_thread
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = cuda.threadIdx.x
+        td = coop.ThreadData(items_per_thread, dtype=d_in.dtype)
+
+        for i in range(items_per_thread):
+            td[i] = d_in[tid * items_per_thread + i]
+
+        for i in range(items_per_thread):
+            d_out[tid * items_per_thread + i] = td[i]
+
+    h_input = np.random.randint(0, 64, total_items, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    kernel[1, threads_per_block](d_input, d_output)
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    np.testing.assert_array_equal(h_output, h_input)
+
+
 def test_thread_data_multiple_instances_control_flow():
     threads_per_block = 128
     items_per_thread = 4
