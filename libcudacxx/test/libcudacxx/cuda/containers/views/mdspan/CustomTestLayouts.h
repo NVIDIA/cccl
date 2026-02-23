@@ -18,6 +18,7 @@
 #ifndef TEST_STD_CONTAINERS_VIEWS_MDSPAN_CUSTOM_TEST_LAYOUTS_H
 #define TEST_STD_CONTAINERS_VIEWS_MDSPAN_CUSTOM_TEST_LAYOUTS_H
 
+#include <cuda/numeric>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
@@ -40,12 +41,6 @@
 // - not trivially copyable
 // - does not check dynamic to static extent conversion in converting ctor
 // - check via side-effects that mdspan::swap calls mappings swap via ADL
-
-__host__ __device__ bool mul_overflow(size_t x, size_t y, size_t* res)
-{
-  *res = x * y;
-  return x && ((*res / x) != y);
-}
 
 template <class T>
 __host__ __device__ inline const T& Min(const T& __a, const T& __b)
@@ -93,7 +88,7 @@ private:
     index_type prod = ext.extent(0);
     for (rank_type r = 1; r < extents_type::rank(); r++)
     {
-      bool overflowed = mul_overflow(prod, Min(ext.extent(r), Wrap), &prod);
+      bool overflowed = ::cuda::mul_overflow(prod, Min(ext.extent(r), Wrap), prod);
       if (overflowed)
       {
         return false;
@@ -378,7 +373,7 @@ private:
     index_type prod = ext.extent(0);
     for (rank_type r = 1; r < extents_type::rank(); r++)
     {
-      bool overflowed = mul_overflow(prod, ext.extent(r), &prod);
+      bool overflowed = ::cuda::mul_overflow(prod, ext.extent(r), prod);
       if (overflowed)
       {
         return false;
