@@ -571,24 +571,45 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
   //! where each thread owns 4 consecutive keys.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
-  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
   //!
-  //!        // Allocate shared memory for BlockRadixSort
-  //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
+  //!            using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_keys[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockRadixSort
+  //!            __shared__ typename BlockRadixSort::TempStorage temp_storage;
   //!
-  //!        // Collectively sort the keys
-  //!        BlockRadixSort(temp_storage).Sort(thread_keys);
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_keys[4];
+  //!            ...
+  //!
+  //!            // Collectively sort the keys
+  //!            BlockRadixSort(temp_storage).Sort(thread_keys);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_keys):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_keys = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_keys, thread_keys)
+  //!            coop.block.radix_sort_keys[temp_storage](thread_keys)
+  //!            coop.block.store(d_keys, thread_keys)
+  //!
+  //!        # kernel[1, threads_per_block](d_keys)
   //!
   //! Suppose the set of input ``thread_keys`` across the block of threads is
   //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
@@ -765,25 +786,49 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
   //! where each thread owns 4 consecutive pairs.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
-  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4, int>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
   //!
-  //!        // Allocate shared memory for BlockRadixSort
-  //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
+  //!            using BlockRadixSort = cub::BlockRadixSort<int, 128, 4, int>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_keys[4];
-  //!        int thread_values[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockRadixSort
+  //!            __shared__ typename BlockRadixSort::TempStorage temp_storage;
   //!
-  //!        // Collectively sort the keys and values among block threads
-  //!        BlockRadixSort(temp_storage).Sort(thread_keys, thread_values);
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_keys[4];
+  //!            int thread_values[4];
+  //!            ...
+  //!
+  //!            // Collectively sort the keys and values among block threads
+  //!            BlockRadixSort(temp_storage).Sort(thread_keys, thread_values);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_keys, d_values):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_keys = coop.ThreadData(items_per_thread)
+  //!            thread_values = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_keys, thread_keys)
+  //!            coop.block.load(d_values, thread_values)
+  //!            coop.block.radix_sort_keys[temp_storage](thread_keys, values=thread_values)
+  //!            coop.block.store(d_keys, thread_keys)
+  //!            coop.block.store(d_values, thread_values)
+  //!
+  //!        # kernel[1, threads_per_block](d_keys, d_values)
   //!
   //! @endcode
   //! @par
@@ -974,24 +1019,45 @@ public:
   //! are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128 threads
   //! where each thread owns 4 consecutive keys.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
-  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
   //!
-  //!        // Allocate shared memory for BlockRadixSort
-  //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
+  //!            using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_keys[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockRadixSort
+  //!            __shared__ typename BlockRadixSort::TempStorage temp_storage;
   //!
-  //!        // Collectively sort the keys
-  //!        BlockRadixSort(temp_storage).Sort(thread_keys);
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_keys[4];
+  //!            ...
+  //!
+  //!            // Collectively sort the keys
+  //!            BlockRadixSort(temp_storage).Sort(thread_keys);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_keys):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_keys = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_keys, thread_keys)
+  //!            coop.block.radix_sort_keys_descending[temp_storage](thread_keys)
+  //!            coop.block.store(d_keys, thread_keys)
+  //!
+  //!        # kernel[1, threads_per_block](d_keys)
   //!
   //! Suppose the set of input ``thread_keys`` across the block of threads is
   //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
@@ -1178,25 +1244,49 @@ public:
   //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
   //! where each thread owns 4 consecutive pairs.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
-  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4, int>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
   //!
-  //!        // Allocate shared memory for BlockRadixSort
-  //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
+  //!            using BlockRadixSort = cub::BlockRadixSort<int, 128, 4, int>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_keys[4];
-  //!        int thread_values[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockRadixSort
+  //!            __shared__ typename BlockRadixSort::TempStorage temp_storage;
   //!
-  //!        // Collectively sort the keys and values among block threads
-  //!        BlockRadixSort(temp_storage).Sort(thread_keys, thread_values);
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_keys[4];
+  //!            int thread_values[4];
+  //!            ...
+  //!
+  //!            // Collectively sort the keys and values among block threads
+  //!            BlockRadixSort(temp_storage).Sort(thread_keys, thread_values);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_keys, d_values):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_keys = coop.ThreadData(items_per_thread)
+  //!            thread_values = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_keys, thread_keys)
+  //!            coop.block.load(d_values, thread_values)
+  //!            coop.block.radix_sort_keys_descending[temp_storage](thread_keys, values=thread_values)
+  //!            coop.block.store(d_keys, thread_keys)
+  //!            coop.block.store(d_values, thread_values)
+  //!
+  //!        # kernel[1, threads_per_block](d_keys, d_values)
   //!
   //! Suppose the set of input ``thread_keys`` across the block of threads is
   //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``. The
@@ -1396,24 +1486,45 @@ public:
   //! are initially partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128
   //! threads where each thread owns 4 consecutive keys. The final partitioning is striped.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
-  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
   //!
-  //!        // Allocate shared memory for BlockRadixSort
-  //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
+  //!            using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_keys[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockRadixSort
+  //!            __shared__ typename BlockRadixSort::TempStorage temp_storage;
   //!
-  //!        // Collectively sort the keys
-  //!        BlockRadixSort(temp_storage).SortBlockedToStriped(thread_keys);
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_keys[4];
+  //!            ...
+  //!
+  //!            // Collectively sort the keys
+  //!            BlockRadixSort(temp_storage).SortBlockedToStriped(thread_keys);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_keys):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_keys = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_keys, thread_keys)
+  //!            coop.block.radix_sort_keys[temp_storage](thread_keys, blocked_to_striped=True)
+  //!            coop.block.store(d_keys, thread_keys, algorithm=coop.BlockStoreAlgorithm.STRIPED)
+  //!
+  //!        # kernel[1, threads_per_block](d_keys)
   //!
   //! Suppose the set of input ``thread_keys`` across the block of threads is
   //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
@@ -1603,25 +1714,53 @@ public:
   //! are initially partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128
   //! threads where each thread owns 4 consecutive pairs.  The final partitioning is striped.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
-  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4, int>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
   //!
-  //!        // Allocate shared memory for BlockRadixSort
-  //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
+  //!            using BlockRadixSort = cub::BlockRadixSort<int, 128, 4, int>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_keys[4];
-  //!        int thread_values[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockRadixSort
+  //!            __shared__ typename BlockRadixSort::TempStorage temp_storage;
   //!
-  //!        // Collectively sort the keys and values among block threads
-  //!        BlockRadixSort(temp_storage).SortBlockedToStriped(thread_keys, thread_values);
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_keys[4];
+  //!            int thread_values[4];
+  //!            ...
+  //!
+  //!            // Collectively sort the keys and values among block threads
+  //!            BlockRadixSort(temp_storage).SortBlockedToStriped(thread_keys, thread_values);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_keys, d_values):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_keys = coop.ThreadData(items_per_thread)
+  //!            thread_values = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_keys, thread_keys)
+  //!            coop.block.load(d_values, thread_values)
+  //!            coop.block.radix_sort_keys[temp_storage](
+  //!                thread_keys,
+  //!                values=thread_values,
+  //!                blocked_to_striped=True,
+  //!            )
+  //!            coop.block.store(d_keys, thread_keys, algorithm=coop.BlockStoreAlgorithm.STRIPED)
+  //!            coop.block.store(d_values, thread_values, algorithm=coop.BlockStoreAlgorithm.STRIPED)
+  //!
+  //!        # kernel[1, threads_per_block](d_keys, d_values)
   //!
   //! Suppose the set of input ``thread_keys`` across the block of threads is
   //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
@@ -1810,24 +1949,45 @@ public:
   //! are initially partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128
   //! threads where each thread owns 4 consecutive keys. The final partitioning is striped.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
-  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
   //!
-  //!        // Allocate shared memory for BlockRadixSort
-  //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
+  //!            using BlockRadixSort = cub::BlockRadixSort<int, 128, 4>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_keys[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockRadixSort
+  //!            __shared__ typename BlockRadixSort::TempStorage temp_storage;
   //!
-  //!        // Collectively sort the keys
-  //!        BlockRadixSort(temp_storage).SortBlockedToStriped(thread_keys);
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_keys[4];
+  //!            ...
+  //!
+  //!            // Collectively sort the keys
+  //!            BlockRadixSort(temp_storage).SortBlockedToStriped(thread_keys);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_keys):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_keys = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_keys, thread_keys)
+  //!            coop.block.radix_sort_keys_descending[temp_storage](thread_keys, blocked_to_striped=True)
+  //!            coop.block.store(d_keys, thread_keys, algorithm=coop.BlockStoreAlgorithm.STRIPED)
+  //!
+  //!        # kernel[1, threads_per_block](d_keys)
   //!
   //! Suppose the set of input ``thread_keys`` across the block of threads is
   //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
@@ -2016,25 +2176,53 @@ public:
   //! are initially partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128
   //! threads where each thread owns 4 consecutive pairs. The final partitioning is striped.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
-  //!        using BlockRadixSort = cub::BlockRadixSort<int, 128, 4, int>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
   //!
-  //!        // Allocate shared memory for BlockRadixSort
-  //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
+  //!            using BlockRadixSort = cub::BlockRadixSort<int, 128, 4, int>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_keys[4];
-  //!        int thread_values[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockRadixSort
+  //!            __shared__ typename BlockRadixSort::TempStorage temp_storage;
   //!
-  //!        // Collectively sort the keys and values among block threads
-  //!        BlockRadixSort(temp_storage).SortBlockedToStriped(thread_keys, thread_values);
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_keys[4];
+  //!            int thread_values[4];
+  //!            ...
+  //!
+  //!            // Collectively sort the keys and values among block threads
+  //!            BlockRadixSort(temp_storage).SortBlockedToStriped(thread_keys, thread_values);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_keys, d_values):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_keys = coop.ThreadData(items_per_thread)
+  //!            thread_values = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_keys, thread_keys)
+  //!            coop.block.load(d_values, thread_values)
+  //!            coop.block.radix_sort_keys_descending[temp_storage](
+  //!                thread_keys,
+  //!                values=thread_values,
+  //!                blocked_to_striped=True,
+  //!            )
+  //!            coop.block.store(d_keys, thread_keys, algorithm=coop.BlockStoreAlgorithm.STRIPED)
+  //!            coop.block.store(d_values, thread_values, algorithm=coop.BlockStoreAlgorithm.STRIPED)
+  //!
+  //!        # kernel[1, threads_per_block](d_keys, d_values)
   //!
   //! Suppose the set of input ``thread_keys`` across the block of threads is
   //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
