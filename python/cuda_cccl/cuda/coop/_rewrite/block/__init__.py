@@ -12,6 +12,7 @@ _SIDE_EFFECT_MODULES: tuple[str, ...] = (
     "_block_histogram",
     "_block_run_length_decode",
     "_block_merge_sort",
+    "_block_radix_sort",
 )
 
 
