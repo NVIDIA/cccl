@@ -25,9 +25,9 @@
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <iostream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 CUB_NAMESPACE_BEGIN
 

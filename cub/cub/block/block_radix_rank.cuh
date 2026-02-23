@@ -36,9 +36,9 @@
 #include <cuda/std/limits>
 #include <cuda/std/span>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 CUB_NAMESPACE_BEGIN
 
@@ -74,7 +74,7 @@ enum RadixRankAlgorithm
   RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR
 };
 
-#if !_CCCL_COMPILER(NVRTC) && !defined(_CCCL_DOXYGEN_INVOKED)
+#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 inline ::std::ostream& operator<<(::std::ostream& os, RadixRankAlgorithm algo)
 {
   switch (algo)
@@ -93,7 +93,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, RadixRankAlgorithm algo)
       return os << "<unknown RadixRankAlgorithm: " << static_cast<int>(algo) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
+#endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
 /** Empty callback implementation */
 template <int BINS_PER_THREAD>

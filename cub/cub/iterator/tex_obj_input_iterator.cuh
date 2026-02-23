@@ -29,9 +29,9 @@
 
 #include <nv/target>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 CUB_NAMESPACE_BEGIN
 
@@ -137,7 +137,7 @@ public:
       , tex_obj(0)
   {}
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   /**
    * @brief Use this iterator to bind @p ptr with a texture reference
    *
@@ -174,7 +174,7 @@ public:
   {
     return CubDebug(cudaDestroyTextureObject(tex_obj));
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
   /// Postfix increment
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
@@ -267,7 +267,7 @@ public:
     return ((ptr != rhs.ptr) || (tex_offset != rhs.tex_offset) || (tex_obj != rhs.tex_obj));
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   /// ostream operator
   friend ::std::ostream& operator<<(::std::ostream& os, const self_type& itr)
   {
@@ -275,7 +275,7 @@ public:
        << " )";
     return os;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 private:
   // This is hoisted out of operator* because #pragma can't be used inside of

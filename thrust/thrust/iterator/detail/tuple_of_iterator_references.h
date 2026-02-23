@@ -142,7 +142,7 @@ struct tuple_element<Id, THRUST_NS_QUALIFIER::detail::tuple_of_iterator_referenc
 _CCCL_END_NAMESPACE_CUDA_STD
 
 // structured bindings support
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 namespace std
 {
 template <class... Ts>
@@ -155,4 +155,4 @@ struct tuple_element<Id, THRUST_NS_QUALIFIER::detail::tuple_of_iterator_referenc
     : ::cuda::std::tuple_element<Id, ::cuda::std::tuple<Ts...>>
 {};
 } // namespace std
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
