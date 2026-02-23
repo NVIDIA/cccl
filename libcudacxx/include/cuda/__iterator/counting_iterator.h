@@ -34,7 +34,9 @@
 #include <cuda/std/__concepts/semiregular.h>
 #include <cuda/std/__concepts/totally_ordered.h>
 #include <cuda/std/__functional/ranges_operations.h>
+#include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/unreachable_sentinel.h>
@@ -484,6 +486,51 @@ template <class _Start>
 //! @} iterators
 
 _CCCL_END_NAMESPACE_CUDA
+
+#ifndef _CCCL_DOXYGEN_INVOKED
+#  if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+//! counting_iterator is a C++20 iterator, so it does not play well with legacy STL features like std::distance
+//! To work around that specialize those functions for counting_iterator
+template <class _Diff, class _Start>
+_CCCL_HOST_API constexpr void
+advance(::cuda::counting_iterator<_Start>& __iter, _Diff __diff) noexcept(::cuda::std::__integer_like<_Start>)
+{
+  ::cuda::std::advance(__iter, ::cuda::std::move(__diff));
+}
+
+template <class _Start>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::_IotaDiffT<_Start>
+distance(::cuda::counting_iterator<_Start> __first,
+         ::cuda::counting_iterator<_Start> __last) noexcept(::cuda::std::__integer_like<_Start>)
+{
+  return ::cuda::std::distance(::cuda::std::move(__first), ::cuda::std::move(__last));
+}
+
+template <class _Start>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::counting_iterator<_Start>
+next(::cuda::counting_iterator<_Start> __iter,
+     ::cuda::_IotaDiffT<_Start> __n = 1) noexcept(::cuda::std::__integer_like<_Start>)
+{
+  _CCCL_ASSERT(__n >= 0 || ::cuda::__decrementable<_Start>,
+               "Attempt to std::next(it, n) with negative n on a non-bidirectional iterator");
+  ::cuda::std::advance(__iter, __n);
+  return __iter;
+}
+
+template <class _Start>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::counting_iterator<_Start>
+prev(::cuda::counting_iterator<_Start> __iter,
+     ::cuda::_IotaDiffT<_Start> __n = 1) noexcept(::cuda::std::__integer_like<_Start>)
+{
+  _CCCL_ASSERT(__n >= 0 || ::cuda::__decrementable<_Start>, "Attempt to std::prev(it, +n) on a non-bidi iterator");
+  ::cuda::std::advance(__iter, -__n);
+  return __iter;
+}
+_CCCL_END_NAMESPACE_STD
+#  endif // _CCCL_HAS_HOST_STD_LIB()
+#endif // _CCCL_DOXYGEN_INVOKED
 
 #include <cuda/std/__cccl/epilogue.h>
 
