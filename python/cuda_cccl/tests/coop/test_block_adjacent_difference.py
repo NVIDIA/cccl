@@ -138,6 +138,34 @@ def test_block_adjacent_difference_subtract_left_thread_data_temp_storage_getite
     np.testing.assert_array_equal(h_output, h_reference)
 
 
+def test_block_adjacent_difference_subtract_left_thread_data_infers_dtype_from_output_array():
+    threads_per_block = 64
+    items_per_thread = 2
+    num_items = threads_per_block * items_per_thread
+
+    @cuda.jit
+    def kernel(d_in):
+        tid = row_major_tid()
+        items = cuda.local.array(items_per_thread, numba.int32)
+        output = coop.ThreadData(items_per_thread)
+        base = tid * items_per_thread
+
+        for i in range(items_per_thread):
+            items[i] = d_in[base + i]
+
+        coop.block.adjacent_difference(
+            items,
+            output,
+            items_per_thread=items_per_thread,
+            difference_op=diff_op,
+            block_adjacent_difference_type=BlockAdjacentDifferenceType.SubtractLeft,
+        )
+
+    h_input = np.random.randint(0, 32, num_items, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    kernel[1, threads_per_block](d_input)
+
+
 @cuda.jit(device=True)
 def diff_op_right(lhs, rhs):
     return lhs - rhs
