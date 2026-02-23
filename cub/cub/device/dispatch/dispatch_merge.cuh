@@ -95,6 +95,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
                    active_policy.store_algorithm,
                    active_policy.use_block_load_to_shared>;
 
+  // items_per_tile must be the same of the merge kernel later, so we have to consider whether a fallback agent will be
+  // selected for the merge agent that changes the tile size
   constexpr int items_per_tile =
     choose_merge_agent<AgentPolicyT, KeyIt1, ValueIt1, KeyIt2, ValueIt2, KeyIt3, ValueIt3, Offset, CompareOp>::type::
       policy::ITEMS_PER_TILE;
