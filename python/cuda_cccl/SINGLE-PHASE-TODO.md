@@ -70,6 +70,9 @@
       parity tests ensuring no behavior drift versus direct constructor paths.
 - [x] Add missing two-phase tests for block primitives.
 - [ ] Audit CUB block/warp overload coverage and fill gaps.
+- [x] Complete CUB block/warp public docs parity pass for single-phase
+      `cuda.coop` examples (including rst `tab-set-code` conversion where
+      needed) and run cleanup for stale launch lines / malformed inline links.
 - [x] Add literalinclude examples for coop API overloads (doc stubs + tests).
 - [x] Add warp reduce/sum valid-items overloads.
 - [x] Add WarpScan warp_aggregate/valid_items/temp_storage overloads and tests.
