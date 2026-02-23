@@ -71,22 +71,54 @@ CUB_NAMESPACE_BEGIN
 //! The code snippet below illustrates four concurrent warp sum reductions within a block of 128 threads (one per each
 //! of the 32-thread warps).
 //!
-//! .. code-block:: c++
+//! .. tab-set-code::
 //!
-//!    #include <cub/cub.cuh>
+//!    .. code-block:: c++
 //!
-//!    __global__ void ExampleKernel(...)
-//!    {
-//!        // Specialize WarpReduce for type int
-//!        using WarpReduce = cub::WarpReduce<int>;
-//!        // Allocate WarpReduce shared memory for 4 warps
-//!        __shared__ typename WarpReduce::TempStorage temp_storage[4];
-//!        // Obtain one input item per thread
-//!        int thread_data = ...
-//!        // Return the warp-wide sums to each lane0 (threads 0, 32, 64, and 96)
-//!        int warp_id   = threadIdx.x / 32;
-//!        int aggregate = WarpReduce(temp_storage[warp_id]).Sum(thread_data);
-//!    }
+//!        #include <cub/cub.cuh>
+//!
+//!        __global__ void ExampleKernel(...)
+//!        {
+//!            // Specialize WarpReduce for type int
+//!            using WarpReduce = cub::WarpReduce<int>;
+//!            // Allocate WarpReduce shared memory for 4 warps
+//!            __shared__ typename WarpReduce::TempStorage temp_storage[4];
+//!            // Obtain one input item per thread
+//!            int thread_data = ...
+//!            // Return the warp-wide sums to each lane0 (threads 0, 32, 64, and 96)
+//!            int warp_id   = threadIdx.x / 32;
+//!            int aggregate = WarpReduce(temp_storage[warp_id]).Sum(thread_data);
+//!        }
+//!
+//!    .. code-block:: python
+//!
+//!        from numba import cuda
+//!        from cuda import coop
+//!        from cuda.coop import WarpLoadAlgorithm
+//!
+//!        warp_threads = 32
+//!        threads_per_block = 128
+//!
+//!        @cuda.jit
+//!        def kernel(d_in, d_out):
+//!            temp_storage = coop.TempStorage()
+//!            warp_id = cuda.threadIdx.x // warp_threads
+//!            lane = cuda.threadIdx.x % warp_threads
+//!
+//!            thread_data = coop.ThreadData(1, dtype=d_in.dtype)
+//!            coop.warp.load(
+//!                d_in[warp_id * warp_threads :],
+//!                thread_data,
+//!                threads_in_warp=warp_threads,
+//!                algorithm=WarpLoadAlgorithm.DIRECT,
+//!            )
+//!
+//!            aggregate = coop.warp.sum[temp_storage](thread_data[0])
+//!            if lane == 0:
+//!                d_out[warp_id] = aggregate
+//!
+//!        # Launch with four warps in one block.
+//!        # kernel[1, threads_per_block](d_in, d_out)
 //!
 //! Suppose the set of input ``thread_data`` across the block of threads is ``{0, 1, 2, 3, ..., 127}``.
 //! The corresponding output ``aggregate`` in threads 0, 32, 64, and 96 will be
@@ -94,26 +126,55 @@ CUB_NAMESPACE_BEGIN
 //!
 //! The code snippet below illustrates a single warp sum reduction within a block of 128 threads.
 //!
-//! .. code-block:: c++
+//! .. tab-set-code::
 //!
-//!    #include <cub/cub.cuh>
+//!    .. code-block:: c++
 //!
-//!    __global__ void ExampleKernel(...)
-//!    {
-//!        // Specialize WarpReduce for type int
-//!        using WarpReduce = cub::WarpReduce<int>;
-//!        // Allocate WarpReduce shared memory for one warp
-//!        __shared__ typename WarpReduce::TempStorage temp_storage;
-//!        ...
-//!        // Only the first warp performs a reduction
-//!        if (threadIdx.x < 32)
+//!        #include <cub/cub.cuh>
+//!
+//!        __global__ void ExampleKernel(...)
 //!        {
-//!            // Obtain one input item per thread
-//!            int thread_data = ...
-//!            // Return the warp-wide sum to lane0
-//!            int aggregate = WarpReduce(temp_storage).Sum(thread_data);
+//!            // Specialize WarpReduce for type int
+//!            using WarpReduce = cub::WarpReduce<int>;
+//!            // Allocate WarpReduce shared memory for one warp
+//!            __shared__ typename WarpReduce::TempStorage temp_storage;
+//!            ...
+//!            // Only the first warp performs a reduction
+//!            if (threadIdx.x < 32)
+//!            {
+//!                // Obtain one input item per thread
+//!                int thread_data = ...
+//!                // Return the warp-wide sum to lane0
+//!                int aggregate = WarpReduce(temp_storage).Sum(thread_data);
+//!            }
 //!        }
-//!    }
+//!
+//!    .. code-block:: python
+//!
+//!        from numba import cuda
+//!        from cuda import coop
+//!        from cuda.coop import WarpLoadAlgorithm
+//!
+//!        warp_threads = 32
+//!        threads_per_block = 128
+//!
+//!        @cuda.jit
+//!        def kernel(d_in, d_out):
+//!            if cuda.threadIdx.x < warp_threads:
+//!                temp_storage = coop.TempStorage()
+//!                thread_data = coop.ThreadData(1, dtype=d_in.dtype)
+//!                coop.warp.load(
+//!                    d_in,
+//!                    thread_data,
+//!                    threads_in_warp=warp_threads,
+//!                    algorithm=WarpLoadAlgorithm.DIRECT,
+//!                )
+//!                aggregate = coop.warp.sum[temp_storage](thread_data[0])
+//!                if cuda.threadIdx.x == 0:
+//!                    d_out[0] = aggregate
+//!
+//!        # Launch with one block where only the first warp participates.
+//!        # kernel[1, threads_per_block](d_in, d_out)
 //!
 //! Suppose the set of input ``thread_data`` across the warp of threads is ``{0, 1, 2, 3, ..., 31}``.
 //! The corresponding output ``aggregate`` in thread0 will be ``496`` (and is undefined in other threads).
