@@ -118,7 +118,6 @@ CUB_NAMESPACE_BEGIN
 //!            d_out[cuda.threadIdx.x] = coop.warp.exclusive_sum[temp_storage](thread_data[0])
 //!
 //!        # Launch with four warps in one block.
-//!        # kernel[1, threads_per_block](d_in, d_out)
 //!
 //! Suppose the set of input ``thread_data`` across the block of threads is
 //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps of
@@ -177,7 +176,6 @@ CUB_NAMESPACE_BEGIN
 //!                )
 //!
 //!        # Launch with one block where only the first warp participates.
-//!        # kernel[1, threads_per_block](d_in, d_out)
 //!
 //! Suppose the set of input ``thread_data`` across the warp of threads is
 //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` will be
@@ -304,7 +302,6 @@ public:
   //!                threads_in_warp=warp_threads,
   //!            )
   //!
-  //!        # kernel[1, threads_per_block](d_data, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps
@@ -379,7 +376,6 @@ public:
   //!            )
   //!            d_aggregate[tid] = warp_aggregate[0]
   //!
-  //!        # kernel[1, threads_per_block](d_data, d_out, d_aggregate)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps
@@ -459,7 +455,6 @@ public:
   //!                threads_in_warp=warp_threads,
   //!            )
   //!
-  //!        # kernel[1, threads_per_block](d_data, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps
@@ -539,7 +534,6 @@ public:
   //!            )
   //!            d_aggregate[tid] = warp_aggregate[0]
   //!
-  //!        # kernel[1, threads_per_block](d_data, d_out, d_aggregate)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps
@@ -621,7 +615,6 @@ public:
   //!                threads_in_warp=warp_threads,
   //!            )
   //!
-  //!        # kernel[1, threads_per_block](d_data, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -763,7 +756,6 @@ public:
   //!            )
   //!            d_aggregate[tid] = warp_aggregate[0]
   //!
-  //!        # kernel[1, threads_per_block](d_data, d_out, d_aggregate)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -925,7 +917,6 @@ public:
   //!                valid_items=warp_valid_items,
   //!            )
   //!
-  //!        # kernel[1, threads_per_block](d_data, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -1078,7 +1069,6 @@ public:
   //!            )
   //!            d_aggregate[tid] = warp_aggregate[0]
   //!
-  //!        # kernel[1, threads_per_block](d_data, d_out, d_aggregate)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -1244,7 +1234,6 @@ public:
   //!                threads_in_warp=warp_threads,
   //!            )
   //!
-  //!        # kernel[1, threads_per_block](d_data, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -1335,7 +1324,6 @@ public:
   //!                threads_in_warp=warp_threads,
   //!            )
   //!
-  //!        # kernel[1, threads_per_block](d_data, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -1434,7 +1422,6 @@ public:
   //!            )
   //!            d_aggregate[tid] = warp_aggregate[0]
   //!
-  //!        # kernel[1, threads_per_block](d_data, d_out, d_aggregate)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -1536,7 +1523,6 @@ public:
   //!            )
   //!            d_aggregate[tid] = warp_aggregate[0]
   //!
-  //!        # kernel[1, threads_per_block](d_data, d_out, d_aggregate)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -1646,7 +1632,6 @@ public:
   //!                valid_items=warp_valid_items,
   //!            )
   //!
-  //!        # kernel[1, threads_per_block](d_data, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -1743,7 +1728,6 @@ public:
   //!                valid_items=warp_valid_items,
   //!            )
   //!
-  //!        # kernel[1, threads_per_block](d_data, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -1848,7 +1832,6 @@ public:
   //!            )
   //!            d_aggregate[tid] = warp_aggregate[0]
   //!
-  //!        # kernel[1, threads_per_block](d_data, d_out, d_aggregate)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -1957,7 +1940,6 @@ public:
   //!            )
   //!            d_aggregate[tid] = warp_aggregate[0]
   //!
-  //!        # kernel[1, threads_per_block](d_data, d_out, d_aggregate)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first

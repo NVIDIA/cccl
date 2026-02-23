@@ -105,7 +105,6 @@ CUB_NAMESPACE_BEGIN
 //!                block_exchange_type=coop.block.BlockExchangeType.StripedToBlocked,
 //!            )
 //!
-//!        # kernel[1, threads_per_block](d_data)
 //!
 //! Suppose the set of striped input ``thread_data`` across the block of threads is ``{ [0,128,256,384],
 //! [1,129,257,385], ..., [127,255,383,511] }``. The corresponding output ``thread_data`` in those threads will be
@@ -924,7 +923,6 @@ public:
   //!                block_exchange_type=coop.block.BlockExchangeType.StripedToBlocked,
   //!            )
   //!
-  //!        # kernel[1, threads_per_block](d_data)
   //!
   //! Suppose the set of striped input ``thread_data`` across the block of threads is ``{ [0,128,256,384],
   //! [1,129,257,385], ..., [127,255,383,511] }`` after loading from device-accessible memory. The corresponding output
@@ -1006,7 +1004,6 @@ public:
   //!                algorithm=coop.BlockStoreAlgorithm.STRIPED,
   //!            )
   //!
-  //!        # kernel[1, threads_per_block](d_data)
   //!
   //! Suppose the set of blocked input ``thread_data`` across the block of threads is ``{ [0,1,2,3], [4,5,6,7],
   //! [8,9,10,11], ..., [508,509,510,511] }``. The corresponding output ``thread_data`` in those threads will be
@@ -1091,7 +1088,6 @@ public:
   //!                block_exchange_type=coop.block.BlockExchangeType.WarpStripedToBlocked,
   //!            )
   //!
-  //!        # kernel[1, threads_per_block](d_data)
   //!
   //! Suppose the set of warp-striped input ``thread_data`` across the block of threads is ``{ [0,32,64,96],
   //! [1,33,65,97], [2,34,66,98], ..., [415,447,479,511] }`` after loading from device-accessible memory. (The first 128
@@ -1180,7 +1176,6 @@ public:
   //!            for item in range(items_per_thread):
   //!                d_data[warp_base + lane + item * warp_threads] = thread_data[item]
   //!
-  //!        # kernel[1, threads_per_block](d_data)
   //!
   //! Suppose the set of blocked input ``thread_data`` across the block of threads is ``{ [0,1,2,3], [4,5,6,7],
   //! [8,9,10,11], ..., [508,509,510,511] }``. The corresponding output ``thread_data`` in those threads will be

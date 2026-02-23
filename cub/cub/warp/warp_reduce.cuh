@@ -117,7 +117,6 @@ CUB_NAMESPACE_BEGIN
 //!                d_out[warp_id] = aggregate
 //!
 //!        # Launch with four warps in one block.
-//!        # kernel[1, threads_per_block](d_in, d_out)
 //!
 //! Suppose the set of input ``thread_data`` across the block of threads is ``{0, 1, 2, 3, ..., 127}``.
 //! The corresponding output ``aggregate`` in threads 0, 32, 64, and 96 will be
@@ -172,7 +171,6 @@ CUB_NAMESPACE_BEGIN
 //!                    d_out[0] = aggregate
 //!
 //!        # Launch with one block where only the first warp participates.
-//!        # kernel[1, threads_per_block](d_in, d_out)
 //!
 //! Suppose the set of input ``thread_data`` across the warp of threads is ``{0, 1, 2, 3, ..., 31}``.
 //! The corresponding output ``aggregate`` in thread0 will be ``496`` (and is undefined in other threads).
@@ -286,7 +284,6 @@ public:
   //!            if lane == 0:
   //!                d_out[warp_id] = aggregate
   //!
-  //!        # kernel[1, threads_per_block](d_data, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is ``{0, 1, 2, 3, ..., 127}``.
   //! The corresponding output ``aggregate`` in threads 0, 32, 64, and 96 will ``496``, ``1520``, ``2544``, and
@@ -392,7 +389,6 @@ public:
   //!            if lane == 0:
   //!                d_out[0] = aggregate
   //!
-  //!        # kernel[1, warp_threads](d_data, d_out, valid_items)
   //!
   //! Suppose the input ``d_data`` is ``{0, 1, 2, 3, 4, ...`` and ``valid_items`` is ``4``.
   //! The corresponding output ``aggregate`` in *lane*\ :sub:`0` is ``6``
@@ -604,7 +600,6 @@ public:
   //!            if lane == 0:
   //!                d_out[warp_id] = aggregate
   //!
-  //!        # kernel[1, threads_per_block](d_data, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, 1, 2, 3, ..., 127}``. The corresponding output ``aggregate`` in threads 0, 32, 64, and
@@ -698,7 +693,6 @@ public:
   //!            if lane == 0:
   //!                d_out[0] = aggregate
   //!
-  //!        # kernel[1, warp_threads](d_data, d_out, valid_items)
   //!
   //! Suppose the input ``d_data`` is ``{0, 1, 2, 3, 4, ... }`` and ``valid_items``
   //! is ``4``. The corresponding output ``aggregate`` in thread0 is ``3`` (and is

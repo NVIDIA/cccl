@@ -200,7 +200,6 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 //!            )
 //!            coop.block.store(d_ranks, ranks)
 //!
-//!        # kernel[1, threads_per_block](d_keys, d_ranks)
 //!
 //! Suppose the set of input ``keys`` across the block of threads is ``{ [16,10], [9,11] }``.
 //! The extractor will rank only the lowest 5 bits: ``{ [16,10], [9,11] }`` (bits 0-4).

@@ -4,7 +4,7 @@
 
 /**
  * @file
- * The cub::BlockHistogram class provides [<em>collective</em>](../index.html#sec0) methods for
+ * The cub::BlockHistogram class provides `collective <../index.html#sec0>`_ methods for
  * constructing block-wide histograms from data samples partitioned across a CUDA thread block.
  */
 
@@ -144,7 +144,6 @@ enum BlockHistogramAlgorithm
 //!            if cuda.threadIdx.x < bins:
 //!                d_histogram[cuda.threadIdx.x] = smem_histogram[cuda.threadIdx.x]
 //!
-//!        # kernel[1, threads_per_block](d_in, d_histogram)
 //!
 //! Suppose the set of input ``thread_samples`` across the block of threads is
 //! ``{ [0,0,1,1], [2,2,3,3], ..., [254,254,255,255] }``.
@@ -327,7 +326,6 @@ public:
   //!            if cuda.threadIdx.x < bins:
   //!                d_histogram[cuda.threadIdx.x] = smem_histogram[cuda.threadIdx.x]
   //!
-  //!        # kernel[1, threads_per_block](d_in, d_histogram)
   //!
   //! Suppose ``smem_histogram`` initially contains arbitrary values.
   //! After ``InitHistogram``, all 256 counters are zero.
@@ -421,7 +419,6 @@ public:
   //!            if cuda.threadIdx.x < bins:
   //!                d_histogram[cuda.threadIdx.x] = smem_histogram[cuda.threadIdx.x]
   //!
-  //!        # kernel[1, threads_per_block](d_in, d_histogram)
   //!
   //! Suppose the set of input ``thread_samples`` across the block of threads is
   //! ``{ [0,0,1,1], [2,2,3,3], ..., [254,254,255,255] }``.
@@ -517,7 +514,6 @@ public:
   //!            if cuda.threadIdx.x < bins:
   //!                d_histogram[cuda.threadIdx.x] = smem_histogram[cuda.threadIdx.x]
   //!
-  //!        # kernel[1, threads_per_block](d_in, d_histogram)
   //!
   //! Suppose ``smem_histogram`` is zero-initialized and ``thread_samples`` is
   //! ``{ [0,0,1,1], [2,2,3,3], ..., [254,254,255,255] }``.

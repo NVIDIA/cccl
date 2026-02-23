@@ -95,7 +95,6 @@ CUB_NAMESPACE_BEGIN
 //!            coop.block.store(d_data[block_offset:], thread_data)
 //!
 //!        # Launch with one block of 128 threads.
-//!        # kernel[1, 128](d_data)
 //!
 //! Suppose the set of input ``thread_data`` across the block of threads is
 //! ``{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }``.
