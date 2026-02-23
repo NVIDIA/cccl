@@ -10,6 +10,7 @@ _SIDE_EFFECT_MODULES: tuple[str, ...] = (
     "_block_scan",
     "_block_reduce",
     "_block_histogram",
+    "_block_run_length_decode",
 )
 
 
