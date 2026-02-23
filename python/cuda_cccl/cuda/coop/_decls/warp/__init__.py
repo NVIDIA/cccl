@@ -9,6 +9,7 @@ _SIDE_EFFECT_MODULES: tuple[str, ...] = (
     "_warp_exchange",
     "_warp_merge_sort",
     "_warp_reduce",
+    "_warp_scan",
 )
 
 
