@@ -26,12 +26,12 @@ namespace detail::segmented_scan
 {
 namespace multi_segment_helpers
 {
-template <typename ValueT, typename FlagT>
+template <typename ValueT, typename FlagT = bool>
 using augmented_value_t = ::cuda::std::tuple<ValueT, FlagT>;
 
 template <typename ComputeT, int MaxSegmentsPerWorker>
 using agent_segmented_scan_compute_t =
-  ::cuda::std::conditional_t<MaxSegmentsPerWorker == 1, ComputeT, augmented_value_t<ComputeT, bool>>;
+  ::cuda::std::conditional_t<MaxSegmentsPerWorker == 1, ComputeT, augmented_value_t<ComputeT>>;
 
 template <typename ValueT, typename FlagT>
 _CCCL_DEVICE _CCCL_FORCEINLINE constexpr FlagT get_flag(augmented_value_t<ValueT, FlagT> fv) noexcept
@@ -51,7 +51,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE constexpr augmented_value_t<ValueT, FlagT> make_v
   return {v, f};
 }
 
-template <typename ValueT, typename FlagT, typename BinaryOpT>
+template <typename BinaryOpT, typename ValueT, typename FlagT = bool>
 struct schwarz_scan_op
 {
   using fv_t = augmented_value_t<ValueT, FlagT>;
@@ -71,7 +71,7 @@ struct schwarz_scan_op
   }
 };
 
-template <typename V, typename F>
+template <typename V, typename F = bool>
 struct packer
 {
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
@@ -80,11 +80,11 @@ struct packer
   }
 };
 
-template <typename V, typename F, typename ScanOp>
+template <typename ScanOp, typename V, typename F = bool>
 struct packer_iv
 {
-  V init_v;
   ScanOp& op;
+  V init_v;
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
   {
@@ -97,7 +97,7 @@ struct packer_iv
   }
 };
 
-template <typename V, typename F>
+template <typename V, typename F = bool>
 struct projector
 {
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F) const
@@ -106,7 +106,7 @@ struct projector
   }
 };
 
-template <typename V, typename F>
+template <typename V, typename F = bool>
 struct projector_iv
 {
   V init_v;
@@ -259,8 +259,8 @@ struct multi_segmented_iterator
         : m_it(it)
         , m_offset(offset)
         , m_head_flag(head_flag)
-        , m_read_fn(::cuda::std::move(read_fn))
-        , m_write_fn(::cuda::std::move(write_fn))
+        , m_read_fn(read_fn)
+        , m_write_fn(write_fn)
     {}
 
     _CCCL_DEVICE _CCCL_FORCEINLINE operator value_type() const
@@ -271,7 +271,7 @@ struct multi_segmented_iterator
     template <typename V, typename F>
     _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy& operator=(::cuda::std::tuple<V, F> new_value)
     {
-      m_it[m_offset] = m_write_fn(get_value(::cuda::std::move(new_value)), m_head_flag);
+      m_it[m_offset] = m_write_fn(get_value(new_value), m_head_flag);
       return *this;
     }
 
@@ -292,8 +292,8 @@ struct multi_segmented_iterator
       , m_start{start}
       , m_searcher{searcher}
       , m_it_idx_begin{it_idx_begin}
-      , m_read_transform_fn{::cuda::std::move(read_fn)}
-      , m_write_transform_fn{::cuda::std::move(write_fn)}
+      , m_read_transform_fn{read_fn}
+      , m_write_transform_fn{write_fn}
   {}
 
   _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy operator*() const
