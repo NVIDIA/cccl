@@ -4,7 +4,10 @@
 
 from importlib import import_module
 
-_SIDE_EFFECT_MODULES: tuple[str, ...] = ("_warp_load_store",)
+_SIDE_EFFECT_MODULES: tuple[str, ...] = (
+    "_warp_load_store",
+    "_warp_exchange",
+)
 
 
 def import_side_effect_modules() -> None:
