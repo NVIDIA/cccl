@@ -2248,3 +2248,37 @@
       - Result: `66 passed`.
   - `pre-commit run --files ...` executed for each extraction commit’s touched
     files; all hooks passed.
+
+## 2026-02-23 (ThreadData direct indexed ops: lowering fix)
+- Request: Fix direct indexed `ThreadData` usage (`td[i]` / `td[i] = v`) so it no
+  longer triggers lowering assertions, and keep inferred `items_per_thread`
+  behavior working across block/warp primitives.
+- Changes:
+  - Updated `cuda/coop/_decls/__init__.py`:
+    - added `operator` import.
+    - added `CoopThreadDataGetItemDecl` registered on
+      `operator.getitem` for `ThreadDataType`.
+    - added `CoopThreadDataSetItemDecl` registered on
+      `operator.setitem` for `ThreadDataType`.
+    - both signatures now intentionally use the rewritten runtime target type
+      (`types.Array(dtype, 1, "C")`) to match lowering after `ThreadData`
+      rewrite.
+  - Added regression coverage in
+    `tests/coop/test_thread_data_inference_edge_cases.py`:
+    - `test_thread_data_direct_setitem_getitem_supported`
+    - validates direct indexed writes/reads round-trip through a kernel.
+  - Updated `SINGLE-PHASE-TODO.md`:
+    - checked off direct indexed `ThreadData` support item.
+- Decisions:
+  - Kept `CoopThreadDataNode.rewrite()` behavior unchanged (rewrite to runtime
+    local array call) after validating that preserving `ThreadDataType` in the
+    typemap fixed setitem but regressed existing primitive pathways.
+  - Resolved the lowering mismatch at typing time instead of changing rewrite
+    type preservation semantics.
+- Validation:
+  - `pre-commit run --files cuda/coop/_decls/__init__.py tests/coop/test_thread_data_inference_edge_cases.py SINGLE-PHASE-TODO.md`
+    - Result: all hooks passed.
+  - `pytest -q tests/coop/test_thread_data_inference_edge_cases.py::test_thread_data_direct_setitem_getitem_supported`
+    - Result: `1 passed`.
+  - `pytest -q tests/coop/test_thread_data_inference_edge_cases.py tests/coop/test_warp_load_store_api.py -k "thread_data_infers_items_per_thread" tests/coop/test_warp_exchange_api.py -k "thread_data_infers_items_per_thread" tests/coop/test_warp_merge_sort_api.py -k "thread_data_infers_items_per_thread" tests/coop/test_warp_merge_sort_pairs_api.py -k "thread_data_infers_items_per_thread" tests/coop/test_block_scan_single_phase_aliases.py -k "thread_data_infers_items_per_thread" tests/coop/test_block_reduce.py -k "thread_data_infers_items_per_thread"`
+    - Result: `6 passed, 899 deselected`.
