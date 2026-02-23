@@ -98,7 +98,6 @@ CUB_NAMESPACE_BEGIN
 //!
 //!        from numba import cuda
 //!        from cuda import coop
-//!        from cuda.coop import WarpLoadAlgorithm
 //!
 //!        warp_threads = 32
 //!        threads_per_block = 128
@@ -107,13 +106,13 @@ CUB_NAMESPACE_BEGIN
 //!        def kernel(d_in, d_out):
 //!            temp_storage = coop.TempStorage()
 //!            warp_id = cuda.threadIdx.x // warp_threads
-//!            thread_data = coop.ThreadData(1, dtype=d_in.dtype)
+//!            thread_data = coop.ThreadData(1)
 //!
 //!            coop.warp.load(
 //!                d_in[warp_id * warp_threads :],
 //!                thread_data,
 //!                threads_in_warp=warp_threads,
-//!                algorithm=WarpLoadAlgorithm.DIRECT,
+//!                algorithm=coop.WarpLoadAlgorithm.DIRECT,
 //!            )
 //!
 //!            d_out[cuda.threadIdx.x] = coop.warp.exclusive_sum[temp_storage](thread_data[0])
@@ -158,7 +157,6 @@ CUB_NAMESPACE_BEGIN
 //!
 //!        from numba import cuda
 //!        from cuda import coop
-//!        from cuda.coop import WarpLoadAlgorithm
 //!
 //!        warp_threads = 32
 //!        threads_per_block = 128
@@ -167,12 +165,12 @@ CUB_NAMESPACE_BEGIN
 //!        def kernel(d_in, d_out):
 //!            if cuda.threadIdx.x < warp_threads:
 //!                temp_storage = coop.TempStorage()
-//!                thread_data = coop.ThreadData(1, dtype=d_in.dtype)
+//!                thread_data = coop.ThreadData(1)
 //!                coop.warp.load(
 //!                    d_in,
 //!                    thread_data,
 //!                    threads_in_warp=warp_threads,
-//!                    algorithm=WarpLoadAlgorithm.DIRECT,
+//!                    algorithm=coop.WarpLoadAlgorithm.DIRECT,
 //!                )
 //!                d_out[cuda.threadIdx.x] = coop.warp.exclusive_sum[temp_storage](
 //!                    thread_data[0]
@@ -267,25 +265,46 @@ public:
   //! The code snippet below illustrates four concurrent warp-wide inclusive prefix sums within a
   //! block of 128 threads (one per each of the 32-thread warps).
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize WarpScan for type int
-  //!        using WarpScan = cub::WarpScan<int>;
+  //!        #include <cub/cub.cuh>
   //!
-  //!        // Allocate WarpScan shared memory for 4 warps
-  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize WarpScan for type int
+  //!            using WarpScan = cub::WarpScan<int>;
   //!
-  //!        // Obtain one input item per thread
-  //!        int thread_data = ...
+  //!            // Allocate WarpScan shared memory for 4 warps
+  //!            __shared__ typename WarpScan::TempStorage temp_storage[4];
   //!
-  //!        // Compute inclusive warp-wide prefix sums
-  //!        int warp_id = threadIdx.x / 32;
-  //!        WarpScan(temp_storage[warp_id]).InclusiveSum(thread_data, thread_data);
-  //!    }
+  //!            // Obtain one input item per thread
+  //!            int thread_data = ...
+  //!
+  //!            // Compute inclusive warp-wide prefix sums
+  //!            int warp_id = threadIdx.x / 32;
+  //!            WarpScan(temp_storage[warp_id]).InclusiveSum(thread_data, thread_data);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        warp_threads = 32
+  //!        threads_per_block = 128
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out):
+  //!            tid = cuda.threadIdx.x
+  //!            temp_storage = coop.TempStorage()
+  //!            d_out[tid] = coop.warp.inclusive_sum[temp_storage](
+  //!                d_data[tid],
+  //!                threads_in_warp=warp_threads,
+  //!            )
+  //!
+  //!        # kernel[1, threads_per_block](d_data, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps
@@ -317,26 +336,50 @@ public:
   //! The code snippet below illustrates four concurrent warp-wide inclusive prefix sums within a
   //! block of 128 threads (one per each of the 32-thread warps).
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize WarpScan for type int
-  //!        using WarpScan = cub::WarpScan<int>;
+  //!        #include <cub/cub.cuh>
   //!
-  //!        // Allocate WarpScan shared memory for 4 warps
-  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize WarpScan for type int
+  //!            using WarpScan = cub::WarpScan<int>;
   //!
-  //!        // Obtain one input item per thread
-  //!        int thread_data = ...
+  //!            // Allocate WarpScan shared memory for 4 warps
+  //!            __shared__ typename WarpScan::TempStorage temp_storage[4];
   //!
-  //!        // Compute inclusive warp-wide prefix sums
-  //!        int warp_aggregate;
-  //!        int warp_id = threadIdx.x / 32;
-  //!        WarpScan(temp_storage[warp_id]).InclusiveSum(thread_data, thread_data, warp_aggregate);
-  //!    }
+  //!            // Obtain one input item per thread
+  //!            int thread_data = ...
+  //!
+  //!            // Compute inclusive warp-wide prefix sums
+  //!            int warp_aggregate;
+  //!            int warp_id = threadIdx.x / 32;
+  //!            WarpScan(temp_storage[warp_id]).InclusiveSum(thread_data, thread_data, warp_aggregate);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        warp_threads = 32
+  //!        threads_per_block = 128
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out, d_aggregate):
+  //!            tid = cuda.threadIdx.x
+  //!            temp_storage = coop.TempStorage()
+  //!            warp_aggregate = cuda.local.array(1, dtype=d_data.dtype)
+  //!            d_out[tid] = coop.warp.inclusive_sum[temp_storage](
+  //!                d_data[tid],
+  //!                threads_in_warp=warp_threads,
+  //!                warp_aggregate=warp_aggregate,
+  //!            )
+  //!            d_aggregate[tid] = warp_aggregate[0]
+  //!
+  //!        # kernel[1, threads_per_block](d_data, d_out, d_aggregate)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps
@@ -377,25 +420,46 @@ public:
   //! The code snippet below illustrates four concurrent warp-wide exclusive prefix sums within a
   //! block of 128 threads (one per each of the 32-thread warps).
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize WarpScan for type int
-  //!        using WarpScan = cub::WarpScan<int>;
+  //!        #include <cub/cub.cuh>
   //!
-  //!        // Allocate WarpScan shared memory for 4 warps
-  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize WarpScan for type int
+  //!            using WarpScan = cub::WarpScan<int>;
   //!
-  //!        // Obtain one input item per thread
-  //!        int thread_data = ...
+  //!            // Allocate WarpScan shared memory for 4 warps
+  //!            __shared__ typename WarpScan::TempStorage temp_storage[4];
   //!
-  //!        // Compute exclusive warp-wide prefix sums
-  //!        int warp_id = threadIdx.x / 32;
-  //!        WarpScan(temp_storage[warp_id]).ExclusiveSum(thread_data, thread_data);
-  //!    }
+  //!            // Obtain one input item per thread
+  //!            int thread_data = ...
+  //!
+  //!            // Compute exclusive warp-wide prefix sums
+  //!            int warp_id = threadIdx.x / 32;
+  //!            WarpScan(temp_storage[warp_id]).ExclusiveSum(thread_data, thread_data);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        warp_threads = 32
+  //!        threads_per_block = 128
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out):
+  //!            tid = cuda.threadIdx.x
+  //!            temp_storage = coop.TempStorage()
+  //!            d_out[tid] = coop.warp.exclusive_sum[temp_storage](
+  //!                d_data[tid],
+  //!                threads_in_warp=warp_threads,
+  //!            )
+  //!
+  //!        # kernel[1, threads_per_block](d_data, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps
@@ -430,27 +494,52 @@ public:
   //! The code snippet below illustrates four concurrent warp-wide exclusive prefix sums within a
   //! block of 128 threads (one per each of the 32-thread warps).
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize WarpScan for type int
-  //!        using WarpScan = cub::WarpScan<int>;
+  //!        #include <cub/cub.cuh>
   //!
-  //!        // Allocate WarpScan shared memory for 4 warps
-  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize WarpScan for type int
+  //!            using WarpScan = cub::WarpScan<int>;
   //!
-  //!        // Obtain one input item per thread
-  //!        int thread_data = ...
+  //!            // Allocate WarpScan shared memory for 4 warps
+  //!            __shared__ typename WarpScan::TempStorage temp_storage[4];
   //!
-  //!        // Compute exclusive warp-wide prefix sums
-  //!        int warp_aggregate;
-  //!        int warp_id = threadIdx.x / 32;
-  //!        WarpScan(temp_storage[warp_id]).ExclusiveSum(thread_data,
-  //!                                                     thread_data,
-  //!                                                     warp_aggregate);
+  //!            // Obtain one input item per thread
+  //!            int thread_data = ...
+  //!
+  //!            // Compute exclusive warp-wide prefix sums
+  //!            int warp_aggregate;
+  //!            int warp_id = threadIdx.x / 32;
+  //!            WarpScan(temp_storage[warp_id]).ExclusiveSum(thread_data,
+  //!                                                         thread_data,
+  //!                                                         warp_aggregate);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        warp_threads = 32
+  //!        threads_per_block = 128
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out, d_aggregate):
+  //!            tid = cuda.threadIdx.x
+  //!            temp_storage = coop.TempStorage()
+  //!            warp_aggregate = cuda.local.array(1, dtype=d_data.dtype)
+  //!            d_out[tid] = coop.warp.exclusive_sum[temp_storage](
+  //!                d_data[tid],
+  //!                threads_in_warp=warp_threads,
+  //!                warp_aggregate=warp_aggregate,
+  //!            )
+  //!            d_aggregate[tid] = warp_aggregate[0]
+  //!
+  //!        # kernel[1, threads_per_block](d_data, d_out, d_aggregate)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{1, 1, 1, 1, ...}``. The corresponding output ``thread_data`` in each of the four warps
@@ -492,24 +581,47 @@ public:
   //! The code snippet below illustrates four concurrent warp-wide inclusive prefix max scans
   //! within a block of 128 threads (one per each of the 32-thread warps).
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize WarpScan for type int
-  //!        using WarpScan = cub::WarpScan<int>;
+  //!        #include <cub/cub.cuh>
   //!
-  //!        // Allocate WarpScan shared memory for 4 warps
-  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize WarpScan for type int
+  //!            using WarpScan = cub::WarpScan<int>;
   //!
-  //!        // Obtain one input item per thread
-  //!        int thread_data = ...
+  //!            // Allocate WarpScan shared memory for 4 warps
+  //!            __shared__ typename WarpScan::TempStorage temp_storage[4];
   //!
-  //!        // Compute inclusive warp-wide prefix max scans
-  //!        int warp_id = threadIdx.x / 32;
-  //!        WarpScan(temp_storage[warp_id]).InclusiveScan(thread_data, thread_data, cuda::maximum<>{});
+  //!            // Obtain one input item per thread
+  //!            int thread_data = ...
+  //!
+  //!            // Compute inclusive warp-wide prefix max scans
+  //!            int warp_id = threadIdx.x / 32;
+  //!            WarpScan(temp_storage[warp_id]).InclusiveScan(thread_data, thread_data, cuda::maximum<>{});
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        warp_threads = 32
+  //!        threads_per_block = 128
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out):
+  //!            tid = cuda.threadIdx.x
+  //!            temp_storage = coop.TempStorage()
+  //!            d_out[tid] = coop.warp.inclusive_scan[temp_storage](
+  //!                d_data[tid],
+  //!                "max",
+  //!                threads_in_warp=warp_threads,
+  //!            )
+  //!
+  //!        # kernel[1, threads_per_block](d_data, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -606,26 +718,52 @@ public:
   //! The code snippet below illustrates four concurrent warp-wide inclusive prefix max scans
   //! within a block of 128 threads (one per each of the 32-thread warps).
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize WarpScan for type int
-  //!        using WarpScan = cub::WarpScan<int>;
+  //!        #include <cub/cub.cuh>
   //!
-  //!        // Allocate WarpScan shared memory for 4 warps
-  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize WarpScan for type int
+  //!            using WarpScan = cub::WarpScan<int>;
   //!
-  //!        // Obtain one input item per thread
-  //!        int thread_data = ...
+  //!            // Allocate WarpScan shared memory for 4 warps
+  //!            __shared__ typename WarpScan::TempStorage temp_storage[4];
   //!
-  //!        // Compute inclusive warp-wide prefix max scans
-  //!        int warp_aggregate;
-  //!        int warp_id = threadIdx.x / 32;
-  //!        WarpScan(temp_storage[warp_id]).InclusiveScan(
-  //!            thread_data, thread_data, cuda::maximum<>{}, warp_aggregate);
+  //!            // Obtain one input item per thread
+  //!            int thread_data = ...
+  //!
+  //!            // Compute inclusive warp-wide prefix max scans
+  //!            int warp_aggregate;
+  //!            int warp_id = threadIdx.x / 32;
+  //!            WarpScan(temp_storage[warp_id]).InclusiveScan(
+  //!                thread_data, thread_data, cuda::maximum<>{}, warp_aggregate);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        warp_threads = 32
+  //!        threads_per_block = 128
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out, d_aggregate):
+  //!            tid = cuda.threadIdx.x
+  //!            temp_storage = coop.TempStorage()
+  //!            warp_aggregate = cuda.local.array(1, dtype=d_data.dtype)
+  //!            d_out[tid] = coop.warp.inclusive_scan[temp_storage](
+  //!                d_data[tid],
+  //!                "max",
+  //!                threads_in_warp=warp_threads,
+  //!                warp_aggregate=warp_aggregate,
+  //!            )
+  //!            d_aggregate[tid] = warp_aggregate[0]
+  //!
+  //!        # kernel[1, threads_per_block](d_data, d_out, d_aggregate)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -740,27 +878,54 @@ public:
   //! The code snippet below illustrates four concurrent warp-wide inclusive prefix max scans
   //! within a block of 128 threads (one per each of the 32-thread warps).
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize WarpScan for type int
-  //!        using WarpScan = cub::WarpScan<int>;
+  //!        #include <cub/cub.cuh>
   //!
-  //!        // Allocate WarpScan shared memory for 4 warps
-  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize WarpScan for type int
+  //!            using WarpScan = cub::WarpScan<int>;
   //!
-  //!        // Obtain one input item per thread
-  //!        int thread_data = ...
-  //!        int warp_id = threadIdx.x / 32;
-  //!        int block_valid_items = 35;
-  //!        int warp_valid_items = block_valid_items - warp_id * 32;
+  //!            // Allocate WarpScan shared memory for 4 warps
+  //!            __shared__ typename WarpScan::TempStorage temp_storage[4];
   //!
-  //!        // Compute inclusive warp-wide prefix max scans
-  //!        WarpScan(temp_storage[warp_id]).InclusiveScanPartial(
-  //!            thread_data, thread_data, cuda::maximum<>{}, warp_valid_items);
+  //!            // Obtain one input item per thread
+  //!            int thread_data = ...
+  //!            int warp_id = threadIdx.x / 32;
+  //!            int block_valid_items = 35;
+  //!            int warp_valid_items = block_valid_items - warp_id * 32;
+  //!
+  //!            // Compute inclusive warp-wide prefix max scans
+  //!            WarpScan(temp_storage[warp_id]).InclusiveScanPartial(
+  //!                thread_data, thread_data, cuda::maximum<>{}, warp_valid_items);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        warp_threads = 32
+  //!        threads_per_block = 128
+  //!        block_valid_items = 35
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out):
+  //!            tid = cuda.threadIdx.x
+  //!            warp_id = tid // warp_threads
+  //!            warp_valid_items = max(0, min(warp_threads, block_valid_items - warp_id * warp_threads))
+  //!            temp_storage = coop.TempStorage()
+  //!            d_out[tid] = coop.warp.inclusive_scan[temp_storage](
+  //!                d_data[tid],
+  //!                "max",
+  //!                threads_in_warp=warp_threads,
+  //!                valid_items=warp_valid_items,
+  //!            )
+  //!
+  //!        # kernel[1, threads_per_block](d_data, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -862,28 +1027,58 @@ public:
   //! The code snippet below illustrates four concurrent warp-wide inclusive prefix max scans
   //! within a block of 128 threads (one per each of the 32-thread warps).
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize WarpScan for type int
-  //!        using WarpScan = cub::WarpScan<int>;
+  //!        #include <cub/cub.cuh>
   //!
-  //!        // Allocate WarpScan shared memory for 4 warps
-  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize WarpScan for type int
+  //!            using WarpScan = cub::WarpScan<int>;
   //!
-  //!        // Obtain one input item per thread
-  //!        int thread_data = ...
-  //!        int warp_id = threadIdx.x / 32;
-  //!        int block_valid_items = 35;
-  //!        int warp_valid_items = block_valid_items - warp_id * 32;
+  //!            // Allocate WarpScan shared memory for 4 warps
+  //!            __shared__ typename WarpScan::TempStorage temp_storage[4];
   //!
-  //!        // Compute inclusive warp-wide prefix max scans
-  //!        int warp_aggregate;
-  //!        WarpScan(temp_storage[warp_id]).InclusiveScan(
-  //!            thread_data, thread_data, cuda::maximum<>{}, warp_valid_items, warp_aggregate);
+  //!            // Obtain one input item per thread
+  //!            int thread_data = ...
+  //!            int warp_id = threadIdx.x / 32;
+  //!            int block_valid_items = 35;
+  //!            int warp_valid_items = block_valid_items - warp_id * 32;
+  //!
+  //!            // Compute inclusive warp-wide prefix max scans
+  //!            int warp_aggregate;
+  //!            WarpScan(temp_storage[warp_id]).InclusiveScan(
+  //!                thread_data, thread_data, cuda::maximum<>{}, warp_valid_items, warp_aggregate);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        warp_threads = 32
+  //!        threads_per_block = 128
+  //!        block_valid_items = 35
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out, d_aggregate):
+  //!            tid = cuda.threadIdx.x
+  //!            warp_id = tid // warp_threads
+  //!            warp_valid_items = max(0, min(warp_threads, block_valid_items - warp_id * warp_threads))
+  //!            temp_storage = coop.TempStorage()
+  //!            warp_aggregate = cuda.local.array(1, dtype=d_data.dtype)
+  //!            d_out[tid] = coop.warp.inclusive_scan[temp_storage](
+  //!                d_data[tid],
+  //!                "max",
+  //!                threads_in_warp=warp_threads,
+  //!                valid_items=warp_valid_items,
+  //!                warp_aggregate=warp_aggregate,
+  //!            )
+  //!            d_aggregate[tid] = warp_aggregate[0]
+  //!
+  //!        # kernel[1, threads_per_block](d_data, d_out, d_aggregate)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -1009,24 +1204,47 @@ public:
   //! The code snippet below illustrates four concurrent warp-wide exclusive prefix max scans
   //! within a block of 128 threads (one per each of the 32-thread warps).
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize WarpScan for type int
-  //!        using WarpScan = cub::WarpScan<int>;
+  //!        #include <cub/cub.cuh>
   //!
-  //!        // Allocate WarpScan shared memory for 4 warps
-  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize WarpScan for type int
+  //!            using WarpScan = cub::WarpScan<int>;
   //!
-  //!        // Obtain one input item per thread
-  //!        int thread_data = ...
+  //!            // Allocate WarpScan shared memory for 4 warps
+  //!            __shared__ typename WarpScan::TempStorage temp_storage[4];
   //!
-  //!        // Compute exclusive warp-wide prefix max scans
-  //!        int warp_id = threadIdx.x / 32;
-  //!        WarpScan(temp_storage[warp_id]).ExclusiveScan(thread_data, thread_data, cuda::maximum<>{});
+  //!            // Obtain one input item per thread
+  //!            int thread_data = ...
+  //!
+  //!            // Compute exclusive warp-wide prefix max scans
+  //!            int warp_id = threadIdx.x / 32;
+  //!            WarpScan(temp_storage[warp_id]).ExclusiveScan(thread_data, thread_data, cuda::maximum<>{});
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        warp_threads = 32
+  //!        threads_per_block = 128
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out):
+  //!            tid = cuda.threadIdx.x
+  //!            temp_storage = coop.TempStorage()
+  //!            d_out[tid] = coop.warp.exclusive_scan[temp_storage](
+  //!                d_data[tid],
+  //!                "max",
+  //!                threads_in_warp=warp_threads,
+  //!            )
+  //!
+  //!        # kernel[1, threads_per_block](d_data, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -1073,27 +1291,51 @@ public:
   //! The code snippet below illustrates four concurrent warp-wide exclusive prefix max scans
   //! within a block of 128 threads (one per each of the 32-thread warps).
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize WarpScan for type int
-  //!        using WarpScan = cub::WarpScan<int>;
+  //!        #include <cub/cub.cuh>
   //!
-  //!        // Allocate WarpScan shared memory for 4 warps
-  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize WarpScan for type int
+  //!            using WarpScan = cub::WarpScan<int>;
   //!
-  //!        // Obtain one input item per thread
-  //!        int thread_data = ...
+  //!            // Allocate WarpScan shared memory for 4 warps
+  //!            __shared__ typename WarpScan::TempStorage temp_storage[4];
   //!
-  //!        // Compute exclusive warp-wide prefix max scans
-  //!        int warp_id = threadIdx.x / 32;
-  //!        WarpScan(temp_storage[warp_id]).ExclusiveScan(thread_data,
-  //!                                                      thread_data,
-  //!                                                      INT_MIN,
-  //!                                                      cuda::maximum<>{});
+  //!            // Obtain one input item per thread
+  //!            int thread_data = ...
+  //!
+  //!            // Compute exclusive warp-wide prefix max scans
+  //!            int warp_id = threadIdx.x / 32;
+  //!            WarpScan(temp_storage[warp_id]).ExclusiveScan(thread_data,
+  //!                                                          thread_data,
+  //!                                                          INT_MIN,
+  //!                                                          cuda::maximum<>{});
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        warp_threads = 32
+  //!        threads_per_block = 128
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out):
+  //!            tid = cuda.threadIdx.x
+  //!            temp_storage = coop.TempStorage()
+  //!            d_out[tid] = coop.warp.exclusive_scan[temp_storage](
+  //!                d_data[tid],
+  //!                "max",
+  //!                -2147483648,
+  //!                threads_in_warp=warp_threads,
+  //!            )
+  //!
+  //!        # kernel[1, threads_per_block](d_data, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -1145,28 +1387,54 @@ public:
   //! The code snippet below illustrates four concurrent warp-wide exclusive prefix max scans
   //! within a block of 128 threads (one per each of the 32-thread warps).
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize WarpScan for type int
-  //!        using WarpScan = cub::WarpScan<int>;
+  //!        #include <cub/cub.cuh>
   //!
-  //!        // Allocate WarpScan shared memory for 4 warps
-  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize WarpScan for type int
+  //!            using WarpScan = cub::WarpScan<int>;
   //!
-  //!        // Obtain one input item per thread
-  //!        int thread_data = ...
+  //!            // Allocate WarpScan shared memory for 4 warps
+  //!            __shared__ typename WarpScan::TempStorage temp_storage[4];
   //!
-  //!        // Compute exclusive warp-wide prefix max scans
-  //!        int warp_aggregate;
-  //!        int warp_id = threadIdx.x / 32;
-  //!        WarpScan(temp_storage[warp_id]).ExclusiveScan(thread_data,
-  //!                                                      thread_data,
-  //!                                                      cuda::maximum<>{},
-  //!                                                      warp_aggregate);
+  //!            // Obtain one input item per thread
+  //!            int thread_data = ...
+  //!
+  //!            // Compute exclusive warp-wide prefix max scans
+  //!            int warp_aggregate;
+  //!            int warp_id = threadIdx.x / 32;
+  //!            WarpScan(temp_storage[warp_id]).ExclusiveScan(thread_data,
+  //!                                                          thread_data,
+  //!                                                          cuda::maximum<>{},
+  //!                                                          warp_aggregate);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        warp_threads = 32
+  //!        threads_per_block = 128
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out, d_aggregate):
+  //!            tid = cuda.threadIdx.x
+  //!            temp_storage = coop.TempStorage()
+  //!            warp_aggregate = cuda.local.array(1, dtype=d_data.dtype)
+  //!            d_out[tid] = coop.warp.exclusive_scan[temp_storage](
+  //!                d_data[tid],
+  //!                "max",
+  //!                threads_in_warp=warp_threads,
+  //!                warp_aggregate=warp_aggregate,
+  //!            )
+  //!            d_aggregate[tid] = warp_aggregate[0]
+  //!
+  //!        # kernel[1, threads_per_block](d_data, d_out, d_aggregate)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -1219,29 +1487,56 @@ public:
   //! The code snippet below illustrates four concurrent warp-wide exclusive prefix max scans
   //! within a block of 128 threads (one per each of the 32-thread warps).
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize WarpScan for type int
-  //!        using WarpScan = cub::WarpScan<int>;
+  //!        #include <cub/cub.cuh>
   //!
-  //!        // Allocate WarpScan shared memory for 4 warps
-  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize WarpScan for type int
+  //!            using WarpScan = cub::WarpScan<int>;
   //!
-  //!        // Obtain one input item per thread
-  //!        int thread_data = ...
+  //!            // Allocate WarpScan shared memory for 4 warps
+  //!            __shared__ typename WarpScan::TempStorage temp_storage[4];
   //!
-  //!        // Compute exclusive warp-wide prefix max scans
-  //!        int warp_aggregate;
-  //!        int warp_id = threadIdx.x / 32;
-  //!        WarpScan(temp_storage[warp_id]).ExclusiveScan(thread_data,
-  //!                                                      thread_data,
-  //!                                                      INT_MIN,
-  //!                                                      cuda::maximum<>{},
-  //!                                                      warp_aggregate);
+  //!            // Obtain one input item per thread
+  //!            int thread_data = ...
+  //!
+  //!            // Compute exclusive warp-wide prefix max scans
+  //!            int warp_aggregate;
+  //!            int warp_id = threadIdx.x / 32;
+  //!            WarpScan(temp_storage[warp_id]).ExclusiveScan(thread_data,
+  //!                                                          thread_data,
+  //!                                                          INT_MIN,
+  //!                                                          cuda::maximum<>{},
+  //!                                                          warp_aggregate);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        warp_threads = 32
+  //!        threads_per_block = 128
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out, d_aggregate):
+  //!            tid = cuda.threadIdx.x
+  //!            temp_storage = coop.TempStorage()
+  //!            warp_aggregate = cuda.local.array(1, dtype=d_data.dtype)
+  //!            d_out[tid] = coop.warp.exclusive_scan[temp_storage](
+  //!                d_data[tid],
+  //!                "max",
+  //!                -2147483648,
+  //!                threads_in_warp=warp_threads,
+  //!                warp_aggregate=warp_aggregate,
+  //!            )
+  //!            d_aggregate[tid] = warp_aggregate[0]
+  //!
+  //!        # kernel[1, threads_per_block](d_data, d_out, d_aggregate)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -1304,27 +1599,54 @@ public:
   //! The code snippet below illustrates four concurrent warp-wide exclusive prefix max scans
   //! within a block of 128 threads (one per each of the 32-thread warps).
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize WarpScan for type int
-  //!        using WarpScan = cub::WarpScan<int>;
+  //!        #include <cub/cub.cuh>
   //!
-  //!        // Allocate WarpScan shared memory for 4 warps
-  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize WarpScan for type int
+  //!            using WarpScan = cub::WarpScan<int>;
   //!
-  //!        // Obtain one input item per thread
-  //!        int thread_data = ...
-  //!        int warp_id = threadIdx.x / 32;
-  //!        int block_valid_items = 35;
-  //!        int warp_valid_items = block_valid_items - warp_id * 32;
+  //!            // Allocate WarpScan shared memory for 4 warps
+  //!            __shared__ typename WarpScan::TempStorage temp_storage[4];
   //!
-  //!        // Compute exclusive warp-wide prefix max scans
-  //!        WarpScan(temp_storage[warp_id]).ExclusiveScanPartial(
-  //!            thread_data, thread_data, cuda::maximum<>{}, warp_valid_items);
+  //!            // Obtain one input item per thread
+  //!            int thread_data = ...
+  //!            int warp_id = threadIdx.x / 32;
+  //!            int block_valid_items = 35;
+  //!            int warp_valid_items = block_valid_items - warp_id * 32;
+  //!
+  //!            // Compute exclusive warp-wide prefix max scans
+  //!            WarpScan(temp_storage[warp_id]).ExclusiveScanPartial(
+  //!                thread_data, thread_data, cuda::maximum<>{}, warp_valid_items);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        warp_threads = 32
+  //!        threads_per_block = 128
+  //!        block_valid_items = 35
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out):
+  //!            tid = cuda.threadIdx.x
+  //!            warp_id = tid // warp_threads
+  //!            warp_valid_items = max(0, min(warp_threads, block_valid_items - warp_id * warp_threads))
+  //!            temp_storage = coop.TempStorage()
+  //!            d_out[tid] = coop.warp.exclusive_scan[temp_storage](
+  //!                d_data[tid],
+  //!                "max",
+  //!                threads_in_warp=warp_threads,
+  //!                valid_items=warp_valid_items,
+  //!            )
+  //!
+  //!        # kernel[1, threads_per_block](d_data, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -1373,27 +1695,55 @@ public:
   //! The code snippet below illustrates four concurrent warp-wide exclusive prefix max scans
   //! within a block of 128 threads (one per each of the 32-thread warps).
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize WarpScan for type int
-  //!        using WarpScan = cub::WarpScan<int>;
+  //!        #include <cub/cub.cuh>
   //!
-  //!        // Allocate WarpScan shared memory for 4 warps
-  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize WarpScan for type int
+  //!            using WarpScan = cub::WarpScan<int>;
   //!
-  //!        // Obtain one input item per thread
-  //!        int thread_data = ...
-  //!        int warp_id = threadIdx.x / 32;
-  //!        int block_valid_items = 35;
-  //!        int warp_valid_items = block_valid_items - warp_id * 32;
+  //!            // Allocate WarpScan shared memory for 4 warps
+  //!            __shared__ typename WarpScan::TempStorage temp_storage[4];
   //!
-  //!        // Compute exclusive warp-wide prefix max scans
-  //!        WarpScan(temp_storage[warp_id]).ExclusiveScanPartial(
-  //!            thread_data, thread_data, INT_MIN, cuda::maximum<>{}, warp_valid_items);
+  //!            // Obtain one input item per thread
+  //!            int thread_data = ...
+  //!            int warp_id = threadIdx.x / 32;
+  //!            int block_valid_items = 35;
+  //!            int warp_valid_items = block_valid_items - warp_id * 32;
+  //!
+  //!            // Compute exclusive warp-wide prefix max scans
+  //!            WarpScan(temp_storage[warp_id]).ExclusiveScanPartial(
+  //!                thread_data, thread_data, INT_MIN, cuda::maximum<>{}, warp_valid_items);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        warp_threads = 32
+  //!        threads_per_block = 128
+  //!        block_valid_items = 35
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out):
+  //!            tid = cuda.threadIdx.x
+  //!            warp_id = tid // warp_threads
+  //!            warp_valid_items = max(0, min(warp_threads, block_valid_items - warp_id * warp_threads))
+  //!            temp_storage = coop.TempStorage()
+  //!            d_out[tid] = coop.warp.exclusive_scan[temp_storage](
+  //!                d_data[tid],
+  //!                "max",
+  //!                -2147483648,
+  //!                threads_in_warp=warp_threads,
+  //!                valid_items=warp_valid_items,
+  //!            )
+  //!
+  //!        # kernel[1, threads_per_block](d_data, d_out)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -1447,28 +1797,58 @@ public:
   //! The code snippet below illustrates four concurrent warp-wide exclusive prefix max scans
   //! within a block of 128 threads (one per each of the 32-thread warps).
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize WarpScan for type int
-  //!        using WarpScan = cub::WarpScan<int>;
+  //!        #include <cub/cub.cuh>
   //!
-  //!        // Allocate WarpScan shared memory for 4 warps
-  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize WarpScan for type int
+  //!            using WarpScan = cub::WarpScan<int>;
   //!
-  //!        // Obtain one input item per thread
-  //!        int thread_data = ...
-  //!        int warp_id = threadIdx.x / 32;
-  //!        int block_valid_items = 35;
-  //!        int warp_valid_items = block_valid_items - warp_id * 32;
+  //!            // Allocate WarpScan shared memory for 4 warps
+  //!            __shared__ typename WarpScan::TempStorage temp_storage[4];
   //!
-  //!        // Compute exclusive warp-wide prefix max scans
-  //!        int warp_aggregate;
-  //!        WarpScan(temp_storage[warp_id]).ExclusiveScanPartial(
-  //!            thread_data, thread_data, cuda::maximum<>{}, warp_valid_items, warp_aggregate);
+  //!            // Obtain one input item per thread
+  //!            int thread_data = ...
+  //!            int warp_id = threadIdx.x / 32;
+  //!            int block_valid_items = 35;
+  //!            int warp_valid_items = block_valid_items - warp_id * 32;
+  //!
+  //!            // Compute exclusive warp-wide prefix max scans
+  //!            int warp_aggregate;
+  //!            WarpScan(temp_storage[warp_id]).ExclusiveScanPartial(
+  //!                thread_data, thread_data, cuda::maximum<>{}, warp_valid_items, warp_aggregate);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        warp_threads = 32
+  //!        threads_per_block = 128
+  //!        block_valid_items = 35
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out, d_aggregate):
+  //!            tid = cuda.threadIdx.x
+  //!            warp_id = tid // warp_threads
+  //!            warp_valid_items = max(0, min(warp_threads, block_valid_items - warp_id * warp_threads))
+  //!            temp_storage = coop.TempStorage()
+  //!            warp_aggregate = cuda.local.array(1, dtype=d_data.dtype)
+  //!            d_out[tid] = coop.warp.exclusive_scan[temp_storage](
+  //!                d_data[tid],
+  //!                "max",
+  //!                threads_in_warp=warp_threads,
+  //!                valid_items=warp_valid_items,
+  //!                warp_aggregate=warp_aggregate,
+  //!            )
+  //!            d_aggregate[tid] = warp_aggregate[0]
+  //!
+  //!        # kernel[1, threads_per_block](d_data, d_out, d_aggregate)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -1525,28 +1905,59 @@ public:
   //! The code snippet below illustrates four concurrent warp-wide exclusive prefix max scans
   //! within a block of 128 threads (one per each of the 32-thread warps).
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize WarpScan for type int
-  //!        using WarpScan = cub::WarpScan<int>;
+  //!        #include <cub/cub.cuh>
   //!
-  //!        // Allocate WarpScan shared memory for 4 warps
-  //!        __shared__ typename WarpScan::TempStorage temp_storage[4];
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize WarpScan for type int
+  //!            using WarpScan = cub::WarpScan<int>;
   //!
-  //!        // Obtain one input item per thread
-  //!        int thread_data = ...
-  //!        int warp_id = threadIdx.x / 32;
-  //!        int block_valid_items = 35;
-  //!        int warp_valid_items = block_valid_items - warp_id * 32;
+  //!            // Allocate WarpScan shared memory for 4 warps
+  //!            __shared__ typename WarpScan::TempStorage temp_storage[4];
   //!
-  //!        // Compute exclusive warp-wide prefix max scans
-  //!        int warp_aggregate;
-  //!        WarpScan(temp_storage[warp_id]).ExclusiveScanPartial(
-  //!            thread_data, thread_data, INT_MIN, cuda::maximum<>{}, warp_valid_items, warp_aggregate);
+  //!            // Obtain one input item per thread
+  //!            int thread_data = ...
+  //!            int warp_id = threadIdx.x / 32;
+  //!            int block_valid_items = 35;
+  //!            int warp_valid_items = block_valid_items - warp_id * 32;
+  //!
+  //!            // Compute exclusive warp-wide prefix max scans
+  //!            int warp_aggregate;
+  //!            WarpScan(temp_storage[warp_id]).ExclusiveScanPartial(
+  //!                thread_data, thread_data, INT_MIN, cuda::maximum<>{}, warp_valid_items, warp_aggregate);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        warp_threads = 32
+  //!        threads_per_block = 128
+  //!        block_valid_items = 35
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out, d_aggregate):
+  //!            tid = cuda.threadIdx.x
+  //!            warp_id = tid // warp_threads
+  //!            warp_valid_items = max(0, min(warp_threads, block_valid_items - warp_id * warp_threads))
+  //!            temp_storage = coop.TempStorage()
+  //!            warp_aggregate = cuda.local.array(1, dtype=d_data.dtype)
+  //!            d_out[tid] = coop.warp.exclusive_scan[temp_storage](
+  //!                d_data[tid],
+  //!                "max",
+  //!                -2147483648,
+  //!                threads_in_warp=warp_threads,
+  //!                valid_items=warp_valid_items,
+  //!                warp_aggregate=warp_aggregate,
+  //!            )
+  //!            d_aggregate[tid] = warp_aggregate[0]
+  //!
+  //!        # kernel[1, threads_per_block](d_data, d_out, d_aggregate)
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
