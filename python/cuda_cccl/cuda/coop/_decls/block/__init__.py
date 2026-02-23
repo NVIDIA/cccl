@@ -8,6 +8,7 @@ _SIDE_EFFECT_MODULES: tuple[str, ...] = (
     "_block_load_store",
     "_block_exchange",
     "_block_scan",
+    "_block_reduce",
 )
 
 
