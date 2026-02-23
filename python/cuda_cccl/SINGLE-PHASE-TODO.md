@@ -160,6 +160,15 @@
 - [x] Update coop docs for expanded TempStorage usage and add a new
       `coop_thread_data.rst` guide wired into the toctree.
 
+## PR #7214 @codex review follow-up (2026-02-23, round 3)
+
+- [x] Expand `docs/python/coop_thread_data.rst` with a CUB/C++ mental model
+      (`T thread_data[ITEMS_PER_THREAD]`) and explain rewrite lowering to
+      thread-private `cuda.local.array(...)`.
+- [x] Expand ThreadData dtype inference docs with concrete failure behavior and
+      a literalinclude mismatch example sourced from
+      `tests/coop/test_block_load_store_api.py`.
+
 ## Deferred / Not Planned
 
 - BlockRadixSort decomposer support (requires a C++ tuple-of-references adapter).
