@@ -278,3 +278,59 @@ conceptual guidance and clarifying rewrite-time dtype inference behavior.
 ### Validation
 - `pytest -q tests/coop/test_block_load_store_api.py -k "block_load_store_single_phase_thread_data or thread_data_dtype_mismatch_raises"`
 - `pre-commit run --files ../../docs/python/coop_thread_data.rst tests/coop/test_block_load_store_api.py`
+
+## Follow-Up (2026-02-23, PR #7214 `@codex` round 4)
+
+### Goal
+Address new `_rewrite/__init__.py` maintainability comments (dataclass docs,
+SimpleNamespace cleanup, helper placement, ThreadData inference structure) and
+consolidate histogram tests by folding `test_histo2.py` into
+`test_block_histogram.py`.
+
+### Thread-by-Thread Plan
+- [x] 1. `python/cuda_cccl/cuda/coop/_rewrite/__init__.py:280`
+  - Expand `ArrayCallDefinition` docstring with explicit field docs.
+
+- [x] 2. `python/cuda_cccl/cuda/coop/_rewrite/__init__.py:236`
+  - Add full `CallDefinition` class docstring with field descriptions.
+
+- [x] 3. `python/cuda_cccl/cuda/coop/_rewrite/__init__.py:380`
+  - Add full `GetAttrDefinition` class docstring with field descriptions.
+
+- [x] 4. `python/cuda_cccl/cuda/coop/_rewrite/__init__.py:406`
+  - Add a structured `RootDefinition` docstring (header, details, fields).
+
+- [x] 5. `python/cuda_cccl/cuda/coop/_rewrite/__init__.py:1356`
+  - Remove stale commented code from `CoopNode.call_var_name`.
+
+- [x] 6. `python/cuda_cccl/cuda/coop/_rewrite/__init__.py:2250`
+  - Move `get_coop_class_and_instance_maps()` up with other helper functions.
+
+- [x] 7. `python/cuda_cccl/cuda/coop/_rewrite/__init__.py:2823`
+  - Replace TempStorage requirement `SimpleNamespace` payload with documented
+    dataclass (`TempStorageUseRequirementEntry`).
+
+- [x] 8. `python/cuda_cccl/cuda/coop/_rewrite/__init__.py:2960`
+  - Shorten long `CUfunction_attribute` line using local aliases.
+
+- [x] 9. `python/cuda_cccl/cuda/coop/_rewrite/__init__.py:3288`
+  - Replace clunky primitive `if/elif` chain with a rule-table-driven dtype
+    inference helper and extend coverage where peer-based inference is valid
+    (block/warp load/store/exchange plus block shuffle/adjacent-difference).
+
+- [x] 10. `python/cuda_cccl/cuda/coop/_rewrite/__init__.py:3506`
+  - Replace finalized TempStorage info `SimpleNamespace` with documented
+    dataclass (`TempStorageInfo`).
+
+- [x] 11. `python/cuda_cccl/tests/coop/test_histo2.py:1`
+  - Merge test coverage into `tests/coop/test_block_histogram.py` and delete
+    `tests/coop/test_histo2.py`.
+
+### Validation
+- `pytest -q tests/coop/test_warp_load_store_api.py -k "infers_items_per_thread_and_dtype"`
+- `pytest -q tests/coop/test_warp_exchange_api.py -k "infers_dtype_from_output_array"`
+- `pytest -q tests/coop/test_block_shuffle.py -k "thread_data_infers_dtype_from_output_array"`
+- `pytest -q tests/coop/test_block_adjacent_difference.py -k "infers_dtype_from_output_array"`
+- `pytest -q tests/coop/test_thread_data_inference_edge_cases.py tests/coop/test_block_load_store_api.py -k "thread_data"`
+- `pytest -q "tests/coop/test_block_histogram.py::test_block_histogram_histo_single_phase_2[::cub::BLOCK_HISTO_ATOMIC-1024-2-32-int32-uint8]"`
+- `pre-commit run --files AGENTS.md cuda/coop/_decls/block/_block_shuffle.py cuda/coop/_rewrite/__init__.py tests/coop/test_block_adjacent_difference.py tests/coop/test_block_histogram.py tests/coop/test_block_shuffle.py tests/coop/test_warp_exchange_api.py tests/coop/test_warp_load_store_api.py`

@@ -24,7 +24,8 @@ This directory tracks the CUDA cooperative single-phase effort. Start with
   `cuda/coop/block/_block_histogram.py`, `cuda/coop/block/_block_reduce.py`,
   `cuda/coop/block/_block_exchange.py`, `cuda/coop/block/_block_run_length_decode.py`,
   `cuda/coop/block/_block_merge_sort.py`, `cuda/coop/block/_block_radix_sort.py`.
-- Examples/tests: `tests/coop/test_histo2.py` (single-phase histogram example),
+- Examples/tests: `tests/coop/test_block_histogram.py` (single-phase histogram
+  examples, including former `test_histo2.py` coverage),
   `tests/coop/test_block_load_store_scan_single_phase.py`,
   `tests/coop/test_block_reduce.py`, `tests/coop/test_block_exchange.py`.
 

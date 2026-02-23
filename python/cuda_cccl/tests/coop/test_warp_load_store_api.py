@@ -188,13 +188,13 @@ def test_warp_load_store_single_phase():
     np.testing.assert_allclose(h_output, h_input)
 
 
-def test_warp_load_store_single_phase_thread_data_infers_items_per_thread():
+def test_warp_load_store_single_phase_thread_data_infers_items_per_thread_and_dtype():
     threads_in_warp = 32
     items_per_thread = 4
 
     @cuda.jit
     def kernel(d_in, d_out):
-        items = coop.ThreadData(items_per_thread, dtype=d_in.dtype)
+        items = coop.ThreadData(items_per_thread)
         coop.warp.load(
             d_in,
             items,

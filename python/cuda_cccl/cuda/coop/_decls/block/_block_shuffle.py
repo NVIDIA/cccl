@@ -87,7 +87,14 @@ class CoopBlockShuffleDecl(CoopAbstractTemplate, CoopDeclMixin):
                     "or thread-data array for Up/Down shuffles"
                 )
 
-            if isinstance(items, types.Array) and isinstance(output_items, types.Array):
+            using_thread_data = isinstance(items, ThreadDataType) or isinstance(
+                output_items, ThreadDataType
+            )
+            if (
+                not using_thread_data
+                and isinstance(items, types.Array)
+                and isinstance(output_items, types.Array)
+            ):
                 if items.dtype != output_items.dtype:
                     raise errors.TypingError(
                         f"{self.primitive_name} requires 'items' and "

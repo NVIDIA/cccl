@@ -99,6 +99,23 @@ DEBUG_PRINT = False
 _GLOBAL_SYMBOL_ID_COUNTER = itertools.count(0)
 DEFAULT_STATIC_SHARED_MEMORY_BYTES = 48 * 1024
 MAX_SHARED_MEMORY_CARVEOUT_PERCENT = 100
+# Only primitives with a guaranteed same-dtype peer argument are included here.
+# Primitives that operate purely on ThreadData (for example, sort/reduce forms
+# without a typed array peer) cannot reliably infer dtype from call usage alone.
+THREAD_DATA_DTYPE_INFERENCE_ARG_PAIRS: dict[str, tuple[tuple[str, str], ...]] = {
+    "coop.block.load": (("dst", "src"), ("src", "dst")),
+    "coop.block.store": (("src", "dst"), ("dst", "src")),
+    "coop.block.exchange": (("items", "output_items"), ("output_items", "items")),
+    "coop.block.scan": (("src", "dst"), ("dst", "src")),
+    "coop.block.adjacent_difference": (
+        ("items", "output_items"),
+        ("output_items", "items"),
+    ),
+    "coop.block.shuffle": (("items", "output_items"), ("output_items", "items")),
+    "coop.warp.load": (("dst", "src"), ("src", "dst")),
+    "coop.warp.store": (("src", "dst"), ("dst", "src")),
+    "coop.warp.exchange": (("items", "output_items"), ("output_items", "items")),
+}
 
 
 def debug_print(*args, **kwargs):
@@ -221,6 +238,55 @@ def get_thread_data_type():
     return thread_data_type
 
 
+@lru_cache(maxsize=None)
+def get_coop_class_and_instance_maps():
+    from cuda.coop._decls import (
+        get_coop_decl_class_map,
+        get_coop_instance_of_instance_types_map,
+    )
+
+    decl_classes = get_coop_decl_class_map()
+    node_classes = get_coop_node_class_map()
+    instance_map = get_coop_instance_of_instance_types_map()
+
+    decl_primitive_names = set(decl.primitive_name for decl in decl_classes.keys())
+    node_primitive_names = set(node.primitive_name for node in node_classes.values())
+    instance_names = set(
+        instance.decl.primitive_name for instance in instance_map.values()
+    )
+
+    # Ensure that the decl classes and node classes have the exact same
+    # primitive names.
+    if decl_primitive_names != node_primitive_names:
+        raise RuntimeError(
+            f"Decl classes and node classes have different primitive names: "
+            f"{decl_primitive_names} != {node_primitive_names}"
+        )
+
+    # Ensure that the instance names are a subset of the decl names.
+    if not instance_names.issubset(decl_primitive_names):
+        raise RuntimeError(
+            f"Instance names {instance_names} are not a subset of decl names "
+            f"{decl_primitive_names}"
+        )
+
+    # Ensure all instances are unique.
+    instance_values = set(instance_map.values())
+    if len(instance_values) != len(instance_map):
+        raise RuntimeError("Instance classes are not unique.")
+
+    # instance_map is a map from name to instance; we'll return the inverse
+    # of that to the user (i.e. instance to name).
+    instances = {instance: name for (name, instance) in instance_map.items()}
+
+    # Invariant checks complete, return the class maps.
+    return SimpleNamespace(
+        decls=decl_classes,
+        nodes=node_classes,
+        instances=instances,
+    )
+
+
 VarType = Union[ir.Arg, ir.Const, ir.Expr, ir.FreeVar, ir.Global, ir.Var]
 RootVarType = Union[ir.Arg, ir.Const, ir.FreeVar, ir.Global]
 CallDefinitionType = Union[
@@ -233,6 +299,18 @@ CallDefinitionType = Union[
 
 @dataclass
 class CallDefinition:
+    """
+    Captures a callable IR definition and context needed for rewrite analysis.
+
+    Attributes:
+        instr: The underlying call expression/value instruction.
+        func: IR value for the callable target used by `instr`.
+        func_name: Symbol name associated with `func`.
+        rewriter: Active CoopNodeRewriter handling this IR graph.
+        assign: Optional assignment instruction that produced this call value.
+        order: Optional lexical order within the containing block.
+    """
+
     instr: VarType
     func: VarType
     func_name: str
@@ -276,8 +354,14 @@ class CallDefinition:
 @dataclass
 class ArrayCallDefinition(CallDefinition):
     """
-    Specialization of CallDefinition for array calls.  This is used to capture
-    additional information specific to array calls.
+    Specialization of CallDefinition for `coop.*.array(...)` style calls.
+
+    Attributes:
+        array_type: Numba array return type of the call.
+        array_dtype: Element dtype extracted from `array_type`.
+        array_alignment: Optional explicit alignment passed at the call site.
+        is_coop_array: True when the call originated from `cuda.coop._array`.
+        shape: Compile-time array shape (flattened element count when known).
     """
 
     # N.B. We need to mark everything `Optional` and default to None because
@@ -352,6 +436,64 @@ class TempStorageUseLayoutEntry:
 
 
 @dataclass
+class TempStorageUseRequirementEntry:
+    """
+    Inferred temp-storage requirement for one primitive call site.
+
+    Attributes:
+        instr: Assignment instruction containing the primitive call.
+        expr: Call expression for the primitive invocation.
+        call_key: Stable integer key for associating layout entries by call.
+        ordinal: Encounter order of this requirement during inference walk.
+        primitive_name: Fully-qualified primitive name (e.g. `coop.block.scan`).
+        size_in_bytes: Required temp-storage bytes for this primitive call.
+        alignment: Required byte alignment for this primitive call.
+    """
+
+    instr: ir.Assign
+    expr: ir.Expr
+    call_key: int
+    ordinal: int
+    primitive_name: str
+    size_in_bytes: int
+    alignment: int
+
+
+@dataclass
+class TempStorageInfo:
+    """
+    Finalized TempStorage metadata for a single root TempStorage binding.
+
+    Attributes:
+        key: Canonical root variable name for this TempStorage binding.
+        root_var: Root IR variable that owns this TempStorage placeholder.
+        order: Relative lexical order used by global TempStorage planning.
+        size_in_bytes: Effective user/inferred TempStorage allocation size.
+        alignment: Effective byte alignment for this TempStorage allocation.
+        required_size: Minimum bytes required by associated primitive uses.
+        required_alignment: Minimum alignment required by associated uses.
+        use_layout: Per-call byte-slice layout for bound primitive invocations.
+        requirements: Inferred primitive requirements contributing to sizing.
+        sharing: TempStorage sharing mode (`shared` or `exclusive`).
+        auto_sync: Effective auto-sync policy after sharing-mode validation.
+        base_offset: Byte offset into the global TempStorage backing buffer.
+    """
+
+    key: str
+    root_var: ir.Var
+    order: int
+    size_in_bytes: int
+    alignment: int
+    required_size: int
+    required_alignment: int
+    use_layout: dict[int, TempStorageUseLayoutEntry]
+    requirements: list[TempStorageUseRequirementEntry]
+    sharing: str
+    auto_sync: bool
+    base_offset: int = 0
+
+
+@dataclass
 class RewriteDetails:
     """
     IR artifacts generated for a rewritten cooperative primitive call.
@@ -377,6 +519,21 @@ class RewriteDetails:
 
 @dataclass
 class GetAttrDefinition:
+    """
+    Represents a chained `getattr` step while resolving a root definition.
+
+    Attributes:
+        instr: The underlying IR instruction for the `getattr`.
+        instance_name: Symbol name of the base object for this attribute access.
+        attr_name: Attribute name read from the base object.
+        rewriter: Active CoopNodeRewriter handling this IR graph.
+        assign: Optional assignment that stores the `getattr` result.
+        instance: Resolved Python instance object, when statically available.
+        attr_instance: Resolved attribute value object, when available.
+        order: Optional lexical order in the containing block.
+        subsequent_call: Optional call that immediately consumes this attribute.
+    """
+
     instr: VarType
     instance_name: str
     attr_name: str
@@ -403,6 +560,27 @@ class ConstDefinition:
 
 @dataclass
 class RootDefinition:
+    """
+    Canonical root metadata for a resolved IR value chain.
+
+    This object links the original queried instruction to its root assignment
+    and all intermediate `getattr`/`call` definitions discovered while walking
+    the IR graph. Rewrite passes use this structure to classify single-phase vs
+    two-phase usage and to locate constructor call details.
+
+    Attributes:
+        original_instr: Instruction originally requested by the caller.
+        root_instr: Root IR value reached after definition traversal.
+        root_assign: Assignment producing `root_instr`.
+        instance: Resolved Python object for the root symbol.
+        needs_pre_launch_callback: Whether launch callbacks are required.
+        all_instructions: All traversed IR instructions in discovery order.
+        all_assignments: Assignment instructions encountered during traversal.
+        rewriter: Active CoopNodeRewriter handling this IR graph.
+        definitions: Ordered helper definitions (getattr/call/const wrappers).
+        attr_instance: Final resolved attribute instance, when available.
+    """
+
     original_instr: VarType
     root_instr: RootVarType
     root_assign: ir.Assign
@@ -1353,8 +1531,6 @@ class CoopNode:
             f"{self.primitive.name.lower()}_"
             f"{self.block_line}_{self.index}"
         )
-        # if self.implicit_temp_storage:
-        #    name += "_alloc"
         return name
 
     def make_arg_name(self, arg_name: str) -> str:
@@ -2246,55 +2422,6 @@ CoopWarpReduceNode = _rewrite_warp_reduce.CoopWarpReduceNode
 CoopWarpSumNode = _rewrite_warp_reduce.CoopWarpSumNode
 
 
-@lru_cache(maxsize=None)
-def get_coop_class_and_instance_maps():
-    from cuda.coop._decls import (
-        get_coop_decl_class_map,
-        get_coop_instance_of_instance_types_map,
-    )
-
-    decl_classes = get_coop_decl_class_map()
-    node_classes = get_coop_node_class_map()
-    instance_map = get_coop_instance_of_instance_types_map()
-
-    decl_primitive_names = set(decl.primitive_name for decl in decl_classes.keys())
-    node_primitive_names = set(node.primitive_name for node in node_classes.values())
-    instance_names = set(
-        instance.decl.primitive_name for instance in instance_map.values()
-    )
-
-    # Ensure that the decl classes and node classes have the exact same
-    # primitive names.
-    if decl_primitive_names != node_primitive_names:
-        raise RuntimeError(
-            f"Decl classes and node classes have different primitive names: "
-            f"{decl_primitive_names} != {node_primitive_names}"
-        )
-
-    # Ensure that the instance names are a subset of the decl names.
-    if not instance_names.issubset(decl_primitive_names):
-        raise RuntimeError(
-            f"Instance names {instance_names} are not a subset of decl names "
-            f"{decl_primitive_names}"
-        )
-
-    # Ensure all instances are unique.
-    instance_values = set(instance_map.values())
-    if len(instance_values) != len(instance_map):
-        raise RuntimeError("Instance classes are not unique.")
-
-    # instance_map is a map from name to instance; we'll return the inverse
-    # of that to the user (i.e. instance to name).
-    instances = {instance: name for (name, instance) in instance_map.items()}
-
-    # Invariant checks complete, return the class maps.
-    return SimpleNamespace(
-        decls=decl_classes,
-        nodes=node_classes,
-        instances=instances,
-    )
-
-
 @register_rewrite("after-inference")
 class CoopNodeRewriter(Rewrite):
     interesting_modules = {
@@ -2820,7 +2947,7 @@ class CoopNodeRewriter(Rewrite):
                     )
 
                 requirements.append(
-                    SimpleNamespace(
+                    TempStorageUseRequirementEntry(
                         instr=instr,
                         expr=expr,
                         call_key=id(instr),
@@ -2957,11 +3084,14 @@ class CoopNodeRewriter(Rewrite):
                 from numba.cuda.cudadrv import driver
                 from numba.cuda.cudadrv.driver import binding
 
-                CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES = binding.CUfunction_attribute.CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES
+                attrs = binding.CUfunction_attribute
+                max_dynamic_smem_attr = (
+                    attrs.CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES
+                )
 
                 cufunc = kernel_obj._codelibrary.get_cufunc()
                 driver.driver.cuKernelSetAttribute(
-                    CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES,
+                    max_dynamic_smem_attr,
                     dynamic_shared_bytes,
                     cufunc.handle,
                     cufunc.device.id,
@@ -3254,6 +3384,22 @@ class CoopNodeRewriter(Rewrite):
             return dtype
         return None
 
+    def _infer_thread_data_dtype_candidate(self, primitive_name, bound, var_name):
+        arg_pairs = THREAD_DATA_DTYPE_INFERENCE_ARG_PAIRS.get(primitive_name)
+        if not arg_pairs:
+            return None
+
+        for thread_arg_name, peer_arg_name in arg_pairs:
+            thread_arg = bound.arguments.get(thread_arg_name)
+            if not self._var_matches(thread_arg, var_name):
+                continue
+            peer_arg = bound.arguments.get(peer_arg_name)
+            candidate = self._dtype_from_var(peer_arg)
+            if candidate is not None:
+                return candidate
+
+        return None
+
     def _infer_thread_data_dtype_from_uses(self, var):
         var_name = var.name
         candidates = []
@@ -3284,35 +3430,11 @@ class CoopNodeRewriter(Rewrite):
             except Exception:
                 continue
 
-            candidate = None
-            if primitive_name == "coop.block.load":
-                src = bound.arguments.get("src")
-                dst = bound.arguments.get("dst")
-                if self._var_matches(dst, var_name):
-                    candidate = self._dtype_from_var(src)
-                elif self._var_matches(src, var_name):
-                    candidate = self._dtype_from_var(dst)
-            elif primitive_name == "coop.block.store":
-                dst = bound.arguments.get("dst")
-                src = bound.arguments.get("src")
-                if self._var_matches(src, var_name):
-                    candidate = self._dtype_from_var(dst)
-                elif self._var_matches(dst, var_name):
-                    candidate = self._dtype_from_var(src)
-            elif primitive_name == "coop.block.exchange":
-                items = bound.arguments.get("items")
-                output_items = bound.arguments.get("output_items")
-                if self._var_matches(items, var_name):
-                    candidate = self._dtype_from_var(output_items)
-                elif self._var_matches(output_items, var_name):
-                    candidate = self._dtype_from_var(items)
-            elif primitive_name == "coop.block.scan":
-                src = bound.arguments.get("src")
-                dst = bound.arguments.get("dst")
-                if self._var_matches(src, var_name):
-                    candidate = self._dtype_from_var(dst)
-                elif self._var_matches(dst, var_name):
-                    candidate = self._dtype_from_var(src)
+            candidate = self._infer_thread_data_dtype_candidate(
+                primitive_name,
+                bound,
+                var_name,
+            )
 
             if candidate is not None:
                 candidates.append(candidate)
@@ -3503,7 +3625,7 @@ class CoopNodeRewriter(Rewrite):
         else:
             effective_auto_sync = True if auto_sync is None else auto_sync
 
-        info = SimpleNamespace(
+        info = TempStorageInfo(
             key=key,
             root_var=root_var,
             order=leaf.order if leaf.order is not None else 0,
@@ -3515,7 +3637,6 @@ class CoopNodeRewriter(Rewrite):
             requirements=requirements,
             sharing=sharing,
             auto_sync=effective_auto_sync,
-            base_offset=0,
         )
         self._temp_storage_info[key] = info
         return info
