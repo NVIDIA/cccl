@@ -7,6 +7,7 @@ from importlib import import_module
 _SIDE_EFFECT_MODULES: tuple[str, ...] = (
     "_warp_load_store",
     "_warp_exchange",
+    "_warp_merge_sort",
 )
 
 
