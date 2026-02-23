@@ -117,7 +117,7 @@ static constexpr ::cuda::std::size_t max_smem_per_block = 48 * 1024;
 
 // The size in bytes of the largest machine word that can be atomically read/written in a single instruction, so we can
 // use it to pass messages from one thread to another using strong loads (acquire) and stores (release).
-inline static constexpr int largest_atomic_message_size = 16;
+inline constexpr int largest_atomic_message_size = 16;
 
 struct scaling_result
 {
