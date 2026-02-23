@@ -78,31 +78,67 @@ using InternalWarpExchangeImpl =
  * "striped" arrangement of 64 integer items partitioned across 16 threads where
  * each thread owns 4 items.
  * @par
- * @code
- * #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_exchange.cuh>
+ * @rst
+ * .. tab-set-code::
  *
- * __global__ void ExampleKernel(int *d_data, ...)
- * {
- *     constexpr int warp_threads = 16;
- *     constexpr int block_threads = 256;
- *     constexpr int items_per_thread = 4;
- *     constexpr int warps_per_block = block_threads / warp_threads;
- *     const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
+ *    .. code-block:: c++
  *
- *     // Specialize WarpExchange for a virtual warp of 16 threads owning 4 integer items each
- *     using WarpExchangeT =
- *       cub::WarpExchange<int, items_per_thread, warp_threads>;
+ *        #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_exchange.cuh>
  *
- *     // Allocate shared memory for WarpExchange
- *     __shared__ typename WarpExchangeT::TempStorage temp_storage[warps_per_block];
+ *        __global__ void ExampleKernel(int *d_data, ...)
+ *        {
+ *            constexpr int warp_threads = 16;
+ *            constexpr int block_threads = 256;
+ *            constexpr int items_per_thread = 4;
+ *            constexpr int warps_per_block = block_threads / warp_threads;
+ *            const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
  *
- *     // Load a tile of data striped across threads
- *     int thread_data[items_per_thread];
- *     // ...
+ *            // Specialize WarpExchange for a virtual warp of 16 threads owning 4 integer items each
+ *            using WarpExchangeT =
+ *              cub::WarpExchange<int, items_per_thread, warp_threads>;
  *
- *     // Collectively exchange data into a blocked arrangement across threads
- *     WarpExchangeT(temp_storage[warp_id]).StripedToBlocked(thread_data, thread_data);
- * @endcode
+ *            // Allocate shared memory for WarpExchange
+ *            __shared__ typename WarpExchangeT::TempStorage temp_storage[warps_per_block];
+ *
+ *            // Load a tile of data striped across threads
+ *            int thread_data[items_per_thread];
+ *            // ...
+ *
+ *            // Collectively exchange data into a blocked arrangement across threads
+ *            WarpExchangeT(temp_storage[warp_id]).StripedToBlocked(thread_data, thread_data);
+ *        }
+ *
+ *    .. code-block:: python
+ *
+ *        from numba import cuda
+ *        from cuda import coop
+ *
+ *        warp_threads = 16
+ *        items_per_thread = 4
+ *        threads_per_block = 256
+ *
+ *        @cuda.jit
+ *        def kernel(d_data):
+ *            warp_id = cuda.threadIdx.x // warp_threads
+ *            tile_offset = warp_id * warp_threads * items_per_thread
+ *            temp_storage = coop.TempStorage()
+ *            thread_data = coop.ThreadData(items_per_thread)
+ *
+ *            coop.warp.load(
+ *                d_data[tile_offset:],
+ *                thread_data,
+ *                threads_in_warp=warp_threads,
+ *                algorithm=coop.WarpLoadAlgorithm.STRIPED,
+ *            )
+ *            coop.warp.exchange[temp_storage](
+ *                thread_data,
+ *                thread_data,
+ *                threads_in_warp=warp_threads,
+ *                warp_exchange_type=coop.warp.WarpExchangeType.StripedToBlocked,
+ *            )
+ *
+ *        # kernel[1, threads_per_block](d_data)
+ * @endrst
  * @par
  * Suppose the set of striped input @p thread_data across the block of threads
  * is <tt>{ [0,16,32,48], [1,17,33,49], ..., [15, 32, 47, 63] }</tt>.
@@ -157,30 +193,66 @@ public:
    * "striped" arrangement of 64 integer items partitioned across 16 threads
    * where each thread owns 4 items.
    * @par
-   * @code
-   * #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_exchange.cuh>
+   * @rst
+   * .. tab-set-code::
    *
-   * __global__ void ExampleKernel(int *d_data, ...)
-   * {
-   *     constexpr int warp_threads = 16;
-   *     constexpr int block_threads = 256;
-   *     constexpr int items_per_thread = 4;
-   *     constexpr int warps_per_block = block_threads / warp_threads;
-   *     const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
+   *    .. code-block:: c++
    *
-   *     // Specialize WarpExchange for a virtual warp of 16 threads owning 4 integer items each
-   *     using WarpExchangeT = cub::WarpExchange<int, items_per_thread, warp_threads>;
+   *        #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_exchange.cuh>
    *
-   *     // Allocate shared memory for WarpExchange
-   *     __shared__ typename WarpExchangeT::TempStorage temp_storage[warps_per_block];
+   *        __global__ void ExampleKernel(int *d_data, ...)
+   *        {
+   *            constexpr int warp_threads = 16;
+   *            constexpr int block_threads = 256;
+   *            constexpr int items_per_thread = 4;
+   *            constexpr int warps_per_block = block_threads / warp_threads;
+   *            const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
    *
-   *     // Obtain a segment of consecutive items that are blocked across threads
-   *     int thread_data[items_per_thread];
-   *     // ...
+   *            // Specialize WarpExchange for a virtual warp of 16 threads owning 4 integer items each
+   *            using WarpExchangeT = cub::WarpExchange<int, items_per_thread, warp_threads>;
    *
-   *     // Collectively exchange data into a striped arrangement across threads
-   *     WarpExchangeT(temp_storage[warp_id]).BlockedToStriped(thread_data, thread_data);
-   * @endcode
+   *            // Allocate shared memory for WarpExchange
+   *            __shared__ typename WarpExchangeT::TempStorage temp_storage[warps_per_block];
+   *
+   *            // Obtain a segment of consecutive items that are blocked across threads
+   *            int thread_data[items_per_thread];
+   *            // ...
+   *
+   *            // Collectively exchange data into a striped arrangement across threads
+   *            WarpExchangeT(temp_storage[warp_id]).BlockedToStriped(thread_data, thread_data);
+   *        }
+   *
+   *    .. code-block:: python
+   *
+   *        from numba import cuda
+   *        from cuda import coop
+   *
+   *        warp_threads = 16
+   *        items_per_thread = 4
+   *        threads_per_block = 256
+   *
+   *        @cuda.jit
+   *        def kernel(d_data):
+   *            warp_id = cuda.threadIdx.x // warp_threads
+   *            tile_offset = warp_id * warp_threads * items_per_thread
+   *            temp_storage = coop.TempStorage()
+   *            thread_data = coop.ThreadData(items_per_thread)
+   *
+   *            coop.warp.load(
+   *                d_data[tile_offset:],
+   *                thread_data,
+   *                threads_in_warp=warp_threads,
+   *                algorithm=coop.WarpLoadAlgorithm.DIRECT,
+   *            )
+   *            coop.warp.exchange[temp_storage](
+   *                thread_data,
+   *                thread_data,
+   *                threads_in_warp=warp_threads,
+   *                warp_exchange_type=coop.warp.WarpExchangeType.BlockedToStriped,
+   *            )
+   *
+   *        # kernel[1, threads_per_block](d_data)
+   * @endrst
    * @par
    * Suppose the set of striped input @p thread_data across the block of threads
    * is <tt>{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [60,61,62,63] }</tt>.
@@ -219,30 +291,66 @@ public:
    * "blocked" arrangement of 64 integer items partitioned across 16 threads
    * where each thread owns 4 items.
    * @par
-   * @code
-   * #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_exchange.cuh>
+   * @rst
+   * .. tab-set-code::
    *
-   * __global__ void ExampleKernel(int *d_data, ...)
-   * {
-   *     constexpr int warp_threads = 16;
-   *     constexpr int block_threads = 256;
-   *     constexpr int items_per_thread = 4;
-   *     constexpr int warps_per_block = block_threads / warp_threads;
-   *     const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
+   *    .. code-block:: c++
    *
-   *     // Specialize WarpExchange for a virtual warp of 16 threads owning 4 integer items each
-   *     using WarpExchangeT = cub::WarpExchange<int, items_per_thread, warp_threads>;
+   *        #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_exchange.cuh>
    *
-   *     // Allocate shared memory for WarpExchange
-   *     __shared__ typename WarpExchangeT::TempStorage temp_storage[warps_per_block];
+   *        __global__ void ExampleKernel(int *d_data, ...)
+   *        {
+   *            constexpr int warp_threads = 16;
+   *            constexpr int block_threads = 256;
+   *            constexpr int items_per_thread = 4;
+   *            constexpr int warps_per_block = block_threads / warp_threads;
+   *            const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
    *
-   *     // Load a tile of data striped across threads
-   *     int thread_data[items_per_thread];
-   *     // ...
+   *            // Specialize WarpExchange for a virtual warp of 16 threads owning 4 integer items each
+   *            using WarpExchangeT = cub::WarpExchange<int, items_per_thread, warp_threads>;
    *
-   *     // Collectively exchange data into a blocked arrangement across threads
-   *     WarpExchangeT(temp_storage[warp_id]).StripedToBlocked(thread_data, thread_data);
-   * @endcode
+   *            // Allocate shared memory for WarpExchange
+   *            __shared__ typename WarpExchangeT::TempStorage temp_storage[warps_per_block];
+   *
+   *            // Load a tile of data striped across threads
+   *            int thread_data[items_per_thread];
+   *            // ...
+   *
+   *            // Collectively exchange data into a blocked arrangement across threads
+   *            WarpExchangeT(temp_storage[warp_id]).StripedToBlocked(thread_data, thread_data);
+   *        }
+   *
+   *    .. code-block:: python
+   *
+   *        from numba import cuda
+   *        from cuda import coop
+   *
+   *        warp_threads = 16
+   *        items_per_thread = 4
+   *        threads_per_block = 256
+   *
+   *        @cuda.jit
+   *        def kernel(d_data):
+   *            warp_id = cuda.threadIdx.x // warp_threads
+   *            tile_offset = warp_id * warp_threads * items_per_thread
+   *            temp_storage = coop.TempStorage()
+   *            thread_data = coop.ThreadData(items_per_thread)
+   *
+   *            coop.warp.load(
+   *                d_data[tile_offset:],
+   *                thread_data,
+   *                threads_in_warp=warp_threads,
+   *                algorithm=coop.WarpLoadAlgorithm.STRIPED,
+   *            )
+   *            coop.warp.exchange[temp_storage](
+   *                thread_data,
+   *                thread_data,
+   *                threads_in_warp=warp_threads,
+   *                warp_exchange_type=coop.warp.WarpExchangeType.StripedToBlocked,
+   *            )
+   *
+   *        # kernel[1, threads_per_block](d_data)
+   * @endrst
    * @par
    * Suppose the set of striped input @p thread_data across the block of threads
    * is <tt>{ [0,16,32,48], [1,17,33,49], ..., [15, 32, 47, 63] }</tt>.
@@ -279,32 +387,75 @@ public:
    * "striped" arrangement of 64 integer items partitioned across 16 threads
    * where each thread owns 4 items.
    * @par
-   * @code
-   * #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_exchange.cuh>
+   * @rst
+   * .. tab-set-code::
    *
-   * __global__ void ExampleKernel(int *d_data, ...)
-   * {
-   *     constexpr int warp_threads = 16;
-   *     constexpr int block_threads = 256;
-   *     constexpr int items_per_thread = 4;
-   *     constexpr int warps_per_block = block_threads / warp_threads;
-   *     const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
+   *    .. code-block:: c++
    *
-   *     // Specialize WarpExchange for a virtual warp of 16 threads owning 4 integer items each
-   *     using WarpExchangeT = cub::WarpExchange<int, items_per_thread, warp_threads>;
+   *        #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_exchange.cuh>
    *
-   *     // Allocate shared memory for WarpExchange
-   *     __shared__ typename WarpExchangeT::TempStorage temp_storage[warps_per_block];
+   *        __global__ void ExampleKernel(int *d_data, ...)
+   *        {
+   *            constexpr int warp_threads = 16;
+   *            constexpr int block_threads = 256;
+   *            constexpr int items_per_thread = 4;
+   *            constexpr int warps_per_block = block_threads / warp_threads;
+   *            const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
    *
-   *     // Obtain a segment of consecutive items that are blocked across threads
-   *     int thread_data[items_per_thread];
-   *     int thread_ranks[items_per_thread];
-   *     // ...
+   *            // Specialize WarpExchange for a virtual warp of 16 threads owning 4 integer items each
+   *            using WarpExchangeT = cub::WarpExchange<int, items_per_thread, warp_threads>;
    *
-   *     // Collectively exchange data into a striped arrangement across threads
-   *     WarpExchangeT(temp_storage[warp_id]).ScatterToStriped(
-   *       thread_data, thread_ranks);
-   * @endcode
+   *            // Allocate shared memory for WarpExchange
+   *            __shared__ typename WarpExchangeT::TempStorage temp_storage[warps_per_block];
+   *
+   *            // Obtain a segment of consecutive items that are blocked across threads
+   *            int thread_data[items_per_thread];
+   *            int thread_ranks[items_per_thread];
+   *            // ...
+   *
+   *            // Collectively exchange data into a striped arrangement across threads
+   *            WarpExchangeT(temp_storage[warp_id]).ScatterToStriped(
+   *              thread_data, thread_ranks);
+   *        }
+   *
+   *    .. code-block:: python
+   *
+   *        from numba import cuda
+   *        from cuda import coop
+   *
+   *        warp_threads = 16
+   *        items_per_thread = 4
+   *        threads_per_block = 256
+   *
+   *        @cuda.jit
+   *        def kernel(d_values, d_ranks):
+   *            warp_id = cuda.threadIdx.x // warp_threads
+   *            tile_offset = warp_id * warp_threads * items_per_thread
+   *            temp_storage = coop.TempStorage()
+   *            thread_data = coop.ThreadData(items_per_thread)
+   *            thread_ranks = coop.ThreadData(items_per_thread)
+   *            coop.warp.load(
+   *                d_values[tile_offset:],
+   *                thread_data,
+   *                threads_in_warp=warp_threads,
+   *                algorithm=coop.WarpLoadAlgorithm.DIRECT,
+   *            )
+   *            coop.warp.load(
+   *                d_ranks[tile_offset:],
+   *                thread_ranks,
+   *                threads_in_warp=warp_threads,
+   *                algorithm=coop.WarpLoadAlgorithm.DIRECT,
+   *            )
+   *            coop.warp.exchange[temp_storage](
+   *                thread_data,
+   *                thread_data,
+   *                thread_ranks,
+   *                threads_in_warp=warp_threads,
+   *                warp_exchange_type=coop.warp.WarpExchangeType.ScatterToStriped,
+   *            )
+   *
+   *        # kernel[1, threads_per_block](d_values, d_ranks)
+   * @endrst
    * @par
    * Suppose the set of input @p thread_data across the block of threads
    * is `{ [0,1,2,3], [4,5,6,7], ..., [60,61,62,63] }`, and the set of
@@ -341,33 +492,83 @@ public:
    * "striped" arrangement of 64 integer items partitioned across 16 threads
    * where each thread owns 4 items.
    * @par
-   * @code
-   * #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_exchange.cuh>
+   * @rst
+   * .. tab-set-code::
    *
-   * __global__ void ExampleKernel(int *d_data, ...)
-   * {
-   *     constexpr int warp_threads = 16;
-   *     constexpr int block_threads = 256;
-   *     constexpr int items_per_thread = 4;
-   *     constexpr int warps_per_block = block_threads / warp_threads;
-   *     const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
+   *    .. code-block:: c++
    *
-   *     // Specialize WarpExchange for a virtual warp of 16 threads owning 4 integer items each
-   *     using WarpExchangeT = cub::WarpExchange<int, items_per_thread, warp_threads>;
+   *        #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_exchange.cuh>
    *
-   *     // Allocate shared memory for WarpExchange
-   *     __shared__ typename WarpExchangeT::TempStorage temp_storage[warps_per_block];
+   *        __global__ void ExampleKernel(int *d_data, ...)
+   *        {
+   *            constexpr int warp_threads = 16;
+   *            constexpr int block_threads = 256;
+   *            constexpr int items_per_thread = 4;
+   *            constexpr int warps_per_block = block_threads / warp_threads;
+   *            const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
    *
-   *     // Obtain a segment of consecutive items that are blocked across threads
-   *     int thread_input[items_per_thread];
-   *     int thread_ranks[items_per_thread];
-   *     // ...
+   *            // Specialize WarpExchange for a virtual warp of 16 threads owning 4 integer items each
+   *            using WarpExchangeT = cub::WarpExchange<int, items_per_thread, warp_threads>;
    *
-   *     // Collectively exchange data into a striped arrangement across threads
-   *     int thread_output[items_per_thread];
-   *     WarpExchangeT(temp_storage[warp_id]).ScatterToStriped(
-   *       thread_input, thread_output, thread_ranks);
-   * @endcode
+   *            // Allocate shared memory for WarpExchange
+   *            __shared__ typename WarpExchangeT::TempStorage temp_storage[warps_per_block];
+   *
+   *            // Obtain a segment of consecutive items that are blocked across threads
+   *            int thread_input[items_per_thread];
+   *            int thread_ranks[items_per_thread];
+   *            // ...
+   *
+   *            // Collectively exchange data into a striped arrangement across threads
+   *            int thread_output[items_per_thread];
+   *            WarpExchangeT(temp_storage[warp_id]).ScatterToStriped(
+   *              thread_input, thread_output, thread_ranks);
+   *        }
+   *
+   *    .. code-block:: python
+   *
+   *        from numba import cuda
+   *        from cuda import coop
+   *
+   *        warp_threads = 16
+   *        items_per_thread = 4
+   *        threads_per_block = 256
+   *
+   *        @cuda.jit
+   *        def kernel(d_values, d_ranks, d_out):
+   *            warp_id = cuda.threadIdx.x // warp_threads
+   *            tile_offset = warp_id * warp_threads * items_per_thread
+   *            temp_storage = coop.TempStorage()
+   *            thread_input = coop.ThreadData(items_per_thread)
+   *            thread_output = coop.ThreadData(items_per_thread)
+   *            thread_ranks = coop.ThreadData(items_per_thread)
+   *            coop.warp.load(
+   *                d_values[tile_offset:],
+   *                thread_input,
+   *                threads_in_warp=warp_threads,
+   *                algorithm=coop.WarpLoadAlgorithm.DIRECT,
+   *            )
+   *            coop.warp.load(
+   *                d_ranks[tile_offset:],
+   *                thread_ranks,
+   *                threads_in_warp=warp_threads,
+   *                algorithm=coop.WarpLoadAlgorithm.DIRECT,
+   *            )
+   *            coop.warp.exchange[temp_storage](
+   *                thread_input,
+   *                thread_output,
+   *                thread_ranks,
+   *                threads_in_warp=warp_threads,
+   *                warp_exchange_type=coop.warp.WarpExchangeType.ScatterToStriped,
+   *            )
+   *            coop.warp.store(
+   *                d_out[tile_offset:],
+   *                thread_output,
+   *                threads_in_warp=warp_threads,
+   *                algorithm=coop.WarpStoreAlgorithm.STRIPED,
+   *            )
+   *
+   *        # kernel[1, threads_per_block](d_values, d_ranks, d_out)
+   * @endrst
    * @par
    * Suppose the set of input @p thread_input across the block of threads
    * is `{ [0,1,2,3], [4,5,6,7], ..., [60,61,62,63] }`, and the set of
