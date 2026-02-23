@@ -69,9 +69,9 @@ private:
   static constexpr int block_threads = BlockDimX * BlockDimY * BlockDimZ;
 
   // Helper for fallback to gmem->reg->smem
-  struct alignas(cub::detail::bulk_min_align) vec_load_t
+  struct alignas(detail::bulk_copy_min_align) vec_load_t
   {
-    char c_array[cub::detail::bulk_min_align];
+    char c_array[detail::bulk_copy_min_align];
   };
 
   struct _TempStorage
@@ -106,7 +106,7 @@ private:
   State state{State::ready_to_copy};
 #endif // CCCL_ENABLE_DEVICE_ASSERTIONS
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool __elect_thread() const
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __elect_thread() const
   {
     // Otherwise elect.sync in the last warp with a full mask is UB.
     static_assert(block_threads % cub::detail::warp_threads == 0, "The block size must be a multiple of the warp size");
@@ -118,7 +118,7 @@ private:
       (return linear_tid == 0;));
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void __init_mbarrier()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void __init_mbarrier()
   {
     {
       NV_IF_TARGET(NV_PROVIDES_SM_90,
@@ -128,7 +128,7 @@ private:
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void __copy_aligned_async_bulk(char* smem_dst, const char* gmem_src, int num_bytes)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void __copy_aligned_async_bulk(char* smem_dst, const char* gmem_src, int num_bytes)
   {
     if (elected)
     {
@@ -158,10 +158,10 @@ private:
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void __copy_aligned_async(char* smem_dst, const char* gmem_src, int num_bytes)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void __copy_aligned_async(char* smem_dst, const char* gmem_src, int num_bytes)
   {
-    for (int offset = linear_tid * cub::detail::bulk_min_align; offset < num_bytes;
-         offset += block_threads * cub::detail::bulk_min_align)
+    for (int offset = linear_tid * detail::bulk_copy_min_align; offset < num_bytes;
+         offset += block_threads * detail::bulk_copy_min_align)
     {
       [[maybe_unused]] const auto thread_src = gmem_src + offset;
       [[maybe_unused]] const auto thread_dst = smem_dst + offset;
@@ -174,10 +174,10 @@ private:
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void __copy_aligned_fallback(char* smem_dst, const char* gmem_src, int num_bytes)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void __copy_aligned_fallback(char* smem_dst, const char* gmem_src, int num_bytes)
   {
-    for (int offset = linear_tid * cub::detail::bulk_min_align; offset < num_bytes;
-         offset += block_threads * cub::detail::bulk_min_align)
+    for (int offset = linear_tid * detail::bulk_copy_min_align; offset < num_bytes;
+         offset += block_threads * detail::bulk_copy_min_align)
     {
       const auto thread_src                       = gmem_src + offset;
       const auto thread_dst                       = smem_dst + offset;
@@ -185,7 +185,7 @@ private:
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void __copy_aligned(char* smem_dst, const char* gmem_src, int num_bytes)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void __copy_aligned(char* smem_dst, const char* gmem_src, int num_bytes)
   {
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
@@ -197,7 +197,7 @@ private:
   }
 
   // Dispatch to fallback for waiting pre TMA/SM_90
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool __try_wait()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait()
   {
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
@@ -215,7 +215,7 @@ private:
   class token_impl
   {
     friend class BlockLoadToShared;
-    _CCCL_DEVICE _CCCL_FORCEINLINE token_impl() {} // ctor must have a body to avoid token_impl{} to compile
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE token_impl() {} // ctor must have a body to avoid token_impl{} to compile
 
     token_impl(const token_impl&)            = delete;
     token_impl& operator=(const token_impl&) = delete;
@@ -295,7 +295,7 @@ public:
     static_assert(THRUST_NS_QUALIFIER::is_trivially_relocatable_v<T>);
     static_assert(::cuda::std::has_single_bit(unsigned{GmemAlign}));
     static_assert(GmemAlign >= int{alignof(T)});
-    constexpr bool bulk_aligned = GmemAlign >= cub::detail::bulk_min_align;
+    constexpr bool bulk_aligned = GmemAlign >= detail::bulk_copy_min_align;
     // Avoid 64b multiplication in span::size_bytes()
     const int num_bytes = static_cast<int>(sizeof(T)) * static_cast<int>(size(gmem_src));
     const auto dst_ptr  = data(smem_dst);
@@ -327,17 +327,17 @@ public:
     }
     else
     {
-      const auto src_ptr_aligned   = ::cuda::align_up(src_ptr, cub::detail::bulk_min_align);
+      const auto src_ptr_aligned   = ::cuda::align_up(src_ptr, detail::bulk_copy_min_align);
       const int align_diff         = static_cast<int>(src_ptr_aligned - src_ptr);
-      const int head_padding_bytes = (cub::detail::bulk_min_align - align_diff) % cub::detail::bulk_min_align;
+      const int head_padding_bytes = (detail::bulk_copy_min_align - align_diff) % detail::bulk_copy_min_align;
       const auto actual_dst_ptr    = dst_ptr + head_padding_bytes;
       const int head_peeling_bytes = ::cuda::std::min(align_diff, num_bytes);
-      const int num_bytes_bulk     = ::cuda::round_down(num_bytes - head_peeling_bytes, cub::detail::bulk_min_align);
+      const int num_bytes_bulk     = ::cuda::round_down(num_bytes - head_peeling_bytes, detail::bulk_copy_min_align);
       __copy_aligned(actual_dst_ptr + head_peeling_bytes, src_ptr_aligned, num_bytes_bulk);
 
       // Peel head and tail
       // Make sure we have enough threads for the worst case of bulk_min_align bytes on each side.
-      static_assert(block_threads >= 2 * (cub::detail::bulk_min_align - 1));
+      static_assert(block_threads >= 2 * (detail::bulk_copy_min_align - 1));
       // |-------------head--------------|--------------------------tail--------------------------|
       // 0, 1, ... head_peeling_bytes - 1, head_peeling_bytes + num_bytes_bulk, ..., num_bytes - 1
       const int begin_offset = linear_tid < head_peeling_bytes ? 0 : num_bytes_bulk;
@@ -352,14 +352,14 @@ public:
   // Avoid need to explicitly specify `T` for non-const src.
   //! @brief Convenience overload, see `CopyAsync(span<char>, span<const T>)`.
   template <typename T, int GmemAlign = alignof(T)>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::span<T>
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::span<T>
   CopyAsync(::cuda::std::span<char> smem_dst, ::cuda::std::span<T> gmem_src)
   {
     return CopyAsync<T, GmemAlign>(smem_dst, ::cuda::std::span<const T>{gmem_src});
   }
 
   //! @brief Commit one or more @c CopyAsync() calls.
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE CommitToken Commit()
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE CommitToken Commit()
   {
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     _CCCL_ASSERT(state == State::ready_to_copy_or_commit, "CopyAsync() must be called before Commit()");
@@ -388,7 +388,7 @@ public:
 
   //! @brief Wait for previously committed copies to arrive. Prepare for next
   //! calls to @c CopyAsync() .
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Wait(CommitToken&&)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Wait(CommitToken&&)
   {
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
     _CCCL_ASSERT(state == State::committed, "Commit() must be called before Wait()");
@@ -401,7 +401,7 @@ public:
   }
 
   //! @brief Convenience overload calling `Commit()` and `Wait()`.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void CommitAndWait()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void CommitAndWait()
   {
     Wait(Commit());
   }

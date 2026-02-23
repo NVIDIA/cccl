@@ -17,7 +17,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_policy_wrapper_t.cuh>
 #include <cub/util_type.cuh>
@@ -512,13 +511,16 @@ MaxPotentialDynamicSmemBytes(int& max_dyn_smem_bytes, KernelPtr kernel_ptr) noex
 
 namespace detail
 {
+// This should stay an implementation detail even when below functions become public.
+static constexpr int bulk_copy_min_align = 16;
+
 //! @brief Returns the alignment needed for the shared memory destination buffer of BlockLoadToShared.
 //! @tparam T
 //!   Value type to be loaded.
 template <typename T>
 _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferAlignBytes()
 {
-  return (::cuda::std::max) (int{alignof(T)}, cub::detail::bulk_min_align);
+  return (::cuda::std::max) (int{alignof(T)}, detail::bulk_copy_min_align);
 }
 
 //! @brief Returns the size needed for the shared memory destination buffer of BlockLoadToShared.
@@ -536,12 +538,12 @@ _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t 
   _CCCL_ASSERT(num_items <= ::cuda::std::size_t{::cuda::std::numeric_limits<int>::max()},
                "num_items must fit into an int");
   const int num_bytes = static_cast<int>(num_items) * int{sizeof(T)};
-  if constexpr (GmemAlign >= cub::detail::bulk_min_align)
+  if constexpr (GmemAlign >= detail::bulk_copy_min_align)
   {
     return num_bytes;
   }
-  const int extra_space = (num_bytes == 0) ? 0 : cub::detail::bulk_min_align;
-  return ::cuda::round_up(num_bytes, cub::detail::bulk_min_align) + extra_space;
+  const int extra_space = (num_bytes == 0) ? 0 : detail::bulk_copy_min_align;
+  return ::cuda::round_up(num_bytes, detail::bulk_copy_min_align) + extra_space;
 }
 } // namespace detail
 
