@@ -60,25 +60,52 @@ CUB_NAMESPACE_BEGIN
 //! The code snippet below illustrates the conversion from a "blocked" to a "striped" arrangement of 512 integer items
 //! partitioned across 128 threads where each thread owns 4 items.
 //!
-//! .. code-block:: c++
+//! .. tab-set-code::
 //!
-//!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
+//!    .. code-block:: c++
 //!
-//!    __global__ void ExampleKernel(int *d_data, ...)
-//!    {
-//!        // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
-//!        using BlockExchange = cub::BlockExchange<int, 128, 4>;
+//!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
 //!
-//!        // Allocate shared memory for BlockExchange
-//!        __shared__ typename BlockExchange::TempStorage temp_storage;
+//!        __global__ void ExampleKernel(int *d_data, ...)
+//!        {
+//!            // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
+//!            using BlockExchange = cub::BlockExchange<int, 128, 4>;
 //!
-//!        // Load a tile of data striped across threads
-//!        int thread_data[4];
-//!        cub::LoadDirectStriped<128>(threadIdx.x, d_data, thread_data);
+//!            // Allocate shared memory for BlockExchange
+//!            __shared__ typename BlockExchange::TempStorage temp_storage;
 //!
-//!        // Collectively exchange data into a blocked arrangement across threads
-//!        BlockExchange(temp_storage).StripedToBlocked(thread_data);
-//!    }
+//!            // Load a tile of data striped across threads
+//!            int thread_data[4];
+//!            cub::LoadDirectStriped<128>(threadIdx.x, d_data, thread_data);
+//!
+//!            // Collectively exchange data into a blocked arrangement across threads
+//!            BlockExchange(temp_storage).StripedToBlocked(thread_data);
+//!        }
+//!
+//!    .. code-block:: python
+//!
+//!        from numba import cuda
+//!        from cuda import coop
+//!
+//!        threads_per_block = 128
+//!        items_per_thread = 4
+//!
+//!        @cuda.jit
+//!        def kernel(d_data):
+//!            temp_storage = coop.TempStorage()
+//!            thread_data = coop.ThreadData(items_per_thread)
+//!            coop.block.load(
+//!                d_data,
+//!                thread_data,
+//!                algorithm=coop.BlockLoadAlgorithm.STRIPED,
+//!            )
+//!            coop.block.exchange[temp_storage](
+//!                thread_data,
+//!                thread_data,
+//!                block_exchange_type=coop.block.BlockExchangeType.StripedToBlocked,
+//!            )
+//!
+//!        # kernel[1, threads_per_block](d_data)
 //!
 //! Suppose the set of striped input ``thread_data`` across the block of threads is ``{ [0,128,256,384],
 //! [1,129,257,385], ..., [127,255,383,511] }``. The corresponding output ``thread_data`` in those threads will be
@@ -852,25 +879,52 @@ public:
   //! The code snippet below illustrates the conversion from a "striped" to a "blocked" arrangement
   //! of 512 integer items partitioned across 128 threads where each thread owns 4 items.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(int *d_data, ...)
-  //!    {
-  //!        // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
-  //!        using BlockExchange = cub::BlockExchange<int, 128, 4>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
   //!
-  //!        // Allocate shared memory for BlockExchange
-  //!        __shared__ typename BlockExchange::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(int *d_data, ...)
+  //!        {
+  //!            // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
+  //!            using BlockExchange = cub::BlockExchange<int, 128, 4>;
   //!
-  //!        // Load a tile of ordered data into a striped arrangement across block threads
-  //!        int thread_data[4];
-  //!        cub::LoadDirectStriped<128>(threadIdx.x, d_data, thread_data);
+  //!            // Allocate shared memory for BlockExchange
+  //!            __shared__ typename BlockExchange::TempStorage temp_storage;
   //!
-  //!        // Collectively exchange data into a blocked arrangement across threads
-  //!        BlockExchange(temp_storage).StripedToBlocked(thread_data, thread_data);
-  //!    }
+  //!            // Load a tile of ordered data into a striped arrangement across block threads
+  //!            int thread_data[4];
+  //!            cub::LoadDirectStriped<128>(threadIdx.x, d_data, thread_data);
+  //!
+  //!            // Collectively exchange data into a blocked arrangement across threads
+  //!            BlockExchange(temp_storage).StripedToBlocked(thread_data, thread_data);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(
+  //!                d_data,
+  //!                thread_data,
+  //!                algorithm=coop.BlockLoadAlgorithm.STRIPED,
+  //!            )
+  //!            coop.block.exchange[temp_storage](
+  //!                thread_data,
+  //!                thread_data,
+  //!                block_exchange_type=coop.block.BlockExchangeType.StripedToBlocked,
+  //!            )
+  //!
+  //!        # kernel[1, threads_per_block](d_data)
   //!
   //! Suppose the set of striped input ``thread_data`` across the block of threads is ``{ [0,128,256,384],
   //! [1,129,257,385], ..., [127,255,383,511] }`` after loading from device-accessible memory. The corresponding output
@@ -903,28 +957,56 @@ public:
   //! The code snippet below illustrates the conversion from a "blocked" to a "striped" arrangement
   //! of 512 integer items partitioned across 128 threads where each thread owns 4 items.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(int *d_data, ...)
-  //!    {
-  //!        // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
-  //!        using BlockExchange = cub::BlockExchange<int, 128, 4>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
   //!
-  //!        // Allocate shared memory for BlockExchange
-  //!        __shared__ typename BlockExchange::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(int *d_data, ...)
+  //!        {
+  //!            // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
+  //!            using BlockExchange = cub::BlockExchange<int, 128, 4>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockExchange
+  //!            __shared__ typename BlockExchange::TempStorage temp_storage;
   //!
-  //!        // Collectively exchange data into a striped arrangement across threads
-  //!        BlockExchange(temp_storage).BlockedToStriped(thread_data, thread_data);
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
   //!
-  //!        // Store data striped across block threads into an ordered tile
-  //!        cub::StoreDirectStriped<STORE_DEFAULT, 128>(threadIdx.x, d_data, thread_data);
-  //!    }
+  //!            // Collectively exchange data into a striped arrangement across threads
+  //!            BlockExchange(temp_storage).BlockedToStriped(thread_data, thread_data);
+  //!
+  //!            // Store data striped across block threads into an ordered tile
+  //!            cub::StoreDirectStriped<STORE_DEFAULT, 128>(threadIdx.x, d_data, thread_data);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_data, thread_data)
+  //!            coop.block.exchange[temp_storage](
+  //!                thread_data,
+  //!                thread_data,
+  //!                block_exchange_type=coop.block.BlockExchangeType.BlockedToStriped,
+  //!            )
+  //!            coop.block.store(
+  //!                d_data,
+  //!                thread_data,
+  //!                algorithm=coop.BlockStoreAlgorithm.STRIPED,
+  //!            )
+  //!
+  //!        # kernel[1, threads_per_block](d_data)
   //!
   //! Suppose the set of blocked input ``thread_data`` across the block of threads is ``{ [0,1,2,3], [4,5,6,7],
   //! [8,9,10,11], ..., [508,509,510,511] }``. The corresponding output ``thread_data`` in those threads will be
@@ -960,25 +1042,56 @@ public:
   //! arrangement of 512 integer items partitioned across 128 threads where each thread owns 4
   //! items.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(int *d_data, ...)
-  //!    {
-  //!        // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
-  //!        using BlockExchange = cub::BlockExchange<int, 128, 4>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
   //!
-  //!        // Allocate shared memory for BlockExchange
-  //!        __shared__ typename BlockExchange::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(int *d_data, ...)
+  //!        {
+  //!            // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
+  //!            using BlockExchange = cub::BlockExchange<int, 128, 4>;
   //!
-  //!        // Load a tile of ordered data into a warp-striped arrangement across warp threads
-  //!        int thread_data[4];
-  //!        cub::LoadSWarptriped<LOAD_DEFAULT>(threadIdx.x, d_data, thread_data);
+  //!            // Allocate shared memory for BlockExchange
+  //!            __shared__ typename BlockExchange::TempStorage temp_storage;
   //!
-  //!        // Collectively exchange data into a blocked arrangement across threads
-  //!        BlockExchange(temp_storage).WarpStripedToBlocked(thread_data);
-  //!    }
+  //!            // Load a tile of ordered data into a warp-striped arrangement across warp threads
+  //!            int thread_data[4];
+  //!            cub::LoadSWarptriped<LOAD_DEFAULT>(threadIdx.x, d_data, thread_data);
+  //!
+  //!            // Collectively exchange data into a blocked arrangement across threads
+  //!            BlockExchange(temp_storage).WarpStripedToBlocked(thread_data);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!        warp_threads = 32
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data):
+  //!            tid = cuda.threadIdx.x
+  //!            lane = tid % warp_threads
+  //!            warp_id = tid // warp_threads
+  //!            warp_base = warp_id * warp_threads * items_per_thread
+  //!
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            for item in range(items_per_thread):
+  //!                thread_data[item] = d_data[warp_base + lane + item * warp_threads]
+  //!
+  //!            coop.block.exchange[temp_storage](
+  //!                thread_data,
+  //!                thread_data,
+  //!                block_exchange_type=coop.block.BlockExchangeType.WarpStripedToBlocked,
+  //!            )
+  //!
+  //!        # kernel[1, threads_per_block](d_data)
   //!
   //! Suppose the set of warp-striped input ``thread_data`` across the block of threads is ``{ [0,32,64,96],
   //! [1,33,65,97], [2,34,66,98], ..., [415,447,479,511] }`` after loading from device-accessible memory. (The first 128
@@ -1015,28 +1128,59 @@ public:
   //! arrangement of 512 integer items partitioned across 128 threads where each thread owns 4
   //! items.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(int *d_data, ...)
-  //!    {
-  //!        // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
-  //!        using BlockExchange = cub::BlockExchange<int, 128, 4>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_exchange.cuh>
   //!
-  //!        // Allocate shared memory for BlockExchange
-  //!        __shared__ typename BlockExchange::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(int *d_data, ...)
+  //!        {
+  //!            // Specialize BlockExchange for a 1D block of 128 threads owning 4 integer items each
+  //!            using BlockExchange = cub::BlockExchange<int, 128, 4>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockExchange
+  //!            __shared__ typename BlockExchange::TempStorage temp_storage;
   //!
-  //!        // Collectively exchange data into a warp-striped arrangement across threads
-  //!        BlockExchange(temp_storage).BlockedToWarpStriped(thread_data, thread_data);
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
   //!
-  //!        // Store data striped across warp threads into an ordered tile
-  //!        cub::StoreDirectStriped<STORE_DEFAULT, 128>(threadIdx.x, d_data, thread_data);
-  //!    }
+  //!            // Collectively exchange data into a warp-striped arrangement across threads
+  //!            BlockExchange(temp_storage).BlockedToWarpStriped(thread_data, thread_data);
+  //!
+  //!            // Store data striped across warp threads into an ordered tile
+  //!            cub::StoreDirectStriped<STORE_DEFAULT, 128>(threadIdx.x, d_data, thread_data);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!        warp_threads = 32
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data):
+  //!            tid = cuda.threadIdx.x
+  //!            lane = tid % warp_threads
+  //!            warp_id = tid // warp_threads
+  //!            warp_base = warp_id * warp_threads * items_per_thread
+  //!
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_data, thread_data)
+  //!            coop.block.exchange[temp_storage](
+  //!                thread_data,
+  //!                thread_data,
+  //!                block_exchange_type=coop.block.BlockExchangeType.BlockedToWarpStriped,
+  //!            )
+  //!            for item in range(items_per_thread):
+  //!                d_data[warp_base + lane + item * warp_threads] = thread_data[item]
+  //!
+  //!        # kernel[1, threads_per_block](d_data)
   //!
   //! Suppose the set of blocked input ``thread_data`` across the block of threads is ``{ [0,1,2,3], [4,5,6,7],
   //! [8,9,10,11], ..., [508,509,510,511] }``. The corresponding output ``thread_data`` in those threads will be
