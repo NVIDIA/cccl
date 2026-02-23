@@ -14,11 +14,11 @@ The CUDA Core Compute Libraries provide a set of macros to enable or disable spe
 Assertion Control Macros
 ------------------------
 +---------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-| CCCL_ENABLE_ASSERTIONS                            | Enables assertions in both host and device code. Automatically defined by CCCL in debug mode.                                                          |
+| CCCL_ENABLE_ASSERTIONS                            | Enables assertions in both host and device code. Implied by compiling in debug mode.                                                                   |
 +---------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-| CCCL_ENABLE_DEVICE_ASSERTIONS                     | Enables assertions in device code, independent of debug mode. Automatically defined by CCCL when ``CCCL_ENABLE_ASSERTIONS`` is defined.                |
+| CCCL_ENABLE_DEVICE_ASSERTIONS                     | Enables assertions in device code, independent of debug mode. Implied by ``CCCL_ENABLE_ASSERTIONS``.                                                   |
 +---------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
-| CCCL_ENABLE_HOST_ASSERTIONS                       | Enables assertions in host code, independent of debug mode. Automatically defined by CCCL when ``CCCL_ENABLE_ASSERTIONS`` is defined.                  |
+| CCCL_ENABLE_HOST_ASSERTIONS                       | Enables assertions in host code, independent of debug mode. Implied by ``CCCL_ENABLE_ASSERTIONS``.                                                     |
 +---------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 C++ Feature Control Macros
