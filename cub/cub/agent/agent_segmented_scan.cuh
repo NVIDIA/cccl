@@ -447,8 +447,8 @@ public:
         block_scan_aug_t scanner(temp_storage.reused.scan_aug);
         if (chunk_id == 0)
         {
+          const auto augmented_init_value = multi_segment_helpers::make_value_flag(initial_value, false);
           // Initialize exclusive_prefix, referenced from prefix_op
-          augmented_init_value_t augmented_init_value = multi_segment_helpers::make_value_flag(initial_value, false);
           scan_first_tile(scanner, thread_flag_values, augmented_init_value, augmented_scan_op, exclusive_prefix);
         }
         else

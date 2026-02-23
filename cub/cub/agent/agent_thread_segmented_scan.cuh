@@ -404,8 +404,8 @@ struct agent_thread_segmented_scan
       // compute scan
       if (chunk_id == 0)
       {
-        using augmented_init_value_t                = augmented_value_t<InitValueT>;
-        augmented_init_value_t augmented_init_value = make_value_flag(initial_value, false);
+        const auto augmented_init_value = make_value_flag(initial_value, false);
+        // Initialize exclusive_prefix
         scan_first_tile(items, augmented_init_value, augmented_scan_op, exclusive_prefix);
       }
       else
