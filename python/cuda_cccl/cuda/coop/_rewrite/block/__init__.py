@@ -11,6 +11,7 @@ _SIDE_EFFECT_MODULES: tuple[str, ...] = (
     "_block_reduce",
     "_block_histogram",
     "_block_run_length_decode",
+    "_block_merge_sort",
 )
 
 
