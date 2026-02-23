@@ -75,6 +75,10 @@
 - [x] Add block discontinuity tile predecessor/successor overloads.
 - [x] Add block shuffle prefix/suffix overloads (block_prefix/block_suffix).
 - [x] Add block scan block-aggregate overloads (multi-output).
+- [x] Convert monolithic coop typing/rewrite files to package modules:
+      `cuda/coop/_decls/__init__.py` + `cuda/coop/_rewrite/__init__.py`
+      with per-primitive block/warp modules and one-to-one parity with
+      `cuda/coop/block/_block_*.py` and `cuda/coop/warp/_warp_*.py`.
 - [x] Add block merge/radix sort key/value + valid-items/oob_default/decomposer overloads.
 - [x] Add block radix rank exclusive_digit_prefix output overloads.
 - [ ] Enable BlockRadixSort decomposer for user-defined types (blocked: CUB expects tuple-of-references; prototype confirms current lowering emits tuple-by-value and fails CUB deduction; need C++ adapter or alternate lowering).
