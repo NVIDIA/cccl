@@ -8,6 +8,7 @@ _SIDE_EFFECT_MODULES: tuple[str, ...] = (
     "_block_adjacent_difference",
     "_block_discontinuity",
     "_block_shuffle",
+    "_block_radix_rank",
     "_block_load_store",
     "_block_exchange",
     "_block_scan",
