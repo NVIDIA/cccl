@@ -24,7 +24,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/launch>
 
-#include <cuda/experimental/__copy_bytes/layout_utils.cuh>
+#include <cuda/experimental/__copy_bytes/cute_utils.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 #include <cute/tensor.hpp>
@@ -54,8 +54,8 @@ void copy_bytes_naive(
   {
     return;
   }
-  const auto src_tensor = cudax::make_gmem_tensor(src, src_layout);
-  const auto dst_tensor = cudax::make_gmem_tensor(dst, dst_layout);
+  const auto src_tensor = cudax::__make_gmem_tensor(src, src_layout);
+  const auto dst_tensor = cudax::__make_gmem_tensor(dst, dst_layout);
   const auto grid_size     = ::cuda::ceil_div(num_items, block_size);
   const auto config        = ::cuda::make_config(::cuda::block_dims<block_size>(), ::cuda::grid_dims(grid_size));
   const auto& kernel = cudax::copy_bytes_naive_kernel<decltype(config), decltype(src_tensor), decltype(dst_tensor)>;

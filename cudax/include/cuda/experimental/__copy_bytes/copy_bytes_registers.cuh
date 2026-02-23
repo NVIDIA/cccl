@@ -28,6 +28,7 @@
 #include <cuda/experimental/__copy/types.cuh>
 #include <cuda/experimental/__copy/utils.cuh>
 #include <cuda/experimental/__copy_bytes/copy_bytes_naive.cuh>
+#include <cuda/experimental/__copy_bytes/cute_utils.cuh>
 #include <cuda/experimental/__copy_bytes/layout_utils.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -70,8 +71,8 @@ __global__ void copy_bytes_kernel(Config config, SrcTensor src, DstTensor dst, i
     {
       constexpr int EPT     = TileSize / NumThreads;
       const auto thr_layout = ::cute::make_layout(::cute::Int<EPT>{});
-      auto thr_src          = make_gmem_tensor(&src(flat_offset + tid * EPT), thr_layout);
-      auto thr_dst          = make_gmem_tensor(&dst(flat_offset + tid * EPT), thr_layout);
+      auto thr_src          = __make_gmem_tensor(&src(flat_offset + tid * EPT), thr_layout);
+      auto thr_dst          = __make_gmem_tensor(&dst(flat_offset + tid * EPT), thr_layout);
       ::cute::copy(::cute::AutoVectorizingCopyWithAssumedAlignment<VecBitsInt>{}, thr_src, thr_dst);
       return;
     }
@@ -209,26 +210,26 @@ void copy_bytes_registers(
       if (__actual_rank <= 1 || inner_size == total_size)
       {
         auto opt        = ::cute::make_layout(::cute::make_shape(total_size), ::cute::make_stride(::cute::_1{}));
-        auto src_tensor = ::cuda::experimental::make_gmem_tensor(__src.__data, opt);
-        auto dst_tensor = ::cuda::experimental::make_gmem_tensor(__dst.__data, opt);
+        auto src_tensor = ::cuda::experimental::__make_gmem_tensor(__src.__data, opt);
+        auto dst_tensor = ::cuda::experimental::__make_gmem_tensor(__dst.__data, opt);
         __dispatch_vectorized_copy(stream, src_tensor, dst_tensor, common_vector_bytes);
       }
       else if (__actual_rank == 2)
       {
         auto shape      = ::cute::make_shape(__src.__shapes[0], __src.__shapes[1]);
-        auto src_tensor = ::cuda::experimental::make_gmem_tensor(
+        auto src_tensor = ::cuda::experimental::__make_gmem_tensor(
           __src.__data, ::cute::make_layout(shape, ::cute::make_stride(::cute::_1{}, __src.__strides[1])));
-        auto dst_tensor = ::cuda::experimental::make_gmem_tensor(
+        auto dst_tensor = ::cuda::experimental::__make_gmem_tensor(
           __dst.__data, ::cute::make_layout(shape, ::cute::make_stride(::cute::_1{}, __dst.__strides[1])));
         __dispatch_vectorized_copy(stream, src_tensor, dst_tensor, common_vector_bytes);
       }
       else if (__actual_rank == 3)
       {
         auto shape      = ::cute::make_shape(__src.__shapes[0], __src.__shapes[1], __src.__shapes[2]);
-        auto src_tensor = ::cuda::experimental::make_gmem_tensor(
+        auto src_tensor = ::cuda::experimental::__make_gmem_tensor(
           __src.__data,
           ::cute::make_layout(shape, ::cute::make_stride(::cute::_1{}, __src.__strides[1], __src.__strides[2])));
-        auto dst_tensor = ::cuda::experimental::make_gmem_tensor(
+        auto dst_tensor = ::cuda::experimental::__make_gmem_tensor(
           __dst.__data,
           ::cute::make_layout(shape, ::cute::make_stride(::cute::_1{}, __dst.__strides[1], __dst.__strides[2])));
         __dispatch_vectorized_copy(stream, src_tensor, dst_tensor, common_vector_bytes);
