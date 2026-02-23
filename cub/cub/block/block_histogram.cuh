@@ -146,6 +146,10 @@ enum BlockHistogramAlgorithm
 //!
 //!        # kernel[1, threads_per_block](d_in, d_histogram)
 //!
+//! Suppose the set of input ``thread_samples`` across the block of threads is
+//! ``{ [0,0,1,1], [2,2,3,3], ..., [254,254,255,255] }``.
+//! The resulting output histogram ``d_histogram`` will have value ``2`` in each bin.
+//!
 //! Performance and Usage Considerations
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
@@ -324,6 +328,12 @@ public:
   //!                d_histogram[cuda.threadIdx.x] = smem_histogram[cuda.threadIdx.x]
   //!
   //!        # kernel[1, threads_per_block](d_in, d_histogram)
+  //!
+  //! Suppose ``smem_histogram`` initially contains arbitrary values.
+  //! After ``InitHistogram``, all 256 counters are zero.
+  //! If ``thread_samples`` is
+  //! ``{ [0,0,1,1], [2,2,3,3], ..., [254,254,255,255] }``,
+  //! then after ``Composite`` each histogram bin contains ``2``.
   //! @endrst
   //!
   //! @tparam CounterT
@@ -412,6 +422,10 @@ public:
   //!                d_histogram[cuda.threadIdx.x] = smem_histogram[cuda.threadIdx.x]
   //!
   //!        # kernel[1, threads_per_block](d_in, d_histogram)
+  //!
+  //! Suppose the set of input ``thread_samples`` across the block of threads is
+  //! ``{ [0,0,1,1], [2,2,3,3], ..., [254,254,255,255] }``.
+  //! After ``Histogram`` executes, each counter in ``smem_histogram`` contains ``2``.
   //! @endrst
   //!
   //! @tparam CounterT
@@ -504,6 +518,11 @@ public:
   //!                d_histogram[cuda.threadIdx.x] = smem_histogram[cuda.threadIdx.x]
   //!
   //!        # kernel[1, threads_per_block](d_in, d_histogram)
+  //!
+  //! Suppose ``smem_histogram`` is zero-initialized and ``thread_samples`` is
+  //! ``{ [0,0,1,1], [2,2,3,3], ..., [254,254,255,255] }``.
+  //! After one call to ``Composite``, each counter in ``smem_histogram`` is ``2``.
+  //! A second call with the same inputs increments each counter to ``4``.
   //! @endrst
   //!
   //! @tparam CounterT
