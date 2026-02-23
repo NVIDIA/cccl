@@ -121,6 +121,12 @@ from ..warp._warp_scan import (
     _make_inclusive_scan_rewrite,
     _make_inclusive_sum_rewrite,
 )
+from .block import (
+    import_side_effect_modules as _import_block_decl_side_effect_modules,
+)
+from .warp import (
+    import_side_effect_modules as _import_warp_decl_side_effect_modules,
+)
 
 registry = Registry()
 register = registry.register
@@ -153,6 +159,9 @@ class CoopDeclMixin:
 
 
 def get_coop_decl_class_map():
+    _import_block_decl_side_effect_modules()
+    _import_warp_decl_side_effect_modules()
+
     def _iter_decl_subclasses():
         stack = list(CoopDeclMixin.__subclasses__())
         seen = set()
