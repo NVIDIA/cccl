@@ -260,6 +260,33 @@ def test_block_shuffle_up_down_arrays():
     np.testing.assert_array_equal(h_out_down, expected_down)
 
 
+def test_block_shuffle_up_thread_data_infers_dtype_from_output_array():
+    threads_per_block = 64
+    items_per_thread = 2
+    total_items = threads_per_block * items_per_thread
+
+    @cuda.jit
+    def kernel(d_in):
+        tid = row_major_tid()
+        items = cuda.local.array(items_per_thread, numba.int32)
+        output_items = coop.ThreadData(items_per_thread)
+        base = tid * items_per_thread
+
+        for i in range(items_per_thread):
+            items[i] = d_in[base + i]
+
+        coop.block.shuffle(
+            items,
+            output_items,
+            items_per_thread=items_per_thread,
+            block_shuffle_type=BlockShuffleType.Up,
+        )
+
+    h_input = np.arange(total_items, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    kernel[1, threads_per_block](d_input)
+
+
 def test_block_shuffle_up_down_block_prefix_suffix():
     threads_per_block = 128
     items_per_thread = 4
