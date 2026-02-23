@@ -10,8 +10,16 @@ This directory tracks the CUDA cooperative single-phase effort. Start with
 - GPU tests are available; prefer targeted runs and note any skips.
 
 ## Single-Phase Entry Points
-- Rewriter: `cuda/coop/_rewrite.py` (CoopNodeRewriter + per-primitive nodes).
-- Typing: `cuda/coop/_decls.py` (templates, validation, instance types).
+- Rewriter:
+  - Core: `cuda/coop/_rewrite/__init__.py` (`CoopNodeRewriter`,
+    `CoopNode`, shared rewrite plumbing).
+  - Primitive modules: `cuda/coop/_rewrite/block/_block_*.py`,
+    `cuda/coop/_rewrite/warp/_warp_*.py`.
+- Typing:
+  - Core: `cuda/coop/_decls/__init__.py` (templates, validation helpers,
+    instance-type base classes and registration).
+  - Primitive modules: `cuda/coop/_decls/block/_block_*.py`,
+    `cuda/coop/_decls/warp/_warp_*.py`.
 - Primitives: `cuda/coop/block/_block_scan.py`, `cuda/coop/block/_block_load_store.py`,
   `cuda/coop/block/_block_histogram.py`, `cuda/coop/block/_block_reduce.py`,
   `cuda/coop/block/_block_exchange.py`, `cuda/coop/block/_block_run_length_decode.py`,
