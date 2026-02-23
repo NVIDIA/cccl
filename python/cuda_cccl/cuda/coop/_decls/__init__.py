@@ -8,6 +8,7 @@
 
 import enum
 import inspect
+import operator
 from typing import (
     Any,
     Literal,
@@ -538,6 +539,49 @@ class CoopThreadDataDecl(CoopAbstractTemplate):
             ThreadDataType(dtype_type, items_per_thread=items_per_thread),
             *arglist,
         )
+
+
+@register_global(operator.getitem)
+class CoopThreadDataGetItemDecl(AbstractTemplate):
+    def generic(self, args, kwds):
+        if kwds:
+            return None
+        if len(args) != 2:
+            return None
+
+        (target, index) = args
+        if not isinstance(target, ThreadDataType):
+            return None
+        if not isinstance(index, types.Integer):
+            return None
+
+        runtime_target = types.Array(target.dtype, 1, "C")
+        return signature(target.dtype, runtime_target, index)
+
+
+@register_global(operator.setitem)
+class CoopThreadDataSetItemDecl(AbstractTemplate):
+    def generic(self, args, kwds):
+        if kwds:
+            return None
+        if len(args) != 3:
+            return None
+
+        (target, index, value) = args
+        if not isinstance(target, ThreadDataType):
+            return None
+        if not isinstance(index, types.Integer):
+            return None
+
+        conversion = self.context.can_convert(value, target.dtype)
+        if conversion is None:
+            raise errors.TypingError(
+                "Cannot assign value of type "
+                f"{value!r} to ThreadData element type {target.dtype!r}"
+            )
+
+        runtime_target = types.Array(target.dtype, 1, "C")
+        return signature(types.none, runtime_target, index, target.dtype)
 
 
 # =============================================================================
