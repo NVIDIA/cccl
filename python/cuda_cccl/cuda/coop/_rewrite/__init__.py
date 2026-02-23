@@ -46,6 +46,12 @@ from numba.cuda.cudaimpl import lower
 
 from .._types import Algorithm as CoopAlgorithm
 from .._types import algo_coalesce_key
+from .block import (
+    import_side_effect_modules as _import_block_rewrite_side_effect_modules,
+)
+from .warp import (
+    import_side_effect_modules as _import_warp_rewrite_side_effect_modules,
+)
 
 try:
     from numba.cuda.launchconfig import (
@@ -1018,6 +1024,8 @@ class CoopNodeMixin:
 
 
 def get_coop_node_class_map():
+    _import_block_rewrite_side_effect_modules()
+    _import_warp_rewrite_side_effect_modules()
     return {
         subclass.primitive_name: subclass for subclass in CoopNodeMixin.__subclasses__()
     }
