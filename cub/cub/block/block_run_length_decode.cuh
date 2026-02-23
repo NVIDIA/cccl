@@ -39,56 +39,93 @@ CUB_NAMESPACE_BEGIN
 //!    Trailing runs of length 0 are supported (i.e., they may only appear at the end of the run_lengths array).
 //!    A run of length zero may not be followed by a run length that is not zero.
 //!
-//! .. code-block:: c++
+//! .. tab-set-code::
 //!
-//!    __global__ void ExampleKernel(...)
-//!    {
-//!      // Specialising BlockRunLengthDecode to run-length decode items of type uint64_t
-//!      using RunItemT = uint64_t;
-//!      // Type large enough to index into the run-length decoded array
-//!      using RunLengthT = uint32_t;
+//!    .. code-block:: c++
 //!
-//!      // Specialising BlockRunLengthDecode for a 1D block of 128 threads
-//!      constexpr int BlockDimX = 128;
-//!      // Specialising BlockRunLengthDecode to have each thread contribute 2 run-length encoded runs
-//!      constexpr int RunsPerThread = 2;
-//!      // Specialising BlockRunLengthDecode to have each thread hold 4 run-length decoded items
-//!      constexpr int DecodedItemsPerThread = 4;
+//!        __global__ void ExampleKernel(...)
+//!        {
+//!          // Specialising BlockRunLengthDecode to run-length decode items of type uint64_t
+//!          using RunItemT = uint64_t;
+//!          // Type large enough to index into the run-length decoded array
+//!          using RunLengthT = uint32_t;
 //!
-//!      // Specialize BlockRunLengthDecode for a 1D block of 128 threads owning 4 integer items each
-//!      using BlockRunLengthDecodeT =
-//!        cub::BlockRunLengthDecode<RunItemT, BlockDimX, RunsPerThread, DecodedItemsPerThread>;
+//!          // Specialising BlockRunLengthDecode for a 1D block of 128 threads
+//!          constexpr int BlockDimX = 128;
+//!          // Specialising BlockRunLengthDecode to have each thread contribute 2 run-length encoded runs
+//!          constexpr int RunsPerThread = 2;
+//!          // Specialising BlockRunLengthDecode to have each thread hold 4 run-length decoded items
+//!          constexpr int DecodedItemsPerThread = 4;
 //!
-//!      // Allocate shared memory for BlockRunLengthDecode
-//!      __shared__ typename BlockRunLengthDecodeT::TempStorage temp_storage;
+//!          // Specialize BlockRunLengthDecode for a 1D block of 128 threads owning 4 integer items each
+//!          using BlockRunLengthDecodeT =
+//!            cub::BlockRunLengthDecode<RunItemT, BlockDimX, RunsPerThread, DecodedItemsPerThread>;
 //!
-//!      // The run-length encoded items and how often they shall be repeated in the run-length decoded output
-//!      RunItemT run_values[RunsPerThread];
-//!      RunLengthT run_lengths[RunsPerThread];
-//!      ...
+//!          // Allocate shared memory for BlockRunLengthDecode
+//!          __shared__ typename BlockRunLengthDecodeT::TempStorage temp_storage;
 //!
-//!      // Initialize the BlockRunLengthDecode with the runs that we want to run-length decode
-//!      uint32_t total_decoded_size = 0;
-//!      BlockRunLengthDecodeT block_rld(temp_storage, run_values, run_lengths, total_decoded_size);
+//!          // The run-length encoded items and how often they shall be repeated in the run-length decoded output
+//!          RunItemT run_values[RunsPerThread];
+//!          RunLengthT run_lengths[RunsPerThread];
+//!          ...
 //!
-//!      // Run-length decode ("decompress") the runs into a window buffer of limited size. This is repeated until all
-//!      runs
-//!      // have been decoded.
-//!      uint32_t decoded_window_offset = 0U;
-//!      while (decoded_window_offset < total_decoded_size)
-//!      {
-//!        RunLengthT relative_offsets[DecodedItemsPerThread];
-//!        RunItemT decoded_items[DecodedItemsPerThread];
+//!          // Initialize the BlockRunLengthDecode with the runs that we want to run-length decode
+//!          uint32_t total_decoded_size = 0;
+//!          BlockRunLengthDecodeT block_rld(temp_storage, run_values, run_lengths, total_decoded_size);
 //!
-//!        // The number of decoded items that are valid within this window (aka pass) of run-length decoding
-//!        uint32_t num_valid_items = total_decoded_size - decoded_window_offset;
-//!        block_rld.RunLengthDecode(decoded_items, relative_offsets, decoded_window_offset);
+//!          // Run-length decode ("decompress") the runs into a window buffer of limited size. This is repeated until
+//!          all runs
+//!          // have been decoded.
+//!          uint32_t decoded_window_offset = 0U;
+//!          while (decoded_window_offset < total_decoded_size)
+//!          {
+//!            RunLengthT relative_offsets[DecodedItemsPerThread];
+//!            RunItemT decoded_items[DecodedItemsPerThread];
 //!
-//!        decoded_window_offset += BlockDimX * DecodedItemsPerThread;
+//!            // The number of decoded items that are valid within this window (aka pass) of run-length decoding
+//!            uint32_t num_valid_items = total_decoded_size - decoded_window_offset;
+//!            block_rld.RunLengthDecode(decoded_items, relative_offsets, decoded_window_offset);
 //!
-//!        ...
-//!      }
-//!    }
+//!            decoded_window_offset += BlockDimX * DecodedItemsPerThread;
+//!
+//!            ...
+//!          }
+//!        }
+//!
+//!    .. code-block:: python
+//!
+//!        from numba import cuda
+//!        from cuda import coop
+//!
+//!        threads_per_block = 128
+//!        runs_per_thread = 2
+//!        decoded_items_per_thread = 4
+//!
+//!        @cuda.jit
+//!        def kernel(run_values, run_lengths):
+//!            temp_storage = coop.TempStorage()
+//!            run_values_local = coop.local.array(runs_per_thread, dtype=run_values.dtype)
+//!            run_lengths_local = coop.local.array(runs_per_thread, dtype=run_lengths.dtype)
+//!            coop.block.load(run_values, run_values_local, items_per_thread=runs_per_thread)
+//!            coop.block.load(run_lengths, run_lengths_local, items_per_thread=runs_per_thread)
+//!
+//!            total_decoded_size = coop.local.array(1, dtype=run_lengths.dtype)
+//!            total_decoded_size[0] = 0
+//!            run_length = coop.block.run_length(
+//!                run_values_local,
+//!                run_lengths_local,
+//!                runs_per_thread,
+//!                decoded_items_per_thread,
+//!                total_decoded_size,
+//!                temp_storage=temp_storage,
+//!            )
+//!
+//!            decoded_window_offset = 0
+//!            while decoded_window_offset < total_decoded_size[0]:
+//!                decoded_items = coop.local.array(decoded_items_per_thread, dtype=run_values.dtype)
+//!                relative_offsets = coop.local.array(decoded_items_per_thread, dtype=run_lengths.dtype)
+//!                run_length.decode(decoded_items, decoded_window_offset, relative_offsets)
+//!                decoded_window_offset += threads_per_block * decoded_items_per_thread
 //!
 //! Suppose the set of input ``run_values`` across the block of threads is
 //! ``{ [0, 1], [2, 3], [4, 5], [6, 7], ..., [254, 255] }`` and
