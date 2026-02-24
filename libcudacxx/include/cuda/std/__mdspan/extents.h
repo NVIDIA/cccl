@@ -34,6 +34,7 @@
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
@@ -417,8 +418,7 @@ public:
   using size_type  = make_unsigned_t<index_type>;
   using rank_type  = size_t;
 
-  static_assert(is_integral_v<index_type> && !is_same_v<index_type, bool>,
-                "extents::index_type must be a signed or unsigned integer type");
+  static_assert(__cccl_is_integer_v<index_type>, "extents::index_type must be a signed or unsigned integer type");
   static_assert(
     __all<(__mdspan_detail::__is_representable_as<index_type>(_Extents) || (_Extents == dynamic_extent))...>::value,
     "extents ctor: arguments must be representable as index_type and nonnegative");
