@@ -28,6 +28,8 @@
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
 #  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/span>
 
 #  include <vector>
@@ -71,7 +73,7 @@ public:
   {
     if (__i >= size())
     {
-      ::cuda::std::__throw_out_of_range("device index out of range");
+      _CCCL_THROW(::std::out_of_range, "device index out of range");
     }
     return ::cuda::__devices()[__i];
   }

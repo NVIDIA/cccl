@@ -28,7 +28,9 @@
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/invocable.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__ranges/compressed_movable_box.h>
 #include <cuda/std/__ranges/concepts.h>
@@ -103,8 +105,8 @@ public:
 //! @brief @c transform_output_iterator is a special kind of output iterator which transforms a value written upon
 //! dereference. This iterator is useful for transforming an output from algorithms without explicitly storing the
 //! intermediate result in the memory and applying subsequent transformation, thereby avoiding wasting memory capacity
-//! and bandwidth. Using @c transform_iterator facilitates kernel fusion by deferring execution of transformation until
-//! the value is written while saving both memory capacity and bandwidth.
+//! and bandwidth. Using @c transform_output_iterator facilitates kernel fusion by deferring execution of transformation
+//! until the value is written while saving both memory capacity and bandwidth.
 //!
 //! The following code snippet demonstrated how to create a @c transform_output_iterator which applies @c sqrtf to the
 //! assigning value.
@@ -480,6 +482,48 @@ template <class _Fn, class _Iter>
 //! @}
 
 _CCCL_END_NAMESPACE_CUDA
+
+#ifndef _CCCL_DOXYGEN_INVOKED
+#  if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+//! transform_output_iterator is a C++20 iterator, so it does not play well with legacy STL features like std::distance
+//! To work around that specialize those functions for transform_output_iterator
+template <class _Diff, class _Fn, class _Iter>
+_CCCL_HOST_API constexpr void advance(::cuda::transform_output_iterator<_Fn, _Iter>& __iter, _Diff __diff)
+{
+  ::cuda::std::advance(__iter, ::cuda::std::move(__diff));
+}
+
+template <class _Fn, class _Iter>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::iter_difference_t<_Iter>
+distance(::cuda::transform_output_iterator<_Fn, _Iter> __first, ::cuda::transform_output_iterator<_Fn, _Iter> __last)
+{
+  return ::cuda::std::distance(::cuda::std::move(__first), ::cuda::std::move(__last));
+}
+
+template <class _Fn, class _Iter>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::transform_output_iterator<_Fn, _Iter>
+next(::cuda::transform_output_iterator<_Fn, _Iter> __iter, ::cuda::std::iter_difference_t<_Iter> __n = 1)
+{
+  _CCCL_ASSERT(__n >= 0 || ::cuda::std::__has_bidirectional_traversal<_Iter>,
+               "Attempt to std::next(it, n) with negative n on a non-bidirectional iterator");
+  ::cuda::std::advance(__iter, __n);
+  return __iter;
+}
+
+template <class _Fn, class _Iter>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::transform_output_iterator<_Fn, _Iter>
+prev(::cuda::transform_output_iterator<_Fn, _Iter> __iter, ::cuda::std::iter_difference_t<_Iter> __n = 1)
+{
+  _CCCL_ASSERT(__n <= 0 || ::cuda::std::__has_bidirectional_traversal<_Iter>,
+               "Attempt to std::prev(it, +n) on a non-bidi iterator");
+  ::cuda::std::advance(__iter, -__n);
+  return __iter;
+}
+_CCCL_END_NAMESPACE_STD
+#  endif // _CCCL_HAS_HOST_STD_LIB()
+#endif // _CCCL_DOXYGEN_INVOKED
 
 #include <cuda/std/__cccl/epilogue.h>
 
