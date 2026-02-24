@@ -2403,3 +2403,39 @@
     - Result: `36 passed, 4 deselected`.
   - `pre-commit run --files SINGLE-PHASE-CURRENT-PLAN.md SINGLE-PHASE-LOG.md SINGLE-PHASE-NOTES.md SINGLE-PHASE-TODO.md cuda/coop/_decls/__init__.py cuda/coop/_decls/warp/_warp_reduce.py cuda/coop/_rewrite/__init__.py cuda/coop/_rewrite/warp/_warp_reduce.py cuda/coop/warp/__init__.py cuda/coop/warp/_warp_reduce.py tests/coop/test_make_factories_two_phase.py tests/coop/test_warp_reduce.py tests/coop/test_warp_reduce_api.py`
     - Result: all hooks passed.
+
+## 2026-02-24 (multi-TempStorage coverage: mamba + histogram loop + dynamic smem aggregation)
+- Request: Add targeted tests for multiple `coop.TempStorage()` bindings,
+  including a mamba example, loop-local TempStorage construction, and combined
+  dynamic-shared-memory handling when aggregate TempStorage size exceeds the
+  default shared-memory limit.
+- Changes:
+  - `tests/coop/test_mamba_selective_scan_fwd.py`:
+    - Added `test_mamba_dual_temp_storage_staging_kernel`, a mamba-style
+      dual-input staging kernel that uses two distinct `TempStorage()`
+      instances (`temp_load` and `temp_store`) and reuses each across multiple
+      block load/store calls to exercise per-binding TempStorage tracking and
+      auto-sync behavior.
+  - `tests/coop/test_block_histogram.py`:
+    - Added
+      `test_block_histogram_temp_storage_inside_loop_single_phase`, which
+      constructs `coop.TempStorage()` inside a loop and uses it with
+      `coop.block.load` in each iteration before histogram composite updates.
+  - `tests/coop/test_block_stress_kernels.py`:
+    - Added
+      `test_temp_storage_auto_dynamic_shared_callback_multiple_instances_combined`,
+      which allocates two explicit TempStorage bindings where each per-instance
+      size is below the device default shared-memory limit, but combined usage
+      exceeds it; validates that launch shared-memory/callback handling is still
+      applied and verifies kernel output correctness.
+  - `SINGLE-PHASE-TODO.md`:
+    - Added a checked item tracking this multi-TempStorage regression coverage.
+- Validation:
+  - `pytest -q tests/coop/test_mamba_selective_scan_fwd.py`
+    - Result: `4 passed`.
+  - `pytest -q tests/coop/test_block_histogram.py -k temp_storage_inside_loop_single_phase`
+    - Result: `1 passed, 884 deselected`.
+  - `pytest -q tests/coop/test_block_stress_kernels.py -k temp_storage_auto_dynamic_shared_callback_multiple_instances_combined`
+    - Result: `1 passed, 34 deselected`.
+  - `pre-commit run --files tests/coop/test_mamba_selective_scan_fwd.py tests/coop/test_block_histogram.py tests/coop/test_block_stress_kernels.py`
+    - Result: all hooks passed (after one `ruff` import-order auto-fix and rerun).
