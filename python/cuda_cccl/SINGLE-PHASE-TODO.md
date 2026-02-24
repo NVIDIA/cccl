@@ -75,6 +75,7 @@
       needed) and run cleanup for stale launch lines / malformed inline links.
 - [x] Add literalinclude examples for coop API overloads (doc stubs + tests).
 - [x] Add warp reduce/sum valid-items overloads.
+- [x] Add warp max/min convenience APIs (single-phase + two-phase + docs tests).
 - [x] Add WarpScan warp_aggregate/valid_items/temp_storage overloads and tests.
 - [x] Add block load oob_default overload.
 - [x] Add block discontinuity tile predecessor/successor overloads.

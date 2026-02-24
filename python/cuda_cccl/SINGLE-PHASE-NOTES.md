@@ -1588,53 +1588,16 @@ class Algorithm:
    completely different instance being in flight than whatever Numba thought
    was going to be used as the `histo` parent instance, for example.
 
-## Todo
+## Todo (Historical Snapshot)
 
-The following section either lists things I haven't gotten around to tackling
-yet, or things I have tried but are broken in the single-phase branch.
+This section captured an early planning snapshot from 2025 and is now mostly
+superseded.
 
-1. Get stateful Python callback functions working (i.e. `BlockPrefixCallbackOp`
-   for `scan`).  They currently crash CUDA in a very cryptic way.  (Est: 1-3
-   days?)
-
-2. Haven't even tried user-defined types support yet, but I can guarantee it
-   will need work to play nice with single-phase.  (Est: 2-4 days?)
-
-3. Figure out a solution for argument validation and signature/typing that
-   doesn't require so much duplication.  (Est: 2-4 days?)
-
-4. Figure out the documentation story.  This includes both docstrings and
-   higher-level guides and whatnot.  (Est: ~5-10+ days, factoring in figuring
-   out the solution, and actually updating existing docs and writing new
-   docs.)
-
-5. Port all the existing warp and block primitives to the new
-   `BasePrimitive`-derived interface.  This needs to be done for everything at
-   the same time the new rewriting logic is introduced just due to the fact
-   the way primitives are implemented fundamentally changes (i.e. from a Python
-   function to a `BasePrimitive`-derived class).
-
-6. ....and implement appropriate typing (`_decls.py`) and node (`_rewrite.py`)
-   support for all of these primitives as well---again, a prerequisite for any
-   of this stuff to get in.
-
-7. Update all existing tests to ensure they still pass.  Write new tests that
-   exercise single-phase variants.  (Est: probably at least 2-3 calendar weeks
-   for the last three items.)
-
-8. Spend a bit of time trying to break the rewriter.  I've already come across
-   a weird bug where if child primitive is called in multiple blocks, things
-   break (the rewriter needs to track multiple instances of the same child and
-   essentially coalesce them such that codegen/LTO only handles the child func
-   once).
-
-   Additionally, doing quirky stuff like assigning primitives (within a kernel)
-   to object attributes or setitem-array stuff will certainly break things now.
-
-   (Est: 2-3 days?)
-
-9. Ensure `temp_storage=` kwargs works again.  Definitely neglected it whilst
-   getting single-phase stuff working.  (Est: ~2 days?)
+- Prefix callback support, user-defined-type support, primitive-family ports,
+  `_decls`/`_rewrite` coverage, broad test migration, and `temp_storage=`
+  support have since landed.
+- The remaining active follow-on work now lives in `SINGLE-PHASE-TODO.md`
+  (canonical checklist) with execution history in `SINGLE-PHASE-LOG.md`.
 
 ## Factory split note (2026-02-21)
 

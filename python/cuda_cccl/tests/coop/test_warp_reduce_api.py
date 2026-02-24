@@ -129,6 +129,119 @@ def test_warp_sum():
     assert h_out_two_phase[0] == h_out_single_phase[0]
 
 
+def test_warp_max():
+    # example-begin max
+    warp_max = coop.warp.max(numba.int32)
+    threads_in_warp = 32
+    items_per_thread = 1
+    warp_load = coop.warp.load(
+        numba.int32, items_per_thread, threads_in_warp, algorithm="direct"
+    )
+    warp_store = coop.warp.store(
+        numba.int32, items_per_thread, threads_in_warp, algorithm="direct"
+    )
+
+    @cuda.jit
+    def kernel_two_phase(d_in, d_out):
+        items = cuda.local.array(items_per_thread, numba.int32)
+        warp_load(d_in, items)
+        items[0] = warp_max(items[0])
+        warp_store(d_out, items)
+
+    # example-end max
+
+    h_input = np.random.randint(0, 42, 32, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_out_two_phase = cuda.device_array(threads_in_warp, dtype=np.int32)
+    d_out_single_phase = cuda.device_array(threads_in_warp, dtype=np.int32)
+    kernel_two_phase[1, threads_in_warp](d_input, d_out_two_phase)
+
+    @cuda.jit
+    def kernel_single_phase(d_in, d_out):
+        items = cuda.local.array(items_per_thread, numba.int32)
+        coop.warp.load(
+            d_in,
+            items,
+            items_per_thread=items_per_thread,
+            threads_in_warp=threads_in_warp,
+            algorithm=WarpLoadAlgorithm.DIRECT,
+        )
+        items[0] = coop.warp.max(items[0])
+        coop.warp.store(
+            d_out,
+            items,
+            items_per_thread=items_per_thread,
+            threads_in_warp=threads_in_warp,
+            algorithm=WarpStoreAlgorithm.DIRECT,
+        )
+
+    kernel_single_phase[1, threads_in_warp](d_input, d_out_single_phase)
+    h_out_two_phase = d_out_two_phase.copy_to_host()
+    h_out_single_phase = d_out_single_phase.copy_to_host()
+
+    expected = np.max(h_input)
+    assert h_out_two_phase[0] == expected
+    assert h_out_single_phase[0] == expected
+    assert h_out_two_phase[0] == h_out_single_phase[0]
+
+
+def test_warp_min_valid_items():
+    warp_min = coop.warp.min(numba.int32)
+    valid_items = 11
+    threads_in_warp = 32
+    items_per_thread = 1
+    warp_load = coop.warp.load(
+        numba.int32, items_per_thread, threads_in_warp, algorithm="direct"
+    )
+    warp_store = coop.warp.store(
+        numba.int32, items_per_thread, threads_in_warp, algorithm="direct"
+    )
+
+    # example-begin min
+    @cuda.jit
+    def kernel_two_phase(d_in, d_out):
+        items = cuda.local.array(items_per_thread, numba.int32)
+        warp_load(d_in, items)
+        items[0] = warp_min(items[0], valid_items=valid_items)
+        warp_store(d_out, items)
+
+    # example-end min
+
+    h_input = np.random.randint(0, 42, 32, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_out_two_phase = cuda.device_array(threads_in_warp, dtype=np.int32)
+    d_out_single_phase = cuda.device_array(threads_in_warp, dtype=np.int32)
+    kernel_two_phase[1, threads_in_warp](d_input, d_out_two_phase)
+
+    @cuda.jit
+    def kernel_single_phase(d_in, d_out):
+        items = cuda.local.array(items_per_thread, numba.int32)
+        coop.warp.load(
+            d_in,
+            items,
+            items_per_thread=items_per_thread,
+            threads_in_warp=threads_in_warp,
+            algorithm=WarpLoadAlgorithm.DIRECT,
+        )
+        items[0] = coop.warp.min(items[0], valid_items=valid_items)
+        coop.warp.store(
+            d_out,
+            items,
+            items_per_thread=items_per_thread,
+            threads_in_warp=threads_in_warp,
+            algorithm=WarpStoreAlgorithm.DIRECT,
+        )
+
+    kernel_single_phase[1, threads_in_warp](d_input, d_out_single_phase)
+    h_out_two_phase = d_out_two_phase.copy_to_host()
+    h_out_single_phase = d_out_single_phase.copy_to_host()
+
+    expected = np.min(h_input[:valid_items])
+    assert h_out_two_phase[0] == expected
+    assert h_out_single_phase[0] == expected
+    assert h_out_two_phase[0] == h_out_single_phase[0]
+
+
 def test_warp_sum_valid_items():
     warp_sum = coop.warp.sum(numba.int32)
     valid_items = 8
