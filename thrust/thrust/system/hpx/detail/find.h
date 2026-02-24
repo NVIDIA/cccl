@@ -45,7 +45,7 @@ namespace detail
 {
 
 template <typename DerivedPolicy, typename InputIterator, typename T>
-InputIterator find(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, const T& value)
+InputIterator find(execution_policy<DerivedPolicy>& exec [[maybe_unused]], InputIterator first, InputIterator last, const T& value)
 {
   if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
   {
@@ -58,13 +58,12 @@ InputIterator find(execution_policy<DerivedPolicy>& exec, InputIterator first, I
   }
   else
   {
-    (void) exec;
     return ::hpx::find(first, last, value);
   }
 }
 
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-InputIterator find_if(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
+InputIterator find_if(execution_policy<DerivedPolicy>& exec [[maybe_unused]], InputIterator first, InputIterator last, Predicate pred)
 {
   // wrap
   wrapped_function<Predicate> wrapped_pred(pred);
@@ -80,13 +79,12 @@ InputIterator find_if(execution_policy<DerivedPolicy>& exec, InputIterator first
   }
   else
   {
-    (void) exec;
     return ::hpx::find_if(first, last, wrapped_pred);
   }
 }
 
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-InputIterator find_if_not(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
+InputIterator find_if_not(execution_policy<DerivedPolicy>& exec [[maybe_unused]], InputIterator first, InputIterator last, Predicate pred)
 {
   // wrap
   wrapped_function<Predicate> wrapped_pred(pred);
@@ -102,7 +100,6 @@ InputIterator find_if_not(execution_policy<DerivedPolicy>& exec, InputIterator f
   }
   else
   {
-    (void) exec;
     return ::hpx::find_if_not(first, last, wrapped_pred);
   }
 }

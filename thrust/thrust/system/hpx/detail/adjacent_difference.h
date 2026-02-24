@@ -35,6 +35,7 @@
 #include <thrust/system/hpx/detail/function.h>
 #include <thrust/system/detail/generic/adjacent_difference.h>
 #include <hpx/parallel/algorithms/adjacent_difference.hpp>
+#include <cuda/std/__numeric/adjacent_difference.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -66,7 +67,7 @@ adjacent_difference(execution_policy<ExecutionPolicy>& exec [[maybe_unused]],
   }
   else
   {
-    return thrust::system::detail::generic::adjacent_difference(first, last, result);
+    return ::cuda::std::adjacent_difference(first, last, result);
   }
 }
 
@@ -97,7 +98,7 @@ adjacent_difference(execution_policy<ExecutionPolicy>& exec [[maybe_unused]],
   }
   else
   {
-    return thrust::system::detail::generic::adjacent_difference(first, last, result, wrapped_op);
+    return ::cuda::std::adjacent_difference(first, last, result, wrapped_op);
   }
 } 
 

@@ -141,7 +141,7 @@ template <typename ExecutionPolicy,
           typename OutputIterator,
           typename StrictWeakOrdering>
 OutputIterator
-merge(execution_policy<ExecutionPolicy>& exec,
+merge(execution_policy<ExecutionPolicy>& exec [[maybe_unused]],
       InputIterator1 first1,
       InputIterator1 last1,
       InputIterator2 first2,
@@ -186,7 +186,6 @@ merge(execution_policy<ExecutionPolicy>& exec,
   }
   else
   {
-    (void) exec;
     return ::hpx::merge(first1, last1, first2, last2, result, wrapped_comp);
   }
 }

@@ -49,7 +49,7 @@ template <typename ExecutionPolicy,
           typename OutputType,
           typename BinaryFunction>
 OutputType transform_reduce(
-  execution_policy<ExecutionPolicy>& exec,
+  execution_policy<ExecutionPolicy>& exec [[maybe_unused]],
   InputIterator first,
   InputIterator last,
   UnaryFunction unary_op,
@@ -72,7 +72,6 @@ OutputType transform_reduce(
   }
   else
   {
-    (void) exec;
     return ::hpx::transform_reduce(first, last, init, wrapped_binary_op, wrapped_unary_op);
   }
 }

@@ -45,7 +45,7 @@ namespace detail
 
 template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator, typename UnaryFunction>
 OutputIterator transform(
-  execution_policy<ExecutionPolicy>& exec,
+  execution_policy<ExecutionPolicy>& exec [[maybe_unused]],
   InputIterator first,
   InputIterator last,
   OutputIterator result,
@@ -66,7 +66,6 @@ OutputIterator transform(
   }
   else
   {
-    (void) exec;
     return ::hpx::transform(first, last, result, wrapped_op);
   }
 }
@@ -77,7 +76,7 @@ template <typename ExecutionPolicy,
           typename OutputIterator,
           typename BinaryFunction>
 OutputIterator transform(
-  execution_policy<ExecutionPolicy>& exec,
+  execution_policy<ExecutionPolicy>& exec [[maybe_unused]],
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
@@ -101,7 +100,6 @@ OutputIterator transform(
   }
   else
   {
-    (void) exec;
     return ::hpx::transform(first1, last1, first2, result, wrapped_op);
   }
 }

@@ -45,7 +45,7 @@ namespace detail
 
 template <typename DerivedPolicy, typename InputIterator, typename EqualityComparable>
 typename thrust::iterator_traits<InputIterator>::difference_type
-count(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, const EqualityComparable& value)
+count(execution_policy<DerivedPolicy>& exec [[maybe_unused]], InputIterator first, InputIterator last, const EqualityComparable& value)
 {
   if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
   {
@@ -56,14 +56,13 @@ count(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator 
   }
   else
   {
-    (void) exec;
     return ::hpx::count(first, last, value);
   }
 }
 
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
 typename thrust::iterator_traits<InputIterator>::difference_type
-count_if(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
+count_if(execution_policy<DerivedPolicy>& exec [[maybe_unused]], InputIterator first, InputIterator last, Predicate pred)
 {
   // wrap pred
   wrapped_function<Predicate> wrapped_pred{pred};
@@ -78,7 +77,6 @@ count_if(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterat
   }
   else
   {
-    (void) exec;
     return ::hpx::count_if(first, last, wrapped_pred);
   }
 }

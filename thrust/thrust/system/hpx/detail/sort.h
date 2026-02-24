@@ -42,7 +42,7 @@ namespace detail
 
 template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
 void stable_sort(
-  execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp)
+  execution_policy<DerivedPolicy>& exec [[maybe_unused]], RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp)
 {
   // wrap comp
   wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
@@ -57,7 +57,6 @@ void stable_sort(
   }
   else
   {
-    (void) exec;
     return ::hpx::stable_sort(first, last, comp);
   }
 }
