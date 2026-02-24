@@ -16,6 +16,7 @@
 #include <cub/device/dispatch/tuning/common.cuh>
 
 #include <cuda/__device/arch_id.h>
+#include <cuda/std/__algorithm/clamp.h>
 
 #if _CCCL_HAS_CONCEPTS()
 #  include <cuda/std/concepts>
@@ -66,8 +67,7 @@ concept merge_policy_selector = policy_selector<T, merge_policy>;
 
 _CCCL_HOST_DEVICE constexpr int nominal_4b_items_to_items(int nominal_4b_items_per_thread, int type_size)
 {
-  return (::cuda::std::min) (nominal_4b_items_per_thread,
-                             (::cuda::std::max) (1, nominal_4b_items_per_thread * 4 / type_size));
+  return ::cuda::std::clamp(nominal_4b_items_per_thread * 4 / type_size, 1, nominal_4b_items_per_thread);
 }
 
 struct policy_selector
