@@ -35,10 +35,15 @@
 #include <hpx/parallel/algorithms/fill.hpp>
 
 THRUST_NAMESPACE_BEGIN
-namespace system::hpx::detail {
+namespace system
+{
+namespace hpx
+{
+namespace detail
+{
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-void fill(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, const T& value)
+void fill(execution_policy<DerivedPolicy>& exec [[maybe_unused]], ForwardIterator first, ForwardIterator last, const T& value)
 {
   if constexpr (::hpx::traits::is_forward_iterator_v<ForwardIterator>)
   {
@@ -49,13 +54,12 @@ void fill(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardI
   }
   else
   {
-    (void) exec;
     return ::hpx::fill(first, last, value);
   }
 }
 
 template <typename DerivedPolicy, typename OutputIterator, typename Size, typename T>
-OutputIterator fill_n(execution_policy<DerivedPolicy>& exec, OutputIterator first, Size n, const T& value)
+OutputIterator fill_n(execution_policy<DerivedPolicy>& exec [[maybe_unused]], OutputIterator first, Size n, const T& value)
 {
   if constexpr (::hpx::traits::is_forward_iterator_v<OutputIterator>)
   {
@@ -65,7 +69,6 @@ OutputIterator fill_n(execution_policy<DerivedPolicy>& exec, OutputIterator firs
   }
   else
   {
-    (void) exec;
     return ::hpx::fill_n(first, n, value);
   }
 }
