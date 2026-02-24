@@ -104,7 +104,7 @@ int main(int, char**)
 {
   test<int>();
   test<unsigned>();
-  test<char>();
+  test<signed char>();
   test<long long>();
   test<size_t>();
   return 0;

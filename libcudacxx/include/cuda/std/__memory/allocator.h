@@ -22,7 +22,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__fwd/allocator.h>
+#include <cuda/std/__host_stdlib/new>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/allocate_at_least.h>
 #include <cuda/std/__memory/allocator_traits.h>
@@ -129,7 +131,7 @@ public:
   {
     if (__n > allocator_traits<allocator>::max_size(*this))
     {
-      __throw_bad_array_new_length();
+      _CCCL_THROW(::std::bad_array_new_length);
     }
 #if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION)
     _CCCL_IF_CONSTEVAL
@@ -232,7 +234,7 @@ public:
   {
     if (__n > allocator_traits<allocator>::max_size(*this))
     {
-      __throw_bad_array_new_length();
+      _CCCL_THROW(::std::bad_array_new_length);
     }
     _CCCL_IF_CONSTEVAL
     {

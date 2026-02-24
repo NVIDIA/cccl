@@ -4,6 +4,8 @@
 # .inl files are not globbed for, because they are not supposed to be used as public
 # entrypoints.
 
+cccl_get_cudatoolkit()
+
 # Meta target for all configs' header builds:
 add_custom_target(libcudacxx.test.public_headers_host_only)
 add_custom_target(libcudacxx.test.public_headers_host_only_with_ctk)

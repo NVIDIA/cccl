@@ -48,9 +48,9 @@ void test_vectorized(Variant variant, HostVariant host_variant, std::size_t num_
   using Result = std::ptrdiff_t;
   c2h::device_vector<Result> offsets_d(target_values_d.size(), thrust::default_init);
   variant(thrust::raw_pointer_cast(values_d.data()),
-          thrust::raw_pointer_cast(values_d.data() + num_items),
+          num_items,
           thrust::raw_pointer_cast(target_values_d.data()),
-          thrust::raw_pointer_cast(target_values_d.data() + target_values_d.size()),
+          target_values_d.size(),
           thrust::raw_pointer_cast(offsets_d.data()),
           compare_op);
 
