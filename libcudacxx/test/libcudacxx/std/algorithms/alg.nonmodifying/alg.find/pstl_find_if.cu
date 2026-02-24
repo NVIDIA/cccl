@@ -26,7 +26,7 @@ inline constexpr size_t size = 1000;
 template <class Policy>
 void test_find_if(const Policy& policy)
 {
-  const size_t expected = 42;
+  const int expected = 42;
 
   { // empty should not access anything
     const auto res = cuda::std::find_if(
@@ -36,16 +36,13 @@ void test_find_if(const Policy& policy)
 
   { // same type
     const auto res = cuda::std::find_if(
-      policy, cuda::counting_iterator{size_t{0}}, cuda::counting_iterator{size}, cuda::equal_to_value<size_t>{expected});
+      policy, cuda::counting_iterator{int{0}}, cuda::counting_iterator{int{size}}, cuda::equal_to_value{expected});
     CHECK(res == cuda::counting_iterator{expected});
   }
 
-  { // convertible type
+  { // convertible function arg
     const auto res = cuda::std::find_if(
-      policy,
-      cuda::counting_iterator{size_t{0}},
-      cuda::counting_iterator{size},
-      cuda::equal_to_value<int>{static_cast<int>(expected)});
+      policy, cuda::counting_iterator{short{0}}, cuda::counting_iterator{short{size}}, cuda::equal_to_value{expected});
     CHECK(res == cuda::counting_iterator{expected});
   }
 }
