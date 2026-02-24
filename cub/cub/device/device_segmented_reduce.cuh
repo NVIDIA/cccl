@@ -26,7 +26,6 @@
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
 #include <cuda/__execution/determinism.h>
@@ -35,6 +34,7 @@
 #include <cuda/__functional/call_or.h>
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
+#include <cuda/__iterator/counting_iterator.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/__stream/stream_ref.h>
@@ -1128,7 +1128,7 @@ struct DeviceSegmentedReduce
 
     // Wrapped input iterator to produce index-value <offset_t, InputT> tuples
     auto d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
-      THRUST_NS_QUALIFIER::counting_iterator<::cuda::std::int64_t>{0},
+      ::cuda::counting_iterator<::cuda::std::int64_t>{0},
       detail::reduce::generate_idx_value<InputIteratorT, output_value_t>(d_in, segment_size));
 
     using arg_index_input_iterator_t = decltype(d_indexed_in);
@@ -1586,7 +1586,7 @@ struct DeviceSegmentedReduce
 
     // Wrapped input iterator to produce index-value <input_t, InputT> tuples
     auto d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
-      THRUST_NS_QUALIFIER::counting_iterator<::cuda::std::int64_t>{0},
+      ::cuda::counting_iterator<::cuda::std::int64_t>{0},
       detail::reduce::generate_idx_value<InputIteratorT, output_value_t>(d_in, segment_size));
     using arg_index_input_iterator_t = decltype(d_indexed_in);
 

@@ -12,13 +12,14 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/internal_functional.h>
 #include <thrust/find.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/reduce.h>
 
+#include <cuda/__iterator/counting_iterator.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/tuple>
 
@@ -81,11 +82,11 @@ find_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Inpu
 
   // force transform_iterator output to bool
   using XfrmIterator  = thrust::transform_iterator<Predicate, InputIterator, bool>;
-  using IteratorTuple = ::cuda::std::tuple<XfrmIterator, thrust::counting_iterator<difference_type>>;
+  using IteratorTuple = ::cuda::std::tuple<XfrmIterator, ::cuda::counting_iterator<difference_type>>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
   IteratorTuple iter_tuple =
-    ::cuda::std::make_tuple(XfrmIterator(first, pred), thrust::counting_iterator<difference_type>(0));
+    ::cuda::std::make_tuple(XfrmIterator(first, pred), ::cuda::counting_iterator<difference_type>(0));
 
   ZipIterator begin = thrust::make_zip_iterator(iter_tuple);
   ZipIterator end   = begin + n;

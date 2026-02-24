@@ -21,11 +21,11 @@
 
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/extrema.h>
-#  include <thrust/iterator/counting_iterator.h>
 #  include <thrust/iterator/transform_iterator.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/reduce.h>
 
+#  include <cuda/__iterator/counting_iterator.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__utility/pair.h>
@@ -349,15 +349,15 @@ element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPr
 
   IndexType num_items = static_cast<IndexType>(::cuda::std::distance(first, last));
 
-  using iterator_tuple = ::cuda::std::tuple<ItemsIt, counting_iterator<IndexType>>;
+  using iterator_tuple = ::cuda::std::tuple<ItemsIt, ::cuda::counting_iterator<IndexType>>;
   using zip_iterator   = zip_iterator<iterator_tuple>;
 
-  iterator_tuple iter_tuple = ::cuda::std::make_tuple(first, counting_iterator<IndexType>(0));
+  iterator_tuple iter_tuple = ::cuda::std::make_tuple(first, ::cuda::counting_iterator<IndexType>(0));
 
   using arg_min_t = ArgFunctor<InputType, IndexType, BinaryPred>;
   using T         = ::cuda::std::tuple<InputType, IndexType>;
 
-  zip_iterator begin = make_zip_iterator(iter_tuple);
+  zip_iterator begin = thrust::make_zip_iterator(iter_tuple);
 
   T result = extrema(policy, begin, num_items, arg_min_t(binary_pred), (T*) (nullptr));
   return first + ::cuda::std::get<1>(result);
@@ -420,17 +420,17 @@ minmax_element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, B
 
      const auto num_items = static_cast<IndexType>(::cuda::std::distance(first, last));
 
-     using iterator_tuple = ::cuda::std::tuple<ItemsIt, counting_iterator<IndexType>>;
+     using iterator_tuple = ::cuda::std::tuple<ItemsIt, ::cuda::counting_iterator<IndexType>>;
      using zip_iterator   = zip_iterator<iterator_tuple>;
 
-     iterator_tuple iter_tuple = ::cuda::std::make_tuple(first, counting_iterator<IndexType>(0));
+     iterator_tuple iter_tuple = ::cuda::std::make_tuple(first, ::cuda::counting_iterator<IndexType>(0));
 
      using arg_minmax_t   = __extrema::arg_minmax_f<InputType, IndexType, BinaryPred>;
      using two_pairs_type = typename arg_minmax_t::two_pairs_type;
      using duplicate_t    = typename arg_minmax_t::duplicate_tuple;
      using transform_t    = transform_iterator<duplicate_t, zip_iterator, two_pairs_type, two_pairs_type>;
 
-     zip_iterator begin    = make_zip_iterator(iter_tuple);
+     zip_iterator begin    = thrust::make_zip_iterator(iter_tuple);
      two_pairs_type result = __extrema::extrema(
        policy, transform_t(begin, duplicate_t()), num_items, arg_minmax_t(binary_pred), (two_pairs_type*) (nullptr));
      ret = ::cuda::std::make_pair(first + ::cuda::std::get<1>(::cuda::std::get<0>(result)),

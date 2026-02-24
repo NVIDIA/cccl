@@ -1,7 +1,8 @@
 #include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/reduce.h>
+
+#include <cuda/iterator>
 
 #include <limits>
 
@@ -164,13 +165,13 @@ void TestReduceCountingIterator()
 
   ASSERT_LEQUAL(T(n), unittest::truncate_to_max_representable<T>(n));
 
-  thrust::counting_iterator<T, thrust::host_system_tag> h_first   = thrust::make_counting_iterator<T>(0);
-  thrust::counting_iterator<T, thrust::device_system_tag> d_first = thrust::make_counting_iterator<T>(0);
+  cuda::counting_iterator<T> h_first{0};
+  cuda::counting_iterator<T> d_first{0};
 
   T init = unittest::random_integer<T>();
 
-  T h_result = thrust::reduce(h_first, h_first + n, init);
-  T d_result = thrust::reduce(d_first, d_first + n, init);
+  T h_result = thrust::reduce(thrust::host, h_first, h_first + n, init);
+  T d_result = thrust::reduce(thrust::device, d_first, d_first + n, init);
 
   // we use ASSERT_ALMOST_EQUAL because we're testing floating point types
   ASSERT_ALMOST_EQUAL(h_result, d_result);
