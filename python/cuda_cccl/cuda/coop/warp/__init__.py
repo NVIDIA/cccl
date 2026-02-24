@@ -30,12 +30,20 @@ from ._warp_merge_sort import (
     merge_sort_pairs,
 )
 from ._warp_reduce import (
+    _make_max_two_phase as make_max,
+)
+from ._warp_reduce import (
+    _make_min_two_phase as make_min,
+)
+from ._warp_reduce import (
     _make_reduce_two_phase as make_reduce,
 )
 from ._warp_reduce import (
     _make_sum_two_phase as make_sum,
 )
 from ._warp_reduce import (
+    max,
+    min,
     reduce,
     sum,
 )
@@ -65,6 +73,8 @@ __all__ = [
     "inclusive_sum",
     "reduce",
     "sum",
+    "max",
+    "min",
     "merge_sort_keys",
     "merge_sort_pairs",
     "load",
@@ -82,4 +92,6 @@ __all__ = [
     "make_reduce",
     "make_store",
     "make_sum",
+    "make_max",
+    "make_min",
 ]

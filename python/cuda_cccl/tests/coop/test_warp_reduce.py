@@ -74,6 +74,55 @@ def test_warp_sum(T):
     assert "STL" not in sass
 
 
+@pytest.mark.parametrize("T", [types.uint32, types.uint64])
+def test_warp_max_single_phase_unsigned(T):
+    threads_in_warp = 32
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = cuda.threadIdx.x
+        val = d_in[tid]
+        warp_max = coop.warp.max(val)
+        if tid == 0:
+            d_out[0] = warp_max
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    h_input = random_int(threads_in_warp, dtype)
+    d_input = cuda.to_device(h_input)
+    d_out = cuda.device_array(1, dtype=dtype)
+
+    kernel[1, threads_in_warp](d_input, d_out)
+    cuda.synchronize()
+
+    h_out = d_out.copy_to_host()
+    assert h_out[0] == np.max(h_input)
+
+
+@pytest.mark.parametrize("T", [types.uint32, types.uint64])
+def test_warp_min_single_phase_valid_items_unsigned(T):
+    threads_in_warp = 32
+    valid_items = 13
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = cuda.threadIdx.x
+        val = d_in[tid]
+        warp_min = coop.warp.min(val, valid_items=valid_items)
+        if tid == 0:
+            d_out[0] = warp_min
+
+    dtype = NUMBA_TYPES_TO_NP[T]
+    h_input = random_int(threads_in_warp, dtype)
+    d_input = cuda.to_device(h_input)
+    d_out = cuda.device_array(1, dtype=dtype)
+
+    kernel[1, threads_in_warp](d_input, d_out)
+    cuda.synchronize()
+
+    h_out = d_out.copy_to_host()
+    assert h_out[0] == np.min(h_input[:valid_items])
+
+
 def test_warp_reduce_sum_single_phase():
     @cuda.jit(device=True)
     def max_op(a, b):

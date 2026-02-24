@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
@@ -144,8 +144,9 @@ class reduce(BasePrimitive):
         )
 
 
-class sum(BasePrimitive):
+class _warp_unary_reduce(BasePrimitive):
     is_one_shot = True
+    cpp_method_name = None
 
     def __init__(
         self,
@@ -155,22 +156,9 @@ class sum(BasePrimitive):
         unique_id=None,
         temp_storage=None,
     ):
-        """
-        Computes a warp-wide sum for lane :sub:`0` using addition (+).
+        if self.cpp_method_name is None:
+            raise ValueError("cpp_method_name must be defined by subclass")
 
-        Example:
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
-                :language: python
-                :dedent:
-                :start-after: example-begin imports
-                :end-before: example-end imports
-
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
-                :language: python
-                :dedent:
-                :start-after: example-begin sum
-                :end-before: example-end sum
-        """
         self.temp_storage = temp_storage
         self.dtype = normalize_dtype_param(dtype)
         self.binary_op = None
@@ -195,7 +183,7 @@ class sum(BasePrimitive):
 
         template = Algorithm(
             "WarpReduce",
-            "Sum",
+            self.cpp_method_name,
             "warp_reduce",
             ["cub/warp/warp_reduce.cuh"],
             [TemplateParameter("T"), TemplateParameter("VIRTUAL_WARP_THREADS")],
@@ -222,6 +210,114 @@ class sum(BasePrimitive):
             temp_storage_bytes=specialization.temp_storage_bytes,
             temp_storage_alignment=specialization.temp_storage_alignment,
             algorithm=specialization,
+        )
+
+
+class sum(_warp_unary_reduce):
+    cpp_method_name = "Sum"
+
+    def __init__(
+        self,
+        dtype,
+        threads_in_warp=32,
+        valid_items=None,
+        unique_id=None,
+        temp_storage=None,
+    ):
+        """
+        Computes a warp-wide sum for lane :sub:`0` using addition (+).
+
+        Example:
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin sum
+                :end-before: example-end sum
+        """
+        super().__init__(
+            dtype=dtype,
+            threads_in_warp=threads_in_warp,
+            valid_items=valid_items,
+            unique_id=unique_id,
+            temp_storage=temp_storage,
+        )
+
+
+class max(_warp_unary_reduce):
+    cpp_method_name = "Max"
+
+    def __init__(
+        self,
+        dtype,
+        threads_in_warp=32,
+        valid_items=None,
+        unique_id=None,
+        temp_storage=None,
+    ):
+        """
+        Computes a warp-wide maximum for lane :sub:`0`.
+
+        Example:
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin max
+                :end-before: example-end max
+        """
+        super().__init__(
+            dtype=dtype,
+            threads_in_warp=threads_in_warp,
+            valid_items=valid_items,
+            unique_id=unique_id,
+            temp_storage=temp_storage,
+        )
+
+
+class min(_warp_unary_reduce):
+    cpp_method_name = "Min"
+
+    def __init__(
+        self,
+        dtype,
+        threads_in_warp=32,
+        valid_items=None,
+        unique_id=None,
+        temp_storage=None,
+    ):
+        """
+        Computes a warp-wide minimum for lane :sub:`0`.
+
+        Example:
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin imports
+                :end-before: example-end imports
+
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
+                :language: python
+                :dedent:
+                :start-after: example-begin min
+                :end-before: example-end min
+        """
+        super().__init__(
+            dtype=dtype,
+            threads_in_warp=threads_in_warp,
+            valid_items=valid_items,
+            unique_id=unique_id,
+            temp_storage=temp_storage,
         )
 
 
@@ -326,3 +422,87 @@ def _make_sum_rewrite(
     )
     spec.update({"unique_id": unique_id, "temp_storage": temp_storage})
     return sum(**spec)
+
+
+def _build_max_spec(
+    dtype,
+    threads_in_warp=32,
+    valid_items=None,
+):
+    return {
+        "dtype": dtype,
+        "threads_in_warp": threads_in_warp,
+        "valid_items": valid_items,
+    }
+
+
+def _make_max_two_phase(
+    dtype,
+    threads_in_warp=32,
+    valid_items=None,
+):
+    return max.create(
+        **_build_max_spec(
+            dtype=dtype,
+            threads_in_warp=threads_in_warp,
+            valid_items=valid_items,
+        )
+    )
+
+
+def _make_max_rewrite(
+    dtype,
+    threads_in_warp=32,
+    valid_items=None,
+    unique_id=None,
+    temp_storage=None,
+):
+    spec = _build_max_spec(
+        dtype=dtype,
+        threads_in_warp=threads_in_warp,
+        valid_items=valid_items,
+    )
+    spec.update({"unique_id": unique_id, "temp_storage": temp_storage})
+    return max(**spec)
+
+
+def _build_min_spec(
+    dtype,
+    threads_in_warp=32,
+    valid_items=None,
+):
+    return {
+        "dtype": dtype,
+        "threads_in_warp": threads_in_warp,
+        "valid_items": valid_items,
+    }
+
+
+def _make_min_two_phase(
+    dtype,
+    threads_in_warp=32,
+    valid_items=None,
+):
+    return min.create(
+        **_build_min_spec(
+            dtype=dtype,
+            threads_in_warp=threads_in_warp,
+            valid_items=valid_items,
+        )
+    )
+
+
+def _make_min_rewrite(
+    dtype,
+    threads_in_warp=32,
+    valid_items=None,
+    unique_id=None,
+    temp_storage=None,
+):
+    spec = _build_min_spec(
+        dtype=dtype,
+        threads_in_warp=threads_in_warp,
+        valid_items=valid_items,
+    )
+    spec.update({"unique_id": unique_id, "temp_storage": temp_storage})
+    return min(**spec)
