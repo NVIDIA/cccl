@@ -41,10 +41,11 @@ namespace cuda::experimental
 //! @brief Compute the alignment of a pointer in bytes.
 //!
 //! Returns the largest power-of-two that divides the pointer address.
-//! For a null pointer, returns 16 (maximum vectorization width).
+//!
+//! @pre `__ptr` must not be null.
 //!
 //! @param[in] __ptr Pointer to check
-//! @return Alignment in bytes (always a power of two, at most the true alignment)
+//! @return Alignment in bytes (always a power of two)
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t __ptr_alignment(const void* __ptr) noexcept
 {
   _CCCL_ASSERT(__ptr != nullptr, "Pointer is null");
@@ -54,8 +55,11 @@ namespace cuda::experimental
 
 //! @brief Sort modes of a src/dst tensor pair by dst's ascending absolute stride.
 //!
+//! The same permutation is applied to both tensors, so shapes remain identical after sorting.
+//! After sorting, the destination's stride-1 mode (if any) is at index 0.
+//!
+//! @pre `__src.__rank == __dst.__rank`, in [1, _MaxRank].
 //! @pre Both tensors must have the same shapes (mode-by-mode).
-//! The same permutation is applied to both, so shapes remain identical after sorting.
 //!
 //! @param[in,out] __src Source tensor (shapes and strides reordered)
 //! @param[in,out] __dst Destination tensor (shapes and strides reordered by same permutation)
@@ -63,24 +67,25 @@ template <typename _TpSrc, typename _TpDst, ::cuda::std::size_t _MaxRank>
 _CCCL_HOST_API void
 __sort_by_stride_paired(__raw_tensor<_TpSrc, _MaxRank>& __src, __raw_tensor<_TpDst, _MaxRank>& __dst) noexcept
 {
-  _CCCL_ASSERT(::cuda::in_range(__src.__rank, 1, _MaxRank - 1), "Invalid tensor rank");
+  using ::cuda::std::size_t;
+  _CCCL_ASSERT(::cuda::in_range(__src.__rank, size_t{1}, _MaxRank), "Invalid tensor rank");
   _CCCL_ASSERT(__src.__rank == __dst.__rank, "Source and destination ranks must be equal");
   _CCCL_ASSERT(__src.__shapes == __dst.__shapes, "Source and destination shapes must be identical");
   struct __mode
   {
-    ::cuda::std::size_t __shape;
+    size_t __shape;
     ::cuda::std::int64_t __src_stride;
     ::cuda::std::int64_t __dst_stride;
   };
   ::cuda::std::array<__mode, _MaxRank> __modes{};
-  for (::cuda::std::size_t __i = 0; __i < __src.__rank; ++__i)
+  for (size_t __i = 0; __i < __src.__rank; ++__i)
   {
     __modes[__i] = {__src.__shapes[__i], __src.__strides[__i], __dst.__strides[__i]};
   }
   ::cuda::std::stable_sort(__modes.begin(), __modes.begin() + __src.__rank, [](auto __a, auto __b) {
     return ::cuda::std::abs(__a.__dst_stride) < ::cuda::std::abs(__b.__dst_stride);
   });
-  for (::cuda::std::size_t __i = 0; __i < __src.__rank; ++__i)
+  for (size_t __i = 0; __i < __src.__rank; ++__i)
   {
     __src.__shapes[__i]  = __modes[__i].__shape;
     __src.__strides[__i] = __modes[__i].__src_stride;
@@ -98,8 +103,10 @@ __sort_by_stride_paired(__raw_tensor<_TpSrc, _MaxRank>& __src, __raw_tensor<_TpD
 //! @note Coalescing can lose per-mode stride information, e.g.
 //! (2,4,16):(80,20,3) --> (8,16):(20,3)
 //!
-//! @pre Both tensors must be sorted by ascending absolute stride.
+//! @pre `__src.__rank == __dst.__rank`, in [1, _MaxRank].
 //! @pre Both tensors must have the same shapes (mode-by-mode).
+//! @pre All shapes must be > 1 (no degenerate modes).
+//! @pre Destination strides must be sorted in non-descending order.
 //!
 //! @param[in,out] __src Source tensor (shapes, strides, and rank updated)
 //! @param[in,out] __dst Destination tensor (shapes, strides, and rank updated)
@@ -107,12 +114,11 @@ template <typename _TpSrc, typename _TpDst, ::cuda::std::size_t _MaxRank>
 _CCCL_HOST_API void
 __coalesce_paired(__raw_tensor<_TpSrc, _MaxRank>& __src, __raw_tensor<_TpDst, _MaxRank>& __dst) noexcept
 {
-  _CCCL_ASSERT(::cuda::in_range(__src.__rank, 1, _MaxRank - 1), "Invalid tensor rank");
+  _CCCL_ASSERT(::cuda::in_range(__src.__rank, ::cuda::std::size_t{1}, _MaxRank), "Invalid tensor rank");
   _CCCL_ASSERT(__src.__rank == __dst.__rank, "Source and destination ranks must be equal");
   _CCCL_ASSERT(__src.__shapes == __dst.__shapes, "Source and destination shapes must be identical");
   _CCCL_ASSERT(::cuda::experimental::__has_no_extent1_modes(__src), "All shapes must be greater than 1");
-  _CCCL_ASSERT(::cuda::experimental::__has_sorted_strides(__src), "Strides must be sorted");
-  _CCCL_ASSERT(::cuda::experimental::__has_sorted_strides(__dst), "Strides must be sorted");
+  _CCCL_ASSERT(::cuda::experimental::__has_sorted_strides(__dst), "Destination strides must be sorted by dst strides");
   const auto __rank         = __src.__rank;
   auto& __shapes            = __src.__shapes;
   ::cuda::std::size_t __out = 1;
@@ -138,25 +144,33 @@ __coalesce_paired(__raw_tensor<_TpSrc, _MaxRank>& __src, __raw_tensor<_TpDst, _M
 
 //! @brief Compute the maximum vectorization width in bytes for a raw tensor.
 //!
-//! For recast<VecType> to be valid:
-//! - Non-contiguous strides (|stride| > 1) must be divisible by vec_elems.
-//! - The stride-1 (contiguous) mode's shape must be divisible by vec_elems.
-//! - The pointer must be aligned to vec_bytes.
+//! Expects mode 0 to be the contiguous mode (stride == 1), as established by
+//! @ref __sort_by_stride_paired. Computes the largest power-of-two vector width such that:
+//! - The pointer is aligned to that width.
+//! - All non-contiguous strides (in bytes) are divisible by it.
+//! - The contiguous mode's shape is divisible by the element count.
+//! The result is capped at 16 bytes. If mode 0 is not contiguous, returns sizeof(_Tp).
 //!
-//! @param[in] __tensor Raw tensor with sorted shapes and strides
-//! @return Maximum safe vectorization width in bytes
+//! @pre `__tensor.__rank` is in [1, _MaxRank].
+//! @pre All shapes must be > 1 (no degenerate modes).
+//! @pre Strides are sorted by @ref __sort_by_stride_paired (mode 0 has the smallest absolute stride).
+//!
+//! @param[in] __tensor Raw tensor with strides sorted by @ref __sort_by_stride_paired
+//! @return Maximum safe vectorization width in bytes, in [sizeof(_Tp), 16]
 template <typename _Tp, ::cuda::std::size_t _MaxRank>
 [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t
 __max_vector_size_bytes(const __raw_tensor<_Tp, _MaxRank>& __tensor) noexcept
 {
   using ::cuda::std::size_t;
-  _CCCL_ASSERT(::cuda::in_range(__tensor.__rank, 1, _MaxRank - 1), "Invalid tensor rank");
-  _CCCL_ASSERT(::cuda::experimental::__has_sorted_strides(__tensor), "Strides must be sorted");
+  _CCCL_ASSERT(::cuda::in_range(__tensor.__rank, size_t{1}, _MaxRank), "Invalid tensor rank");
   _CCCL_ASSERT(::cuda::experimental::__has_no_extent1_modes(__tensor), "All shapes must be greater than 1");
   const auto& __shapes  = __tensor.__shapes;
   const auto& __strides = __tensor.__strides;
-  if (__strides[0] != 1) // early exit for non-contiguous tensors
-  { // this also handles __strides[__i] == -1 (non-contiguous) because strides are sorted
+  // early exit for non-contiguous tensors
+  // this also handles __strides[__i] == -1 (non-contiguous) because strides are sorted
+  // copy_bytes_registers.cuh already ensures that the function is called on tensors with strides[0] == 1
+  if (__strides[0] != 1)
+  {
     return sizeof(_Tp);
   }
   // (1) pointer alignment

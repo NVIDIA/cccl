@@ -29,7 +29,7 @@
 #include <cuda/experimental/__copy/utils.cuh>
 #include <cuda/experimental/__copy_bytes/copy_bytes_naive.cuh>
 #include <cuda/experimental/__copy_bytes/cute_utils.cuh>
-#include <cuda/experimental/__copy_bytes/layout_utils.cuh>
+#include <cuda/experimental/__copy_bytes/layout_optimization.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 #include <cute/algorithm/copy.hpp>
@@ -181,6 +181,11 @@ void copy_bytes_registers(
     _CCCL_ASSERT(__src.__rank == __dst.__rank,
                  "Source and destination ranks must be equal after removing extent-1 modes");
     _CCCL_ASSERT(__src.__shapes == __dst.__shapes, "Source and destination shapes must be identical");
+    if (__src.__rank == 0)
+    {
+      cudaMemcpyAsync(__dst.__data, __src.__data, sizeof(T), cudaMemcpyDeviceToDevice, stream.get());
+      return;
+    }
     // Sort both by dst's ascending absolute stride (common permutation).
     // After this, dst has stride-1 in mode 0 (if any mode is stride-1).
     // Shapes are kept in sync (both tensors share the same shape because they are ordered by the same permutation).

@@ -34,27 +34,34 @@
 namespace cuda::experimental
 {
 //! @brief Create a CuTe tensor backed by global memory.
+//!
+//! @param[in] __ptr    Pointer to device memory
+//! @param[in] __layout CuTe layout describing the tensor's shape and strides
+//! @return A `cute::Tensor` with a `gmem_ptr` engine and the given layout
 template <typename _Tp, typename _Layout>
-[[nodiscard]] _CCCL_API ::cute::Tensor<_Tp, _Layout> __make_gmem_tensor(_Tp* __ptr, const _Layout& __layout) noexcept
+[[nodiscard]] _CCCL_API auto __make_gmem_tensor(_Tp* __ptr, const _Layout& __layout) noexcept
 {
   return ::cute::make_tensor(::cute::make_gmem_ptr(__ptr), __layout);
 }
 
 #if !_CCCL_COMPILER(NVRTC)
 
+//! @brief Tag constant used to enable extent-1 mode removal in @ref __to_raw_tensor.
 inline constexpr auto __remove_extent1_mode = ::cuda::std::true_type{};
 
-//! @brief Construct a raw tensor from a pointer and a CuTe layout.
+//! @brief Construct a __raw_tensor from a pointer and a CuTe layout.
 //!
 //! Extracts runtime shapes and strides from the CuTe layout into a __raw_tensor.
-//! For static layouts, compile-time values are converted to runtime integers.
+//! When `_RemoveExtent1` is true, modes with shape == 1 are omitted and the
+//! resulting rank may be less than the layout rank.
 //!
-//! @tparam _MaxRank Maximum rank capacity for the raw tensor
-//! @tparam _Tp      Element type (deduced from pointer)
-//! @tparam _Layout  CuTe layout type
+//! @tparam _MaxRank       Maximum rank capacity for the raw tensor (must be >= layout rank)
+//! @tparam _Tp            Element type (deduced from pointer)
+//! @tparam _Layout        CuTe layout type
+//! @tparam _RemoveExtent1 If true, skip modes whose shape is 1
 //! @param[in] __data   Pointer to tensor data
 //! @param[in] __layout The CuTe layout to extract from
-//! @return A __raw_tensor populated with the layout's shapes and strides
+//! @return A __raw_tensor with rank <= layout rank, populated with the layout's shapes and strides
 template <::cuda::std::size_t _MaxRank, typename _Tp, typename _Layout, bool _RemoveExtent1 = false>
 [[nodiscard]] _CCCL_HOST_API __raw_tensor<_Tp, _MaxRank>
 __to_raw_tensor(_Tp* __data, const _Layout& __layout, ::cuda::std::bool_constant<_RemoveExtent1> = {}) noexcept
