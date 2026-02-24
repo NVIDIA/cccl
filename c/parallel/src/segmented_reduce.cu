@@ -156,37 +156,7 @@ try
 
   // TODO(bgruber): share this with reduce.cu
   const auto policy_sel = [&] {
-    using namespace cub::detail;
-
-    auto accum_type = type_t::other;
-    if (accum_t.type == CCCL_FLOAT32)
-    {
-      accum_type = type_t::float32;
-    }
-    else if (accum_t.type == CCCL_FLOAT64)
-    {
-      accum_type = type_t::float64;
-    }
-
-    auto operation_t = op_kind_t::other;
-    switch (op.type)
-    {
-      case CCCL_PLUS:
-        operation_t = op_kind_t::plus;
-        break;
-      case CCCL_MINIMUM:
-        operation_t = op_kind_t::min;
-        break;
-      case CCCL_MAXIMUM:
-        operation_t = op_kind_t::max;
-        break;
-      default:
-        break;
-    }
-
-    const int offset_size = int{sizeof(OffsetT)};
-    return cub::detail::segmented_reduce::policy_selector{
-      accum_type, operation_t, offset_size, static_cast<int>(accum_t.size)};
+    return cub::detail::segmented_reduce::policy_selector{static_cast<int>(accum_t.size)};
   }();
 
   // TODO(bgruber): drop this if tuning policies become formattable

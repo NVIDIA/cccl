@@ -127,6 +127,8 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).segme
 
   // Large segment agent (one block per segment)
   static constexpr reduce::agent_reduce_policy large_pol = full_policy.segmented_reduce;
+
+  // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
   using large_agent_policy_t =
     AgentReducePolicy<large_pol.block_threads,
                       large_pol.items_per_thread,

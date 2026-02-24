@@ -18,7 +18,7 @@
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_reduce.cuh>
-#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#include <cub/device/dispatch/tuning/tuning_segmented_reduce.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::it_value_t
@@ -74,7 +74,7 @@ struct policy_selector_from_hub
   _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> segmented_reduce_policy
   {
     using p  = typename PolicyHub::MaxPolicy::ActivePolicy::SegmentedReducePolicy;
-    using fs = typename fixed_size_segmented_reduce::policy_hub<AccumT, int, ::cuda::std::plus<>>::Policy500;
+    using fs = typename segmented_reduce::policy_hub<AccumT, int, ::cuda::std::plus<>>::MaxPolicy;
     using sp = typename fs::SmallReducePolicy;
     using mp = typename fs::MediumReducePolicy;
     return segmented_reduce_policy{
@@ -383,6 +383,11 @@ struct DispatchSegmentedReduce
    * @param[in] stream
    *   **[optional]** CUDA stream to launch kernels within.
    *   Default is stream<sub>0</sub>.
+   *
+   * @param[in] max_segment_size
+   *   **[optional]** Maximum guaranteed segment size, which will be used by
+   *   to select more efficient code paths when small and medium segments are guaranteed.
+   *   Default is 0, which indicates no known maximum, performing block wise segmented reduction
    */
   template <typename MaxPolicyT = typename PolicyHub::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(

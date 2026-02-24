@@ -12,52 +12,6 @@
 
 #include <nvbench_helper.cuh>
 
-#if !TUNE_BASE
-template <typename AccumT>
-struct policy_hub_t
-{
-  struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
-  {
-    static constexpr int items_per_vec_load = 1;
-
-    static constexpr int small_threads_per_warp  = TUNE_SW_THREADS;
-    static constexpr int medium_threads_per_warp = TUNE_MW_THREADS;
-
-    static constexpr int nominal_4b_large_threads_per_block = TUNE_THREADS;
-
-    static constexpr int nominal_4b_small_items_per_thread  = TUNE_L_ITEMS;
-    static constexpr int nominal_4b_medium_items_per_thread = TUNE_M_ITEMS;
-    static constexpr int nominal_4b_large_items_per_thread  = TUNE_S_ITEMS;
-
-    using ReducePolicy =
-      cub::AgentReducePolicy<nominal_4b_large_threads_per_block,
-                             nominal_4b_large_items_per_thread,
-                             AccumT,
-                             items_per_vec_load,
-                             cub::BLOCK_REDUCE_WARP_REDUCTIONS,
-                             cub::LOAD_LDG>;
-
-    using SmallReducePolicy =
-      cub::AgentWarpReducePolicy<ReducePolicy::BLOCK_THREADS,
-                                 small_threads_per_warp,
-                                 nominal_4b_small_items_per_thread,
-                                 AccumT,
-                                 items_per_vec_load,
-                                 TUNE_S_LOAD_MODIFIER>;
-
-    using MediumReducePolicy =
-      cub::AgentWarpReducePolicy<ReducePolicy::BLOCK_THREADS,
-                                 medium_threads_per_warp,
-                                 nominal_4b_medium_items_per_thread,
-                                 AccumT,
-                                 items_per_vec_load,
-                                 cub::LOAD_LDG>;
-  };
-
-  using MaxPolicy = policy_t;
-};
-#endif // !TUNE_BASE
-
 template <typename T, typename OffsetT>
 void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
@@ -129,24 +83,9 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
   state.add_global_memory_writes<output_t>(num_segments);
   state.add_global_memory_reads<offset_t>(num_segments + 1);
 
-  using dispatch_t = cub::DispatchSegmentedReduce<
-    input_it_t,
-    output_it_t,
-    begin_offset_it_t,
-    end_offset_it_t,
-    offset_t,
-    op_t,
-    init_t,
-    accum_t
-#if !TUNE_BASE
-    ,
-    policy_hub_t<accum_t>
-#endif // TUNE_BASE
-    >;
-
   // Allocate temporary storage
   std::size_t temp_size{};
-  dispatch_t::Dispatch(
+  cub::detail::segmented_reduce::dispatch(
     nullptr,
     temp_size,
     d_in,
@@ -157,13 +96,14 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
     op_t{},
     init_t{},
     0 /* stream */,
+    {},
     guaranteed_max_seg_size);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
+    cub::detail::segmented_reduce::dispatch(
       temp_storage,
       temp_size,
       d_in,
@@ -174,6 +114,7 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
       op_t{},
       init_t{},
       launch.get_stream(),
+      {},
       guaranteed_max_seg_size);
   });
 }
