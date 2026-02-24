@@ -141,6 +141,8 @@ def _flag_op(lhs, rhs):
         ),
         lambda: coop.warp.make_reduce(numba.int32, _binary_op, threads_in_warp=32),
         lambda: coop.warp.make_sum(numba.int32, threads_in_warp=32),
+        lambda: coop.warp.make_max(numba.int32, threads_in_warp=32),
+        lambda: coop.warp.make_min(numba.int32, threads_in_warp=32),
         lambda: coop.warp.make_exclusive_sum(numba.int32, threads_in_warp=32),
         lambda: coop.warp.make_inclusive_sum(numba.int32, threads_in_warp=32),
         lambda: coop.warp.make_exclusive_scan(
@@ -235,3 +237,39 @@ def test_make_warp_sum_runs_in_kernel_without_explicit_link():
     h_output = d_output.copy_to_host()
 
     assert h_output[0] == threads_in_warp
+
+
+def test_make_warp_max_runs_in_kernel_without_explicit_link():
+    warp_max = coop.warp.make_max(numba.int32)
+    threads_in_warp = 32
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = cuda.threadIdx.x
+        d_out[tid] = warp_max(d_in[tid])
+
+    h_input = np.random.randint(0, 2048, threads_in_warp, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+    kernel[1, threads_in_warp](d_input, d_output)
+    h_output = d_output.copy_to_host()
+
+    assert h_output[0] == np.max(h_input)
+
+
+def test_make_warp_min_runs_in_kernel_without_explicit_link():
+    warp_min = coop.warp.make_min(numba.int32)
+    threads_in_warp = 32
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        tid = cuda.threadIdx.x
+        d_out[tid] = warp_min(d_in[tid])
+
+    h_input = np.random.randint(0, 2048, threads_in_warp, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+    kernel[1, threads_in_warp](d_input, d_output)
+    h_output = d_output.copy_to_host()
+
+    assert h_output[0] == np.min(h_input)

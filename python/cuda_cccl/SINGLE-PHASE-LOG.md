@@ -2304,3 +2304,102 @@
   - `rg -n "kernel\\s*\\[" cub/cub/block cub/cub/warp --glob '*.cuh'` (no matches)
   - `rg -n "\\[<em>.*</em>\\]\\([^)]*\\)|\\]\\(\\.?\\.?/index\\.html#[^)]+\\)" cub/cub --glob '*.cuh'` (no matches)
   - `rg -n "\\[\\*Group\\*\\]" docs/libcudacxx/extended_api/asynchronous_operations/memcpy_async.rst` (no matches)
+
+## 2026-02-24 (ledger cleanup: superseded unchecked items)
+- Request: Clean up older unchecked planning items that were already superseded
+  by completed single-phase implementation work.
+- Changes:
+  - Updated `SINGLE-PHASE-CURRENT-PLAN.md`:
+    - marked the 2026-02-21 factory-helper follow-up checklist (steps 1-5) as
+      completed.
+    - added a status note indicating the plan was executed and rolled out, with
+      completion reflected in 2026-02-21 to 2026-02-23 log entries.
+  - Updated `SINGLE-PHASE-NOTES.md`:
+    - replaced the stale `## Todo` list with `## Todo (Historical Snapshot)`.
+    - documented that the early list is superseded and redirected active work
+      tracking to `SINGLE-PHASE-TODO.md` + `SINGLE-PHASE-LOG.md`.
+- Decisions:
+  - Treat `SINGLE-PHASE-TODO.md` as the canonical active checklist, and keep
+    older plan/notes checklists as historical context only.
+- Validation:
+  - `pre-commit run --files SINGLE-PHASE-CURRENT-PLAN.md SINGLE-PHASE-NOTES.md SINGLE-PHASE-LOG.md`
+    - Result: all relevant hooks passed.
+
+## 2026-02-24 (CUB block/warp history audit for cuda.coop parity)
+- Request: Inspect recent git history for `cub/cub/block` and `cub/cub/warp`
+  to identify newly-added primitives/overloads that should be reflected in
+  `cuda.coop`.
+- Findings:
+  - `c15d57536e` (`2026-02-02`) added
+    `cub/cub/block/block_topk.cuh` (`cub::detail::block_topk`) with
+    `max_keys` / `min_keys` / `max_pairs` / `min_pairs` methods.
+  - `380be803f4` + follow-ups `31e2114810`, `b614b2cbff` introduced and
+    evolved `cub::detail::BlockLoadToShared` in
+    `cub/cub/block/block_load_to_shared.cuh` (`CopyAsync`, `Commit`, `Wait`,
+    `CommitAndWait`, explicit token sequencing).
+  - `d5ae0dee77` added `WarpScan::*Partial` member functions;
+    `cuda.coop` already maps `valid_items` onto `InclusiveScanPartial` /
+    `ExclusiveScanPartial` in `cuda/coop/warp/_warp_scan.py`.
+  - `b281fc1619` expanded `WarpReduce` overloads (`Sum/Max/Min` families,
+    plus fixed-size range-input overloads in `warp_reduce.cuh`); current
+    `cuda.coop` warp reduce surface remains `reduce` and `sum`.
+  - No recent block-load/store API-surface expansion was found beyond
+    documentation and implementation cleanups; the existing coop
+    `num_valid_items` / `oob_default` paths already align with current public
+    `BlockLoad`/`BlockStore` signatures.
+- Decisions:
+  - Treat `block_topk` and `BlockLoadToShared` as internal/detail-only until
+    there is an explicit product decision to expose detail primitives in
+    `cuda.coop`.
+  - Track warp-reduce parity expansion (`max`/`min` convenience and/or
+    range-input pathways) under the existing overload-audit TODO.
+- Validation:
+  - History audit only; no runtime tests executed.
+
+## 2026-02-24 (warp reduce max/min parity for cuda.coop)
+- Request: Implement the immediate warp-reduce parity follow-up from the CUB
+  audit, focusing on `WarpReduce` convenience paths now present in CUB.
+- Changes:
+  - Added warp reduce convenience APIs in
+    `cuda/coop/warp/_warp_reduce.py`:
+    - new public primitives `coop.warp.max` and `coop.warp.min`.
+    - new two-phase factories `coop.warp.make_max` and
+      `coop.warp.make_min`.
+    - shared unary reduce helper plumbing to keep `sum`/`max`/`min`
+      construction and spec handling consistent.
+  - Exported new APIs from `cuda/coop/warp/__init__.py`.
+  - Added typing/decl support in `cuda/coop/_decls/warp/_warp_reduce.py`:
+    - `CoopWarpMaxDecl` / `CoopWarpMinDecl`.
+    - max/min instance types + models + constant lowering.
+  - Wired module/dispatch scaffolding in `cuda/coop/_decls/__init__.py`:
+    - `coop.warp.max` / `coop.warp.min` module resolvers.
+    - invocable type mapping for two-phase max/min instances.
+  - Added rewrite nodes in `cuda/coop/_rewrite/warp/_warp_reduce.py`:
+    - `CoopWarpMaxNode` / `CoopWarpMinNode`.
+  - Updated primitive classification in `cuda/coop/_rewrite/__init__.py` so
+    `max`/`min` are treated as `Primitive.REDUCE`.
+  - Added tests:
+    - `tests/coop/test_warp_reduce.py`:
+      `test_warp_max_single_phase_unsigned`,
+      `test_warp_min_single_phase_valid_items_unsigned`.
+    - `tests/coop/test_warp_reduce_api.py`:
+      `test_warp_max`, `test_warp_min_valid_items` with literalinclude markers.
+    - `tests/coop/test_make_factories_two_phase.py`:
+      max/min factory coverage + kernel execution coverage for
+      `make_max` and `make_min`.
+  - Updated `SINGLE-PHASE-TODO.md` to mark the new warp max/min parity item
+    complete.
+- Debugging note:
+  - Initial `make_max` kernel test failed with unresolved extern
+    `warp_reduce` because max/min invocables were missing from
+    `_INVOCABLE_PRIMITIVE_TYPE_TO_INSTANCE_TYPE`; adding those entries fixed
+    link-time LTO injection for two-phase invocables.
+- Validation:
+  - `pytest -q tests/coop/test_warp_reduce.py -k 'warp_max_single_phase_unsigned or warp_min_single_phase_valid_items_unsigned'`
+    - Result: `4 passed, 14 deselected`.
+  - `pytest -q tests/coop/test_warp_reduce_api.py -k 'test_warp_max or test_warp_min_valid_items'`
+    - Result: `2 passed, 4 deselected`.
+  - `pytest -q tests/coop/test_make_factories_two_phase.py -k 'make_factories_return_invocable or make_warp_sum_runs_in_kernel_without_explicit_link or make_warp_max_runs_in_kernel_without_explicit_link or make_warp_min_runs_in_kernel_without_explicit_link'`
+    - Result: `36 passed, 4 deselected`.
+  - `pre-commit run --files SINGLE-PHASE-CURRENT-PLAN.md SINGLE-PHASE-LOG.md SINGLE-PHASE-NOTES.md SINGLE-PHASE-TODO.md cuda/coop/_decls/__init__.py cuda/coop/_decls/warp/_warp_reduce.py cuda/coop/_rewrite/__init__.py cuda/coop/_rewrite/warp/_warp_reduce.py cuda/coop/warp/__init__.py cuda/coop/warp/_warp_reduce.py tests/coop/test_make_factories_two_phase.py tests/coop/test_warp_reduce.py tests/coop/test_warp_reduce_api.py`
+    - Result: all hooks passed.
