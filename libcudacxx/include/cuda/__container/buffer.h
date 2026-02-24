@@ -36,6 +36,8 @@
 #  include <cuda/__memory_resource/synchronous_resource_adapter.h>
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/get_stream.h>
+#  include <cuda/std/__exception/cuda_error.h>
+#  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__execution/env.h>
 #  include <cuda/std/__iterator/concepts.h>
 #  include <cuda/std/__iterator/distance.h>
@@ -648,7 +650,7 @@ __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::std::size_t __count, c
       ::cuda::__driver::__pointerGetAttributeNoThrow<CU_POINTER_ATTRIBUTE_IS_MANAGED>(__is_managed, __first);
     if (__status1 != ::cudaSuccess || __status2 != ::cudaSuccess)
     {
-      __throw_cuda_error(__status1, "Failed to get buffer memory attributes");
+      _CCCL_THROW(::cuda::cuda_error, __status1, "Failed to get buffer memory attributes");
     }
     if (__type == ::CU_MEMORYTYPE_HOST && !__is_managed)
     {

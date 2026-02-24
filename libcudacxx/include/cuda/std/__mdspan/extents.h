@@ -34,9 +34,13 @@
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/__type_traits/num_bits.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/array>
@@ -326,41 +330,13 @@ _CCCL_DIAG_POP // MSVC(4702) Unreachable code
 // value must be a positive integer otherwise returns false
 // if _From is not an integral, we just check positivity
 _CCCL_TEMPLATE(class _To, class _From)
-_CCCL_REQUIRES(integral<_To>)
+_CCCL_REQUIRES(__cccl_is_integer_v<_To>)
 [[nodiscard]] _CCCL_API constexpr bool __is_representable_as([[maybe_unused]] _From __value)
 {
-  if constexpr (integral<_From>)
+  if constexpr (integral<_From> && !is_same_v<_From, bool>)
   {
-    if constexpr (is_signed_v<_From>)
-    {
-      if constexpr (__potentially_narrowing<_To, _From>)
-      {
-        using _To_u   = make_unsigned_t<_To>;
-        using _From_u = make_unsigned_t<_From>;
-        if (__value < 0)
-        {
-          return false;
-        }
-        return static_cast<_To_u>((numeric_limits<_To>::max)()) >= static_cast<_From_u>(__value);
-      }
-      else // !__potentially_narrowing<_To, _From>
-      {
-        return __value >= 0;
-      }
-    }
-    else // !is_signed_v<_From>
-    {
-      if constexpr (__potentially_narrowing<_To, _From>)
-      {
-        using _To_u   = make_unsigned_t<_To>;
-        using _From_u = make_unsigned_t<_From>;
-        return static_cast<_To_u>((numeric_limits<_To>::max)()) >= static_cast<_From_u>(__value);
-      }
-      else // !__potentially_narrowing<_To, _From>
-      {
-        return true;
-      }
-    }
+    using _FromInt = __make_nbit_int_t<__num_bits_v<_From>, is_signed_v<_From>>;
+    return ::cuda::std::in_range<_To>(static_cast<_FromInt>(__value));
   }
   else // !integral<_From>
   {
@@ -376,14 +352,14 @@ _CCCL_REQUIRES(integral<_To>)
 }
 
 _CCCL_TEMPLATE(class _To, class... _From)
-_CCCL_REQUIRES(integral<_To>)
+_CCCL_REQUIRES(__cccl_is_integer_v<_To>)
 [[nodiscard]] _CCCL_API constexpr bool __are_representable_as(_From... __values)
 {
   return (__mdspan_detail::__is_representable_as<_To>(__values) && ... && true);
 }
 
 _CCCL_TEMPLATE(class _To, class _From, size_t _Size)
-_CCCL_REQUIRES(integral<_To>)
+_CCCL_REQUIRES(__cccl_is_integer_v<_To>)
 [[nodiscard]] _CCCL_API constexpr bool __are_representable_as(span<_From, _Size> __values)
 {
   for (size_t __i = 0; __i != _Size; __i++)
@@ -417,11 +393,9 @@ public:
   using size_type  = make_unsigned_t<index_type>;
   using rank_type  = size_t;
 
-  static_assert(is_integral_v<index_type> && !is_same_v<index_type, bool>,
-                "extents::index_type must be a signed or unsigned integer type");
-  static_assert(
-    __all<(__mdspan_detail::__is_representable_as<index_type>(_Extents) || (_Extents == dynamic_extent))...>::value,
-    "extents ctor: arguments must be representable as index_type and nonnegative");
+  static_assert(__cccl_is_integer_v<index_type>, "extents::index_type must be a signed or unsigned integer type");
+  static_assert(((::cuda::std::in_range<index_type>(_Extents) || (_Extents == dynamic_extent)) && ...),
+                "extents ctor: arguments must be representable as index_type and nonnegative");
 
 private:
   static constexpr rank_type __rank_ = sizeof...(_Extents);
@@ -559,13 +533,8 @@ private:
     {
       for (size_t __r = 0; __r != rank(); __r++)
       {
-        if constexpr (__mdspan_detail::__potentially_narrowing<index_type, _OtherIndexType>)
-        {
-          // Not catching this could lead to out of bounds errors later
-          // e.g. dextents<char,1>> e(dextents<unsigned,1>(200)) leads to an extent of -56 on e
-          _CCCL_ASSERT(__mdspan_detail::__is_representable_as<index_type>(__other.extent(__r)),
-                       "extents ctor: arguments must be representable as index_type and nonnegative");
-        }
+        _CCCL_ASSERT(::cuda::std::in_range<index_type>(__other.extent(__r)),
+                     "extents ctor: arguments must be representable as index_type and nonnegative");
 
         // Not catching this could lead to out of bounds errors later
         // e.g. mdspan<int, extents<int, 10>> m = mdspan<int, dextents<int, 1>>(new int[5], 5);
@@ -617,9 +586,7 @@ public:
     {
       for (rank_type __r = 0; __r != __rank_; __r++)
       {
-        // avoid warning when comparing signed and unsigner integers and pick the wider of two types
-        using _CommonType = common_type_t<index_type, _OtherIndexType>;
-        if (static_cast<_CommonType>(__lhs.extent(__r)) != static_cast<_CommonType>(__rhs.extent(__r)))
+        if (::cuda::std::cmp_not_equal(__lhs.extent(__r), __rhs.extent(__r)))
         {
           return false;
         }
@@ -693,22 +660,11 @@ _CCCL_TEMPLATE(class _IndexType, class _From)
 _CCCL_REQUIRES(integral<_IndexType>)
 [[nodiscard]] _CCCL_API constexpr bool __is_index_in_extent(_IndexType __extent, _From __value)
 {
-  if constexpr (integral<_From>)
+  if constexpr (integral<_From> && !is_same_v<_From, bool>)
   {
-    if constexpr (is_signed_v<_From>)
-    {
-      if (__value < 0)
-      {
-        return false;
-      }
-      using _Tp = common_type_t<_IndexType, _From>;
-      return static_cast<_Tp>(__value) < static_cast<_Tp>(__extent);
-    }
-    else
-    {
-      using _Tp = common_type_t<_IndexType, _From>;
-      return static_cast<_Tp>(__value) < static_cast<_Tp>(__extent);
-    }
+    using _FromInt        = __make_nbit_int_t<__num_bits_v<_From>, is_signed_v<_From>>;
+    const auto __from_int = static_cast<_FromInt>(__value);
+    return ::cuda::std::cmp_greater_equal(__from_int, 0) && ::cuda::std::cmp_less(__from_int, __extent);
   }
   else
   {
@@ -731,7 +687,7 @@ template <size_t... _Idxs, class _Extents, class... _From>
 [[nodiscard]] _CCCL_API constexpr bool
 __is_multidimensional_index_in_impl(index_sequence<_Idxs...>, const _Extents& __ext, _From... __values)
 {
-  return (__mdspan_detail::__is_index_in_extent(__ext.extent(_Idxs), __values) && ... && true);
+  return (__mdspan_detail::__is_index_in_extent(__ext.extent(_Idxs), __values) && ...);
 }
 
 template <class _Extents, class... _From>

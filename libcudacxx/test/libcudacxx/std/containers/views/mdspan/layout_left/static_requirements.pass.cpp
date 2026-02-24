@@ -141,7 +141,7 @@ int main(int, char**)
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_layout_mapping_left<cuda::std::extents<int>>();
-  test_layout_mapping_left<cuda::std::extents<char, 4, 5>>();
+  test_layout_mapping_left<cuda::std::extents<signed char, 4, 5>>();
   test_layout_mapping_left<cuda::std::extents<unsigned, D, 4>>();
   test_layout_mapping_left<cuda::std::extents<size_t, D, D, D, D>>();
   return 0;

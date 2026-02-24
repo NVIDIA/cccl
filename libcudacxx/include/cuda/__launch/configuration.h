@@ -28,6 +28,8 @@
 #  include <cuda/__numeric/overflow_cast.h>
 #  include <cuda/__ptx/instructions/get_sreg.h>
 #  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/__type_traits/is_reference.h>
 #  include <cuda/std/__type_traits/is_unbounded_array.h>
@@ -415,7 +417,7 @@ _CCCL_REQUIRES(::cuda::std::is_unbounded_array_v<_Tp>)
   using value_type = typename dynamic_shared_memory_option<_Tp>::value_type;
   if (__n * sizeof(value_type) > __max_portable_dyn_smem_size)
   {
-    ::cuda::std::__throw_invalid_argument("portable dynamic shared memory limit exceeded");
+    _CCCL_THROW(::std::invalid_argument, "portable dynamic shared memory limit exceeded");
   }
   return dynamic_shared_memory_option<_Tp>::__create(__n, false);
 }
