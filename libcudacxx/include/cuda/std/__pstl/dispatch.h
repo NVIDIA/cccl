@@ -37,6 +37,7 @@ enum class __pstl_algorithm
   __generate_n,
   __reduce,
   __transform,
+  __transform_reduce,
 };
 
 //! @brief tag type to indicate that we cannot dispatch to a parallel algorithm and should run the algorithm serially
