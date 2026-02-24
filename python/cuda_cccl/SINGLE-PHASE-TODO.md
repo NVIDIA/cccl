@@ -98,6 +98,9 @@
       unit/stress/mamba coverage.
 - [x] Add GPU tests that use `gpu_dataclass` with multiple primitives sharing
       temp storage (load/scan/reduce/store pipelines, mixed parent/child).
+- [x] Add multi-`TempStorage` single-phase regression coverage for:
+      mamba-style dual bindings, loop-local TempStorage construction, and
+      combined-size dynamic shared-memory callback handling.
 - [x] Add/upgrade docstrings for every public primitive with
       `literalinclude`-based examples in `tests/coop/*_api.py`; remove any
       mention of `.create()` from public docs.

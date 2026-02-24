@@ -3117,6 +3117,106 @@ def test_temp_storage_auto_dynamic_shared_callback():
     np.testing.assert_array_equal(h_output, h_reference)
 
 
+def test_temp_storage_auto_dynamic_shared_callback_multiple_instances_combined():
+    threads_per_block = 128
+    items_per_thread = 4
+    total_items = threads_per_block * items_per_thread
+    dtype = np.uint32
+
+    block_exclusive_sum = coop.block.exclusive_sum(
+        dtype,
+        threads_per_block,
+        items_per_thread,
+    )
+    temp_storage_alignment = block_exclusive_sum.temp_storage_alignment
+    min_required_bytes = block_exclusive_sum.temp_storage_bytes
+
+    device = cuda.current_context().device
+    max_default = int(getattr(device, "MAX_SHARED_MEMORY_PER_BLOCK", 0) or 0)
+    max_optin = int(getattr(device, "MAX_SHARED_MEMORY_PER_BLOCK_OPTIN", 0) or 0)
+    if max_default <= 0 or max_optin <= 0:
+        pytest.skip("Device does not expose shared memory limits.")
+    if max_optin <= max_default:
+        pytest.skip(
+            "Device opt-in shared memory limit does not exceed default shared memory."
+        )
+
+    per_instance_bytes = _align_up(
+        max(min_required_bytes, (max_default // 2) + temp_storage_alignment),
+        temp_storage_alignment,
+    )
+    if per_instance_bytes >= max_default:
+        per_instance_bytes = _align_down(
+            max_default - temp_storage_alignment,
+            temp_storage_alignment,
+        )
+    if per_instance_bytes < min_required_bytes or per_instance_bytes <= 0:
+        pytest.skip("Unable to pick per-instance TempStorage below default limit.")
+
+    combined_bytes = _align_up(2 * per_instance_bytes, temp_storage_alignment)
+    if combined_bytes <= max_default:
+        pytest.skip("Combined TempStorage size did not exceed default shared memory.")
+    if combined_bytes > max_optin:
+        pytest.skip(
+            "Device does not support required combined dynamic shared memory size "
+            f"({combined_bytes} > {max_optin})."
+        )
+
+    assert per_instance_bytes < max_default
+    assert combined_bytes > max_default
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
+        temp_storage_first = coop.TempStorage(
+            per_instance_bytes,
+            temp_storage_alignment,
+        )
+        temp_storage_second = coop.TempStorage(
+            per_instance_bytes,
+            temp_storage_alignment,
+        )
+
+        coop.block.load(
+            d_in,
+            thread_data,
+            items_per_thread=items_per_thread,
+        )
+        coop.block.exclusive_sum(
+            thread_data,
+            thread_data,
+            items_per_thread=items_per_thread,
+            temp_storage=temp_storage_first,
+        )
+        coop.block.exclusive_sum(
+            thread_data,
+            thread_data,
+            items_per_thread=items_per_thread,
+            temp_storage=temp_storage_second,
+        )
+        coop.block.store(
+            d_out,
+            thread_data,
+            items_per_thread=items_per_thread,
+        )
+
+    h_input = np.random.randint(0, 16, total_items, dtype=dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    configured = kernel[1, threads_per_block]
+    before_callbacks = len(configured.pre_launch_callbacks)
+    configured(d_input, d_output)
+    cuda.synchronize()
+
+    assert configured.sharedmem >= combined_bytes
+    assert len(configured.pre_launch_callbacks) >= before_callbacks + 1
+
+    h_output = d_output.copy_to_host()
+    h_reference = _exclusive_scan_host(_exclusive_scan_host(h_input))
+    np.testing.assert_array_equal(h_output, h_reference)
+
+
 def test_temp_storage_auto_dynamic_shared_rejects_device_limit():
     threads_per_block = 128
     items_per_thread = 4
