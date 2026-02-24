@@ -13,7 +13,10 @@
 #include <thrust/tabulate.h>
 
 #include <cstdint>
+#include <numeric>
+#include <tuple>
 #include <type_traits> // std::integral_constant
+#include <vector>
 
 #include "catch2_test_device_scan.cuh"
 #include <c2h/catch2_test_helper.h>
@@ -619,6 +622,37 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
   }
 }
 
+// Given vector of segment sizes (s1, s2, ..., sn), compute input offsets
+// (0, s1, s1 + s2, ..., s1 + s2 + ... + sn)
+// Similar for out-offsets, except every 0 in segment sizes is replaced with
+// `gap`.
+template <typename OffsetT>
+std::tuple<std::vector<OffsetT>, std::vector<OffsetT>> make_in_out_offsets(const std::vector<OffsetT> sizes, OffsetT gap)
+{
+  std::vector<OffsetT> offsets;
+
+  std::size_t segment_count = sizes.size();
+
+  offsets.resize(segment_count + 1);
+  offsets[0] = OffsetT{0};
+  std::inclusive_scan(sizes.begin(), sizes.end(), offsets.begin() + 1);
+
+  std::vector<OffsetT> sizes_with_gaps;
+  sizes_with_gaps.resize(segment_count);
+  for (std::size_t i = 0; i < segment_count; ++i)
+  {
+    const auto s       = sizes[i];
+    sizes_with_gaps[i] = (s == 0) ? gap : s;
+  }
+
+  std::vector<OffsetT> offsets_with_gaps;
+  offsets_with_gaps.resize(segment_count + 1);
+  offsets_with_gaps[0] = OffsetT{0};
+  std::inclusive_scan(sizes_with_gaps.begin(), sizes_with_gaps.end(), offsets_with_gaps.begin() + 1);
+
+  return {offsets, offsets_with_gaps};
+}
+
 C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segmented][scan]", itp_list)
 {
   using op_t     = cuda::std::plus<>;
@@ -634,20 +668,13 @@ C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
 
   const auto canary = value_t{0xDEADBEEF};
 
-  const offset_t gap = 4;
-  c2h::device_vector<offset_t> offsets{{0, 4, 17, 17, 63, 63, 99, 127, 127, 133, 150}};
-  c2h::device_vector<offset_t> out_offsets{
-    {0,
-     4,
-     17,
-     17 + gap,
-     63 + gap,
-     63 + 2 * gap,
-     99 + 2 * gap,
-     127 + 2 * gap,
-     127 + 3 * gap,
-     133 + 3 * gap,
-     150 + 3 * gap}};
+  const offset_t gap                        = 4;
+  const std::vector<offset_t> segment_sizes = {4, 13, 0, 46, 0, 33, 28, 0, 6, 17};
+
+  const auto [in_offsets_v, out_offsets_v] = make_in_out_offsets(segment_sizes, gap);
+
+  c2h::device_vector<offset_t> offsets{in_offsets_v.begin(), in_offsets_v.end()};
+  c2h::device_vector<offset_t> out_offsets{out_offsets_v.begin(), out_offsets_v.end()};
 
   const size_t num_segments = offsets.size() - 1;
   const unsigned num_items  = offsets.back();
