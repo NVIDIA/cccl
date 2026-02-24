@@ -31,25 +31,37 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::merge
 {
-template <typename PolicyT>
-struct policy_noblockload2smem_t : PolicyT
-{
-  static constexpr bool use_block_load_to_shared = false;
-};
-
 inline constexpr int fallback_BLOCK_THREADS    = 64;
 inline constexpr int fallback_ITEMS_PER_THREAD = 1;
 
-// TODO(bgruber): the agent and policy is not public, so we can refactor choose_merge_agent into a constexpr function
-template <typename DefaultPolicy, class... Args>
+// TODO(bgruber): we should choose the merge_policy rather than the agent, but before C++20 this is more verbose
+template <typename PolicyGetter, class... Args>
 class choose_merge_agent
 {
-  using default_load2sh_agent_t   = agent_t<DefaultPolicy, Args...>;
-  using default_noload2sh_agent_t = agent_t<policy_noblockload2smem_t<DefaultPolicy>, Args...>;
+  static constexpr merge_policy active_policy = PolicyGetter{}();
 
-  using fallback_agent_t = agent_t<
-    policy_wrapper_t<policy_noblockload2smem_t<DefaultPolicy>, fallback_BLOCK_THREADS, fallback_ITEMS_PER_THREAD>,
-    Args...>;
+  using default_load2sh_agent_t =
+    agent_t<active_policy.block_threads,
+            active_policy.items_per_thread,
+            active_policy.load_modifier,
+            active_policy.store_algorithm,
+            active_policy.use_block_load_to_shared,
+            Args...>;
+  using default_noload2sh_agent_t =
+    agent_t<active_policy.block_threads,
+            active_policy.items_per_thread,
+            active_policy.load_modifier,
+            active_policy.store_algorithm,
+            /* UseBlockLoadToShared */ false,
+            Args...>;
+
+  using fallback_agent_t =
+    agent_t<fallback_BLOCK_THREADS,
+            fallback_ITEMS_PER_THREAD,
+            active_policy.load_modifier,
+            active_policy.store_algorithm,
+            /* UseBlockLoadToShared */ false,
+            Args...>;
 
   static constexpr bool use_default_load2sh =
     sizeof(typename default_load2sh_agent_t::TempStorage) <= max_smem_per_block;
@@ -85,21 +97,18 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
   Offset* key1_beg_offsets,
   CompareOp compare_op)
 {
-  constexpr merge_policy active_policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
-
-  // convert the policy into a legacy agent policy for choose_merge_agent. TODO(bgruber): refactor this in the future
-  using AgentPolicyT =
-    agent_policy_t<active_policy.block_threads,
-                   active_policy.items_per_thread,
-                   active_policy.load_modifier,
-                   active_policy.store_algorithm,
-                   active_policy.use_block_load_to_shared>;
-
   // items_per_tile must be the same of the merge kernel later, so we have to consider whether a fallback agent will be
   // selected for the merge agent that changes the tile size
   constexpr int items_per_tile =
-    choose_merge_agent<AgentPolicyT, KeyIt1, ValueIt1, KeyIt2, ValueIt2, KeyIt3, ValueIt3, Offset, CompareOp>::type::
-      policy::ITEMS_PER_TILE;
+    choose_merge_agent<policy_getter<PolicySelector, ::cuda::arch_id{CUB_PTX_ARCH / 10}>,
+                       KeyIt1,
+                       ValueIt1,
+                       KeyIt2,
+                       ValueIt2,
+                       KeyIt3,
+                       ValueIt3,
+                       Offset,
+                       CompareOp>::type::items_per_tile;
   const Offset diagonal_idx = blockDim.x * blockIdx.x + threadIdx.x;
   if (diagonal_idx < num_diagonals)
   {
@@ -117,7 +126,16 @@ template <typename PolicySelector,
           typename ValueIt3,
           typename Offset,
           typename CompareOp>
-__launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads)
+__launch_bounds__(
+  choose_merge_agent<policy_getter<PolicySelector, ::cuda::arch_id{CUB_PTX_ARCH / 10}>,
+                     KeyIt1,
+                     ValueIt1,
+                     KeyIt2,
+                     ValueIt2,
+                     KeyIt3,
+                     ValueIt3,
+                     Offset,
+                     CompareOp>::type::block_threads)
   CUB_DETAIL_KERNEL_ATTRIBUTES void device_merge_kernel(
     KeyIt1 keys1,
     ValueIt1 items1,
@@ -136,19 +154,16 @@ __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_thr
   static_assert(::cuda::std::is_convertible_v<::cuda::std::invoke_result_t<CompareOp, key_t, key_t>, bool>,
                 "Comparison operator must be convertible to bool");
 
-  constexpr merge_policy active_policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
-
-  // convert the policy into a legacy agent policy for choose_merge_agent. TODO(bgruber): refactor this in the future
-  using AgentPolicyT =
-    agent_policy_t<active_policy.block_threads,
-                   active_policy.items_per_thread,
-                   active_policy.load_modifier,
-                   active_policy.store_algorithm,
-                   active_policy.use_block_load_to_shared>;
-
-  using MergeAgent =
-    typename choose_merge_agent<AgentPolicyT, KeyIt1, ValueIt1, KeyIt2, ValueIt2, KeyIt3, ValueIt3, Offset, CompareOp>::
-      type;
+  using MergeAgent = typename choose_merge_agent<
+    policy_getter<PolicySelector, ::cuda::arch_id{CUB_PTX_ARCH / 10}>,
+    KeyIt1,
+    ValueIt1,
+    KeyIt2,
+    ValueIt2,
+    KeyIt3,
+    ValueIt3,
+    Offset,
+    CompareOp>::type;
 
   using vsmem_helper_t = vsmem_helper_impl<MergeAgent>;
   __shared__ typename vsmem_helper_t::static_temp_storage_t shared_temp_storage;
@@ -204,27 +219,26 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
 
   return dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
-    constexpr merge_policy active_policy = policy_getter();
-
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(
       NV_IS_HOST,
-      (std::stringstream ss; ss << active_policy;
+      (std::stringstream ss; ss << policy_getter();
        _CubLog("Dispatching DeviceMerge to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());))
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
-    // convert the policy into a legacy agent policy for vsmem_helper. TODO(bgruber): refactor this in the future
-    using AgentPolicyT =
-      agent_policy_t<active_policy.block_threads,
-                     active_policy.items_per_thread,
-                     active_policy.load_modifier,
-                     active_policy.store_algorithm,
-                     active_policy.use_block_load_to_shared>;
-    using AgentT =
-      typename choose_merge_agent<AgentPolicyT, KeyIt1, ValueIt1, KeyIt2, ValueIt2, KeyIt3, ValueIt3, Offset, CompareOp>::
-        type;
+    static_assert(::cuda::std::is_empty_v<decltype(policy_getter)>);
+    using AgentT = typename choose_merge_agent<
+      decltype(policy_getter),
+      KeyIt1,
+      ValueIt1,
+      KeyIt2,
+      ValueIt2,
+      KeyIt3,
+      ValueIt3,
+      Offset,
+      CompareOp>::type;
 
-    const auto num_tiles = ::cuda::ceil_div(num_items1 + num_items2, AgentT::policy::ITEMS_PER_TILE);
+    const auto num_tiles = ::cuda::ceil_div(num_items1 + num_items2, AgentT::items_per_tile);
     void* allocations[2] = {nullptr, nullptr};
     {
       const size_t key1_beg_offsets_size      = (1 + num_tiles) * sizeof(Offset);
@@ -283,7 +297,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     {
       if (const auto error = CubDebug(
             THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-              static_cast<int>(num_tiles), static_cast<int>(AgentT::policy::BLOCK_THREADS), 0, stream)
+              static_cast<int>(num_tiles), static_cast<int>(AgentT::block_threads), 0, stream)
               .doit(
                 device_merge_kernel<PolicySelector, KeyIt1, ValueIt1, KeyIt2, ValueIt2, KeyIt3, ValueIt3, Offset, CompareOp>,
                 d_keys1,
