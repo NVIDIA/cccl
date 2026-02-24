@@ -29,7 +29,6 @@
 #include <cub/util_device.cuh>
 #include <cub/util_ptx.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
