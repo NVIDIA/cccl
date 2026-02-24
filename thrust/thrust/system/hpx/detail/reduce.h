@@ -44,7 +44,7 @@ namespace detail
 {
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputType, typename BinaryFunction>
-OutputType reduce(execution_policy<DerivedPolicy>& exec,
+OutputType reduce(execution_policy<DerivedPolicy>& exec [[maybe_unused]],
                   InputIterator first,
                   InputIterator last,
                   OutputType init,
@@ -64,7 +64,6 @@ OutputType reduce(execution_policy<DerivedPolicy>& exec,
   }
   else
   {
-    (void) exec;
     return ::hpx::reduce(first, last, init, wrapped_binary_op);
   }
 }

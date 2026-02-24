@@ -44,7 +44,7 @@ namespace detail
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
 OutputIterator
-copy(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
+copy(execution_policy<DerivedPolicy>& exec [[maybe_unused]], InputIterator first, InputIterator last, OutputIterator result)
 {
   if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
   {
@@ -57,13 +57,12 @@ copy(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator l
   }
   else
   {
-    (void) exec;
     return ::hpx::copy(first, last, result);
   }
 }
 
 template <typename DerivedPolicy, typename InputIterator, typename Size, typename OutputIterator>
-OutputIterator copy_n(execution_policy<DerivedPolicy>& exec, InputIterator first, Size n, OutputIterator result)
+OutputIterator copy_n(execution_policy<DerivedPolicy>& exec [[maybe_unused]], InputIterator first, Size n, OutputIterator result)
 {
   if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
   {
@@ -76,7 +75,6 @@ OutputIterator copy_n(execution_policy<DerivedPolicy>& exec, InputIterator first
   }
   else
   {
-    (void) exec;
     return ::hpx::copy_n(first, n, result);
   }
 }
