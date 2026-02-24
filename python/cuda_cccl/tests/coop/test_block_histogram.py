@@ -71,6 +71,58 @@ def test_block_histogram_init_composite():
     np.testing.assert_array_equal(h_output, expected)
 
 
+def test_block_histogram_temp_storage_inside_loop_single_phase():
+    item_dtype = np.uint8
+    counter_dtype = np.uint32
+    bins = 64
+    items_per_thread = 4
+    threads_per_block = 128
+    items_per_block = threads_per_block * items_per_thread
+    num_tiles = 3
+    total_items = items_per_block * num_tiles
+
+    @cuda.jit
+    def kernel(d_in, d_out, total_items):
+        tid = cuda.threadIdx.x
+        thread_samples = coop.local.array(items_per_thread, item_dtype)
+        smem_histogram = coop.shared.array(bins, counter_dtype)
+        histo = coop.block.histogram(thread_samples, smem_histogram)
+
+        histo.init()
+        cuda.syncthreads()
+
+        block_offset = cuda.blockIdx.x * items_per_block
+        grid_stride = cuda.gridDim.x * items_per_block
+        index = block_offset
+
+        while index < total_items:
+            temp_load = coop.TempStorage()
+            coop.block.load(
+                d_in[index:],
+                thread_samples,
+                items_per_thread=items_per_thread,
+                algorithm=BlockLoadAlgorithm.WARP_TRANSPOSE,
+                temp_storage=temp_load,
+            )
+            histo.composite(thread_samples)
+            cuda.syncthreads()
+            index += grid_stride
+
+        for bin_idx in range(tid, bins, threads_per_block):
+            d_out[bin_idx] = smem_histogram[bin_idx]
+
+    h_input = np.random.randint(0, bins, total_items, dtype=item_dtype)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.to_device(np.zeros(bins, dtype=counter_dtype))
+
+    kernel[1, threads_per_block](d_input, d_output, np.int32(total_items))
+    cuda.synchronize()
+
+    h_output = d_output.copy_to_host()
+    expected = np.bincount(h_input, minlength=bins).astype(counter_dtype)
+    np.testing.assert_array_equal(h_output, expected)
+
+
 def test_block_histogram_histo_atomic_single_phase0():
     item_dtype = np.uint8
     counter_dtype = np.uint32
