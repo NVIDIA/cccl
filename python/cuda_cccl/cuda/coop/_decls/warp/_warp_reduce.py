@@ -13,6 +13,8 @@ from numba.extending import models, register_model, typeof_impl
 import cuda.coop as coop
 
 from ...warp._warp_reduce import (
+    _make_max_rewrite,
+    _make_min_rewrite,
     _make_reduce_rewrite,
     _make_sum_rewrite,
 )
@@ -30,7 +32,7 @@ from .. import (
 
 
 # =============================================================================
-# Reduce/Sum
+# Reduce/Sum/Max/Min
 # =============================================================================
 @register_global(coop.warp.reduce)
 class CoopWarpReduceDecl(CoopAbstractTemplate, CoopDeclMixin):
@@ -119,14 +121,7 @@ class CoopWarpReduceDecl(CoopAbstractTemplate, CoopDeclMixin):
         return signature(src, *arglist)
 
 
-@register_global(coop.warp.sum)
-class CoopWarpSumDecl(CoopAbstractTemplate, CoopDeclMixin):
-    key = coop.warp.sum
-    impl_key = _make_sum_rewrite
-    primitive_name = "coop.warp.sum"
-    is_constructor = False
-    minimum_num_args = 1
-
+class _CoopWarpUnaryReduceDecl:
     @staticmethod
     def signature(
         src: types.Number,
@@ -134,7 +129,7 @@ class CoopWarpSumDecl(CoopAbstractTemplate, CoopDeclMixin):
         valid_items: Optional[int] = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
-        return inspect.signature(CoopWarpSumDecl.signature).bind(
+        return inspect.signature(_CoopWarpUnaryReduceDecl.signature).bind(
             src,
             threads_in_warp=threads_in_warp,
             valid_items=valid_items,
@@ -177,8 +172,35 @@ class CoopWarpSumDecl(CoopAbstractTemplate, CoopDeclMixin):
         return signature(src, *arglist)
 
 
+@register_global(coop.warp.sum)
+class CoopWarpSumDecl(_CoopWarpUnaryReduceDecl, CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.warp.sum
+    impl_key = _make_sum_rewrite
+    primitive_name = "coop.warp.sum"
+    is_constructor = False
+    minimum_num_args = 1
+
+
+@register_global(coop.warp.max)
+class CoopWarpMaxDecl(_CoopWarpUnaryReduceDecl, CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.warp.max
+    impl_key = _make_max_rewrite
+    primitive_name = "coop.warp.max"
+    is_constructor = False
+    minimum_num_args = 1
+
+
+@register_global(coop.warp.min)
+class CoopWarpMinDecl(_CoopWarpUnaryReduceDecl, CoopAbstractTemplate, CoopDeclMixin):
+    key = coop.warp.min
+    impl_key = _make_min_rewrite
+    primitive_name = "coop.warp.min"
+    is_constructor = False
+    minimum_num_args = 1
+
+
 # =============================================================================
-# Instance-related Reduce/Sum Scaffolding
+# Instance-related Reduce/Sum/Max/Min Scaffolding
 # =============================================================================
 class CoopWarpReduceInstanceType(CoopSimpleInstanceType):
     decl_class = CoopWarpReduceDecl
@@ -235,4 +257,62 @@ class CoopWarpSumInstanceModel(models.OpaqueModel):
 
 @lower_constant(CoopWarpSumInstanceType)
 def lower_constant_warp_sum_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+class CoopWarpMaxInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopWarpMaxDecl
+
+
+warp_max_instance_type = CoopWarpMaxInstanceType()
+
+
+@typeof_impl.register(coop.warp.max)
+def typeof_warp_max_instance(*args, **kwargs):
+    return warp_max_instance_type
+
+
+@register
+class CoopWarpMaxInstanceDecl(CoopInstanceTemplate):
+    key = warp_max_instance_type
+    instance_type = warp_max_instance_type
+    primitive_name = "coop.warp.max"
+
+
+@register_model(CoopWarpMaxInstanceType)
+class CoopWarpMaxInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopWarpMaxInstanceType)
+def lower_constant_warp_max_instance_type(context, builder, typ, value):
+    return context.get_dummy_value()
+
+
+class CoopWarpMinInstanceType(CoopSimpleInstanceType):
+    decl_class = CoopWarpMinDecl
+
+
+warp_min_instance_type = CoopWarpMinInstanceType()
+
+
+@typeof_impl.register(coop.warp.min)
+def typeof_warp_min_instance(*args, **kwargs):
+    return warp_min_instance_type
+
+
+@register
+class CoopWarpMinInstanceDecl(CoopInstanceTemplate):
+    key = warp_min_instance_type
+    instance_type = warp_min_instance_type
+    primitive_name = "coop.warp.min"
+
+
+@register_model(CoopWarpMinInstanceType)
+class CoopWarpMinInstanceModel(models.OpaqueModel):
+    pass
+
+
+@lower_constant(CoopWarpMinInstanceType)
+def lower_constant_warp_min_instance_type(context, builder, typ, value):
     return context.get_dummy_value()

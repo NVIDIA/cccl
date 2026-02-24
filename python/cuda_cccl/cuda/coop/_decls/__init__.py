@@ -1503,18 +1503,30 @@ warp_exchange_instance_type = _decls_warp_exchange.warp_exchange_instance_type
 _decls_warp_reduce = __import__(
     "cuda.coop._decls.warp._warp_reduce",
     fromlist=[
+        "CoopWarpMaxDecl",
+        "CoopWarpMaxInstanceType",
+        "CoopWarpMinDecl",
+        "CoopWarpMinInstanceType",
         "CoopWarpReduceDecl",
         "CoopWarpReduceInstanceType",
         "CoopWarpSumDecl",
         "CoopWarpSumInstanceType",
+        "warp_max_instance_type",
+        "warp_min_instance_type",
         "warp_reduce_instance_type",
         "warp_sum_instance_type",
     ],
 )
+CoopWarpMaxDecl = _decls_warp_reduce.CoopWarpMaxDecl
+CoopWarpMaxInstanceType = _decls_warp_reduce.CoopWarpMaxInstanceType
+CoopWarpMinDecl = _decls_warp_reduce.CoopWarpMinDecl
+CoopWarpMinInstanceType = _decls_warp_reduce.CoopWarpMinInstanceType
 CoopWarpReduceDecl = _decls_warp_reduce.CoopWarpReduceDecl
 CoopWarpReduceInstanceType = _decls_warp_reduce.CoopWarpReduceInstanceType
 CoopWarpSumDecl = _decls_warp_reduce.CoopWarpSumDecl
 CoopWarpSumInstanceType = _decls_warp_reduce.CoopWarpSumInstanceType
+warp_max_instance_type = _decls_warp_reduce.warp_max_instance_type
+warp_min_instance_type = _decls_warp_reduce.warp_min_instance_type
 warp_reduce_instance_type = _decls_warp_reduce.warp_reduce_instance_type
 warp_sum_instance_type = _decls_warp_reduce.warp_sum_instance_type
 
@@ -1599,6 +1611,8 @@ _INVOCABLE_PRIMITIVE_TYPE_TO_INSTANCE_TYPE = {
     coop.warp.exchange: warp_exchange_instance_type,
     coop.warp.reduce: warp_reduce_instance_type,
     coop.warp.sum: warp_sum_instance_type,
+    coop.warp.max: warp_max_instance_type,
+    coop.warp.min: warp_min_instance_type,
     coop.warp.exclusive_sum: warp_exclusive_sum_instance_type,
     coop.warp.inclusive_sum: warp_inclusive_sum_instance_type,
     coop.warp.exclusive_scan: warp_exclusive_scan_instance_type,
@@ -1720,6 +1734,12 @@ class CoopWarpModuleTemplate(AttributeTemplate):
 
     def resolve_sum(self, mod):
         return types.Function(CoopWarpSumDecl)
+
+    def resolve_max(self, mod):
+        return types.Function(CoopWarpMaxDecl)
+
+    def resolve_min(self, mod):
+        return types.Function(CoopWarpMinDecl)
 
     def resolve_inclusive_sum(self, mod):
         return types.Function(CoopWarpInclusiveSumDecl)

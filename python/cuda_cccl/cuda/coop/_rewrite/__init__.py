@@ -1601,6 +1601,10 @@ class CoopNode:
             return Primitive.REDUCE
         elif "sum" in name:
             return Primitive.REDUCE
+        elif "max" in name:
+            return Primitive.REDUCE
+        elif "min" in name:
+            return Primitive.REDUCE
         elif "histogram" in name:
             if "init" in name:
                 return Primitive.HISTOGRAM__INIT
@@ -2416,8 +2420,15 @@ CoopBlockSumNode = _rewrite_block_reduce.CoopBlockSumNode
 
 _rewrite_warp_reduce = __import__(
     "cuda.coop._rewrite.warp._warp_reduce",
-    fromlist=["CoopWarpReduceNode", "CoopWarpSumNode"],
+    fromlist=[
+        "CoopWarpMaxNode",
+        "CoopWarpMinNode",
+        "CoopWarpReduceNode",
+        "CoopWarpSumNode",
+    ],
 )
+CoopWarpMaxNode = _rewrite_warp_reduce.CoopWarpMaxNode
+CoopWarpMinNode = _rewrite_warp_reduce.CoopWarpMinNode
 CoopWarpReduceNode = _rewrite_warp_reduce.CoopWarpReduceNode
 CoopWarpSumNode = _rewrite_warp_reduce.CoopWarpSumNode
 

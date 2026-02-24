@@ -180,8 +180,8 @@ class CoopWarpReduceNode(CoopNode, CoopNodeMixin):
 
 
 @dataclass
-class CoopWarpSumNode(CoopNode, CoopNodeMixin):
-    primitive_name = "coop.warp.sum"
+class _CoopWarpUnaryReduceNode(CoopNode):
+    valid_items_const_prefix = None
     disposition = Disposition.ONE_SHOT
 
     def refine_match(self, rewriter):
@@ -197,17 +197,20 @@ class CoopWarpSumNode(CoopNode, CoopNodeMixin):
         expr_args = list(expr.args)
         src = expr_args.pop(0)
         if src is None:
-            raise RuntimeError("coop.warp.sum requires a src argument")
+            raise RuntimeError(f"{self.primitive_name} requires a src argument")
 
         src_ty = self.typemap[src.name]
         if isinstance(src_ty, types.Array):
-            raise RuntimeError("coop.warp.sum requires a scalar input")
+            raise RuntimeError(f"{self.primitive_name} requires a scalar input")
         if not isinstance(src_ty, types.Number):
-            raise RuntimeError("coop.warp.sum requires a numeric input")
+            raise RuntimeError(f"{self.primitive_name} requires a numeric input")
 
         runtime_args.append(src)
         runtime_arg_types.append(src_ty)
         runtime_arg_names.append("src")
+
+        if self.valid_items_const_prefix is None:
+            raise RuntimeError("valid_items_const_prefix must be defined by subclass")
 
         threads_in_warp = self.get_arg_value_safe("threads_in_warp")
         threads_in_warp_arg = self.bound.arguments.get("threads_in_warp")
@@ -234,7 +237,9 @@ class CoopWarpSumNode(CoopNode, CoopNodeMixin):
 
             if valid_items_var is None:
                 scope = self.instr.target.scope
-                const_name = f"$warp_sum_valid_items_{self.unique_id}"
+                const_name = (
+                    f"${self.valid_items_const_prefix}_valid_items_{self.unique_id}"
+                )
                 const_var = ir.Var(scope, const_name, self.expr.loc)
                 if const_name in self.typemap:
                     raise RuntimeError(
@@ -259,7 +264,7 @@ class CoopWarpSumNode(CoopNode, CoopNodeMixin):
         if temp_storage is not None:
             if not isinstance(temp_storage, ir.Var):
                 raise RuntimeError(
-                    "coop.warp.sum temp_storage must be provided as a variable"
+                    f"{self.primitive_name} temp_storage must be provided as a variable"
                 )
             (_, _, temp_storage_info) = rewriter.bind_temp_storage_runtime_arg(
                 node=self,
@@ -324,3 +329,21 @@ class CoopWarpSumNode(CoopNode, CoopNodeMixin):
     @cached_property
     def rewrite_details(self):
         return self.do_rewrite()
+
+
+@dataclass
+class CoopWarpSumNode(_CoopWarpUnaryReduceNode, CoopNodeMixin):
+    primitive_name = "coop.warp.sum"
+    valid_items_const_prefix = "warp_sum"
+
+
+@dataclass
+class CoopWarpMaxNode(_CoopWarpUnaryReduceNode, CoopNodeMixin):
+    primitive_name = "coop.warp.max"
+    valid_items_const_prefix = "warp_max"
+
+
+@dataclass
+class CoopWarpMinNode(_CoopWarpUnaryReduceNode, CoopNodeMixin):
+    primitive_name = "coop.warp.min"
+    valid_items_const_prefix = "warp_min"
