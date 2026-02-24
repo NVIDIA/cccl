@@ -17,7 +17,7 @@
 #if !TUNE_BASE
 struct bench_reduce_by_key_policy_selector
 {
-  [[nodiscard]] constexpr auto operator()(::cuda::arch_id /*arch*/) const
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const
     -> cub::detail::reduce_by_key::reduce_by_key_policy
   {
     return {
