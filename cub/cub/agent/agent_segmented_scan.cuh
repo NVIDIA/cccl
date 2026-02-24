@@ -17,6 +17,7 @@
 #endif // no system header
 
 #include <cub/block/block_load.cuh>
+#include <cub/block/block_reduce.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/detail/segmented_scan_helpers.cuh>
@@ -186,6 +187,7 @@ private:
   using block_store_aug_t   = BlockStore<augmented_accum_t, block_threads, items_per_thread, store_algorithm>;
   using block_scan_aug_t    = BlockScan<augmented_accum_t, block_threads, scan_algorithm>;
   using block_offset_scan_t = BlockScan<OffsetT, block_threads, scan_algorithm>;
+  using block_reduce_t      = BlockReduce<unsigned int, block_threads>;
 
   using _multiple_segment_algorithms_storage_t = union
   {
@@ -196,11 +198,13 @@ private:
     typename block_store_aug_t::TempStorage store_aug;
     typename block_scan_aug_t::TempStorage scan_aug;
     typename block_offset_scan_t::TempStorage offset_scan;
+    typename block_reduce_t::TempStorage min_reduce;
   };
 
   struct _multi_segment_temp_storage_t
   {
     OffsetT logical_segment_offsets[max_segments_per_block];
+    unsigned int fixed_size_mask;
     _multiple_segment_algorithms_storage_t reused;
   };
 
@@ -346,6 +350,12 @@ public:
 
     // cooperatively compute inclusive scan of sizes of segments to be processed by this block
     {
+      // assume all segments have the same size
+      if (threadIdx.x == 0)
+      {
+        temp_storage.fixed_size_mask = 1u;
+      }
+
       n_segments               = ::cuda::std::min(n_segments, static_cast<int>(NumSegments));
       unsigned n_chunks        = ::cuda::ceil_div(n_segments, block_threads);
       OffsetT exclusive_prefix = 0;
@@ -372,15 +382,55 @@ public:
           temp_storage.logical_segment_offsets[work_id] = prefix;
         }
         __syncthreads();
+
+        block_reduce_t min_reducer(temp_storage.reused.min_reduce);
+        ::cuda::minimum<unsigned int> min_op;
+
+        const unsigned int fixed_size_check =
+          ((work_id >= n_segments) || (prefix == (work_id + 1) * temp_storage.logical_segment_offsets[0])) ? 1u : 0u;
+        const unsigned int block_fixed_size_check = min_reducer.Reduce(fixed_size_check, min_op);
+        if (threadIdx.x == 0)
+        {
+          temp_storage.fixed_size_mask = min_op(temp_storage.fixed_size_mask, block_fixed_size_check);
+        }
+        __syncthreads();
       }
     }
 
     const ::cuda::std::span<OffsetT> cum_sizes{
       temp_storage.logical_segment_offsets, static_cast<::cuda::std::size_t>(n_segments)};
-    const multi_segment_helpers::bag_of_segments searcher{cum_sizes};
 
     const OffsetT items_per_block = cum_sizes[n_segments - 1];
-    const OffsetT n_chunks        = ::cuda::ceil_div(items_per_block, tile_items);
+
+    if (temp_storage.fixed_size_mask && (items_per_block > 0))
+    {
+      // fast path: assumes all segments have identical size (checked via fixed_size_mask)
+      // fixed-size searcher can cheaply identify which segment an element belongs to
+      // using segment_id = elem_id / segment_size;
+      const auto segment_size = cum_sizes[0];
+      _CCCL_ASSERT((segment_size > 0) && ((items_per_block % segment_size) == 0),
+                   "Precondition violated, likely due to a race condition");
+
+      const multi_segment_helpers::bag_of_fixed_size_segments searcher{segment_size};
+      consume_ranges_chunked_impl(searcher, inp_idx_begin_it, out_idx_begin_it, items_per_block);
+    }
+    else
+    {
+      // searcher locates segment_id using linear/binary search in cum_sizes
+      const multi_segment_helpers::bag_of_segments searcher{cum_sizes};
+      consume_ranges_chunked_impl(searcher, inp_idx_begin_it, out_idx_begin_it, items_per_block);
+    }
+  }
+
+private:
+  template <typename SearcherT, typename InputBeginOffsetIteratorT, typename OutputBeginOffsetIteratorT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_ranges_chunked_impl(
+    const SearcherT& searcher,
+    InputBeginOffsetIteratorT inp_idx_begin_it,
+    OutputBeginOffsetIteratorT out_idx_begin_it,
+    OffsetT items_per_block)
+  {
+    const OffsetT n_chunks = ::cuda::ceil_div(items_per_block, tile_items);
 
     using augmented_scan_op_t = multi_segment_helpers::schwarz_scan_op<ScanOpT, AccumT>;
     using augmented_init_value_t =
@@ -501,7 +551,6 @@ public:
     }
   }
 
-private:
   template <typename ScannerT,
             typename ItemTy,
             typename InitValueTy,
