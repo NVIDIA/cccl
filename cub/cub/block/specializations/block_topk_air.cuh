@@ -1,10 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-//! @file
-//! The @c cub::detail::block_topk class provides a :ref:`collective <collective-primitives>` method for selecting the
-//! top-k elements from a set of items within a CUDA thread block.
-
 #pragma once
 
 #include <cub/config.cuh>
@@ -30,39 +26,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-template <typename T, topk::select SelectDirection>
-struct twiddle_keys_in_op_t
-{
-  using sort_key_t = typename Traits<T>::UnsignedBits;
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE sort_key_t operator()(T key) const
-  {
-    auto sort_key = reinterpret_cast<typename Traits<T>::UnsignedBits&>(key);
-    sort_key      = Traits<T>::TwiddleIn(sort_key);
-    if constexpr (SelectDirection != topk::select::min)
-    {
-      sort_key = ~sort_key;
-    }
-    return sort_key;
-  }
-};
-
-template <typename T, topk::select SelectDirection>
-struct twiddle_keys_out_op_t
-{
-  using sort_key_t = typename Traits<T>::UnsignedBits;
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T operator()(sort_key_t sort_key) const
-  {
-    if constexpr (SelectDirection != topk::select::min)
-    {
-      sort_key = ~sort_key;
-    }
-    sort_key = Traits<T>::TwiddleOut(sort_key);
-    return reinterpret_cast<T&>(sort_key);
-  }
-};
-
 template <typename SortKeyT>
 struct compare_key_prefix_op
 {
@@ -74,7 +37,6 @@ struct compare_key_prefix_op
   }
 };
 
-// TODO (elstehle): Add documentation
 template <typename KeyT, int BlockThreads, int ItemsPerThread, typename ValueT = NullType, int RadixBits = 11>
 class block_topk_air
 {
@@ -227,6 +189,84 @@ private:
     }
   }
 
+  template <typename detail::topk::select SelectDirection, bool IsFullTile, typename DecomposerT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void get_kth_key_prefix(
+    bit_ordered_type (&unsigned_keys)[items_per_thread],
+    int k,
+    int num_valid,
+    int begin_bit,
+    int end_bit,
+    histo_counter_t& current_len,
+    histo_counter_t& current_k,
+    bit_ordered_type& kth_key_prefix,
+    bit_ordered_type& prefix_mask,
+    histo_counter_t& total_selected,
+    DecomposerT decomposer = DecomposerT{})
+  {
+    // We only consider candidates identified in the previous pass, i.e., ((sortkey & prefix_mask) == kth_prefix)
+    // With each pass, we identify a wider prefix of the splitter key
+    kth_key_prefix = 0;
+    prefix_mask    = 0;
+
+    // The total number of selected items
+    total_selected = 0;
+
+    const int total_bits = end_bit - begin_bit;
+    const int num_passes = (total_bits > 0) ? ::cuda::ceil_div(total_bits, RadixBits) : 0;
+    for (int pass = 0; pass < num_passes; ++pass)
+    {
+      const int pass_end_bit = end_bit - pass * RadixBits;
+      int pass_begin_bit     = pass_end_bit - RadixBits;
+      if (pass_begin_bit < begin_bit)
+      {
+        pass_begin_bit = begin_bit;
+      }
+      const int pass_bits = pass_end_bit - pass_begin_bit;
+
+      const bit_ordered_type pass_mask = ::cuda::bitmask<bit_ordered_type>(pass_begin_bit, pass_bits);
+
+      // Zero-initialize histograms for the current pass
+      init_histograms();
+      __syncthreads();
+
+      // Compute histogram over the current pass's bits pre-filtered for keys matching the previous pass's prefix mask
+      auto filter_op = compare_key_prefix_op<bit_ordered_type>{prefix_mask, kth_key_prefix};
+      auto digit_extractor =
+        traits::template digit_extractor<fundamental_digit_extractor_t>(pass_begin_bit, pass_bits, decomposer);
+      compute_histograms<IsFullTile>(unsigned_keys, num_valid, digit_extractor, filter_op);
+      __syncthreads();
+
+      // Compute prefix sum over buckets
+      compute_bin_offsets();
+      __syncthreads();
+
+      // Identify the bucket that the k-th item falls into
+      choose_bucket(current_k);
+      __syncthreads();
+
+      // Update the current k and length for the next pass
+      current_k   = storage.stage.passes.pass_state.k;
+      current_len = storage.stage.passes.pass_state.len;
+      total_selected += storage.stage.passes.pass_state.selected;
+
+      // Update the kth_key_prefix and prefix_mask for the next pass
+      // Basically, we will have current_len candidates with the prefix kth_key_prefix
+      kth_key_prefix |= bit_ordered_type(storage.stage.passes.pass_state.bucket) << pass_begin_bit;
+      prefix_mask |= pass_mask;
+
+      // Short-circuit if we have identified the exact "splitter" key
+      // If all candidates are amongst the remaining top-k, we can simply select all matching smaller or equal to the
+      // splitter prefix
+      if (current_len == current_k)
+      {
+        break;
+      }
+    }
+
+    // Ensure we can repurpose shared memory after the multi-pass stage
+    __syncthreads();
+  }
+
   template <detail::topk::select SelectDirection, bool IsFullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void select_topk(
     KeyT (&keys)[items_per_thread], ValueT (&values)[items_per_thread], int k, int num_valid, int begin_bit, int end_bit)
@@ -250,7 +290,6 @@ private:
     {
       end_bit = max_bit;
     }
-    const int total_bits = end_bit - begin_bit;
 
     // TODO (elstehle): Short-circuit if k is greater than the number of items in the tile
     if ((!IsFullTile && k >= num_valid) || k >= tile_items)
@@ -276,81 +315,25 @@ private:
       unsigned_keys[i] = val;
     }
 
-    // We only consider candidates identified in the previous pass, i.e., ((sortkey & prefix_mask) == kth_prefix)
-    // With each pass, we identify a wider prefix of the splitter key
-    bit_ordered_type kth_key_bits = 0;
-    bit_ordered_type prefix_mask  = 0;
-
+    bit_ordered_type kth_prefix{};
+    bit_ordered_type prefix_mask{};
+    histo_counter_t total_selected{};
     // K *within the candidates considered of this pass* of the current pass
     histo_counter_t current_k = static_cast<histo_counter_t>(k);
     // The number of candidates in the current pass
-    histo_counter_t current_len = tile_items;
-    // The total number of selected items
-    histo_counter_t total_selected = 0;
-
-    const int num_passes = (total_bits > 0) ? ::cuda::ceil_div(total_bits, RadixBits) : 0;
-    for (int pass = 0; pass < num_passes; ++pass)
-    {
-      const int pass_end_bit = end_bit - pass * RadixBits;
-      int pass_begin_bit     = pass_end_bit - RadixBits;
-      if (pass_begin_bit < begin_bit)
-      {
-        pass_begin_bit = begin_bit;
-      }
-      const int pass_bits = pass_end_bit - pass_begin_bit;
-      if (pass_bits <= 0)
-      {
-        break;
-      }
-
-      // TODO (elstehle): Find a more general way to compute the prefix mask
-      const ::cuda::std::uint64_t pass_mask_wide =
-        ((::cuda::std::uint64_t{1} << pass_bits) - ::cuda::std::uint64_t{1}) << pass_begin_bit;
-      const bit_ordered_type pass_mask = static_cast<bit_ordered_type>(pass_mask_wide);
-
-      // Zero-initialize histograms for the current pass
-      init_histograms();
-      __syncthreads();
-
-      // Compute histogram over the current pass's bits pre-filtered for keys matching the previous pass's prefix mask
-      auto filter_op = compare_key_prefix_op<bit_ordered_type>{prefix_mask, kth_key_bits};
-      auto digit_extractor =
-        traits::template digit_extractor<fundamental_digit_extractor_t>(pass_begin_bit, pass_bits, decomposer);
-      compute_histograms<IsFullTile>(unsigned_keys, num_valid, digit_extractor, filter_op);
-      __syncthreads();
-
-      // Compute prefix sum over buckets
-      compute_bin_offsets();
-      __syncthreads();
-
-      // Identify the bucket that the k-th item falls into
-      choose_bucket(current_k);
-      __syncthreads();
-
-      // Update the current k and length for the next pass
-      current_k   = storage.stage.passes.pass_state.k;
-      current_len = storage.stage.passes.pass_state.len;
-      total_selected += storage.stage.passes.pass_state.selected;
-
-      // Update the kth_key_bits and prefix_mask for the next pass
-      // Basically, we will have current_len candidates with the prefix kth_key_bits
-      kth_key_bits |= bit_ordered_type(storage.stage.passes.pass_state.bucket) << pass_begin_bit;
-      prefix_mask |= pass_mask;
-
-      // Short-circuit if we have identified the exact "splitter" key
-      // If all candidates are amongst the remaining top-k, we can simply select all matching smaller or equal to the
-      // splitter prefix
-      if (current_len == current_k)
-      {
-        break;
-      }
-
-      __syncthreads();
-    }
-    // Ensure we can repurpose shared memory after the multi-pass stage
-    __syncthreads();
-
-    const bit_ordered_type kth_prefix = kth_key_bits & prefix_mask;
+    histo_counter_t current_len = IsFullTile ? tile_items : static_cast<histo_counter_t>(num_valid);
+    get_kth_key_prefix<SelectDirection, IsFullTile>(
+      unsigned_keys,
+      k,
+      num_valid,
+      begin_bit,
+      end_bit,
+      current_len,
+      current_k,
+      kth_prefix,
+      prefix_mask,
+      total_selected,
+      decomposer);
 
     [[maybe_unused]] int scatter_indices[items_per_thread];
     if constexpr (!keys_only)
