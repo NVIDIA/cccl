@@ -189,10 +189,10 @@ _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status)
     NV_IF_TARGET(NV_IS_HOST,
                  (throw thrust::system_error(status, thrust::cuda_category());),
                  (THRUST_TEMP_DEVICE_CODE; ::cuda::std::terminate();));
-#else
+#else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
     THRUST_TEMP_DEVICE_CODE;
     ::cuda::std::terminate();
-#endif // _CCCL_HOSTED()
+#endif // _CCCL_FREESTANDING()
 
 #undef THRUST_TEMP_DEVICE_CODE
   }
@@ -227,10 +227,10 @@ _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status, char const* msg
     NV_IF_TARGET(NV_IS_HOST,
                  (throw thrust::system_error(status, thrust::cuda_category(), msg);),
                  (THRUST_TEMP_DEVICE_CODE; ::cuda::std::terminate();));
-#else
+#else // ^^^ _CCCL_HOSTED() ^^^ / vvv _CCCL_FREESTANDING() vvv
     THRUST_TEMP_DEVICE_CODE;
     ::cuda::std::terminate();
-#endif // _CCCL_HOSTED()
+#endif // _CCCL_FREESTANDING()
 
 #undef THRUST_TEMP_DEVICE_CODE
   }

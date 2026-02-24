@@ -33,7 +33,7 @@
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 #  include <sstream>
-#endif
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
 CUB_NAMESPACE_BEGIN
 

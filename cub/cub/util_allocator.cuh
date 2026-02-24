@@ -362,7 +362,7 @@ struct CachingDeviceAllocator
 #  ifdef CUB_DEBUG_LOG
     _CubLog(
       "Changing max_cached_bytes (%lld -> %lld)\n", (long long) this->max_cached_bytes, (long long) max_cached_bytes_);
-#  endif
+#  endif // CUB_DEBUG_LOG
 
     this->max_cached_bytes = max_cached_bytes_;
 
@@ -478,7 +478,7 @@ struct CachingDeviceAllocator
                   (long long) search_key.bytes,
                   (long long) search_key.associated_stream,
                   (long long) block_itr->associated_stream);
-#  endif
+#  endif // CUB_DEBUG_LOG
 
           cached_blocks.erase(block_itr);
 
@@ -520,7 +520,7 @@ struct CachingDeviceAllocator
                 device,
                 (long long) search_key.bytes,
                 (long long) search_key.associated_stream);
-#  endif
+#  endif // CUB_DEBUG_LOG
 
         error = cudaSuccess; // Reset the error we will return
         cudaGetLastError(); // Reset CUDART's error
@@ -563,7 +563,7 @@ struct CachingDeviceAllocator
                   (long long) cached_bytes[device].free,
                   (long long) live_blocks.size(),
                   (long long) cached_bytes[device].live);
-#  endif
+#  endif // CUB_DEBUG_LOG
 
           block_itr = cached_blocks.erase(block_itr);
         }
@@ -605,7 +605,7 @@ struct CachingDeviceAllocator
               search_key.d_ptr,
               (long long) search_key.bytes,
               (long long) search_key.associated_stream);
-#  endif
+#  endif // CUB_DEBUG_LOG
 
       // Attempt to revert back to previous device if necessary
       if ((entrypoint_device != INVALID_DEVICE_ORDINAL) && (entrypoint_device != device))
@@ -630,7 +630,7 @@ struct CachingDeviceAllocator
               (long long) live_blocks.size(),
               (long long) cached_bytes[device].live);
     }
-#  endif
+#  endif // CUB_DEBUG_LOG
 
     return error;
   }
@@ -714,7 +714,7 @@ struct CachingDeviceAllocator
                 (long long) cached_bytes[device].free,
                 (long long) live_blocks.size(),
                 (long long) cached_bytes[device].live);
-#  endif
+#  endif // CUB_DEBUG_LOG
       }
     }
 
@@ -772,7 +772,7 @@ struct CachingDeviceAllocator
               (long long) cached_bytes[device].free,
               (long long) live_blocks.size(),
               (long long) cached_bytes[device].live);
-#  endif
+#  endif // CUB_DEBUG_LOG
     }
 
     // Reset device
@@ -866,7 +866,7 @@ struct CachingDeviceAllocator
               (long long) cached_bytes[current_device].free,
               (long long) live_blocks.size(),
               (long long) cached_bytes[current_device].live);
-#  endif
+#  endif // CUB_DEBUG_LOG
     }
 
     mutex.unlock();

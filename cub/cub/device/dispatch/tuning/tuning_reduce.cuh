@@ -23,7 +23,7 @@
 
 #if _CCCL_HOSTED()
 #  include <ostream>
-#endif
+#endif // _CCCL_HOSTED()
 
 CUB_NAMESPACE_BEGIN
 namespace detail

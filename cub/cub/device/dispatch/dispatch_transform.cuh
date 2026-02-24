@@ -47,7 +47,7 @@
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 #  include <sstream>
-#endif
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
 // On Windows, the `if CUB_DETAIL_CONSTEXPR_ISH` results in `warning C4702: unreachable code`.
 _CCCL_DIAG_PUSH

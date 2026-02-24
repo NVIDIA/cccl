@@ -36,7 +36,7 @@
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 #  include <sstream>
-#endif
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
 // TODO(bgruber): included to not break users when moving DeviceSegmentedReduce to its own file. Remove in CCCL 4.0.
 #include <cub/device/dispatch/dispatch_fixed_size_segmented_reduce.cuh>
