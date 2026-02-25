@@ -26,10 +26,6 @@ class CoopWarpLoadStoreNode(CoopNode):
     disposition = Disposition.ONE_SHOT
 
     def refine_match(self, rewriter):
-        launch_config = rewriter.launch_config
-        if launch_config is None:
-            return False
-
         expr = self.expr
         dtype = None
         items_per_thread = None

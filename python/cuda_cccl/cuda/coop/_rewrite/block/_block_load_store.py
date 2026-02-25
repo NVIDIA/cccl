@@ -39,9 +39,7 @@ class CoopLoadStoreNode(CoopNode):
         Refine the match for a load/store node by extracting the relevant
         arguments and types.
         """
-
-        launch_config = self.launch_config
-        self.threads_per_block = launch_config.blockdim
+        self.threads_per_block = self.resolve_threads_per_block()
 
         expr = self.expr
         dtype = None
