@@ -48,12 +48,11 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<size_t>(1);
 
   caching_allocator_t alloc{};
-  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
 
-  state.exec(
-    nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-      (void) cuda::std::find(policy.with_stream(launch.get_stream().get_stream()), dinput.begin(), dinput.end(), val);
-    });
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               do_not_optimize(cuda::std::find(cuda_policy(alloc, launch), dinput.begin(), dinput.end(), val));
+             });
 }
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))
