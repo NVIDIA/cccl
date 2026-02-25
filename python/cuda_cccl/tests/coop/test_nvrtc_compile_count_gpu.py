@@ -22,7 +22,7 @@ _nvrtc._set_compile_counter_enabled(True)
 
 # Run the actual kernel test
 _test = test_mamba_selective_scan_fwd_simple
-_test()
+_test("traits_gpu_dataclass")
 
 print("__NVRTC_COUNT__=" + str(_nvrtc.get_compile_counter()))
 """
@@ -78,7 +78,7 @@ _nvrtc._set_compile_counter_enabled(True)
 
 # Run the actual kernel test
 _test = test_mamba_selective_scan_fwd_simple
-_test()
+_test("traits_gpu_dataclass")
 
 print("__NVRTC_COUNT__=" + str(_nvrtc.get_compile_counter()))
 """
