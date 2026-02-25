@@ -40,7 +40,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::rle::encode
 {
-// TODO(bgruber): remove in CCCL 4.0 when we drop the reduce dispatchers
+// TODO(bgruber): remove in CCCL 4.0 when we drop the CUB dispatchers
 template <class LengthT,
           class KeyT,
           primitive_length PrimitiveLength = is_primitive_length<LengthT>(),
@@ -101,7 +101,7 @@ struct sm80_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::n
 {};
 #endif
 
-// TODO(bgruber): remove in CCCL 4.0 when we drop the reduce dispatchers
+// TODO(bgruber): remove in CCCL 4.0 when we drop the CUB dispatchers
 template <class LengthT,
           class KeyT,
           primitive_length PrimitiveLength = is_primitive_length<LengthT>(),
@@ -162,6 +162,7 @@ struct sm90_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::n
 {};
 #endif
 
+// TODO(bgruber): remove in CCCL 4.0 when we drop the CUB dispatchers
 template <class LengthT,
           class KeyT,
           primitive_length PrimitiveLength = is_primitive_length<LengthT>(),
@@ -479,6 +480,10 @@ struct policy_selector
   }
 };
 
+#if _CCCL_HAS_CONCEPTS()
+static_assert(rle_encode_policy_selector<policy_selector>);
+#endif // _CCCL_HAS_CONCEPTS()
+
 template <class LengthT, class KeyT>
 struct policy_selector_from_types
 {
@@ -494,10 +499,6 @@ struct policy_selector_from_types
     return selector(arch);
   }
 };
-
-#if _CCCL_HAS_CONCEPTS()
-static_assert(rle_encode_policy_selector<policy_selector>);
-#endif // _CCCL_HAS_CONCEPTS()
 } // namespace detail::rle::encode
 
 CUB_NAMESPACE_END

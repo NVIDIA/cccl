@@ -38,21 +38,28 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce_by_key
 {
+// TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 enum class primitive_key
 {
   no,
   yes
 };
+
+// TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 enum class primitive_accum
 {
   no,
   yes
 };
+
+// TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 enum class primitive_op
 {
   no,
   yes
 };
+
+// TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 enum class key_size
 {
   _1,
@@ -62,6 +69,8 @@ enum class key_size
   _16,
   unknown
 };
+
+// TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 enum class accum_size
 {
   _1,
@@ -72,24 +81,28 @@ enum class accum_size
   unknown
 };
 
+// TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 template <class T>
 _CCCL_API constexpr primitive_key is_primitive_key()
 {
   return detail::is_primitive<T>::value ? primitive_key::yes : primitive_key::no;
 }
 
+// TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 template <class T>
 _CCCL_API constexpr primitive_accum is_primitive_accum()
 {
   return detail::is_primitive<T>::value ? primitive_accum::yes : primitive_accum::no;
 }
 
+// TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 template <class ReductionOpT>
 _CCCL_API constexpr primitive_op is_primitive_op()
 {
   return basic_binary_op_t<ReductionOpT>::value ? primitive_op::yes : primitive_op::no;
 }
 
+// TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 template <class KeyT>
 _CCCL_API constexpr key_size classify_key_size()
 {
@@ -102,6 +115,7 @@ _CCCL_API constexpr key_size classify_key_size()
          : key_size::unknown;
 }
 
+// TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 template <class AccumT>
 _CCCL_API constexpr accum_size classify_accum_size()
 {
@@ -114,28 +128,7 @@ _CCCL_API constexpr accum_size classify_accum_size()
          : accum_size::unknown;
 }
 
-_CCCL_API constexpr int size_of(key_size sz)
-{
-  return sz == key_size::_1 ? 1
-       : sz == key_size::_2 ? 2
-       : sz == key_size::_4 ? 4
-       : sz == key_size::_8 ? 8
-       : sz == key_size::_16
-         ? 16
-         : 4;
-}
-
-_CCCL_API constexpr int size_of(accum_size sz)
-{
-  return sz == accum_size::_1 ? 1
-       : sz == accum_size::_2 ? 2
-       : sz == accum_size::_4 ? 4
-       : sz == accum_size::_8 ? 8
-       : sz == accum_size::_16
-         ? 16
-         : 4;
-}
-
+// TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 template <class KeyT,
           class AccumT,
           primitive_op PrimitiveOp,
@@ -375,6 +368,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
   using delay_constructor                            = detail::no_delay_constructor_t<1090>;
 };
 
+// TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 template <class KeyT,
           class AccumT,
           primitive_op PrimitiveOp,
@@ -614,6 +608,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
   using delay_constructor                            = detail::no_delay_constructor_t<1150>;
 };
 
+// TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 template <class KeyT,
           class AccumT,
           primitive_op PrimitiveOp,
@@ -865,6 +860,7 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
 //   using delay_constructor                            = detail::no_delay_constructor_t<1125>;
 // };
 
+// TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
 template <class ReductionOpT, class AccumT, class KeyT>
 struct policy_hub
 {
@@ -979,6 +975,11 @@ struct reduce_by_key_policy
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
+
+#if _CCCL_HAS_CONCEPTS()
+template <typename T>
+concept reduce_by_key_policy_selector = detail::policy_selector<T, reduce_by_key_policy>;
+#endif // _CCCL_HAS_CONCEPTS()
 
 _CCCL_HOST_DEVICE constexpr reduce_by_key_policy
 make_default_reduce_by_key_policy(int combined_input_bytes, int max_input_bytes, CacheLoadModifier load_mod)
@@ -1587,8 +1588,7 @@ struct policy_selector
 };
 
 #if _CCCL_HAS_CONCEPTS()
-template <typename T>
-concept reduce_by_key_policy_selector = detail::policy_selector<T, reduce_by_key_policy>;
+static_assert(reduce_by_key_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
