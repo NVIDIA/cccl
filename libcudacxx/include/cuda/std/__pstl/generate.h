@@ -24,6 +24,7 @@
 #if !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__iterator/counting_iterator.h>
+#  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/generate.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__execution/policy.h>
@@ -64,6 +65,7 @@ generate([[maybe_unused]] const _Policy& __policy, _InputIterator __first, _Inpu
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__generate_n, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
+    _CCCL_NVTX_RANGE_SCOPE("cuda::std::generate");
     const auto __count = ::cuda::std::distance(__first, __last);
     (void) __dispatch(__policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__gen));
   }

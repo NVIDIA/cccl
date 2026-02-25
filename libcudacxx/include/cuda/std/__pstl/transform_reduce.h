@@ -25,6 +25,7 @@
 
 #  include <cuda/__iterator/zip_function.h>
 #  include <cuda/__iterator/zip_iterator.h>
+#  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__functional/invoke.h>
@@ -68,6 +69,7 @@ _CCCL_HOST_API _Tp transform_reduce(
                                                    _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
+    _CCCL_NVTX_RANGE_SCOPE("cuda::std::transform_reduce");
     const auto __count = ::cuda::std::distance(__first, __last);
     return __dispatch(
       __policy,
