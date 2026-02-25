@@ -25,6 +25,7 @@
 
 #  include <cuda/__iterator/zip_function.h>
 #  include <cuda/__iterator/zip_iterator.h>
+#  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/equal.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__execution/policy.h>
@@ -70,6 +71,7 @@ equal([[maybe_unused]] const _Policy& __policy,
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__find_if, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
+    _CCCL_NVTX_RANGE_SCOPE("cuda::std::equal");
     const auto __count    = ::cuda::std::distance(__first1, __last1);
     auto __zip_first      = ::cuda::zip_iterator{::cuda::std::move(__first1), ::cuda::std::move(__first2)};
     const auto __zip_last = __zip_first + __count;
@@ -119,6 +121,7 @@ _CCCL_REQUIRES(__has_forward_traversal<_InputIter1> _CCCL_AND __has_forward_trav
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__find_if, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
+    _CCCL_NVTX_RANGE_SCOPE("cuda::std::equal");
     auto __zip_first      = ::cuda::zip_iterator{::cuda::std::move(__first1), ::cuda::std::move(__first2)};
     const auto __zip_last = ::cuda::zip_iterator{::cuda::std::move(__last1), ::cuda::std::move(__last2)};
     const auto __result   = __dispatch(
