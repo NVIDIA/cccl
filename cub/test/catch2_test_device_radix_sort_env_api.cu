@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "insert_nested_NVTX_range_guard.h"
 // above header needs to be included first
@@ -23,9 +23,12 @@ C2H_TEST("cub::DeviceRadixSort::SortPairs env-based API", "[radix_sort][env]")
     keys_out.data().get(),
     values_in.data().get(),
     values_out.data().get(),
-    static_cast<int>(keys_in.size()),
-    0,
-    sizeof(int) * 8);
+    static_cast<int>(keys_in.size()));
+
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceRadixSort::SortPairs failed with status: " << error << std::endl;
+  }
 
   thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   thrust::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
@@ -49,9 +52,12 @@ C2H_TEST("cub::DeviceRadixSort::SortPairsDescending env-based API", "[radix_sort
     keys_out.data().get(),
     values_in.data().get(),
     values_out.data().get(),
-    static_cast<int>(keys_in.size()),
-    0,
-    sizeof(int) * 8);
+    static_cast<int>(keys_in.size()));
+
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceRadixSort::SortPairsDescending failed with status: " << error << std::endl;
+  }
 
   thrust::device_vector<int> expected_keys{9, 8, 7, 6, 5, 3, 0};
   thrust::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};

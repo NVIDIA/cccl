@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 // Should precede any includes
 struct stream_registry_factory_t;
@@ -31,16 +31,13 @@ TEST_CASE("Device radix sort pairs works with default environment", "[radix_sort
   auto values_in  = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
   auto values_out = c2h::device_vector<int>(7);
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceRadixSort::SortPairs(
-      keys_in.data().get(),
-      keys_out.data().get(),
-      values_in.data().get(),
-      values_out.data().get(),
-      static_cast<int>(keys_in.size()),
-      0,
-      static_cast<int>(sizeof(int) * 8)));
+  REQUIRE(cudaSuccess
+          == cub::DeviceRadixSort::SortPairs(
+            keys_in.data().get(),
+            keys_out.data().get(),
+            values_in.data().get(),
+            values_out.data().get(),
+            static_cast<int>(keys_in.size())));
 
   c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   c2h::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
@@ -56,16 +53,13 @@ TEST_CASE("Device radix sort pairs descending works with default environment", "
   auto values_in  = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
   auto values_out = c2h::device_vector<int>(7);
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceRadixSort::SortPairsDescending(
-      keys_in.data().get(),
-      keys_out.data().get(),
-      values_in.data().get(),
-      values_out.data().get(),
-      static_cast<int>(keys_in.size()),
-      0,
-      static_cast<int>(sizeof(int) * 8)));
+  REQUIRE(cudaSuccess
+          == cub::DeviceRadixSort::SortPairsDescending(
+            keys_in.data().get(),
+            keys_out.data().get(),
+            values_in.data().get(),
+            values_out.data().get(),
+            static_cast<int>(keys_in.size())));
 
   c2h::device_vector<int> expected_keys{9, 8, 7, 6, 5, 3, 0};
   c2h::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
@@ -94,9 +88,7 @@ C2H_TEST("Device radix sort pairs uses environment", "[radix_sort][device]")
       keys_out.data().get(),
       values_in.data().get(),
       values_out.data().get(),
-      static_cast<int>(keys_in.size()),
-      0,
-      static_cast<int>(sizeof(int) * 8)));
+      static_cast<int>(keys_in.size())));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -134,9 +126,7 @@ C2H_TEST("Device radix sort pairs descending uses environment", "[radix_sort][de
       keys_out.data().get(),
       values_in.data().get(),
       values_out.data().get(),
-      static_cast<int>(keys_in.size()),
-      0,
-      static_cast<int>(sizeof(int) * 8)));
+      static_cast<int>(keys_in.size())));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -177,9 +167,7 @@ TEST_CASE("Device radix sort pairs uses custom stream", "[radix_sort][device]")
       keys_out.data().get(),
       values_in.data().get(),
       values_out.data().get(),
-      static_cast<int>(keys_in.size()),
-      0,
-      static_cast<int>(sizeof(int) * 8)));
+      static_cast<int>(keys_in.size())));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
@@ -225,9 +213,7 @@ TEST_CASE("Device radix sort pairs descending uses custom stream", "[radix_sort]
       keys_out.data().get(),
       values_in.data().get(),
       values_out.data().get(),
-      static_cast<int>(keys_in.size()),
-      0,
-      static_cast<int>(sizeof(int) * 8)));
+      static_cast<int>(keys_in.size())));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
