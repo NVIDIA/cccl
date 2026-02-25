@@ -301,18 +301,16 @@ private:
     identity_decomposer_t decomposer;
 
     // Get bit-twiddled sortkeys
-    bit_ordered_type unsigned_keys[items_per_thread];
+    bit_ordered_type(&unsigned_keys)[ItemsPerThread] = reinterpret_cast<bit_ordered_type(&)[ItemsPerThread]>(keys);
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < items_per_thread; ++i)
     {
-      bit_ordered_type raw = reinterpret_cast<bit_ordered_type&>(keys[i]);
-      bit_ordered_type val = bit_ordered_conversion::to_bit_ordered(decomposer, raw);
-      val                  = BaseDigitExtractor<KeyT>::ProcessFloatMinusZero(val);
+      unsigned_keys[i] = bit_ordered_conversion::to_bit_ordered(decomposer, unsigned_keys[i]);
+      unsigned_keys[i] = BaseDigitExtractor<KeyT>::ProcessFloatMinusZero(unsigned_keys[i]);
       if constexpr (SelectDirection == detail::topk::select::max)
       {
-        val = bit_ordered_inversion::inverse(decomposer, val);
+        unsigned_keys[i] = bit_ordered_inversion::inverse(decomposer, unsigned_keys[i]);
       }
-      unsigned_keys[i] = val;
     }
 
     bit_ordered_type kth_prefix{};
@@ -363,10 +361,18 @@ private:
         const auto item_index             = static_cast<int>(linear_tid) * items_per_thread + i;
         const bit_ordered_type key_prefix = unsigned_keys[i] & prefix_mask;
         const bool qualifies_for_top_k    = (IsFullTile || item_index < num_valid) && key_prefix <= kth_prefix;
+
+        // Untwiddle the key before storing in shared memory
+        if constexpr (SelectDirection == detail::topk::select::max)
+        {
+          unsigned_keys[i] = bit_ordered_inversion::inverse(decomposer, unsigned_keys[i]);
+        }
+        unsigned_keys[i] = bit_ordered_conversion::from_bit_ordered(decomposer, unsigned_keys[i]);
+
         if (qualifies_for_top_k)
         {
-          const histo_counter_t selected_offset               = atomicAdd(&storage.stage.select.selected_offset[0], 1);
-          storage.stage.select.exchange.keys[selected_offset] = keys[i];
+          const histo_counter_t selected_offset = atomicAdd(&storage.stage.select.selected_offset[0], 1);
+          reinterpret_cast<bit_ordered_type*>(storage.stage.select.exchange.keys)[selected_offset] = unsigned_keys[i];
           if constexpr (!keys_only)
           {
             scatter_indices[i] = selected_offset;
@@ -391,10 +397,18 @@ private:
         const bool is_valid     = (IsFullTile || static_cast<int>(linear_tid) * items_per_thread + i < num_valid);
         const bool is_selected  = is_valid && key_prefix < kth_prefix;
         const bool is_candidate = is_valid && key_prefix == kth_prefix;
+
+        // Untwiddle the key before storing in shared memory
+        if constexpr (SelectDirection == detail::topk::select::max)
+        {
+          unsigned_keys[i] = bit_ordered_inversion::inverse(decomposer, unsigned_keys[i]);
+        }
+        unsigned_keys[i] = bit_ordered_conversion::from_bit_ordered(decomposer, unsigned_keys[i]);
+
         if (is_selected)
         {
-          const histo_counter_t selected_offset               = atomicAdd(&storage.stage.select.selected_offset[0], 1);
-          storage.stage.select.exchange.keys[selected_offset] = keys[i];
+          const histo_counter_t selected_offset = atomicAdd(&storage.stage.select.selected_offset[0], 1);
+          reinterpret_cast<bit_ordered_type*>(storage.stage.select.exchange.keys)[selected_offset] = unsigned_keys[i];
           if constexpr (!keys_only)
           {
             scatter_indices[i] = selected_offset;
@@ -403,7 +417,7 @@ private:
         if (is_candidate)
         {
           const histo_counter_t candidate_offset = atomicAdd(&storage.stage.select.candidate_offset[0], 1);
-          storage.stage.select.exchange.keys[candidate_offset] = keys[i];
+          reinterpret_cast<bit_ordered_type*>(storage.stage.select.exchange.keys)[candidate_offset] = unsigned_keys[i];
           if constexpr (!keys_only)
           {
             scatter_indices[i] = candidate_offset;
@@ -431,6 +445,7 @@ private:
       // Ensure all keys have been loaded from shared memory before we repurpose the exchange buffer for values
       __syncthreads();
 
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < items_per_thread; ++i)
       {
         if (scatter_indices[i] >= 0)
@@ -442,6 +457,7 @@ private:
       // Ensure all values have been written to shared memory before we read them back in
       __syncthreads();
 
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < items_per_thread; ++i)
       {
         const int buffer_idx = static_cast<int>(linear_tid) * items_per_thread + i;
