@@ -35,8 +35,9 @@
 
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__concepts/convertible_to.h>
-#  include <cuda/std/__exception/throw_error.h>
+#  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__execution/env.h>
+#  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/cstddef>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -95,9 +96,9 @@ __validate_allocation_alignment(::cuda::std::size_t __alignment, ::cuda::std::si
 {
   if (!__is_valid_allocation_alignment(__alignment, __min_alignment))
   {
-    ::cuda::std::__throw_invalid_argument(
-      "Invalid allocation alignment: must be a power of two and at least the "
-      "type's alignment.");
+    _CCCL_THROW(::std::invalid_argument,
+                "Invalid allocation alignment: must be a power of two and at least the "
+                "type's alignment.");
   }
 }
 
