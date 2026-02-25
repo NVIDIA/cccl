@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__utility/static_for.h>
+#include <cuda/std/__utility/integer_sequence.h>
 
 #include <cuda/experimental/__copy/types.cuh>
 
@@ -45,6 +46,23 @@ template <typename _Tp, typename _Layout>
 }
 
 #if !_CCCL_COMPILER(NVRTC)
+
+//! @brief Build a CuTe layout from a @ref __raw_tensor's shapes and strides.
+//!
+//! Mode 0 receives a compile-time `cute::_1{}` stride; remaining modes use the
+//! runtime strides stored in the raw tensor. Call with
+//! `make_index_sequence<N - 1>` where `N` is the desired rank.
+//!
+//! @param[in] __raw Raw tensor whose shapes/strides are extracted
+//! @param[in] (tag) Index sequence of size `N - 1` (indices 0 .. N-2)
+//! @return A CuTe layout of rank `N`
+template <typename _Tp, ::cuda::std::size_t _MaxRank, ::cuda::std::size_t... _Is>
+[[nodiscard]] _CCCL_HOST_API auto
+__to_cute_layout(const __raw_tensor<_Tp, _MaxRank>& __raw, ::cuda::std::index_sequence<_Is...>) noexcept
+{
+  return ::cute::make_layout(::cute::make_shape(__raw.__shapes[0], __raw.__shapes[_Is + 1]...),
+                             ::cute::make_stride(::cute::_1{}, __raw.__strides[_Is + 1]...));
+}
 
 //! @brief Tag constant used to enable extent-1 mode removal in @ref __to_raw_tensor.
 inline constexpr auto __remove_extent1_mode = ::cuda::std::true_type{};

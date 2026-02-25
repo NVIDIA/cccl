@@ -13,6 +13,9 @@
 
 #include <cuda/std/detail/__config>
 
+#include <cuda/std/__mdspan/extents.h>
+#include <cuda/std/__type_traits/remove_pointer.h>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -21,85 +24,127 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/ceil_div.h>
-#include <cuda/launch>
-#include <cuda/std/__type_traits/make_nbit_int.h>
+#include <cub/device/device_copy.cuh>
 
-#include <cuda/experimental/__copy/types.cuh>
-#include <cuda/experimental/__copy/utils.cuh>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__launch/configuration.h>
+#include <cuda/__launch/launch.h>
+#include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__host_stdlib/stdexcept>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/make_nbit_int.h>
+#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/remove_pointer.h>
+#include <cuda/std/__utility/declval.h>
+
 #include <cuda/experimental/__copy_bytes/copy_bytes_naive.cuh>
 #include <cuda/experimental/__copy_bytes/cute_utils.cuh>
 #include <cuda/experimental/__copy_bytes/layout_optimization.cuh>
 
-#include <cuda/std/__cccl/prologue.h>
 #include <cute/algorithm/copy.hpp>
-#include <cute/layout.hpp>
-#include <cute/tensor.hpp>
+#include <cute/tensor_impl.hpp>
+//
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
-//! @brief Unified tiled copy kernel.
+//! @brief Tiled copy kernel.
 //!
-//! Each block processes one tile of TileSize elements along the innermost
-//! dimension. Blocks are distributed over (tiles_per_row * outer_size) tiles.
+//! Each block processes one tile of _TileSize elements along the innermost dimension.
+//! Blocks are distributed over (tiles_per_row * outer_size) tiles.
 //!
-//! When both tensors have compile-time stride Int<1> in mode 0 (vectorized
-//! path), each thread copies a contiguous chunk of EPT elements via
-//! cute::copy, which auto-vectorizes through static layout analysis.
-//!
-//! Otherwise (element-wise path), each thread copies elements via a strided
-//! loop using CuTe's linear index decomposition.
-template <typename Config, typename SrcTensor, typename DstTensor, int TileSize, int VecBitsInt>
-__global__ void copy_bytes_kernel(Config config, SrcTensor src, DstTensor dst, int inner_size, int tiles_per_row)
+//! When both tensors have compile-time stride Int<1> in mode 0 (vectorized path), each thread copies a contiguous chunk
+//! of elements via cute::copy.
+template <typename _Config,
+          typename _SrcPtr,
+          typename _SrcLayout,
+          typename _DstPtr,
+          typename _DstLayout,
+          int _TileSize,
+          int _VectorBits>
+__global__ void __copy_bytes_kernel(
+  _CCCL_GRID_CONSTANT const _Config __config,
+  _CCCL_GRID_CONSTANT const _SrcPtr* const _CCCL_RESTRICT __src_data,
+  _CCCL_GRID_CONSTANT const _SrcLayout __src_layout,
+  _CCCL_GRID_CONSTANT _DstPtr* const _CCCL_RESTRICT __dst_data,
+  _CCCL_GRID_CONSTANT const _DstLayout __dst_layout,
+  _CCCL_GRID_CONSTANT const int __inner_size,
+  _CCCL_GRID_CONSTANT const unsigned __tiles_per_row)
 {
-  constexpr int NumThreads = ::cuda::gpu_thread.count(::cuda::block, config);
-  uint32_t tid             = ::cuda::gpu_thread.rank(::cuda::block, config);
-  int bid                  = ::cuda::block.rank(::cuda::grid, config);
-  int inner_tile           = bid % tiles_per_row;
-  int outer_idx            = bid / tiles_per_row;
-  int inner_offset         = inner_tile * TileSize;
-  int flat_offset          = inner_offset + outer_idx * inner_size;
-  int remaining            = inner_size - inner_offset;
+  const auto __src = ::cuda::experimental::__make_gmem_tensor(__src_data, __src_layout);
+  auto __dst       = ::cuda::experimental::__make_gmem_tensor(__dst_data, __dst_layout);
+
+  constexpr int __num_threads = ::cuda::gpu_thread.count(::cuda::block, __config);
+  const auto __thread_id      = ::cuda::gpu_thread.rank(::cuda::block, __config);
+  const auto __block_id       = ::cuda::block.rank(::cuda::grid, __config);
+  const int __inner_tile      = __block_id % __tiles_per_row;
+  const int __outer_idx       = __block_id / __tiles_per_row;
+  const int __inner_offset    = __inner_tile * _TileSize;
+  const int __flat_offset     = __inner_offset + __outer_idx * __inner_size;
+  const int __remaining       = __inner_size - __inner_offset;
 
   constexpr bool __stride1 =
-    ::cute::is_constant<1, decltype(::cute::stride<0>(::cuda::std::declval<SrcTensor>()))>::value
-    && ::cute::is_constant<1, decltype(::cute::stride<0>(::cuda::std::declval<DstTensor>()))>::value;
+    ::cute::is_constant<1, decltype(::cute::stride<0>(::cuda::std::declval<_SrcLayout>()))>::value
+    && ::cute::is_constant<1, decltype(::cute::stride<0>(::cuda::std::declval<_DstLayout>()))>::value;
 
   if constexpr (__stride1)
   {
-    if (remaining >= TileSize)
+    if (__remaining >= _TileSize)
     {
-      constexpr int EPT     = TileSize / NumThreads;
-      const auto thr_layout = ::cute::make_layout(::cute::Int<EPT>{});
-      auto thr_src          = __make_gmem_tensor(&src(flat_offset + tid * EPT), thr_layout);
-      auto thr_dst          = __make_gmem_tensor(&dst(flat_offset + tid * EPT), thr_layout);
-      ::cute::copy(::cute::AutoVectorizingCopyWithAssumedAlignment<VecBitsInt>{}, thr_src, thr_dst);
+      constexpr int __elems_per_thread = _TileSize / __num_threads;
+      const auto __thr_layout          = ::cute::make_layout(::cute::Int<__elems_per_thread>{});
+      const auto __thr_offset          = __flat_offset + __thread_id * __elems_per_thread;
+      const auto __thr_src             = ::cuda::experimental::__make_gmem_tensor(&__src(__thr_offset), __thr_layout);
+      auto __thr_dst                   = ::cuda::experimental::__make_gmem_tensor(&__dst(__thr_offset), __thr_layout);
+      ::cute::copy(::cute::AutoVectorizingCopyWithAssumedAlignment<_VectorBits>{}, __thr_src, __thr_dst);
       return;
     }
   }
-  for (int i = tid; i < remaining; i += NumThreads)
+  for (auto __i = __thread_id; __i < __remaining; __i += __num_threads)
   {
-    dst(flat_offset + i) = src(flat_offset + i);
+    __dst(__flat_offset + __i) = __src(__flat_offset + __i);
   }
 }
 
-//! @brief Launch the unified copy kernel with pre-built tensors.
-template <int TileSize, int VecBitsInt, typename SrcTensor, typename DstTensor>
-void __launch_copy_bytes_kernel(
-  ::cuda::stream_ref stream, SrcTensor src_tensor, DstTensor dst_tensor, int inner_size, int outer_size)
+#if !_CCCL_COMPILER(NVRTC)
+
+inline constexpr int __block_size       = 256;
+inline constexpr int __max_vector_bytes = 16;
+
+//! @brief Launch the tiled copy kernel with pre-built (recast) tensors.
+//!
+//! Computes tile size, inner/outer dimensions from the tensor and _VectorBits,
+//! then decomposes each CuTe tensor into its raw pointer and layout.
+//! The decomposition avoids an NVCC stub-generator limitation that fails to
+//! resolve dependent type aliases such as `Tensor::layout_type`.
+template <int _VectorBits, typename _SrcTensor, typename _DstTensor>
+_CCCL_HOST_API void
+__launch_copy_bytes_kernel(const _SrcTensor& __src_tensor, const _DstTensor& __dst_tensor, ::cuda::stream_ref __stream)
 {
-  constexpr int block_size = 256;
-  const int tiles_per_row  = ::cuda::ceil_div(inner_size, TileSize);
-  const int grid_size      = tiles_per_row * outer_size;
-  auto config              = ::cuda::make_config(::cuda::block_dims<block_size>(), ::cuda::grid_dims(grid_size));
+  const auto __src_data   = ::cute::raw_pointer_cast(__src_tensor.data());
+  const auto __dst_data   = ::cute::raw_pointer_cast(__dst_tensor.data());
+  const auto __src_layout = __src_tensor.layout();
+  const auto __dst_layout = __dst_tensor.layout();
+
+  constexpr int __vec_bytes      = _VectorBits / CHAR_BIT;
+  constexpr int __tile_size      = __block_size * (__max_vector_bytes / __vec_bytes);
+  const int __inner_size         = ::cute::size<0>(__src_tensor);
+  const int __outer_size         = ::cute::size(__src_tensor) / __inner_size;
+  const unsigned __tiles_per_row = ::cuda::ceil_div(__inner_size, __tile_size);
+  const int __grid_size          = __tiles_per_row * __outer_size;
+  const auto __config = ::cuda::make_config(::cuda::block_dims<__block_size>(), ::cuda::grid_dims(__grid_size));
+
+  using __src_t        = ::cuda::std::remove_cv_t<::cuda::std::remove_pointer_t<decltype(__src_data)>>;
+  using __dst_t        = ::cuda::std::remove_pointer_t<decltype(__dst_data)>;
+  using __src_layout_t = decltype(__src_layout);
+  using __dst_layout_t = decltype(__dst_layout);
+  const auto __kernel  = ::cuda::experimental::
+    __copy_bytes_kernel<decltype(__config), __src_t, __src_layout_t, __dst_t, __dst_layout_t, __tile_size, _VectorBits>;
+
   ::cuda::launch(
-    stream,
-    config,
-    copy_bytes_kernel<decltype(config), SrcTensor, DstTensor, TileSize, VecBitsInt>,
-    src_tensor,
-    dst_tensor,
-    inner_size,
-    tiles_per_row);
+    __stream, __config, __kernel, __src_data, __src_layout, __dst_data, __dst_layout, __inner_size, __tiles_per_row);
 }
 
 //! @brief Dispatch a vectorized copy kernel based on the common vector size in bytes.
@@ -107,24 +152,21 @@ void __launch_copy_bytes_kernel(
 //! Recasts the source and destination tensors to the appropriate vector type
 //! and launches the unified tiled copy kernel.
 //!
-//! @param[in] __stream    CUDA stream to launch on
-//! @param[in] __src       Source CuTe tensor
-//! @param[in] __dst       Destination CuTe tensor
-//! @param[in] __common_vector_bytes  Common vectorization width in bytes (1, 2, 4, 8, or 16)
+//! @param[in] __stream              CUDA stream to launch on
+//! @param[in] __src_ptr                 Source CuTe tensor
+//! @param[in] __dst_ptr                 Destination CuTe tensor
+//! @param[in] __common_vector_bytes Common vectorization width in bytes (1, 2, 4, 8, or 16)
 template <typename _SrcTensor, typename _DstTensor>
-void __dispatch_vectorized_copy(
-  ::cuda::stream_ref __stream, const _SrcTensor& __src, const _DstTensor& __dst, int __common_vector_bytes)
+_CCCL_HOST_API void __dispatch_vectorized_copy(
+  const _SrcTensor& __src_ptr, const _DstTensor& __dst_ptr, int __common_vector_bytes, ::cuda::stream_ref __stream)
 {
   auto __launch = [&](auto __vec_c) {
-    constexpr int VecBytes   = decltype(__vec_c)::value;
-    constexpr int VecBitsInt = VecBytes * 8;
-    using VecType            = ::cuda::std::__make_nbit_uint_t<VecBitsInt>;
-    auto src_recast          = ::cute::recast<VecType>(__src);
-    auto dst_recast          = ::cute::recast<VecType>(__dst);
-    const int vec_inner      = ::cute::size<0>(src_recast);
-    const int vec_outer      = ::cute::size(src_recast) / vec_inner;
-    constexpr int TileSize   = 256 * (16 / VecBytes);
-    __launch_copy_bytes_kernel<TileSize, VecBitsInt>(__stream, src_recast, dst_recast, vec_inner, vec_outer);
+    constexpr int __vec_bytes    = decltype(__vec_c)::value;
+    constexpr int __vec_bits_int = __vec_bytes * CHAR_BIT;
+    using __vec_type             = ::cuda::std::__make_nbit_uint_t<__vec_bits_int>;
+    const auto __src_recast      = ::cute::recast<__vec_type>(__src_ptr);
+    const auto __dst_recast      = ::cute::recast<__vec_type>(__dst_ptr);
+    ::cuda::experimental::__launch_copy_bytes_kernel<__vec_bits_int>(__src_recast, __dst_recast, __stream);
   };
   switch (__common_vector_bytes)
   {
@@ -146,6 +188,46 @@ void __dispatch_vectorized_copy(
   }
 }
 
+//! @brief Recursively dispatch a vectorized copy for a given runtime rank.
+//!
+//! Tries ranks `_Np`, `_Np+1`, ... up to `min(_MaxRank, 5)`. At each level,
+//! builds CuTe layouts from the raw tensor's shapes/strides via
+//! @ref __make_raw_cute_layout and dispatches the vectorized copy.
+//!
+//! @tparam _Np Current candidate rank
+//! @param[in] __src                 Source raw tensor (stride-1 at mode 0)
+//! @param[in] __dst                 Destination raw tensor (stride-1 at mode 0)
+//! @param[in] __common_vector_bytes Common vectorization width in bytes
+//! @param[in] __stream              CUDA stream
+//! @return `true` if the rank matched and the copy was dispatched, `false` if rank exceeded the limit
+template <::cuda::std::size_t _Np = 2, typename _TpSrc, typename _TpDst, ::cuda::std::size_t _MaxRank>
+[[nodiscard]] _CCCL_HOST_API bool __dispatch_copy_by_rank(
+  const __raw_tensor<_TpSrc, _MaxRank>& __src,
+  const __raw_tensor<_TpDst, _MaxRank>& __dst,
+  ::cuda::std::size_t __common_vector_bytes,
+  ::cuda::stream_ref __stream)
+{
+  constexpr auto __max_dispatch_rank = ::cuda::std::min(_MaxRank, ::cuda::std::size_t{5});
+  if constexpr (_Np > __max_dispatch_rank)
+  {
+    return false;
+  }
+  else
+  {
+    if (__src.__rank == _Np)
+    {
+      constexpr auto __seq    = ::cuda::std::make_index_sequence<_Np - 1>{};
+      const auto __src_layout = ::cuda::experimental::__to_cute_layout(__src, __seq);
+      const auto __dst_layout = ::cuda::experimental::__to_cute_layout(__dst, __seq);
+      const auto __src_tensor = ::cuda::experimental::__make_gmem_tensor(__src.__data, __src_layout);
+      const auto __dst_tensor = ::cuda::experimental::__make_gmem_tensor(__dst.__data, __dst_layout);
+      ::cuda::experimental::__dispatch_vectorized_copy(__src_tensor, __dst_tensor, __common_vector_bytes, __stream);
+      return true;
+    }
+    return ::cuda::experimental::__dispatch_copy_by_rank<_Np + 1>(__src, __dst, __common_vector_bytes, __stream);
+  }
+}
+
 //! @brief Register-based copy using cute::copy.
 //!
 //! Preprocesses both layouts to determine the optimal copy strategy:
@@ -157,99 +239,71 @@ void __dispatch_vectorized_copy(
 //!    - Compute the maximum compatible vectorization width and recast.
 //!    - Launch the unified kernel (cute::copy auto-vectorizes).
 //! 3. Fallback: copy_bytes_naive for non-vectorizable or unsupported configurations.
-template <typename T, typename SrcLayout, typename DstLayout>
-void copy_bytes_registers(
-  const T* src, const SrcLayout& src_layout, T* dst, const DstLayout& dst_layout, ::cuda::stream_ref stream)
+template <typename _Tp, typename _SrcLayout, typename _DstLayout>
+_CCCL_HOST_API void copy_bytes_registers(
+  const _Tp* __src_ptr,
+  const _SrcLayout& __src_layout,
+  _Tp* __dst_ptr,
+  const _DstLayout& __dst_layout,
+  ::cuda::stream_ref __stream)
 {
-  constexpr int SrcR = decltype(::cute::rank(src_layout))::value;
-  constexpr int DstR = decltype(::cute::rank(dst_layout))::value;
-  static_assert(SrcR == DstR, "Source and destination layouts must have the same rank");
-  const int total_size = static_cast<int>(::cute::size(src_layout));
-  if (total_size == 0)
+  namespace cudax          = cuda::experimental;
+  constexpr auto __remove1 = cudax::__remove_extent1_mode;
+  constexpr int __src_rank = decltype(::cute::rank(__src_layout))::value;
+  constexpr int __dst_rank = decltype(::cute::rank(__dst_layout))::value;
+  auto __src_raw           = cudax::__to_raw_tensor<__src_rank>(__src_ptr, __src_layout, __remove1);
+  auto __dst_raw           = cudax::__to_raw_tensor<__dst_rank>(__dst_ptr, __dst_layout, __remove1);
+  if (__src_rank != __dst_rank || __src_raw.__shapes != __dst_raw.__shapes)
+  {
+    _CCCL_THROW(std::invalid_argument, "Source and destination layouts must have the same rank and shapes");
+  }
+  const int __total_size = static_cast<int>(::cute::size(__src_layout));
+  if (__total_size == 0)
   {
     return;
   }
-  if constexpr (SrcR == 0)
+  if (__total_size == 1)
   {
+    ::cuda::__driver::__memcpyAsync(__dst_ptr, __src_ptr, sizeof(_Tp), __stream.get());
     return;
   }
-  else
+  // NOTE: source and destination extents are identical
+  //       Sort both by dst's ascending absolute stride (common permutation).
+  //       After this, dst has stride-1 in mode 0 (if any mode is stride-1).
+  //       Shapes are kept in sync (both tensors share the same shape because they are ordered by the same permutation).
+  cudax::__sort_by_stride_paired(__src_raw, __dst_raw);
+  // Merge adjacent modes that are contiguous in both tensors, reducing effective rank.
+  cudax::__coalesce_paired(__src_raw, __dst_raw);
+
+  const bool __are_both_contiguous = (__src_raw.__strides[0] == 1) && (__dst_raw.__strides[0] == 1);
+  if (__are_both_contiguous)
   {
-    // NOTE: source and destination extents are idential
-    auto __src = __to_raw_tensor<SrcR>(src, src_layout, __remove_extent1_mode);
-    auto __dst = __to_raw_tensor<DstR>(dst, dst_layout, __remove_extent1_mode);
-    _CCCL_ASSERT(__src.__rank == __dst.__rank,
-                 "Source and destination ranks must be equal after removing extent-1 modes");
-    _CCCL_ASSERT(__src.__shapes == __dst.__shapes, "Source and destination shapes must be identical");
-    if (__src.__rank == 0)
+    if (__src_raw.__rank == 1)
     {
-      cudaMemcpyAsync(__dst.__data, __src.__data, sizeof(T), cudaMemcpyDeviceToDevice, stream.get());
+      using __extents_t       = ::cuda::std::dims<1>;
+      const auto __src_mdspan = ::cuda::std::mdspan<const _Tp, __extents_t>(__src_raw.__data, __src_raw.__shapes[0]);
+      const auto __dst_mdspan = ::cuda::std::mdspan<_Tp, __extents_t>(__dst_raw.__data, __dst_raw.__shapes[0]);
+      ::cuda::std::size_t __temp_bytes = 1;
+      const auto __status              = ::cub::DeviceCopy::Copy(
+        static_cast<void*>(__dst_raw.__data), __temp_bytes, __src_mdspan, __dst_mdspan, __stream.get());
+      if (__status != ::cudaSuccess)
+      {
+        ::cuda::__throw_cuda_error(__status, "cub::DeviceCopy::Copy failed");
+      }
       return;
     }
-    // Sort both by dst's ascending absolute stride (common permutation).
-    // After this, dst has stride-1 in mode 0 (if any mode is stride-1).
-    // Shapes are kept in sync (both tensors share the same shape because they are ordered by the same permutation).
-    __sort_by_stride_paired(__src, __dst);
-    // Merge adjacent modes that are contiguous in both tensors, reducing effective rank.
-    __coalesce_paired(__src, __dst);
-
-    const int __actual_rank        = static_cast<int>(__src.__rank);
-    const bool are_both_contiguous = (__src.__strides[0] == 1) && (__dst.__strides[0] == 1);
-
-    if (are_both_contiguous)
+    const auto __src_vector_bytes    = cudax::__max_vector_size_bytes(__src_raw);
+    const auto __dst_vector_bytes    = cudax::__max_vector_size_bytes(__dst_raw);
+    const auto __common_vector_bytes = ::cuda::std::min(__src_vector_bytes, __dst_vector_bytes);
+    if (cudax::__dispatch_copy_by_rank(__src_raw, __dst_raw, __common_vector_bytes, __stream))
     {
-      const int inner_size           = static_cast<int>(__src.__shapes[0]);
-      const auto src_vector_bytes    = __max_vector_size_bytes(__src);
-      const auto dst_vector_bytes    = __max_vector_size_bytes(__dst);
-      const auto common_vector_bytes = ::cuda::std::min(src_vector_bytes, dst_vector_bytes);
-
-      printf("--------------------------------\n");
-      cute::print(src_layout);
-      printf("\n");
-      cute::print(dst_layout);
-      printf("\n");
-      printf("common_vector_bytes: %d\n", (int) common_vector_bytes);
-      __println(__src);
-      __println(__dst);
-
-      if (__actual_rank <= 1 || inner_size == total_size)
-      {
-        auto opt        = ::cute::make_layout(::cute::make_shape(total_size), ::cute::make_stride(::cute::_1{}));
-        auto src_tensor = ::cuda::experimental::__make_gmem_tensor(__src.__data, opt);
-        auto dst_tensor = ::cuda::experimental::__make_gmem_tensor(__dst.__data, opt);
-        __dispatch_vectorized_copy(stream, src_tensor, dst_tensor, common_vector_bytes);
-      }
-      else if (__actual_rank == 2)
-      {
-        auto shape      = ::cute::make_shape(__src.__shapes[0], __src.__shapes[1]);
-        auto src_tensor = ::cuda::experimental::__make_gmem_tensor(
-          __src.__data, ::cute::make_layout(shape, ::cute::make_stride(::cute::_1{}, __src.__strides[1])));
-        auto dst_tensor = ::cuda::experimental::__make_gmem_tensor(
-          __dst.__data, ::cute::make_layout(shape, ::cute::make_stride(::cute::_1{}, __dst.__strides[1])));
-        __dispatch_vectorized_copy(stream, src_tensor, dst_tensor, common_vector_bytes);
-      }
-      else if (__actual_rank == 3)
-      {
-        auto shape      = ::cute::make_shape(__src.__shapes[0], __src.__shapes[1], __src.__shapes[2]);
-        auto src_tensor = ::cuda::experimental::__make_gmem_tensor(
-          __src.__data,
-          ::cute::make_layout(shape, ::cute::make_stride(::cute::_1{}, __src.__strides[1], __src.__strides[2])));
-        auto dst_tensor = ::cuda::experimental::__make_gmem_tensor(
-          __dst.__data,
-          ::cute::make_layout(shape, ::cute::make_stride(::cute::_1{}, __dst.__strides[1], __dst.__strides[2])));
-        __dispatch_vectorized_copy(stream, src_tensor, dst_tensor, common_vector_bytes);
-      }
-      else
-      {
-        ::cuda::experimental::copy_bytes_naive(src, src_layout, dst, dst_layout, stream);
-      }
-    }
-    else
-    {
-      ::cuda::experimental::copy_bytes_naive(src, src_layout, dst, dst_layout, stream);
+      return;
     }
   }
+  cudax::copy_bytes_naive(__src_ptr, __src_layout, __dst_ptr, __dst_layout, __stream);
 }
+
+#endif // !_CCCL_COMPILER(NVRTC)
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
