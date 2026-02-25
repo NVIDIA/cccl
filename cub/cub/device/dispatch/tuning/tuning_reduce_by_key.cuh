@@ -994,7 +994,7 @@ struct policy_selector
   bool accum_is_primitive;
   bool op_is_primitive;
 
-  _CCCL_API constexpr auto __make_default_reduce_by_key_policy(CacheLoadModifier load_mod) const -> reduce_by_key_policy
+  _CCCL_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const -> reduce_by_key_policy
   {
     constexpr int nominal_4B_items_per_thread = 6;
     const int combined_input_bytes            = key_size + accum_size;
@@ -1019,7 +1019,7 @@ struct policy_selector
     // bail out if we don't know the operation. TODO(bgruber): drop this check when we make the tuning API public
     if (!op_is_primitive)
     {
-      return __make_default_reduce_by_key_policy(LOAD_LDG);
+      return __make_default_policy(LOAD_LDG);
     }
 
     const bool use_tuning = (key_is_primitive || key_size == 16) && (accum_is_primitive || accum_size == 16);
@@ -1408,12 +1408,12 @@ struct policy_selector
       }
 
       // no tuning, use a default one
-      return __make_default_reduce_by_key_policy(LOAD_DEFAULT);
+      return __make_default_policy(LOAD_DEFAULT);
     }
 
     if (arch >= ::cuda::arch_id::sm_86)
     {
-      return __make_default_reduce_by_key_policy(LOAD_LDG);
+      return __make_default_policy(LOAD_LDG);
     }
 
     if (arch >= ::cuda::arch_id::sm_80)
@@ -1616,10 +1616,11 @@ struct policy_selector
       }
 
       // no tuning, use a default one
-      return __make_default_reduce_by_key_policy(LOAD_DEFAULT);
+      return __make_default_policy(LOAD_DEFAULT);
     }
 
-    return __make_default_reduce_by_key_policy(LOAD_LDG);
+    // for SM50
+    return __make_default_policy(LOAD_LDG);
   }
 };
 
