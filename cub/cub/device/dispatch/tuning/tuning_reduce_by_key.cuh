@@ -1014,14 +1014,15 @@ struct policy_selector
 
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> reduce_by_key_policy
   {
-    const bool tuned_prim = (is_primitive_key_t && is_primitive_accum_t);
-
+    // bail out if we don't know the operation. TODO(bgruber): drop this check when we make the tuning API public
     if (!is_primitive_op)
     {
       return __make_default_reduce_by_key_policy(LOAD_LDG);
     }
 
-    if (arch >= ::cuda::arch_id::sm_100 && tuned_prim)
+    const bool use_tuning = (is_primitive_key_t || key_size == 16) && (is_primitive_accum_t || accum_size == 16);
+
+    if (arch >= ::cuda::arch_id::sm_100 && use_tuning)
     {
       if (key_size == 1 && accum_size == 1)
       {
@@ -1169,7 +1170,7 @@ struct policy_selector
       }
     }
 
-    if (arch >= ::cuda::arch_id::sm_90 && tuned_prim)
+    if (arch >= ::cuda::arch_id::sm_90 && use_tuning)
     {
       if (key_size == 1 && accum_size == 1)
       {
@@ -1388,7 +1389,7 @@ struct policy_selector
       return __make_default_reduce_by_key_policy(LOAD_LDG);
     }
 
-    if (arch >= ::cuda::arch_id::sm_80 && tuned_prim)
+    if (arch >= ::cuda::arch_id::sm_80 && use_tuning)
     {
       if (key_size == 1 && accum_size == 1)
       {

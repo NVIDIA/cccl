@@ -35,15 +35,9 @@ struct bench_reduce_by_key_policy_selector
 template <class KeyT, class ValueT, class OffsetT>
 static void reduce(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
-  using keys_input_it_t            = const KeyT*;
-  using unique_output_it_t         = KeyT*;
-  using vals_input_it_t            = const ValueT*;
-  using aggregate_output_it_t      = ValueT*;
-  using num_runs_output_iterator_t = OffsetT*;
-  using equality_op_t              = ::cuda::std::equal_to<>;
-  using reduction_op_t             = ::cuda::std::plus<>;
-  using accum_t                    = ValueT;
-  using offset_t                   = OffsetT;
+  using equality_op_t  = ::cuda::std::equal_to<>;
+  using reduction_op_t = ::cuda::std::plus<>;
+  using offset_t       = OffsetT;
 
   const auto elements                    = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   constexpr std::size_t min_segment_size = 1;
@@ -66,7 +60,7 @@ static void reduce(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
   const offset_t num_items = static_cast<offset_t>(elements);
 
   auto dispatch_on_stream = [&](cudaStream_t stream) {
-    return cub::detail::reduce_by_key::dispatch(
+    return cub::detail::reduce_by_key::dispatch</* OverrideAccumT */ ValueT>(
       d_temp_storage,
       temp_storage_bytes,
       d_in_keys,
