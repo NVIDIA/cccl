@@ -76,7 +76,69 @@ def test_two_phase_global_primitive_runs_when_launch_config_disabled():
 
 
 @pytest.mark.skipif(not cuda.is_available(), reason="CUDA GPU required")
-def test_single_phase_requires_launch_config_when_disabled():
+def test_single_phase_runs_with_explicit_threads_per_block_when_disabled():
+    dim = 32
+    items_per_thread = 2
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
+        coop.block.load(
+            d_in,
+            thread_data,
+            items_per_thread=items_per_thread,
+            threads_per_block=dim,
+        )
+        coop.block.store(
+            d_out,
+            thread_data,
+            items_per_thread=items_per_thread,
+            threads_per_block=dim,
+        )
+
+    h_input = np.arange(dim * items_per_thread, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    with _launch_config.temporary_launch_config_enabled(False):
+        kernel[1, dim](d_input, d_output)
+
+    np.testing.assert_array_equal(d_output.copy_to_host(), h_input)
+
+
+@pytest.mark.skipif(not cuda.is_available(), reason="CUDA GPU required")
+def test_single_phase_runs_with_dim_alias_when_launch_config_disabled():
+    dim = 32
+    items_per_thread = 2
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        thread_data = coop.local.array(items_per_thread, dtype=d_in.dtype)
+        coop.block.load(
+            d_in,
+            thread_data,
+            items_per_thread=items_per_thread,
+            dim=dim,
+        )
+        coop.block.store(
+            d_out,
+            thread_data,
+            items_per_thread=items_per_thread,
+            dim=dim,
+        )
+
+    h_input = np.arange(dim * items_per_thread, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    with _launch_config.temporary_launch_config_enabled(False):
+        kernel[1, dim](d_input, d_output)
+
+    np.testing.assert_array_equal(d_output.copy_to_host(), h_input)
+
+
+@pytest.mark.skipif(not cuda.is_available(), reason="CUDA GPU required")
+def test_single_phase_requires_explicit_dim_if_launch_config_disabled():
     dim = 32
     items_per_thread = 2
 
@@ -93,6 +155,27 @@ def test_single_phase_requires_launch_config_when_disabled():
     with _launch_config.temporary_launch_config_enabled(False):
         with pytest.raises(
             LaunchConfigUnavailableError,
-            match="threads-per-block",
+            match="threads_per_block",
         ):
             kernel[1, dim](d_input, d_output)
+
+
+@pytest.mark.skipif(not cuda.is_available(), reason="CUDA GPU required")
+def test_single_phase_block_sum_runs_with_explicit_dim_when_disabled():
+    dim = 32
+
+    @cuda.jit
+    def kernel(d_in, d_out):
+        item = d_in[cuda.threadIdx.x]
+        aggregate = coop.block.sum(item, items_per_thread=1, dim=dim)
+        if cuda.threadIdx.x == 0:
+            d_out[0] = aggregate
+
+    h_input = np.arange(dim, dtype=np.int32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(1, dtype=np.int32)
+
+    with _launch_config.temporary_launch_config_enabled(False):
+        kernel[1, dim](d_input, d_output)
+
+    np.testing.assert_array_equal(d_output.copy_to_host(), np.array([h_input.sum()]))

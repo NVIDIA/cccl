@@ -29,6 +29,7 @@ from ...block._block_load_store import (
     _make_store_rewrite as _make_block_store_rewrite,
 )
 from .. import (
+    CoopAbstractTemplate,
     CoopDeclMixin,
     CoopInstanceTemplate,
     CoopInstanceTypeMixin,
@@ -146,6 +147,7 @@ class CoopLoadStoreBaseTemplate(AbstractTemplate):
             )
 
     def generic(self, args, kwds):
+        kwds = CoopAbstractTemplate._normalize_kernel_launch_dim_kwds(self, kwds)
         self._prevalidate_args(args)
         bound = self.signature(*args, **kwds)
         return self._validate_args_and_create_signature(bound)
