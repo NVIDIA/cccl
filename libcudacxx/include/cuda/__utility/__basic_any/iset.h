@@ -97,12 +97,12 @@ struct __iset_flatten_all<_Interface, _Rest...>
 template <class... _Interfaces>
 using __iset = ::cuda::std::__type_call<::cuda::std::__type_unique<typename __iset_flatten_all<_Interfaces...>::type>,
                                         ::cuda::std::__type_quote<__iset_>>;
-#else
+#else // ^^^ _CCCL_COMPILER(GCC, <, 8) ^^^ / vvv _CCCL_COMPILER(GCC, >=, 8) vvv
 template <class... _Interfaces>
 using __iset =
   ::cuda::std::__type_call<::cuda::std::__type_unique<::cuda::std::__type_concat<__iset_flatten<_Interfaces>...>>,
                            ::cuda::std::__type_quote<__iset_>>;
-#endif
+#endif // _CCCL_COMPILER(GCC, >=, 8)
 
 //!
 //! Virtual table pointers

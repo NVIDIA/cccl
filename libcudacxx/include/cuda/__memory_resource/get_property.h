@@ -115,8 +115,11 @@ _CCCL_CONCEPT_FRAGMENT(__has_get_resource_,
                          ::cuda::std::same_as<::cuda::std::__remove_const_ref_t<decltype(__res.get())>, _Upstream>)));
 template <class _Resource, class _Upstream>
 _CCCL_CONCEPT __has_get_resource = _CCCL_FRAGMENT(__has_get_resource_, _Resource, _Upstream);
-
 #  endif // ^^^ _CCCL_DOXYGEN_INVOKED ^^^
+
+template <class _Resource, class _Upstream>
+_CCCL_CONCEPT __has_upstream_resource = _CCCL_FRAGMENT(__has_upstream_resource_, _Resource, _Upstream);
+
 template <class _Resource, class _Upstream>
 _CCCL_CONCEPT __has_forwarded_resource =
   _CCCL_FRAGMENT(__has_upstream_resource_, _Resource, _Upstream)
@@ -152,7 +155,7 @@ struct __fn
                    __has_forwarded_resource<_Derived2, _Upstream>)
   _CCCL_API friend constexpr __property_value_t<_Property> get_property(const _Derived& __res, _Property __prop)
   {
-    if constexpr (_CCCL_FRAGMENT(__has_upstream_resource_, _Derived, _Upstream))
+    if constexpr (__has_upstream_resource<_Derived, _Upstream>)
     {
       return get_property(__res.upstream_resource(), __prop);
     }
