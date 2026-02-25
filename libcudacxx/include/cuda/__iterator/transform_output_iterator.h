@@ -76,11 +76,16 @@ public:
       , __func_(__func)
   {}
 
+  _CCCL_HIDE_FROM_ABI __transform_output_proxy(const __transform_output_proxy&)            = default;
+  _CCCL_HIDE_FROM_ABI __transform_output_proxy& operator=(const __transform_output_proxy&) = default;
+  _CCCL_HIDE_FROM_ABI __transform_output_proxy(__transform_output_proxy&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __transform_output_proxy& operator=(__transform_output_proxy&&)      = default;
+
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg)
-  _CCCL_REQUIRES((!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Arg>, __transform_output_proxy>)
-                   _CCCL_AND ::cuda::std::is_invocable_v<_Fn&, _Arg> _CCCL_AND ::cuda::std::
-                     is_assignable_v<::cuda::std::iter_reference_t<_Iter>, ::cuda::std::invoke_result_t<_Fn&, _Arg>>)
+  _CCCL_REQUIRES(::cuda::std::is_invocable_v<_Fn&, _Arg> //
+                   _CCCL_AND ::cuda::std::is_assignable_v<::cuda::std::iter_reference_t<_Iter>,
+                                                          ::cuda::std::invoke_result_t<_Fn&, _Arg>>)
   _CCCL_API constexpr __transform_output_proxy&
   operator=(_Arg&& __arg) noexcept(noexcept(*__iter_ = ::cuda::std::invoke(__func_, ::cuda::std::forward<_Arg>(__arg))))
   {
@@ -90,10 +95,9 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg)
-  _CCCL_REQUIRES(
-    (!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Arg>, __transform_output_proxy>)
-      _CCCL_AND ::cuda::std::is_invocable_v<const _Fn&, _Arg> _CCCL_AND ::cuda::std::
-        is_assignable_v<::cuda::std::iter_reference_t<const _Iter>, ::cuda::std::invoke_result_t<const _Fn&, _Arg>>)
+  _CCCL_REQUIRES(::cuda::std::is_invocable_v<const _Fn&, _Arg>
+                   _CCCL_AND ::cuda::std::is_assignable_v<::cuda::std::iter_reference_t<const _Iter>,
+                                                          ::cuda::std::invoke_result_t<const _Fn&, _Arg>>)
   _CCCL_API constexpr const __transform_output_proxy& operator=(_Arg&& __arg) const
     noexcept(noexcept(*__iter_ = ::cuda::std::invoke(__func_, ::cuda::std::forward<_Arg>(__arg))))
   {
