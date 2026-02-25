@@ -200,11 +200,32 @@ class CoopAbstractTemplate(AbstractTemplate):
             )
             raise errors.TypingError(msg)
 
+    def _normalize_kernel_launch_dim_kwds(self, kwds):
+        if not kwds:
+            return kwds
+
+        primitive_name = getattr(self, "primitive_name", "")
+        if not primitive_name.startswith("coop.block."):
+            return kwds
+
+        if "threads_per_block" in kwds and "dim" in kwds:
+            raise errors.TypingError(
+                f"{primitive_name} accepts only one of 'threads_per_block' or 'dim'"
+            )
+
+        # Single-phase typing signatures currently do not include launch-dimension
+        # kwargs; rewrite consumes these directly from IR call keywords.
+        normalized = dict(kwds)
+        normalized.pop("threads_per_block", None)
+        normalized.pop("dim", None)
+        return normalized
+
     def generic(self, args, kwds):
         """
         Validate the arguments and create a signature for the cooperative
         primitive.
         """
+        kwds = self._normalize_kernel_launch_dim_kwds(kwds)
         self._prevalidate_args(args, kwds)
         bound = self.signature(*args, **kwds)
         return self._validate_args_and_create_signature(bound)

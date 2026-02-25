@@ -2510,3 +2510,53 @@
     - Result: `2 passed`.
   - `pytest tests/coop -n 16`
     - Result: `3153 passed, 42 skipped, 5 xfailed, 2 warnings`.
+
+## 2026-02-25 (launch-config-disabled explicit block-dim single-phase fallback)
+- Request: Improve launch-config-disabled behavior so single-phase block
+  primitives can continue to work by requiring explicit
+  `threads_per_block`/`dim` kwargs rather than hard-failing on launch-config
+  inference.
+- Changes:
+  - `cuda/coop/_decls/__init__.py`:
+    - Added `CoopAbstractTemplate._normalize_kernel_launch_dim_kwds()` and
+      wired it into `CoopAbstractTemplate.generic()` to accept block-primitive
+      `threads_per_block`/`dim` kwargs during typing while leaving existing
+      signatures unchanged.
+  - `cuda/coop/_decls/block/_block_load_store.py`:
+    - Applied the same launch-dimension kw normalization path in the
+      load/store-specific `generic()` implementation (which does not inherit
+      `CoopAbstractTemplate` generic behavior).
+  - `cuda/coop/_rewrite/__init__.py`:
+    - Added generic IR kwarg resolution helpers:
+      `_resolve_var_value_safe()`, `_expr_kwds_as_dict()`,
+      `get_call_kwarg_value_safe()`.
+    - Updated `get_arg_value_safe()` to reuse `_resolve_var_value_safe()`.
+    - Updated `CoopNode.bound` to normalize/remove `threads_per_block`/`dim`
+      before signature binding while preserving direct IR-kwarg access for
+      rewrite-time block-dimension resolution.
+    - Updated `CoopNode.resolve_threads_per_block()` precedence to:
+      1) explicit call kwarg (`threads_per_block`/`dim`),
+      2) launch config blockdim,
+      3) two-phase instance metadata.
+      If none are available, error text now explicitly asks for
+      `threads_per_block`/`dim` when launch-config support is unavailable.
+  - `tests/coop/test_launch_config_optional.py`:
+    - Replaced the old “single-phase requires launch config” check with:
+      - success case using `threads_per_block=...`,
+      - success case using `dim=...` alias,
+      - success case for `coop.block.sum` with explicit `dim=...`,
+      - explicit error case when launch config is disabled and no explicit
+        block dimension is provided.
+  - `SINGLE-PHASE-TODO.md`:
+    - Added completed item for explicit block-dimension fallback support.
+- Decisions:
+  - Single-phase block primitives in launch-config-disabled mode now use an
+    explicit-argument calling convention instead of launch-metadata inference.
+  - Missing explicit block-dimension inputs still raise a targeted
+    user-facing error (not a hidden internal failure), as template
+    specialization requires a concrete block dimension.
+- Validation:
+  - `pytest -q tests/coop/test_launch_config_optional.py`
+    - Result: `9 passed`.
+  - `pytest tests/coop -n 16`
+    - Result: `3156 passed, 42 skipped, 5 xfailed, 2 warnings`.

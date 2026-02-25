@@ -1401,11 +1401,11 @@ class CoopNode:
     def is_two_phase(self):
         return self.type_instance is not None
 
-    def get_arg_value_safe(self, arg_name: str) -> Any:
+    def _resolve_var_value_safe(self, arg_var: Any) -> Any:
         """
-        Get the value of an argument by name from the expression arguments.
+        Resolve a value from an IR variable/constant in the current rewrite
+        context. Returns None when the value cannot be resolved.
         """
-        arg_var = self.bound.arguments.get(arg_name, None)
         if arg_var is None:
             return
         if isinstance(arg_var, ir.Const):
@@ -1414,7 +1414,9 @@ class CoopNode:
             # Two-phase defaults are injected as concrete values; return as-is.
             return arg_var
 
-        arg_ty = self.typemap[arg_var.name]
+        arg_ty = self.typemap.get(arg_var.name, None)
+        if arg_ty is None:
+            return None
 
         if isinstance(arg_ty, types.IntegerLiteral):
             # If the argument is an integer literal, return its value.
@@ -1458,6 +1460,34 @@ class CoopNode:
         # If we reach here, the argument is not found.
         return None
 
+    def _expr_kwds_as_dict(self) -> dict[str, Any]:
+        expr_kws = self.expr.kws
+        if isinstance(expr_kws, dict):
+            return expr_kws
+        if isinstance(expr_kws, (tuple, list)):
+            return dict(expr_kws)
+        return {}
+
+    def get_call_kwarg_value_safe(self, *arg_names: str) -> Any:
+        """
+        Resolve call-kwarg values directly from the underlying IR expression.
+        This is used for kwargs not modeled in typing signatures.
+        """
+        if not arg_names:
+            return None
+        kwds = self._expr_kwds_as_dict()
+        for name in arg_names:
+            if name in kwds:
+                return self._resolve_var_value_safe(kwds[name])
+        return None
+
+    def get_arg_value_safe(self, arg_name: str) -> Any:
+        """
+        Get the value of an argument by name from the expression arguments.
+        """
+        arg_var = self.bound.arguments.get(arg_name, None)
+        return self._resolve_var_value_safe(arg_var)
+
     def get_arg_value(self, arg_name: str) -> Any:
         """
         Get the value of an argument by name from the expression arguments.
@@ -1481,6 +1511,13 @@ class CoopNode:
         )
 
     def resolve_threads_per_block(self) -> Any:
+        explicit_threads_per_block = self.get_call_kwarg_value_safe(
+            "threads_per_block",
+            "dim",
+        )
+        if explicit_threads_per_block is not None:
+            return explicit_threads_per_block
+
         launch_config = self.launch_config
         if launch_config is not None:
             return launch_config.blockdim
@@ -1496,7 +1533,10 @@ class CoopNode:
         primitive_name = getattr(self, "primitive_name", "<unknown primitive>")
         raise LaunchConfigUnavailableError(
             _launch_config_required_message(
-                f"Resolving threads-per-block for {primitive_name}"
+                "Resolving threads-per-block for "
+                f"{primitive_name}; pass explicit "
+                "`threads_per_block=<int|tuple>` (or `dim=...`) to the "
+                "primitive call when launch-config support is unavailable"
             )
         )
 
@@ -1540,6 +1580,21 @@ class CoopNode:
                         "temp_storage syntax."
                     )
                 kwds["temp_storage"] = getitem_temp_storage
+
+        primitive_name = getattr(self, "primitive_name", "")
+        if primitive_name.startswith("coop.block."):
+            has_threads_per_block = "threads_per_block" in kwds
+            has_dim = "dim" in kwds
+            if has_threads_per_block and has_dim:
+                raise RuntimeError(
+                    f"{primitive_name} cannot use both 'threads_per_block' and 'dim'"
+                )
+            # These kwargs are consumed directly from IR call keywords for
+            # rewrite-time block-dimension resolution.
+            if "threads_per_block" not in sig.parameters:
+                kwds.pop("threads_per_block", None)
+            if "dim" not in sig.parameters:
+                kwds.pop("dim", None)
 
         if self.is_two_phase:
             # Fill in any missing arguments from the two-phase instance.

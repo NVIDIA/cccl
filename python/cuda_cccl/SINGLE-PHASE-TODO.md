@@ -203,6 +203,9 @@
       `tests/coop/test_block_histogram.py` and delete `test_histo2.py`.
 - [x] Update local agent notes (`AGENTS.md`) to reference consolidated
       histogram test coverage in `tests/coop/test_block_histogram.py`.
+- [x] In launch-config-disabled mode, support explicit single-phase
+      `threads_per_block`/`dim` kwargs for block primitives so rewrite can
+      resolve block dimensions without kernel launch-config metadata.
 
 ## Deferred / Not Planned
 
