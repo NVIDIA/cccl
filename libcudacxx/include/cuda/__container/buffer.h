@@ -141,9 +141,9 @@ private:
   template <class _Env>
   static size_t __alignment_from_env(const _Env& __env)
   {
-    const ::cuda::std::size_t __a = ::cuda::__call_or(::cuda::allocation_alignment, alignof(_Tp), __env);
-    ::cuda::__validate_allocation_alignment(__a, alignof(_Tp));
-    return __a;
+    const auto __align = ::cuda::__call_or(::cuda::allocation_alignment, alignof(_Tp), __env);
+    ::cuda::__validate_allocation_alignment(__align, alignof(_Tp));
+    return __align;
   }
 
   //! @brief Copies \p __count elements from `[__first, __last)` to \p __dest,
@@ -528,7 +528,7 @@ public:
   }
 
   //! @brief Returns the alignment used for the allocation.
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr size_type alignment() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr size_type alignment() const noexcept
   {
     return __buf_.alignment();
   }

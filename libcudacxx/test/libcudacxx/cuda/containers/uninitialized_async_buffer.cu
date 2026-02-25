@@ -23,7 +23,7 @@
 #include <cuda/std/utility>
 #include <cuda/stream>
 
-#include "test_resources.h"
+#include <test_resources.h>
 #include "testing.cuh"
 
 #if _CCCL_COMPILER(GCC, >=, 13)
