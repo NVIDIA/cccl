@@ -69,12 +69,12 @@ static void range_range(nvbench::state& state, nvbench::type_list<T>)
   auto policy = cuda::execution::__cub_par_unseq.with_stream(stream).with_memory_resource(alloc);
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               (void) cuda::std::mismatch(
-                 policy.with_stream(launch.get_stream().get_stream()),
+               do_not_optimize(cuda::std::mismatch(
+                 cuda_policy(alloc, launch),
                  dinput.begin(),
                  dinput.end(),
                  cuda::constant_iterator<T>{0},
-                 cuda::constant_iterator<T>{0, elements});
+                 cuda::constant_iterator<T>{0, elements}));
              });
 }
 
