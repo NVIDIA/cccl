@@ -188,7 +188,7 @@ public:
   //! @returns A proxy that applies the stored function and index on assignment
   [[nodiscard]] _CCCL_API constexpr auto operator[](difference_type __n) const noexcept
   {
-    return __tabulate_proxy<_Fn, _Index>{const_cast<_Fn&>(__func()), __index() + __n};
+    return __tabulate_proxy<_Fn, _Index>{const_cast<_Fn&>(__func()), static_cast<difference_type>(__index() + __n)};
   }
 
   //! @brief Subscripts the @c tabulate_output_iterator with a given offset
@@ -196,7 +196,7 @@ public:
   //! @returns A proxy that applies the stored function and index on assignment
   [[nodiscard]] _CCCL_API constexpr auto operator[](difference_type __n) noexcept
   {
-    return __tabulate_proxy<_Fn, _Index>{__func(), __index() + __n};
+    return __tabulate_proxy<_Fn, _Index>{__func(), static_cast<difference_type>(__index() + __n)};
   }
 
   //! @brief Increments the @c tabulate_output_iterator by incrementing the stored index
@@ -238,7 +238,7 @@ public:
   operator+(const tabulate_output_iterator& __iter, difference_type __n) //
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
-    return tabulate_output_iterator{__iter.__func(), __iter.__index() + __n};
+    return tabulate_output_iterator{__iter.__func(), static_cast<difference_type>(__iter.__index() + __n)};
   }
 
   //! @brief Returns a copy of a @c tabulate_output_iterator advanced a given number of elements
@@ -249,7 +249,7 @@ public:
   operator+(difference_type __n, const tabulate_output_iterator& __iter) //
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
-    return tabulate_output_iterator{__iter.__func(), __iter.__index() + __n};
+    return tabulate_output_iterator{__iter.__func(), static_cast<difference_type>(__iter.__index() + __n)};
   }
 
   //! @brief Advances the @c tabulate_output_iterator by a given number of elements
@@ -267,7 +267,7 @@ public:
   operator-(const tabulate_output_iterator& __iter, difference_type __n) //
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
-    return tabulate_output_iterator{__iter.__func(), __iter.__index() - __n};
+    return tabulate_output_iterator{__iter.__func(), static_cast<difference_type>(__iter.__index() - __n)};
   }
 
   //! @brief Returns the distance between two @c tabulate_output_iterator 's
