@@ -74,7 +74,7 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf accepts env with stream", "[select][env]"
 {
   // example-begin select-flaggedif-env
   auto input        = thrust::device_vector<int>{1, 2, 3, 4, 5, 6, 7, 8};
-  auto flags        = thrust::device_vector<int>{2, 1, 1, 4, 1, 3, 6, 1};
+  auto flags        = thrust::device_vector<int>{2, 1, 1, 4, 1, 6, 6, 1};
   auto output       = thrust::device_vector<int>(4);
   auto num_selected = thrust::device_vector<int>(1);
   mod_n<int> select_op{2};
