@@ -981,49 +981,44 @@ template <typename T>
 concept reduce_by_key_policy_selector = detail::policy_selector<T, reduce_by_key_policy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
-_CCCL_HOST_DEVICE constexpr reduce_by_key_policy
-make_default_reduce_by_key_policy(int combined_input_bytes, int max_input_bytes, CacheLoadModifier load_mod)
-{
-  constexpr int nominal_4B_items_per_thread = 6;
-  const int items_per_thread =
-    (max_input_bytes <= 8)
-      ? 6
-      : ::cuda::std::clamp(static_cast<int>(::cuda::ceil_div(nominal_4B_items_per_thread * 8, combined_input_bytes)),
-                           1,
-                           nominal_4B_items_per_thread);
-  return reduce_by_key_policy{
-    128,
-    items_per_thread,
-    BLOCK_LOAD_DIRECT,
-    load_mod,
-    BLOCK_SCAN_WARP_SCANS,
-    {delay_constructor_kind::fixed_delay, 350, 450}};
-}
-
 struct policy_selector
 {
   int key_size;
   int accum_size;
+
+  // TODO(bgruber): we want to get rid of the following three and just assume by default that types behave "primitive".
+  // This opts a lot more types into the tunings we have. We can do this when we publish the public tuning API, because
+  // then users can opt-out of tunings again
   bool is_primitive_key_t;
   bool is_primitive_accum_t;
   bool is_primitive_op;
 
+  _CCCL_API constexpr auto __make_default_reduce_by_key_policy(CacheLoadModifier load_mod) const -> reduce_by_key_policy
+  {
+    constexpr int nominal_4B_items_per_thread = 6;
+    const int combined_input_bytes            = key_size + accum_size;
+    const int max_input_bytes                 = (::cuda::std::max) (key_size, accum_size);
+    const int items_per_thread =
+      (max_input_bytes <= 8)
+        ? 6
+        : ::cuda::std::clamp(
+            ::cuda::ceil_div(nominal_4B_items_per_thread * 8, combined_input_bytes), 1, nominal_4B_items_per_thread);
+    return reduce_by_key_policy{
+      128,
+      items_per_thread,
+      BLOCK_LOAD_DIRECT,
+      load_mod,
+      BLOCK_SCAN_WARP_SCANS,
+      default_reduce_by_key_delay_constructor_policy(accum_size, sizeof(int), true)};
+  }
+
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> reduce_by_key_policy
   {
-    const int combined_input_bytes = key_size + accum_size;
-    const int max_input_bytes      = (::cuda::std::max) (key_size, accum_size);
-    const auto default_ldg         = [&] {
-      return make_default_reduce_by_key_policy(combined_input_bytes, max_input_bytes, LOAD_LDG);
-    };
-    const auto default_load_default = [&] {
-      return make_default_reduce_by_key_policy(combined_input_bytes, max_input_bytes, LOAD_DEFAULT);
-    };
-
     const bool tuned_prim = (is_primitive_key_t && is_primitive_accum_t);
 
     if (!is_primitive_op)
     {
-      return default_ldg();
+      return __make_default_reduce_by_key_policy(LOAD_LDG);
     }
 
     if (arch >= ::cuda::arch_id::sm_100 && tuned_prim)
@@ -1385,12 +1380,12 @@ struct policy_selector
                 BLOCK_SCAN_WARP_SCANS,
                 {delay_constructor_kind::no_delay, 0, 1150}};
       }
-      return default_load_default();
+      return __make_default_reduce_by_key_policy(LOAD_DEFAULT);
     }
 
     if (arch >= ::cuda::arch_id::sm_86)
     {
-      return default_ldg();
+      return __make_default_reduce_by_key_policy(LOAD_LDG);
     }
 
     if (arch >= ::cuda::arch_id::sm_80 && tuned_prim)
@@ -1580,10 +1575,10 @@ struct policy_selector
                 BLOCK_SCAN_WARP_SCANS,
                 {delay_constructor_kind::no_delay, 0, 1090}};
       }
-      return default_load_default();
+      return __make_default_reduce_by_key_policy(LOAD_DEFAULT);
     }
 
-    return default_ldg();
+    return __make_default_reduce_by_key_policy(LOAD_LDG);
   }
 };
 
