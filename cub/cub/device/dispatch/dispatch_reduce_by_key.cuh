@@ -685,7 +685,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   }
 
   return detail::dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
-    constexpr reduce_by_key_policy policy = policy_getter(); // need the constexpr of vsmem_helper
+    static constexpr reduce_by_key_policy policy = policy_getter(); // need the constexpr of vsmem_helper
 
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(
