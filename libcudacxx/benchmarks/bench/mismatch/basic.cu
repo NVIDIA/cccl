@@ -9,10 +9,11 @@
 //===----------------------------------------------------------------------===//
 
 #include <thrust/device_vector.h>
+#include <thrust/fill.h>
 
 #include <cuda/memory_pool>
 #include <cuda/std/__pstl_algorithm>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include "nvbench_helper.cuh"
 
@@ -33,16 +34,12 @@ static void range_iter(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<size_t>(1);
 
   caching_allocator_t alloc{};
-  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
 
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
-             [&](nvbench::launch& launch) {
-               (void) cuda::std::mismatch(
-                 policy.with_stream(launch.get_stream().get_stream()),
-                 dinput.begin(),
-                 dinput.end(),
-                 cuda::constant_iterator<T>{0});
-             });
+  state.exec(
+    nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+      do_not_optimize(
+        cuda::std::mismatch(cuda_policy(alloc, launch), dinput.begin(), dinput.end(), cuda::constant_iterator<T>{0}));
+    });
 }
 
 NVBENCH_BENCH_TYPES(range_iter, NVBENCH_TYPE_AXES(fundamental_types))
