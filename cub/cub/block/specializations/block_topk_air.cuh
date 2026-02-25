@@ -37,7 +37,19 @@ struct compare_key_prefix_op
   }
 };
 
-template <typename KeyT, int BlockThreads, int ItemsPerThread, typename ValueT = NullType, int RadixBits = 11>
+enum class data_arrangement
+{
+  blocked,
+  warp_striped,
+  block_striped
+};
+
+template <typename KeyT,
+          int BlockThreads,
+          int ItemsPerThread,
+          typename ValueT              = NullType,
+          int RadixBits                = 8,
+          data_arrangement Arrangement = data_arrangement::blocked>
 class block_topk_air
 {
 private:
@@ -99,16 +111,19 @@ private:
   // Initialize histogram bins to zero
   _CCCL_DEVICE _CCCL_FORCEINLINE void init_histograms()
   {
-    const int base = static_cast<int>(linear_tid) * buckets_per_thread;
+    // Initialize histogram bin counts to zeros
+    int histo_offset = 0;
 
+    // Loop unrolling is beneficial for performance here
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < buckets_per_thread; ++i)
+    for (; histo_offset + block_threads <= num_buckets; histo_offset += block_threads)
     {
-      const int bin_idx = base + i;
-      if (bin_idx < num_buckets)
-      {
-        storage.stage.passes.histogram[bin_idx] = 0;
-      }
+      storage.stage.passes.histogram[histo_offset + threadIdx.x] = 0;
+    }
+    // Finish up with guarded initialization if necessary
+    if ((num_buckets % block_threads != 0) && (histo_offset + threadIdx.x < num_buckets))
+    {
+      storage.stage.passes.histogram[histo_offset + threadIdx.x] = 0;
     }
   }
 
