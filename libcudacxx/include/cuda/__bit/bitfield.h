@@ -34,28 +34,28 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 #if __cccl_ptx_isa >= 200
 
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint32_t
+[[nodiscard]] _CCCL_DEVICE_API inline uint32_t
 __bfi(uint32_t __dest, uint32_t __source, int __start, int __width) noexcept
 {
   asm("bfi.b32 %0, %1, %2, %3, %4;" : "=r"(__dest) : "r"(__source), "r"(__dest), "r"(__start), "r"(__width));
   return __dest;
 }
 
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint64_t
+[[nodiscard]] _CCCL_DEVICE_API inline uint64_t
 __bfi(uint64_t __dest, uint64_t __source, int __start, int __width) noexcept
 {
   asm("bfi.b64 %0, %1, %2, %3, %4;" : "=l"(__dest) : "l"(__source), "l"(__dest), "r"(__start), "r"(__width));
   return __dest;
 }
 
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint32_t __bfe(uint32_t __value, int __start, int __width) noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline uint32_t __bfe(uint32_t __value, int __start, int __width) noexcept
 {
   uint32_t __ret;
   asm("bfe.u32 %0, %1, %2, %3;" : "=r"(__ret) : "r"(__value), "r"(__start), "r"(__width));
   return __ret;
 }
 
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint64_t __bfe(uint64_t __value, int __start, int __width) noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline uint64_t __bfe(uint64_t __value, int __start, int __width) noexcept
 {
   uint64_t __ret;
   asm("bfe.u64 %0, %1, %2, %3;" : "=l"(__ret) : "l"(__value), "r"(__start), "r"(__width));
