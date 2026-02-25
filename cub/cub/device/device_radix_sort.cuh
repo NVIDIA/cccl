@@ -196,37 +196,6 @@ private:
       decomposer);
   }
 
-  template <typename TuningEnvT,
-            SortOrder Order,
-            typename KeyT,
-            typename ValueT,
-            typename OffsetT,
-            typename DecomposerT = detail::identity_decomposer_t>
-  CUB_RUNTIME_FUNCTION static cudaError_t sort_pairs_env_dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    DoubleBuffer<KeyT>& d_keys,
-    DoubleBuffer<ValueT>& d_values,
-    OffsetT num_items,
-    int begin_bit,
-    int end_bit,
-    bool is_overwrite_okay,
-    cudaStream_t stream,
-    DecomposerT decomposer = {})
-  {
-    return detail::radix_sort::dispatch<Order>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      static_cast<OffsetT>(num_items),
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      stream,
-      decomposer);
-  }
-
   // Name reported for NVTX ranges
   _CCCL_HOST_DEVICE static constexpr auto GetName() -> const char*
   {
@@ -384,8 +353,8 @@ public:
   //! @rst
   //! Sorts key-value pairs into ascending order using :math:`\approx 2N` auxiliary storage.
   //!
-  //! .. versionadded:: 3.2.0
-  //!    First appears in CUDA Toolkit 13.2.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -477,22 +446,12 @@ public:
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
     // Dispatch with environment - handles all boilerplate
-    constexpr bool is_overwrite_okay = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return sort_pairs_env_dispatch<tuning_t, SortOrder::Ascending>(
-        storage,
-        bytes,
-        d_keys,
-        d_values,
-        static_cast<offset_t>(num_items),
-        begin_bit,
-        end_bit,
-        is_overwrite_okay,
-        stream);
+      return detail::radix_sort::dispatch<SortOrder::Ascending>(
+        storage, bytes, d_keys, d_values, static_cast<offset_t>(num_items), begin_bit, end_bit, false, stream);
     });
   }
 
@@ -935,8 +894,8 @@ public:
   //! @rst
   //! Sorts key-value pairs into ascending order using :math:`\approx N` auxiliary storage.
   //!
-  //! .. versionadded:: 3.2.0
-  //!    First appears in CUDA Toolkit 13.2.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -1018,20 +977,9 @@ public:
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    constexpr bool is_overwrite_okay = true;
-
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return sort_pairs_env_dispatch<tuning_t, SortOrder::Ascending>(
-        storage,
-        bytes,
-        d_keys,
-        d_values,
-        static_cast<offset_t>(num_items),
-        begin_bit,
-        end_bit,
-        is_overwrite_okay,
-        stream);
+      return detail::radix_sort::dispatch<SortOrder::Ascending>(
+        storage, bytes, d_keys, d_values, static_cast<offset_t>(num_items), begin_bit, end_bit, true, stream);
     });
   }
 
@@ -1470,8 +1418,8 @@ public:
   //! @rst
   //! Sorts key-value pairs into descending order using :math:`\approx 2N` auxiliary storage.
   //!
-  //! .. versionadded:: 3.2.0
-  //!    First appears in CUDA Toolkit 13.2.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -1562,22 +1510,12 @@ public:
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    constexpr bool is_overwrite_okay = false;
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return sort_pairs_env_dispatch<tuning_t, SortOrder::Descending>(
-        storage,
-        bytes,
-        d_keys,
-        d_values,
-        static_cast<offset_t>(num_items),
-        begin_bit,
-        end_bit,
-        is_overwrite_okay,
-        stream);
+      return detail::radix_sort::dispatch<SortOrder::Descending>(
+        storage, bytes, d_keys, d_values, static_cast<offset_t>(num_items), begin_bit, end_bit, false, stream);
     });
   }
 
@@ -2024,8 +1962,8 @@ public:
   //! @rst
   //! Sorts key-value pairs into descending order using :math:`\approx N` auxiliary storage.
   //!
-  //! .. versionadded:: 3.2.0
-  //!    First appears in CUDA Toolkit 13.2.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -2107,20 +2045,9 @@ public:
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    constexpr bool is_overwrite_okay = true;
-
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return sort_pairs_env_dispatch<tuning_t, SortOrder::Descending>(
-        storage,
-        bytes,
-        d_keys,
-        d_values,
-        static_cast<offset_t>(num_items),
-        begin_bit,
-        end_bit,
-        is_overwrite_okay,
-        stream);
+      return detail::radix_sort::dispatch<SortOrder::Descending>(
+        storage, bytes, d_keys, d_values, static_cast<offset_t>(num_items), begin_bit, end_bit, true, stream);
     });
   }
 
