@@ -3,6 +3,8 @@
 
 #include <cub/device/device_scan.cuh>
 
+#include "look_back_helper.cuh"
+
 #if !TUNE_BASE
 template <typename AccumT>
 struct policy_selector
@@ -17,7 +19,7 @@ struct policy_selector
       TUNE_LOAD_MODIFIER,
       TUNE_STORE_ALGORITHM,
       cub::BLOCK_SCAN_WARP_SCANS,
-      cub::detail::delay_constructor_policy_from_type<delay_constructor_t>);
+      delay_constructor_policy);
   }
 };
 #endif // !TUNE_BASE
