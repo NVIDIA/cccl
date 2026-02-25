@@ -327,13 +327,14 @@ struct policy_selector
   int key_size;
   type_t key_t;
   bool length_is_primitive;
+  bool length_is_trivially_copyable;
   bool key_is_primitive;
-  int max_input_bytes;
-  int combined_input_bytes;
 
   _CCCL_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const -> rle_encode_policy
   {
     constexpr int nominal_4B_items_per_thread = 6;
+    const int combined_input_bytes            = length_size + key_size;
+    const int max_input_bytes                 = (::cuda::std::max) (length_size, key_size);
     const int items_per_thread =
       (max_input_bytes <= 8)
         ? 6
@@ -345,8 +346,8 @@ struct policy_selector
       BLOCK_LOAD_DIRECT,
       load_mod,
       BLOCK_SCAN_WARP_SCANS,
-      {delay_constructor_kind::fixed_delay, 350, 450},
-    };
+      default_reduce_by_key_delay_constructor_policy(
+        length_size, int{sizeof(int)}, length_is_primitive || length_is_trivially_copyable, true)};
   }
 
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> rle_encode_policy
@@ -520,9 +521,8 @@ struct policy_selector_from_types
       int{sizeof(KeyT)},
       classify_type<KeyT>,
       is_primitive_v<LengthT>,
-      is_primitive_v<KeyT>,
-      static_cast<int>((::cuda::std::max) (sizeof(LengthT), sizeof(KeyT))),
-      static_cast<int>(sizeof(LengthT) + sizeof(KeyT))};
+      ::cuda::std::is_trivially_copyable_v<LengthT>,
+      is_primitive_v<KeyT>};
     return selector(arch);
   }
 };

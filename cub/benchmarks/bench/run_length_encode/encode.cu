@@ -47,6 +47,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   using run_length_input_it_t = thrust::constant_iterator<run_length_t, offset_t>;
   using equality_op_t         = ::cuda::std::equal_to<>;
   using reduction_op_t        = ::cuda::std::plus<>;
+  using accum_t               = run_length_t;
 
   const auto elements                    = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   constexpr std::size_t min_segment_size = 1;
@@ -68,7 +69,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   const offset_t num_items = static_cast<offset_t>(elements);
 
   auto dispatch_on_stream = [&](cudaStream_t stream) {
-    return cub::detail::reduce_by_key::dispatch_streaming_reduce_by_key</* OverrideAccumT */ run_length_t>(
+    return cub::detail::reduce_by_key::dispatch_streaming_reduce_by_key</* OverrideAccumT */ accum_t>(
       d_temp_storage,
       temp_storage_bytes,
       d_in_keys,
@@ -79,11 +80,12 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
       equality_op_t{},
       reduction_op_t{},
       num_items,
-      stream
-#if !TUNE_BASE
-      ,
+      stream,
+#if TUNE_BASE
+      cub::detail::rle::encode::policy_selector_from_types<accum_t, T> {}
+#else // TUNE_BASE
       bench_encode_policy_selector{}
-#endif
+#endif // TUNE_BASE
     );
   };
 
