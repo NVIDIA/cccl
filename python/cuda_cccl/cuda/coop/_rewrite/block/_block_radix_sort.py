@@ -30,11 +30,7 @@ class CoopBlockRadixSortNode(CoopNode, CoopNodeMixin):
         return self._refine_block_radix_sort(rewriter, descending=False)
 
     def _refine_block_radix_sort(self, rewriter, descending: bool):
-        launch_config = rewriter.launch_config
-        if launch_config is None:
-            return False
-
-        self.threads_per_block = launch_config.blockdim
+        self.threads_per_block = self.resolve_threads_per_block()
 
         runtime_args = []
         runtime_arg_types = []

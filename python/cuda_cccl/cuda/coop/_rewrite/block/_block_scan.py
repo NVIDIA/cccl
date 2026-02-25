@@ -27,11 +27,7 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
     codegen_return_type3: types.Type = types.void
 
     def refine_match(self, rewriter):
-        launch_config = rewriter.launch_config
-        if launch_config is None:
-            return False
-
-        self.threads_per_block = launch_config.blockdim
+        self.threads_per_block = self.resolve_threads_per_block()
         instance = self.two_phase_instance if self.is_two_phase else None
         if instance is not None:
             self.instance = instance

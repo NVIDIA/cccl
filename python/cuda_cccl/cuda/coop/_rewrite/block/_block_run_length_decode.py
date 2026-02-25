@@ -155,7 +155,7 @@ class CoopBlockRunLengthNode(CoopNode, CoopNodeMixin):
         # access it before our rewrite() method is called.
         self.instance = self.instantiate_impl(
             item_dtype=item_dtype,
-            dim=self.launch_config.blockdim,
+            dim=self.resolve_threads_per_block(),
             runs_per_thread=runs_per_thread,
             decoded_items_per_thread=decoded_items_per_thread,
             decoded_offset_dtype=decoded_offset_dtype,

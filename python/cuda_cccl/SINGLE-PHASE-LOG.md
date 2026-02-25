@@ -2439,3 +2439,56 @@
     - Result: `1 passed, 34 deselected`.
   - `pre-commit run --files tests/coop/test_mamba_selective_scan_fwd.py tests/coop/test_block_histogram.py tests/coop/test_block_stress_kernels.py`
     - Result: all hooks passed (after one `ruff` import-order auto-fix and rerun).
+
+## 2026-02-25 (launch-config optional mode + runtime test toggle)
+- Request: Make `numba.cuda.launchconfig` optional for `cuda.coop`; keep using
+  it when available, but degrade gracefully when unavailable/disabled, with an
+  easy runtime toggle for tests.
+- Changes:
+  - Added `cuda/coop/_launch_config.py`:
+    - feature-detects `numba.cuda.launchconfig` availability,
+    - exposes globals `LAUNCH_CONFIG_AVAILABLE` /
+      `LAUNCH_CONFIG_ENABLED`,
+    - adds runtime toggles:
+      `set_launch_config_enabled()`, `reset_launch_config_enabled()`,
+      `temporary_launch_config_enabled()`,
+    - wraps `current_launch_config()` / `ensure_current_launch_config()`
+      with optional-mode behavior (return `None` when inactive).
+  - Rewired `cuda/coop/_rewrite/__init__.py` to import launch-config
+    access through `cuda.coop._launch_config` instead of hard failing at
+    import time when missing.
+  - Added `LaunchConfigUnavailableError` and explicit failure messages for
+    code paths that require launch metadata (kernel-arg extraction,
+    kernel-traits/pre-launch callback registration, dynamic array shape/alignment
+    from kernel args, and block-dim resolution when unavailable).
+  - Added `CoopNode.resolve_threads_per_block()` and updated block rewrite
+    nodes to use it; this enables two-phase/global-instance block rewrites in
+    disabled mode while preserving clear failures for launch-config-dependent
+    one-shot paths.
+  - Removed launch-config-presence early-return guards from warp rewrite nodes
+    where launch metadata was not otherwise used.
+  - Added tests in `tests/coop/test_launch_config_optional.py` covering:
+    - runtime toggle behavior and env reset,
+    - safe kernel-param lookups when disabled,
+    - disabled-mode execution of a two-phase global primitive kernel,
+    - clear error for a single-phase block primitive in disabled mode.
+  - Updated `SINGLE-PHASE-TODO.md` with a completed item tracking this optional
+    launch-config work.
+- Decisions:
+  - “Optional launch-config” mode is now best-effort:
+    - rewrites that do not need launch metadata continue to work,
+    - rewrites that require launch metadata fail with targeted
+      `LaunchConfigUnavailableError` messages.
+  - No numba-cuda monkey patching was introduced for this change; behavior is
+    handled entirely in-tree within `cuda.coop`.
+- Validation:
+  - `pytest -q tests/coop/test_launch_config_optional.py`
+    - Result: `6 passed`.
+  - `pytest -q tests/coop/test_block_load_store_api.py -k 'test_block_load_store_two_phase_kernel_param or test_block_load_store_two_phase_gpu_dataclass or test_block_load_store_one_shot'`
+    - Result: `2 passed, 39 deselected`.
+  - `pytest -q tests/coop/test_block_scan.py -k 'test_block_sum and not gpu_dataclass'`
+    - Result: `28 passed, 175 deselected`.
+  - `pytest -q tests/coop/test_warp_reduce.py -k 'test_warp_sum_single_phase_unsigned or test_warp_max_single_phase_unsigned'`
+    - Result: `4 passed, 14 deselected`.
+  - `pre-commit run --files SINGLE-PHASE-TODO.md cuda/coop/_launch_config.py cuda/coop/_rewrite/__init__.py cuda/coop/_rewrite/block/_block_adjacent_difference.py cuda/coop/_rewrite/block/_block_discontinuity.py cuda/coop/_rewrite/block/_block_exchange.py cuda/coop/_rewrite/block/_block_histogram.py cuda/coop/_rewrite/block/_block_load_store.py cuda/coop/_rewrite/block/_block_merge_sort.py cuda/coop/_rewrite/block/_block_radix_rank.py cuda/coop/_rewrite/block/_block_radix_sort.py cuda/coop/_rewrite/block/_block_reduce.py cuda/coop/_rewrite/block/_block_run_length_decode.py cuda/coop/_rewrite/block/_block_scan.py cuda/coop/_rewrite/block/_block_shuffle.py cuda/coop/_rewrite/warp/_warp_exchange.py cuda/coop/_rewrite/warp/_warp_load_store.py cuda/coop/_rewrite/warp/_warp_merge_sort.py cuda/coop/_rewrite/warp/_warp_reduce.py cuda/coop/_rewrite/warp/_warp_scan.py tests/coop/test_launch_config_optional.py`
+    - Result: all hooks passed.
