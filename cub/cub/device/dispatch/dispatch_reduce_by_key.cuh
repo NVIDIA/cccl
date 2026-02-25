@@ -680,7 +680,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
 {
   using streaming_context_t = NullType; // streaming context not used for ReduceByKey yet
   using ScanTileStateT      = ReduceByKeyScanTileState<AccumT, OffsetT>;
-  [[maybe_unused]] static constexpr int INIT_KERNEL_THREADS = 128;
+  [[maybe_unused]] static constexpr int init_kernel_threads = 128;
 
   ::cuda::arch_id arch_id{};
   if (const auto error = CubDebug(ptx_arch_id(arch_id)))
@@ -758,12 +758,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
       return error;
     }
 
-    const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
+    const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_tiles, init_kernel_threads));
 #ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
+    _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
 #endif
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
             .doit(detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
                   tile_state,
                   num_tiles,
@@ -793,6 +793,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
       OffsetT,
       AccumT,
       streaming_context_t>;
+
     int reduce_by_key_sm_occupancy{};
     if (const auto error = CubDebug(MaxSmOccupancy(reduce_by_key_sm_occupancy, reduce_by_key_kernel, block_threads)))
     {
