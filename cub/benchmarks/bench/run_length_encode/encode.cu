@@ -44,14 +44,9 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   // Offset type large enough to represent the total number of runs in the sequence
   using num_runs_t = offset_t;
 
-  using keys_input_it_t            = const T*;
-  using unique_output_it_t         = T*;
-  using run_length_input_it_t      = thrust::constant_iterator<run_length_t, offset_t>;
-  using run_length_output_it_t     = run_length_t*;
-  using num_runs_output_iterator_t = num_runs_t*;
-  using equality_op_t              = ::cuda::std::equal_to<>;
-  using reduction_op_t             = ::cuda::std::plus<>;
-  using accum_t                    = run_length_t;
+  using run_length_input_it_t = thrust::constant_iterator<run_length_t, offset_t>;
+  using equality_op_t         = ::cuda::std::equal_to<>;
+  using reduction_op_t        = ::cuda::std::plus<>;
 
   const auto elements                    = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   constexpr std::size_t min_segment_size = 1;
@@ -73,7 +68,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   const offset_t num_items = static_cast<offset_t>(elements);
 
   auto dispatch_on_stream = [&](cudaStream_t stream) {
-    return cub::detail::reduce_by_key::dispatch_streaming_reduce_by_key(
+    return cub::detail::reduce_by_key::dispatch_streaming_reduce_by_key</* OverrideAccumT */ run_length_t>(
       d_temp_storage,
       temp_storage_bytes,
       d_in_keys,

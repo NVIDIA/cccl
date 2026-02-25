@@ -14,7 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_reduce_by_key.cuh>
-#include <cub/detail/arch_dispatch.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
 #include <cub/thread/thread_operators.cuh>
@@ -35,6 +35,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail::reduce_by_key
 {
 template <
+  typename OverrideAccumT = use_default,
   typename KeysInputIteratorT,
   typename UniqueOutputIteratorT,
   typename ValuesInputIteratorT,
@@ -43,8 +44,10 @@ template <
   typename EqualityOpT,
   typename ReductionOpT,
   typename OffsetT,
-  typename AccumT =
-    ::cuda::std::__accumulator_t<ReductionOpT, it_value_t<ValuesInputIteratorT>, it_value_t<ValuesInputIteratorT>>,
+  typename AccumT = ::cuda::std::conditional_t<
+    !::cuda::std::is_same_v<OverrideAccumT, use_default>,
+    OverrideAccumT,
+    ::cuda::std::__accumulator_t<ReductionOpT, it_value_t<ValuesInputIteratorT>, it_value_t<ValuesInputIteratorT>>>,
   typename PolicySelector =
     policy_selector_from_types<ReductionOpT,
                                AccumT,
