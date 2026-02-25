@@ -2492,3 +2492,21 @@
     - Result: `4 passed, 14 deselected`.
   - `pre-commit run --files SINGLE-PHASE-TODO.md cuda/coop/_launch_config.py cuda/coop/_rewrite/__init__.py cuda/coop/_rewrite/block/_block_adjacent_difference.py cuda/coop/_rewrite/block/_block_discontinuity.py cuda/coop/_rewrite/block/_block_exchange.py cuda/coop/_rewrite/block/_block_histogram.py cuda/coop/_rewrite/block/_block_load_store.py cuda/coop/_rewrite/block/_block_merge_sort.py cuda/coop/_rewrite/block/_block_radix_rank.py cuda/coop/_rewrite/block/_block_radix_sort.py cuda/coop/_rewrite/block/_block_reduce.py cuda/coop/_rewrite/block/_block_run_length_decode.py cuda/coop/_rewrite/block/_block_scan.py cuda/coop/_rewrite/block/_block_shuffle.py cuda/coop/_rewrite/warp/_warp_exchange.py cuda/coop/_rewrite/warp/_warp_load_store.py cuda/coop/_rewrite/warp/_warp_merge_sort.py cuda/coop/_rewrite/warp/_warp_reduce.py cuda/coop/_rewrite/warp/_warp_scan.py tests/coop/test_launch_config_optional.py`
     - Result: all hooks passed.
+
+## 2026-02-25 (full `tests/coop` run + NVRTC mamba wrapper fix)
+- Request: Run the full `cuda.coop` pytest suite with parallelism and fix any
+  failures.
+- Changes:
+  - `tests/coop/test_nvrtc_compile_count_gpu.py`:
+    - Updated both subprocess scripts to call
+      `test_mamba_selective_scan_fwd_simple("traits_gpu_dataclass")` instead
+      of invoking the now-parameterized test without arguments.
+- Root cause:
+  - `test_mamba_selective_scan_fwd_simple` was changed to require
+    `kernel_variant`; the NVRTC compile-count subprocess wrappers still called
+    it with no parameters, causing `TypeError` and two test failures.
+- Validation:
+  - `pytest -q tests/coop/test_nvrtc_compile_count_gpu.py`
+    - Result: `2 passed`.
+  - `pytest tests/coop -n 16`
+    - Result: `3153 passed, 42 skipped, 5 xfailed, 2 warnings`.
