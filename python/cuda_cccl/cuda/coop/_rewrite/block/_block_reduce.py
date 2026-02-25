@@ -24,11 +24,7 @@ class CoopBlockReduceNode(CoopNode, CoopNodeMixin):
     disposition = Disposition.ONE_SHOT
 
     def refine_match(self, rewriter):
-        launch_config = rewriter.launch_config
-        if launch_config is None:
-            return False
-
-        self.threads_per_block = launch_config.blockdim
+        self.threads_per_block = self.resolve_threads_per_block()
 
         runtime_args = []
         runtime_arg_types = []
@@ -205,11 +201,7 @@ class CoopBlockSumNode(CoopNode, CoopNodeMixin):
     disposition = Disposition.ONE_SHOT
 
     def refine_match(self, rewriter):
-        launch_config = rewriter.launch_config
-        if launch_config is None:
-            return False
-
-        self.threads_per_block = launch_config.blockdim
+        self.threads_per_block = self.resolve_threads_per_block()
 
         runtime_args = []
         runtime_arg_types = []

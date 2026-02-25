@@ -44,6 +44,11 @@ from numba.cuda.cudadecl import register_global
 from numba.cuda.cudadrv.devicearray import DeviceNDArray
 from numba.cuda.cudaimpl import lower
 
+from .. import _launch_config as coop_launch_config
+from .._launch_config import (
+    current_launch_config,
+    ensure_current_launch_config,
+)
 from .._types import Algorithm as CoopAlgorithm
 from .._types import algo_coalesce_key
 from .block import (
@@ -53,39 +58,8 @@ from .warp import (
     import_side_effect_modules as _import_warp_rewrite_side_effect_modules,
 )
 
-try:
-    from numba.cuda.launchconfig import (
-        current_launch_config,
-        ensure_current_launch_config,
-    )
-except ModuleNotFoundError:
-    msg = (
-        "cuda.coop currently requires a customized version of\n"
-        "numba-cuda with the new `LaunchConfig` support.  This requires\n"
-        "running a custom version of numba-cuda (which will typically need\n"
-        "the latest version of numba).  Steps I use for now to get a working\n"
-        "environment:\n"
-        "   conda create -n cccl312 python=3.12 pip\n"
-        "   conda activate cccl312\n"
-        "   cd ~/src\n"
-        "   git clone https://github.com/numba/numba\n"
-        "   cd numba\n"
-        "   pip install -e .\n"
-        "   cd ..\n"
-        "   git clone https://github.com/tpn/numba-cuda\n"
-        "   cd numba-cuda\n"
-        "   git checkout 280-launch-config-v2\n"
-        "   pip install -e '.[cu12]'\n"
-        "   cd ..\n"
-        "   # Assuming you don't have cccl already cloned:\n"
-        "   git clone https://github.com/nvidia/cccl\n"
-        "   cd cccl/python/cuda_cccl\n"
-        "   pip install -e .\n"
-    )
-    raise ModuleNotFoundError(msg) from None
-
 if TYPE_CHECKING:
-    from numba.cuda.launchconfig import LaunchConfig
+    from .._launch_config import LaunchConfig
 
 # Select the IR implementation once imports are complete.
 ir = cuda_ir if cuda_ir is not None else core_ir
@@ -180,10 +154,28 @@ def get_kernel_param_index_safe(code, name: str, *, include_kwonly=True):
         return None
 
 
-def get_kernel_param_value(name: str, launch_config: "LaunchConfig") -> Any:
+class LaunchConfigUnavailableError(RuntimeError):
+    pass
+
+
+def _launch_config_required_message(context: str) -> str:
+    return (
+        f"{context} requires `numba.cuda.launchconfig`, which is currently "
+        "unavailable or disabled in this process."
+    )
+
+
+def get_kernel_param_value(name: str, launch_config: Optional["LaunchConfig"]) -> Any:
     """
     Return the value of the parameter *name* from the launch configuration.
     """
+    if launch_config is None:
+        raise LaunchConfigUnavailableError(
+            _launch_config_required_message(
+                f"Resolving kernel argument {name!r} during cuda.coop rewrite",
+            )
+        )
+
     args = launch_config.args
     code = launch_config.dispatcher.func_code
     idx = get_kernel_param_index_safe(code, name)
@@ -198,14 +190,16 @@ def get_kernel_param_value(name: str, launch_config: "LaunchConfig") -> Any:
     return args[idx]
 
 
-def get_kernel_param_value_safe(name: str, launch_config: "LaunchConfig") -> Any:
+def get_kernel_param_value_safe(
+    name: str, launch_config: Optional["LaunchConfig"]
+) -> Any:
     """
     Return the value of the parameter *name* from the launch configuration.
     Returns None if the parameter is not found.
     """
     try:
         return get_kernel_param_value(name, launch_config)
-    except LookupError:
+    except (LookupError, LaunchConfigUnavailableError):
         # If the parameter is not found, return None.
         return None
 
@@ -686,7 +680,7 @@ def get_root_definition(
     func_ir: ir.FunctionIR,
     typemap: dict[str, types.Type],
     calltypes: dict[ir.Expr, types.Type],
-    launch_config: "LaunchConfig",
+    launch_config: Optional["LaunchConfig"],
     assignments_map: dict[ir.Var, ir.Assign],
     rewriter: Optional["CoopNodeRewriter"],
 ) -> Optional[RootDefinition]:
@@ -768,7 +762,7 @@ def get_root_definition(
             break
         elif isinstance(instr, ir.Arg):
             root_instr = instr
-            instance = get_kernel_param_value(
+            instance = get_kernel_param_value_safe(
                 instr.name,
                 launch_config,
             )
@@ -788,6 +782,12 @@ def get_root_definition(
                         "Expected attr_name to be set, but got "
                         f"None for {original_instr!r}"
                     )
+                if instance is None:
+                    raise LaunchConfigUnavailableError(
+                        _launch_config_required_message(
+                            "Resolving kernel-traits attributes from kernel arguments"
+                        )
+                    )
                 attr_instance = getattr(instance, attr_name)
 
             last_instr = all_instructions[-1]
@@ -804,6 +804,12 @@ def get_root_definition(
                     raise RuntimeError(
                         "Expected attr_name to be set, but got None for "
                         f"{last_instr!r}, instr: {instr!r}"
+                    )
+                if instance is None:
+                    raise LaunchConfigUnavailableError(
+                        _launch_config_required_message(
+                            "Resolving getattr expressions from kernel arguments"
+                        )
                     )
                 attr_instance = getattr(instance, attr_name)
             break
@@ -1025,7 +1031,10 @@ def get_root_definition(
                         # This is a `cuda.(local|shared).array()`.  We can obtain
                         # the shape as a literal value from the first argument
                         # of the instr, by way of another root def call.
-                        shape = shape_root.root_instr.value
+                        if isinstance(shape_root.root_instr, ir.Const):
+                            shape = shape_root.root_instr.value
+                        else:
+                            shape = shape_root.instance
                     else:
                         # For `coop.(local|shared).array()`, we can get the
                         # shape directly from the shape_root's `instance`
@@ -1041,6 +1050,14 @@ def get_root_definition(
                             # if we're dealing with a device array.
                             shape = shape.shape
 
+                    if shape is None:
+                        raise LaunchConfigUnavailableError(
+                            _launch_config_required_message(
+                                "Resolving coop/local/shared array shapes from "
+                                "kernel arguments"
+                            )
+                        )
+
                     # Normalize the shape into a 1D value.
                     shape = get_element_count(shape)
 
@@ -1055,6 +1072,13 @@ def get_root_definition(
                                 "but got None."
                             )
                         alignment = alignment_root.instance
+                        if alignment is None:
+                            raise LaunchConfigUnavailableError(
+                                _launch_config_required_message(
+                                    "Resolving coop/local/shared array alignment "
+                                    "from kernel arguments"
+                                )
+                            )
                         if not isinstance(alignment, int):
                             raise TypeError(
                                 "Expected alignment to be an int, got "
@@ -1303,7 +1327,14 @@ class CoopNode:
             # is necessary in order for numba not to balk in the _Kernel's
             # _prepare_args() method when it doesn't know how to handle one
             # of our two-phase primitive instances.
-            self.launch_config.pre_launch_callbacks.append(self.pre_launch_callback)
+            config = self.launch_config
+            if config is None:
+                raise LaunchConfigUnavailableError(
+                    _launch_config_required_message(
+                        "Kernel-argument two-phase primitive handling"
+                    )
+                )
+            config.pre_launch_callbacks.append(self.pre_launch_callback)
 
         if self.parent_node is not None:
             self.parent_node.add_child(self)
@@ -1447,6 +1478,26 @@ class CoopNode:
         return get_kernel_param_value_safe(
             arg_var.name,
             self.launch_config,
+        )
+
+    def resolve_threads_per_block(self) -> Any:
+        launch_config = self.launch_config
+        if launch_config is not None:
+            return launch_config.blockdim
+
+        instance = self.two_phase_instance or self.instance
+        if instance is not None:
+            dim = getattr(instance, "dim", None)
+            if dim is None:
+                dim = getattr(instance, "threads_per_block", None)
+            if dim is not None:
+                return dim
+
+        primitive_name = getattr(self, "primitive_name", "<unknown primitive>")
+        raise LaunchConfigUnavailableError(
+            _launch_config_required_message(
+                f"Resolving threads-per-block for {primitive_name}"
+            )
         )
 
     @cached_property
@@ -3890,7 +3941,7 @@ class CoopNodeRewriter(Rewrite):
         parent_root_def: RootDefinition,
         calltypes: dict[ir.Expr, types.Type],
         typemap: dict[str, types.Type],
-        launch_config: "LaunchConfig",
+        launch_config: Optional["LaunchConfig"],
         child_expr: ir.Expr,
         child_template: Any,
     ) -> CoopNode:
@@ -3966,8 +4017,15 @@ class CoopNodeRewriter(Rewrite):
         return node
 
     def handle_new_kernel_traits_struct(
-        self, struct: Any, name: str, launch_config: "LaunchConfig"
+        self, struct: Any, name: str, launch_config: Optional["LaunchConfig"]
     ):
+        if launch_config is None:
+            raise LaunchConfigUnavailableError(
+                _launch_config_required_message(
+                    "Kernel-traits struct argument handling"
+                )
+            )
+
         # N.B. See the comment in the `match()` method for more details about
         #      the purpose of this method and the `CustomPrepareArgs` class.
         needs_custom = not hasattr(struct, "prepare_args") or not hasattr(
@@ -4009,7 +4067,8 @@ class CoopNodeRewriter(Rewrite):
     @property
     def launch_config(self):
         config = ensure_current_launch_config()
-        config.mark_kernel_as_launch_config_sensitive()
+        if config is not None:
+            config.mark_kernel_as_launch_config_sensitive()
         return config
 
     @property
@@ -4076,7 +4135,10 @@ class CoopNodeRewriter(Rewrite):
         # as part of a two-phase one-shot primitive instantiation where one
         # of the parameters is something user-defined (custom type, stateful
         # callback, etc.).  We can skip processing in these cases.
-        if not launch_config:
+        #
+        # If launch-config support itself is unavailable/disabled, continue in
+        # a degraded mode and allow rewrites that do not need launch metadata.
+        if launch_config is None and coop_launch_config.is_launch_config_active():
             return False
 
         self.func_ir = func_ir
