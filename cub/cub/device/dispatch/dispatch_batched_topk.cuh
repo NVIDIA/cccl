@@ -270,6 +270,7 @@ struct dispatch_batched_topk
     // sizes and k, and (b) if so, which set of one-worker-per-segment policies to use
     using find_valid_policy_t = find_valid_policy<
       ActivePolicyT,
+      SegmentSizeParameterT,
       agent_batched_topk_worker_per_segment,
       KeyInputItItT,
       KeyOutputItItT,
