@@ -91,8 +91,7 @@ private:
 
       struct
       {
-        histo_counter_t selected_offset[1];
-        histo_counter_t candidate_offset[1];
+        histo_counter_t selected_offset[2];
         union
         {
           KeyT keys[tile_items];
@@ -399,8 +398,8 @@ private:
     {
       if (linear_tid == 0)
       {
-        storage.stage.select.selected_offset[0]  = 0;
-        storage.stage.select.candidate_offset[0] = total_selected;
+        storage.stage.select.selected_offset[0] = 0;
+        storage.stage.select.selected_offset[1] = total_selected;
       }
       // Ensure atomic selection counter has been reset
       __syncthreads();
@@ -409,9 +408,13 @@ private:
       for (int i = 0; i < items_per_thread; ++i)
       {
         const bit_ordered_type key_prefix = unsigned_keys[i] & prefix_mask;
-        const bool is_valid     = (IsFullTile || static_cast<int>(linear_tid) * items_per_thread + i < num_valid);
-        const bool is_selected  = is_valid && key_prefix < kth_prefix;
-        const bool is_candidate = is_valid && key_prefix == kth_prefix;
+
+        const bool is_selected  = key_prefix < kth_prefix;
+        const bool is_candidate = key_prefix == kth_prefix;
+        int item_class          = is_selected ? 0 : (is_candidate ? 1 : -1);
+
+        const bool is_valid = (IsFullTile || static_cast<int>(linear_tid) * items_per_thread + i < num_valid);
+        item_class          = is_valid ? item_class : -1;
 
         // Untwiddle the key before storing in shared memory
         if constexpr (SelectDirection == detail::topk::select::max)
@@ -420,22 +423,13 @@ private:
         }
         unsigned_keys[i] = bit_ordered_conversion::from_bit_ordered(decomposer, unsigned_keys[i]);
 
-        if (is_selected)
+        if (item_class >= 0)
         {
-          const histo_counter_t selected_offset = atomicAdd(&storage.stage.select.selected_offset[0], 1);
+          const histo_counter_t selected_offset = atomicAdd(&storage.stage.select.selected_offset[item_class], 1);
           reinterpret_cast<bit_ordered_type*>(storage.stage.select.exchange.keys)[selected_offset] = unsigned_keys[i];
           if constexpr (!keys_only)
           {
             scatter_indices[i] = selected_offset;
-          }
-        }
-        if (is_candidate)
-        {
-          const histo_counter_t candidate_offset = atomicAdd(&storage.stage.select.candidate_offset[0], 1);
-          reinterpret_cast<bit_ordered_type*>(storage.stage.select.exchange.keys)[candidate_offset] = unsigned_keys[i];
-          if constexpr (!keys_only)
-          {
-            scatter_indices[i] = candidate_offset;
           }
         }
       }
