@@ -615,10 +615,10 @@ struct caching_allocator_t
     return result;
   }
 
-  void deallocate(::cuda::stream_ref, void* ptr, size_t num_bytes, size_t)
+  void deallocate(::cuda::stream_ref __stream, void* ptr, size_t num_bytes, size_t)
   {
+    __stream.sync();
     deallocate(static_cast<char*>(ptr), num_bytes);
-    // It is fine to not synchronize here, because there is no work done
   }
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
