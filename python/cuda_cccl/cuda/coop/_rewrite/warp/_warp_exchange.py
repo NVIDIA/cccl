@@ -26,10 +26,6 @@ class CoopWarpExchangeNode(CoopNode, CoopNodeMixin):
     disposition = Disposition.ONE_SHOT
 
     def refine_match(self, rewriter):
-        launch_config = rewriter.launch_config
-        if launch_config is None:
-            return False
-
         runtime_args = []
         runtime_arg_types = []
         runtime_arg_names = []

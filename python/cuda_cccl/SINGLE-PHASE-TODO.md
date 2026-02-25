@@ -43,6 +43,8 @@
 - [x] Document BlockLoad/Store algorithm constraints and shared-memory
   behavior (no separate BlockLoadToShared API; algorithms handle smem).
 - [x] Evaluate numba-cuda `280-launch-config-v2` branch for coop launch config needs.
+- [x] Make launch-config integration optional (feature-detect + runtime toggle)
+      and degrade gracefully for paths that need launch metadata.
 - [x] Port block shuffle to single-phase (typing, rewrite, tests).
 - [x] Port block radix rank to single-phase (typing, rewrite, tests).
 - [x] Add warp exchange scatter-to-striped coverage/tests (including ranks dtype).

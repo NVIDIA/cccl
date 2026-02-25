@@ -24,10 +24,6 @@ class CoopWarpExclusiveSumNode(CoopNode, CoopNodeMixin):
     disposition = Disposition.ONE_SHOT
 
     def refine_match(self, rewriter):
-        launch_config = rewriter.launch_config
-        if launch_config is None:
-            return False
-
         runtime_args = []
         runtime_arg_types = []
         runtime_arg_names = []
@@ -142,10 +138,6 @@ class CoopWarpInclusiveSumNode(CoopNode, CoopNodeMixin):
     disposition = Disposition.ONE_SHOT
 
     def refine_match(self, rewriter):
-        launch_config = rewriter.launch_config
-        if launch_config is None:
-            return False
-
         runtime_args = []
         runtime_arg_types = []
         runtime_arg_names = []
@@ -255,10 +247,6 @@ class CoopWarpInclusiveSumNode(CoopNode, CoopNodeMixin):
 
 
 def _refine_warp_scan_node(node, rewriter):
-    launch_config = rewriter.launch_config
-    if launch_config is None:
-        return False
-
     runtime_args = []
     runtime_arg_types = []
     runtime_arg_names = []

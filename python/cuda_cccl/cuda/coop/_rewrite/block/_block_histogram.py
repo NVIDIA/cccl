@@ -32,12 +32,7 @@ class CoopBlockHistogramNode(CoopNode, CoopNodeMixin):
             self.items_per_thread = instance.items_per_thread
             self.bins = instance.bins
             self.algorithm = getattr(instance, "algorithm", None)
-
-            launch_config = rewriter.launch_config
-            if launch_config is None:
-                return False
-
-            self.threads_per_block = launch_config.blockdim
+            self.threads_per_block = self.resolve_threads_per_block()
             self.children = []
             self.runtime_args = tuple()
             self.runtime_arg_types = tuple()
@@ -89,12 +84,7 @@ class CoopBlockHistogramNode(CoopNode, CoopNodeMixin):
 
         self.counter_dtype = histogram_ty.dtype
         self.bins = bins
-
-        launch_config = rewriter.launch_config
-        if launch_config is None:
-            return False
-
-        self.threads_per_block = launch_config.blockdim
+        self.threads_per_block = self.resolve_threads_per_block()
 
         # Instantiate an instance now so our children can access it.
         self.instance = self.instantiate_impl(
