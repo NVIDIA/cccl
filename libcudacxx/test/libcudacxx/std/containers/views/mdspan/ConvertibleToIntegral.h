@@ -38,9 +38,9 @@ struct IntType
   {
     return static_cast<unsigned char>(val);
   }
-  __host__ __device__ constexpr operator char() const noexcept
+  __host__ __device__ constexpr operator signed char() const noexcept
   {
-    return static_cast<char>(val);
+    return static_cast<signed char>(val);
   }
 };
 
@@ -70,9 +70,9 @@ struct IntTypeNC
   {
     return static_cast<unsigned>(val);
   }
-  __host__ __device__ constexpr operator char() noexcept
+  __host__ __device__ constexpr operator signed char() noexcept
   {
-    return static_cast<char>(val);
+    return static_cast<signed char>(val);
   }
 };
 

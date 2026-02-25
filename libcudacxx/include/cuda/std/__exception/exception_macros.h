@@ -82,10 +82,11 @@ _CCCL_END_NAMESPACE_CUDA_STD
 #  define _CCCL_TRY     \
     if constexpr (true) \
     {
-#  define _CCCL_CATCH(...)                                                                       \
-    }                                                                                            \
-    else if constexpr (false) for (__VA_ARGS__ = ::cuda::std::__cccl_catch_any_lvalue{}; false;) \
-    {
+#  define _CCCL_CATCH(...)    \
+    }                         \
+    else if constexpr (false) \
+    {                         \
+      for (__VA_ARGS__ = ::cuda::std::__cccl_catch_any_lvalue{}; false;)
 #  define _CCCL_CATCH_ALL \
     }                     \
     else

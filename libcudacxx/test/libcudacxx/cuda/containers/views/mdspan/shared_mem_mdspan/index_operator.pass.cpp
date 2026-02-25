@@ -160,7 +160,7 @@ __device__ void test_layout()
   test_iteration(construct_mapping(Layout(), cuda::std::extents<unsigned, D>(7)));
   test_iteration(construct_mapping(Layout(), cuda::std::extents<unsigned, 7>()));
   test_iteration(construct_mapping(Layout(), cuda::std::extents<unsigned, 7, 8>()));
-  test_iteration(construct_mapping(Layout(), cuda::std::extents<char, D, D, D, D>(1, 1, 1, 1)));
+  test_iteration(construct_mapping(Layout(), cuda::std::extents<signed char, D, D, D, D>(1, 1, 1, 1)));
 
 #if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
   test_iteration(construct_mapping(Layout(), cuda::std::extents<int>()));
