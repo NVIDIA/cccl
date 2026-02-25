@@ -326,6 +326,10 @@ struct policy_selector
   int length_size;
   int key_size;
   type_t key_t;
+
+  // TODO(bgruber): we want to get rid of the following three and just assume by default that types behave "primitive".
+  // This opts a lot more types into the tunings we have. We can do this when we publish the public tuning API, because
+  // then users can opt-out of tunings again
   bool length_is_primitive;
   bool length_is_trivially_copyable;
   bool key_is_primitive;
