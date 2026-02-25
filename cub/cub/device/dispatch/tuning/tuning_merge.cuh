@@ -13,7 +13,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/block/block_store.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/thread/thread_load.cuh>
 
 #include <cuda/__device/arch_id.h>
 #include <cuda/std/__algorithm/clamp.h>
