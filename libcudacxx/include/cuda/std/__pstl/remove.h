@@ -68,16 +68,16 @@ _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND is_execution_po
 _CCCL_HOST_API _InputIterator
 remove([[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, const _Tp& __value)
 {
-  if (__first == __last)
-  {
-    return __first;
-  }
-
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__remove_if, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
     _CCCL_NVTX_RANGE_SCOPE("cuda::std::remove");
+
+    if (__first == __last)
+    {
+      return __first;
+    }
     const auto __count = ::cuda::std::distance(__first, __last);
     return __dispatch(__policy, __first, __count, __remove_compare_not_eq{__value});
   }
