@@ -8,53 +8,26 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include <cuda/stream>
-
-#include <cuda/experimental/__copy_bytes/copy_bytes_naive.cuh>
-#include <cuda/experimental/__copy_bytes/copy_bytes_registers.cuh>
-
-#include "testing.cuh"
 #include <cute/layout.hpp>
 
-// Tested Layouts -> must generate 16B vectorized copy and (48):(1) layout                  
-// --------------------------                  
-// (6,8):(8,1)              
-// (8,6):(1,8)              
-// (6,8):(1,6)              
-// (8,6):(6,1)              
-// 48:1                     
-// (3,16):(1,3)             
-// (3,16):(16,1)            
-// (16,3):(1,16)            
-// (16,3):(3,1)             
-// (2,2,2,2,3):(2,1,4,8,16) 
-// (2,2,2,2,3):(8,1,4,2,16) 
+#include "copy_bytes_common.cuh"
+
+// Tested Layouts -> must generate 16B vectorized copy and (48):(1) layout
+// --------------------------
+// (6,8):(8,1)
+// (8,6):(1,8)
+// (6,8):(1,6)
+// (8,6):(6,1)
+// 48:1
+// (3,16):(1,3)
+// (3,16):(16,1)
+// (16,3):(1,16)
+// (16,3):(3,1)
+// (2,2,2,2,3):(2,1,4,8,16)
+// (2,2,2,2,3):(8,1,4,2,16)
 // (2,2,3,2,2):(6,3,1,24,12)
-
-static const cuda::stream stream{cuda::device_ref{0}};
-
-template <typename T, typename Layout>
-void test_impl(const thrust::host_vector<T>& input, const Layout& layout)
-{
-  namespace cudax                = cuda::experimental;
-  thrust::device_vector<T> d_src = input;
-  thrust::device_vector<T> d_dst(input.size(), T{0});
-  auto* src_ptr = thrust::raw_pointer_cast(d_src.data());
-  auto* dst_ptr = thrust::raw_pointer_cast(d_dst.data());
-
-  d_dst.assign(input.size(), T{0});
-  cudax::copy_bytes_naive(src_ptr, layout, dst_ptr, layout, stream);
-  stream.sync();
-  CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == input);
-
-  d_dst.assign(input.size(), T{0});
-  cudax::copy_bytes_registers(src_ptr, layout, dst_ptr, layout, stream);
-  stream.sync();
-  CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == input);
-}
 
 static constexpr int N = 48;
 

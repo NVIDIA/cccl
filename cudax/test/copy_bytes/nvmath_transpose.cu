@@ -8,54 +8,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-
-#include <cuda/stream>
-
-#include <cuda/experimental/__copy_bytes/copy_bytes_naive.cuh>
-#include <cuda/experimental/__copy_bytes/copy_bytes_registers.cuh>
-
-#include "testing.cuh"
 #include <cute/layout.hpp>
 
+#include <cstdint>
+
+#include "copy_bytes_common.cuh"
+
 using data_t = int8_t;
-
-static const cuda::stream stream{cuda::device_ref{0}};
-
-template <typename T, typename SrcLayout, typename DstLayout>
-void test_impl(
-  int src_alloc, int src_offset, const SrcLayout& src_layout, int dst_alloc, int dst_offset, const DstLayout& dst_layout)
-{
-  namespace cudax = cuda::experimental;
-  thrust::host_vector<T> h_src(src_alloc);
-  for (int i = 0; i < src_alloc; ++i)
-  {
-    h_src[i] = static_cast<T>(i);
-  }
-
-  thrust::host_vector<T> expected(dst_alloc, T{0});
-  const int num_items = static_cast<int>(cute::size(src_layout));
-  for (int i = 0; i < num_items; ++i)
-  {
-    expected[dst_offset + dst_layout(i)] = h_src[src_offset + src_layout(i)];
-  }
-
-  thrust::device_vector<T> d_src = h_src;
-  thrust::device_vector<T> d_dst(dst_alloc, T{0});
-  auto* src_ptr = thrust::raw_pointer_cast(d_src.data()) + src_offset;
-  auto* dst_ptr = thrust::raw_pointer_cast(d_dst.data()) + dst_offset;
-
-  d_dst.assign(dst_alloc, T{0});
-  cudax::copy_bytes_naive(src_ptr, src_layout, dst_ptr, dst_layout, stream);
-  stream.sync();
-  CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == expected);
-
-  d_dst.assign(dst_alloc, T{0});
-  cudax::copy_bytes_registers(src_ptr, src_layout, dst_ptr, dst_layout, stream);
-  stream.sync();
-  CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == expected);
-}
 
 /***********************************************************************************************************************
  * nvmath transpose test cases (device-to-device)
@@ -63,6 +22,11 @@ void test_impl(
 
 // transpose_merge_extents: 20-dim tensor (2,)*20, reversed stride orders
 // dst F-order, src C-order. Tests merging extents for tiling.
+//
+// src (2,)^20:(2^19,2^18,...,1)
+// stride_order (19,18,...,0), slice [:]
+// dst (2,)^20:(1,2,...,2^19)
+// stride_order (0,1,...,19), slice [:]
 TEST_CASE("nvmath transpose_merge_extents", "[nvmath][transpose][d2d]")
 {
   using namespace cute;
@@ -81,8 +45,12 @@ TEST_CASE("nvmath transpose_merge_extents", "[nvmath][transpose][d2d]")
   test_impl<data_t>(alloc, 0, src_layout, alloc, 0, dst_layout);
 }
 
-// transpose: tiling efficiency test, shape (55,13,55,55)
-// dst C-order (0,1,2,3), src stride_order (2,3,0,1)
+// transpose: tiling efficiency test
+//
+// src (55,13,55,55):(13, 1, 39325, 715)
+// stride_order (2,3,0,1), slice [:]
+// dst (55,13,55,55):(39325, 3025, 55, 1)
+// stride_order (0,1,2,3), slice [:]
 TEST_CASE("nvmath transpose", "[nvmath][transpose][d2d]")
 {
   using namespace cute;
@@ -92,8 +60,12 @@ TEST_CASE("nvmath transpose", "[nvmath][transpose][d2d]")
   test_impl<data_t>(alloc, 0, src_layout, alloc, 0, dst_layout);
 }
 
-// transpose_2: shape (55,55,13,55)
-// dst C-order (0,1,2,3), src stride_order (1,0,3,2)
+// transpose_2: transposed pairs (0,1) and (2,3)
+//
+// src (55,55,13,55):(715, 39325, 1, 13)            row-major order
+// stride_order (1,0,3,2), slice [:]
+// dst (55,55,13,55):(39325, 715, 55, 1)            strided order
+// stride_order (0,1,2,3), slice [:]
 TEST_CASE("nvmath transpose_2", "[nvmath][transpose][d2d]")
 {
   using namespace cute;
@@ -103,8 +75,12 @@ TEST_CASE("nvmath transpose_2", "[nvmath][transpose][d2d]")
   test_impl<data_t>(alloc, 0, src_layout, alloc, 0, dst_layout);
 }
 
-// transpose_3: shape (101,)*4
-// dst C-order (0,1,2,3), src stride_order (1,3,0,2)
+// transpose_3: interleaved stride permutation
+//
+// src (101,101,101,101):(101, 1030301, 1, 10201)
+// stride_order (1,3,0,2), slice [:]
+// dst (101,101,101,101):(1030301, 10201, 101, 1)
+// stride_order (0,1,2,3), slice [:]
 TEST_CASE("nvmath transpose_3", "[nvmath][transpose][d2d]")
 {
   using namespace cute;
@@ -114,8 +90,12 @@ TEST_CASE("nvmath transpose_3", "[nvmath][transpose][d2d]")
   test_impl<data_t>(alloc, 0, src_layout, alloc, 0, dst_layout);
 }
 
-// transpose_small_tile: shape (7,100019,7), fully reversed stride orders
-// Small tile dimensions (7x7=49 elements per block)
+// transpose_small_tile: fully reversed stride orders, small tile (7x7=49 elements)
+//
+// src (7,100019,7):(1, 7, 700133)
+// stride_order (2,1,0), slice [:]
+// dst (7,100019,7):(700133, 7, 1)
+// stride_order (0,1,2), slice [:]
 TEST_CASE("nvmath transpose_small_tile", "[nvmath][transpose][d2d]")
 {
   using namespace cute;
@@ -125,7 +105,12 @@ TEST_CASE("nvmath transpose_small_tile", "[nvmath][transpose][d2d]")
   test_impl<data_t>(alloc, 0, src_layout, alloc, 0, dst_layout);
 }
 
-// transpose_small_tile_2: shape (33,100019,33), fully reversed stride orders
+// transpose_small_tile_2: fully reversed stride orders
+//
+// src (33,100019,33):(1, 33, 3300627)
+// stride_order (2,1,0), slice [:]
+// dst (33,100019,33):(3300627, 33, 1)
+// stride_order (0,1,2), slice [:]
 TEST_CASE("nvmath transpose_small_tile_2", "[nvmath][transpose][d2d]")
 {
   using namespace cute;
@@ -135,8 +120,12 @@ TEST_CASE("nvmath transpose_small_tile_2", "[nvmath][transpose][d2d]")
   test_impl<data_t>(alloc, 0, src_layout, alloc, 0, dst_layout);
 }
 
-// transpose_small_tile_3: shape (7,100019,7), only the 7x7 transposed between src and dst
-// dst stride_order (0,2,1), src stride_order (1,2,0)
+// transpose_small_tile_3: only the 7x7 block transposed between src and dst
+//
+// src (7,100019,7):(1, 49, 7)
+// stride_order (1,2,0), slice [:]
+// dst (7,100019,7):(700133, 1, 100019)
+// stride_order (0,2,1), slice [:]
 TEST_CASE("nvmath transpose_small_tile_3", "[nvmath][transpose][d2d]")
 {
   using namespace cute;
@@ -146,8 +135,12 @@ TEST_CASE("nvmath transpose_small_tile_3", "[nvmath][transpose][d2d]")
   test_impl<data_t>(alloc, 0, src_layout, alloc, 0, dst_layout);
 }
 
-// transpose_small_tile_4: shape (33,100019,33), only the 33x33 transposed
-// dst stride_order (0,2,1), src stride_order (1,2,0)
+// transpose_small_tile_4: only the 33x33 block transposed between src and dst
+//
+// src (33,100019,33):(1, 1089, 33)
+// stride_order (1,2,0), slice [:]
+// dst (33,100019,33):(3300627, 1, 100019)
+// stride_order (0,2,1), slice [:]
 TEST_CASE("nvmath transpose_small_tile_4", "[nvmath][transpose][d2d]")
 {
   using namespace cute;
@@ -158,7 +151,11 @@ TEST_CASE("nvmath transpose_small_tile_4", "[nvmath][transpose][d2d]")
 }
 
 // transpose_channels: shared least strided extent (3), complicates tiling
-// dst C-order (0,1,2), src stride_order (1,0,2)
+//
+// src (10001,10001,3):(3, 30003, 1)
+// stride_order (1,0,2), slice [:]
+// dst (10001,10001,3):(30003, 3, 1)
+// stride_order (0,1,2), slice [:]
 TEST_CASE("nvmath transpose_channels", "[nvmath][transpose][d2d]")
 {
   using namespace cute;
@@ -169,7 +166,11 @@ TEST_CASE("nvmath transpose_channels", "[nvmath][transpose][d2d]")
 }
 
 // transpose_channels_2: 5D with shared least strided extents
-// dst C-order (0,1,2,3,4), src stride_order (1,0,2,4,3)
+//
+// src (1001,1001,3,3,3):(27, 27027, 9, 1, 3)
+// stride_order (1,0,2,4,3), slice [:]
+// dst (1001,1001,3,3,3):(27027, 27, 9, 3, 1)
+// stride_order (0,1,2,3,4), slice [:]
 TEST_CASE("nvmath transpose_channels_2", "[nvmath][transpose][d2d]")
 {
   using namespace cute;
@@ -179,9 +180,13 @@ TEST_CASE("nvmath transpose_channels_2", "[nvmath][transpose][d2d]")
   test_impl<data_t>(alloc, 0, src_layout, alloc, 0, dst_layout);
 }
 
-// transpose_inbalanced: 2D with highly imbalanced extents (3 x 1000033)
+// transpose_inbalanced: 2D with highly imbalanced extents
 // L2 cache pressure: large stride between rows in src exhausts cache
-// dst C-order (0,1), src stride_order (1,0)
+//
+// src (3,1000033):(1, 3)
+// stride_order (1,0), slice [:]
+// dst (3,1000033):(1000033, 1)
+// stride_order (0,1), slice [:]
 TEST_CASE("nvmath transpose_inbalanced", "[nvmath][transpose][d2d]")
 {
   using namespace cute;

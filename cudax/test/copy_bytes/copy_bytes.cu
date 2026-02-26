@@ -8,47 +8,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include <cuda/stream>
-
-#include <cuda/experimental/__copy_bytes/copy_bytes_naive.cuh>
-#include <cuda/experimental/__copy_bytes/copy_bytes_registers.cuh>
-
-#include "testing.cuh"
 #include <cute/layout.hpp>
 
-static const cuda::stream stream{cuda::device_ref{0}};
-
-template <typename T, typename SrcLayout, typename DstLayout>
-void test_impl(const thrust::host_vector<T>& input,
-               const thrust::host_vector<T>& expected,
-               const SrcLayout& src_layout,
-               const DstLayout& dst_layout)
-{
-  namespace cudax                = cuda::experimental;
-  thrust::device_vector<T> d_src = input;
-  thrust::device_vector<T> d_dst(expected.size(), T{0});
-  auto* src_ptr = thrust::raw_pointer_cast(d_src.data());
-  auto* dst_ptr = thrust::raw_pointer_cast(d_dst.data());
-
-  d_dst.assign(expected.size(), T{0});
-  cudax::copy_bytes_naive(src_ptr, src_layout, dst_ptr, dst_layout, stream);
-  stream.sync();
-  CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == expected);
-
-  d_dst.assign(expected.size(), T{0});
-  cudax::copy_bytes_registers(src_ptr, src_layout, dst_ptr, dst_layout, stream);
-  stream.sync();
-  CUDAX_REQUIRE(thrust::host_vector<T>(d_dst) == expected);
-}
-
-template <typename T, typename Layout>
-void test_impl(const thrust::host_vector<T>& input, const Layout& layout)
-{
-  test_impl(input, input, layout, layout);
-}
+#include "copy_bytes_common.cuh"
 
 /***********************************************************************************************************************
  * 1D Tests
@@ -169,26 +133,6 @@ TEST_CASE("copy_bytes 3D", "[copy_bytes][3d]")
   }
   test_impl(
     data, expected, make_layout(shape, make_stride(D1 * D2, D2, 1)), make_layout(shape, make_stride(1, D0, D0 * D1)));
-}
-
-/***********************************************************************************************************************
- * Edge Cases
- **********************************************************************************************************************/
-
-TEST_CASE("copy_bytes scalar", "[copy_bytes][0d]")
-{
-  using namespace cute;
-  thrust::host_vector<int> data(1, 42);
-  test_impl(data, make_layout(make_shape(1)));
-}
-
-TEST_CASE("copy_bytes size 0", "[copy_bytes][zero_size]")
-{
-  using namespace cute;
-  thrust::host_vector<int> data(1, 0);
-  thrust::host_vector<int> expected(1, 0);
-  auto layout = make_layout(make_shape(0, 0));
-  test_impl(data, expected, layout, layout);
 }
 
 /***********************************************************************************************************************

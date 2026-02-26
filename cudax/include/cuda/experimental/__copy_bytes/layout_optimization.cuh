@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__COPY_BYTES_LAYOUT_UTILS
-#define _CUDAX__COPY_BYTES_LAYOUT_UTILS
+#ifndef _CUDAX__COPY_BYTES_LAYOUT_OPTIMIZATION
+#define _CUDAX__COPY_BYTES_LAYOUT_OPTIMIZATION
 
 #include <cuda/std/detail/__config>
 
@@ -36,6 +36,8 @@
 
 namespace cuda::experimental
 {
+inline constexpr int __max_vector_bytes = 16;
+
 #if !_CCCL_COMPILER(NVRTC)
 
 //! @brief Compute the alignment of a pointer in bytes.
@@ -200,4 +202,4 @@ __max_vector_size_bytes(const __raw_tensor<_Tp, _MaxRank>& __tensor) noexcept
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__COPY_BYTES_LAYOUT_UTILS
+#endif // _CUDAX__COPY_BYTES_LAYOUT_OPTIMIZATION

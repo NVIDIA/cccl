@@ -27,6 +27,7 @@
 #  include <cuda/std/__algorithm/all_of.h>
 #  include <cuda/std/__algorithm/is_sorted.h>
 #  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__cstdlib/abs.h>
 
 #  include <cuda/experimental/__copy/types.cuh>
 
@@ -44,7 +45,10 @@ template <typename _Tp, ::cuda::std::size_t _MaxRank>
 [[nodiscard]] _CCCL_HOST_API bool __has_sorted_strides(const __raw_tensor<_Tp, _MaxRank>& __tensor) noexcept
 {
   _CCCL_ASSERT(::cuda::in_range(__tensor.__rank, ::cuda::std::size_t{0}, _MaxRank), "Invalid tensor rank");
-  return ::cuda::std::is_sorted(__tensor.__strides.cbegin(), __tensor.__strides.cbegin() + __tensor.__rank);
+  return ::cuda::std::is_sorted(
+    __tensor.__strides.cbegin(), __tensor.__strides.cbegin() + __tensor.__rank, [](auto __a, auto __b) {
+      return ::cuda::std::abs(__a) < ::cuda::std::abs(__b);
+    });
 }
 
 //! @brief Check whether every active mode has shape strictly greater than 1.
