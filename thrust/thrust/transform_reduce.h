@@ -246,9 +246,8 @@ template <
   typename InputIterator1,
   typename InputIterator2,
   typename T,
-  typename BinaryOp1 = ::cuda::std::plus<T>,
-  typename BinaryOp2 = ::cuda::std::multiplies<
-    ::cuda::std::common_type_t<::cuda::std::iter_value_t<InputIterator1>, ::cuda::std::iter_value_t<InputIterator2>>>>
+  typename BinaryOp1 = ::cuda::std::plus<>,
+  typename BinaryOp2 = ::cuda::std::multiplies<>>
 _CCCL_HOST_DEVICE T transform_reduce(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
@@ -305,9 +304,8 @@ template <
   typename InputIterator1,
   typename InputIterator2,
   typename T,
-  typename BinaryOp1 = ::cuda::std::plus<T>,
-  typename BinaryOp2 = ::cuda::std::multiplies<
-    ::cuda::std::common_type_t<::cuda::std::iter_value_t<InputIterator1>, ::cuda::std::iter_value_t<InputIterator2>>>>
+  typename BinaryOp1 = ::cuda::std::plus<>,
+  typename BinaryOp2 = ::cuda::std::multiplies<>>
 T transform_reduce(
   InputIterator1 first1,
   InputIterator1 last1,
