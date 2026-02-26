@@ -49,6 +49,9 @@ struct find_valid_policy_impl<PoliciesT, Count, Count, WorkerPerSegmentAgentT, A
   static constexpr bool has_valid_policy = false;
 };
 
+// Finds the first policy in a tuple of policies that can be instantiated within the shared memory limits
+// This is useful to figure out which segments (given a runtime segment size) can still be addressed with a
+// one-worker-per-segment approach
 template <typename PoliciesT,
           ::cuda::std::int64_t Index,
           ::cuda::std::int64_t Count,
@@ -76,27 +79,68 @@ struct find_valid_policy_impl
   static constexpr bool has_valid_policy = fits ? true : next_step::has_valid_policy;
 };
 
-template <typename SegmentedTopKPolicy, template <typename...> class WorkerPerSegmentAgentT, typename... AgentParamsT>
+// Finds the last policy in a tuple of policies that can be instantiated within the shared memory limits
+// I.e., we want to find a policy for the one-worker-per-segment approach that is optimized for the segment size
+template <typename PoliciesT, ::cuda::std::int64_t Index, ::cuda::std::int64_t Count, int MaxSegmentSize>
+struct find_tightest_policy_impl
+{
+  using current_policy_t = ::cuda::std::tuple_element_t<Index, PoliciesT>;
+
+  // Calculate the capacity of the current policy
+  static constexpr int tile_size = current_policy_t::block_threads * current_policy_t::items_per_thread;
+
+  // Does this policy still cover our segment?
+  static constexpr bool covers = (tile_size >= MaxSegmentSize);
+
+  // Peek at the next policy
+  using next_step = find_tightest_policy_impl<PoliciesT, Index + 1, Count, MaxSegmentSize>;
+
+  // Selection Logic:
+  // If the current policy covers the segment, we check if the next one also still does.
+  // We want the last one that returns true for 'covers'.
+  using policy_t =
+    ::cuda::std::conditional_t<(covers && next_step::has_valid_policy),
+                               typename next_step::policy_t, // The next one is even tighter and still works
+                               ::cuda::std::conditional_t<covers, current_policy_t, void> // This is the tightest valid
+                                                                                          // one
+                               >;
+
+  static constexpr bool has_valid_policy = covers || next_step::has_valid_policy;
+};
+
+// Base case: end of tuple
+template <typename PoliciesT, ::cuda::std::int64_t Count, int MaxSegmentSize>
+struct find_tightest_policy_impl<PoliciesT, Count, Count, MaxSegmentSize>
+{
+  using policy_t                         = void;
+  static constexpr bool has_valid_policy = false;
+};
+
+template <typename SegmentedTopKPolicy,
+          typename SegmentSizeParameterT,
+          template <typename...> class WorkerPerSegmentAgentT,
+          typename... AgentParamsT>
 struct find_valid_policy
 {
-  // The list of policies for the one-worker-per-segment approach
-  using worker_per_segment_policies = typename SegmentedTopKPolicy::worker_per_segment_policies;
+  using worker_per_segment_policies     = typename SegmentedTopKPolicy::worker_per_segment_policies;
+  static constexpr int max_segment_size = params::static_max_value_v<SegmentSizeParameterT>;
 
-  // Helper to find a valid policy that we can successfully instantiate the agent with
-  using find_valid_policy_impl_t =
-    find_valid_policy_impl<worker_per_segment_policies,
-                           0,
-                           ::cuda::std::tuple_size<worker_per_segment_policies>::value,
-                           WorkerPerSegmentAgentT,
-                           AgentParamsT...>;
+  // Finds the "smallest" (last) policy that still fits the upper bound of the given segment size.
+  using segment_optimized_impl =
+    find_tightest_policy_impl<worker_per_segment_policies,
+                              0,
+                              ::cuda::std::tuple_size<worker_per_segment_policies>::value,
+                              max_segment_size>;
 
-  // Whether there's a valid policy for one-worker-per-segment approach
-  static constexpr bool supports_one_worker_per_segment = find_valid_policy_impl_t::has_valid_policy;
+  // Logic: We want the tighter (smaller) policy
+  // Since the list is decreasing, the "tightest" policy is further down the list
+  // than the "first fit SMEM" policy.
+  // If segment_optimized_impl finds a policy, it is guaranteed to be <= the SMEM policy in size.
+  static constexpr bool supports_one_worker_per_segment = segment_optimized_impl::has_valid_policy;
 
-  // Policy selected for one-worker-per-segment approach, if there is a valid policy
-  using worker_per_segment_policy_t = typename find_valid_policy_impl_t::policy_t;
+  using worker_per_segment_policy_t =
+    ::cuda::std::conditional_t<supports_one_worker_per_segment, typename segment_optimized_impl::policy_t, void>;
 
-  // Agent for the one-worker-per-segment approach, if there is a valid policy
   using worker_per_segment_agent_t =
     ::cuda::std::conditional_t<supports_one_worker_per_segment,
                                WorkerPerSegmentAgentT<worker_per_segment_policy_t, AgentParamsT...>,
@@ -117,6 +161,7 @@ template <typename ChainedPolicyT,
           typename NumSegmentsParameterT>
 __launch_bounds__(int(
   find_valid_policy<typename ChainedPolicyT::ActivePolicy,
+                    SegmentSizeParameterT,
                     agent_batched_topk_worker_per_segment,
                     KeyInputItItT,
                     KeyOutputItItT,
@@ -140,6 +185,7 @@ __launch_bounds__(int(
 
   using find_valid_policy_t = find_valid_policy<
     active_policy_t,
+    SegmentSizeParameterT,
     agent_batched_topk_worker_per_segment,
     KeyInputItItT,
     KeyOutputItItT,
