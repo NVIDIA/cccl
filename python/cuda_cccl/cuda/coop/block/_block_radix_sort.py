@@ -346,12 +346,6 @@ class radix_sort_keys(_radix_sort_base):
         are partitioned in a :ref:`blocked arrangement <coop-flexible-data-arrangement>` across 128 threads
         where each thread owns 4 consecutive keys. We start by importing necessary modules:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort.py
-            :language: python
-            :dedent:
-            :start-after: example-begin imports
-            :end-before: example-end imports
-
         Below is the code snippet that demonstrates the usage of the ``radix_sort_keys`` API:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort.py
@@ -460,12 +454,6 @@ class radix_sort_keys_descending(_radix_sort_base):
         The code snippet below illustrates a sort of 512 integer keys that
         are partitioned in a :ref:`blocked arrangement <coop-flexible-data-arrangement>` across 128 threads
         where each thread owns 4 consecutive keys. We start by importing necessary modules:
-
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort.py
-            :language: python
-            :dedent:
-            :start-after: example-begin imports
-            :end-before: example-end imports
 
         Below is the code snippet that demonstrates the usage of the ``radix_sort_keys`` API:
 

@@ -2560,3 +2560,14 @@
     - Result: `9 passed`.
   - `pytest tests/coop -n 16`
     - Result: `3156 passed, 42 skipped, 5 xfailed, 2 warnings`.
+
+## 2026-02-26 (imports examples cleanup)
+- Request: Remove import-only literalinclude snippets from coop docs/examples because they add no value in final rendered docs.
+- Changes:
+  - Removed all `literalinclude` blocks targeting `example-begin imports` / `example-end imports` from coop public docs and primitive docstrings.
+  - Updated `docs/python/coop_single_phase.rst` and `docs/python/coop_thread_data.rst` to keep only behavior-focused snippets.
+  - Updated block/warp primitive docstrings under `cuda/coop/block/*` and `cuda/coop/warp/*` to keep only operation examples.
+- Decisions:
+  - Keep test-side `# example-begin imports` markers unchanged for now; only rendered-doc include blocks were removed.
+- Tests:
+  - Pending: `pre-commit run --files <changed files>`.

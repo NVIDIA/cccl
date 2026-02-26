@@ -33,12 +33,6 @@ Basic usage
 .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api.py
    :language: python
    :dedent:
-   :start-after: example-begin imports
-   :end-before: example-end imports
-
-.. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api.py
-   :language: python
-   :dedent:
    :start-after: example-begin load-store-thread-data
    :end-before: example-end load-store-thread-data
 

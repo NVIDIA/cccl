@@ -15,12 +15,6 @@ The snippet below shows a block-wide reduction with a custom operator:
 .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
    :language: python
    :dedent:
-   :start-after: example-begin imports
-   :end-before: example-end imports
-
-.. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce_api.py
-   :language: python
-   :dedent:
    :start-after: example-begin reduce
    :end-before: example-end reduce
 
@@ -28,12 +22,6 @@ Warp example
 ------------
 
 Warp collectives are similar, but operate on a single warp of threads:
-
-.. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_scan_api.py
-   :language: python
-   :dedent:
-   :start-after: example-begin imports
-   :end-before: example-end imports
 
 .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_scan_api.py
    :language: python

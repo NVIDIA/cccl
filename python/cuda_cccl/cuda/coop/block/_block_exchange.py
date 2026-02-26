@@ -123,12 +123,6 @@ class exchange(BasePrimitive):
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_exchange_api.py
                 :language: python
                 :dedent:
-                :start-after: example-begin imports
-                :end-before: example-end imports
-
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_exchange_api.py
-                :language: python
-                :dedent:
                 :start-after: example-begin striped-to-blocked
                 :end-before: example-end striped-to-blocked
 

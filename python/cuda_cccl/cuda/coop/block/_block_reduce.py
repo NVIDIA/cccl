@@ -55,12 +55,6 @@ class reduce(BasePrimitive):
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce.py
                 :language: python
                 :dedent:
-                :start-after: example-begin imports
-                :end-before: example-end imports
-
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce.py
-                :language: python
-                :dedent:
                 :start-after: example-begin reduce
                 :end-before: example-end reduce
 
@@ -274,12 +268,6 @@ class sum(reduce):
 
         Example:
             The snippet below demonstrates a block sum.
-
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce.py
-                :language: python
-                :dedent:
-                :start-after: example-begin imports
-                :end-before: example-end imports
 
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_reduce.py
                 :language: python

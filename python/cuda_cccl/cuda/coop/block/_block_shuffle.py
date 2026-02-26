@@ -67,12 +67,6 @@ class shuffle(BasePrimitive):
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_shuffle.py
                 :language: python
                 :dedent:
-                :start-after: example-begin imports
-                :end-before: example-end imports
-
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_shuffle.py
-                :language: python
-                :dedent:
                 :start-after: example-begin offset-scalar
                 :end-before: example-end offset-scalar
 
