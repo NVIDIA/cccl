@@ -19,6 +19,7 @@
 #include <cub/util_macro.cuh>
 
 #include <cuda/__device/arch_id.h>
+#include <cuda/std/concepts>
 #include <cuda/std/optional>
 
 #if !_CCCL_COMPILER(NVRTC)
