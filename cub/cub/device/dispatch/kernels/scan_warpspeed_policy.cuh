@@ -7,6 +7,10 @@
 
 #include <cub/detail/warpspeed/squad/squad_desc.cuh>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
@@ -61,6 +65,23 @@ struct scan_warpspeed_policy
         && lhs.num_look_ahead_items == rhs.num_look_ahead_items && lhs.num_total_threads == rhs.num_total_threads
         && lhs.items_per_thread == rhs.items_per_thread && lhs.tile_size == rhs.tile_size;
   }
+
+  _CCCL_API constexpr friend bool operator!=(const scan_warpspeed_policy& lhs, const scan_warpspeed_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const scan_warpspeed_policy& p)
+  {
+    return os
+        << "scan_warpspeed_policy { .valid = " << p.valid << ", .num_reduce_warps = " << p.num_reduce_warps
+        << ", .num_scan_stor_warps = " << p.num_scan_stor_warps << ", .num_load_warps = " << p.num_load_warps
+        << ", .num_sched_warps = " << p.num_sched_warps << ", .num_look_ahead_warps = " << p.num_look_ahead_warps
+        << ", .num_look_ahead_items = " << p.num_look_ahead_items << ", .num_total_threads = " << p.num_total_threads
+        << ", .items_per_thread = " << p.items_per_thread << ", .tile_size = " << p.tile_size << " }";
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
 };
 } // namespace detail::scan
 

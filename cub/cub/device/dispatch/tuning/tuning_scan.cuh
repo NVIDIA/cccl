@@ -155,13 +155,7 @@ struct scan_policy
        << ", .delay_constructor = " << p.delay_constructor;
     if (p.warpspeed)
     {
-      os << ", .warpspeed = scan_warpspeed_policy { .valid = " << p.warpspeed.valid << ", .num_reduce_warps = "
-         << p.warpspeed.num_reduce_warps << ", .num_scan_stor_warps = " << p.warpspeed.num_scan_stor_warps
-         << ", .num_load_warps = " << p.warpspeed.num_load_warps << ", .num_sched_warps = "
-         << p.warpspeed.num_sched_warps << ", .num_look_ahead_warps = " << p.warpspeed.num_look_ahead_warps
-         << ", .num_look_ahead_items = " << p.warpspeed.num_look_ahead_items << ", .num_total_threads = "
-         << p.warpspeed.num_total_threads << ", .items_per_thread = " << p.warpspeed.items_per_thread
-         << ", .tile_size = " << p.warpspeed.tile_size << "}";
+      os << ", .warpspeed = " << p.warpspeed;
     }
     return os << " }";
   }
