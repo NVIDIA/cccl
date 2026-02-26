@@ -1039,6 +1039,9 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
+  //!
+  //! @return cudaError_t
+  //!   error status
   template <typename IndexType, size_t... Extents, typename OpType, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, EnvT env = {})
@@ -1126,6 +1129,9 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
+  //!
+  //! @return cudaError_t
+  //!   error status
   _CCCL_TEMPLATE(typename LayoutMapping, typename OpType, typename EnvT = ::cuda::std::execution::env<>)
   _CCCL_REQUIRES(::cuda::std::__is_cuda_std_layout_left_or_right_mapping_v<LayoutMapping>)
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
