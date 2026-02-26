@@ -21,7 +21,11 @@
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__functional/call_or.h>
+#include <cuda/__stream/get_stream.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__mdspan/extents.h>
@@ -566,6 +570,63 @@ public:
     return detail::for_each::dispatch<offset_t, OpT>(static_cast<offset_t>(shape), op, stream);
   }
 
+  //! @rst
+  //! Applies the function object ``op`` to each index in the provided shape.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //!
+  //! - The return value of ``op``, if any, is ignored.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin bulk-env
+  //!     :end-before: example-end bulk-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam ShapeT
+  //!   **[inferred]** Integral type
+  //!
+  //! @tparam OpT
+  //!   **[inferred]** Unary function object type
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!
+  //! @param[in] shape
+  //!   Shape of the index space to iterate over
+  //!
+  //! @param[in] op
+  //!   Function object to apply to each index in the index space
+  //!
+  //! @param[in] env
+  //!   Execution environment
+  template <class ShapeT,
+            class OpT,
+            class EnvT,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t Bulk(ShapeT shape, OpT op, EnvT env)
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::Bulk");
+    static_assert(::cuda::std::is_integral_v<ShapeT>, "ShapeT must be an integral type");
+    if (shape == 0)
+    {
+      return cudaSuccess;
+    }
+    auto stream    = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
+    using offset_t = ShapeT;
+    return detail::for_each::dispatch<offset_t, OpT>(static_cast<offset_t>(shape), op, stream.get());
+  }
+
 private:
   // Internal version without NVTX raNGE
   template <class RandomAccessIteratorT, class NumItemsT, class OpT>
@@ -641,6 +702,65 @@ public:
   }
 
   //! @rst
+  //! Applies the function object ``op`` to each element in the range ``[first, first + num_items)``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //!
+  //! - The return value of ``op``, if any, is ignored.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-n-env
+  //!     :end-before: example-end for-each-n-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam RandomAccessIteratorT
+  //!   **[inferred]** Random-access iterator type
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Integral type for the number of items
+  //!
+  //! @tparam OpT
+  //!   **[inferred]** Unary function object type
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!
+  //! @param[in] first
+  //!   The beginning of the sequence
+  //!
+  //! @param[in] num_items
+  //!   Number of elements to iterate over
+  //!
+  //! @param[in] op
+  //!   Function object to apply to each element in the range
+  //!
+  //! @param[in] env
+  //!   Execution environment
+  template <class RandomAccessIteratorT,
+            class NumItemsT,
+            class OpT,
+            class EnvT,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEachN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, EnvT env)
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachN");
+    auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
+    return ForEachNNoNVTX(first, num_items, op, stream.get());
+  }
+
+  //! @rst
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -696,6 +816,63 @@ public:
     using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
     const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
     return ForEachNNoNVTX(first, num_items, op, stream);
+  }
+
+  //! @rst
+  //! Applies the function object ``op`` to each element in the range ``[first, last)``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //!
+  //! - The return value of ``op``, if any, is ignored.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-env
+  //!     :end-before: example-end for-each-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam RandomAccessIteratorT
+  //!   **[inferred]** Random-access iterator type
+  //!
+  //! @tparam OpT
+  //!   **[inferred]** Unary function object type
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!
+  //! @param[in] first
+  //!   The beginning of the sequence
+  //!
+  //! @param[in] last
+  //!   The end of the sequence
+  //!
+  //! @param[in] op
+  //!   Function object to apply to each element in the range
+  //!
+  //! @param[in] env
+  //!   Execution environment
+  template <class RandomAccessIteratorT,
+            class OpT,
+            class EnvT,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEach(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, EnvT env)
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEach");
+    auto stream          = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
+    using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
+    const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
+    return ForEachNNoNVTX(first, num_items, op, stream.get());
   }
 
 private:
@@ -772,6 +949,68 @@ public:
   }
 
   //! @rst
+  //! Applies the function object ``op`` to each element in the range ``[first, first + num_items)``.
+  //! Unlike ``ForEachN``, ``ForEachCopyN`` is allowed to invoke ``op`` on copies of the elements.
+  //! This relaxation allows ``ForEachCopyN`` to vectorize loads.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //!
+  //! - Allowed to invoke ``op`` on copies of the elements
+  //! - The return value of ``op``, if any, is ignored.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-copy-n-env
+  //!     :end-before: example-end for-each-copy-n-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam RandomAccessIteratorT
+  //!   **[inferred]** Random-access iterator type
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Integral type for the number of items
+  //!
+  //! @tparam OpT
+  //!   **[inferred]** Unary function object type
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!
+  //! @param[in] first
+  //!   The beginning of the sequence
+  //!
+  //! @param[in] num_items
+  //!   Number of elements to iterate over
+  //!
+  //! @param[in] op
+  //!   Function object to apply to a copy of each element in the range
+  //!
+  //! @param[in] env
+  //!   Execution environment
+  template <class RandomAccessIteratorT,
+            class NumItemsT,
+            class OpT,
+            class EnvT,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEachCopyN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, EnvT env)
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopyN");
+    auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
+    return ForEachCopyNNoNVTX(first, num_items, op, stream.get());
+  }
+
+  //! @rst
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -829,6 +1068,66 @@ public:
     using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
     const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
     return ForEachCopyNNoNVTX(first, num_items, op, stream);
+  }
+
+  //! @rst
+  //! Applies the function object ``op`` to each element in the range ``[first, last)``.
+  //! Unlike ``ForEach``, ``ForEachCopy`` is allowed to invoke ``op`` on copies of the elements.
+  //! This relaxation allows ``ForEachCopy`` to vectorize loads.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //!
+  //! - Allowed to invoke ``op`` on copies of the elements
+  //! - The return value of ``op``, if any, is ignored.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-copy-env
+  //!     :end-before: example-end for-each-copy-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam RandomAccessIteratorT
+  //!   **[inferred]** Random-access iterator type
+  //!
+  //! @tparam OpT
+  //!   **[inferred]** Unary function object type
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., ``cuda::std::execution::env<...>``)
+  //!
+  //! @param[in] first
+  //!   The beginning of the sequence
+  //!
+  //! @param[in] last
+  //!   The end of the sequence
+  //!
+  //! @param[in] op
+  //!   Function object to apply to a copy of each element in the range
+  //!
+  //! @param[in] env
+  //!   Execution environment
+  template <class RandomAccessIteratorT,
+            class OpT,
+            class EnvT,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEachCopy(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, EnvT env)
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopy");
+    auto stream          = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
+    using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
+    const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
+    return ForEachCopyNNoNVTX(first, num_items, op, stream.get());
   }
 
   /*********************************************************************************************************************
