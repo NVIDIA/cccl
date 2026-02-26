@@ -768,7 +768,8 @@ struct DispatchScan
   {
     struct policy_getter
     {
-      _CCCL_API _CCCL_FORCEINLINE constexpr auto operator()() const
+      // host-device not api, because clang warns about exclude_from_explicit_instantiation in local types
+      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()() const
       {
         return detail::scan::convert_policy<ActivePolicyT>();
       }
