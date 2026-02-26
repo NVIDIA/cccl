@@ -91,12 +91,6 @@ class radix_rank(BasePrimitive):
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_rank.py
                 :language: python
                 :dedent:
-                :start-after: example-begin imports
-                :end-before: example-end imports
-
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_rank.py
-                :language: python
-                :dedent:
                 :start-after: example-begin radix-rank
                 :end-before: example-end radix-rank
 

@@ -62,12 +62,6 @@ class reduce(BasePrimitive):
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
                 :language: python
                 :dedent:
-                :start-after: example-begin imports
-                :end-before: example-end imports
-
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
-                :language: python
-                :dedent:
                 :start-after: example-begin reduce
                 :end-before: example-end reduce
         """
@@ -231,12 +225,6 @@ class sum(_warp_unary_reduce):
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
                 :language: python
                 :dedent:
-                :start-after: example-begin imports
-                :end-before: example-end imports
-
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
-                :language: python
-                :dedent:
                 :start-after: example-begin sum
                 :end-before: example-end sum
         """
@@ -267,12 +255,6 @@ class max(_warp_unary_reduce):
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
                 :language: python
                 :dedent:
-                :start-after: example-begin imports
-                :end-before: example-end imports
-
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
-                :language: python
-                :dedent:
                 :start-after: example-begin max
                 :end-before: example-end max
         """
@@ -300,12 +282,6 @@ class min(_warp_unary_reduce):
         Computes a warp-wide minimum for lane :sub:`0`.
 
         Example:
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
-                :language: python
-                :dedent:
-                :start-after: example-begin imports
-                :end-before: example-end imports
-
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_reduce_api.py
                 :language: python
                 :dedent:

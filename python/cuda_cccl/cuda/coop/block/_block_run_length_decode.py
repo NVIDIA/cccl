@@ -165,12 +165,6 @@ class run_length(BasePrimitive):
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_run_length_decode.py
                 :language: python
                 :dedent:
-                :start-after: example-begin imports
-                :end-before: example-end imports
-
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_run_length_decode.py
-                :language: python
-                :dedent:
                 :start-after: example-begin run-length
                 :end-before: example-end run-length
         """

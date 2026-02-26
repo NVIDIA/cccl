@@ -66,12 +66,6 @@ class merge_sort_keys(BasePrimitive):
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_merge_sort_api.py
                 :language: python
                 :dedent:
-                :start-after: example-begin imports
-                :end-before: example-end imports
-
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_merge_sort_api.py
-                :language: python
-                :dedent:
                 :start-after: example-begin merge-sort
                 :end-before: example-end merge-sort
         """

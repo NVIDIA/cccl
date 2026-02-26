@@ -880,12 +880,6 @@ class exclusive_sum(scan):
             :ref:`blocked arrangement <coop-flexible-data-arrangement>` across 128
             threads where each thread owns 4 consecutive items.
 
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_scan_api.py
-                :language: python
-                :dedent:
-                :start-after: example-begin imports
-                :end-before: example-end imports
-
             Below is the code snippet that demonstrates the usage of the
             ``exclusive_sum`` API:
 
