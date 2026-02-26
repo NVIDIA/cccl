@@ -283,24 +283,8 @@ try
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
   const auto is_trivial_type = [](cccl_type_enum type) {
-    switch (type)
-    {
-      case CCCL_INT8:
-      case CCCL_INT16:
-      case CCCL_INT32:
-      case CCCL_INT64:
-      case CCCL_UINT8:
-      case CCCL_UINT16:
-      case CCCL_UINT32:
-      case CCCL_UINT64:
-      case CCCL_FLOAT16:
-      case CCCL_FLOAT32:
-      case CCCL_FLOAT64:
-      case CCCL_BOOLEAN:
-        return true;
-      default:
-        return false;
-    }
+    // TODO: implement actual logic here when nontrivial custom types become supported
+    return true;
   };
 
   const bool input_contiguous             = input_it.type == cccl_iterator_kind_t::CCCL_POINTER;
