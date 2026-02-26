@@ -12,7 +12,7 @@
 
 #include <cuda/memory_pool>
 #include <cuda/std/__pstl_algorithm>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include "nvbench_helper.cuh"
 
@@ -30,7 +30,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               cuda::std::fill_n(cuda_policy(alloc, launch), output.begin(), elements, T{42});
+               do_not_optimize(cuda::std::fill_n(cuda_policy(alloc, launch), output.begin(), elements, T{42}));
              });
 }
 

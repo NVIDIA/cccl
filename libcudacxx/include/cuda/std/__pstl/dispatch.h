@@ -32,11 +32,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
 
 enum class __pstl_algorithm
 {
+  __copy_if,
   __find_if,
   __for_each_n,
   __generate_n,
   __reduce,
   __transform,
+  __transform_reduce,
 };
 
 //! @brief tag type to indicate that we cannot dispatch to a parallel algorithm and should run the algorithm serially

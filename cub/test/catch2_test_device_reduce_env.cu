@@ -244,17 +244,16 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
     }
     else
     {
-      using policy_t              = cub::detail::rfa::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
+      using policy_t              = cub::detail::rfa::policy_selector_from_types<accumulator_t>;
       using deterministic_add_t   = cub::detail::rfa::deterministic_sum_t<accumulator_t>;
       using reduction_op_t        = deterministic_add_t;
       using deterministic_accum_t = deterministic_add_t::DeterministicAcc;
       using output_it_t           = decltype(d_out.begin());
 
-      using dispatch_t = cub::detail::rfa::
-        dispatch_t<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>;
-
-      REQUIRE(
-        cudaSuccess == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
+      REQUIRE(cudaSuccess
+              == cub::detail::rfa::
+                dispatch<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>(
+                  nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
 
       auto k1 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
         policy_t,
@@ -363,17 +362,16 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
     }
     else
     {
-      using policy_t              = cub::detail::rfa::policy_hub<accumulator_t, offset_t, op_t>::MaxPolicy;
+      using policy_t              = cub::detail::rfa::policy_selector_from_types<accumulator_t>;
       using deterministic_add_t   = cub::detail::rfa::deterministic_sum_t<accumulator_t>;
       using reduction_op_t        = deterministic_add_t;
       using deterministic_accum_t = deterministic_add_t::DeterministicAcc;
       using output_it_t           = decltype(d_out.begin());
 
-      using dispatch_t = cub::detail::rfa::
-        dispatch_t<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>;
-
-      REQUIRE(
-        cudaSuccess == dispatch_t::Dispatch(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
+      REQUIRE(cudaSuccess
+              == cub::detail::rfa::
+                dispatch<decltype(d_in), decltype(d_out.begin()), offset_t, init_t, transform_t, accumulator_t>(
+                  nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items, init));
 
       auto k1 = cub::detail::reduce::DeterministicDeviceReduceSingleTileKernel<
         policy_t,
