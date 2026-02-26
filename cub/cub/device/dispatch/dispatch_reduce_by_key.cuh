@@ -698,16 +698,20 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
          "Dispatching DeviceReduceByKey to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());))
 #endif
 
+    // Convert the policy into a legacy agent policy for vsmem_helper. Use a value and decltype it again, to workaround
+    // MSVC bug that just turns the type to `int`. TODO(bgruber): refactor this in the future
+    [[maybe_unused]] AgentReduceByKeyPolicy<
+      policy.block_threads,
+      policy.items_per_thread,
+      policy.load_algorithm,
+      policy.load_modifier,
+      policy.scan_algorithm,
+      delay_constructor_t<policy.delay_constructor.kind,
+                          policy.delay_constructor.delay,
+                          policy.delay_constructor.l2_write_latency>> agent_policy;
+
     using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<
-      // convert the policy into a legacy agent policy for vsmem_helper. TODO(bgruber): refactor this in the future
-      AgentReduceByKeyPolicy<policy.block_threads,
-                             policy.items_per_thread,
-                             policy.load_algorithm,
-                             policy.load_modifier,
-                             policy.scan_algorithm,
-                             delay_constructor_t<policy.delay_constructor.kind,
-                                                 policy.delay_constructor.delay,
-                                                 policy.delay_constructor.l2_write_latency>>,
+      decltype(agent_policy),
       AgentReduceByKey,
       KeysInputIteratorT,
       UniqueOutputIteratorT,
