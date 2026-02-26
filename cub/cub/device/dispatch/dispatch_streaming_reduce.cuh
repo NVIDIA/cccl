@@ -141,16 +141,16 @@ struct local_to_global_op
 // @tparam InitT
 //   Initial value type
 //
-// @tparam PolicyChainT
-//   The policy chain passed to the DispatchReduce template specialization
+// @tparam PolicySelector
+//   Selects the tuning policy
 template <typename InputIteratorT,
           typename OutputIteratorT,
           typename PerPartitionOffsetT,
           typename GlobalOffsetT,
           typename ReductionOpT,
           typename InitT,
-          typename PolicyChainT =
-            detail::reduce::policy_hub<KeyValuePair<PerPartitionOffsetT, InitT>, PerPartitionOffsetT, ReductionOpT>>
+          typename PolicySelector = detail::reduce::
+            policy_selector_from_types<KeyValuePair<PerPartitionOffsetT, InitT>, PerPartitionOffsetT, ReductionOpT>>
 struct dispatch_streaming_arg_reduce_t
 {
   // Internal dispatch routine for computing a device-wide argument extremum, like `ArgMin` and `ArgMax`
@@ -254,7 +254,9 @@ struct dispatch_streaming_arg_reduce_t
       static_cast<PerPartitionOffsetT>(largest_partition_size),
       reduce_op,
       initial_value,
-      stream);
+      stream,
+      ::cuda::std::identity{},
+      PolicySelector{});
 
     // Alias the temporary allocations from the single storage blob (or compute the necessary size
     // of the blob)
