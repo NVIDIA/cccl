@@ -112,7 +112,7 @@ DeviceCompactInitKernel(ScanTileStateT tile_state, int num_tiles, NumSelectedIte
   }
 }
 template <typename PolicySelector, typename InputIteratorT, typename OutputIteratorT, typename AccumT>
-_CCCL_DEVICE constexpr int get_device_scan_launch_bounds() noexcept
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_CONSTEVAL int get_device_scan_launch_bounds() noexcept
 {
   constexpr scan_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
@@ -204,22 +204,11 @@ __launch_bounds__(get_device_scan_launch_bounds<PolicySelector, InputIteratorT, 
   if constexpr (policy.warpspeed
                 && detail::scan::use_warpspeed<InputIteratorT, OutputIteratorT, AccumT>(policy.warpspeed))
   {
-    using WarpspeedPolicyT [[maybe_unused]] = warpspeedKernelPolicy<
-      scan_warpspeed_policy::num_squads,
-      policy.warpspeed.num_reduce_warps,
-      policy.warpspeed.num_scan_stor_warps,
-      policy.warpspeed.num_load_warps,
-      policy.warpspeed.num_sched_warps,
-      policy.warpspeed.num_look_ahead_warps,
-      policy.warpspeed.num_look_ahead_items,
-      policy.warpspeed.num_total_threads,
-      policy.warpspeed.items_per_thread,
-      policy.warpspeed.tile_size>;
     NV_IF_TARGET(
       NV_PROVIDES_SM_100, ({
         auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
           d_in, d_out, tile_state.lookahead, num_items, num_stages};
-        device_scan_lookahead_body<WarpspeedPolicyT, ForceInclusive, RealInitValueT>(scan_params, scan_op, init_value);
+        device_scan_lookahead_body<PolicySelector, ForceInclusive, RealInitValueT>(scan_params, scan_op, init_value);
       }));
   }
   else

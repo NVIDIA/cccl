@@ -282,7 +282,7 @@ try
   const auto active_policy = policy_sel(arch_id);
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-  const auto is_trivial_type = [](cccl_type_enum type) {
+  const auto is_trivial_type = [](cccl_type_enum /* type */) {
     // TODO: implement actual logic here when nontrivial custom types become supported
     return true;
   };
@@ -450,7 +450,7 @@ CUresult cccl_device_scan(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    auto exec_status = cub::detail::scan::dispatch_with_accum<void>(
+    auto exec_status = cub::detail::scan::dispatch_with_accum<void, EnforceInclusive>(
       d_temp_storage,
       *temp_storage_bytes,
       indirect_arg_t{d_in},
