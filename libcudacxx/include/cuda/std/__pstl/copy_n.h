@@ -49,16 +49,16 @@ _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_t
 _CCCL_HOST_API _OutputIterator
 copy_n([[maybe_unused]] const _Policy& __policy, _InputIterator __first, _Size __count, _OutputIterator __result)
 {
-  if (__count == 0)
-  {
-    return __result;
-  }
-
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__copy_n, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
     _CCCL_NVTX_RANGE_SCOPE("cuda::std::copy_n");
+
+    if (__count == 0)
+    {
+      return __result;
+    }
     return __dispatch(__policy,
                       ::cuda::std::move(__first),
                       static_cast<iter_difference_t<_InputIterator>>(__count),
