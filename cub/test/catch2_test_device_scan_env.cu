@@ -207,18 +207,17 @@ TEST_CASE("Device scan inclusive-scan works with default environment", "[scan][d
   using value_t     = int;
   using offset_t    = cub::detail::choose_offset_t<num_items_t>;
 
-  using policy_t =
-    cub::detail::scan::default_tuning::fn<value_t, value_t, value_t, offset_t, block_size_check_t>::MaxPolicy;
+  using selector_t =
+    cub::detail::scan::default_tuning::selector<value_t, value_t, value_t, offset_t, block_size_check_t>;
 
   int current_device{};
   REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
 
-  int ptx_version{};
-  REQUIRE(cudaSuccess == cub::PtxVersion(ptx_version, current_device));
+  cudaDeviceProp device_props{};
+  REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, current_device));
 
-  int target_block_size{};
-  block_size_retreiver_t block_size_retreiver{&target_block_size};
-  REQUIRE(cudaSuccess == policy_t::Invoke(ptx_version, block_size_retreiver));
+  const auto target_block_size =
+    selector_t{}(cuda::to_arch_id(cuda::compute_capability{device_props.major, device_props.minor})).block_threads;
 
   num_items_t num_items = 1;
   c2h::device_vector<int> d_block_size(1);
