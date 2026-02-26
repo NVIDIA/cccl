@@ -283,6 +283,10 @@ struct dispatch_batched_topk
 
     // Currently, we only support fixed-size segments that fit into shared memory
     // TODO (elstehle): extend support for variable-size segments
+    static_assert(
+      !params::is_per_segment_param_v<SegmentSizeParameterT> && find_valid_policy_t::supports_one_worker_per_segment,
+      "Currently only small, fixed-size segments are supported, where each segment can be processed by a single thread "
+      "block.");
     if constexpr (!params::is_per_segment_param_v<SegmentSizeParameterT>
                   && find_valid_policy_t::supports_one_worker_per_segment)
     {
