@@ -241,13 +241,12 @@ OutputType transform_reduce(
  *  \see \c reduce
  *  \see \c inner_product
  */
-template <
-  typename DerivedPolicy,
-  typename InputIterator1,
-  typename InputIterator2,
-  typename T,
-  typename BinaryOp1 = ::cuda::std::plus<>,
-  typename BinaryOp2 = ::cuda::std::multiplies<>>
+template <typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename T,
+          typename BinaryOp1 = ::cuda::std::plus<>,
+          typename BinaryOp2 = ::cuda::std::multiplies<>>
 _CCCL_HOST_DEVICE T transform_reduce(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
@@ -300,12 +299,11 @@ _CCCL_HOST_DEVICE T transform_reduce(
  *  \see \c reduce
  *  \see \c inner_product
  */
-template <
-  typename InputIterator1,
-  typename InputIterator2,
-  typename T,
-  typename BinaryOp1 = ::cuda::std::plus<>,
-  typename BinaryOp2 = ::cuda::std::multiplies<>>
+template <typename InputIterator1,
+          typename InputIterator2,
+          typename T,
+          typename BinaryOp1 = ::cuda::std::plus<>,
+          typename BinaryOp2 = ::cuda::std::multiplies<>>
 T transform_reduce(
   InputIterator1 first1,
   InputIterator1 last1,
