@@ -23,14 +23,6 @@
 
 #if _CCCL_HAS_BACKEND_CUDA()
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
-_CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
-
-#  include <cub/device/device_find.cuh>
-
-_CCCL_DIAG_POP
-
 #  include <cuda/__iterator/tabulate_output_iterator.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__stream/stream_ref.h>
