@@ -78,7 +78,7 @@ C2H_TEST("Device bulk works without temporary storage", "[bulk][device]")
   c2h::device_vector<int> vec = {1, 2, 3, 4};
   square_t op{thrust::raw_pointer_cast(vec.data())};
 
-  cub::DeviceFor::Bulk(vec.size(), op);
+  (void) cub::DeviceFor::Bulk(vec.size(), op);
 
   c2h::device_vector<int> expected = {1, 4, 9, 16};
   // example-end bulk-wo-temp-storage
@@ -116,7 +116,7 @@ C2H_TEST("Device for each n works without temporary storage", "[for_each][device
   c2h::device_vector<int> vec = {1, 2, 3, 4};
   square_ref_t op{};
 
-  cub::DeviceFor::ForEachN(vec.begin(), vec.size(), op);
+  (void) cub::DeviceFor::ForEachN(vec.begin(), vec.size(), op);
 
   c2h::device_vector<int> expected = {1, 4, 9, 16};
   // example-end for-each-n-wo-temp-storage
@@ -154,7 +154,7 @@ C2H_TEST("Device for each works without temporary storage", "[for_each][device]"
   c2h::device_vector<int> vec = {1, 2, 3, 4};
   square_ref_t op{};
 
-  cub::DeviceFor::ForEach(vec.begin(), vec.end(), op);
+  (void) cub::DeviceFor::ForEach(vec.begin(), vec.end(), op);
 
   c2h::device_vector<int> expected = {1, 4, 9, 16};
   // example-end for-each-wo-temp-storage
@@ -194,7 +194,7 @@ C2H_TEST("Device for each n copy works without temporary storage", "[for_each][d
   c2h::device_vector<int> count(1);
   odd_count_t op{thrust::raw_pointer_cast(count.data())};
 
-  cub::DeviceFor::ForEachCopyN(vec.begin(), vec.size(), op);
+  (void) cub::DeviceFor::ForEachCopyN(vec.begin(), vec.size(), op);
 
   c2h::device_vector<int> expected = {2};
   // example-end for-each-copy-n-wo-temp-storage
@@ -234,7 +234,7 @@ C2H_TEST("Device for each copy works without temporary storage", "[for_each][dev
   c2h::device_vector<int> count(1);
   odd_count_t op{thrust::raw_pointer_cast(count.data())};
 
-  cub::DeviceFor::ForEachCopy(vec.begin(), vec.end(), op);
+  (void) cub::DeviceFor::ForEachCopy(vec.begin(), vec.end(), op);
 
   c2h::device_vector<int> expected = {2};
   // example-end for-each-copy-wo-temp-storage
