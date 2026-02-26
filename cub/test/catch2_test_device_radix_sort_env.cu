@@ -291,7 +291,6 @@ TEST_CASE("Device radix sort pairs uses custom stream", "[radix_sort][device]")
 
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
-
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
@@ -337,7 +336,6 @@ TEST_CASE("Device radix sort pairs descending uses custom stream", "[radix_sort]
 
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
-
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
@@ -373,11 +371,8 @@ TEST_CASE("Device radix sort keys uses custom stream", "[radix_sort][device]")
     env);
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
-
   c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
-
   REQUIRE(keys_out == expected_keys);
-
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
@@ -413,10 +408,7 @@ TEST_CASE("Device radix sort keys descending uses custom stream", "[radix_sort][
     env);
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
-
   c2h::device_vector<int> expected_keys{9, 8, 7, 6, 5, 3, 0};
-
   REQUIRE(keys_out == expected_keys);
-
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }

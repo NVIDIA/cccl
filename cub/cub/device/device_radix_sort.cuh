@@ -2553,8 +2553,9 @@ public:
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
       DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-      return sort_keys_env_dispatch<tuning_t, SortOrder::Ascending>(
-        storage, bytes, d_keys, static_cast<offset_t>(num_items), begin_bit, end_bit, false, stream);
+      DoubleBuffer<NullType> d_values;
+      return detail::radix_sort::dispatch<SortOrder::Ascending>(
+        storage, bytes, d_keys, d_values, static_cast<offset_t>(num_items), begin_bit, end_bit, false, stream);
     });
   }
 
@@ -2989,6 +2990,17 @@ public:
   //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
   //!
+  //! Snippet
+  //! --------------------------------------------------
+  //!
+  //! The code snippet below illustrates the env-based sorting of keys using DoubleBuffer:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin radix-sort-keys-db-env
+  //!     :end-before: example-end radix-sort-keys-db-env
+  //!
   //! @endrst
   //!
   //! @tparam KeyT
@@ -3030,8 +3042,9 @@ public:
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
-      return sort_keys_env_dispatch<tuning_t, SortOrder::Ascending>(
-        storage, bytes, d_keys, static_cast<offset_t>(num_items), begin_bit, end_bit, true, stream);
+      DoubleBuffer<NullType> d_values;
+      return detail::radix_sort::dispatch<SortOrder::Ascending>(
+        storage, bytes, d_keys, d_values, static_cast<offset_t>(num_items), begin_bit, end_bit, true, stream);
     });
   }
 
@@ -3507,8 +3520,9 @@ public:
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
       DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-      return sort_keys_env_dispatch<tuning_t, SortOrder::Descending>(
-        storage, bytes, d_keys, static_cast<offset_t>(num_items), begin_bit, end_bit, false, stream);
+      DoubleBuffer<NullType> d_values;
+      return detail::radix_sort::dispatch<SortOrder::Descending>(
+        storage, bytes, d_keys, d_values, static_cast<offset_t>(num_items), begin_bit, end_bit, false, stream);
     });
   }
 
@@ -3941,6 +3955,17 @@ public:
   //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
   //!
+  //! Snippet
+  //! --------------------------------------------------
+  //!
+  //! The code snippet below illustrates the env-based descending sort of keys using DoubleBuffer:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin radix-sort-keys-descending-db-env
+  //!     :end-before: example-end radix-sort-keys-descending-db-env
+  //!
   //! @endrst
   //!
   //! @tparam KeyT
@@ -3982,8 +4007,9 @@ public:
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
-      return sort_keys_env_dispatch<tuning_t, SortOrder::Descending>(
-        storage, bytes, d_keys, static_cast<offset_t>(num_items), begin_bit, end_bit, true, stream);
+      DoubleBuffer<NullType> d_values;
+      return detail::radix_sort::dispatch<SortOrder::Descending>(
+        storage, bytes, d_keys, d_values, static_cast<offset_t>(num_items), begin_bit, end_bit, true, stream);
     });
   }
 

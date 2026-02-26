@@ -101,6 +101,30 @@ C2H_TEST("cub::DeviceRadixSort::SortKeys env-based API", "[radix_sort][env]")
   REQUIRE(keys_out == expected_keys);
 }
 
+C2H_TEST("cub::DeviceRadixSort::SortKeys DoubleBuffer env-based API", "[radix_sort][env]")
+{
+  // example-begin radix-sort-keys-db-env
+  thrust::device_vector<int> keys_buf0{8, 6, 7, 5, 3, 0, 9};
+  thrust::device_vector<int> keys_buf1(7);
+
+  cub::DoubleBuffer<int> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
+
+  auto error = cub::DeviceRadixSort::SortKeys(d_keys, static_cast<int>(keys_buf0.size()), 0, sizeof(int) * 8);
+
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceRadixSort::SortKeys (DoubleBuffer) failed with status: " << error << std::endl;
+  }
+
+  thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  // example-end radix-sort-keys-db-env
+
+  REQUIRE(error == cudaSuccess);
+  thrust::device_vector<int> result(keys_buf0.size());
+  cudaMemcpy(result.data().get(), d_keys.Current(), sizeof(int) * keys_buf0.size(), cudaMemcpyDeviceToDevice);
+  REQUIRE(result == expected_keys);
+}
+
 C2H_TEST("cub::DeviceRadixSort::SortKeysDescending env-based API", "[radix_sort][env]")
 {
   // example-begin radix-sort-keys-descending-env
@@ -120,4 +144,28 @@ C2H_TEST("cub::DeviceRadixSort::SortKeysDescending env-based API", "[radix_sort]
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(keys_out == expected_keys);
+}
+
+C2H_TEST("cub::DeviceRadixSort::SortKeysDescending DoubleBuffer env-based API", "[radix_sort][env]")
+{
+  // example-begin radix-sort-keys-descending-db-env
+  thrust::device_vector<int> keys_buf0{8, 6, 7, 5, 3, 0, 9};
+  thrust::device_vector<int> keys_buf1(7);
+
+  cub::DoubleBuffer<int> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
+
+  auto error = cub::DeviceRadixSort::SortKeysDescending(d_keys, static_cast<int>(keys_buf0.size()), 0, sizeof(int) * 8);
+
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceRadixSort::SortKeysDescending (DoubleBuffer) failed with status: " << error << std::endl;
+  }
+
+  thrust::device_vector<int> expected_keys{9, 8, 7, 6, 5, 3, 0};
+  // example-end radix-sort-keys-descending-db-env
+
+  REQUIRE(error == cudaSuccess);
+  thrust::device_vector<int> result(keys_buf0.size());
+  cudaMemcpy(result.data().get(), d_keys.Current(), sizeof(int) * keys_buf0.size(), cudaMemcpyDeviceToDevice);
+  REQUIRE(result == expected_keys);
 }
