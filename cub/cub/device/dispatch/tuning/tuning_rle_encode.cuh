@@ -27,10 +27,7 @@
 #include <cuda/__device/arch_id.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
-
-#if _CCCL_HAS_CONCEPTS()
-#  include <cuda/std/concepts>
-#endif // _CCCL_HAS_CONCEPTS()
+#include <cuda/std/concepts>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>

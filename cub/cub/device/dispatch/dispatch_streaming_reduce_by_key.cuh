@@ -17,14 +17,15 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
-#include <cub/thread/thread_operators.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
 #include <thrust/iterator/offset_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 #  include <sstream>
