@@ -26,7 +26,8 @@
 #include <nvbench_helper.cuh>
 
 #if !TUNE_BASE
-struct policy_selector
+// TODO(bgruber): can we get by without the base class?
+struct policy_selector : cub::detail::transform::tuning<policy_selector>
 {
   _CCCL_API constexpr auto operator()(cuda::arch_id) const -> cub::detail::transform::transform_policy
   {
@@ -83,17 +84,16 @@ void bench_transform(nvbench::state& state,
                      TransformOp transform_op)
 {
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](const nvbench::launch& launch) {
-    cub::detail::transform::dispatch<cub::detail::transform::requires_stable_address::no>(
+    cub::DeviceTransform::Transform(
       inputs,
       output,
       num_items,
-      cub::detail::transform::always_true_predicate{},
       transform_op,
-      launch.get_stream()
+      cuda::std::execution::env{launch.get_stream().get_stream()
 #if !TUNE_BASE
-        ,
-      policy_selector{}
+                                  ,
+                                cuda::execution::__tune(policy_selector{})
 #endif // !TUNE_BASE
-    );
+      });
   });
 }
