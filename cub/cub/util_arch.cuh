@@ -115,6 +115,10 @@ inline constexpr bool prefer_conflict_over_padding = CUB_PTX_PREFER_CONFLICT_OVE
 // shared memory in a kernel. Note that dynamic shared memory may be larger than this amount.
 static constexpr ::cuda::std::size_t max_smem_per_block = 48 * 1024;
 
+// The size in bytes of the largest machine word that can be atomically read/written in a single instruction, so we can
+// use it to pass messages from one thread to another using strong loads (acquire) and stores (release).
+inline constexpr int largest_atomic_message_size = 16;
+
 struct scaling_result
 {
   int items_per_thread;

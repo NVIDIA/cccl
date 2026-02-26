@@ -39,7 +39,7 @@ using ::free;
 using ::malloc;
 
 #if _CCCL_CUDA_COMPILATION()
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __calloc_device(size_t __n, size_t __size) noexcept
+[[nodiscard]] _CCCL_DEVICE_API inline void* __calloc_device(size_t __n, size_t __size) noexcept
 {
   void* __ptr{};
   // check for overflow through a hypothetical larger integer

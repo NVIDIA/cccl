@@ -161,8 +161,8 @@ public:
   {}
 
   using iterator_concept = decltype(__get_zip_iterator_concept<_Iterators...>());
-  using value_type       = ::cuda::std::tuple<::cuda::std::iter_value_t<_Iterators>...>;
-  using reference        = ::cuda::std::tuple<::cuda::std::iter_reference_t<_Iterators>...>;
+  using value_type       = ::cuda::std::tuple<__zip_maybe_proxy_value_type_t<_Iterators>...>;
+  using reference        = ::cuda::std::tuple<__zip_maybe_proxy_reference_t<_Iterators>...>;
   using difference_type  = ::cuda::std::common_type_t<::cuda::std::iter_difference_t<_Iterators>...>;
 
   // Those are technically not to spec, but pre-ranges iterator_traits do not work properly with iterators that do not

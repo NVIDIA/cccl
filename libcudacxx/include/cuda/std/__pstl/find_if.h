@@ -23,6 +23,7 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/find_if.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__execution/policy.h>
@@ -60,6 +61,7 @@ find_if([[maybe_unused]] const _Policy& __policy, _Iter __first, _Iter __last, _
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__find_if, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
+    _CCCL_NVTX_RANGE_SCOPE("cuda::std::find_if");
     return __dispatch(__policy, ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__pred));
   }
   else

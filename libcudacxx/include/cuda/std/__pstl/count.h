@@ -23,7 +23,9 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__functional/equal_to_value.h>
 #  include <cuda/__iterator/transform_iterator.h>
+#  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/count.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__execution/policy.h>
@@ -46,19 +48,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Tp>
-struct __count_compare_eq
-{
-  _Tp __val_;
-
-  template <class _Up>
-  [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE constexpr int operator()(const _Up& __rhs) const
-    noexcept(__is_cpp17_nothrow_equality_comparable_v<_Tp, _Up>)
-  {
-    return static_cast<bool>(__val_ == __rhs) ? 1 : 0;
-  }
-};
-
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _Tp)
@@ -72,10 +61,11 @@ count([[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIt
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__reduce, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
+    _CCCL_NVTX_RANGE_SCOPE("cuda::std::count");
     const auto __count = ::cuda::std::distance(__first, __last);
     return __dispatch(
       __policy,
-      ::cuda::transform_iterator{::cuda::std::move(__first), __count_compare_eq<_Tp>{__value}},
+      ::cuda::transform_iterator{::cuda::std::move(__first), ::cuda::equal_to_value<_Tp>{__value}},
       __count,
       iter_difference_t<_InputIterator>{0},
       ::cuda::std::plus<iter_difference_t<_InputIterator>>{});

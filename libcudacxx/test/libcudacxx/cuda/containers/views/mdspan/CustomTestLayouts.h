@@ -220,9 +220,9 @@ public:
   template <
     class... Indices,
     cuda::std::enable_if_t<sizeof...(Indices) == extents_type::rank(), int>                                        = 0,
-    cuda::std::enable_if_t<cuda::std::__all<cuda::std::integral<Indices>...>::value, int>                          = 0,
-    cuda::std::enable_if_t<cuda::std::__all<cuda::std::is_convertible<Indices, index_type>::value...>::value, int> = 0,
-    cuda::std::enable_if_t<cuda::std::__all<cuda::std::is_nothrow_constructible<index_type, Indices>::value...>::value,
+    cuda::std::enable_if_t<cuda::std::__fold_and_v<cuda::std::integral<Indices>...>, int>                          = 0,
+    cuda::std::enable_if_t<cuda::std::__fold_and_v<cuda::std::is_convertible<Indices, index_type>::value...>, int> = 0,
+    cuda::std::enable_if_t<cuda::std::__fold_and_v<cuda::std::is_nothrow_constructible<index_type, Indices>::value...>,
                            int>                                                                                    = 0>
   __host__ __device__ constexpr index_type operator()(Indices... idx) const noexcept
   {
@@ -486,9 +486,9 @@ public:
   template <
     class... Indices,
     cuda::std::enable_if_t<sizeof...(Indices) == extents_type::rank(), int>                                        = 0,
-    cuda::std::enable_if_t<cuda::std::__all<cuda::std::integral<Indices>...>::value, int>                          = 0,
-    cuda::std::enable_if_t<cuda::std::__all<cuda::std::is_convertible<Indices, index_type>::value...>::value, int> = 0,
-    cuda::std::enable_if_t<cuda::std::__all<cuda::std::is_nothrow_constructible<index_type, Indices>::value...>::value,
+    cuda::std::enable_if_t<cuda::std::__fold_and_v<cuda::std::integral<Indices>...>, int>                          = 0,
+    cuda::std::enable_if_t<cuda::std::__fold_and_v<cuda::std::is_convertible<Indices, index_type>::value...>, int> = 0,
+    cuda::std::enable_if_t<cuda::std::__fold_and_v<cuda::std::is_nothrow_constructible<index_type, Indices>::value...>,
                            int>                                                                                    = 0>
   __host__ __device__ constexpr index_type operator()(Indices... idx) const noexcept
   {

@@ -112,15 +112,14 @@ template <class _Tp, size_t _Np>
 struct __static_nameof;
 
 template <size_t _Np, size_t _Mp, size_t... _Is>
-_CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __sstring<_Np>
-__make_pretty_name_impl(char const (&__s)[_Mp], index_sequence<_Is...>) noexcept
+_CCCL_API constexpr __sstring<_Np> __make_pretty_name_impl(char const (&__s)[_Mp], index_sequence<_Is...>) noexcept
 {
   static_assert(_Mp <= _Np, "Type name too long for __pretty_nameof");
   return __sstring<_Np>{{(_Is < _Mp ? __s[_Is] : '\0')...}, _Mp - 1};
 }
 
 template <class _Tp, size_t _Np>
-_CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr auto __make_pretty_name(integral_constant<size_t, _Np>) noexcept //
+_CCCL_API constexpr auto __make_pretty_name(integral_constant<size_t, _Np>) noexcept //
   -> enable_if_t<_Np == size_t(-1), __string_view>
 {
   using _TpName = __static_nameof<_Tp, sizeof(_CCCL_BUILTIN_PRETTY_FUNCTION())>;
@@ -128,7 +127,7 @@ _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr auto __make_pretty_name(integral
 }
 
 template <class _Tp, size_t _Np>
-_CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr auto __make_pretty_name(integral_constant<size_t, _Np>) noexcept //
+_CCCL_API constexpr auto __make_pretty_name(integral_constant<size_t, _Np>) noexcept //
   -> enable_if_t<_Np != size_t(-1), __sstring<_Np>>
 {
   return ::cuda::std::__make_pretty_name_impl<_Np>(_CCCL_BUILTIN_PRETTY_FUNCTION(), make_index_sequence<_Np>{});
@@ -154,15 +153,13 @@ struct __pretty_name_begin
 };
 
 // If a position is -1, it is an invalid position. Return it unchanged.
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr ptrdiff_t
-__add_string_view_position(ptrdiff_t __pos, ptrdiff_t __diff) noexcept
+[[nodiscard]] _CCCL_API constexpr ptrdiff_t __add_string_view_position(ptrdiff_t __pos, ptrdiff_t __diff) noexcept
 {
   return __pos == -1 ? -1 : __pos + __diff;
 }
 
 // Get the type name from the pretty name by trimming the front and back.
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __string_view
-__find_pretty_name(__string_view __sv) noexcept
+[[nodiscard]] _CCCL_API constexpr __string_view __find_pretty_name(__string_view __sv) noexcept
 {
   return __sv.substr(::cuda::std::__add_string_view_position(
                        __sv.find("__pretty_name_begin<"), ptrdiff_t(sizeof("__pretty_name_begin<")) - 1),
@@ -170,7 +167,7 @@ __find_pretty_name(__string_view __sv) noexcept
 }
 
 template <class _Tp>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __string_view __pretty_nameof_helper() noexcept
+[[nodiscard]] _CCCL_API constexpr __string_view __pretty_nameof_helper() noexcept
 {
 #if _CCCL_COMPILER(GCC, <, 9) && !defined(__CUDA_ARCH__)
   return ::cuda::std::__find_pretty_name(::cuda::std::__make_pretty_name<_Tp>(integral_constant<size_t, size_t(-1)>{}));
@@ -180,7 +177,7 @@ template <class _Tp>
 }
 
 template <class _Tp>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __string_view __pretty_nameof() noexcept
+[[nodiscard]] _CCCL_API constexpr __string_view __pretty_nameof() noexcept
 {
   return ::cuda::std::__pretty_nameof_helper<typename __pretty_name_begin<_Tp>::__pretty_name_end>();
 }
@@ -214,11 +211,11 @@ struct __type_info_ptr_
 {
   _CCCL_HIDE_FROM_ABI constexpr __type_info_ptr_() noexcept = default;
 
-  _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __type_info_ptr_(__type_info_impl (*__pfn_)() noexcept) noexcept
+  _CCCL_API constexpr __type_info_ptr_(__type_info_impl (*__pfn_)() noexcept) noexcept
       : __pfn_(__pfn_)
   {}
 
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __type_info_ref_ operator*() const noexcept;
+  [[nodiscard]] _CCCL_API constexpr __type_info_ref_ operator*() const noexcept;
 
   [[nodiscard]] _CCCL_API friend constexpr bool operator==(__type_info_ptr_ __a, __type_info_ptr_ __b) noexcept
   {
@@ -239,38 +236,38 @@ struct __type_info
 {
   __type_info() = delete;
 
-  _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE explicit constexpr __type_info(__type_info_impl (*__pfn)() noexcept) noexcept
+  _CCCL_API explicit constexpr __type_info(__type_info_impl (*__pfn)() noexcept) noexcept
       : __pfn_(__pfn)
   {}
 
   template <class _Tp>
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE static constexpr __type_info_impl __get_ti_for() noexcept
+  [[nodiscard]] _CCCL_API static constexpr __type_info_impl __get_ti_for() noexcept
   {
     return __type_info_impl{::cuda::std::__pretty_nameof<_Tp>()};
   }
 
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr char const* name() const noexcept
+  [[nodiscard]] _CCCL_API constexpr char const* name() const noexcept
   {
     return __pfn_().__name_.begin();
   }
 
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __string_view __name_view() const noexcept
+  [[nodiscard]] _CCCL_API constexpr __string_view __name_view() const noexcept
   {
     return __pfn_().__name_;
   }
 
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr bool before(__type_info const& __other) const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool before(__type_info const& __other) const noexcept
   {
     return __pfn_().__name_ < __other.__pfn_().__name_;
   }
 
   // Not yet implemented:
-  // [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr size_t hash_code() const noexcept
+  // [[nodiscard]] _CCCL_API constexpr size_t hash_code() const noexcept
   // {
   //   return ;
   // }
 
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __type_info_ptr_ operator&() const noexcept
+  [[nodiscard]] _CCCL_API constexpr __type_info_ptr_ operator&() const noexcept
   {
     return __type_info_ptr_{__pfn_};
   }
@@ -297,21 +294,20 @@ private:
 
 struct __type_info_ref_ : __type_info
 {
-  _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __type_info_ref_(__type_info_impl (*__pfn)() noexcept) noexcept
+  _CCCL_API constexpr __type_info_ref_(__type_info_impl (*__pfn)() noexcept) noexcept
       : __type_info(__pfn)
   {}
 
-  _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __type_info_ref_(__type_info const& __other) noexcept
+  _CCCL_API constexpr __type_info_ref_(__type_info const& __other) noexcept
       : __type_info(__other)
   {}
 
-  _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __type_info_ref_(__type_info_ref_ const& __other) noexcept
+  _CCCL_API constexpr __type_info_ref_(__type_info_ref_ const& __other) noexcept
       : __type_info(__other)
   {}
 };
 
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __type_info_ref_
-__type_info_ptr_::operator*() const noexcept
+[[nodiscard]] _CCCL_API constexpr __type_info_ref_ __type_info_ptr_::operator*() const noexcept
 {
   return __type_info_ref_(__pfn_);
 }
@@ -345,39 +341,39 @@ struct __type_info
   __type_info(__type_info const&)            = delete;
   __type_info& operator=(__type_info const&) = delete;
 
-  _CCCL_HIDE_FROM_ABI constexpr __type_info(__string_view __name) noexcept
+  _CCCL_HOST_API constexpr __type_info(__string_view __name) noexcept
       : __name_(__name)
   {}
 
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr char const* name() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr char const* name() const noexcept
   {
     return __name_.begin();
   }
 
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr __string_view __name_view() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr __string_view __name_view() const noexcept
   {
     return __name_;
   }
 
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr bool before(const __type_info& __other) const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr bool before(const __type_info& __other) const noexcept
   {
     return __name_ < __other.__name_;
   }
 
   // Not yet implemented:
-  // [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr size_t hash_code() const noexcept
+  // [[nodiscard]] _CCCL_HOST_API constexpr size_t hash_code() const noexcept
   // {
   //   return ;
   // }
 
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_API friend constexpr bool
   operator==(const __type_info& __lhs, const __type_info& __rhs) noexcept
   {
     return &__lhs == &__rhs || __lhs.__name_ == __rhs.__name_;
   }
 
 #  if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_API friend constexpr bool
   operator!=(const __type_info& __lhs, const __type_info& __rhs) noexcept
   {
     return !(__lhs == __rhs);
@@ -400,7 +396,7 @@ _CCCL_GLOBAL_CONSTANT __type_info __typeid_v{::cuda::std::__pretty_nameof<_Tp>()
 // When inline variables are available, this indirection through an inline function
 // is not necessary, but it doesn't hurt either.
 template <class _Tp>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr __type_info const& __typeid() noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr __type_info const& __typeid() noexcept
 {
   return __typeid_v<_Tp>;
 }

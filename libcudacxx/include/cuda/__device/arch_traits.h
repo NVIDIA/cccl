@@ -477,7 +477,6 @@ template <>
 #else // ^^^ _CCCL_HAS_CTK() ^^^ / vvv !_CCCL_HAS_CTK() vvv
       _CCCL_THROW(::cuda::cuda_error, /*cudaErrorInvalidValue*/ 1, "Traits requested for an unknown architecture");
 #endif // ^^^ !_CCCL_HAS_CTK() ^^^
-      break;
   }
 }
 
