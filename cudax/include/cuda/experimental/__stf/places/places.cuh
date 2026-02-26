@@ -314,7 +314,7 @@ public:
   const exec_place_grid& get_grid() const;
   const get_executor_func_t& get_partitioner() const;
 
-  exec_place get_affine_exec_place() const;
+  exec_place affine_exec_place() const;
 
   /**
    * @brief Compute a hash value for this data place
@@ -1060,6 +1060,9 @@ public:
 
   // For debug purpose on a machine with a single GPU, for example
   static exec_place_grid repeat(const exec_place& e, size_t cnt);
+
+  template <typename... Args>
+  auto partition_by_scope(Args&&... args);
 
   /**
    * @brief Execute lambda on this place.
@@ -1883,7 +1886,7 @@ data_place data_place::composite(partitioner_t, const exec_place_grid& g)
   return data_place::composite(&partitioner_t::get_executor, g);
 }
 
-inline exec_place data_place::get_affine_exec_place() const
+inline exec_place data_place::affine_exec_place() const
 {
   //    EXPECT(*this != affine);
   //    EXPECT(*this != data_place::invalid());
@@ -1907,7 +1910,7 @@ inline exec_place data_place::get_affine_exec_place() const
 
   if (is_extension())
   {
-    return extension->get_affine_exec_place();
+    return extension->affine_exec_place();
   }
 
   // This must be a device
@@ -1916,7 +1919,7 @@ inline exec_place data_place::get_affine_exec_place() const
 
 inline decorated_stream data_place::getDataStream(async_resources_handle& async_resources) const
 {
-  return get_affine_exec_place().getStream(async_resources, false);
+  return affine_exec_place().getStream(async_resources, false);
 }
 
 inline const exec_place_grid& data_place::get_grid() const

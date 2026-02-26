@@ -188,13 +188,15 @@ C2H_TEST("Device reduce works with a very large number of segments", "[reduce][d
 template <typename PolicyHub>
 struct dispatch_helper
 {
-  using tuple_t = cuda::std::tuple<int, int>;
+  using tuple_t = cuda::std::tuple<int, int, int>;
   tuple_t thresholds{};
 
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION cudaError_t Invoke()
   {
-    thresholds = {ActivePolicyT::SmallReducePolicy::ITEMS_PER_TILE, ActivePolicyT::MediumReducePolicy::ITEMS_PER_TILE};
+    thresholds = {ActivePolicyT::SmallReducePolicy::ITEMS_PER_TILE,
+                  ActivePolicyT::MediumReducePolicy::ITEMS_PER_TILE,
+                  ActivePolicyT::ReducePolicy::BLOCK_THREADS * ActivePolicyT::ReducePolicy::ITEMS_PER_THREAD};
     return cudaSuccess;
   }
 
@@ -229,16 +231,18 @@ void test_fixed_size_segmented_reduce(
   using policy_hub_t = cub::detail::fixed_size_segmented_reduce::policy_hub<AccumT, offset_t, OpT>;
 
   // Get small and medium segment size thresholds from dispatch helper
-  const cuda::std::tuple<int, int> thresholds = dispatch_helper<policy_hub_t>::get_thresholds();
-  const int small_segment_size                = cuda::std::get<0>(thresholds);
-  const int medium_segment_size               = cuda::std::get<1>(thresholds);
+  const cuda::std::tuple<int, int, int> thresholds = dispatch_helper<policy_hub_t>::get_thresholds();
+  const int small_segment_size                     = cuda::std::get<0>(thresholds);
+  const int medium_segment_size                    = cuda::std::get<1>(thresholds);
+  const int large_segment_size                     = cuda::std::get<2>(thresholds);
 
   // Take one random segment size from each of the segment sizes
   const segment_size_t segment_size = GENERATE_COPY(
     values({0}),
     take(1, random(1, small_segment_size)),
     take(1, random(small_segment_size, medium_segment_size)),
-    take(1, random(medium_segment_size, medium_segment_size * 2)));
+    take(1, random(medium_segment_size, large_segment_size)),
+    take(1, random(large_segment_size, large_segment_size * 4)));
 
   const cuda::std::int64_t num_items = num_segments * segment_size;
 

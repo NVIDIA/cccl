@@ -32,7 +32,8 @@ enum class delay_constructor_kind
   exponential_backoff_jitter_window,
   exponential_backon_jitter_window,
   exponential_backon_jitter,
-  exponential_backon
+  exponential_backon,
+  reduce_by_key
 };
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -56,6 +57,8 @@ inline ::std::ostream& operator<<(::std::ostream& os, delay_constructor_kind kin
       return os << "delay_constructor_kind::exponential_backon_jitter";
     case delay_constructor_kind::exponential_backon:
       return os << "delay_constructor_kind::exponential_backon";
+    case delay_constructor_kind::reduce_by_key:
+      return os << "delay_constructor_kind::reduce_by_key";
     default:
       return os << "<unknown delay_constructor_kind: " << static_cast<int>(kind) << ">";
   }
@@ -125,6 +128,11 @@ template <unsigned int Delay, unsigned int L2WriteLatency>
 inline constexpr auto delay_constructor_policy_from_type<exponential_backon_constructor_t<Delay, L2WriteLatency>> =
   delay_constructor_policy{delay_constructor_kind::exponential_backon, Delay, L2WriteLatency};
 
+template <unsigned int Delay, unsigned int L2WriteLatency, unsigned int GridThreshold>
+inline constexpr auto
+  delay_constructor_policy_from_type<reduce_by_key_delay_constructor_t<Delay, L2WriteLatency, GridThreshold>> =
+    delay_constructor_policy{delay_constructor_kind::reduce_by_key, Delay, L2WriteLatency};
+
 template <delay_constructor_kind Kind, unsigned int Delay, unsigned int L2WriteLatency>
 struct delay_constructor_for;
 
@@ -176,8 +184,24 @@ struct delay_constructor_for<delay_constructor_kind::exponential_backon, Delay, 
   using type = exponential_backon_constructor_t<Delay, L2WriteLatency>;
 };
 
+template <unsigned int Delay, unsigned int L2WriteLatency>
+struct delay_constructor_for<delay_constructor_kind::reduce_by_key, Delay, L2WriteLatency>
+{
+  using type = reduce_by_key_delay_constructor_t<Delay, L2WriteLatency>;
+};
+
 template <delay_constructor_kind Kind, unsigned int Delay, unsigned int L2WriteLatency>
 using delay_constructor_t = typename delay_constructor_for<Kind, Delay, L2WriteLatency>::type;
+
+_CCCL_API constexpr auto
+default_reduce_by_key_delay_constructor_policy(int key_size, int value_size, bool value_is_primitive)
+{
+  if (value_is_primitive && (value_size + key_size < 16))
+  {
+    return delay_constructor_policy{delay_constructor_kind::reduce_by_key, 350, 450};
+  }
+  return delay_constructor_policy{delay_constructor_kind::no_delay, 0, 450};
+}
 } // namespace detail
 
 CUB_NAMESPACE_END

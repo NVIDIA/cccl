@@ -45,6 +45,13 @@ struct non_trivial
       : a(nt.a)
       , b(nt.b)
   {}
+
+  _CCCL_HOST_DEVICE non_trivial& operator=(const non_trivial& nt)
+  {
+    a = nt.a;
+    b = nt.b;
+    return *this;
+  }
 };
 
 static_assert(!::cuda::std::is_trivially_copyable<non_trivial>::value, ""); // as required by the C++ standard

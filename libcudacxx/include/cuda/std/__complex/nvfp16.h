@@ -159,7 +159,7 @@ public:
     return *this;
   }
 
-  _CCCL_HOST operator ::std::complex<value_type>() const
+  _CCCL_HOST_API operator ::std::complex<value_type>() const
   {
     return {__repr_.x, __repr_.y};
   }

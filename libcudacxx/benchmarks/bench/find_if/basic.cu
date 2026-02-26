@@ -10,26 +10,12 @@
 
 #include <thrust/device_vector.h>
 
+#include <cuda/functional>
 #include <cuda/memory_pool>
 #include <cuda/std/__pstl_algorithm>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include "nvbench_helper.cuh"
-
-template <class T>
-struct equal_to_val
-{
-  T val_;
-
-  constexpr equal_to_val(const T& val) noexcept
-      : val_(val)
-  {}
-
-  __device__ constexpr bool operator()(const T& val) const noexcept
-  {
-    return val == val_;
-  }
-};
 
 template <typename T>
 static void basic(nvbench::state& state, nvbench::type_list<T>)
@@ -48,12 +34,11 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<size_t>(1);
 
   caching_allocator_t alloc{};
-  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               (void) cuda::std::find_if(
-                 policy.with_stream(launch.get_stream().get_stream()), dinput.begin(), dinput.end(), equal_to_val{val});
+               do_not_optimize(
+                 cuda::std::find_if(cuda_policy(alloc, launch), dinput.begin(), dinput.end(), cuda::equal_to_val{val}));
              });
 }
 

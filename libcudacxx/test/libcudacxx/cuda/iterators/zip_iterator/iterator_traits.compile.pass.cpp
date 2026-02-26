@@ -95,6 +95,62 @@ __host__ __device__ void test()
     static_assert(cuda::std::random_access_iterator<Iter>);
     static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
+
+  { // working with proxy iterator cuda::discard_iterator
+    using Iter       = cuda::zip_iterator<int*, cuda::discard_iterator>;
+    using IterTraits = Traits<Iter>;
+    static_assert(cuda::std::is_same_v<typename IterTraits::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::is_same_v<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::is_same_v<typename IterTraits::value_type,
+                                       cuda::std::tuple<int, cuda::discard_iterator::__discard_proxy>>);
+    static_assert(cuda::std::is_same_v<typename IterTraits::reference,
+                                       cuda::std::tuple<int&, cuda::discard_iterator::__discard_proxy>>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
+  }
+
+  { // working with proxy iterator cuda::tabulate_output_iterator
+    using Iter       = cuda::zip_iterator<int*, cuda::tabulate_output_iterator<cuda::std::plus<>, short>>;
+    using IterTraits = Traits<Iter>;
+    static_assert(cuda::std::is_same_v<typename IterTraits::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::is_same_v<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::is_same_v<typename IterTraits::value_type,
+                                       cuda::std::tuple<int, cuda::__tabulate_proxy<cuda::std::plus<>, short>>>);
+    static_assert(cuda::std::is_same_v<typename IterTraits::reference,
+                                       cuda::std::tuple<int&, cuda::__tabulate_proxy<cuda::std::plus<>, short>>>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
+  }
+
+  { // working with proxy iterator cuda::transform_output_iterator
+    using Iter       = cuda::zip_iterator<int*, cuda::transform_output_iterator<cuda::std::plus<>, short*>>;
+    using IterTraits = Traits<Iter>;
+    static_assert(cuda::std::is_same_v<typename IterTraits::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::is_same_v<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(
+      cuda::std::is_same_v<typename IterTraits::value_type,
+                           cuda::std::tuple<int, cuda::__transform_output_proxy<cuda::std::plus<>, short*>>>);
+    static_assert(
+      cuda::std::is_same_v<typename IterTraits::reference,
+                           cuda::std::tuple<int&, cuda::__transform_output_proxy<cuda::std::plus<>, short*>>>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
+  }
+
+  { // working with proxy iterator cuda::transform_input_output_iterator
+    using Iter =
+      cuda::zip_iterator<int*, cuda::transform_input_output_iterator<cuda::std::negate<>, cuda::std::plus<>, short*>>;
+    using IterTraits = Traits<Iter>;
+    static_assert(cuda::std::is_same_v<typename IterTraits::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::is_same_v<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
+    static_assert(cuda::std::is_same_v<typename IterTraits::value_type, cuda::std::tuple<int, int>>);
+    static_assert(
+      cuda::std::is_same_v<
+        typename IterTraits::reference,
+        cuda::std::tuple<int&, cuda::__transform_input_output_proxy<cuda::std::negate<>, cuda::std::plus<>, short*>>>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
+    static_assert(cuda::std::__has_random_access_traversal<Iter>);
+  }
 }
 
 __host__ __device__ void test()

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
@@ -14,38 +14,54 @@
 #endif // no system header
 
 #include <cub/agent/agent_merge.cuh>
+#include <cub/detail/arch_dispatch.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge.cuh>
-#include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 #include <cub/util_vsmem.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+
+#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#  include <sstream>
+#endif
 
 CUB_NAMESPACE_BEGIN
 namespace detail::merge
 {
-template <typename PolicyT>
-struct policy_noblockload2smem_t : PolicyT
-{
-  static constexpr bool use_block_load_to_shared = false;
-};
-
 inline constexpr int fallback_BLOCK_THREADS    = 64;
 inline constexpr int fallback_ITEMS_PER_THREAD = 1;
 
-template <typename DefaultPolicy, class... Args>
+// TODO(bgruber): we should choose the merge_policy rather than the agent, but before C++20 this is more verbose
+template <typename PolicyGetter, class... Args>
 class choose_merge_agent
 {
-  using default_load2sh_agent_t   = agent_t<DefaultPolicy, Args...>;
-  using default_noload2sh_agent_t = agent_t<policy_noblockload2smem_t<DefaultPolicy>, Args...>;
+  static constexpr merge_policy active_policy = PolicyGetter{}();
 
-  using fallback_agent_t = agent_t<
-    policy_wrapper_t<policy_noblockload2smem_t<DefaultPolicy>, fallback_BLOCK_THREADS, fallback_ITEMS_PER_THREAD>,
-    Args...>;
+  using default_load2sh_agent_t =
+    agent_t<active_policy.block_threads,
+            active_policy.items_per_thread,
+            active_policy.load_modifier,
+            active_policy.store_algorithm,
+            active_policy.use_block_load_to_shared,
+            Args...>;
+  using default_noload2sh_agent_t =
+    agent_t<active_policy.block_threads,
+            active_policy.items_per_thread,
+            active_policy.load_modifier,
+            active_policy.store_algorithm,
+            /* UseBlockLoadToShared */ false,
+            Args...>;
+
+  using fallback_agent_t =
+    agent_t<fallback_BLOCK_THREADS,
+            fallback_ITEMS_PER_THREAD,
+            active_policy.load_modifier,
+            active_policy.store_algorithm,
+            /* UseBlockLoadToShared */ false,
+            Args...>;
 
   static constexpr bool use_default_load2sh =
     sizeof(typename default_load2sh_agent_t::TempStorage) <= max_smem_per_block;
@@ -63,7 +79,7 @@ public:
 // Computes the merge path intersections at equally wide intervals. The approach is outlined in the paper:
 // Odeh et al, "Merge Path - Parallel Merging Made Simple" * doi : 10.1109 / IPDPSW .2012.202
 // The algorithm is the same as AgentPartition for merge sort, but that agent handles a lot more.
-template <typename MaxPolicy,
+template <typename PolicySelector,
           typename KeyIt1,
           typename ValueIt1,
           typename KeyIt2,
@@ -84,7 +100,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
   // items_per_tile must be the same of the merge kernel later, so we have to consider whether a fallback agent will be
   // selected for the merge agent that changes the tile size
   constexpr int items_per_tile =
-    choose_merge_agent<typename MaxPolicy::ActivePolicy::merge_policy,
+    choose_merge_agent<policy_getter<PolicySelector, ::cuda::arch_id{CUB_PTX_ARCH / 10}>,
                        KeyIt1,
                        ValueIt1,
                        KeyIt2,
@@ -92,17 +108,16 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
                        KeyIt3,
                        ValueIt3,
                        Offset,
-                       CompareOp>::type::policy::ITEMS_PER_TILE;
+                       CompareOp>::type::items_per_tile;
   const Offset diagonal_idx = blockDim.x * blockIdx.x + threadIdx.x;
   if (diagonal_idx < num_diagonals)
   {
-    // Compute diagonal at the first item in the tile we merge later, clamped to the total number of items
     const Offset diagonal_num      = (::cuda::std::min) (diagonal_idx * items_per_tile, keys1_count + keys2_count);
     key1_beg_offsets[diagonal_idx] = cub::MergePath(keys1, keys2, keys1_count, keys2_count, diagonal_num, compare_op);
   }
 }
 
-template <typename MaxPolicy,
+template <typename PolicySelector,
           typename KeyIt1,
           typename ValueIt1,
           typename KeyIt2,
@@ -112,7 +127,7 @@ template <typename MaxPolicy,
           typename Offset,
           typename CompareOp>
 __launch_bounds__(
-  choose_merge_agent<typename MaxPolicy::ActivePolicy::merge_policy,
+  choose_merge_agent<policy_getter<PolicySelector, ::cuda::arch_id{CUB_PTX_ARCH / 10}>,
                      KeyIt1,
                      ValueIt1,
                      KeyIt2,
@@ -120,7 +135,7 @@ __launch_bounds__(
                      KeyIt3,
                      ValueIt3,
                      Offset,
-                     CompareOp>::type::policy::BLOCK_THREADS)
+                     CompareOp>::type::block_threads)
   CUB_DETAIL_KERNEL_ATTRIBUTES void device_merge_kernel(
     KeyIt1 keys1,
     ValueIt1 items1,
@@ -134,14 +149,13 @@ __launch_bounds__(
     Offset* key1_beg_offsets,
     vsmem_t global_temp_storage)
 {
-  // the merge agent loads keys into a local array of KeyIt1::value_type, on which the comparisons are performed
   using key_t = it_value_t<KeyIt1>;
   static_assert(::cuda::std::is_invocable_v<CompareOp, key_t, key_t>, "Comparison operator cannot compare two keys");
   static_assert(::cuda::std::is_convertible_v<::cuda::std::invoke_result_t<CompareOp, key_t, key_t>, bool>,
                 "Comparison operator must be convertible to bool");
 
   using MergeAgent = typename choose_merge_agent<
-    typename MaxPolicy::ActivePolicy::merge_policy,
+    policy_getter<PolicySelector, ::cuda::arch_id{CUB_PTX_ARCH / 10}>,
     KeyIt1,
     ValueIt1,
     KeyIt2,
@@ -150,7 +164,6 @@ __launch_bounds__(
     ValueIt3,
     Offset,
     CompareOp>::type;
-  using MergePolicy = typename MergeAgent::policy;
 
   using vsmem_helper_t = vsmem_helper_impl<MergeAgent>;
   __shared__ typename vsmem_helper_t::static_temp_storage_t shared_temp_storage;
@@ -178,140 +191,137 @@ template <typename KeyIt1,
           typename ValueIt3,
           typename Offset,
           typename CompareOp,
-          typename PolicyHub = detail::merge::policy_hub<it_value_t<KeyIt1>, it_value_t<ValueIt1>, Offset>>
-struct dispatch_t
+          typename PolicySelector        = policy_selector_from_types<it_value_t<KeyIt1>, it_value_t<ValueIt1>, Offset>,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+#if _CCCL_HAS_CONCEPTS()
+  requires merge_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  KeyIt1 d_keys1,
+  ValueIt1 d_values1,
+  Offset num_items1,
+  KeyIt2 d_keys2,
+  ValueIt2 d_values2,
+  Offset num_items2,
+  KeyIt3 d_keys_out,
+  ValueIt3 d_values_out,
+  CompareOp compare_op,
+  cudaStream_t stream,
+  PolicySelector policy_selector         = {},
+  KernelLauncherFactory launcher_factory = {})
 {
-  void* d_temp_storage;
-  size_t& temp_storage_bytes;
-  KeyIt1 d_keys1;
-  ValueIt1 d_values1;
-  Offset num_items1;
-  KeyIt2 d_keys2;
-  ValueIt2 d_values2;
-  Offset num_items2;
-  KeyIt3 d_keys_out;
-  ValueIt3 d_values_out;
-  CompareOp compare_op;
-  cudaStream_t stream;
-
-  template <typename ActivePolicy>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
+  ::cuda::arch_id arch_id{};
+  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
   {
-    using max_policy_t   = typename PolicyHub::max_policy;
-    using merge_policy_t = typename ActivePolicy::merge_policy;
-    using agent_t =
-      typename choose_merge_agent<merge_policy_t, KeyIt1, ValueIt1, KeyIt2, ValueIt2, KeyIt3, ValueIt3, Offset, CompareOp>::
-        type;
+    return error;
+  }
 
-    const auto num_tiles = ::cuda::ceil_div(num_items1 + num_items2, agent_t::policy::ITEMS_PER_TILE);
+  return dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
+#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+    NV_IF_TARGET(
+      NV_IS_HOST,
+      (std::stringstream ss; ss << policy_getter();
+       _CubLog("Dispatching DeviceMerge to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());))
+#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+
+    static_assert(::cuda::std::is_empty_v<decltype(policy_getter)>);
+    using AgentT = typename choose_merge_agent<
+      decltype(policy_getter),
+      KeyIt1,
+      ValueIt1,
+      KeyIt2,
+      ValueIt2,
+      KeyIt3,
+      ValueIt3,
+      Offset,
+      CompareOp>::type;
+
+    const auto num_tiles = ::cuda::ceil_div(num_items1 + num_items2, AgentT::items_per_tile);
     void* allocations[2] = {nullptr, nullptr};
     {
       const size_t key1_beg_offsets_size      = (1 + num_tiles) * sizeof(Offset);
-      const size_t virtual_shared_memory_size = num_tiles * vsmem_helper_impl<agent_t>::vsmem_per_block;
+      const size_t virtual_shared_memory_size = num_tiles * vsmem_helper_impl<AgentT>::vsmem_per_block;
       const size_t allocation_sizes[2]        = {key1_beg_offsets_size, virtual_shared_memory_size};
-      const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
-      if (cudaSuccess != error)
+      if (const auto error =
+            CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
       {
         return error;
       }
     }
 
-    // Return if only temporary storage was requested or there is no work to be done
     if (d_temp_storage == nullptr || num_tiles == 0)
     {
       return cudaSuccess;
     }
 
-    // holds the intersections of the diagonals with the merge path for the beginning of each tile, and one at the end
     auto key1_beg_offsets = static_cast<Offset*>(allocations[0]);
 
-    // compute the diagonal intersections with the merge path
+    // merge path kernel
     {
-      // we need to compute the diagonals at the start of each tile, plus one extra to mark the end
       const Offset num_diagonals                = num_tiles + 1;
-      constexpr int threads_per_partition_block = 256; // TODO(bgruber): no policy?
+      constexpr int threads_per_partition_block = 256;
       const int partition_grid_size = static_cast<int>(::cuda::ceil_div(num_diagonals, threads_per_partition_block));
 
-      auto error = CubDebug(
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-          partition_grid_size, threads_per_partition_block, 0, stream)
-          .doit(device_partition_merge_path_kernel<
-                  max_policy_t,
-                  KeyIt1,
-                  ValueIt1,
-                  KeyIt2,
-                  ValueIt2,
-                  KeyIt3,
-                  ValueIt3,
-                  Offset,
-                  CompareOp>,
+      if (const auto error = CubDebug(
+            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+              partition_grid_size, threads_per_partition_block, 0, stream)
+              .doit(device_partition_merge_path_kernel<
+                      PolicySelector,
+                      KeyIt1,
+                      ValueIt1,
+                      KeyIt2,
+                      ValueIt2,
+                      KeyIt3,
+                      ValueIt3,
+                      Offset,
+                      CompareOp>,
+                    d_keys1,
+                    num_items1,
+                    d_keys2,
+                    num_items2,
+                    num_diagonals,
+                    key1_beg_offsets,
+                    compare_op)))
+      {
+        return error;
+      }
+      if (const auto error = CubDebug(DebugSyncStream(stream)))
+      {
+        return error;
+      }
+    }
+
+    // merge kernel
+    {
+      if (const auto error = CubDebug(
+            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+              static_cast<int>(num_tiles), static_cast<int>(AgentT::block_threads), 0, stream)
+              .doit(
+                device_merge_kernel<PolicySelector, KeyIt1, ValueIt1, KeyIt2, ValueIt2, KeyIt3, ValueIt3, Offset, CompareOp>,
                 d_keys1,
+                d_values1,
                 num_items1,
                 d_keys2,
+                d_values2,
                 num_items2,
-                num_diagonals,
+                d_keys_out,
+                d_values_out,
+                compare_op,
                 key1_beg_offsets,
-                compare_op));
-      if (cudaSuccess != error)
+                vsmem_t{allocations[1]})))
       {
         return error;
       }
-      error = CubDebug(DebugSyncStream(stream));
-      if (cudaSuccess != error)
+      if (const auto error = CubDebug(DebugSyncStream(stream)))
       {
         return error;
       }
     }
 
-    // merge tile-wise
-    auto error = CubDebug(
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-        static_cast<int>(num_tiles), static_cast<int>(agent_t::policy::BLOCK_THREADS), 0, stream)
-        .doit(
-          device_merge_kernel<max_policy_t, KeyIt1, ValueIt1, KeyIt2, ValueIt2, KeyIt3, ValueIt3, Offset, CompareOp>,
-          d_keys1,
-          d_values1,
-          num_items1,
-          d_keys2,
-          d_values2,
-          num_items2,
-          d_keys_out,
-          d_values_out,
-          compare_op,
-          key1_beg_offsets,
-          vsmem_t{allocations[1]}));
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
-    error = CubDebug(DebugSyncStream(stream));
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
-
     return cudaSuccess;
-  }
-
-  template <typename... Args>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(Args&&... args)
-  {
-    int ptx_version = 0;
-    auto error      = CubDebug(PtxVersion(ptx_version));
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
-    dispatch_t dispatch{::cuda::std::forward<Args>(args)...};
-    error = CubDebug(PolicyHub::max_policy::Invoke(ptx_version, dispatch));
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
-
-    return cudaSuccess;
-  }
-};
+  });
+}
 } // namespace detail::merge
 CUB_NAMESPACE_END

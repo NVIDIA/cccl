@@ -23,6 +23,7 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/for_each_n.h>
 #  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__iterator/distance.h>
@@ -49,6 +50,7 @@ _CCCL_HOST_API _Iter for_each_n([[maybe_unused]] const _Policy& __policy, _Iter 
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__for_each_n, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
+    _CCCL_NVTX_RANGE_SCOPE("cuda::std::for_each_n");
     return __dispatch(__policy, ::cuda::std::move(__first), __orig_n, ::cuda::std::move(__func));
   }
   else

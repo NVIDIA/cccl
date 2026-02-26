@@ -247,18 +247,16 @@ C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle pointers", "[device][
 
 // Guard against #293
 template <bool TimeSlicing>
-struct device_rle_policy_hub
+struct device_rle_policy_selector
 {
   static constexpr int threads = 96;
   static constexpr int items   = 15;
 
-  struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
+  _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const
+    -> cub::detail::rle::non_trivial_runs::rle_non_trivial_runs_policy
   {
-    using RleSweepPolicyT = cub::
-      AgentRlePolicy<threads, items, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, TimeSlicing, cub::BLOCK_SCAN_WARP_SCANS>;
-  };
-
-  using MaxPolicy = Policy500;
+    return {threads, items, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, TimeSlicing, cub::BLOCK_SCAN_WARP_SCANS};
+  }
 };
 
 struct CustomDeviceRunLengthEncode
@@ -275,28 +273,20 @@ struct CustomDeviceRunLengthEncode
     OffsetsOutputIteratorT d_offsets_out,
     LengthsOutputIteratorT d_lengths_out,
     NumRunsOutputIteratorT d_num_runs_out,
-    int num_items,
+    int num_items, // Signed integer type for global offsets
     cudaStream_t stream = 0)
   {
-    using OffsetT    = int; // Signed integer type for global offsets
-    using EqualityOp = cuda::std::equal_to<>; // Default == operator
-
-    return cub::DeviceRleDispatch<InputIteratorT,
-                                  OffsetsOutputIteratorT,
-                                  LengthsOutputIteratorT,
-                                  NumRunsOutputIteratorT,
-                                  EqualityOp,
-                                  OffsetT,
-                                  device_rle_policy_hub<TimeSlicing>>::
-      Dispatch(d_temp_storage,
-               temp_storage_bytes,
-               d_in,
-               d_offsets_out,
-               d_lengths_out,
-               d_num_runs_out,
-               EqualityOp(),
-               num_items,
-               stream);
+    return cub::detail::rle::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_offsets_out,
+      d_lengths_out,
+      d_num_runs_out,
+      cuda::std::equal_to<>{}, // Default == operator
+      num_items,
+      stream,
+      device_rle_policy_selector<TimeSlicing>{});
   }
 };
 
@@ -308,9 +298,9 @@ using time_slicing = c2h::type_list<std::true_type, std::false_type>;
 C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns does not run out of memory", "[device][run_length_encode]", time_slicing)
 {
   using type         = typename c2h::get<0, TestType>;
-  using policy_hub_t = device_rle_policy_hub<type::value>;
+  using policy_sel_t = device_rle_policy_selector<type::value>;
 
-  constexpr int tile_size    = policy_hub_t::threads * policy_hub_t::items;
+  constexpr int tile_size    = policy_sel_t::threads * policy_sel_t::items;
   constexpr int num_items    = 2 * tile_size;
   constexpr int magic_number = num_items + 1;
 

@@ -30,7 +30,9 @@
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__ranges/compressed_movable_box.h>
@@ -589,6 +591,51 @@ template <class _Fn, class... _Iterators>
 inline constexpr bool __is_fancy_pointer<::cuda::zip_transform_iterator<_Fn, _Iterators...>> = false;
 _CCCL_END_NAMESPACE_CUDA_STD
 #endif // (_CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC)) && _CCCL_STD_VER <= 2017
+
+#ifndef _CCCL_DOXYGEN_INVOKED
+#  if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+//! zip_transform_iterator is a C++20 iterator, so it does not play well with legacy STL features like std::distance
+//! To work around that specialize those functions for zip_transform_iterator
+template <class _Diff, class _Fn, class... _Iterators>
+_CCCL_HOST_API constexpr void advance(::cuda::zip_transform_iterator<_Fn, _Iterators...>& __iter, _Diff __diff)
+{
+  ::cuda::std::advance(__iter, ::cuda::std::move(__diff));
+}
+
+template <class _Fn, class... _Iterators>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::common_type_t<::cuda::std::iter_difference_t<_Iterators>...>
+distance(::cuda::zip_transform_iterator<_Fn, _Iterators...> __first,
+         ::cuda::zip_transform_iterator<_Fn, _Iterators...> __last)
+{
+  return ::cuda::std::distance(::cuda::std::move(__first), ::cuda::std::move(__last));
+}
+
+template <class _Fn, class... _Iterators>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::zip_transform_iterator<_Fn, _Iterators...>
+next(::cuda::zip_transform_iterator<_Fn, _Iterators...> __iter,
+     ::cuda::std::common_type_t<::cuda::std::iter_difference_t<_Iterators>...> __n = 1)
+{
+  _CCCL_ASSERT(__n >= 0 || ::cuda::__zip_iter_constraints<_Iterators...>::__all_bidirectional,
+               "Attempt to std::next(it, n) with negative n on a non-bidirectional iterator");
+  ::cuda::std::advance(__iter, __n);
+  return __iter;
+}
+
+template <class _Fn, class... _Iterators>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::zip_transform_iterator<_Fn, _Iterators...>
+prev(::cuda::zip_transform_iterator<_Fn, _Iterators...> __iter,
+     ::cuda::std::common_type_t<::cuda::std::iter_difference_t<_Iterators>...> __n = 1)
+{
+  _CCCL_ASSERT(__n <= 0 || ::cuda::__zip_iter_constraints<_Iterators...>::__all_bidirectional,
+               "Attempt to std::prev(it, +n) on a non-bidi iterator");
+  ::cuda::std::advance(__iter, -__n);
+  return __iter;
+}
+_CCCL_END_NAMESPACE_STD
+#  endif // _CCCL_HAS_HOST_STD_LIB()
+#endif // _CCCL_DOXYGEN_INVOKED
 
 #include <cuda/std/__cccl/epilogue.h>
 
