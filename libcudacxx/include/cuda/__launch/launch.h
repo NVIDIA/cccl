@@ -105,6 +105,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 #      define _CCCL_GRID_DIM_Z                     gridDim.z
 #    endif // ^^^ !_CCCL_CUDA_COMPILER(CLANG) ^^^
 
+// clang-cuda sometimes warns about the assumption being ignored because it contains (potential) side-effects. We can
+// just suppress it, because in the worst case, the assumption will be just ignored.
+// note(dabayer): I haven't found out when exactly the assumption fails.
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wassume")
 
