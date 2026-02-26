@@ -63,10 +63,8 @@ static void range_range(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_reads<T>(mismatch_point + 1);
   state.add_global_memory_writes<size_t>(1);
 
-  cuda::stream stream{cuda::device_ref{0}};
-  cuda::device_memory_pool_ref alloc = cuda::device_default_memory_pool(stream.device());
+  caching_allocator_t alloc{};
 
-  auto policy = cuda::execution::__cub_par_unseq.with_stream(stream).with_memory_resource(alloc);
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
                do_not_optimize(cuda::std::equal(
