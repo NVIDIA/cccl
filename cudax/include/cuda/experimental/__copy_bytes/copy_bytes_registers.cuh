@@ -37,6 +37,7 @@
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 
+#include <cuda/experimental/__copy/utils.cuh>
 #include <cuda/experimental/__copy_bytes/copy_bytes_naive.cuh>
 #include <cuda/experimental/__copy_bytes/cute_utils.cuh>
 #include <cuda/experimental/__copy_bytes/layout_optimization.cuh>
@@ -219,6 +220,34 @@ template <::cuda::std::size_t _Np = 2, typename _TpSrc, typename _TpDst, ::cuda:
   }
 }
 
+//! @brief Recursively dispatch a naive copy for a given runtime rank.
+//!
+//! Same rank-dispatch pattern as @ref __dispatch_copy_by_rank, but launches
+//! @ref copy_bytes_naive instead of the vectorized kernel. Uses @ref __to_cute_layout
+//! which preserves all runtime strides (no stride-1 assumption on mode 0).
+template <::cuda::std::size_t _Np = 1, typename _TpSrc, typename _TpDst, ::cuda::std::size_t _MaxRank>
+[[nodiscard]] _CCCL_HOST_API bool __dispatch_naive_by_rank(
+  const __raw_tensor<_TpSrc, _MaxRank>& __src, const __raw_tensor<_TpDst, _MaxRank>& __dst, ::cuda::stream_ref __stream)
+{
+  constexpr auto __max_dispatch_rank = ::cuda::std::min(_MaxRank, ::cuda::std::size_t{5});
+  if constexpr (_Np > __max_dispatch_rank)
+  {
+    return false;
+  }
+  else
+  {
+    if (__src.__rank == _Np)
+    {
+      constexpr auto __seq    = ::cuda::std::make_index_sequence<_Np - 1>{};
+      const auto __src_layout = ::cuda::experimental::__to_cute_layout(__src, __seq);
+      const auto __dst_layout = ::cuda::experimental::__to_cute_layout(__dst, __seq);
+      ::cuda::experimental::copy_bytes_naive(__src.__data, __src_layout, __dst.__data, __dst_layout, __stream);
+      return true;
+    }
+    return ::cuda::experimental::__dispatch_naive_by_rank<_Np + 1>(__src, __dst, __stream);
+  }
+}
+
 //! @brief Register-based copy using cute::copy.
 //!
 //! Preprocesses both layouts to determine the optimal copy strategy:
@@ -265,8 +294,13 @@ _CCCL_HOST_API void copy_bytes_registers(
   //       After this, dst has stride-1 in mode 0 (if any mode is stride-1).
   //       Shapes are kept in sync (both tensors share the same shape because they are ordered by the same permutation).
   cudax::__sort_by_stride_paired(__src_raw, __dst_raw);
+  // Flip modes where both strides are negative to positive, enabling coalescing and vectorization.
+  cudax::__flip_negative_strides_paired(__src_raw, __dst_raw);
   // Merge adjacent modes that are contiguous in both tensors, reducing effective rank.
   cudax::__coalesce_paired(__src_raw, __dst_raw);
+
+  __println(__src_raw);
+  __println(__dst_raw);
 
   const bool __are_both_contiguous = (__src_raw.__strides[0] == 1) && (__dst_raw.__strides[0] == 1);
   if (__are_both_contiguous)
@@ -286,12 +320,16 @@ _CCCL_HOST_API void copy_bytes_registers(
     const auto __src_vector_bytes    = cudax::__max_vector_size_bytes(__src_raw);
     const auto __dst_vector_bytes    = cudax::__max_vector_size_bytes(__dst_raw);
     const auto __common_vector_bytes = ::cuda::std::min(__src_vector_bytes, __dst_vector_bytes);
-    if (cudax::__dispatch_copy_by_rank(__src_raw, __dst_raw, __common_vector_bytes, __stream))
+    if (__common_vector_bytes > sizeof(_Tp)
+        && cudax::__dispatch_copy_by_rank(__src_raw, __dst_raw, __common_vector_bytes, __stream))
     {
       return;
     }
   }
-  cudax::copy_bytes_naive(__src_ptr, __src_layout, __dst_ptr, __dst_layout, __stream);
+  if (!cudax::__dispatch_naive_by_rank(__src_raw, __dst_raw, __stream))
+  {
+    cudax::copy_bytes_naive(__src_ptr, __src_layout, __dst_ptr, __dst_layout, __stream);
+  }
 }
 
 #endif // !_CCCL_COMPILER(NVRTC)

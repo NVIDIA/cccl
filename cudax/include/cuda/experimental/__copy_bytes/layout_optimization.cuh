@@ -96,6 +96,37 @@ __sort_by_stride_paired(__raw_tensor<_TpSrc, _MaxRank>& __src, __raw_tensor<_TpD
   __dst.__shapes = __src.__shapes;
 }
 
+//! @brief Flip modes where both tensors have negative strides to positive.
+//!
+//! For each mode where both src and dst strides are negative, reverses the iteration direction:
+//! negates both strides and advances both data pointers by `(shape - 1) * stride`
+//! (a negative offset, moving pointers backward).
+//!
+//! @pre `__src.__rank == __dst.__rank`, in [1, _MaxRank].
+//! @pre Both tensors must have the same shapes (mode-by-mode).
+//!
+//! @param[in,out] __src Source tensor (data pointer and strides updated)
+//! @param[in,out] __dst Destination tensor (data pointer and strides updated)
+template <typename _TpSrc, typename _TpDst, ::cuda::std::size_t _MaxRank>
+_CCCL_HOST_API void
+__flip_negative_strides_paired(__raw_tensor<_TpSrc, _MaxRank>& __src, __raw_tensor<_TpDst, _MaxRank>& __dst) noexcept
+{
+  _CCCL_ASSERT(__src.__rank == __dst.__rank, "Source and destination ranks must be equal");
+  _CCCL_ASSERT(__src.__shapes == __dst.__shapes, "Source and destination shapes must be identical");
+  for (::cuda::std::size_t __i = 0; __i < __src.__rank; ++__i)
+  {
+    if (__src.__strides[__i] < 0 && __dst.__strides[__i] < 0)
+    {
+      const auto __adj_src = static_cast<::cuda::std::int64_t>(__src.__shapes[__i] - 1) * __src.__strides[__i];
+      const auto __adj_dst = static_cast<::cuda::std::int64_t>(__dst.__shapes[__i] - 1) * __dst.__strides[__i];
+      __src.__data += __adj_src;
+      __dst.__data += __adj_dst;
+      __src.__strides[__i] = -__src.__strides[__i];
+      __dst.__strides[__i] = -__dst.__strides[__i];
+    }
+  }
+}
+
 //! @brief Coalesce adjacent contiguous modes in a src/dst tensor pair.
 //!
 //! Two adjacent modes (i, i+1) are merged when shape[i] * stride[i] == stride[i+1]
