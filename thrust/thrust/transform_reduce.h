@@ -32,8 +32,8 @@
 #include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 
-#include <cuda/std/functional>
-#include <cuda/std/type_traits>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/common_type.h>
 
 THRUST_NAMESPACE_BEGIN
 

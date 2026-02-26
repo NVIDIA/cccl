@@ -26,13 +26,11 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/iterator/transform_iterator.h>
-#include <thrust/iterator/zip_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/system/detail/generic/transform_reduce.h>
-#include <thrust/tuple.h>
-#include <thrust/zip_function.h>
 
-#include <cuda/std/functional>
+#include <cuda/__iterator/zip_transform_iterator.h>
+#include <cuda/std/__iterator/distance.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
@@ -68,15 +66,17 @@ _CCCL_HOST_DEVICE T transform_reduce(
   InputIterator1 last1,
   InputIterator2 first2,
   T init,
-  BinaryOp1 reduce,
-  BinaryOp2 transform)
+  BinaryOp1 reduce_op,
+  BinaryOp2 transform_op)
 {
-  // Create a zip iterator to iterate over both input ranges simultaneously
-  const auto first = thrust::make_zip_iterator(first1, first2);
-  const auto last  = thrust::make_zip_iterator(last1, first2); // only first iterator matters
+  // Calculate the number of elements
+  const auto n = ::cuda::std::distance(first1, last1);
 
-  // Use the unary transform_reduce with the zipped iterators and a zip_function
-  return thrust::transform_reduce(exec, first, last, thrust::make_zip_function(transform), init, reduce);
+  // Create a zip_transform_iterator to iterate over both input ranges simultaneously
+  const auto first = ::cuda::make_zip_transform_iterator(transform_op, first1, first2);
+
+  // Use reduce with the zip_transform_iterator directly, using n for iteration count
+  return thrust::reduce(exec, first, first + n, init, reduce_op);
 } // end transform_reduce()
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

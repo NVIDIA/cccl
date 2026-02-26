@@ -54,6 +54,7 @@
 #  include <thrust/system/cuda/detail/make_unsigned_special.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/__iterator/zip_transform_iterator.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/cstdint>
 
@@ -133,6 +134,28 @@ T _CCCL_HOST_DEVICE transform_reduce(
     (init = thrust::transform_reduce(
        cvt_to_seq(derived_cast(policy)), first, first + num_items, transform_op, init, reduce_op);));
   return init;
+}
+
+// Binary transform_reduce with CUDA-specific iterators
+_CCCL_EXEC_CHECK_DISABLE
+template <class Derived, class InputIt1, class InputIt2, class T, class ReduceOp, class TransformOp>
+T _CCCL_HOST_DEVICE transform_reduce(
+  execution_policy<Derived>& policy,
+  InputIt1 first1,
+  InputIt1 last1,
+  InputIt2 first2,
+  T init,
+  ReduceOp reduce_op,
+  TransformOp transform_op)
+{
+  // Calculate the number of elements
+  const auto n = ::cuda::std::distance(first1, last1);
+
+  // Create a zip_transform_iterator to iterate over both input ranges simultaneously
+  const auto first = ::cuda::make_zip_transform_iterator(transform_op, first1, first2);
+
+  // Delegate to the unary transform_reduce which handles CDP dispatch
+  return thrust::cuda_cub::transform_reduce(policy, first, first + n, ::cuda::std::identity{}, init, reduce_op);
 }
 } // namespace cuda_cub
 THRUST_NAMESPACE_END
