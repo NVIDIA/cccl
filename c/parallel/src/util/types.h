@@ -114,6 +114,8 @@ inline constexpr cub::detail::type_t cccl_type_enum_to_cub_type(cccl_type_enum t
 {
   switch (type)
   {
+    case CCCL_BOOLEAN:
+      return cub::detail::type_t::boolean;
     case CCCL_INT8:
       return cub::detail::type_t::int8;
     case CCCL_INT16:
@@ -136,7 +138,6 @@ inline constexpr cub::detail::type_t cccl_type_enum_to_cub_type(cccl_type_enum t
       return cub::detail::type_t::float64;
     case CCCL_FLOAT16:
     case CCCL_STORAGE:
-    case CCCL_BOOLEAN:
     default:
       return cub::detail::type_t::other;
   }
