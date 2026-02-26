@@ -37,22 +37,14 @@ struct compare_key_prefix_op
   }
 };
 
-enum class data_arrangement
-{
-  blocked,
-  warp_striped,
-  block_striped
-};
-
-template <typename KeyT,
-          int BlockThreads,
-          int ItemsPerThread,
-          typename ValueT              = NullType,
-          int RadixBits                = 8,
-          data_arrangement Arrangement = data_arrangement::blocked>
+template <typename KeyT, int BlockThreads, int ItemsPerThread, typename ValueT = NullType, int RadixBits = 8>
 class block_topk_air
 {
 private:
+  // TODO (elstehle): Make this configurable
+  // Whether to include all items tied with the k-th key when selecting top-k
+  static constexpr bool expand_k_to_include_ties = false;
+
   static constexpr int block_threads    = BlockThreads;
   static constexpr int items_per_thread = ItemsPerThread;
   static constexpr int tile_items       = block_threads * items_per_thread;
@@ -82,10 +74,9 @@ private:
         typename block_scan_t::TempStorage scan_temp_storage;
         struct
         {
-          histo_counter_t k;
-          histo_counter_t len;
-          int bucket;
           histo_counter_t selected;
+          histo_counter_t candidates;
+          int bucket;
         } pass_state;
       } passes;
 
@@ -104,7 +95,7 @@ private:
   /// Shared storage reference
   TempStorage_& storage;
 
-  /// Linear thread-id
+  /// Linear thread index
   unsigned int linear_tid;
 
   // Initialize histogram bins to zero
@@ -126,7 +117,7 @@ private:
     }
   }
 
-  // Compute histogram over keys. digit_extractor is a function object that returns the bin for each key.
+  // Compute histogram over keys
   template <bool IsFullTile, typename DigitExtractorT, typename FilterOpT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void compute_histograms(
     const bit_ordered_type (&unsigned_keys)[items_per_thread],
@@ -194,10 +185,9 @@ private:
 
         if (prev < k && cur >= k)
         {
-          storage.stage.passes.pass_state.k        = k - prev;
-          storage.stage.passes.pass_state.len      = cur - prev;
-          storage.stage.passes.pass_state.bucket   = bin_idx;
-          storage.stage.passes.pass_state.selected = prev;
+          storage.stage.passes.pass_state.bucket     = bin_idx;
+          storage.stage.passes.pass_state.candidates = cur - prev;
+          storage.stage.passes.pass_state.selected   = prev;
         }
       }
     }
@@ -210,11 +200,10 @@ private:
     int num_valid,
     int begin_bit,
     int end_bit,
-    histo_counter_t& current_len,
-    histo_counter_t& current_k,
+    int& total_selected,
+    int& num_candidates,
     bit_ordered_type& kth_key_prefix,
     bit_ordered_type& prefix_mask,
-    histo_counter_t& total_selected,
     DecomposerT decomposer = DecomposerT{})
   {
     // We only consider candidates identified in the previous pass, i.e., ((sortkey & prefix_mask) == kth_prefix)
@@ -229,21 +218,17 @@ private:
     const int num_passes = (total_bits > 0) ? ::cuda::ceil_div(total_bits, RadixBits) : 0;
     for (int pass = 0; pass < num_passes; ++pass)
     {
-      const int pass_end_bit = end_bit - pass * RadixBits;
-      int pass_begin_bit     = pass_end_bit - RadixBits;
-      if (pass_begin_bit < begin_bit)
-      {
-        pass_begin_bit = begin_bit;
-      }
-      const int pass_bits = pass_end_bit - pass_begin_bit;
-
+      // Bit-range & mask of the current pass
+      const int pass_end_bit           = end_bit - pass * RadixBits;
+      const int pass_begin_bit         = ::cuda::std::max(pass_end_bit - RadixBits, begin_bit);
+      const int pass_bits              = pass_end_bit - pass_begin_bit;
       const bit_ordered_type pass_mask = ::cuda::bitmask<bit_ordered_type>(pass_begin_bit, pass_bits);
 
       // Zero-initialize histograms for the current pass
       init_histograms();
       __syncthreads();
 
-      // Compute histogram over the current pass's bits pre-filtered for keys matching the previous pass's prefix mask
+      // Compute histogram over the current pass's, bits pre-filtered for keys matching the previous pass's prefix mask
       auto filter_op = compare_key_prefix_op<bit_ordered_type>{prefix_mask, kth_key_prefix};
       auto digit_extractor =
         traits::template digit_extractor<fundamental_digit_extractor_t>(pass_begin_bit, pass_bits, decomposer);
@@ -255,23 +240,21 @@ private:
       __syncthreads();
 
       // Identify the bucket that the k-th item falls into
-      choose_bucket(current_k);
+      choose_bucket(k);
       __syncthreads();
 
       // Update the current k and length for the next pass
-      current_k   = storage.stage.passes.pass_state.k;
-      current_len = storage.stage.passes.pass_state.len;
+      k -= storage.stage.passes.pass_state.selected;
+      num_candidates = storage.stage.passes.pass_state.candidates;
       total_selected += storage.stage.passes.pass_state.selected;
 
       // Update the kth_key_prefix and prefix_mask for the next pass
-      // Basically, we will have current_len candidates with the prefix kth_key_prefix
+      // Basically, we will have num_valid candidates with the prefix kth_key_prefix
       kth_key_prefix |= bit_ordered_type(storage.stage.passes.pass_state.bucket) << pass_begin_bit;
       prefix_mask |= pass_mask;
 
-      // Short-circuit if we have identified the exact "splitter" key
-      // If all candidates are amongst the remaining top-k, we can simply select all matching smaller or equal to the
-      // splitter prefix
-      if (current_len == current_k)
+      // Short-circuit if all candidates are amongst the top-k
+      if (num_candidates == k)
       {
         break;
       }
@@ -327,26 +310,31 @@ private:
       }
     }
 
+    // The prefix (i.e., the most significant bits) of the k-th key
     bit_ordered_type kth_prefix{};
+    // The prefix mask (i.e., the bit mask with the most significant bits populated) of the k-th key
     bit_ordered_type prefix_mask{};
-    histo_counter_t total_selected{};
-    // K *within the candidates considered of this pass* of the current pass
-    histo_counter_t current_k = static_cast<histo_counter_t>(k);
-    // The number of candidates in the current pass
-    histo_counter_t current_len = IsFullTile ? tile_items : static_cast<histo_counter_t>(num_valid);
+    // The total number of items that compare strictly less than the k-th key's prefix (i.e., the number of items that
+    // are guaranteed to be selected)
+    int total_selected{};
+    // The number of candidates that compare equal to the k-th key's prefix
+    auto num_candidates = IsFullTile ? tile_items : num_valid;
+
+    // Identify the prefix of the k-th key
     get_kth_key_prefix<SelectDirection, IsFullTile>(
       unsigned_keys,
       k,
       num_valid,
       begin_bit,
       end_bit,
-      current_len,
-      current_k,
+      total_selected,
+      num_candidates,
       kth_prefix,
       prefix_mask,
-      total_selected,
       decomposer);
 
+    // Scatter indices of selected items into shared memory (only for selecting key-value pairs, using a two-phase
+    // approach to lower shared memory requirements).
     [[maybe_unused]] int scatter_indices[items_per_thread];
     if constexpr (!keys_only)
     {
@@ -356,14 +344,15 @@ private:
       }
     }
 
-    // If all candidates are amongst the remaining top-k, we can simply select all matching smaller or equal to the
-    // splitter prefix
-    // TODO (elstehle): Make this configurable
-    constexpr bool expand_k_to_include_ties = false;
-    if (expand_k_to_include_ties || current_len == current_k)
+    // If all candidates are amongst the remaining top-k, we can simply select all items that compare less than or equal
+    // to the splitter prefix. Otherwise, we have to make sure that *all* candidates that compare strictly less than the
+    // splitter prefix are selected, and then select amongst candidates that compare equal to the splitter prefix to
+    // fill up the remaining slots up to k.
+    if (expand_k_to_include_ties || num_candidates + total_selected == k)
     {
       if (linear_tid == 0)
       {
+        // Write offsets for selected items with key_prefix < kth_prefix
         storage.stage.select.selected_offset[0] = 0;
       }
       // Ensure atomic selection counter has been reset
@@ -398,7 +387,9 @@ private:
     {
       if (linear_tid == 0)
       {
+        // Write offsets for selected items with key_prefix < kth_prefix
         storage.stage.select.selected_offset[0] = 0;
+        // Write offsets for tied items across the k-th position, i.e., key_prefix == kth_prefix
         storage.stage.select.selected_offset[1] = total_selected;
       }
       // Ensure atomic selection counter has been reset
