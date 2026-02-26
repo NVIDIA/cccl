@@ -164,7 +164,7 @@ _CCCL_HOST_API void __println(const __raw_tensor<_Tp, _Rank>& __tensor)
   ::printf("(");
   for (int __i = 0; __i < __rank - 1; ++__i)
   {
-    ::printf("%zu,", __tensor.__shapes[__i]);
+    ::printf("%zu, ", __tensor.__shapes[__i]);
   }
   if (__rank > 0)
   {
@@ -173,7 +173,7 @@ _CCCL_HOST_API void __println(const __raw_tensor<_Tp, _Rank>& __tensor)
   ::printf("):(");
   for (int __i = 0; __i < __rank - 1; ++__i)
   {
-    ::printf("%lld,", static_cast<long long>(__tensor.__strides[__i]));
+    ::printf("%lld, ", static_cast<long long>(__tensor.__strides[__i]));
   }
   if (__rank > 0)
   {
@@ -189,7 +189,7 @@ _CCCL_HOST_API void __println(const __raw_tensor_ordered<_Tp, _Rank>& __tensor)
   ::printf("(");
   for (int __i = 0; __i < __rank - 1; ++__i)
   {
-    ::printf("%zu,", __tensor.__shapes[__i]);
+    ::printf("%zu, ", __tensor.__shapes[__i]);
   }
   if (__rank > 0)
   {
@@ -198,7 +198,7 @@ _CCCL_HOST_API void __println(const __raw_tensor_ordered<_Tp, _Rank>& __tensor)
   ::printf("):(");
   for (int __i = 0; __i < __rank - 1; ++__i)
   {
-    ::printf("%lld,", static_cast<long long>(__tensor.__strides[__i]));
+    ::printf("%lld, ", static_cast<long long>(__tensor.__strides[__i]));
   }
   if (__rank > 0)
   {

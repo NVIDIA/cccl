@@ -180,23 +180,35 @@ _CCCL_HOST_API void __dispatch_vectorized_copy(
   }
 }
 
-//! @brief Recursively dispatch a vectorized copy for a given runtime rank.
+struct __vectorized_dispatch_tag
+{
+  static constexpr bool __vectorized = true;
+  ::cuda::std::size_t __common_vector_bytes;
+};
+
+struct __naive_dispatch_tag
+{
+  static constexpr bool __vectorized = false;
+};
+
+//! @brief Recursively dispatch a rank-dependent copy on two raw tensors.
 //!
-//! Tries ranks `_Np`, `_Np+1`, ... up to `min(_MaxRank, 5)`. At each level,
-//! builds CuTe layouts from the raw tensor's shapes/strides via
-//! @ref __make_raw_cute_layout and dispatches the vectorized copy.
+//! Tries ranks `_Np`, `_Np+1`, ... up to `min(_MaxRank, 5)`. When the runtime
+//! rank matches, builds CuTe layouts and dispatches via the tag-selected path:
+//! - @ref __vectorized_dispatch_tag : contiguous layouts + vectorized kernel
+//! - @ref __naive_dispatch_tag      : general layouts + naive kernel
 //!
-//! @tparam _Np Current candidate rank
-//! @param[in] __src                 Source raw tensor (stride-1 at mode 0)
-//! @param[in] __dst                 Destination raw tensor (stride-1 at mode 0)
-//! @param[in] __common_vector_bytes Common vectorization width in bytes
-//! @param[in] __stream              CUDA stream
+//! @tparam _Np   Starting candidate rank
+//! @param[in] __tag    Dispatch tag (carries extra parameters for the vectorized path)
+//! @param[in] __src    Source raw tensor
+//! @param[in] __dst    Destination raw tensor
+//! @param[in] __stream CUDA stream
 //! @return `true` if the rank matched and the copy was dispatched, `false` if rank exceeded the limit
-template <::cuda::std::size_t _Np = 2, typename _TpSrc, typename _TpDst, ::cuda::std::size_t _MaxRank>
-[[nodiscard]] _CCCL_HOST_API bool __dispatch_copy_by_rank(
+template <::cuda::std::size_t _Np, typename _Tag, typename _TpSrc, typename _TpDst, ::cuda::std::size_t _MaxRank>
+[[nodiscard]] _CCCL_HOST_API bool __dispatch_by_rank(
+  const _Tag& __tag,
   const __raw_tensor<_TpSrc, _MaxRank>& __src,
   const __raw_tensor<_TpDst, _MaxRank>& __dst,
-  ::cuda::std::size_t __common_vector_bytes,
   ::cuda::stream_ref __stream)
 {
   constexpr auto __max_dispatch_rank = ::cuda::std::min(_MaxRank, ::cuda::std::size_t{5});
@@ -208,43 +220,26 @@ template <::cuda::std::size_t _Np = 2, typename _TpSrc, typename _TpDst, ::cuda:
   {
     if (__src.__rank == _Np)
     {
-      constexpr auto __seq    = ::cuda::std::make_index_sequence<_Np - 1>{};
-      const auto __src_layout = ::cuda::experimental::__to_cute_layout_contiguous(__src, __seq);
-      const auto __dst_layout = ::cuda::experimental::__to_cute_layout_contiguous(__dst, __seq);
-      const auto __src_tensor = ::cuda::experimental::__make_gmem_tensor(__src.__data, __src_layout);
-      const auto __dst_tensor = ::cuda::experimental::__make_gmem_tensor(__dst.__data, __dst_layout);
-      ::cuda::experimental::__dispatch_vectorized_copy(__src_tensor, __dst_tensor, __common_vector_bytes, __stream);
+      constexpr auto __seq = ::cuda::std::make_index_sequence<_Np - 1>{};
+      if constexpr (_Tag::__vectorized)
+      {
+        const auto __sl = ::cuda::experimental::__to_cute_layout_contiguous(__src, __seq);
+        const auto __dl = ::cuda::experimental::__to_cute_layout_contiguous(__dst, __seq);
+        ::cuda::experimental::__dispatch_vectorized_copy(
+          ::cuda::experimental::__make_gmem_tensor(__src.__data, __sl),
+          ::cuda::experimental::__make_gmem_tensor(__dst.__data, __dl),
+          __tag.__common_vector_bytes,
+          __stream);
+      }
+      else
+      {
+        const auto __sl = ::cuda::experimental::__to_cute_layout(__src, __seq);
+        const auto __dl = ::cuda::experimental::__to_cute_layout(__dst, __seq);
+        ::cuda::experimental::copy_bytes_naive(__src.__data, __sl, __dst.__data, __dl, __stream);
+      }
       return true;
     }
-    return ::cuda::experimental::__dispatch_copy_by_rank<_Np + 1>(__src, __dst, __common_vector_bytes, __stream);
-  }
-}
-
-//! @brief Recursively dispatch a naive copy for a given runtime rank.
-//!
-//! Same rank-dispatch pattern as @ref __dispatch_copy_by_rank, but launches
-//! @ref copy_bytes_naive instead of the vectorized kernel. Uses @ref __to_cute_layout
-//! which preserves all runtime strides (no stride-1 assumption on mode 0).
-template <::cuda::std::size_t _Np = 1, typename _TpSrc, typename _TpDst, ::cuda::std::size_t _MaxRank>
-[[nodiscard]] _CCCL_HOST_API bool __dispatch_naive_by_rank(
-  const __raw_tensor<_TpSrc, _MaxRank>& __src, const __raw_tensor<_TpDst, _MaxRank>& __dst, ::cuda::stream_ref __stream)
-{
-  constexpr auto __max_dispatch_rank = ::cuda::std::min(_MaxRank, ::cuda::std::size_t{5});
-  if constexpr (_Np > __max_dispatch_rank)
-  {
-    return false;
-  }
-  else
-  {
-    if (__src.__rank == _Np)
-    {
-      constexpr auto __seq    = ::cuda::std::make_index_sequence<_Np - 1>{};
-      const auto __src_layout = ::cuda::experimental::__to_cute_layout(__src, __seq);
-      const auto __dst_layout = ::cuda::experimental::__to_cute_layout(__dst, __seq);
-      ::cuda::experimental::copy_bytes_naive(__src.__data, __src_layout, __dst.__data, __dst_layout, __stream);
-      return true;
-    }
-    return ::cuda::experimental::__dispatch_naive_by_rank<_Np + 1>(__src, __dst, __stream);
+    return ::cuda::experimental::__dispatch_by_rank<_Np + 1>(__tag, __src, __dst, __stream);
   }
 }
 
@@ -299,9 +294,6 @@ _CCCL_HOST_API void copy_bytes_registers(
   // Merge adjacent modes that are contiguous in both tensors, reducing effective rank.
   cudax::__coalesce_paired(__src_raw, __dst_raw);
 
-  __println(__src_raw);
-  __println(__dst_raw);
-
   const bool __are_both_contiguous = (__src_raw.__strides[0] == 1) && (__dst_raw.__strides[0] == 1);
   if (__are_both_contiguous)
   {
@@ -320,13 +312,14 @@ _CCCL_HOST_API void copy_bytes_registers(
     const auto __src_vector_bytes    = cudax::__max_vector_size_bytes(__src_raw);
     const auto __dst_vector_bytes    = cudax::__max_vector_size_bytes(__dst_raw);
     const auto __common_vector_bytes = ::cuda::std::min(__src_vector_bytes, __dst_vector_bytes);
+    const auto __vector_tag          = cudax::__vectorized_dispatch_tag{__common_vector_bytes};
     if (__common_vector_bytes > sizeof(_Tp)
-        && cudax::__dispatch_copy_by_rank(__src_raw, __dst_raw, __common_vector_bytes, __stream))
+        && cudax::__dispatch_by_rank<2>(__vector_tag, __src_raw, __dst_raw, __stream))
     {
       return;
     }
   }
-  if (!cudax::__dispatch_naive_by_rank(__src_raw, __dst_raw, __stream))
+  if (!cudax::__dispatch_by_rank<1>(cudax::__naive_dispatch_tag{}, __src_raw, __dst_raw, __stream))
   {
     cudax::copy_bytes_naive(__src_ptr, __src_layout, __dst_ptr, __dst_layout, __stream);
   }
