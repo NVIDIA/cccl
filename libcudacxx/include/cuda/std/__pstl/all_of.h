@@ -23,6 +23,7 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/all_of.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__execution/policy.h>
@@ -63,6 +64,7 @@ all_of([[maybe_unused]] const _Policy& __policy, _Iter __first, _Iter __last, _U
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__find_if, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
+    _CCCL_NVTX_RANGE_SCOPE("cuda::std::all_of");
     auto __res =
       __dispatch(__policy, ::cuda::std::move(__first), __last, ::cuda::std::not_fn(::cuda::std::move(__pred)));
     return __res == __last;
