@@ -37,7 +37,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 }
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))
-  .set_name("base")
+  .set_name("contiguous")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
 
@@ -65,6 +65,6 @@ static void random_access(nvbench::state& state, nvbench::type_list<T>)
 }
 
 NVBENCH_BENCH_TYPES(random_access, NVBENCH_TYPE_AXES(integral_types))
-  .set_name("base")
+  .set_name("random_access")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
