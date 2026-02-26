@@ -154,8 +154,9 @@ _CCCL_API constexpr auto convert_policy() -> scan_policy
 template <typename PolicyHub, typename InputValueT, typename OutputValueT, typename AccumT>
 struct policy_selector_from_hub
 {
-  // this is only called in device code
-  _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> scan_policy
+  // Called from device code during dispatch, and from host code when clang-cuda evaluates
+  // scan_policy_selector concept checks.
+  _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> scan_policy
   {
     return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
   }
