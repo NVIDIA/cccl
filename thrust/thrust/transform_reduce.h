@@ -247,7 +247,12 @@ template <typename DerivedPolicy,
           typename T,
           typename BinaryOp1 = ::cuda::std::plus<>,
           typename BinaryOp2 = ::cuda::std::multiplies<>>
-_CCCL_HOST_DEVICE T transform_reduce(
+_CCCL_HOST_DEVICE
+// SFINAE: only participate when InputIterator2 is actually an iterator
+typename ::cuda::std::enable_if<
+  ::cuda::std::is_convertible<typename ::cuda::std::iterator_traits<InputIterator2>::iterator_category*, void*>::value,
+  T>::type
+transform_reduce(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -304,13 +309,16 @@ template <typename InputIterator1,
           typename T,
           typename BinaryOp1 = ::cuda::std::plus<>,
           typename BinaryOp2 = ::cuda::std::multiplies<>>
-T transform_reduce(
-  InputIterator1 first1,
-  InputIterator1 last1,
-  InputIterator2 first2,
-  T init,
-  BinaryOp1 reduce    = BinaryOp1(),
-  BinaryOp2 transform = BinaryOp2());
+// SFINAE: only participate when InputIterator2 is actually an iterator
+typename ::cuda::std::enable_if<
+  ::cuda::std::is_convertible<typename ::cuda::std::iterator_traits<InputIterator2>::iterator_category*, void*>::value,
+  T>::type
+transform_reduce(InputIterator1 first1,
+                 InputIterator1 last1,
+                 InputIterator2 first2,
+                 T init,
+                 BinaryOp1 reduce    = BinaryOp1(),
+                 BinaryOp2 transform = BinaryOp2());
 
 /*! \} // end transformed_reductions
  *  \} // end reductions
