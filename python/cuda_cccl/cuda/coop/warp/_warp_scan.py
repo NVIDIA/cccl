@@ -71,12 +71,6 @@ class exclusive_sum(BasePrimitive):
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_scan_api.py
                 :language: python
                 :dedent:
-                :start-after: example-begin imports
-                :end-before: example-end imports
-
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_scan_api.py
-                :language: python
-                :dedent:
                 :start-after: example-begin exclusive-sum
                 :end-before: example-end exclusive-sum
         """
@@ -165,12 +159,6 @@ class inclusive_sum(BasePrimitive):
         :type  temp_storage: Any, optional
 
         Example:
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_scan_api.py
-                :language: python
-                :dedent:
-                :start-after: example-begin imports
-                :end-before: example-end imports
-
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_warp_scan_api.py
                 :language: python
                 :dedent:
