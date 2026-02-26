@@ -254,7 +254,9 @@ struct dispatch_streaming_arg_reduce_t
       static_cast<PerPartitionOffsetT>(largest_partition_size),
       reduce_op,
       initial_value,
-      stream);
+      stream,
+      ::cuda::std::identity{},
+      reduce::policy_selector_from_hub<PolicyChainT>{});
 
     // Alias the temporary allocations from the single storage blob (or compute the necessary size
     // of the blob)
