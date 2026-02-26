@@ -24,13 +24,13 @@
 #include <cuda/__functional/call_or.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__mdspan/layout_left.h>
 #include <cuda/std/__mdspan/layout_right.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/array>
 
@@ -202,7 +202,7 @@ public:
       return cudaSuccess;
     }
 
-    return Bulk(shape, op, stream);
+    return Bulk(shape, op, ::cuda::std::execution::env{::cuda::stream_ref{stream}});
   }
 
   //! @rst
@@ -278,7 +278,7 @@ public:
       return cudaSuccess;
     }
 
-    return ForEachN(first, num_items, op, stream);
+    return ForEachN(first, num_items, op, ::cuda::std::execution::env{::cuda::stream_ref{stream}});
   }
 
   //! @rst
@@ -351,7 +351,7 @@ public:
       return cudaSuccess;
     }
 
-    return ForEach(first, last, op, stream);
+    return ForEach(first, last, op, ::cuda::std::execution::env{::cuda::stream_ref{stream}});
   }
 
   //! @rst
@@ -430,7 +430,7 @@ public:
       return cudaSuccess;
     }
 
-    return ForEachCopyN(first, num_items, op, stream);
+    return ForEachCopyN(first, num_items, op, ::cuda::std::execution::env{::cuda::stream_ref{stream}});
   }
 
   //! @rst
@@ -506,7 +506,7 @@ public:
       return cudaSuccess;
     }
 
-    return ForEachCopy(first, last, op, stream);
+    return ForEachCopy(first, last, op, ::cuda::std::execution::env{::cuda::stream_ref{stream}});
   }
 
   //! @rst
@@ -971,7 +971,7 @@ public:
       temp_storage_bytes = 1;
       return cudaSuccess;
     }
-    return ForEachInExtents(extents, op, stream);
+    return ForEachInExtents(extents, op, ::cuda::std::execution::env{::cuda::stream_ref{stream}});
   }
 
   //! @rst
@@ -982,6 +982,10 @@ public:
   //!
   //! .. versionadded:: 2.4.0
   //!    First appears in CUDA Toolkit 12.5.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
   //!
   //! - a single linear index that represents the current iteration
   //! - list of indices containing the coordinates for each extent dimension
@@ -1021,23 +1025,26 @@ public:
   //! @tparam OpType
   //!   is a function object with arity equal to the number of extents + 1 for the linear index (iteration)
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of stream via ``cuda::get_stream``.
+  //!
   //! @param[in] extents
   //!   Extents object that represents a multi-dimensional index space
   //!
   //! @param[in] op
   //!   Function object to apply to each linear index (iteration) and multi-dimensional coordinates
   //!
-  //! @param[in] stream
-  //!   CUDA stream to launch kernels within. Default stream is `NULL`
-  //!
-  //! @return cudaError_t
-  //!   error status
-  template <typename IndexType, size_t... Extents, typename OpType>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, cudaStream_t stream = {})
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename IndexType, size_t... Extents, typename OpType, typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, EnvT env = {})
   {
     using extents_type = ::cuda::std::extents<IndexType, Extents...>;
-    return cub::DeviceFor::ForEachInLayout(::cuda::std::layout_right::mapping<extents_type>{extents}, op, stream);
+    return cub::DeviceFor::ForEachInLayout(::cuda::std::layout_right::mapping<extents_type>{extents}, op, env);
   }
 
   /*********************************************************************************************************************
@@ -1061,6 +1068,10 @@ public:
   //!
   //! - ``layout_right``: Iterates in row-major order (rightmost index varies fastest)
   //! - ``layout_left``: Iterates in column-major order (leftmost index varies fastest)
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
   //!
   //! - The return value of ``op``, if any, is ignored.
   //!
@@ -1107,15 +1118,18 @@ public:
   //!   Function object to apply to each linear index (iteration) and multi-dimensional coordinates.
   //!   Called as ``op(linear_index, coord_0, coord_1, ..., coord_n)``
   //!
-  //! @param[in] stream
-  //!   CUDA stream to launch kernels within. Default stream is `nullptr`
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of stream via ``cuda::get_stream``.
   //!
-  //! @return cudaError_t
-  //!   error status
-  _CCCL_TEMPLATE(typename LayoutMapping, typename OpType)
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  _CCCL_TEMPLATE(typename LayoutMapping, typename OpType, typename EnvT = ::cuda::std::execution::env<>)
   _CCCL_REQUIRES(::cuda::std::__is_cuda_std_layout_left_or_right_mapping_v<LayoutMapping>)
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEachInLayout(const LayoutMapping& layout_mapping, OpType op, cudaStream_t stream = {})
+  ForEachInLayout(const LayoutMapping& layout_mapping, OpType op, EnvT env = {})
   {
     using namespace cub::detail;
     using extents_type      = typename LayoutMapping::extents_type;
@@ -1129,7 +1143,7 @@ public:
     fast_mod_array_t extents_div_array   = cub::detail::extents_fast_div_mod(extents, seq);
     for_each::op_wrapper_extents_t<OpType, extents_type, is_layout_right, fast_mod_array_t> op_wrapper{
       op, extents, sub_sizes_div_array, extents_div_array};
-    return Bulk(static_cast<implicit_prom_t<extent_index_type>>(cub::detail::size(extents)), op_wrapper, stream);
+    return Bulk(static_cast<implicit_prom_t<extent_index_type>>(cub::detail::size(extents)), op_wrapper, env);
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED
@@ -1148,7 +1162,7 @@ public:
       temp_storage_bytes = 1;
       return cudaSuccess;
     }
-    return ForEachInLayout(layout_mapping, op, stream);
+    return ForEachInLayout(layout_mapping, op, ::cuda::std::execution::env{::cuda::stream_ref{stream}});
   }
 
 #endif // !_CCCL_DOXYGEN_INVOKED
