@@ -220,12 +220,6 @@ class histogram(BasePrimitive):
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_histogram.py
                 :language: python
                 :dedent:
-                :start-after: example-begin imports
-                :end-before: example-end imports
-
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_histogram.py
-                :language: python
-                :dedent:
                 :start-after: example-begin histogram
                 :end-before: example-end histogram
 

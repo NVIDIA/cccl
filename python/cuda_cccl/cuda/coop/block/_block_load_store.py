@@ -89,12 +89,6 @@ class base_load_store(BasePrimitive):
             .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api.py
                 :language: python
                 :dedent:
-                :start-after: example-begin imports
-                :end-before: example-end imports
-
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api.py
-                :language: python
-                :dedent:
                 :start-after: example-begin load_store
                 :end-before: example-end load_store
 
