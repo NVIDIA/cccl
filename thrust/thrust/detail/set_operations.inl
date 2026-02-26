@@ -12,9 +12,9 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/select_system.h>
+
+#include <cuda/iterator>
 
 // Include all active backend system implementations (generic, sequential, host and device)
 #include <thrust/system/detail/generic/set_operations.h>
@@ -601,13 +601,11 @@ template <typename InputIterator1,
   _CCCL_NVTX_RANGE_SCOPE("thrust::set_difference_by_key");
   using thrust::system::detail::generic::select_system;
 
-  using value_type1 = typename thrust::iterator_value<InputIterator3>::type;
-
-  using constant_iterator = thrust::constant_iterator<value_type1>;
+  using value_type1 = ::cuda::std::iter_value_t<InputIterator3>;
 
   // fabricate a values_first2 by repeating a default-constructed value_type1
   // XXX assumes value_type1 is default-constructible
-  constant_iterator values_first2 = thrust::make_constant_iterator(value_type1());
+  auto values_first2 = ::cuda::make_constant_iterator(value_type1());
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
   using System2 = typename thrust::iterator_system<InputIterator2>::type;
