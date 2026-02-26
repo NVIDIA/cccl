@@ -326,6 +326,7 @@ C2H_TEST("Device select unique_by_key uses environment", "[select][device]")
     d_values_out.begin(),
     d_num_selected.begin(),
     num_items,
+    ::cuda::std::equal_to<>{},
     env);
 
   c2h::device_vector<value_t> expected_keys{1, 2, 3, 4, 5};
@@ -540,6 +541,7 @@ TEST_CASE("Device select unique_by_key uses custom stream", "[select][device]")
     d_values_out.begin(),
     d_num_selected.begin(),
     num_items,
+    ::cuda::std::equal_to<>{},
     env);
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
