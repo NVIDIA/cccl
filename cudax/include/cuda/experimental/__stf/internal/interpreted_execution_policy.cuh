@@ -231,8 +231,8 @@ public:
     // scratchpad.
     for (size_t i = levels.size(); i-- > 0;)
     {
-      auto& l  = levels[i];
-      size_t w = l.width();
+      auto& l        = levels[i];
+      size_t w       = l.width();
       width_product *= w;
 
       size_t m = l.get_mem();
@@ -273,8 +273,8 @@ public:
     // Scan all levels in reversed order
     for (size_t i = levels.size(); i-- > 0;)
     {
-      auto& l  = levels[i];
-      size_t w = l.width();
+      auto& l        = levels[i];
+      size_t w       = l.width();
       width_product *= w;
 
       if (width_product > block_scope_size && get_level_sync(i))

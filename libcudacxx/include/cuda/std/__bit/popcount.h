@@ -155,8 +155,8 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
     _CCCL_PRAGMA_UNROLL_FULL()
     for (size_t __i = 0; __i < sizeof(_Tp) / sizeof(uint64_t); ++__i)
     {
-      __count += ::cuda::std::__cccl_popcount_impl(static_cast<uint64_t>(__v));
-      __v >>= numeric_limits<uint64_t>::digits;
+      __count  += ::cuda::std::__cccl_popcount_impl(static_cast<uint64_t>(__v));
+      __v     >>= numeric_limits<uint64_t>::digits;
     }
   }
 #endif // ^^^ !_CCCL_BUILTIN_POPCOUNTG ^^^

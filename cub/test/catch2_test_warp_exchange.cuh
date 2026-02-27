@@ -75,7 +75,7 @@ __global__ void scatter_kernel(const InputT* input_data, OutputT* output_data)
   // Reverse data
   int ranks[ITEMS_PER_THREAD];
 
-  input_data += warp_id * tile_size;
+  input_data  += warp_id * tile_size;
   output_data += warp_id * tile_size;
 
   for (int item = 0; item < ITEMS_PER_THREAD; item++)
@@ -134,7 +134,7 @@ __global__ void kernel(const InputT* input_data, OutputT* output_data, ActionT a
 
   exchange_data_t<InputT, OutputT, ITEMS_PER_THREAD, Alg> exchange_data;
 
-  input_data += warp_id * tile_size;
+  input_data  += warp_id * tile_size;
   output_data += warp_id * tile_size;
 
   for (int item = 0; item < ITEMS_PER_THREAD; item++)

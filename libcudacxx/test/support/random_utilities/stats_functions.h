@@ -29,7 +29,7 @@ __host__ __device__ inline double incomplete_gamma(double a, double x)
   for (int n = 1; n < max_iter; ++n)
   {
     term *= x / (a + n);
-    sum += term;
+    sum  += term;
     if (cuda::std::abs(term) < 1e-12 * cuda::std::abs(sum))
     {
       break;
@@ -99,7 +99,7 @@ __host__ __device__ inline double incomplete_beta(double a, double b, double x)
     {
       c = 1e-30;
     }
-    d = 1.0 / d;
+    d  = 1.0 / d;
     h *= d * c;
 
     double aa2 = -(aa + m) * (qab + m) * xx / ((aa + m2) * (qap + m2));
@@ -113,9 +113,9 @@ __host__ __device__ inline double incomplete_beta(double a, double b, double x)
     {
       c = 1e-30;
     }
-    d          = 1.0 / d;
-    double del = d * c;
-    h *= del;
+    d           = 1.0 / d;
+    double del  = d * c;
+    h          *= del;
 
     if (cuda::std::abs(del - 1.0) < eps)
     {

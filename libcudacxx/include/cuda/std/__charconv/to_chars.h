@@ -78,7 +78,7 @@ template <class _Tp>
     }
 
     __uv /= __ubase_4;
-    __r += 4;
+    __r  += 4;
   }
 
   _CCCL_UNREACHABLE();
@@ -89,9 +89,9 @@ _CCCL_API constexpr void __to_chars_int_generic(char* __last, _Tp __value, int _
 {
   do
   {
-    const int __c = __value % __base;
-    *--__last     = ::cuda::std::__to_chars_value_to_char(__c, __base);
-    __value /= static_cast<_Tp>(__base);
+    const int __c  = __value % __base;
+    *--__last      = ::cuda::std::__to_chars_value_to_char(__c, __base);
+    __value       /= static_cast<_Tp>(__base);
   } while (__value != 0);
 }
 

@@ -503,8 +503,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   _CCCL_API inline static void
   __construct_backward_with_exception_guarantees(allocator_type&, _Tp* __begin1, _Tp* __end1, _Tp*& __end2)
   {
-    ptrdiff_t _Np = __end1 - __begin1;
-    __end2 -= _Np;
+    ptrdiff_t _Np  = __end1 - __begin1;
+    __end2        -= _Np;
     if (_Np > 0)
     {
       ::cuda::std::memcpy(__end2, __begin1, _Np * sizeof(_Tp));

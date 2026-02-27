@@ -20,8 +20,8 @@ __host__ __device__ constexpr bool test()
 {
   using Iter = cuda::std::ranges::iterator_t<cuda::std::ranges::repeat_view<int>>;
   cuda::std::ranges::repeat_view<int> v(10);
-  auto iter = v.begin() + 10;
-  iter -= 5;
+  auto iter  = v.begin() + 10;
+  iter      -= 5;
   assert(iter == v.begin() + 5);
 
   static_assert(cuda::std::same_as<decltype(iter -= 5), Iter&>);

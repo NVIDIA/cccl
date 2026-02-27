@@ -148,8 +148,8 @@ struct __static_partial_sums
     size_t __running_sum = 0;
     for (int __i = 0; __i != sizeof...(_Values); ++__i)
     {
-      __partial_sums[__i] = __running_sum;
-      __running_sum += __values[__i];
+      __partial_sums[__i]  = __running_sum;
+      __running_sum       += __values[__i];
     }
     return __partial_sums;
   }

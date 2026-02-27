@@ -421,8 +421,8 @@ struct AgentRadixSortUpsweep
 
     // Whole blocks
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int BIN_BASE = RADIX_DIGITS % BLOCK_THREADS; (BIN_BASE + BLOCK_THREADS) <= RADIX_DIGITS;
-         BIN_BASE += BLOCK_THREADS)
+    for (int BIN_BASE  = RADIX_DIGITS % BLOCK_THREADS; (BIN_BASE + BLOCK_THREADS) <= RADIX_DIGITS;
+         BIN_BASE     += BLOCK_THREADS)
     {
       int bin_idx       = BIN_BASE + threadIdx.x;
       OffsetT bin_count = 0;

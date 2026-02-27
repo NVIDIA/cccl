@@ -57,8 +57,8 @@ struct value<V>
     auto init            = V;
     do
     {
-      *--buffer_ptr = '0' + init % 10;
-      init /= 10;
+      *--buffer_ptr  = '0' + init % 10;
+      init          /= 10;
     } while (init != 0);
     return string(buffer);
   }

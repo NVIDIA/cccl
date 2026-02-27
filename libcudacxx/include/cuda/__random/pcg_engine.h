@@ -209,11 +209,11 @@ private:
       if (__delta & 1)
       {
         __acc_mult *= __cur_mult;
-        __acc_plus = __acc_plus * __cur_mult + __cur_plus;
+        __acc_plus  = __acc_plus * __cur_mult + __cur_plus;
       }
-      __cur_plus = (__cur_mult + 1) * __cur_plus;
+      __cur_plus  = (__cur_mult + 1) * __cur_plus;
       __cur_mult *= __cur_mult;
-      __delta = __delta >> 1;
+      __delta     = __delta >> 1;
     }
     return ::cuda::std::pair{__acc_mult, __acc_plus};
   }

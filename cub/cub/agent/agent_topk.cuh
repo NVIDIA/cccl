@@ -316,7 +316,7 @@ struct AgentTopK
         f(thread_data[j], offset + j);
       }
       tile_base += items_per_pass;
-      offset += items_per_pass;
+      offset    += items_per_pass;
     }
 
     // Last tile specialized code-path
@@ -566,7 +566,7 @@ struct AgentTopK
         counter->len                                   = cur - prev;
         typename Traits<key_in_t>::UnsignedBits bucket = bin_idx;
         // Update the "splitter" key by adding the radix digit of the k-th item bin of this pass
-        const int start_bit = calc_start_bit<key_in_t, bits_per_pass>(pass);
+        const int start_bit    = calc_start_bit<key_in_t, bits_per_pass>(pass);
         counter->kth_key_bits |= bucket << start_bit;
       }
     };

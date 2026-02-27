@@ -89,8 +89,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It begin, int items)
 
     // prefetch does not stall and unrolling just generates a lot of unnecessary computations and predicate handling
     _CCCL_PRAGMA_NOUNROLL()
-    for (int offset = threadIdx.x * prefetch_byte_stride; offset < items_bytes;
-         offset += BlockDim * prefetch_byte_stride)
+    for (int offset  = threadIdx.x * prefetch_byte_stride; offset < items_bytes;
+         offset     += BlockDim * prefetch_byte_stride)
     {
       prefetch(reinterpret_cast<const char*>(::cuda::std::to_address(begin)) + offset);
     }
@@ -414,8 +414,8 @@ _CCCL_DEVICE void memcpy_async_aligned(void* dst, const void* src, unsigned int 
 
   // allowing unrolling generates a LOT more instructions and is usually slower (confirmed by benchmark)
   _CCCL_PRAGMA_NOUNROLL()
-  for (unsigned int offset = threadIdx.x * ldgsts_size_and_align; offset < bytes_to_copy;
-       offset += BlockThreads * ldgsts_size_and_align)
+  for (unsigned int offset  = threadIdx.x * ldgsts_size_and_align; offset < bytes_to_copy;
+       offset              += BlockThreads * ldgsts_size_and_align)
   {
     asm volatile(
       "cp.async.cg.shared.global [%0], [%1], %2, %3;"
@@ -909,10 +909,10 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       {
         char* smem         = smem_base;
         auto fetch_operand = [&](auto aligned_ptr) {
-          using T                = typename decltype(aligned_ptr)::value_type;
-          const int head_padding = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
-          const char* src        = smem + head_padding;
-          smem += tile_padding + int{sizeof(T)} * tile_size;
+          using T                 = typename decltype(aligned_ptr)::value_type;
+          const int head_padding  = alignof(T) < bulk_copy_alignment ? aligned_ptr.head_padding : 0;
+          const char* src         = smem + head_padding;
+          smem                   += tile_padding + int{sizeof(T)} * tile_size;
           return reinterpret_cast<const T*>(src)[idx];
         };
 

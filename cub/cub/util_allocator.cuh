@@ -851,7 +851,7 @@ struct CachingDeviceAllocator
       }
 
       // Reduce balance and erase entry
-      const size_t block_bytes = begin->bytes;
+      const size_t block_bytes           = begin->bytes;
       cached_bytes[current_device].free -= block_bytes;
       cached_blocks.erase(begin);
 

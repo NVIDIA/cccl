@@ -375,8 +375,8 @@ void PDNRM2_HOST(matrix<double>* A, double* result)
         {
           for (size_t row = 0; row < sA.extent(0); row++)
           {
-            double v = sA(row, col);
-            res2 += v * v;
+            double v  = sA(row, col);
+            res2     += v * v;
           }
         }
         *result += res2;

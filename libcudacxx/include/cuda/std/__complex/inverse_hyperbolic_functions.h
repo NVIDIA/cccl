@@ -270,9 +270,9 @@ template <class _Tp>
     const _Tp __term2_sum_hi = (_Tp{1} + __imagx);
     const _Tp __term2_sum_lo = ((_Tp{1} - __term2_sum_hi) + __imagx);
 
-    const _Tp __term2_sq_hi = __term2_sum_hi * __term2_sum_hi;
-    _Tp __term2_sq_lo       = ::cuda::std::fma(__term2_sum_hi, __term2_sum_hi, -__term2_sq_hi);
-    __term2_sq_lo += _Tp{2} * __term2_sum_hi * __term2_sum_lo;
+    const _Tp __term2_sq_hi  = __term2_sum_hi * __term2_sum_hi;
+    _Tp __term2_sq_lo        = ::cuda::std::fma(__term2_sum_hi, __term2_sum_hi, -__term2_sq_hi);
+    __term2_sq_lo           += _Tp{2} * __term2_sum_hi * __term2_sum_lo;
 
     // Multiple __term1_hi/lo and __term2_sq_hi/lo:
     __inner_most_term_hi = __term1_hi * __term2_sq_hi;
@@ -342,7 +342,7 @@ template <class _Tp>
   const _Tp __m1  = __extended_sqrt_hi - _Tp{1};
   const _Tp __rem = -((__m1 + _Tp{1}) - __extended_sqrt_hi);
 
-  __extended_sqrt_hi = __m1;
+  __extended_sqrt_hi  = __m1;
   __extended_sqrt_lo += __rem;
 
   // Final sum before sending it to log1p, all terms needed.
@@ -560,9 +560,9 @@ template <class _Tp>
     const _Tp __term2_sum_hi = (_Tp{1} + __realx);
     const _Tp __term2_sum_lo = ((_Tp{1} - __term2_sum_hi) + __realx);
 
-    const _Tp __term2_sq_hi = __term2_sum_hi * __term2_sum_hi;
-    _Tp __term2_sq_lo       = ::cuda::std::fma(__term2_sum_hi, __term2_sum_hi, -__term2_sq_hi);
-    __term2_sq_lo += _Tp{2} * __term2_sum_hi * __term2_sum_lo;
+    const _Tp __term2_sq_hi  = __term2_sum_hi * __term2_sum_hi;
+    _Tp __term2_sq_lo        = ::cuda::std::fma(__term2_sum_hi, __term2_sum_hi, -__term2_sq_hi);
+    __term2_sq_lo           += _Tp{2} * __term2_sum_hi * __term2_sum_lo;
 
     // Multiple __term1_hi/lo and __term2_sq_hi/lo:
     __inner_most_term_hi = __term1_hi * __term2_sq_hi;
@@ -630,7 +630,7 @@ template <class _Tp>
   const _Tp __m1  = __extended_sqrt_hi - _Tp{1};
   const _Tp __rem = -((__m1 + _Tp{1}) - __extended_sqrt_hi);
 
-  __extended_sqrt_hi = __m1;
+  __extended_sqrt_hi  = __m1;
   __extended_sqrt_lo += __rem;
 
   // Final sum before sending it to log1p, all terms needed.

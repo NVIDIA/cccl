@@ -139,7 +139,7 @@ private:
       {
         ::cuda::static_for<4>([&](auto i) {
           __v[i] += __holder.__blocks[__offset++] * __prime2;
-          __v[i] = ::cuda::std::rotl(__v[i], 13);
+          __v[i]  = ::cuda::std::rotl(__v[i], 13);
           __v[i] *= __prime1;
         });
       }
@@ -159,7 +159,7 @@ private:
       for (; __offset < _Holder::__num_blocks; ++__offset)
       {
         __h32 += __holder.__blocks[__offset] * __prime3;
-        __h32 = ::cuda::std::rotl(__h32, 17) * __prime4;
+        __h32  = ::cuda::std::rotl(__h32, 17) * __prime4;
       }
     }
 
@@ -169,7 +169,7 @@ private:
       for (::cuda::std::uint32_t __i = 0; __i < _Holder::__tail_size; ++__i)
       {
         __h32 += (static_cast<::cuda::std::uint32_t>(__holder.__bytes[__i])) * __prime5;
-        __h32 = ::cuda::std::rotl(__h32, 11) * __prime1;
+        __h32  = ::cuda::std::rotl(__h32, 11) * __prime1;
       }
     }
 
@@ -207,7 +207,7 @@ private:
         ::cuda::static_for<4>([&](auto i) {
           __v[i] += ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint32_t>(__bytes, __pipeline_offset + i)
                   * __prime2;
-          __v[i] = ::cuda::std::rotl(__v[i], 13);
+          __v[i]  = ::cuda::std::rotl(__v[i], 13);
           __v[i] *= __prime1;
         });
       }
@@ -229,7 +229,7 @@ private:
       for (; __offset <= __size - 4; __offset += 4)
       {
         __h32 += ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint32_t>(__bytes, __offset / 4) * __prime3;
-        __h32 = ::cuda::std::rotl(__h32, 17) * __prime4;
+        __h32  = ::cuda::std::rotl(__h32, 17) * __prime4;
       }
     }
 
@@ -239,7 +239,7 @@ private:
       while (__offset < __size)
       {
         __h32 += (::cuda::std::to_integer<::cuda::std::uint32_t>(__bytes[__offset]) & 255) * __prime5;
-        __h32 = ::cuda::std::rotl(__h32, 11) * __prime1;
+        __h32  = ::cuda::std::rotl(__h32, 11) * __prime1;
         ++__offset;
       }
     }
@@ -342,7 +342,7 @@ private:
         ::cuda::static_for<4>([&](auto i) {
           __v[i] += ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint64_t>(__bytes, __pipeline_offset + i)
                   * __prime2;
-          __v[i] = ::cuda::std::rotl(__v[i], 31);
+          __v[i]  = ::cuda::std::rotl(__v[i], 31);
           __v[i] *= __prime1;
         });
       }
@@ -352,10 +352,10 @@ private:
 
       ::cuda::static_for<4>([&](auto i) {
         __v[i] *= __prime2;
-        __v[i] = ::cuda::std::rotl(__v[i], 31);
+        __v[i]  = ::cuda::std::rotl(__v[i], 31);
         __v[i] *= __prime1;
-        __h64 ^= __v[i];
-        __h64 = __h64 * __prime1 + __prime4;
+        __h64  ^= __v[i];
+        __h64   = __h64 * __prime1 + __prime4;
       });
     }
     else
@@ -373,9 +373,9 @@ private:
       {
         ::cuda::std::uint64_t __k1 =
           ::cuda::experimental::cuco::__load_chunk<::cuda::std::uint64_t>(__bytes, __offset / 8) * __prime2;
-        __k1 = ::cuda::std::rotl(__k1, 31) * __prime1;
+        __k1   = ::cuda::std::rotl(__k1, 31) * __prime1;
         __h64 ^= __k1;
-        __h64 = ::cuda::std::rotl(__h64, 27) * __prime1 + __prime4;
+        __h64  = ::cuda::std::rotl(__h64, 27) * __prime1 + __prime4;
       }
     }
 
@@ -385,7 +385,7 @@ private:
       for (; __offset <= __size - 4; __offset += 4)
       {
         __h64 ^= (::cuda::experimental::cuco::__load_chunk<::cuda::std::uint32_t>(__bytes, __offset / 4)) * __prime1;
-        __h64 = ::cuda::std::rotl(__h64, 23) * __prime2 + __prime3;
+        __h64  = ::cuda::std::rotl(__h64, 23) * __prime2 + __prime3;
       }
     }
 
@@ -396,7 +396,7 @@ private:
       while (__offset < __size)
       {
         __h64 ^= (::cuda::std::to_integer<::cuda::std::uint32_t>(__bytes[__offset])) * __prime5;
-        __h64 = ::cuda::std::rotl(__h64, 11) * __prime1;
+        __h64  = ::cuda::std::rotl(__h64, 11) * __prime1;
         ++__offset;
       }
     }

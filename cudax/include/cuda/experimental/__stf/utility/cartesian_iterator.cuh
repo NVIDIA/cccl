@@ -173,8 +173,8 @@ public:
 
   _CCCL_HOST_DEVICE RangeIterator operator+(difference_type n) const
   {
-    RangeIterator result = *this;
-    result += n;
+    RangeIterator result  = *this;
+    result               += n;
     return result;
   }
 
@@ -186,8 +186,8 @@ public:
 
   _CCCL_HOST_DEVICE RangeIterator operator-(difference_type n) const
   {
-    RangeIterator result = *this;
-    result -= n;
+    RangeIterator result  = *this;
+    result               -= n;
     return result;
   }
 

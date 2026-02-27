@@ -201,8 +201,8 @@ struct Symbol
         {
           if (it[1] == ':' && it[2] == ':')
           {
-            is_template = false;
-            it += 2;
+            is_template  = false;
+            it          += 2;
           }
         }
         break;

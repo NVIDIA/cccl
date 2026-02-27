@@ -34,14 +34,14 @@ struct binomial_cdf
       return 1.0;
     }
 
-    double sum  = 0.0;
-    double q    = 1.0 - p.p();
-    double prob = cuda::std::pow(q, static_cast<double>(p.t()));
-    sum += prob;
+    double sum   = 0.0;
+    double q     = 1.0 - p.p();
+    double prob  = cuda::std::pow(q, static_cast<double>(p.t()));
+    sum         += prob;
     for (int i = 1; i <= x && i < p.t(); ++i)
     {
       prob *= (static_cast<double>(p.t() - i + 1) * p.p()) / (static_cast<double>(i) * q);
-      sum += prob;
+      sum  += prob;
     }
     return sum;
   }

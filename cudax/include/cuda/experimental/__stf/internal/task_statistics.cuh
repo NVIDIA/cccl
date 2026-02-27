@@ -132,7 +132,7 @@ public:
 
       double delta = new_time - mean;
 
-      mean += delta / num_calls;
+      mean    += delta / num_calls;
       squares += delta * (new_time - mean);
 
       double variance = (num_calls == 1 ? 0 : squares / (num_calls - 1));
@@ -264,8 +264,8 @@ private:
 
     for (auto it = deps.begin(); it < deps.end(); it++)
     {
-      size_t new_size = it->get_data_footprint();
-      data_footprint += new_size;
+      size_t new_size  = it->get_data_footprint();
+      data_footprint  += new_size;
       assert(data_footprint >= new_size); // Check for overflow
     }
 

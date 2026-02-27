@@ -240,12 +240,12 @@ vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const vo
   {
     // Copy bytes in range `[dest, aligned_range.out_begin)`
     out_ptr += thread_rank;
-    in_ptr += thread_rank;
+    in_ptr  += thread_rank;
     while (out_ptr < reinterpret_cast<char*>(aligned_range.out_begin))
     {
-      *out_ptr = *in_ptr;
-      out_ptr += LOGICAL_WARP_SIZE;
-      in_ptr += LOGICAL_WARP_SIZE;
+      *out_ptr  = *in_ptr;
+      out_ptr  += LOGICAL_WARP_SIZE;
+      in_ptr   += LOGICAL_WARP_SIZE;
     }
 
     // Copy bytes in range `[aligned_range.out_begin, aligned_range.out_end)`
@@ -255,9 +255,9 @@ vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const vo
     {
       VectorT data_in;
       LoadVector(in_aligned_begin, data_in);
-      *aligned_range_begin = data_in;
-      in_aligned_begin += sizeof(VectorT) * LOGICAL_WARP_SIZE;
-      aligned_range_begin += LOGICAL_WARP_SIZE;
+      *aligned_range_begin  = data_in;
+      in_aligned_begin     += sizeof(VectorT) * LOGICAL_WARP_SIZE;
+      aligned_range_begin  += LOGICAL_WARP_SIZE;
     }
 
     // Copy bytes in range `[aligned_range.out_end, dest + num_bytes)`.
@@ -265,9 +265,9 @@ vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const vo
     in_ptr  = aligned_range.in_end + thread_rank;
     while (out_ptr < reinterpret_cast<char*>(dest) + num_bytes)
     {
-      *out_ptr = *in_ptr;
-      out_ptr += LOGICAL_WARP_SIZE;
-      in_ptr += LOGICAL_WARP_SIZE;
+      *out_ptr  = *in_ptr;
+      out_ptr  += LOGICAL_WARP_SIZE;
+      in_ptr   += LOGICAL_WARP_SIZE;
     }
   }
 }
@@ -298,7 +298,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void
 copy_items(InputBufferT input_buffer, OutputBufferT output_buffer, OffsetT num_items, OffsetT offset = 0)
 {
   output_buffer += offset;
-  input_buffer += offset;
+  input_buffer  += offset;
   for (OffsetT i = threadIdx.x % LOGICAL_WARP_SIZE; i < num_items; i += LOGICAL_WARP_SIZE)
   {
     *(output_buffer + i) = *(input_buffer + i);
@@ -402,8 +402,8 @@ public:
       // C++'s bit-shift has undefined behaviour if the bits being shifted exceed the operand width,
       // we use the PTX instruction `shr` to make sure behaviour is well-defined.
       // Negative bit-shift amounts wrap around in unsigned integer math and are ultimately clamped.
-      const uint32_t bit_shift = target_offset - i * USED_BITS_PER_UNIT;
-      val |= detail::LogicShiftRight(data[i], bit_shift) & ITEM_MASK;
+      const uint32_t bit_shift  = target_offset - i * USED_BITS_PER_UNIT;
+      val                      |= detail::LogicShiftRight(data[i], bit_shift) & ITEM_MASK;
     }
     return val;
   }
@@ -420,8 +420,8 @@ public:
       // C++'s bit-shift has undefined behaviour if the bits being shifted exceed the operand width,
       // we use the PTX instruction `shl` to make sure behaviour is well-defined.
       // Negative bit-shift amounts wrap around in unsigned integer math and are ultimately clamped.
-      const uint32_t bit_shift = target_offset - i * USED_BITS_PER_UNIT;
-      data[i] += detail::LogicShiftLeft(value, bit_shift) & UNIT_MASK;
+      const uint32_t bit_shift  = target_offset - i * USED_BITS_PER_UNIT;
+      data[i]                  += detail::LogicShiftLeft(value, bit_shift) & UNIT_MASK;
     }
   }
 
@@ -720,9 +720,9 @@ private:
       // Whether to increment ANY of the buffer size classes at all
       const uint32_t increment = buffer_sizes[i] > 0 ? 1U : 0U;
       // Identify the buffer's size class
-      uint32_t buffer_size_class = 0;
-      buffer_size_class += buffer_sizes[i] > WARP_LEVEL_THRESHOLD ? 1U : 0U;
-      buffer_size_class += buffer_sizes[i] > BLOCK_LEVEL_THRESHOLD ? 1U : 0U;
+      uint32_t buffer_size_class  = 0;
+      buffer_size_class          += buffer_sizes[i] > WARP_LEVEL_THRESHOLD ? 1U : 0U;
+      buffer_size_class          += buffer_sizes[i] > BLOCK_LEVEL_THRESHOLD ? 1U : 0U;
 
       // Increment the count of the respective size class
       vectorized_counters.add(buffer_size_class, increment);
@@ -749,11 +749,11 @@ private:
     {
       if (buffer_sizes[i] > 0)
       {
-        uint32_t buffer_size_class = 0;
-        buffer_size_class += buffer_sizes[i] > WARP_LEVEL_THRESHOLD ? 1U : 0U;
-        buffer_size_class += buffer_sizes[i] > BLOCK_LEVEL_THRESHOLD ? 1U : 0U;
-        const uint32_t write_offset         = vectorized_offsets.get(buffer_size_class);
-        buffers_by_size_class[write_offset] = {static_cast<TLevBufferSizeT>(buffer_sizes[i]), buffer_id};
+        uint32_t buffer_size_class           = 0;
+        buffer_size_class                   += buffer_sizes[i] > WARP_LEVEL_THRESHOLD ? 1U : 0U;
+        buffer_size_class                   += buffer_sizes[i] > BLOCK_LEVEL_THRESHOLD ? 1U : 0U;
+        const uint32_t write_offset          = vectorized_offsets.get(buffer_size_class);
+        buffers_by_size_class[write_offset]  = {static_cast<TLevBufferSizeT>(buffer_sizes[i]), buffer_id};
         vectorized_offsets.add(buffer_size_class, 1U);
       }
       buffer_id += BUFFER_STRIDE;

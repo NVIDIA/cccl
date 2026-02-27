@@ -32,8 +32,8 @@ __host__ __device__ constexpr bool test_right_shift()
     for (cuda::std::size_t s = 0; s <= N + 1; ++s)
     {
       cuda::std::bitset<N> v1(cases[c]);
-      cuda::std::bitset<N> v2 = v1;
-      v1 >>= s;
+      cuda::std::bitset<N> v2   = v1;
+      v1                      >>= s;
       for (cuda::std::size_t i = 0; i < v1.size(); ++i)
       {
         if (i + s < v1.size())

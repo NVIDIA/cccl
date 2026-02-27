@@ -287,8 +287,8 @@ public:
   //! @return A copy of this heterogeneous_iterator advanced by \p __count
   [[nodiscard]] _CCCL_API constexpr heterogeneous_iterator operator+(const difference_type __count) const noexcept
   {
-    heterogeneous_iterator __temp = *this;
-    __temp += __count;
+    heterogeneous_iterator __temp  = *this;
+    __temp                        += __count;
     return __temp;
   }
 
@@ -319,8 +319,8 @@ public:
   //! @return A copy of this heterogeneous_iterator advanced by the negative value of \p __count
   [[nodiscard]] _CCCL_API constexpr heterogeneous_iterator operator-(const difference_type __count) const noexcept
   {
-    heterogeneous_iterator __temp = *this;
-    __temp -= __count;
+    heterogeneous_iterator __temp  = *this;
+    __temp                        -= __count;
     return __temp;
   }
 

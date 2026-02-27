@@ -102,14 +102,14 @@ struct summary_stats_binary_op
 
     result.mean = x.mean + delta * y.n / n;
 
-    result.M2 = x.M2 + y.M2;
+    result.M2  = x.M2 + y.M2;
     result.M2 += delta2 * x.n * y.n / n;
 
-    result.M3 = x.M3 + y.M3;
+    result.M3  = x.M3 + y.M3;
     result.M3 += delta3 * x.n * y.n * (x.n - y.n) / n2;
     result.M3 += (T) 3.0 * delta * (x.n * y.M2 - y.n * x.M2) / n;
 
-    result.M4 = x.M4 + y.M4;
+    result.M4  = x.M4 + y.M4;
     result.M4 += delta4 * x.n * y.n * (x.n * x.n - x.n * y.n + y.n * y.n) / n3;
     result.M4 += (T) 6.0 * delta2 * (x.n * x.n * y.M2 + y.n * y.n * x.M2) / n2;
     result.M4 += (T) 4.0 * delta * (x.n * y.M3 - y.n * x.M3) / n;

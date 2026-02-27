@@ -31,8 +31,8 @@ __host__ __device__ constexpr bool test_op_xor_eq()
     {
       cuda::std::bitset<N> v1(cases[c1]);
       cuda::std::bitset<N> v2(cases[c2]);
-      cuda::std::bitset<N> v3 = v1;
-      v1 ^= v2;
+      cuda::std::bitset<N> v3  = v1;
+      v1                      ^= v2;
       for (cuda::std::size_t i = 0; i < v1.size(); ++i)
       {
         {

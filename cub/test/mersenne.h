@@ -86,7 +86,7 @@ inline void init_by_array(unsigned int init_key[], int key_length)
   k = (static_cast<int>(N) > key_length ? static_cast<int>(N) : key_length);
   for (; k; k--)
   {
-    mt[i] = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 30)) * 1664525)) + init_key[j] + j; /* non linear */
+    mt[i]  = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 30)) * 1664525)) + init_key[j] + j; /* non linear */
     mt[i] &= 0xffffffff; /* for WORDSIZE > 32 machines */
     i++;
     j++;
@@ -102,7 +102,7 @@ inline void init_by_array(unsigned int init_key[], int key_length)
   }
   for (k = N - 1; k; k--)
   {
-    mt[i] = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 30)) * 1566083941)) - i; /* non linear */
+    mt[i]  = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 30)) * 1566083941)) - i; /* non linear */
     mt[i] &= 0xffffffff; /* for WORDSIZE > 32 machines */
     i++;
     if (i >= static_cast<int>(N))

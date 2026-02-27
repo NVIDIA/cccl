@@ -794,7 +794,7 @@ _CCCL_HOST_DEVICE inline complex<ValueType> acosh(const complex<ValueType>& z)
     ret = -ret;
   }
   ret += z;
-  ret = thrust::log(ret);
+  ret  = thrust::log(ret);
   if (ret.real() < ValueType(0.0))
   {
     ret = -ret;

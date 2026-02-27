@@ -65,15 +65,15 @@ struct output_iterator_t
 
   __device__ reference operator[](difference_type diff) const
   {
-    output_iterator_t result = *this;
-    result += diff;
+    output_iterator_t result  = *this;
+    result                   += diff;
     return {result.state};
   }
 
   __device__ output_iterator_t operator+(difference_type diff) const
   {
-    output_iterator_t result = *this;
-    result += diff;
+    output_iterator_t result  = *this;
+    result                   += diff;
     return result;
   }
 

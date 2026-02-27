@@ -389,8 +389,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   }
 
   AccumT block_aggregate = block_reduce_t(temp_storage).Reduce(thread_aggregate, [](AccumT lhs, AccumT rhs) -> AccumT {
-    AccumT rtn = lhs;
-    rtn += rhs;
+    AccumT rtn  = lhs;
+    rtn        += rhs;
     return rtn;
   });
 

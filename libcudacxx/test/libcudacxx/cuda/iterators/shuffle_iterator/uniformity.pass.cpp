@@ -62,8 +62,8 @@ __host__ __device__ double compute_chi_squared(const cuda::std::array<size_t, Nu
   double chi2 = 0.0;
   for (size_t c : counts)
   {
-    double diff = static_cast<double>(c) - expected;
-    chi2 += (diff * diff) / expected;
+    double diff  = static_cast<double>(c) - expected;
+    chi2        += (diff * diff) / expected;
   }
   return chi2;
 }
@@ -191,9 +191,9 @@ __host__ __device__ double expected_K(size_t n, double lambda)
 
   for (size_t j = 1; j <= n; ++j)
   {
-    double num = 1.0 - cuda::std::exp(-lambda * j / n2);
-    double den = j * (1.0 - cuda::std::exp(-lambda / n2));
-    prod *= num / den;
+    double num  = 1.0 - cuda::std::exp(-lambda * j / n2);
+    double den  = j * (1.0 - cuda::std::exp(-lambda / n2));
+    prod       *= num / den;
   }
   return prod;
 }
@@ -206,9 +206,9 @@ __host__ __device__ double expected_K2(size_t n, double lambda)
 
   for (size_t j = 1; j <= n; ++j)
   {
-    double num = 1.0 - cuda::std::exp(-2.0 * lambda * j / n2);
-    double den = j * (1.0 - cuda::std::exp(-2.0 * lambda / n2));
-    prod *= num / den;
+    double num  = 1.0 - cuda::std::exp(-2.0 * lambda * j / n2);
+    double den  = j * (1.0 - cuda::std::exp(-2.0 * lambda / n2));
+    prod       *= num / den;
   }
   return prod;
 }

@@ -39,9 +39,9 @@ TEMPLATE_LIST_TEST_CASE("Generators produce power law distributed data", "[gen][
     const TestType end   = h_segment_offsets[i + 1];
     REQUIRE(begin <= end);
 
-    const std::size_t size = end - begin;
-    actual_elements += size;
-    log_sizes[i] = std::log(size);
+    const std::size_t size  = end - begin;
+    actual_elements        += size;
+    log_sizes[i]            = std::log(size);
   }
 
   REQUIRE(actual_elements == elements);

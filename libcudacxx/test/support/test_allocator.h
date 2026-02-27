@@ -530,7 +530,7 @@ struct limited_alloc_handle
     {
       TEST_THROW(std::bad_alloc());
     }
-    last_alloc_ = ::operator new(N * sizeof(T));
+    last_alloc_   = ::operator new(N * sizeof(T));
     outstanding_ += N;
     return static_cast<T*>(last_alloc_);
   }

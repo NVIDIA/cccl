@@ -76,8 +76,8 @@ template <typename _Tp>
       const auto __mark = ~uint32_t{0} >> (__digits - __i);
       if ((__v & __mark) == 0)
       {
-        __v >>= __i;
-        __pos += __i;
+        __v   >>= __i;
+        __pos  += __i;
       }
     }
     return (__pos - (__v & 1));
@@ -178,8 +178,8 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
         __count += ::cuda::std::countr_zero(__value64);
         break;
       }
-      __count += numeric_limits<uint64_t>::digits;
-      __v >>= numeric_limits<uint64_t>::digits;
+      __count  += numeric_limits<uint64_t>::digits;
+      __v     >>= numeric_limits<uint64_t>::digits;
     }
   }
 #endif // ^^^ !__CCCL_BUILTIN_CTZG ^^^

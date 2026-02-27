@@ -35,7 +35,7 @@ int main()
 
   for (size_t ind = 0; ind < N; ind++)
   {
-    X[ind] = sin((double) ind);
+    X[ind]   = sin((double) ind);
     ref_sum += X[ind];
   }
 

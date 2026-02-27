@@ -59,16 +59,16 @@ __global__ void test_iterator_kernel(InputIteratorT d_in, T* d_out, InputIterato
   d_in++;
   d_out[4] = d_in[0]; // Value at offset 1
 
-  d_in += 20;
-  d_out[5]  = d_in[0]; // Value at offset 21
-  d_itrs[0] = d_in; // Iterator at offset 21
+  d_in      += 20;
+  d_out[5]   = d_in[0]; // Value at offset 21
+  d_itrs[0]  = d_in; // Iterator at offset 21
 
-  d_in -= 10;
-  d_out[6] = d_in[0]; // Value at offset 11;
+  d_in     -= 10;
+  d_out[6]  = d_in[0]; // Value at offset 11;
 
-  d_in -= 11;
-  d_out[7]  = d_in[0]; // Value at offset 0
-  d_itrs[1] = d_in; // Iterator at offset 0
+  d_in      -= 11;
+  d_out[7]   = d_in[0]; // Value at offset 0
+  d_itrs[1]  = d_in; // Iterator at offset 0
 }
 
 template <typename InputIteratorT, typename T>

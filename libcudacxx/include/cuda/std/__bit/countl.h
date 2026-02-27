@@ -74,8 +74,8 @@ template <typename _Tp>
       const auto __mark = (~uint32_t{0} >> (__digits - __i)) << __i;
       if (__v & __mark)
       {
-        __v >>= __i;
-        __res |= __i;
+        __v   >>= __i;
+        __res  |= __i;
       }
     }
     return __digits - 1 - __res;

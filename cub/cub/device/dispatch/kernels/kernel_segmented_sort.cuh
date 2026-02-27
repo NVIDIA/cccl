@@ -173,12 +173,12 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
 
   constexpr int cacheable_tile_size = LargeSegmentPolicyT::BLOCK_THREADS * LargeSegmentPolicyT::ITEMS_PER_THREAD;
 
-  d_keys_in_orig += segment_begin;
+  d_keys_in_orig  += segment_begin;
   d_keys_out_orig += segment_begin;
 
   if (!keys_only)
   {
-    d_values_in_orig += segment_begin;
+    d_values_in_orig  += segment_begin;
     d_values_out_orig += segment_begin;
   }
 
@@ -459,12 +459,12 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
   constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
   AgentSegmentedRadixSortT agent(num_items, storage);
 
-  d_keys_in_orig += segment_begin;
+  d_keys_in_orig  += segment_begin;
   d_keys_out_orig += segment_begin;
 
   if (!keys_only)
   {
-    d_values_in_orig += segment_begin;
+    d_values_in_orig  += segment_begin;
     d_values_out_orig += segment_begin;
   }
 

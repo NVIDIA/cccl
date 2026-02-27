@@ -72,11 +72,11 @@ inline __device__ int smem_lin_idx_to_gmem_lin_idx(
   int gmem_stride  = 1;
   for (int i = 0; i < (int) smem_coord.size(); ++i)
   {
-    int smem_i_idx = smem_lin_idx % smem_dims.begin()[i];
-    gmem_lin_idx += (smem_coord.begin()[i] + smem_i_idx) * gmem_stride;
+    int smem_i_idx  = smem_lin_idx % smem_dims.begin()[i];
+    gmem_lin_idx   += (smem_coord.begin()[i] + smem_i_idx) * gmem_stride;
 
     smem_lin_idx /= smem_dims.begin()[i];
-    gmem_stride *= gmem_dims.begin()[i];
+    gmem_stride  *= gmem_dims.begin()[i];
   }
   return gmem_lin_idx;
 }
@@ -293,7 +293,7 @@ CUtensorMap map_encode(T* tensor_ptr,
   for (size_t i = 0; i < stride.size() - 1; ++i)
   {
     base_stride *= gmem_dims[i];
-    stride[i] = base_stride;
+    stride[i]    = base_stride;
   }
 
   // The distance between elements in units of sizeof(element). A stride of 2

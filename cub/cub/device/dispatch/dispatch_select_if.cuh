@@ -81,8 +81,8 @@ public:
   {
     using ::cuda::std::swap;
     swap(d_num_selected_in, d_num_selected_out);
-    first_partition = false;
-    last_partition  = next_partition_is_the_last;
+    first_partition           = false;
+    last_partition            = next_partition_is_the_last;
     total_previous_num_items += num_items;
   };
 

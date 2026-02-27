@@ -80,10 +80,10 @@ _CCCL_HOST_DEVICE inline complex<double> ldexp_cexp(complex<double> z, int expt)
   double x, y, exp_x, scale1, scale2;
   int ex_expt, half_expt;
 
-  x     = z.real();
-  y     = z.imag();
-  exp_x = frexp_exp(x, &ex_expt);
-  expt += ex_expt;
+  x      = z.real();
+  y      = z.imag();
+  exp_x  = frexp_exp(x, &ex_expt);
+  expt  += ex_expt;
 
   /*
    * Arrange so that scale1 * scale2 == 2**expt.  We use this to

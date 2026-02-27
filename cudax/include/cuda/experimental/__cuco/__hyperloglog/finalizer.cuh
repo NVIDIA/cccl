@@ -129,7 +129,7 @@ private:
     // the lower (inclusive) bound.
     while (__high < __n && __distance(__e, __high) < __distance(__e, __low))
     {
-      __low += 1;
+      __low  += 1;
       __high += 1;
     }
 

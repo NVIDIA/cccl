@@ -966,8 +966,8 @@ private:
     {
       if (p.second.timing.has_value())
       {
-        float ms       = p.second.timing.value();
-        p.second.color = get_color_for_duration_percentile(ms, all_durations);
+        float ms        = p.second.timing.value();
+        p.second.color  = get_color_for_duration_percentile(ms, all_durations);
         p.second.label += "\ntiming: " + ::std::to_string(ms) + " ms\n";
       }
     }
@@ -1373,8 +1373,8 @@ private:
       {
         float ms = p.second.timing.value();
         // Total work is simply the sum of all work
-        t1 += ms;
-        durations[p.first] = ms;
+        t1                 += ms;
+        durations[p.first]  = ms;
       }
     }
 

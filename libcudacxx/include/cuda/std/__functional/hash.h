@@ -74,12 +74,12 @@ _Size __murmur2_or_cityhash<_Size, 32>::operator()(const void* __key, _Size __le
   const unsigned char* __data = static_cast<const unsigned char*>(__key);
   for (; __len >= 4; __data += 4, __len -= 4)
   {
-    _Size __k = __loadword<_Size>(__data);
-    __k *= __m;
-    __k ^= __k >> __r;
-    __k *= __m;
-    __h *= __m;
-    __h ^= __k;
+    _Size __k  = __loadword<_Size>(__data);
+    __k       *= __m;
+    __k       ^= __k >> __r;
+    __k       *= __m;
+    __h       *= __m;
+    __h       ^= __k;
   }
   switch (__len)
   {
@@ -128,12 +128,12 @@ private:
 
   static _Size __hash_len_16(_Size __u, _Size __v) _CCCL_NO_SANITIZE("unsigned-integer-overflow")
   {
-    const _Size __mul = 0x9ddfea08eb382d69ULL;
-    _Size __a         = (__u ^ __v) * __mul;
-    __a ^= (__a >> 47);
-    _Size __b = (__v ^ __a) * __mul;
-    __b ^= (__b >> 47);
-    __b *= __mul;
+    const _Size __mul  = 0x9ddfea08eb382d69ULL;
+    _Size __a          = (__u ^ __v) * __mul;
+    __a               ^= (__a >> 47);
+    _Size __b          = (__v ^ __a) * __mul;
+    __b               ^= (__b >> 47);
+    __b               *= __mul;
     return __b;
   }
 
@@ -179,12 +179,12 @@ private:
   __weak_hash_len_32_with_seeds(_Size __w, _Size __x, _Size __y, _Size __z, _Size __a, _Size __b)
     _CCCL_NO_SANITIZE("unsigned-integer-overflow")
   {
-    __a += __w;
-    __b             = __rotate(__b + __a + __z, 21);
-    const _Size __c = __a;
-    __a += __x;
-    __a += __y;
-    __b += __rotate(__a, 44);
+    __a             += __w;
+    __b              = __rotate(__b + __a + __z, 21);
+    const _Size __c  = __a;
+    __a             += __x;
+    __a             += __y;
+    __b             += __rotate(__a, 44);
     return pair<_Size, _Size>(__a + __z, __b + __c);
   }
 
@@ -204,25 +204,25 @@ private:
   // Return an 8-byte hash for 33 to 64 bytes.
   static _Size __hash_len_33_to_64(const char* __s, size_t __len) _CCCL_NO_SANITIZE("unsigned-integer-overflow")
   {
-    _Size __z = __loadword<_Size>(__s + 24);
-    _Size __a = __loadword<_Size>(__s) + (__len + __loadword<_Size>(__s + __len - 16)) * __k0;
-    _Size __b = __rotate(__a + __z, 52);
-    _Size __c = __rotate(__a, 37);
-    __a += __loadword<_Size>(__s + 8);
-    __c += __rotate(__a, 7);
-    __a += __loadword<_Size>(__s + 16);
-    _Size __vf = __a + __z;
-    _Size __vs = __b + __rotate(__a, 31) + __c;
-    __a        = __loadword<_Size>(__s + 16) + __loadword<_Size>(__s + __len - 32);
-    __z += __loadword<_Size>(__s + __len - 8);
-    __b = __rotate(__a + __z, 52);
-    __c = __rotate(__a, 37);
-    __a += __loadword<_Size>(__s + __len - 24);
-    __c += __rotate(__a, 7);
-    __a += __loadword<_Size>(__s + __len - 16);
-    _Size __wf = __a + __z;
-    _Size __ws = __b + __rotate(__a, 31) + __c;
-    _Size __r  = __shift_mix((__vf + __ws) * __k2 + (__wf + __vs) * __k0);
+    _Size __z   = __loadword<_Size>(__s + 24);
+    _Size __a   = __loadword<_Size>(__s) + (__len + __loadword<_Size>(__s + __len - 16)) * __k0;
+    _Size __b   = __rotate(__a + __z, 52);
+    _Size __c   = __rotate(__a, 37);
+    __a        += __loadword<_Size>(__s + 8);
+    __c        += __rotate(__a, 7);
+    __a        += __loadword<_Size>(__s + 16);
+    _Size __vf  = __a + __z;
+    _Size __vs  = __b + __rotate(__a, 31) + __c;
+    __a         = __loadword<_Size>(__s + 16) + __loadword<_Size>(__s + __len - 32);
+    __z        += __loadword<_Size>(__s + __len - 8);
+    __b         = __rotate(__a + __z, 52);
+    __c         = __rotate(__a, 37);
+    __a        += __loadword<_Size>(__s + __len - 24);
+    __c        += __rotate(__a, 7);
+    __a        += __loadword<_Size>(__s + __len - 16);
+    _Size __wf  = __a + __z;
+    _Size __ws  = __b + __rotate(__a, 31) + __c;
+    _Size __r   = __shift_mix((__vf + __ws) * __k2 + (__wf + __vs) * __k0);
     return __shift_mix(__r * __k0 + __vs) * __k2;
   }
 };
@@ -261,15 +261,15 @@ _Size __murmur2_or_cityhash<_Size, 64>::operator()(const void* __key, _Size __le
   __len = (__len - 1) & ~static_cast<_Size>(63);
   do
   {
-    __x = __rotate(__x + __y + __v.first + __loadword<_Size>(__s + 8), 37) * __k1;
-    __y = __rotate(__y + __v.second + __loadword<_Size>(__s + 48), 42) * __k1;
+    __x  = __rotate(__x + __y + __v.first + __loadword<_Size>(__s + 8), 37) * __k1;
+    __y  = __rotate(__y + __v.second + __loadword<_Size>(__s + 48), 42) * __k1;
     __x ^= __w.second;
     __y += __v.first + __loadword<_Size>(__s + 40);
-    __z = __rotate(__z + __w.first, 33) * __k1;
-    __v = __weak_hash_len_32_with_seeds(__s, __v.second * __k1, __x + __w.first);
-    __w = __weak_hash_len_32_with_seeds(__s + 32, __z + __w.second, __y + __loadword<_Size>(__s + 16));
+    __z  = __rotate(__z + __w.first, 33) * __k1;
+    __v  = __weak_hash_len_32_with_seeds(__s, __v.second * __k1, __x + __w.first);
+    __w  = __weak_hash_len_32_with_seeds(__s + 32, __z + __w.second, __y + __loadword<_Size>(__s + 16));
     ::cuda::std::swap(__z, __x);
-    __s += 64;
+    __s   += 64;
     __len -= 64;
   } while (__len != 0);
   return __hash_len_16(__hash_len_16(__v.first, __w.first) + __shift_mix(__y) * __k1 + __z,

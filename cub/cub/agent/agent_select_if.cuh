@@ -973,8 +973,8 @@ struct AgentSelectIf
     // Discount any out-of-bounds selections
     if (IS_LAST_TILE)
     {
-      int num_discount = TILE_ITEMS - num_tile_items;
-      num_selections -= num_discount;
+      int num_discount     = TILE_ITEMS - num_tile_items;
+      num_selections      -= num_discount;
       num_tile_selections -= num_discount;
     }
 

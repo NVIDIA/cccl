@@ -17,18 +17,18 @@ __host__ __device__ constexpr bool test()
   using ut = cuda::std::underlying_type<cf>::type;
 
   {
-    cf x = cf::scientific;
-    x |= cf::fixed;
+    cf x  = cf::scientific;
+    x    |= cf::fixed;
     assert(x == cf::general);
   }
   {
-    cf x = cf::general;
-    x &= cf::fixed;
+    cf x  = cf::general;
+    x    &= cf::fixed;
     assert(x == cf::fixed);
   }
   {
-    cf x = cf::general;
-    x ^= cf::fixed;
+    cf x  = cf::general;
+    x    ^= cf::fixed;
     assert(x == cf::scientific);
   }
 

@@ -49,10 +49,10 @@ inline std::string inspect_sass(const void* cubin, size_t cubin_size)
   temp_in_file.write(static_cast<const char*>(cubin), cubin_size);
   temp_in_file.close();
 
-  std::string command = "nvdisasm -gi ";
-  command += temp_in_filename.string();
-  command += " > ";
-  command += temp_out_filename.string();
+  std::string command  = "nvdisasm -gi ";
+  command             += temp_in_filename.string();
+  command             += " > ";
+  command             += temp_out_filename.string();
 
   int exec_code = std::system(command.c_str());
 

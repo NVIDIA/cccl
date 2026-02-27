@@ -337,38 +337,38 @@ TEMPLATE_LIST_TEST_CASE("ComplexMemberOperators", "[complex]", FloatingPointType
     const std::complex<T> b_std(b_thrust);
 
     a_thrust += b_thrust;
-    a_std += b_std;
+    a_std    += b_std;
     require_almost_equal(a_thrust, a_std);
 
     a_thrust -= b_thrust;
-    a_std -= b_std;
+    a_std    -= b_std;
     require_almost_equal(a_thrust, a_std);
 
     a_thrust *= b_thrust;
-    a_std *= b_std;
+    a_std    *= b_std;
     require_almost_equal(a_thrust, a_std);
 
     a_thrust /= b_thrust;
-    a_std /= b_std;
+    a_std    /= b_std;
     require_almost_equal(a_thrust, a_std);
 
     // arithmetic operators with `double` and `float`
     const T real = data[4];
 
     a_thrust += real;
-    a_std += std::complex<T>(real);
+    a_std    += std::complex<T>(real);
     require_almost_equal(a_thrust, a_std);
 
     a_thrust -= real;
-    a_std -= std::complex<T>(real);
+    a_std    -= std::complex<T>(real);
     require_almost_equal(a_thrust, a_std);
 
     a_thrust *= real;
-    a_std *= std::complex<T>(real);
+    a_std    *= std::complex<T>(real);
     require_almost_equal(a_thrust, a_std);
 
     a_thrust /= real;
-    a_std /= std::complex<T>(real);
+    a_std    /= std::complex<T>(real);
     require_almost_equal(a_thrust, a_std);
 
     // casting operator
@@ -395,38 +395,38 @@ TEMPLATE_LIST_TEST_CASE("ComplexMemberOperators", "[complex]", FloatingPointType
     require_almost_equal(b_thrust, b_std);
 
     a_thrust += b_thrust;
-    a_std += b_std;
+    a_std    += b_std;
     require_almost_equal(a_thrust, a_std);
 
     a_thrust -= b_thrust;
-    a_std -= b_std;
+    a_std    -= b_std;
     require_almost_equal(a_thrust, a_std);
 
     a_thrust *= b_thrust;
-    a_std *= b_std;
+    a_std    *= b_std;
     require_almost_equal(a_thrust, a_std);
 
     a_thrust /= b_thrust;
-    a_std /= b_std;
+    a_std    /= b_std;
     require_almost_equal(a_thrust, a_std);
 
     // Testing arithmetic member operators with another floating point type.
     const T1 e = data[2];
 
     a_thrust += e;
-    a_std += std::complex<T1>(e);
+    a_std    += std::complex<T1>(e);
     require_almost_equal(a_thrust, a_std);
 
     a_thrust -= e;
-    a_std -= std::complex<T1>(e);
+    a_std    -= std::complex<T1>(e);
     require_almost_equal(a_thrust, a_std);
 
     a_thrust *= e;
-    a_std *= std::complex<T1>(e);
+    a_std    *= std::complex<T1>(e);
     require_almost_equal(a_thrust, a_std);
 
     a_thrust /= e;
-    a_std /= std::complex<T1>(e);
+    a_std    /= std::complex<T1>(e);
     require_almost_equal(a_thrust, a_std);
   }
 }

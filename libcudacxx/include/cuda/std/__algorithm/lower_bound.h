@@ -48,8 +48,8 @@ _CCCL_API constexpr _Iter __lower_bound(_Iter __first, _Sent __last, const _Type
     _IterOps<_AlgPolicy>::advance(__m, __l2);
     if (::cuda::std::invoke(__comp, ::cuda::std::invoke(__proj, *__m), __value))
     {
-      __first = ++__m;
-      __len -= __l2 + 1;
+      __first  = ++__m;
+      __len   -= __l2 + 1;
     }
     else
     {

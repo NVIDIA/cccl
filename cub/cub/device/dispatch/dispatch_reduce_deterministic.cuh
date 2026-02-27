@@ -74,8 +74,8 @@ struct deterministic_sum_t
 
   _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc lhs, DeterministicAcc rhs)
   {
-    DeterministicAcc rtn = lhs;
-    rtn += rhs;
+    DeterministicAcc rtn  = lhs;
+    rtn                  += rhs;
     return rtn;
   }
 
@@ -326,7 +326,7 @@ struct dispatch_t
 
       if (chunk_index + 1 < num_chunks)
       {
-        d_in += num_current_items;
+        d_in                     += num_current_items;
         d_chunk_block_reductions += current_grid_size;
       }
 

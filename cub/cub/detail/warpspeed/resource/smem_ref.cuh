@@ -78,7 +78,7 @@ struct SmemRef
   {
     mTxCountIsSet = true;
     // Only leader thread increments txCount
-    txCount = squad.isLeaderThread() ? txCount : 0;
+    txCount   = squad.isLeaderThread() ? txCount : 0;
     mTxCount += txCount;
   }
 

@@ -111,7 +111,7 @@ _CCCL_API constexpr _RandomAccessIterator __floyd_sift_down(
   while (true)
   {
     __child_i += difference_type(__child + 1);
-    __child = 2 * __child + 1;
+    __child    = 2 * __child + 1;
 
     if ((__child + 1) < __len && __comp(*__child_i, *(__child_i + difference_type(1))))
     {

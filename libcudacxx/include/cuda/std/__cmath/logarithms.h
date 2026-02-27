@@ -486,7 +486,7 @@ template <class _Tp>
     unsigned long long __exp = 0;
     while (__x >= _Tp(numeric_limits<_Tp>::radix))
     {
-      __x /= numeric_limits<_Tp>::radix;
+      __x   /= numeric_limits<_Tp>::radix;
       __exp += 1;
     }
     return static_cast<_Tp>(__exp);

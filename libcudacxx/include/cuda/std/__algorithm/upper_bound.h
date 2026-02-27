@@ -51,8 +51,8 @@ __upper_bound(_Iter __first, _Sent __last, const _Tp& __value, _Compare&& __comp
     }
     else
     {
-      __first = ++__mid;
-      __len -= __half_len + 1;
+      __first  = ++__mid;
+      __len   -= __half_len + 1;
     }
   }
   return __first;

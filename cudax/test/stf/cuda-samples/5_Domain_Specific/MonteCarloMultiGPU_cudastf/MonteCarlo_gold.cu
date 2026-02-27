@@ -137,10 +137,10 @@ extern "C" void MonteCarloCPU(TOptionValue& callValue, TOptionData optionData, f
 
   for (int pos = 0; pos < pathN; pos++)
   {
-    double sample    = samples[pos];
-    double callValue = CPU_endCallValue(S, X, sample, MuByT, VBySqrtT);
-    sum += callValue;
-    sum2 += callValue * callValue;
+    double sample     = samples[pos];
+    double callValue  = CPU_endCallValue(S, X, sample, MuByT, VBySqrtT);
+    sum              += callValue;
+    sum2             += callValue * callValue;
   }
 
   if (h_Samples == NULL)

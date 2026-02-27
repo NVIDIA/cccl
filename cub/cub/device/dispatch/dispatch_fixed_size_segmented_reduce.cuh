@@ -231,7 +231,7 @@ struct DispatchFixedSizeSegmentedReduce
               reduction_op,
               init);
 
-      d_in += num_segments_per_invocation * segment_size;
+      d_in  += num_segments_per_invocation * segment_size;
       d_out += num_segments_per_invocation;
 
       error = CubDebug(cudaPeekAtLastError());

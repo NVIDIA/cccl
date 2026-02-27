@@ -134,12 +134,12 @@ void stable_sort(
         sort_detail::inplace_merge(
           exec, first + decomp[a].begin(), first + decomp[b].end(), first + decomp[c].end(), comp);
 
-        b = c;
+        b  = c;
         c += h;
       }
 
-      nseg = (nseg + 1) / 2;
-      h *= 2;
+      nseg  = (nseg + 1) / 2;
+      h    *= 2;
 
       THRUST_PRAGMA_OMP(barrier)
 
@@ -226,12 +226,12 @@ void stable_sort_by_key(
           values_first + decomp[a].begin(),
           comp);
 
-        b = c;
+        b  = c;
         c += h;
       }
 
-      nseg = (nseg + 1) / 2;
-      h *= 2;
+      nseg  = (nseg + 1) / 2;
+      h    *= 2;
 
       THRUST_PRAGMA_OMP(barrier)
 

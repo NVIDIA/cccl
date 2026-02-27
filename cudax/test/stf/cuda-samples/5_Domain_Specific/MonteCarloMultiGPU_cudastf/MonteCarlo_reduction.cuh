@@ -56,12 +56,12 @@ sumReduce(T* sum, T* sum2, cg::thread_block& cta, cg::thread_block_tile<32>& til
   {
     if (tile32.thread_rank() < i)
     {
-      temp  = sum[tid + i];
-      temp2 = sum2[tid + i];
-      beta += temp;
-      beta2 += temp2;
-      sum[tid]  = beta;
-      sum2[tid] = beta2;
+      temp       = sum[tid + i];
+      temp2      = sum2[tid + i];
+      beta      += temp;
+      beta2     += temp2;
+      sum[tid]   = beta;
+      sum2[tid]  = beta2;
     }
     cg::sync(tile32);
   }
@@ -73,7 +73,7 @@ sumReduce(T* sum, T* sum2, cg::thread_block& cta, cg::thread_block_tile<32>& til
     beta2 = 0;
     for (int i = 0; i < blockDim.x; i += VEC)
     {
-      beta += sum[i];
+      beta  += sum[i];
       beta2 += sum2[i];
     }
     __TOptionValue t = {beta, beta2};

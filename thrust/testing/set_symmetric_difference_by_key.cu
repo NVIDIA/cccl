@@ -239,9 +239,9 @@ void TestSetSymmetricDifferenceByKeyMultiset(const size_t n)
   // restrict elements to [min,13)
   for (typename thrust::host_vector<T>::iterator i = vec.begin(); i != vec.end(); ++i)
   {
-    int temp = static_cast<int>(*i);
-    temp %= 13;
-    *i = temp;
+    int temp  = static_cast<int>(*i);
+    temp     %= 13;
+    *i        = temp;
   }
 
   thrust::host_vector<T> h_a_key(vec.begin(), vec.begin() + n);

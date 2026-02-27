@@ -199,8 +199,8 @@ struct uncommon_plus
 
   __host__ __device__ auto operator()(int8_t a, const huge_t& b) const -> huge_t
   {
-    huge_t r = b;
-    r.key += static_cast<size_t>(a);
+    huge_t r  = b;
+    r.key    += static_cast<size_t>(a);
     return r;
   }
 
@@ -745,7 +745,7 @@ __global__ void fill_pdl_kernel(T* data, size_t n, T value)
   const size_t offset = size_t{blockIdx.x} * tile_size;
 
   data += offset;
-  n -= offset;
+  n    -= offset;
 
   for (int j = 0; j < ItemsPerPthread; j++)
   {

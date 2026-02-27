@@ -118,8 +118,8 @@ template <class _Tp>
   for (size_t __i = 0; __i < sizeof(_Tp); ++__i)
   {
     __result <<= __shift;
-    __result |= _Tp(__val & _Tp(numeric_limits<uint8_t>::max()));
-    __val >>= __shift;
+    __result  |= _Tp(__val & _Tp(numeric_limits<uint8_t>::max()));
+    __val    >>= __shift;
   }
   return __result;
 }

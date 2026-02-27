@@ -118,8 +118,8 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     // dependency
     for (auto next = ::std::next(it); next != task_deps.end() && *it == *next; ++it, ++next)
     {
-      mode |= next->get_access_mode();
-      it->skipped = true;
+      mode        |= next->get_access_mode();
+      it->skipped  = true;
     }
 
     /* Get of this dependency which is not skipped, and save it in a vector. We also save the equivalent merged

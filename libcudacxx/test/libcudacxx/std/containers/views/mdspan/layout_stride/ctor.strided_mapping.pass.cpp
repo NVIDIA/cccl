@@ -54,8 +54,8 @@ __host__ __device__ constexpr auto get_strides(FromExt src_exts)
   size_t stride = 2;
   for (size_t r = 0; r < FromExt::rank(); r++)
   {
-    strides[r] = stride;
-    stride *= src_exts.extent(r);
+    strides[r]  = stride;
+    stride     *= src_exts.extent(r);
   }
   return From(src_exts, strides);
 }

@@ -66,11 +66,11 @@ struct AssertionInfoMatcher
 
   std::string ToString() const
   {
-    std::string result = "msg = \"";
-    result += msg_;
-    result += "\"\n";
-    result += "line = " + (line_ == any_line ? "'*'" : std::to_string(line_)) + "\n";
-    result += "file = " + (file_ == any_file ? "'*'" : std::string(file_));
+    std::string result  = "msg = \"";
+    result             += msg_;
+    result             += "\"\n";
+    result             += "line = " + (line_ == any_line ? "'*'" : std::to_string(line_)) + "\n";
+    result             += "file = " + (file_ == any_file ? "'*'" : std::string(file_));
     return result;
   }
 
@@ -243,8 +243,8 @@ private:
     {
       while ((num_read = read(FD, buffer, 255)) > 0)
       {
-        buffer[num_read] = '\0';
-        error_msg += buffer;
+        buffer[num_read]  = '\0';
+        error_msg        += buffer;
       }
     } while (num_read == -1 && errno == EINTR);
     return error_msg;

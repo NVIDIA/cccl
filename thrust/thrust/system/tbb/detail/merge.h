@@ -70,12 +70,12 @@ struct range
     if (n1 > n2)
     {
       mid1 += n1 / 2;
-      mid2 = thrust::lower_bound(thrust::seq, first2, last2, raw_reference_cast(*mid1), comp);
+      mid2  = thrust::lower_bound(thrust::seq, first2, last2, raw_reference_cast(*mid1), comp);
     }
     else
     {
       mid2 += n2 / 2;
-      mid1 = thrust::upper_bound(thrust::seq, first1, last1, raw_reference_cast(*mid2), comp);
+      mid1  = thrust::upper_bound(thrust::seq, first1, last1, raw_reference_cast(*mid2), comp);
     }
 
     // set first range to [first1, mid1), [first2, mid2), result
@@ -83,8 +83,8 @@ struct range
     r.last2 = mid2;
 
     // set second range to [mid1, last1), [mid2, last2), result + (mid1 - first1) + (mid2 - first2)
-    first1 = mid1;
-    first2 = mid2;
+    first1  = mid1;
+    first2  = mid2;
     result += ::cuda::std::distance(r.first1, mid1) + ::cuda::std::distance(r.first2, mid2);
   }
 
@@ -174,12 +174,12 @@ struct range
     if (n1 > n2)
     {
       mid1 += n1 / 2;
-      mid2 = thrust::lower_bound(thrust::seq, keys_first2, keys_last2, raw_reference_cast(*mid1), comp);
+      mid2  = thrust::lower_bound(thrust::seq, keys_first2, keys_last2, raw_reference_cast(*mid1), comp);
     }
     else
     {
       mid2 += n2 / 2;
-      mid1 = thrust::upper_bound(thrust::seq, keys_first1, keys_last1, raw_reference_cast(*mid2), comp);
+      mid1  = thrust::upper_bound(thrust::seq, keys_first1, keys_last1, raw_reference_cast(*mid2), comp);
     }
 
     // set first range to [keys_first1, mid1), [keys_first2, mid2), keys_result, values_result
@@ -188,11 +188,11 @@ struct range
 
     // set second range to [mid1, keys_last1), [mid2, keys_last2), keys_result + (mid1 - keys_first1) + (mid2 -
     // keys_first2), values_result + (mid1 - keys_first1) + (mid2 - keys_first2)
-    keys_first1 = mid1;
-    keys_first2 = mid2;
+    keys_first1    = mid1;
+    keys_first2    = mid2;
     values_first1 += ::cuda::std::distance(r.keys_first1, mid1);
     values_first2 += ::cuda::std::distance(r.keys_first2, mid2);
-    keys_result += ::cuda::std::distance(r.keys_first1, mid1) + ::cuda::std::distance(r.keys_first2, mid2);
+    keys_result   += ::cuda::std::distance(r.keys_first1, mid1) + ::cuda::std::distance(r.keys_first2, mid2);
     values_result += ::cuda::std::distance(r.keys_first1, mid1) + ::cuda::std::distance(r.keys_first2, mid2);
   }
 

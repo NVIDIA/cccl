@@ -27,7 +27,7 @@ public:
       : std::bad_alloc()
       , m_what()
   {
-    m_what = std::bad_alloc::what();
+    m_what  = std::bad_alloc::what();
     m_what += ": ";
     m_what += w;
   } // end bad_alloc()

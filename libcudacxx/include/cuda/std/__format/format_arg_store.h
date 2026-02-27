@@ -209,8 +209,8 @@ _CCCL_API void __fmt_make_packed_storage_impl(
     // Assigns the initial value.
     __types = static_cast<uint64_t>(__arg.__type_);
   }
-  __shift += __fmt_packed_arg_t_bits;
-  *__values++ = __arg.__value_;
+  __shift     += __fmt_packed_arg_t_bits;
+  *__values++  = __arg.__value_;
 }
 
 template <class _Context, class... _Args>

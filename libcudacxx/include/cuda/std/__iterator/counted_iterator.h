@@ -251,7 +251,7 @@ public:
   {
     _CCCL_ASSERT(__n <= __count_, "Cannot advance iterator past end.");
     __current_ += __n;
-    __count_ -= __n;
+    __count_   -= __n;
     return *this;
   }
 
@@ -299,7 +299,7 @@ public:
                  "counted_iterator would be decremented before the "
                  "first element of its range.");
     __current_ -= __n;
-    __count_ += __n;
+    __count_   += __n;
     return *this;
   }
 

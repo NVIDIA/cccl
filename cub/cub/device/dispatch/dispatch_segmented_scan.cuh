@@ -195,8 +195,8 @@ struct dispatch_segmented_scan
 
       if (invocation_index + 1 < num_invocations)
       {
-        d_input_begin_offsets += num_current_segments;
-        d_input_end_offsets += num_current_segments;
+        d_input_begin_offsets  += num_current_segments;
+        d_input_end_offsets    += num_current_segments;
         d_output_begin_offsets += num_current_segments;
       }
 

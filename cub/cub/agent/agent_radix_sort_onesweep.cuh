@@ -298,8 +298,8 @@ struct AgentRadixSortOnesweep
             value_j = ThreadLoad<LOAD_VOLATILE>(&loc_j);
           } while (value_j == 0);
 
-          inc_sum += value_j & LOOKBACK_VALUE_MASK;
-          want_mask = __ballot_sync(want_mask, (value_j & LOOKBACK_GLOBAL_MASK) == 0);
+          inc_sum   += value_j & LOOKBACK_VALUE_MASK;
+          want_mask  = __ballot_sync(want_mask, (value_j & LOOKBACK_GLOBAL_MASK) == 0);
           if (value_j & LOOKBACK_GLOBAL_MASK)
           {
             break;

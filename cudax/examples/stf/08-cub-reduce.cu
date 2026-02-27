@@ -61,7 +61,7 @@ void run()
 
   for (size_t ind = 0; ind < N; ind++)
   {
-    X[ind] = rand() % N;
+    X[ind]   = rand() % N;
     ref_tot += X[ind];
   }
 

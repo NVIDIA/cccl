@@ -26,11 +26,11 @@ __global__ void kernel(const KeyT* keys_in, KeyT* keys_out, const ValueT* values
   KeyT thread_keys[ItemsPerThread];
   KeyT thread_values[ItemsPerThread];
 
-  const auto thread_offset = ItemsPerThread * threadIdx.x;
-  keys_in += thread_offset;
-  keys_out += thread_offset;
-  values_in += thread_offset;
-  values_out += thread_offset;
+  const auto thread_offset  = ItemsPerThread * threadIdx.x;
+  keys_in                  += thread_offset;
+  keys_out                 += thread_offset;
+  values_in                += thread_offset;
+  values_out               += thread_offset;
 
   for (int item = 0; item < ItemsPerThread; item++)
   {

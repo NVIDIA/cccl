@@ -720,7 +720,7 @@ private:
       EndOffsetIteratorT current_end_offset     = d_end_offsets;
 
       current_begin_offset += current_seg_offset;
-      current_end_offset += current_seg_offset;
+      current_end_offset   += current_seg_offset;
 
       auto medium_indices_iterator =
         ::cuda::std::make_reverse_iterator(large_and_medium_segments_indices.get() + current_num_segments);

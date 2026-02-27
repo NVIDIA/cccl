@@ -14,8 +14,8 @@
 
 __host__ __device__ constexpr cuda::std::byte test(cuda::std::byte b1, cuda::std::byte b2)
 {
-  cuda::std::byte bret = b1;
-  return bret |= b2;
+  cuda::std::byte bret  = b1;
+  return bret          |= b2;
 }
 
 int main(int, char**)

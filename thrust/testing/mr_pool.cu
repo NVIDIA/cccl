@@ -89,7 +89,7 @@ struct tracked_pointer
 
   _CCCL_HOST_DEVICE void advance(std::ptrdiff_t diff)
   {
-    ptr = get() + diff;
+    ptr     = get() + diff;
     offset += diff * sizeof(T);
   }
 

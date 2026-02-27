@@ -91,7 +91,7 @@ int main(int, char**)
   NV_IF_TARGET(
     NV_IS_HOST,
     (cuda_thread_count = 2; failure |= test<cuda::barrier<cuda::thread_scope_block>, local_memory_selector>();
-     failure |= test<cuda::barrier<cuda::thread_scope_block>, local_memory_selector>(true);),
+     failure                        |= test<cuda::barrier<cuda::thread_scope_block>, local_memory_selector>(true);),
     (failure |= test<cuda::barrier<cuda::thread_scope_block>, shared_memory_selector>();
      failure |= test<cuda::barrier<cuda::thread_scope_block>, global_memory_selector>();
      failure |= test<cuda::barrier<cuda::thread_scope_block>, shared_memory_selector>(true);

@@ -204,8 +204,8 @@ public:
     noexcept(__noexcept_stride && noexcept(::cuda::std::declval<_Iter&>() += 1))
     && ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && ::cuda::std::is_nothrow_copy_constructible_v<_Stride>)
   {
-    auto __tmp = *this;
-    __iter() += stride();
+    auto __tmp  = *this;
+    __iter()   += stride();
     return __tmp;
   }
 
@@ -224,8 +224,8 @@ public:
     noexcept(__noexcept_stride && noexcept(::cuda::std::declval<_Iter&>() -= 1))
     && ::cuda::std::is_nothrow_copy_constructible_v<_Iter> && ::cuda::std::is_nothrow_copy_constructible_v<_Stride>)
   {
-    auto __tmp = *this;
-    __iter() -= stride();
+    auto __tmp  = *this;
+    __iter()   -= stride();
     return __tmp;
   }
 

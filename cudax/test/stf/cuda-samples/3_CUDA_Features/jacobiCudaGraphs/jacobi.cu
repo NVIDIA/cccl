@@ -113,7 +113,7 @@ JacobiMethod(const float* A, const double* b, const float conv_threshold, double
   if (threadIdx.x < ROWS_PER_CTA)
   {
     int k = threadIdx.x;
-    for (int i = k + (blockIdx.x * ROWS_PER_CTA); (k < ROWS_PER_CTA) && (i < N_ROWS);
+    for (int i  = k + (blockIdx.x * ROWS_PER_CTA); (k < ROWS_PER_CTA) && (i < N_ROWS);
          k += ROWS_PER_CTA, i += ROWS_PER_CTA)
     {
       b_shared[i % (ROWS_PER_CTA + 1)] = b[i];
@@ -152,13 +152,13 @@ JacobiMethod(const float* A, const double* b, const float conv_threshold, double
 
     int k = threadIdx.x;
 
-    for (int i = k + (blockIdx.x * ROWS_PER_CTA); (k < ROWS_PER_CTA) && (i < N_ROWS);
+    for (int i  = k + (blockIdx.x * ROWS_PER_CTA); (k < ROWS_PER_CTA) && (i < N_ROWS);
          k += ROWS_PER_CTA, i += ROWS_PER_CTA)
     {
-      double dx = b_shared[i % (ROWS_PER_CTA + 1)];
-      dx /= A[i * N_ROWS + i];
+      double dx  = b_shared[i % (ROWS_PER_CTA + 1)];
+      dx        /= A[i * N_ROWS + i];
 
-      x_new[i] = (x_shared[i] + dx);
+      x_new[i]  = (x_shared[i] + dx);
       temp_sum += fabs(dx);
     }
 
@@ -186,8 +186,8 @@ static __global__ void finalError(double* x, double* g_sum)
 
   for (int i = globalThreadId; i < N_ROWS; i += blockDim.x * gridDim.x)
   {
-    double d = x[i] - 1.0;
-    sum += fabs(d);
+    double d  = x[i] - 1.0;
+    sum      += fabs(d);
   }
 
   cg::thread_block_tile<32> tile32 = cg::tiled_partition<32>(cta);
@@ -507,9 +507,9 @@ void JacobiMethodCPU(float* A, double* b, float conv_threshold, int max_iter, in
       {
         temp_dx -= A[i * N_ROWS + j] * x[j];
       }
-      temp_dx /= A[i * N_ROWS + i];
+      temp_dx  /= A[i * N_ROWS + i];
       x_new[i] += temp_dx;
-      sum += fabs(temp_dx);
+      sum      += fabs(temp_dx);
     }
 
     for (int i = 0; i < N_ROWS; i++)
@@ -582,8 +582,8 @@ int main()
   // Compute error
   for (int i = 0; i < N_ROWS; i++)
   {
-    double d = x[i] - 1.0;
-    sum += fabs(d);
+    double d  = x[i] - 1.0;
+    sum      += fabs(d);
   }
   //  sdkStopTimer(&timerCPU);
   // printf("CPU iterations : %d\n", cnt);

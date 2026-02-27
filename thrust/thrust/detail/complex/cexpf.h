@@ -68,10 +68,10 @@ _CCCL_HOST_DEVICE inline complex<float> ldexp_cexpf(complex<float> z, int expt)
   float x, y, exp_x, scale1, scale2;
   int ex_expt, half_expt;
 
-  x     = z.real();
-  y     = z.imag();
-  exp_x = frexp_expf(x, &ex_expt);
-  expt += ex_expt;
+  x      = z.real();
+  y      = z.imag();
+  exp_x  = frexp_expf(x, &ex_expt);
+  expt  += ex_expt;
 
   half_expt = expt / 2;
   set_float_word(scale1, (0x7f + half_expt) << 23);

@@ -417,8 +417,8 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
     for (int __i = 0; __i < __rank - 1; ++__i)
     {
       // TODO(fbusato): check mul overflow
-      __cumulative_size *= __tensor_sizes[__i];
-      const auto __stride_bytes = ::cuda::__driver::__cutensormap_size_bytes(__cumulative_size, __data_type);
+      __cumulative_size         *= __tensor_sizes[__i];
+      const auto __stride_bytes  = ::cuda::__driver::__cutensormap_size_bytes(__cumulative_size, __data_type);
       if (__stride_bytes % __alignment != 0)
       {
         _CCCL_THROW(std::invalid_argument, "Stride in bytes is not a multiple of the alignment (32 or 16)");
@@ -483,8 +483,8 @@ _CCCL_HOST_API inline __tma_box_sizes_array_t __get_box_sizes(
     {
       _CCCL_THROW(std::invalid_argument, "box_sizes[i] must be between 1 and min(tensor.shape[rank - 1 - i], 256)");
     }
-    __total_size *= __box_size;
-    __box_sizes_output[__i] = __box_size;
+    __total_size            *= __box_size;
+    __box_sizes_output[__i]  = __box_size;
   }
   const auto __inner_dimension_bytes =
     ::cuda::__driver::__cutensormap_size_bytes(__box_sizes_output[__rank - 1], __data_type);

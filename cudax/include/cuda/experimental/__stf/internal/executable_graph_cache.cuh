@@ -78,9 +78,9 @@ public:
   executable_graph_cache_stat& operator+=(const executable_graph_cache_stat& other)
   {
     instantiate_cnt += other.instantiate_cnt;
-    update_cnt += other.update_cnt;
-    nnodes += other.nnodes;
-    nedges += other.nedges;
+    update_cnt      += other.update_cnt;
+    nnodes          += other.nnodes;
+    nedges          += other.nedges;
     return *this;
   }
 };
@@ -230,7 +230,7 @@ private:
       auto it = device_cache.find(key);
       if (it != device_cache.end())
       {
-        reclaimed += it->second.footprint;
+        reclaimed                     += it->second.footprint;
         total_cache_footprint[dev_id] -= it->second.footprint;
 
         device_cache.erase(it);

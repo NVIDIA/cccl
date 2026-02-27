@@ -394,7 +394,7 @@ private:
     }
 
     // Update selector
-    d_keys.selector ^= 1;
+    d_keys.selector   ^= 1;
     d_values.selector ^= 1;
 
     return cudaSuccess;
@@ -837,7 +837,7 @@ private:
         d_values = num_passes % 2 == 0 ? DoubleBuffer<ValueT>(d_values_tmp, d_values_tmp2)
                                        : DoubleBuffer<ValueT>(d_values_tmp2, d_values_tmp);
       }
-      d_keys.selector ^= 1;
+      d_keys.selector   ^= 1;
       d_values.selector ^= 1;
     }
 
@@ -1036,7 +1036,7 @@ private:
       }
 
       // Invert selectors
-      d_keys_remaining_passes.selector ^= 1;
+      d_keys_remaining_passes.selector   ^= 1;
       d_values_remaining_passes.selector ^= 1;
     }
 

@@ -214,7 +214,7 @@ AssertData CheckCollectionsEqual(It1 F1, It1 E1, It2 F2, It2 E2, AssertData Data
     if (!(C(*F1, *F2)))
     {
       ErrorMsg += PrintMismatch(*F1, *F2, Idx);
-      Failed = true;
+      Failed    = true;
       break;
     }
     ++Idx;
@@ -224,7 +224,7 @@ AssertData CheckCollectionsEqual(It1 F1, It1 E1, It2 F2, It2 E2, AssertData Data
   if (!Failed && (F1 != E1 || F2 != E2))
   {
     ErrorMsg += "  Ranges have different sizes!\n";
-    Failed = true;
+    Failed    = true;
   }
   if (Failed)
   {

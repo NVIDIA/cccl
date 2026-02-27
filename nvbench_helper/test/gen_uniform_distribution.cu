@@ -143,8 +143,8 @@ TEMPLATE_LIST_TEST_CASE("Generators produce uniformly distributed offsets", "[ge
     REQUIRE(size >= min_segment_size);
     REQUIRE(size <= max_segment_size);
 
-    segment_sizes[sid] = size;
-    actual_elements += size;
+    segment_sizes[sid]  = size;
+    actual_elements    += size;
   }
 
   REQUIRE(actual_elements == elements);

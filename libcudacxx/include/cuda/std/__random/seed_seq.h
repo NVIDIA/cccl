@@ -163,7 +163,7 @@ public:
       __begin[__k_p_mod_n] &= 0xFFFFFFFF;
       __begin[__k_q_mod_n] += __r2;
       __begin[__k_q_mod_n] &= 0xFFFFFFFF;
-      __begin[__k_mod_n] = __r2 & 0xFFFFFFFF;
+      __begin[__k_mod_n]    = __r2 & 0xFFFFFFFF;
     }
 
     // 3.

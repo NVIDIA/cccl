@@ -27,8 +27,8 @@ void TestNewDeleteResourceAlignedAllocation()
 {
   for (std::size_t size = MinTestedSize; size <= MaxTestedSize; size += TestedSizeStep)
   {
-    for (std::size_t alignment = MinTestedAlignment; alignment <= MaxTestedAlignment;
-         alignment <<= TestedAlignmentShift)
+    for (std::size_t alignment   = MinTestedAlignment; alignment <= MaxTestedAlignment;
+         alignment             <<= TestedAlignmentShift)
     {
       TestAlignment(thrust::mr::new_delete_resource(), size, alignment);
     }

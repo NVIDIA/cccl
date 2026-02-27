@@ -54,7 +54,7 @@ __global__ void BlockReduceKernel(int* d_in, // Tile of input
   union ShmemLayout
   {
     TempStorageT reduce;
-    int          aggregate;
+    int aggregate;
   };
 
   // shared memory byte-array

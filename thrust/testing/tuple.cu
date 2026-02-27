@@ -350,64 +350,64 @@ struct TestTupleTieFunctor
     // 17 and not 0 to avoid triggering custom_numeric's `operator void *` and a comparison with a null pointer
     // TODO: get this back from 17 to 0 once C++11 is on everywhere and that operator on custom_numeric is changed
     // to an explicit operator bool
-    tie(data[0]) = make_tuple(17);
-    result &= data[0] == 17;
+    tie(data[0])  = make_tuple(17);
+    result       &= data[0] == 17;
     clear(data);
 
-    tie(data[0], data[1]) = make_tuple(17, 1);
-    result &= data[0] == 17;
-    result &= data[1] == 1;
+    tie(data[0], data[1])  = make_tuple(17, 1);
+    result                &= data[0] == 17;
+    result                &= data[1] == 1;
     clear(data);
 
-    tie(data[0], data[1], data[2]) = make_tuple(17, 1, 2);
-    result &= data[0] == 17;
-    result &= data[1] == 1;
-    result &= data[2] == 2;
+    tie(data[0], data[1], data[2])  = make_tuple(17, 1, 2);
+    result                         &= data[0] == 17;
+    result                         &= data[1] == 1;
+    result                         &= data[2] == 2;
     clear(data);
 
-    tie(data[0], data[1], data[2], data[3]) = make_tuple(17, 1, 2, 3);
-    result &= data[0] == 17;
-    result &= data[1] == 1;
-    result &= data[2] == 2;
-    result &= data[3] == 3;
+    tie(data[0], data[1], data[2], data[3])  = make_tuple(17, 1, 2, 3);
+    result                                  &= data[0] == 17;
+    result                                  &= data[1] == 1;
+    result                                  &= data[2] == 2;
+    result                                  &= data[3] == 3;
     clear(data);
 
-    tie(data[0], data[1], data[2], data[3], data[4]) = make_tuple(17, 1, 2, 3, 4);
-    result &= data[0] == 17;
-    result &= data[1] == 1;
-    result &= data[2] == 2;
-    result &= data[3] == 3;
-    result &= data[4] == 4;
+    tie(data[0], data[1], data[2], data[3], data[4])  = make_tuple(17, 1, 2, 3, 4);
+    result                                           &= data[0] == 17;
+    result                                           &= data[1] == 1;
+    result                                           &= data[2] == 2;
+    result                                           &= data[3] == 3;
+    result                                           &= data[4] == 4;
     clear(data);
 
-    tie(data[0], data[1], data[2], data[3], data[4], data[5]) = make_tuple(17, 1, 2, 3, 4, 5);
-    result &= data[0] == 17;
-    result &= data[1] == 1;
-    result &= data[2] == 2;
-    result &= data[3] == 3;
-    result &= data[4] == 4;
-    result &= data[5] == 5;
+    tie(data[0], data[1], data[2], data[3], data[4], data[5])  = make_tuple(17, 1, 2, 3, 4, 5);
+    result                                                    &= data[0] == 17;
+    result                                                    &= data[1] == 1;
+    result                                                    &= data[2] == 2;
+    result                                                    &= data[3] == 3;
+    result                                                    &= data[4] == 4;
+    result                                                    &= data[5] == 5;
     clear(data);
 
-    tie(data[0], data[1], data[2], data[3], data[4], data[5], data[6]) = make_tuple(17, 1, 2, 3, 4, 5, 6);
-    result &= data[0] == 17;
-    result &= data[1] == 1;
-    result &= data[2] == 2;
-    result &= data[3] == 3;
-    result &= data[4] == 4;
-    result &= data[5] == 5;
-    result &= data[6] == 6;
+    tie(data[0], data[1], data[2], data[3], data[4], data[5], data[6])  = make_tuple(17, 1, 2, 3, 4, 5, 6);
+    result                                                             &= data[0] == 17;
+    result                                                             &= data[1] == 1;
+    result                                                             &= data[2] == 2;
+    result                                                             &= data[3] == 3;
+    result                                                             &= data[4] == 4;
+    result                                                             &= data[5] == 5;
+    result                                                             &= data[6] == 6;
     clear(data);
 
-    tie(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]) = make_tuple(17, 1, 2, 3, 4, 5, 6, 7);
-    result &= data[0] == 17;
-    result &= data[1] == 1;
-    result &= data[2] == 2;
-    result &= data[3] == 3;
-    result &= data[4] == 4;
-    result &= data[5] == 5;
-    result &= data[6] == 6;
-    result &= data[7] == 7;
+    tie(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7])  = make_tuple(17, 1, 2, 3, 4, 5, 6, 7);
+    result                                                                      &= data[0] == 17;
+    result                                                                      &= data[1] == 1;
+    result                                                                      &= data[2] == 2;
+    result                                                                      &= data[3] == 3;
+    result                                                                      &= data[4] == 4;
+    result                                                                      &= data[5] == 5;
+    result                                                                      &= data[6] == 6;
+    result                                                                      &= data[7] == 7;
     clear(data);
 
     tie(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8]) =

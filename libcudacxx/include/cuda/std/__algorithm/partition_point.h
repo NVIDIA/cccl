@@ -43,8 +43,8 @@ partition_point(_ForwardIterator __first, _ForwardIterator __last, _Predicate __
     ::cuda::std::advance(__m, __l2);
     if (__pred(*__m))
     {
-      __first = ++__m;
-      __len -= __l2 + 1;
+      __first  = ++__m;
+      __len   -= __l2 + 1;
     }
     else
     {

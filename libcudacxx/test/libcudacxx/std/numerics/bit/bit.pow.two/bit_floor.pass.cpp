@@ -97,8 +97,8 @@ int main(int, char**)
   runtime_test<__uint128_t>();
 
   {
-    __uint128_t val = 128;
-    val <<= 32;
+    __uint128_t val   = 128;
+    val             <<= 32;
     assert(cuda::std::bit_floor(val - 1) == val / 2);
     assert(cuda::std::bit_floor(val) == val);
     assert(cuda::std::bit_floor(val + 1) == val);

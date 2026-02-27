@@ -195,8 +195,8 @@ public:
       result_type __sum = 0;
       for (::cuda::std::size_t __i = 0; __i < __p; ++__i)
       {
-        const size_t __current = __k * __p;
-        __sum += static_cast<result_type>(__a[__current + __i]) << (32 * __i);
+        const size_t __current  = __k * __p;
+        __sum                  += static_cast<result_type>(__a[__current + __i]) << (32 * __i);
       }
       __k_[__k] = __sum & max();
     }
@@ -254,9 +254,9 @@ public:
   _CCCL_API constexpr void discard(unsigned long long __z) noexcept
   {
     // Advance __j_ until we are at n - 1
-    auto __advance = ::cuda::std::min(__z, static_cast<unsigned long long>(word_count - 1 - __j_));
-    __j_ += static_cast<::cuda::std::size_t>(__advance);
-    __z -= __advance;
+    auto __advance  = ::cuda::std::min(__z, static_cast<unsigned long long>(word_count - 1 - __j_));
+    __j_           += static_cast<::cuda::std::size_t>(__advance);
+    __z            -= __advance;
 
     // Increment the big integer counter, handling overflow
     unsigned long long __increment       = __z / word_count;
@@ -463,10 +463,10 @@ private:
     result_type __ahbl = __ahi * __blo;
     result_type __albh = __alo * __bhi;
 
-    result_type __ahbl_albh = ((__ahbl & __lo_mask) + (__albh & __lo_mask));
-    result_type __hi        = __ahi * __bhi + (__ahbl >> __w_half) + (__albh >> __w_half);
-    __hi += __ahbl_albh >> __w_half;
-    __hi += ((__lo >> __w_half) < (__ahbl_albh & __lo_mask));
+    result_type __ahbl_albh  = ((__ahbl & __lo_mask) + (__albh & __lo_mask));
+    result_type __hi         = __ahi * __bhi + (__ahbl >> __w_half) + (__albh >> __w_half);
+    __hi                    += __ahbl_albh >> __w_half;
+    __hi                    += ((__lo >> __w_half) < (__ahbl_albh & __lo_mask));
 
     return ::cuda::std::pair{__hi & max(), __lo & max()};
   }

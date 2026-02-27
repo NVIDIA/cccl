@@ -413,9 +413,9 @@ public:
     int __thread_zeroes    = 0;
     for (int __i = __group.thread_rank(); __i < __sketch.size(); __i += __group.size())
     {
-      const auto __reg = __sketch[__i];
-      __thread_sum += __fp_type{1} / static_cast<__fp_type>(1u << __reg);
-      __thread_zeroes += __reg == 0;
+      const auto __reg  = __sketch[__i];
+      __thread_sum     += __fp_type{1} / static_cast<__fp_type>(1u << __reg);
+      __thread_zeroes  += __reg == 0;
     }
 
     // warp reduce Z and V
@@ -467,7 +467,7 @@ public:
     // geometric mean computation + count registers with 0s
     for (const auto __reg : __host_sketch_buf)
     {
-      __sum += __fp_type{1} / static_cast<__fp_type>(1ull << __reg);
+      __sum    += __fp_type{1} / static_cast<__fp_type>(1ull << __reg);
       __zeroes += __reg == 0;
     }
 

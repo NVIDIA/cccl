@@ -830,8 +830,8 @@ private:
       {
         __validate_fill_character(*__begin);
 
-        __fill_.__data[0] = *__begin;
-        __begin += 2;
+        __fill_.__data[0]  = *__begin;
+        __begin           += 2;
         return true;
       }
     }

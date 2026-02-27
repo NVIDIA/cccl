@@ -441,8 +441,8 @@ __populate_left_bitset(_RandomAccessIterator __first, _Compare __comp, _ValueTyp
   _RandomAccessIterator __iter = __first;
   for (int __j = 0; __j < __detail::__block_size;)
   {
-    bool __comp_result = !__comp(*__iter, __pivot);
-    __left_bitset |= (static_cast<uint64_t>(__comp_result) << __j);
+    bool __comp_result  = !__comp(*__iter, __pivot);
+    __left_bitset      |= (static_cast<uint64_t>(__comp_result) << __j);
     __j++;
     ++__iter;
   }
@@ -459,8 +459,8 @@ __populate_right_bitset(_RandomAccessIterator __lm1, _Compare __comp, _ValueType
   _RandomAccessIterator __iter = __lm1;
   for (int __j = 0; __j < __detail::__block_size;)
   {
-    bool __comp_result = __comp(*__iter, __pivot);
-    __right_bitset |= (static_cast<uint64_t>(__comp_result) << __j);
+    bool __comp_result  = __comp(*__iter, __pivot);
+    __right_bitset     |= (static_cast<uint64_t>(__comp_result) << __j);
     __j++;
     --__iter;
   }
@@ -504,8 +504,8 @@ _CCCL_API void __bitset_partition_partial_blocks(
     _RandomAccessIterator __iter = __first;
     for (int __j = 0; __j < __l_size; __j++)
     {
-      bool __comp_result = !__comp(*__iter, __pivot);
-      __left_bitset |= (static_cast<uint64_t>(__comp_result) << __j);
+      bool __comp_result  = !__comp(*__iter, __pivot);
+      __left_bitset      |= (static_cast<uint64_t>(__comp_result) << __j);
       ++__iter;
     }
   }
@@ -516,14 +516,14 @@ _CCCL_API void __bitset_partition_partial_blocks(
     _RandomAccessIterator __iter = __lm1;
     for (int __j = 0; __j < __r_size; __j++)
     {
-      bool __comp_result = __comp(*__iter, __pivot);
-      __right_bitset |= (static_cast<uint64_t>(__comp_result) << __j);
+      bool __comp_result  = __comp(*__iter, __pivot);
+      __right_bitset     |= (static_cast<uint64_t>(__comp_result) << __j);
       --__iter;
     }
   }
   ::cuda::std::__swap_bitmap_pos<_AlgPolicy, _RandomAccessIterator>(__first, __lm1, __left_bitset, __right_bitset);
   __first += (__left_bitset == 0) ? __l_size : 0;
-  __lm1 -= (__right_bitset == 0) ? __r_size : 0;
+  __lm1   -= (__right_bitset == 0) ? __r_size : 0;
 }
 
 template <class _AlgPolicy, class _RandomAccessIterator>
@@ -538,9 +538,9 @@ _CCCL_API void __swap_bitmap_pos_within(
     // order.
     while (__left_bitset != 0)
     {
-      difference_type __tz_left = __detail::__block_size - 1 - ::cuda::std::countl_zero(__left_bitset);
-      __left_bitset &= (static_cast<uint64_t>(1) << __tz_left) - 1;
-      _RandomAccessIterator __it = __first + __tz_left;
+      difference_type __tz_left   = __detail::__block_size - 1 - ::cuda::std::countl_zero(__left_bitset);
+      __left_bitset              &= (static_cast<uint64_t>(1) << __tz_left) - 1;
+      _RandomAccessIterator __it  = __first + __tz_left;
       if (__it != __lm1)
       {
         _Ops::iter_swap(__it, __lm1);
@@ -555,9 +555,9 @@ _CCCL_API void __swap_bitmap_pos_within(
     // order.
     while (__right_bitset != 0)
     {
-      difference_type __tz_right = __detail::__block_size - 1 - ::cuda::std::countl_zero(__right_bitset);
-      __right_bitset &= (static_cast<uint64_t>(1) << __tz_right) - 1;
-      _RandomAccessIterator __it = __lm1 - __tz_right;
+      difference_type __tz_right  = __detail::__block_size - 1 - ::cuda::std::countl_zero(__right_bitset);
+      __right_bitset             &= (static_cast<uint64_t>(1) << __tz_right) - 1;
+      _RandomAccessIterator __it  = __lm1 - __tz_right;
       if (__it != __first)
       {
         _Ops::iter_swap(__it, __first);
@@ -655,7 +655,7 @@ __bitset_partition(_RandomAccessIterator __first, _RandomAccessIterator __last, 
     // Only advance the iterator if all the elements that need to be moved to
     // other side were moved.
     __first += (__left_bitset == 0) ? difference_type(__detail::__block_size) : difference_type(0);
-    __lm1 -= (__right_bitset == 0) ? difference_type(__detail::__block_size) : difference_type(0);
+    __lm1   -= (__right_bitset == 0) ? difference_type(__detail::__block_size) : difference_type(0);
   }
   // Now, we have a less-than a block worth of elements on at least one of the
   // sides.

@@ -377,8 +377,8 @@ public:
   _CCCL_API friend constexpr auto operator+(const zip_transform_iterator& __iter, difference_type __n)
     _CCCL_TRAILING_REQUIRES(zip_transform_iterator)(_Constraints::__all_random_access)
   {
-    auto __rhs = __iter;
-    __rhs += __n;
+    auto __rhs  = __iter;
+    __rhs      += __n;
     return __rhs;
   }
 
@@ -399,8 +399,8 @@ public:
   _CCCL_API friend constexpr auto operator-(const zip_transform_iterator& __iter, difference_type __n)
     _CCCL_TRAILING_REQUIRES(zip_transform_iterator)(_Constraints::__all_random_access)
   {
-    auto __rhs = __iter;
-    __rhs -= __n;
+    auto __rhs  = __iter;
+    __rhs      -= __n;
     return __rhs;
   }
 

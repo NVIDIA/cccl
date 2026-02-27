@@ -249,8 +249,8 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
         (local_sum = warp_reduce_t{temp_storage}.Reduce(regTmpStates[idx].value, scan_op, warp_right_aggregates_count);))
 
       // We never initialized sumExclusiveCtaCur when starting look ahead at tile 0
-      sumExclusiveCtaCur = idxTileCur == 0 ? local_sum : scan_op(sumExclusiveCtaCur, local_sum);
-      idxTileCur += warp_right_aggregates_count;
+      sumExclusiveCtaCur  = idxTileCur == 0 ? local_sum : scan_op(sumExclusiveCtaCur, local_sum);
+      idxTileCur         += warp_right_aggregates_count;
 
       // we can only continue on the next 32 tile states, if we consumed all 32 of this iteration
       if (warp_right_aggregates_count < 32)

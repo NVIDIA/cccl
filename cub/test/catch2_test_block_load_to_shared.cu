@@ -147,8 +147,8 @@ __global__ void kernel_dyn_smem_dst(InputPointerT input, OutputIteratorT output,
   auto token = block_load2sh.Commit();
   block_load2sh.Wait(::cuda::std::move(token));
 
-  for (int idx = cub::RowMajorTid(ThreadsInBlockX, ThreadsInBlockY, ThreadsInBlockZ); idx < num_items;
-       idx += ThreadsInBlock)
+  for (int idx  = cub::RowMajorTid(ThreadsInBlockX, ThreadsInBlockY, ThreadsInBlockZ); idx < num_items;
+       idx     += ThreadsInBlock)
   {
     output[idx] = dst[idx];
   }

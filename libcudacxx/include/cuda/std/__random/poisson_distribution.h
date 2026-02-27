@@ -197,9 +197,9 @@ public:
             // Inline exponential distribution: -log(1 - U) where U ~ Uniform(0,1)
             __e =
               -::cuda::std::log(1.0 - ::cuda::std::generate_canonical<double, numeric_limits<double>::digits>(__urng));
-            __u = __urd(__urng);
+            __u  = __urd(__urng);
             __u += __u - 1;
-            __t = 1.8 + (__u < 0 ? -__e : __e);
+            __t  = 1.8 + (__u < 0 ? -__e : __e);
           } while (__t <= -.6744);
           __tx             = ::cuda::std::trunc(__pr.__mean_ + __pr.__s_ * __t);
           __difmuk         = __pr.__mean_ - __tx;
@@ -215,9 +215,9 @@ public:
         }
         else
         {
-          double __del = .8333333E-1 / __tx;
-          __del -= 4.8 * __del * __del * __del;
-          double __v = __difmuk / __tx;
+          double __del  = .8333333E-1 / __tx;
+          __del        -= 4.8 * __del * __del * __del;
+          double __v    = __difmuk / __tx;
           if (::cuda::std::abs(__v) > 0.25)
           {
             __px = __tx * ::cuda::std::log(1 + __v) - __difmuk - __del;

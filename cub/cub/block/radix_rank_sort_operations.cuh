@@ -431,7 +431,7 @@ struct digit_f
         const ::cuda::std::uint32_t mask = (1 << bits_to_copy) - 1;
         dst                              = dst | (((ordered_src >> src_bit_start) & mask) << dst_bit_start);
 
-        num_bits -= bits_to_copy;
+        num_bits      -= bits_to_copy;
         dst_bit_start += bits_to_copy;
       }
       src_bit_start = 0;

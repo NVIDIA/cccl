@@ -62,7 +62,7 @@ TEMPLATE_TEST_CASE_METHOD(
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      auto mr2 = mr;
+      auto mr2            = mr;
       expected.new_count += is_big;
       ++expected.copy_count;
       ++expected.object_count;
@@ -71,7 +71,7 @@ TEMPLATE_TEST_CASE_METHOD(
       ++expected.equal_to_count;
       CHECK(this->counts == expected);
 
-      auto mr3 = std::move(mr);
+      auto mr3             = std::move(mr);
       expected.move_count += !is_big; // for big resources, move is a pointer swap
       CHECK(this->counts == expected);
       CHECK((mr2 == mr3));
@@ -223,8 +223,8 @@ TEMPLATE_TEST_CASE_METHOD(
       cuda::mr::synchronous_resource_ref<::cuda::mr::host_accessible, get_data> ref{test};
       CHECK(this->counts == expected);
 
-      cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr = ref;
-      expected.new_count += is_big;
+      cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr  = ref;
+      expected.new_count                                                           += is_big;
       ++expected.object_count;
       ++expected.copy_count;
       CHECK(this->counts == expected);
@@ -257,8 +257,8 @@ TEMPLATE_TEST_CASE_METHOD(
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr2 = mr;
-      expected.new_count += is_big;
+      cuda::mr::any_synchronous_resource<::cuda::mr::host_accessible, get_data> mr2  = mr;
+      expected.new_count                                                            += is_big;
       ++expected.object_count;
       ++expected.copy_count;
       CHECK(this->counts == expected);

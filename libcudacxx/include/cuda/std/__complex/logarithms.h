@@ -39,17 +39,17 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // 0.5 * log1p on [-0.25, 0.5]:
 [[nodiscard]] _CCCL_API inline float __internal_unsafe_log1p_poly(float __x) noexcept
 {
-  float __log1p_poly = 0.5f * -4.50736098e-2f;
-  __log1p_poly       = ::cuda::std::fmaf(__log1p_poly, __x, 0.5f * 0.10464530f);
-  __log1p_poly       = ::cuda::std::fmaf(__log1p_poly, __x, 0.5f * -0.13162985f);
-  __log1p_poly       = ::cuda::std::fmaf(__log1p_poly, __x, 0.5f * 0.14478821f);
-  __log1p_poly       = ::cuda::std::fmaf(__log1p_poly, __x, 0.5f * -0.16647165f);
-  __log1p_poly       = ::cuda::std::fmaf(__log1p_poly, __x, 0.5f * 0.19990806f);
-  __log1p_poly       = ::cuda::std::fmaf(__log1p_poly, __x, 0.5f * -0.25000098f);
-  __log1p_poly       = ::cuda::std::fmaf(__log1p_poly, __x, 0.5f * 0.33333451f);
-  __log1p_poly       = ::cuda::std::fmaf(__log1p_poly, __x, 0.5f * -0.5f);
-  __log1p_poly       = ::cuda::std::fmaf(__log1p_poly, __x, 0.5f * 1.0f);
-  __log1p_poly *= __x;
+  float __log1p_poly  = 0.5f * -4.50736098e-2f;
+  __log1p_poly        = ::cuda::std::fmaf(__log1p_poly, __x, 0.5f * 0.10464530f);
+  __log1p_poly        = ::cuda::std::fmaf(__log1p_poly, __x, 0.5f * -0.13162985f);
+  __log1p_poly        = ::cuda::std::fmaf(__log1p_poly, __x, 0.5f * 0.14478821f);
+  __log1p_poly        = ::cuda::std::fmaf(__log1p_poly, __x, 0.5f * -0.16647165f);
+  __log1p_poly        = ::cuda::std::fmaf(__log1p_poly, __x, 0.5f * 0.19990806f);
+  __log1p_poly        = ::cuda::std::fmaf(__log1p_poly, __x, 0.5f * -0.25000098f);
+  __log1p_poly        = ::cuda::std::fmaf(__log1p_poly, __x, 0.5f * 0.33333451f);
+  __log1p_poly        = ::cuda::std::fmaf(__log1p_poly, __x, 0.5f * -0.5f);
+  __log1p_poly        = ::cuda::std::fmaf(__log1p_poly, __x, 0.5f * 1.0f);
+  __log1p_poly       *= __x;
 
   return __log1p_poly;
 }
@@ -57,29 +57,29 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // 0.5 * log1p on [-0.25, 0.5]:
 [[nodiscard]] _CCCL_API inline double __internal_unsafe_log1p_poly(double __x) noexcept
 {
-  double __log1p_poly = 0.5 * -7.09111630733153322503e-3;
-  __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 2.66022308034025677103e-2);
-  __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * -4.72224506011362787916e-2);
-  __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 5.65972221291394378406e-2);
-  __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * -5.77824005018098968423e-2);
-  __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 5.89181707234033569254e-2);
-  __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * -6.22470356657013820789e-2);
-  __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 6.66071144648464480431e-2);
-  __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * -7.143929943708668406366e-2);
-  __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 7.692821470788910320771e-2);
-  __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * -8.33332949182035986890e-2);
-  __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 9.09088791817835584208e-2);
-  __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * -9.99999883706452485921e-2);
-  __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 0.11111111583539913517);
-  __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * -0.12500000038299266536);
-  __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 0.14285714280067426940);
-  __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * -0.16666666666197160751);
-  __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 0.20000000000032358560);
-  __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * -0.25000000000001904032);
-  __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 0.33333333333333270421);
-  __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * -0.5);
-  __log1p_poly        = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 1.0);
-  __log1p_poly *= __x;
+  double __log1p_poly  = 0.5 * -7.09111630733153322503e-3;
+  __log1p_poly         = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 2.66022308034025677103e-2);
+  __log1p_poly         = ::cuda::std::fma(__log1p_poly, __x, 0.5 * -4.72224506011362787916e-2);
+  __log1p_poly         = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 5.65972221291394378406e-2);
+  __log1p_poly         = ::cuda::std::fma(__log1p_poly, __x, 0.5 * -5.77824005018098968423e-2);
+  __log1p_poly         = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 5.89181707234033569254e-2);
+  __log1p_poly         = ::cuda::std::fma(__log1p_poly, __x, 0.5 * -6.22470356657013820789e-2);
+  __log1p_poly         = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 6.66071144648464480431e-2);
+  __log1p_poly         = ::cuda::std::fma(__log1p_poly, __x, 0.5 * -7.143929943708668406366e-2);
+  __log1p_poly         = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 7.692821470788910320771e-2);
+  __log1p_poly         = ::cuda::std::fma(__log1p_poly, __x, 0.5 * -8.33332949182035986890e-2);
+  __log1p_poly         = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 9.09088791817835584208e-2);
+  __log1p_poly         = ::cuda::std::fma(__log1p_poly, __x, 0.5 * -9.99999883706452485921e-2);
+  __log1p_poly         = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 0.11111111583539913517);
+  __log1p_poly         = ::cuda::std::fma(__log1p_poly, __x, 0.5 * -0.12500000038299266536);
+  __log1p_poly         = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 0.14285714280067426940);
+  __log1p_poly         = ::cuda::std::fma(__log1p_poly, __x, 0.5 * -0.16666666666197160751);
+  __log1p_poly         = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 0.20000000000032358560);
+  __log1p_poly         = ::cuda::std::fma(__log1p_poly, __x, 0.5 * -0.25000000000001904032);
+  __log1p_poly         = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 0.33333333333333270421);
+  __log1p_poly         = ::cuda::std::fma(__log1p_poly, __x, 0.5 * -0.5);
+  __log1p_poly         = ::cuda::std::fma(__log1p_poly, __x, 0.5 * 1.0);
+  __log1p_poly        *= __x;
 
   return __log1p_poly;
 }
@@ -186,7 +186,7 @@ template <class _Tp>
   {
     __max_reduced *= _Tp(2.0);
     __min_reduced *= _Tp(2.0);
-    __exp -= 1;
+    __exp         -= 1;
   }
 
   // hypot(__max_reduced, __min_reduced) is now ~1.0, and we now want log(hypot())).
@@ -219,15 +219,15 @@ template <class _Tp>
   // C = 2: log1p = ln(1/2) + log1p(1 + 2*x)
   if (__hypot_sq_scaled < _Tp(-0.25))
   {
-    __hypot_sq_scaled = ::cuda::std::fma(_Tp(2.0), __hypot_sq_scaled, _Tp(1.0));
-    __exp_d -= _Tp(0.5);
+    __hypot_sq_scaled  = ::cuda::std::fma(_Tp(2.0), __hypot_sq_scaled, _Tp(1.0));
+    __exp_d           -= _Tp(0.5);
   }
 
   // C = 0.5: log1p = ln(2) + log1p(0.5 + 0.5*x)
   if (__hypot_sq_scaled >= _Tp(0.5))
   {
-    __hypot_sq_scaled = ::cuda::std::fma(_Tp(0.5), __hypot_sq_scaled, _Tp(-0.5));
-    __exp_d += _Tp(0.5);
+    __hypot_sq_scaled  = ::cuda::std::fma(_Tp(0.5), __hypot_sq_scaled, _Tp(-0.5));
+    __exp_d           += _Tp(0.5);
   }
 
   // __hypot_sq_scaled is now in [-0.25, 0.5], we can use a log1p polynomial estimate.

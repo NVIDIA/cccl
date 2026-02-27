@@ -2151,8 +2151,8 @@ inline void backend_ctx_untyped::impl::print_logical_data_summary() const
 
   for (const auto& [id, data_impl] : logical_data_ids)
   {
-    size_t footprint = data_impl.dinterface->data_footprint();
-    total_footprint += footprint;
+    size_t footprint  = data_impl.dinterface->data_footprint();
+    total_footprint  += footprint;
 
     ::std::string symbol = data_impl.get_symbol();
     data_summary[symbol][footprint]++;

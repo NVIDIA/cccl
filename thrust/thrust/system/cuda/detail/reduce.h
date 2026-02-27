@@ -310,8 +310,8 @@ struct ReduceAgent
       // Read first item
       if ((IS_FIRST_TILE) && (thread_offset < valid_items))
       {
-        thread_aggregate = load_it[block_offset + thread_offset];
-        thread_offset += BLOCK_THREADS;
+        thread_aggregate  = load_it[block_offset + thread_offset];
+        thread_offset    += BLOCK_THREADS;
       }
 
       // Continue reading items (block-striped)

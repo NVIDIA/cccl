@@ -61,8 +61,8 @@ public:
       get_pointer() = reinterpret_cast<T*>(malloc(sizeof(T) + alignof(T)));
     });
 
-    auto ptr = reinterpret_cast<cuda::std::uintptr_t>(get_pointer());
-    ptr += alignof(T) - ptr % alignof(T);
+    auto ptr  = reinterpret_cast<cuda::std::uintptr_t>(get_pointer());
+    ptr      += alignof(T) - ptr % alignof(T);
     return reinterpret_cast<T*>(ptr);
   }
 

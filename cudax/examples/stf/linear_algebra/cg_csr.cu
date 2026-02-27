@@ -209,8 +209,8 @@ void cg(csr_matrix& A, vector& X, vector& B)
   vector R    = B;
 
   // R = R - A*X
-  auto Ax = SPMV(A, X);
-  R -= Ax;
+  auto Ax  = SPMV(A, X);
+  R       -= Ax;
 
   vector P = R;
 

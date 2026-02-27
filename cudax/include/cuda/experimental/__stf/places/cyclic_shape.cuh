@@ -186,9 +186,9 @@ public:
     size_t total_positions = 1;
     for (auto i : each(0, dimensions))
     {
-      auto begin  = begins[i]; // included
-      auto end    = ends[i]; // excluded
-      auto stride = strides[i];
+      auto begin       = begins[i]; // included
+      auto end         = ends[i]; // excluded
+      auto stride      = strides[i];
       total_positions *= (end - begin + stride - 1) / stride;
     }
     // The first invalid position is index with "total_positions", even if there is no entry in the range

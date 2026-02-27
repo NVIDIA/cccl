@@ -58,8 +58,8 @@ struct input_iterator_t
 
   __device__ input_iterator_t operator+(difference_type diff) const
   {
-    input_iterator_t result = *this;
-    result += diff;
+    input_iterator_t result  = *this;
+    result                  += diff;
     return result;
   }
 

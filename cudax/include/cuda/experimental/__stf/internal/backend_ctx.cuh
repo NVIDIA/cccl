@@ -305,7 +305,7 @@ protected:
         ::std::pair<int, int> nodes     = e.first;
         ::std::pair<size_t, size_t> res = e.second;
         fprintf(stderr, "\t%d->%d : cnt %zu (%zu bytes)\n", nodes.first, nodes.second, res.first, res.second);
-        total_cnt += res.first;
+        total_cnt   += res.first;
         total_bytes += res.second;
       }
 

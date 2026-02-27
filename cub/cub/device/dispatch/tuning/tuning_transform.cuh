@@ -328,10 +328,10 @@ struct policy_selector
     bool all_value_types_have_power_of_two_size = ::cuda::is_power_of_two(output.value_type_size);
     for (const auto& input : inputs)
     {
-      all_inputs_contiguous &= input.is_contiguous;
+      all_inputs_contiguous            &= input.is_contiguous;
       all_input_values_trivially_reloc &= input.value_type_is_trivially_relocatable;
       // the vectorized kernel supports mixing contiguous and non-contiguous iterators
-      can_memcpy_contiguous_inputs &= !input.is_contiguous || input.value_type_is_trivially_relocatable;
+      can_memcpy_contiguous_inputs           &= !input.is_contiguous || input.value_type_is_trivially_relocatable;
       all_value_types_have_power_of_two_size &= ::cuda::is_power_of_two(input.value_type_size);
     }
     const bool can_memcpy_all_inputs = all_inputs_contiguous && all_input_values_trivially_reloc;

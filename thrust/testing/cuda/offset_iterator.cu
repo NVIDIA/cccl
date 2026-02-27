@@ -102,8 +102,8 @@ __global__ void TestOffsetIteratorDevice(thrust::offset_iterator<device_only_ite
   // access
   assert(*iter == 1);
 
-  auto iter2 = iter;
-  iter2 += 3;
+  auto iter2  = iter;
+  iter2      += 3;
   assert(*iter2 == 1);
 
   // difference

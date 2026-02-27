@@ -23,11 +23,11 @@ __host__ __device__ constexpr bool test()
   cuda::tabulate_output_iterator iter1{func, 10};
   cuda::tabulate_output_iterator iter2{func, 10};
   assert(iter1 == iter2);
-  iter1 -= 0;
-  *iter1 = 10;
+  iter1  -= 0;
+  *iter1  = 10;
   assert(iter1 == iter2);
-  iter1 -= 5;
-  *iter1 = 5;
+  iter1  -= 5;
+  *iter1  = 5;
   assert(iter1 != iter2);
   assert(iter1 == (iter2 - 5));
 

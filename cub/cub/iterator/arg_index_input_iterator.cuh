@@ -220,8 +220,8 @@ public:
   /// Normalize
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void normalize()
   {
-    itr += offset;
-    offset = 0;
+    itr    += offset;
+    offset  = 0;
   }
 
 #if !_CCCL_COMPILER(NVRTC)

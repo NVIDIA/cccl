@@ -58,8 +58,8 @@ struct linear_congruential_engine_discard_implementation<std::uint32_t, a, 0, m>
       }
 
       // move to the next bit of the exponent, square (and mod) the base accordingly
-      z >>= 1;
-      multiplier = (multiplier * multiplier) % modulus;
+      z          >>= 1;
+      multiplier   = (multiplier * multiplier) % modulus;
     }
 
     state = static_cast<std::uint32_t>((multiplier_to_z * state) % modulus);

@@ -173,9 +173,9 @@ void TestSetIntersectionMultiset(const size_t n)
   // restrict elements to [min,13)
   for (typename thrust::host_vector<T>::iterator i = vec.begin(); i != vec.end(); ++i)
   {
-    int tmp = static_cast<int>(*i);
-    tmp %= 13;
-    *i = static_cast<T>(tmp);
+    int tmp  = static_cast<int>(*i);
+    tmp     %= 13;
+    *i       = static_cast<T>(tmp);
   }
 
   thrust::host_vector<T> h_a(vec.begin(), vec.begin() + n);

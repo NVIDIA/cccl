@@ -110,16 +110,16 @@ _CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
   if (::cuda::std::fabs(a) >= THRESH || ::cuda::std::fabs(b) >= THRESH)
   {
     /* Scale to avoid overflow. */
-    a *= 0.25;
-    b *= 0.25;
-    scale = 1;
+    a     *= 0.25;
+    b     *= 0.25;
+    scale  = 1;
   }
   else if (::cuda::std::fabs(a) <= low_thresh && ::cuda::std::fabs(b) <= low_thresh)
   {
     /* Scale to avoid underflow. */
-    a *= 4.0;
-    b *= 4.0;
-    scale = 2;
+    a     *= 4.0;
+    b     *= 4.0;
+    scale  = 2;
   }
 
   /* Algorithm 312, CACM vol 10, Oct 1967. */

@@ -231,81 +231,81 @@ public:
 
   _CCCL_HOST_DEVICE derived_type& operator+=(value_type const& rhs)
   {
-    value_type tmp = *this;
-    tmp += rhs;
-    *this = tmp;
+    value_type tmp  = *this;
+    tmp            += rhs;
+    *this           = tmp;
     return derived();
   }
 
   derived_type& operator-=(value_type const& rhs)
   {
-    value_type tmp = *this;
-    tmp -= rhs;
-    *this = tmp;
+    value_type tmp  = *this;
+    tmp            -= rhs;
+    *this           = tmp;
     return derived();
   }
 
   derived_type& operator*=(value_type const& rhs)
   {
-    value_type tmp = *this;
-    tmp *= rhs;
-    *this = tmp;
+    value_type tmp  = *this;
+    tmp            *= rhs;
+    *this           = tmp;
     return derived();
   }
 
   derived_type& operator/=(value_type const& rhs)
   {
-    value_type tmp = *this;
-    tmp /= rhs;
-    *this = tmp;
+    value_type tmp  = *this;
+    tmp            /= rhs;
+    *this           = tmp;
     return derived();
   }
 
   derived_type& operator%=(value_type const& rhs)
   {
-    value_type tmp = *this;
-    tmp %= rhs;
-    *this = tmp;
+    value_type tmp  = *this;
+    tmp            %= rhs;
+    *this           = tmp;
     return derived();
   }
 
   derived_type& operator<<=(value_type const& rhs)
   {
-    value_type tmp = *this;
-    tmp <<= rhs;
-    *this = tmp;
+    value_type tmp   = *this;
+    tmp            <<= rhs;
+    *this            = tmp;
     return derived();
   }
 
   derived_type& operator>>=(value_type const& rhs)
   {
-    value_type tmp = *this;
-    tmp >>= rhs;
-    *this = tmp;
+    value_type tmp   = *this;
+    tmp            >>= rhs;
+    *this            = tmp;
     return derived();
   }
 
   derived_type& operator&=(value_type const& rhs)
   {
-    value_type tmp = *this;
-    tmp &= rhs;
-    *this = tmp;
+    value_type tmp  = *this;
+    tmp            &= rhs;
+    *this           = tmp;
     return derived();
   }
 
   derived_type& operator|=(value_type const& rhs)
   {
-    value_type tmp = *this;
-    tmp |= rhs;
-    *this = tmp;
+    value_type tmp  = *this;
+    tmp            |= rhs;
+    *this           = tmp;
     return derived();
   }
 
   derived_type& operator^=(value_type const& rhs)
   {
-    value_type tmp = *this;
-    tmp ^= rhs;
-    *this = tmp;
+    value_type tmp  = *this;
+    tmp            ^= rhs;
+    *this           = tmp;
     return derived();
   }
 

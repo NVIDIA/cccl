@@ -321,7 +321,7 @@ struct DispatchSegmentedRadixSort
       if (invocation_index + 1 < num_invocations)
       {
         begin_offsets_current_it += num_current_segments;
-        end_offsets_current_it += num_current_segments;
+        end_offsets_current_it   += num_current_segments;
       }
 
       // Sync the stream if specified to flush runtime errors
@@ -479,7 +479,7 @@ struct DispatchSegmentedRadixSort
         }
 
         // Invert selectors and update current bit
-        d_keys_remaining_passes.selector ^= 1;
+        d_keys_remaining_passes.selector   ^= 1;
         d_values_remaining_passes.selector ^= 1;
       }
 

@@ -374,7 +374,7 @@ struct AgentUniqueByKey
     // Do not count any out-of-bounds selections
     if constexpr (IS_LAST_TILE)
     {
-      int num_discount = ITEMS_PER_TILE - num_tile_items;
+      int num_discount     = ITEMS_PER_TILE - num_tile_items;
       num_tile_selections -= num_discount;
     }
     num_selections = num_tile_selections;
@@ -489,9 +489,9 @@ struct AgentUniqueByKey
 
     if constexpr (IS_LAST_TILE)
     {
-      int num_discount = ITEMS_PER_TILE - num_tile_items;
+      int num_discount     = ITEMS_PER_TILE - num_tile_items;
       num_tile_selections -= num_discount;
-      num_selections -= num_discount;
+      num_selections      -= num_discount;
     }
 
     __syncthreads();

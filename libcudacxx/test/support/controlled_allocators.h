@@ -98,7 +98,7 @@ struct AllocController
   {
     ++alive;
     ++alloc_count;
-    alive_size += s;
+    alive_size     += s;
     allocated_size += s;
     last_pointer = last_alloc_pointer = p;
     last_size = last_alloc_size = s;
@@ -109,7 +109,7 @@ struct AllocController
   {
     --alive;
     ++dealloc_count;
-    alive_size -= s;
+    alive_size       -= s;
     deallocated_size += s;
     last_pointer = last_dealloc_pointer = p;
     last_size = last_dealloc_size = s;
@@ -464,8 +464,8 @@ private:
 
   static std::size_t alloc_size(std::size_t s)
   {
-    std::size_t bytes = (s + BlockSize - 1) & ~(BlockSize - 1);
-    bytes += BlockSize;
+    std::size_t bytes  = (s + BlockSize - 1) & ~(BlockSize - 1);
+    bytes             += BlockSize;
     assert(bytes % BlockSize == 0);
     return bytes;
   }

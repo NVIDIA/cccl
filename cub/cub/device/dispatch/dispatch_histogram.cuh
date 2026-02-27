@@ -235,9 +235,9 @@ struct dispatch_histogram
       if (num_row_pixels * NUM_CHANNELS == row_stride_samples)
       {
         // Treat as a single linear array of samples
-        num_row_pixels *= num_rows;
-        num_rows           = 1;
-        row_stride_samples = num_row_pixels * NUM_CHANNELS;
+        num_row_pixels     *= num_rows;
+        num_rows            = 1;
+        row_stride_samples  = num_row_pixels * NUM_CHANNELS;
       }
 
       // Get grid dimensions, trying to keep total blocks ~histogram_sweep_occupancy

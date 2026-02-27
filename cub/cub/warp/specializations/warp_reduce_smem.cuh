@@ -317,7 +317,7 @@ struct WarpReduceSmem
           // Tail-segmented.  Simply propagate flag status
           if (!flag_status)
           {
-            input = reduction_op(input, peer_addend);
+            input        = reduction_op(input, peer_addend);
             flag_status |= peer_flag_status;
           }
         }

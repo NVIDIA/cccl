@@ -177,8 +177,8 @@ calculate_kernel_state_sizes(size_t iter_size, size_t user_size, size_t user_ali
       min_size += user_align - alignment;
     }
     // Capture offset where user function state begins
-    user_op_offset = min_size;
-    min_size += user_size;
+    user_op_offset  = min_size;
+    min_size       += user_size;
   }
 
   return {min_size, user_op_offset};

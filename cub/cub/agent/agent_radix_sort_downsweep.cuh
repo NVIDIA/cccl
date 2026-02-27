@@ -567,9 +567,9 @@ struct AgentRadixSortDownsweep
       int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
       if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
-        bin_offset[track] -= exclusive_digit_prefix[track];
-        temp_storage.keys_and_offsets.relative_bin_offsets[bin_idx] = bin_offset[track];
-        bin_offset[track] += inclusive_digit_prefix[track];
+        bin_offset[track]                                           -= exclusive_digit_prefix[track];
+        temp_storage.keys_and_offsets.relative_bin_offsets[bin_idx]  = bin_offset[track];
+        bin_offset[track]                                           += inclusive_digit_prefix[track];
       }
     }
 

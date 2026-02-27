@@ -667,7 +667,7 @@ _CCCL_API inline constexpr _Tp __constexpr_scalbn(_Tp __x, int __exp)
     else
     {
       ++__exp;
-      __exp = -__exp;
+      __exp   = -__exp;
       __mult /= numeric_limits<_Tp>::radix;
     }
 
@@ -675,8 +675,8 @@ _CCCL_API inline constexpr _Tp __constexpr_scalbn(_Tp __x, int __exp)
     {
       if (!(__exp & 1))
       {
-        __mult *= __mult;
-        __exp >>= 1;
+        __mult  *= __mult;
+        __exp  >>= 1;
       }
       else
       {

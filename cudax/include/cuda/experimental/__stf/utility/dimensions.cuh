@@ -494,10 +494,10 @@ public:
     CUDASTF_NO_DEVICE_STACK
     return make_tuple_indexwise<dimensions>([&](auto i) {
       // included
-      const ::std::ptrdiff_t begin_i  = get_begin(i);
-      const ::std::ptrdiff_t extent_i = get_extent(i);
-      auto result                     = begin_i + (index % extent_i);
-      index /= extent_i;
+      const ::std::ptrdiff_t begin_i   = get_begin(i);
+      const ::std::ptrdiff_t extent_i  = get_extent(i);
+      auto result                      = begin_i + (index % extent_i);
+      index                           /= extent_i;
       return result;
     });
     CUDASTF_NO_DEVICE_STACK

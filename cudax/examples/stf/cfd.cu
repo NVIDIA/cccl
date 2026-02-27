@@ -195,8 +195,8 @@ double deltasq(context& ctx, logical_data<slice<double, 2>> lnewarr, logical_dat
   ctx.parallel_for(lnewarr.shape(), ldsq.reduce(reducer::sum<double>{}), lnewarr.read(), loldarr.read())
       .set_symbol("deltasq")
       ->*[] __device__(size_t i, size_t j, auto& dsq, auto newarr, auto oldarr) {
-            double tmp = newarr(i, j) - oldarr(i, j);
-            dsq += tmp * tmp;
+            double tmp  = newarr(i, j) - oldarr(i, j);
+            dsq        += tmp * tmp;
           };
 
   return ctx.wait(ldsq);

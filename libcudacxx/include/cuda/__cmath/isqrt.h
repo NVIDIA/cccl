@@ -61,8 +61,8 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
   {
     if (__uv >= __ret + __bit)
     {
-      __uv -= __ret + __bit;
-      __ret = (__ret >> 1) + __bit;
+      __uv  -= __ret + __bit;
+      __ret  = (__ret >> 1) + __bit;
     }
     else
     {

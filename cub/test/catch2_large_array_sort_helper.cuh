@@ -284,7 +284,7 @@ struct large_array_sort_helper
                   h_sorted_values.begin() + summary.index + run_size,
                   static_cast<ValueType>(i));
 
-        i += run_size;
+        i             += run_size;
         summary.index += run_size;
         summary.count -= run_size;
         if (summary.count == 0)

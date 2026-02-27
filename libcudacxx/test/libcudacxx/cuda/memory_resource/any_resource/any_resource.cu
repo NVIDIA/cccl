@@ -53,7 +53,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
       ++expected.move_count;
       CHECK(this->counts == expected);
 
-      auto mr2 = mr;
+      auto mr2            = mr;
       expected.new_count += is_big;
       ++expected.copy_count;
       ++expected.object_count;
@@ -62,7 +62,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
       ++expected.equal_to_count;
       CHECK(this->counts == expected);
 
-      auto mr3 = std::move(mr);
+      auto mr3             = std::move(mr);
       expected.move_count += !is_big; // for big resources, move is a pointer swap
       CHECK(this->counts == expected);
       CHECK(mr2 == mr3);

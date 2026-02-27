@@ -391,10 +391,10 @@ public:
         }
       }
 
-      std::size_t descriptor_size = (std::max) (sizeof(block_descriptor), m_options.alignment);
-      std::size_t block_size      = bytes + descriptor_size;
-      block_size += m_options.alignment - block_size % m_options.alignment;
-      std::size_t chunk_size = block_size * n;
+      std::size_t descriptor_size  = (std::max) (sizeof(block_descriptor), m_options.alignment);
+      std::size_t block_size       = bytes + descriptor_size;
+      block_size                  += m_options.alignment - block_size % m_options.alignment;
+      std::size_t chunk_size       = block_size * n;
 
       void_ptr allocated = m_upstream->do_allocate(chunk_size + sizeof(chunk_descriptor), m_options.alignment);
       chunk_descriptor_ptr chunk =

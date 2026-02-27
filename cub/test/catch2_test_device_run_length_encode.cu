@@ -319,8 +319,8 @@ try
 
   constexpr std::size_t uint32_max = cuda::std::numeric_limits<std::uint32_t>::max();
 
-  std::size_t random_range = GENERATE_COPY(take(1, random((1 << 20), (1 << 22))));
-  random_range += (random_range % 2);
+  std::size_t random_range  = GENERATE_COPY(take(1, random((1 << 20), (1 << 22))));
+  random_range             += (random_range % 2);
   const std::size_t num_items =
     (sizeof(offset_type) == 8) ? uint32_max + random_range : cuda::std::numeric_limits<offset_type>::max();
 

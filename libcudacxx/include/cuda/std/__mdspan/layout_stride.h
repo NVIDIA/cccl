@@ -213,8 +213,8 @@ public:
       index_type __stride = 1;
       for (rank_type __r = __rank_ - 1; __r > rank_type{0}; __r--)
       {
-        __strides()[__r] = __stride;
-        __stride *= extents().extent(__r);
+        __strides()[__r]  = __stride;
+        __stride         *= extents().extent(__r);
       }
       __strides()[0] = __stride;
     }

@@ -157,8 +157,8 @@ public:
         j++;
       }
 
-      data_place place  = grid_pos_to_place(p);
-      size_t alloc_size = j * alloc_granularity_bytes;
+      data_place place                    = grid_pos_to_place(p);
+      size_t alloc_size                   = j * alloc_granularity_bytes;
       bytes_per_place[place.to_string()] += alloc_size;
 
       meta.emplace_back(mv(place), alloc_size, i * block_size_bytes);
@@ -401,7 +401,7 @@ private:
     }
 
     // Track statistics
-    stats.total_samples += nsamples;
+    stats.total_samples    += nsamples;
     stats.matching_samples += max_cnt;
 
     // ::std::cout << "GOT BEST POS for offset " << linearized_index << " -> " << max_pos.string() << ::std::endl;

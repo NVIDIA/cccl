@@ -159,7 +159,7 @@ struct ChunkToMat
     for (int i = 1; i < n_bits; ++i)
     {
       (void) i;
-      m = Zp_matmul((_bits & 1) ? _1 : _0, m, m_p);
+      m       = Zp_matmul((_bits & 1) ? _1 : _0, m, m_p);
       _bits >>= 1;
     }
 

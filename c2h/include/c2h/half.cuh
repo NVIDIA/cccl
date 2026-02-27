@@ -108,13 +108,13 @@ struct half_t
         if (shift < -14)
         { /* denormal */
           ir |= ia >> (-1 - shift);
-          ia = ia << (32 - (-1 - shift));
+          ia  = ia << (32 - (-1 - shift));
         }
         else
         { /* normal */
           ir |= ia >> (24 - 11);
-          ia = ia << (32 - (24 - 11));
-          ir = static_cast<uint16_t>(ir + ((14 + shift) << 10));
+          ia  = ia << (32 - (24 - 11));
+          ir  = static_cast<uint16_t>(ir + ((14 + shift) << 10));
         }
         /* IEEE-754 round to nearest of even */
         if ((ia > 0x80000000) || ((ia == 0x80000000) && (ir & 1)))
@@ -147,7 +147,7 @@ struct half_t
     {
       // normal
       exp += 112;
-      f = (sign << 31) | (exp << 23) | (mantissa << 13);
+      f    = (sign << 31) | (exp << 23) | (mantissa << 13);
     }
     else if (exp == 0)
     {
@@ -161,7 +161,7 @@ struct half_t
           exp--;
         }
         mantissa &= 0x3ff;
-        f = (sign << 31) | (exp << 23) | (mantissa << 13);
+        f         = (sign << 31) | (exp << 23) | (mantissa << 13);
       }
       else if (sign)
       {

@@ -1023,9 +1023,9 @@ struct BlockRadixRankMatchEarlyCounts
           _CCCL_PRAGMA_UNROLL_FULL()
           for (int j_warp = 0; j_warp < BLOCK_WARPS; ++j_warp)
           {
-            int warp_offset             = s.warp_offsets[j_warp][bin];
-            s.warp_offsets[j_warp][bin] = bins[u];
-            bins[u] += warp_offset;
+            int warp_offset              = s.warp_offsets[j_warp][bin];
+            s.warp_offsets[j_warp][bin]  = bins[u];
+            bins[u]                     += warp_offset;
           }
         }
       }

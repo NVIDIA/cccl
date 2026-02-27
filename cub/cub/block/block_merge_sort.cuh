@@ -425,8 +425,8 @@ public:
     // each thread has sorted keys
     // merge sort keys in shared memory
     //
-    for (int target_merged_threads_number = 2; target_merged_threads_number <= NumThreads;
-         target_merged_threads_number *= 2)
+    for (int target_merged_threads_number  = 2; target_merged_threads_number <= NumThreads;
+         target_merged_threads_number     *= 2)
     {
       const int merged_threads_number = target_merged_threads_number / 2;
       const int mask                  = target_merged_threads_number - 1;

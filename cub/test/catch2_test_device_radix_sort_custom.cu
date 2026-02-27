@@ -59,7 +59,7 @@ std::bitset<bits_per_pair_t> to_bitset(c2h::custom_type_t<Ps...>& key, int begin
 {
   std::bitset<bits_per_pair_t> bits(key.key);
   bits <<= bits_per_size_t;
-  bits |= key.val;
+  bits  |= key.val;
 
   for (int bit = 0; bit < begin_bit; bit++)
   {
@@ -77,10 +77,10 @@ std::bitset<bits_per_pair_t> to_bitset(c2h::custom_type_t<Ps...>& key, int begin
 template <template <typename> class... Ps>
 void from_bitset(std::bitset<bits_per_pair_t> bits, c2h::custom_type_t<Ps...>& pair)
 {
-  pair.key = (bits >> bits_per_size_t).to_ullong();
-  bits <<= bits_per_size_t;
-  bits >>= bits_per_size_t;
-  pair.val = bits.to_ullong();
+  pair.key   = (bits >> bits_per_size_t).to_ullong();
+  bits     <<= bits_per_size_t;
+  bits     >>= bits_per_size_t;
+  pair.val   = bits.to_ullong();
 }
 
 static c2h::host_vector<key> get_striped_keys(c2h::host_vector<key> keys, int begin_bit, int end_bit)

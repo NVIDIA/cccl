@@ -324,29 +324,29 @@ private:
 
     if (is_binned_index_zero())
     {
-      M        = primary(0);
-      ftype qd = x * compression;
-      auto& ql = get_bit_representation(qd);
-      ql |= 1;
-      qd += M;
-      primary(0) = qd;
-      M -= qd;
-      M *= expansion * 0.5;
-      x += M;
-      x += M;
+      M           = primary(0);
+      ftype qd    = x * compression;
+      auto& ql    = get_bit_representation(qd);
+      ql         |= 1;
+      qd         += M;
+      primary(0)  = qd;
+      M          -= qd;
+      M          *= expansion * 0.5;
+      x          += M;
+      x          += M;
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 1; i < Fold - 1; i++)
       {
-        M  = primary(i);
-        qd = x;
-        ql |= 1;
-        qd += M;
-        primary(i) = qd;
-        M -= qd;
-        x += M;
+        M           = primary(i);
+        qd          = x;
+        ql         |= 1;
+        qd         += M;
+        primary(i)  = qd;
+        M          -= qd;
+        x          += M;
       }
-      qd = x;
-      ql |= 1;
+      qd                   = x;
+      ql                  |= 1;
       primary((Fold - 1)) += qd;
     }
     else
@@ -356,16 +356,16 @@ private:
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < Fold - 1; i++)
       {
-        M  = primary(i);
-        qd = x;
-        ql |= 1;
-        qd += M;
-        primary(i) = qd;
-        M -= qd;
-        x += M;
+        M           = primary(i);
+        qd          = x;
+        ql         |= 1;
+        qd         += M;
+        primary(i)  = qd;
+        M          -= qd;
+        x          += M;
       }
-      qd = x;
-      ql |= 1;
+      qd                   = x;
+      ql                  |= 1;
       primary((Fold - 1)) += qd;
     }
   }
@@ -386,7 +386,7 @@ private:
 
       tmp_renorml &= ~(1ull << (mant_dig - 3));
       tmp_renorml |= 1ull << (mant_dig - 2);
-      primary(i) = tmp_renormd;
+      primary(i)   = tmp_renormd;
     }
   }
 
@@ -444,7 +444,7 @@ private:
           continue;
         }
         primary(i) += x.primary((i + shift)) - binned_bins(X_index + i + shift);
-        carry(i) += x.carry((i + shift));
+        carry(i)   += x.carry((i + shift));
       }
     }
     else if (shift == 0)
@@ -454,7 +454,7 @@ private:
       for (int i = 0; i < Fold; i++)
       {
         primary(i) += x.primary(i) - binned_bins(i + X_index);
-        carry(i) += x.carry(i);
+        carry(i)   += x.carry(i);
       }
     }
 
@@ -476,12 +476,12 @@ private:
         Y += carry(0) * ((binned_bins(0 + X_index) / 6.0) * scale_down * expansion);
         Y += carry(1) * ((binned_bins(1 + X_index) / 6.0) * scale_down);
         Y += (primary(0) - binned_bins(0 + X_index)) * scale_down * expansion;
-        i = 2;
+        i  = 2;
       }
       else
       {
         Y += carry(0) * ((binned_bins(0 + X_index) / 6.0) * scale_down);
-        i = 1;
+        i  = 1;
       }
       for (; i < scaled; i++)
       {
@@ -533,12 +533,12 @@ private:
          * static_cast<double>(expansion);
       Y += static_cast<double>(carry(1)) * static_cast<double>(binned_bins(1 + X_index) / 6.0);
       Y += static_cast<double>(primary(0) - binned_bins(0 + X_index)) * static_cast<double>(expansion);
-      i = 2;
+      i  = 2;
     }
     else
     {
       Y += static_cast<double>(carry(0)) * static_cast<double>((binned_bins(0 + X_index) / 6.0));
-      i = 1;
+      i  = 1;
     }
     for (; i < Fold; i++)
     {

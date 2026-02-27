@@ -89,8 +89,8 @@ c2h::host_vector<MessageT> compute_reference(const c2h::device_vector<MessageT>&
   MessageT aggregate = h_reference[0];
   for (std::size_t i = 1; i < reference.size(); i++)
   {
-    aggregate += h_reference[i];
-    h_reference[i] = aggregate;
+    aggregate      += h_reference[i];
+    h_reference[i]  = aggregate;
   }
 
   return reference;

@@ -108,8 +108,8 @@ int main(int, char**)
   runtime_test<__uint128_t>();
 
   {
-    __uint128_t val = 128;
-    val <<= 32;
+    __uint128_t val   = 128;
+    val             <<= 32;
     assert(cuda::std::bit_width(val - 1) == 39);
     assert(cuda::std::bit_width(val) == 40);
     assert(cuda::std::bit_width(val + 1) == 40);

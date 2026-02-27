@@ -127,9 +127,9 @@ static __global__ void MonteCarloOneBlockPerOption(
       _CCCL_PRAGMA_UNROLL(8)
       for (int i = iSum; i < pathN; i += SUM_N)
       {
-        real r         = curand_normal(&localState);
-        real callValue = endCallValue(S, X, r, MuByT, VBySqrtT);
-        sumCall.Expected += callValue;
+        real r              = curand_normal(&localState);
+        real callValue      = endCallValue(S, X, r, MuByT, VBySqrtT);
+        sumCall.Expected   += callValue;
         sumCall.Confidence += callValue * callValue;
       }
 

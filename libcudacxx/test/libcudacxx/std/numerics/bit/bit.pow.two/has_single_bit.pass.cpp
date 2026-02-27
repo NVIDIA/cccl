@@ -95,8 +95,8 @@ int main(int, char**)
   runtime_test<__uint128_t>();
 
   {
-    __uint128_t val = 128;
-    val <<= 32;
+    __uint128_t val   = 128;
+    val             <<= 32;
     assert(!cuda::std::has_single_bit(val - 1));
     assert(cuda::std::has_single_bit(val));
     assert(!cuda::std::has_single_bit(val + 1));

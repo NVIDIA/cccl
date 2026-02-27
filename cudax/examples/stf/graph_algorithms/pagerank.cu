@@ -42,9 +42,9 @@ __device__ void calculating_pagerank(
   float rank_sum = 0.0;
   for (int i = loffsets[idx]; i < loffsets[idx + 1]; i++)
   {
-    int neighbor   = lnonzeros[i];
-    int out_degree = loffsets[neighbor + 1] - loffsets[neighbor];
-    rank_sum += lpage_rank[neighbor] / out_degree;
+    int neighbor    = lnonzeros[i];
+    int out_degree  = loffsets[neighbor + 1] - loffsets[neighbor];
+    rank_sum       += lpage_rank[neighbor] / out_degree;
   }
   lnew_page_rank[idx] = 0.85 * rank_sum + (1.0 - 0.85) * init_rank;
 }

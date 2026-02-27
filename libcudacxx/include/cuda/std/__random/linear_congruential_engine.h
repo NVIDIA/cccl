@@ -68,12 +68,12 @@ struct __lce_ta<__A, __C, __M, ~uint64_t{0}, true>
   [[nodiscard]] _CCCL_API static constexpr result_type next(result_type __x) noexcept
   {
     // Schrage's algorithm
-    constexpr result_type __q = __M / __A;
-    constexpr result_type __r = __M % __A;
-    const result_type __t0    = __A * (__x % __q);
-    const result_type __t1    = __r * (__x / __q);
-    __x                       = __t0 + (__t0 < __t1) * __M - __t1;
-    __x += __C - (__x >= __M - __C) * __M;
+    constexpr result_type __q  = __M / __A;
+    constexpr result_type __r  = __M % __A;
+    const result_type __t0     = __A * (__x % __q);
+    const result_type __t1     = __r * (__x / __q);
+    __x                        = __t0 + (__t0 < __t1) * __M - __t1;
+    __x                       += __C - (__x >= __M - __C) * __M;
     return __x;
   }
 };
@@ -126,12 +126,12 @@ struct __lce_ta<_Ap, _Cp, _Mp, ~uint32_t{0}, true>
     constexpr auto __C = static_cast<result_type>(_Cp);
     constexpr auto __M = static_cast<result_type>(_Mp);
     // Schrage's algorithm
-    constexpr result_type __q = __M / __A;
-    constexpr result_type __r = __M % __A;
-    const result_type __t0    = __A * (__x % __q);
-    const result_type __t1    = __r * (__x / __q);
-    __x                       = __t0 + (__t0 < __t1) * __M - __t1;
-    __x += __C - (__x >= __M - __C) * __M;
+    constexpr result_type __q  = __M / __A;
+    constexpr result_type __r  = __M % __A;
+    const result_type __t0     = __A * (__x % __q);
+    const result_type __t1     = __r * (__x / __q);
+    __x                        = __t0 + (__t0 < __t1) * __M - __t1;
+    __x                       += __C - (__x >= __M - __C) * __M;
     return __x;
   }
 };
@@ -292,8 +292,8 @@ public:
         {
           __cur_plus = ((__cur_mult + 1) * __cur_plus) % modulus;
         }
-        __cur_mult = (__cur_mult * __cur_mult) % modulus;
-        __z >>= 1;
+        __cur_mult   = (__cur_mult * __cur_mult) % modulus;
+        __z        >>= 1;
       }
       __x_ = (__acc_mult * __x_ + __acc_plus) % modulus;
     }

@@ -54,8 +54,8 @@ __equal_range(_Iter __first, _Sent __last, const _Tp& __value, _Compare&& __comp
     _Iter __mid     = _IterOps<_AlgPolicy>::next(__first, __half_len);
     if (::cuda::std::invoke(__comp, ::cuda::std::invoke(__proj, *__mid), __value))
     {
-      __first = ++__mid;
-      __len -= __half_len + 1;
+      __first  = ++__mid;
+      __len   -= __half_len + 1;
     }
     else if (::cuda::std::invoke(__comp, __value, ::cuda::std::invoke(__proj, *__mid)))
     {

@@ -438,7 +438,7 @@ public:
       else
       {
         product_sizes *= extent(i - 1);
-        strides[i] = product_sizes;
+        strides[i]     = product_sizes;
       }
     });
   }
@@ -463,7 +463,7 @@ public:
     for (size_t i = 1; i < rank(); ++i)
     {
       product_sizes *= extent(i - 1);
-      strides[i] = product_sizes;
+      strides[i]     = product_sizes;
     }
   }
 
@@ -609,8 +609,8 @@ public:
     // for (::std::ptrdiff_t i = _dimensions - 1; i >= 0; i--)
     for (auto i : each(0, shape_of::rank()))
     {
-      coordinates[i] = index % extent(i);
-      index /= extent(i);
+      coordinates[i]  = index % extent(i);
+      index          /= extent(i);
     }
 
     return ::std::apply(

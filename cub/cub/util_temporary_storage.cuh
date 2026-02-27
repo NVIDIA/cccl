@@ -59,8 +59,8 @@ template <int NumAllocations>
   size_t bytes_needed = 0;
   for (int i = 0; i < NumAllocations; ++i)
   {
-    allocation_offsets[i] = bytes_needed;
-    bytes_needed += ::cuda::round_up(allocation_sizes[i], +align_bytes);
+    allocation_offsets[i]  = bytes_needed;
+    bytes_needed          += ::cuda::round_up(allocation_sizes[i], +align_bytes);
   }
   bytes_needed += align_bytes - 1;
 

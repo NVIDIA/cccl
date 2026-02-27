@@ -342,8 +342,8 @@ struct AgentReduceImpl
     // Read first item
     if (IsFirstTile && (thread_offset < valid_items))
     {
-      thread_aggregate = transform_op(d_wrapped_in[block_offset + thread_offset]);
-      thread_offset += NumThreads;
+      thread_aggregate  = transform_op(d_wrapped_in[block_offset + thread_offset]);
+      thread_offset    += NumThreads;
     }
 
     // Continue reading items (block-striped)
@@ -351,8 +351,8 @@ struct AgentReduceImpl
     {
       InputT item(d_wrapped_in[block_offset + thread_offset]);
 
-      thread_aggregate = reduction_op(thread_aggregate, transform_op(item));
-      thread_offset += NumThreads;
+      thread_aggregate  = reduction_op(thread_aggregate, transform_op(item));
+      thread_offset    += NumThreads;
     }
   }
 

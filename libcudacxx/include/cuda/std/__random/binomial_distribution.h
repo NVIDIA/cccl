@@ -139,9 +139,9 @@ public:
       bool __break = true;
       if (__rd >= 1)
       {
-        __pd *= __rd / (__pr.__odds_ratio_ * (__pr.__t_ - __rd + 1));
-        __u -= __pd;
-        __break = false;
+        __pd    *= __rd / (__pr.__odds_ratio_ * (__pr.__t_ - __rd + 1));
+        __u     -= __pd;
+        __break  = false;
         if (__u < 0)
         {
           return __rd - 1;
@@ -154,9 +154,9 @@ public:
       ++__ru;
       if (__ru <= __pr.__t_)
       {
-        __pu *= (__pr.__t_ - __ru + 1) * __pr.__odds_ratio_ / __ru;
-        __u -= __pu;
-        __break = false;
+        __pu    *= (__pr.__t_ - __ru + 1) * __pr.__odds_ratio_ / __ru;
+        __u     -= __pu;
+        __break  = false;
         if (__u < 0)
         {
           return __ru;

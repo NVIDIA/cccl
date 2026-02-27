@@ -298,9 +298,9 @@ struct DispatchSegmentedReduce
 
         if (invocation_index + 1 < num_invocations)
         {
-          d_out += num_current_segments;
+          d_out           += num_current_segments;
           d_begin_offsets += num_current_segments;
-          d_end_offsets += num_current_segments;
+          d_end_offsets   += num_current_segments;
         }
 
         // Sync the stream if specified to flush runtime errors
@@ -566,9 +566,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
     if (invocation_index + 1 < num_invocations)
     {
-      d_out += num_current_segments;
+      d_out           += num_current_segments;
       d_begin_offsets += num_current_segments;
-      d_end_offsets += num_current_segments;
+      d_end_offsets   += num_current_segments;
     }
 
     // Sync the stream if specified to flush runtime errors

@@ -186,7 +186,7 @@ C2H_TEST("Transform works with misaligned input with integral types", "[transfor
   const std::vector<T> output(num_items, 0);
   pointer_t<T> input_ptr_aligned(input);
   pointer_t<T> input_ptr = input;
-  input_ptr.ptr += 1; // misalign by 1 from the guaranteed alignment of cudaMalloc, to maybe trip vectorized path
+  input_ptr.ptr  += 1; // misalign by 1 from the guaranteed alignment of cudaMalloc, to maybe trip vectorized path
   input_ptr.size -= 1;
   pointer_t<T> output_ptr(output);
 
@@ -216,7 +216,7 @@ C2H_TEST("Transform works with misaligned output with integral types", "[transfo
   pointer_t<T> input_ptr(input);
   pointer_t<T> output_ptr_aligned(output);
   pointer_t<T> output_ptr = output;
-  output_ptr.ptr += 1; // misalign by 1 from the guaranteed alignment of cudaMalloc, to maybe trip vectorized path
+  output_ptr.ptr  += 1; // misalign by 1 from the guaranteed alignment of cudaMalloc, to maybe trip vectorized path
   output_ptr.size -= 1;
 
   auto& build_cache    = get_cache<Transform_MisalignedOutput_IntegerTypes_Fixture_Tag>();

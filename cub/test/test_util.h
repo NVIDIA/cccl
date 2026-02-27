@@ -393,9 +393,9 @@ void RandomBits(K& key, int entropy_reduction = 0, int begin_bit = 0, int end_bi
     {
       int current_bit = j * WORD_BYTES * 8;
 
-      unsigned int word = 0xffffffff;
-      word &= 0xffffffff << ::cuda::std::max(0, begin_bit - current_bit);
-      word &= 0xffffffff >> ::cuda::std::max(0, (current_bit + (WORD_BYTES * 8)) - end_bit);
+      unsigned int word  = 0xffffffff;
+      word              &= 0xffffffff << ::cuda::std::max(0, begin_bit - current_bit);
+      word              &= 0xffffffff >> ::cuda::std::max(0, (current_bit + (WORD_BYTES * 8)) - end_bit);
 
       for (int i = 0; i <= entropy_reduction; i++)
       {
@@ -636,8 +636,8 @@ inline std::ostream& operator<<(std::ostream& os, __uint128_t val)
   do
   {
     digit--;
-    *digit = ascii[val % 10];
-    val /= 10;
+    *digit  = ascii[val % 10];
+    val    /= 10;
   } while (val != 0);
 
   for (; digit != buffer + max_digits; digit++)
@@ -1317,9 +1317,9 @@ void InitializeSegments(OffsetT num_items, int num_segments, OffsetT* h_segment_
   {
     h_segment_offsets[i] = offset;
 
-    OffsetT segment_length = RandomValue((expected_segment_length * 2) + 1);
-    offset += segment_length;
-    offset = ::cuda::std::min(offset, num_items);
+    OffsetT segment_length  = RandomValue((expected_segment_length * 2) + 1);
+    offset                 += segment_length;
+    offset                  = ::cuda::std::min(offset, num_items);
   }
   h_segment_offsets[num_segments] = num_items;
 
