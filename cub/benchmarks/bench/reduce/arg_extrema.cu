@@ -14,6 +14,7 @@
 // %RANGE% TUNE_ITEMS_PER_VEC_LOAD_POW2 ipv 1:2:1
 
 #if !TUNE_BASE
+#  error "Cannot tune until https://github.com/NVIDIA/cccl/pull/7807 is merged"
 #  define TUNE_ITEMS_PER_VEC_LOAD (1 << TUNE_ITEMS_PER_VEC_LOAD_POW2)
 template <typename AccumT, typename OffsetT>
 struct policy_hub_t

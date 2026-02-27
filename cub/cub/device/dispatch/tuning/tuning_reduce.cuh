@@ -323,7 +323,7 @@ struct policy_hub
     using ReducePolicy =
       decltype(select_agent_policy<sm100_tuning<AccumT,
                                                 OffsetT,
-                                                classify_op<ReductionOpT>(),
+                                                classify_op<ReductionOpT>,
                                                 classify_offset_size<OffsetT>(),
                                                 classify_accum_size<AccumT>()>>(0));
 
