@@ -9,8 +9,6 @@
 
 #include <cub/config.cuh>
 
-#include <cstdint>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -26,6 +24,8 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
+
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 

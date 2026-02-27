@@ -5,8 +5,6 @@
 
 #include <cub/config.cuh>
 
-#include <cstdint>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -22,6 +20,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/cstdint>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -31,7 +31,7 @@ struct compare_key_prefix_op
 {
   SortKeyT prefix_mask;
   SortKeyT key_prefix;
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(SortKeyT sort_key) const
+  [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE constexpr bool operator()(SortKeyT sort_key) const noexcept
   {
     return (sort_key & prefix_mask) == (key_prefix);
   }
