@@ -35,7 +35,6 @@ KEY_TYPE_MAP = INTEGER_TYPES
 VALUE_TYPE_MAP = INTEGER_TYPES
 
 # Entropy values from C++ benchmark (pairs uses fewer values than keys)
-ENTROPY_VALUES = ["1.000", "0.201"]
 
 
 def generate_values(num_elements, dtype, stream):
@@ -119,7 +118,7 @@ if __name__ == "__main__":
     b.add_string_axis("KeyT", list(KEY_TYPE_MAP.keys()))
     b.add_string_axis("ValueT", list(VALUE_TYPE_MAP.keys()))
     b.add_int64_power_of_two_axis("Elements", range(16, 29, 4))  # [16, 20, 24, 28]
-    b.add_string_axis("Entropy", ENTROPY_VALUES)
+    b.add_string_axis("Entropy", ["1.000", "0.201"])
     # Note: OffsetT axis from C++ is not exposed in Python API
 
     bench.run_all_benchmarks(sys.argv)

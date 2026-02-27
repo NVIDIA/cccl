@@ -29,8 +29,6 @@ import cuda.bench as bench
 from cuda.compute import make_histogram_even
 
 # From C++ benchmark
-BINS_VALUES = [32, 128, 2048, 2097152]
-ENTROPY_VALUES = ["0.201", "1.000"]
 
 
 def get_upper_level(dtype, num_bins, num_elements):
@@ -182,7 +180,7 @@ if __name__ == "__main__":
 
     b.add_string_axis("SampleT", list(TYPE_MAP.keys()))
     b.add_int64_power_of_two_axis("Elements{io}", range(16, 29, 4))  # [16, 20, 24, 28]
-    b.add_int64_axis("Bins", BINS_VALUES)  # [32, 128, 2048, 2097152]
-    b.add_string_axis("Entropy", ENTROPY_VALUES)
+    b.add_int64_axis("Bins", [32, 128, 2048, 2097152])  # [32, 128, 2048, 2097152]
+    b.add_string_axis("Entropy", ["0.201", "1.000"])
 
     bench.run_all_benchmarks(sys.argv)

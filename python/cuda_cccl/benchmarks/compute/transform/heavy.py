@@ -25,8 +25,6 @@ from utils import as_cupy_stream
 import cuda.bench as bench
 import cuda.compute
 
-HEAVINESS_VALUES = (32, 64, 128, 256)
-
 
 def _heavy_op_32(data):
     reg = lang.local.array(shape=32, dtype=numba.uint32)
@@ -140,6 +138,6 @@ def bench_heavy(state: bench.State):
 if __name__ == "__main__":
     b = bench.register(bench_heavy)
     b.set_name("heavy")
-    b.add_string_axis("Heaviness", [str(v) for v in HEAVINESS_VALUES])
+    b.add_string_axis("Heaviness", [str(v) for v in (32, 64, 128, 256)])
     b.add_int64_power_of_two_axis("Elements", range(16, 33, 4))
     bench.run_all_benchmarks(sys.argv)

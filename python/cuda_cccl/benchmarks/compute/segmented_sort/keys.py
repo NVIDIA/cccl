@@ -36,8 +36,6 @@ from utils import (
 import cuda.bench as bench
 from cuda.compute import SortOrder, make_segmented_sort
 
-ENTROPY_VALUES = ["1.000", "0.201"]
-
 
 def run_segmented_sort(
     state: bench.State,
@@ -179,7 +177,7 @@ if __name__ == "__main__":
     b_power.add_string_axis("T", list(TYPE_MAP.keys()))
     b_power.add_int64_power_of_two_axis("Elements", range(22, 31, 4))
     b_power.add_int64_power_of_two_axis("Segments", range(12, 21, 4))
-    b_power.add_string_axis("Entropy", ENTROPY_VALUES)
+    b_power.add_string_axis("Entropy", ["1.000", "0.201"])
 
     b_small = bench.register(bench_segmented_sort_uniform)
     b_small.set_name("small")

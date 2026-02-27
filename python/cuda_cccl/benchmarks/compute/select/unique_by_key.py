@@ -34,10 +34,6 @@ KEY_TYPE_MAP = INTEGER_TYPES
 # Value types: match C++ all_types (fundamental types)
 VALUE_TYPE_MAP = TYPE_MAP
 
-# MaxSegSize values from C++ benchmark (unique_by_key.cu line 176)
-# These are powers of 2: 2^1=2, 2^4=16, 2^8=256
-MAX_SEG_SIZE_VALUES = [2, 16, 256]
-
 
 def bench_unique_by_key(state: bench.State):
     key_type_str = state.get_string("KeyT")

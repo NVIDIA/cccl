@@ -37,8 +37,6 @@ KEY_TYPE_MAP = SIGNED_TYPES
 # Value types: match C++ value_types (int8, int16, int32, int64)
 VALUE_TYPE_MAP = INTEGER_TYPES
 
-ENTROPY_VALUES = ["1.000", "0.201"]
-
 
 def bench_merge_sort_pairs(state: bench.State):
     key_type_str = state.get_string("KeyT")
@@ -117,5 +115,5 @@ if __name__ == "__main__":
     b.add_string_axis("KeyT", list(KEY_TYPE_MAP.keys()))
     b.add_string_axis("ValueT", list(VALUE_TYPE_MAP.keys()))
     b.add_int64_power_of_two_axis("Elements", range(16, 29, 4))
-    b.add_string_axis("Entropy", ENTROPY_VALUES)
+    b.add_string_axis("Entropy", ["1.000", "0.201"])
     bench.run_all_benchmarks(sys.argv)

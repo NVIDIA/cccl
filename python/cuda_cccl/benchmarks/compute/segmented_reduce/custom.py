@@ -33,10 +33,6 @@ from utils import (
 import cuda.bench as bench
 from cuda.compute import make_segmented_reduce
 
-SEGMENT_SIZES_SMALL = [2**i for i in range(0, 5)]
-SEGMENT_SIZES_MEDIUM = [2**i for i in range(5, 9)]
-SEGMENT_SIZES_LARGE = [2**i for i in range(9, 17)]
-
 
 def max_op(a, b):
     return a if a > b else b
@@ -116,18 +112,18 @@ if __name__ == "__main__":
     b_small.set_name("small")
     b_small.add_string_axis("T", list(TYPE_MAP.keys()))
     b_small.add_int64_power_of_two_axis("Elements", range(16, 29, 4))
-    b_small.add_int64_axis("SegmentSize", SEGMENT_SIZES_SMALL)
+    b_small.add_int64_axis("SegmentSize", [2**i for i in range(0, 5)])
 
     b_medium = bench.register(bench_segmented_reduce_custom)
     b_medium.set_name("medium")
     b_medium.add_string_axis("T", list(TYPE_MAP.keys()))
     b_medium.add_int64_power_of_two_axis("Elements", range(16, 29, 4))
-    b_medium.add_int64_axis("SegmentSize", SEGMENT_SIZES_MEDIUM)
+    b_medium.add_int64_axis("SegmentSize", [2**i for i in range(5, 9)])
 
     b_large = bench.register(bench_segmented_reduce_custom)
     b_large.set_name("large")
     b_large.add_string_axis("T", list(TYPE_MAP.keys()))
     b_large.add_int64_power_of_two_axis("Elements", range(16, 29, 4))
-    b_large.add_int64_axis("SegmentSize", SEGMENT_SIZES_LARGE)
+    b_large.add_int64_axis("SegmentSize", [2**i for i in range(9, 17)])
 
     bench.run_all_benchmarks(sys.argv)

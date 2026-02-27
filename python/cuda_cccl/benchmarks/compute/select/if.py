@@ -39,7 +39,6 @@ from cuda.compute import make_select
 
 # Entropy values from C++ benchmark
 # These control the selection threshold and thus how many elements are selected
-ENTROPY_VALUES = ["1.000", "0.544", "0.000"]
 
 
 def bench_select_if(state: bench.State):
@@ -129,7 +128,7 @@ if __name__ == "__main__":
 
     b.add_string_axis("T", list(TYPE_MAP.keys()))
     b.add_int64_power_of_two_axis("Elements", range(16, 29, 4))  # [16, 20, 24, 28]
-    b.add_string_axis("Entropy", ENTROPY_VALUES)
+    b.add_string_axis("Entropy", ["1.000", "0.544", "0.000"])
     # Note: InPlace axis is not exposed in Python API, so we skip it
 
     bench.run_all_benchmarks(sys.argv)

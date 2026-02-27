@@ -42,9 +42,6 @@ from cuda.compute import OpKind, make_segmented_reduce
 # - small: 2^0 to 2^4 (1, 2, 4, 8, 16)
 # - medium: 2^5 to 2^8 (32, 64, 128, 256)
 # - large: 2^9 to 2^16 (512, 1024, 2048, 4096, 8192, 16384, 32768, 65536)
-SEGMENT_SIZES_SMALL = [2**i for i in range(0, 5)]  # 1, 2, 4, 8, 16
-SEGMENT_SIZES_MEDIUM = [2**i for i in range(5, 9)]  # 32, 64, 128, 256
-SEGMENT_SIZES_LARGE = [2**i for i in range(9, 17)]  # 512 to 65536
 
 
 def bench_segmented_reduce_sum(state: bench.State):
@@ -133,20 +130,20 @@ if __name__ == "__main__":
     b_small.set_name("small")
     b_small.add_string_axis("T", list(TYPE_MAP.keys()))
     b_small.add_int64_power_of_two_axis("Elements", range(16, 29, 4))
-    b_small.add_int64_axis("SegmentSize", SEGMENT_SIZES_SMALL)
+    b_small.add_int64_axis("SegmentSize", [2**i for i in range(0, 5)])
 
     # Medium segments benchmark
     b_medium = bench.register(bench_segmented_reduce_sum)
     b_medium.set_name("medium")
     b_medium.add_string_axis("T", list(TYPE_MAP.keys()))
     b_medium.add_int64_power_of_two_axis("Elements", range(16, 29, 4))
-    b_medium.add_int64_axis("SegmentSize", SEGMENT_SIZES_MEDIUM)
+    b_medium.add_int64_axis("SegmentSize", [2**i for i in range(5, 9)])
 
     # Large segments benchmark
     b_large = bench.register(bench_segmented_reduce_sum)
     b_large.set_name("large")
     b_large.add_string_axis("T", list(TYPE_MAP.keys()))
     b_large.add_int64_power_of_two_axis("Elements", range(16, 29, 4))
-    b_large.add_int64_axis("SegmentSize", SEGMENT_SIZES_LARGE)
+    b_large.add_int64_axis("SegmentSize", [2**i for i in range(9, 17)])
 
     bench.run_all_benchmarks(sys.argv)
