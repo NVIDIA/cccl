@@ -27,8 +27,11 @@
 #include <cuda/std/__iterator/iter_move.h>
 #include <cuda/std/__iterator/iter_swap.h>
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -139,6 +142,26 @@ struct __zip_iter_move
     return __iter_move_ret<_Iterators...>{::cuda::std::ranges::iter_move(__iters)...};
   }
 };
+
+// We need this to make proxy iterators work because those might not have a working `iter_value_t`
+template <class _Iter, class = void>
+struct __zip_maybe_proxy_helper
+{
+  using reference  = decltype(*::cuda::std::declval<_Iter>());
+  using value_type = ::cuda::std::remove_reference_t<reference>;
+};
+
+template <class _Iter>
+struct __zip_maybe_proxy_helper<_Iter, ::cuda::std::void_t<::cuda::std::iter_value_t<_Iter>>>
+{
+  using reference  = ::cuda::std::iter_reference_t<_Iter>;
+  using value_type = ::cuda::std::iter_value_t<_Iter>;
+};
+
+template <class _Iter>
+using __zip_maybe_proxy_reference_t = typename __zip_maybe_proxy_helper<_Iter>::reference;
+template <class _Iter>
+using __zip_maybe_proxy_value_type_t = typename __zip_maybe_proxy_helper<_Iter>::value_type;
 
 _CCCL_END_NAMESPACE_CUDA
 

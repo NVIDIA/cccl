@@ -135,8 +135,8 @@ Example:
    #include <cuda/stream>
 
    void manage_stream_and_deallocate() {
-     cuda::stream stream1{};
-     cuda::stream stream2{};
+     cuda::stream stream1{cuda::devices[0]};
+     cuda::stream stream2{cuda::devices[0]};
      auto mr = cuda::device_default_memory_pool(cuda::devices[0]);
 
     // Allocate on stream1

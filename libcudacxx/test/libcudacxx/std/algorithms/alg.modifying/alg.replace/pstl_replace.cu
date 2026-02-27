@@ -38,51 +38,55 @@ struct not_42
   }
 };
 
+template <class Policy>
+void test_replace(const Policy& policy, thrust::device_vector<int>& input)
+{
+  { // empty should not access anything
+    cuda::std::replace(policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), 42, 1);
+  }
+
+  { // same type
+    thrust::sequence(input.begin(), input.end(), 0);
+    cuda::std::replace(policy, input.begin(), input.end(), 42, 1);
+    CHECK(thrust::none_of(input.begin(), input.end(), not_42{}));
+  }
+
+  { // convertible type
+    thrust::sequence(input.begin(), input.end(), 0);
+    cuda::std::replace(policy, input.begin(), input.end(), static_cast<short>(42), static_cast<short>(1));
+    CHECK(thrust::none_of(input.begin(), input.end(), not_42{}));
+  }
+}
+
 C2H_TEST("cuda::std::replace", "[parallel algorithm]")
 {
   thrust::device_vector<int> input(size, thrust::no_init);
 
   SECTION("with default stream")
   {
-    thrust::sequence(input.begin(), input.end(), 0);
-
     const auto policy = cuda::execution::__cub_par_unseq;
-
-    cuda::std::replace(policy, input.begin(), input.end(), 42, 1);
-    CHECK(thrust::none_of(input.begin(), input.end(), not_42{}));
+    test_replace(policy, input);
   }
 
   SECTION("with provided stream")
   {
-    thrust::sequence(input.begin(), input.end(), 0);
-
     cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::__cub_par_unseq.with_stream(stream);
-
-    cuda::std::replace(policy, input.begin(), input.end(), 42, 1);
-    CHECK(thrust::none_of(input.begin(), input.end(), not_42{}));
+    test_replace(policy, input);
   }
 
   SECTION("with provided memory_resource")
   {
-    thrust::sequence(input.begin(), input.end(), 0);
-
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
     const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource);
-
-    cuda::std::replace(policy, input.begin(), input.end(), 42, 1);
-    CHECK(thrust::none_of(input.begin(), input.end(), not_42{}));
+    test_replace(policy, input);
   }
 
   SECTION("with provided stream and memory_resource")
   {
-    thrust::sequence(input.begin(), input.end(), 0);
-
     cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource).with_stream(stream);
-
-    cuda::std::replace(policy, input.begin(), input.end(), 42, 1);
-    CHECK(thrust::none_of(input.begin(), input.end(), not_42{}));
+    test_replace(policy, input);
   }
 }

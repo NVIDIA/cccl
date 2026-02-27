@@ -74,7 +74,7 @@ struct tuning
 struct default_rfa_tuning : tuning<default_rfa_tuning>
 {
   template <class AccumT, class Offset, class OpT>
-  using fn = detail::rfa::policy_hub<AccumT, Offset, OpT>;
+  using fn = detail::rfa::policy_selector_from_types<AccumT>;
 };
 
 template <typename ExtremumOutIteratorT, typename IndexOutIteratorT>
@@ -190,10 +190,8 @@ private:
     using accum_t = ::cuda::std::
       __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
     using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
-    using dispatch_t =
-      detail::rfa::dispatch_t<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t, policy_t>;
 
-    return dispatch_t::Dispatch(
+    return detail::rfa::dispatch<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t, policy_t>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream, transform_op);
   }
 
@@ -1056,7 +1054,6 @@ public:
 
     // The value type used for the extremum
     using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
-    using InitT           = OutputExtremumT;
 
     // Reduction operation
     using ReduceOpT = cub::ArgMin;
@@ -1068,20 +1065,15 @@ public:
     auto out_it = ::cuda::make_tabulate_output_iterator(
       detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_min_out, d_index_out});
 
-    return detail::reduce::dispatch_streaming_arg_reduce_t<
-      InputIteratorT,
-      decltype(out_it),
-      PerPartitionOffsetT,
-      GlobalOffsetT,
-      ReduceOpT,
-      InitT>::Dispatch(d_temp_storage,
-                       temp_storage_bytes,
-                       d_in,
-                       out_it,
-                       static_cast<GlobalOffsetT>(num_items),
-                       ReduceOpT{},
-                       initial_value,
-                       stream);
+    return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      out_it,
+      static_cast<GlobalOffsetT>(num_items),
+      ReduceOpT{},
+      initial_value,
+      stream);
   }
 
   //! @rst
@@ -1183,7 +1175,6 @@ public:
     using GlobalOffsetT       = ::cuda::std::int64_t;
 
     using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
-    using InitT           = OutputExtremumT;
 
     // Initial value
     OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::max()};
@@ -1193,50 +1184,39 @@ public:
       detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_min_out, d_index_out});
 
     // Query the required temporary storage size
-    cudaError_t error = detail::reduce::dispatch_streaming_arg_reduce_t<
-      InputIteratorT,
-      decltype(out_it),
-      PerPartitionOffsetT,
-      GlobalOffsetT,
-      ReduceOpT,
-      InitT>::Dispatch(d_temp_storage,
-                       temp_storage_bytes,
-                       d_in,
-                       out_it,
-                       static_cast<GlobalOffsetT>(num_items),
-                       ReduceOpT{},
-                       initial_value,
-                       stream.get());
-    if (error != cudaSuccess)
+    if (const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in,
+          out_it,
+          static_cast<GlobalOffsetT>(num_items),
+          ReduceOpT{},
+          initial_value,
+          stream.get()))
     {
       return error;
     }
 
     // TODO(gevtushenko): use uninitialized buffer when it's available
-    error = CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr));
-    if (error != cudaSuccess)
+    if (const auto error =
+          CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr)))
     {
       return error;
     }
 
     // Run the algorithm
-    error = detail::reduce::dispatch_streaming_arg_reduce_t<
-      InputIteratorT,
-      decltype(out_it),
-      PerPartitionOffsetT,
-      GlobalOffsetT,
-      ReduceOpT,
-      InitT>::Dispatch(d_temp_storage,
-                       temp_storage_bytes,
-                       d_in,
-                       out_it,
-                       static_cast<GlobalOffsetT>(num_items),
-                       ReduceOpT{},
-                       initial_value,
-                       stream.get());
+    const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      out_it,
+      static_cast<GlobalOffsetT>(num_items),
+      ReduceOpT{},
+      initial_value,
+      stream.get());
 
     // Try to deallocate regardless of the error to avoid memory leaks
-    cudaError_t deallocate_error =
+    const auto deallocate_error =
       CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
 
     if (error != cudaSuccess)
@@ -1692,7 +1672,6 @@ public:
 
     // The value type used for the extremum
     using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
-    using InitT           = OutputExtremumT;
 
     // Reduction operation
     using ReduceOpT = cub::ArgMax;
@@ -1704,20 +1683,15 @@ public:
     auto out_it = ::cuda::make_tabulate_output_iterator(
       detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_max_out, d_index_out});
 
-    return detail::reduce::dispatch_streaming_arg_reduce_t<
-      InputIteratorT,
-      decltype(out_it),
-      PerPartitionOffsetT,
-      GlobalOffsetT,
-      ReduceOpT,
-      InitT>::Dispatch(d_temp_storage,
-                       temp_storage_bytes,
-                       d_in,
-                       out_it,
-                       static_cast<GlobalOffsetT>(num_items),
-                       ReduceOpT{},
-                       initial_value,
-                       stream);
+    return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      out_it,
+      static_cast<GlobalOffsetT>(num_items),
+      ReduceOpT{},
+      initial_value,
+      stream);
   }
 
   //! @rst
@@ -1946,7 +1920,6 @@ public:
     using GlobalOffsetT       = ::cuda::std::int64_t;
 
     using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
-    using InitT           = OutputExtremumT;
 
     // Initial value
     OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::lowest()};
@@ -1956,50 +1929,39 @@ public:
       detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_max_out, d_index_out});
 
     // Query the required temporary storage size
-    cudaError_t error = detail::reduce::dispatch_streaming_arg_reduce_t<
-      InputIteratorT,
-      decltype(out_it),
-      PerPartitionOffsetT,
-      GlobalOffsetT,
-      ReduceOpT,
-      InitT>::Dispatch(d_temp_storage,
-                       temp_storage_bytes,
-                       d_in,
-                       out_it,
-                       static_cast<GlobalOffsetT>(num_items),
-                       ReduceOpT{},
-                       initial_value,
-                       stream.get());
-    if (error != cudaSuccess)
+    if (const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in,
+          out_it,
+          static_cast<GlobalOffsetT>(num_items),
+          ReduceOpT{},
+          initial_value,
+          stream.get()))
     {
       return error;
     }
 
     // TODO(gevtushenko): use uninitialized buffer when it's available
-    error = CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr));
-    if (error != cudaSuccess)
+    if (const auto error =
+          CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr)))
     {
       return error;
     }
 
     // Run the algorithm
-    error = detail::reduce::dispatch_streaming_arg_reduce_t<
-      InputIteratorT,
-      decltype(out_it),
-      PerPartitionOffsetT,
-      GlobalOffsetT,
-      ReduceOpT,
-      InitT>::Dispatch(d_temp_storage,
-                       temp_storage_bytes,
-                       d_in,
-                       out_it,
-                       static_cast<GlobalOffsetT>(num_items),
-                       ReduceOpT{},
-                       initial_value,
-                       stream.get());
+    const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      out_it,
+      static_cast<GlobalOffsetT>(num_items),
+      ReduceOpT{},
+      initial_value,
+      stream.get());
 
     // Try to deallocate regardless of the error to avoid memory leaks
-    cudaError_t deallocate_error =
+    const auto deallocate_error =
       CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
 
     if (error != cudaSuccess)

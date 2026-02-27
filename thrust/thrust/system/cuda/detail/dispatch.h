@@ -16,12 +16,13 @@
 #include <thrust/detail/preprocessor.h>
 
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__exception/throw_error.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
+#include <stdexcept>
 #include <string>
 
 THRUST_NAMESPACE_BEGIN
@@ -60,10 +61,10 @@ THRUST_NAMESPACE_END
     status                              = call arguments;                                 \
   }
 
-#define _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)                           \
-  if (thrust::detail::is_negative(count))                                            \
-  {                                                                                  \
-    ::cuda::std::__throw_runtime_error("Invalid input range, passed negative size"); \
+#define _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)                          \
+  if (thrust::detail::is_negative(count))                                           \
+  {                                                                                 \
+    _CCCL_THROW(::std::runtime_error, "Invalid input range, passed negative size"); \
   }
 
 #define _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW2(count1, count2) \
@@ -86,11 +87,6 @@ THRUST_NAMESPACE_END
     _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)                            \
     _THRUST_INDEX_TYPE_DISPATCH(std::int64_t, status, call_64, count, arguments)
 
-//! Like \ref THRUST_INDEX_TYPE_DISPATCH2 but uses two counts.
-#  define THRUST_DOUBLE_INDEX_TYPE_DISPATCH2(status, call_32, call_64, count1, count2, arguments) \
-    _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW2(count1, count2)                                  \
-    _THRUST_INDEX_TYPE_DISPATCH2(std::int64_t, status, call_64, count1, count2, arguments)
-
 //! Like \ref THRUST_INDEX_TYPE_DISPATCH2 but always dispatching to uint64_t. `count` must not be negative.
 #  define THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(status, call_32, call_64, count, arguments) \
     _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)                                     \
@@ -99,27 +95,27 @@ THRUST_NAMESPACE_END
 #elif defined(THRUST_FORCE_32_BIT_OFFSET_TYPE)
 
 //! @brief Ensures that the size of the input does not overflow the offset type
-#  define _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW(index_type, count)                       \
-    if (static_cast<std::uint64_t>(count)                                                     \
-        > static_cast<std::uint64_t>(::cuda::std::numeric_limits<index_type>::max()))         \
-    {                                                                                         \
-      ::cuda::std::__throw_runtime_error(                                                     \
-        "Input size exceeds the maximum allowable value for " #index_type                     \
-        ". It was used because the macro THRUST_FORCE_32_BIT_OFFSET_TYPE was defined. "       \
-        "To handle larger input sizes, either remove this macro to dynamically dispatch "     \
-        "between 32-bit and 64-bit index types, or define THRUST_FORCE_64_BIT_OFFSET_TYPE."); \
+#  define _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW(index_type, count)                                 \
+    if (static_cast<std::uint64_t>(count)                                                               \
+        > static_cast<std::uint64_t>(::cuda::std::numeric_limits<index_type>::max()))                   \
+    {                                                                                                   \
+      _CCCL_THROW(::std::runtime_error,                                                                 \
+                  "Input size exceeds the maximum allowable value for " #index_type                     \
+                  ". It was used because the macro THRUST_FORCE_32_BIT_OFFSET_TYPE was defined. "       \
+                  "To handle larger input sizes, either remove this macro to dynamically dispatch "     \
+                  "between 32-bit and 64-bit index types, or define THRUST_FORCE_64_BIT_OFFSET_TYPE."); \
     }
 
 //! @brief Ensures that the sizes of the inputs do not overflow the offset type, but two counts
-#  define _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW2(index_type, count1, count2)             \
-    if (static_cast<std::uint64_t>(count1) + static_cast<std::uint64_t>(count2)               \
-        > static_cast<std::uint64_t>(::cuda::std::numeric_limits<index_type>::max()))         \
-    {                                                                                         \
-      ::cuda::std::__throw_runtime_error(                                                     \
-        "Input size exceeds the maximum allowable value for " #index_type                     \
-        ". It was used because the macro THRUST_FORCE_32_BIT_OFFSET_TYPE was defined. "       \
-        "To handle larger input sizes, either remove this macro to dynamically dispatch "     \
-        "between 32-bit and 64-bit index types, or define THRUST_FORCE_64_BIT_OFFSET_TYPE."); \
+#  define _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW2(index_type, count1, count2)                       \
+    if (static_cast<std::uint64_t>(count1) + static_cast<std::uint64_t>(count2)                         \
+        > static_cast<std::uint64_t>(::cuda::std::numeric_limits<index_type>::max()))                   \
+    {                                                                                                   \
+      _CCCL_THROW(::std::runtime_error,                                                                 \
+                  "Input size exceeds the maximum allowable value for " #index_type                     \
+                  ". It was used because the macro THRUST_FORCE_32_BIT_OFFSET_TYPE was defined. "       \
+                  "To handle larger input sizes, either remove this macro to dynamically dispatch "     \
+                  "between 32-bit and 64-bit index types, or define THRUST_FORCE_64_BIT_OFFSET_TYPE."); \
     }
 
 //! @brief Always dispatches to 32 bit offset version of an algorithm but throws if count would overflow
@@ -139,12 +135,6 @@ THRUST_NAMESPACE_END
     _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)                            \
     _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW(std::int32_t, count)               \
     _THRUST_INDEX_TYPE_DISPATCH(std::int32_t, status, call_32, count, arguments)
-
-//! Like \ref THRUST_INDEX_TYPE_DISPATCH2 but uses two counts.
-#  define THRUST_DOUBLE_INDEX_TYPE_DISPATCH2(status, call_32, call_64, count1, count2, arguments) \
-    _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW2(count1, count2)                                  \
-    _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW2(std::int32_t, count1, count2)                     \
-    _THRUST_INDEX_TYPE_DISPATCH2(std::int32_t, status, call_32, count1, count2, arguments)
 
 //! Like \ref THRUST_INDEX_TYPE_DISPATCH but always dispatching to uint64_t. `count` must not be negative.
 #  define THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(status, call_32, call_64, count, arguments) \
@@ -196,14 +186,6 @@ THRUST_NAMESPACE_END
       _THRUST_INDEX_TYPE_DISPATCH(std::int32_t, status, call_32, count, arguments) \
     else                                                                           \
       _THRUST_INDEX_TYPE_DISPATCH(std::int64_t, status, call_64, count, arguments)
-
-//! Like \ref THRUST_INDEX_TYPE_DISPATCH2 but uses two counts.
-#  define THRUST_DOUBLE_INDEX_TYPE_DISPATCH2(status, call_32, call_64, count1, count2, arguments) \
-    _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW2(count1, count2)                                  \
-    if _THRUST_INDEX_TYPE_DISPATCH_SELECT2 (std::int32_t, count1, count2)                         \
-      _THRUST_INDEX_TYPE_DISPATCH2(std::int32_t, status, call_32, count1, count2, arguments)      \
-    else                                                                                          \
-      _THRUST_INDEX_TYPE_DISPATCH2(std::int64_t, status, call_64, count1, count2, arguments)
 
 //! Like \ref THRUST_INDEX_TYPE_DISPATCH2 but dispatching to uint32_t and uint64_t, respectively, depending on the
 //! `count` argument. `count` must not be negative.

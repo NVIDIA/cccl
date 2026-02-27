@@ -80,6 +80,7 @@ _create_rapids_cmake_override_json() {
     echo "Replacing CCCL repo information in rapids-cmake versions.json:";
     curl -fsSL -o- "https://raw.githubusercontent.com/${rapids_cmake_upstream}/rapids-cmake/${rapids_cmake_tag}/rapids-cmake/cpm/versions.json" \
   | jq -r ".packages.CCCL *= {\"git_url\": \"${HOME}/cccl\", \"git_tag\": \"${cccl_sha}\", \"always_download\": true}" \
+  | jq -r "del(.packages.CCCL.url) | del(.packages.CCCL.url_hash)" \
   > ~/rapids-cmake-override-versions-cccl-repo.json;
 
     if test -n "${CCCL_VERSION-}"; then

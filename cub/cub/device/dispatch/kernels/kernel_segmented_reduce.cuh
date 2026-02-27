@@ -196,6 +196,15 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).segme
  *
  * @param[in] init
  *   The initial value of the reduction
+ *
+ * @param[out] d_partial_out
+ *  Pointer to store partial aggregates in two-phase reduction
+ *
+ * @param[in] full_chunk_size
+ *   The full chunk size processed by each block in two-phase reduction
+ *
+ * @param[in] blocks_per_segment
+ *   The number of blocks to be used for reducing each segment in two-phase reduction
  */
 template <typename ChainedPolicyT,
           typename InputIteratorT,
@@ -211,7 +220,10 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   OffsetT segment_size,
   int num_segments,
   ReductionOpT reduction_op,
-  InitT init)
+  InitT init,
+  AccumT* d_partial_out,
+  int full_chunk_size,
+  int blocks_per_segment)
 {
   using ActivePolicyT = typename ChainedPolicyT::ActivePolicy;
 
@@ -297,15 +309,41 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   }
   else
   {
-    const auto segment_begin = static_cast<::cuda::std::int64_t>(bid) * segment_size;
-
-    // Consume input tiles
-    AccumT block_aggregate = AgentReduceT(temp_storage.large_storage, d_in + segment_begin, reduction_op)
-                               .ConsumeRange({}, static_cast<int>(segment_size));
-
-    if (tid == 0)
+    if (d_partial_out != nullptr) // two-phase reduction with partial aggregates
     {
-      reduce::finalize_and_store_aggregate(d_out + bid, reduction_op, init, block_aggregate);
+      const auto chunk_id             = bid % blocks_per_segment;
+      const bool is_last_chunk        = chunk_id == (blocks_per_segment - 1);
+      const bool has_incomplete_chunk = (segment_size % full_chunk_size != 0);
+
+      // If the last chunk is incomplete, only process the valid portion of the segment
+      const auto chunk_size =
+        (has_incomplete_chunk && is_last_chunk) ? (segment_size % full_chunk_size) : full_chunk_size;
+
+      const auto segment_id    = bid / blocks_per_segment;
+      const auto segment_begin = static_cast<::cuda::std::int64_t>(segment_id) * segment_size;
+
+      const auto chunk_offset = chunk_id * full_chunk_size;
+      const auto chunk_begin  = segment_begin + chunk_offset;
+
+      AccumT block_aggregate =
+        AgentReduceT(temp_storage.large_storage, d_in + chunk_begin, reduction_op).ConsumeRange({}, chunk_size);
+      if (tid == 0)
+      {
+        *(d_partial_out + bid) = block_aggregate;
+      }
+    }
+    else // single-phase reduction with direct write-out of final aggregate
+    {
+      const auto segment_begin = static_cast<::cuda::std::int64_t>(bid) * segment_size;
+
+      // Consume input tiles
+      AccumT block_aggregate = AgentReduceT(temp_storage.large_storage, d_in + segment_begin, reduction_op)
+                                 .ConsumeRange({}, static_cast<int>(segment_size));
+
+      if (tid == 0)
+      {
+        reduce::finalize_and_store_aggregate(d_out + bid, reduction_op, init, block_aggregate);
+      }
     }
   }
 }

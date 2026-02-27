@@ -59,7 +59,7 @@ __get_layout_right_stride(const ::cuda::std::int64_t* __shapes, ::cuda::std::siz
     // TODO: replace with mul_overflow
     if (const auto __hi = ::cuda::mul_hi(__stride, __shapes[__i]); __hi != 0 && __hi != -1)
     {
-      _CCCL_THROW(std::invalid_argument, "shape overflow");
+      _CCCL_THROW(::std::invalid_argument, "shape overflow");
     }
     __stride *= __shapes[__i]; // TODO: check for overflow
   }
@@ -76,7 +76,7 @@ __get_layout_left_stride(const ::cuda::std::int64_t* __shapes, ::cuda::std::size
     // TODO: replace with mul_overflow
     if (const auto __hi = ::cuda::mul_hi(__stride, __shapes[__i]); __hi != 0 && __hi != -1)
     {
-      _CCCL_THROW(std::invalid_argument, "shape overflow");
+      _CCCL_THROW(::std::invalid_argument, "shape overflow");
     }
     __stride *= __shapes[__i];
   }
@@ -94,12 +94,12 @@ _CCCL_HOST_API void __validate_dlpack_strides(const ::DLTensor& __tensor, [[mayb
   if (__strides_ptr == nullptr)
   {
 #  if _CCCL_DLPACK_AT_LEAST(1, 2)
-    _CCCL_THROW(std::invalid_argument, "strides=nullptr is not supported for DLPack v1.2 and later");
+    _CCCL_THROW(::std::invalid_argument, "strides=nullptr is not supported for DLPack v1.2 and later");
 #  else
     // strides == nullptr means row-major (C-contiguous) layout
     if (__is_layout_left && __rank > 1)
     {
-      _CCCL_THROW(std::invalid_argument, "strides must be non-null for layout_left");
+      _CCCL_THROW(::std::invalid_argument, "strides must be non-null for layout_left");
     }
     else
     {
@@ -113,21 +113,21 @@ _CCCL_HOST_API void __validate_dlpack_strides(const ::DLTensor& __tensor, [[mayb
     {
       if (__strides_ptr[__pos] != ::cuda::__get_layout_right_stride(__tensor.shape, __pos, __rank))
       {
-        _CCCL_THROW(std::invalid_argument, "DLTensor strides are not compatible with layout_right");
+        _CCCL_THROW(::std::invalid_argument, "DLTensor strides are not compatible with layout_right");
       }
     }
     else if constexpr (__is_layout_left)
     {
       if (__strides_ptr[__pos] != ::cuda::__get_layout_left_stride(__tensor.shape, __pos))
       {
-        _CCCL_THROW(std::invalid_argument, "DLTensor strides are not compatible with layout_left");
+        _CCCL_THROW(::std::invalid_argument, "DLTensor strides are not compatible with layout_left");
       }
     }
     else if constexpr (__is_layout_stride)
     {
       if (__strides_ptr[__pos] <= 0)
       {
-        _CCCL_THROW(std::invalid_argument, "layout_stride requires strictly positive strides");
+        _CCCL_THROW(::std::invalid_argument, "layout_stride requires strictly positive strides");
       }
     }
   }
@@ -155,15 +155,15 @@ __to_mdspan(const ::DLTensor& __tensor)
   {
     if (cuda::std::cmp_not_equal(__tensor.ndim, _Rank))
     {
-      _CCCL_THROW(std::invalid_argument, "DLTensor rank does not match expected rank");
+      _CCCL_THROW(::std::invalid_argument, "DLTensor rank does not match expected rank");
     }
     if (!::cuda::__validate_dlpack_data_type<__element_type>(__tensor.dtype))
     {
-      _CCCL_THROW(std::invalid_argument, "DLTensor data type does not match expected type");
+      _CCCL_THROW(::std::invalid_argument, "DLTensor data type does not match expected type");
     }
     if (__tensor.data == nullptr)
     {
-      _CCCL_THROW(std::invalid_argument, "DLTensor data must be non-null");
+      _CCCL_THROW(::std::invalid_argument, "DLTensor data must be non-null");
     }
     auto __base_data           = static_cast<char*>(__tensor.data) + __tensor.byte_offset;
     auto __data                = reinterpret_cast<__element_type*>(__base_data);
@@ -172,7 +172,7 @@ __to_mdspan(const ::DLTensor& __tensor)
     // However, it always works for the supported data types.
     if (__datatype_size > 0 && !::cuda::is_aligned(__data, __datatype_size))
     {
-      _CCCL_THROW(std::invalid_argument, "DLTensor data must be aligned to the data type");
+      _CCCL_THROW(::std::invalid_argument, "DLTensor data must be aligned to the data type");
     }
     if constexpr (_Rank == 0)
     {
@@ -182,14 +182,14 @@ __to_mdspan(const ::DLTensor& __tensor)
     {
       if (__tensor.shape == nullptr)
       {
-        _CCCL_THROW(std::invalid_argument, "DLTensor shape must be non-null");
+        _CCCL_THROW(::std::invalid_argument, "DLTensor shape must be non-null");
       }
       ::cuda::std::array<::cuda::std::int64_t, _Rank> __extents_array{};
       for (::cuda::std::size_t __i = 0; __i < _Rank; ++__i)
       {
         if (__tensor.shape[__i] < 0)
         {
-          _CCCL_THROW(std::invalid_argument, "DLTensor shapes must be positive");
+          _CCCL_THROW(::std::invalid_argument, "DLTensor shapes must be positive");
         }
         __extents_array[__i] = __tensor.shape[__i];
       }
@@ -224,7 +224,7 @@ to_host_mdspan(const ::DLTensor& __tensor)
 {
   if (__tensor.device.device_type != ::kDLCPU)
   {
-    _CCCL_THROW(std::invalid_argument, "DLTensor device type must be kDLCPU for host_mdspan");
+    _CCCL_THROW(::std::invalid_argument, "DLTensor device type must be kDLCPU for host_mdspan");
   }
   using __extents_type = ::cuda::std::dims<_Rank, ::cuda::std::int64_t>;
   using __mdspan_type  = ::cuda::host_mdspan<_ElementType, __extents_type, _LayoutPolicy>;
@@ -238,7 +238,7 @@ to_device_mdspan(const ::DLTensor& __tensor)
 {
   if (__tensor.device.device_type != ::kDLCUDA)
   {
-    _CCCL_THROW(std::invalid_argument, "DLTensor device type must be kDLCUDA for device_mdspan");
+    _CCCL_THROW(::std::invalid_argument, "DLTensor device type must be kDLCUDA for device_mdspan");
   }
   using __extents_type = ::cuda::std::dims<_Rank, ::cuda::std::int64_t>;
   using __mdspan_type  = ::cuda::device_mdspan<_ElementType, __extents_type, _LayoutPolicy>;
@@ -252,7 +252,7 @@ to_managed_mdspan(const ::DLTensor& __tensor)
 {
   if (__tensor.device.device_type != ::kDLCUDAManaged)
   {
-    _CCCL_THROW(std::invalid_argument, "DLTensor device type must be kDLCUDAManaged for managed_mdspan");
+    _CCCL_THROW(::std::invalid_argument, "DLTensor device type must be kDLCUDAManaged for managed_mdspan");
   }
   using __extents_type = ::cuda::std::dims<_Rank, ::cuda::std::int64_t>;
   using __mdspan_type  = ::cuda::managed_mdspan<_ElementType, __extents_type, _LayoutPolicy>;

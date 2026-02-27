@@ -332,6 +332,7 @@ _CCCL_DIAG_SUPPRESS_NVCC(3215) // "if consteval" and "if not consteval" are not 
 #endif // _CCCL_HAS_IF_CONSTEVAL_IN_CXX20()
 
 _CCCL_DIAG_SUPPRESS_NVHPC(is_constant_evaluated_in_nonconstexpr_context)
+_CCCL_DIAG_SUPPRESS_NVHPC(if_consteval_in_nonconstexpr_function)
 
 _CCCL_DIAG_SUPPRESS_NVCC(3206) // "if consteval" and "if not consteval" are meaningless in a non-constexpr function
 _CCCL_DIAG_SUPPRESS_NVCC(3060) // call to __builtin_is_constant_evaluated appearing in a non-constexpr function always
