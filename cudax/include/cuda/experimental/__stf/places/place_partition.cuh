@@ -46,6 +46,8 @@ enum class place_partition_scope
 
 /**
  * @brief Convert a place_partition_scope value to a string (for debugging purpose)
+ * @param scope The partitioning granularity to convert
+ * @return A string representation of `scope` (e.g. "cuda_device", "green_context", "cuda_stream")
  */
 inline ::std::string place_partition_scope_to_string(place_partition_scope scope)
 {
@@ -68,17 +70,27 @@ inline ::std::string place_partition_scope_to_string(place_partition_scope scope
 /**
  * @brief Get subsets of an execution place.
  *
- * This computes a vector of execution places which are the partition of the
- * input execution place divided with a specific partitioning granularity. One
- * may partition a place into devices, or green contexts, for example.
+ * Computes a vector of execution places that partition the input place at a
+ * given granularity (see `place_partition_scope`). For example, a grid place
+ * can be partitioned into devices, or into green contexts, or into CUDA streams.
  *
- * An iterator is provided to dispatch computation over the subplaces.
+ * Use the constructors that take `async_resources_handle&` when partitioning at
+ * `cuda_stream` or `green_context` scope (stream and green-context resources
+ * are obtained from the handle). The constructors without a handle support only
+ * `cuda_device` scope. Green context scope requires CUDA 12.4 or later.
+ *
+ * Iteration over subplaces is provided via `begin()` / `end()`; `as_grid()` builds
+ * an `exec_place_grid` from the subplaces.
  */
 class place_partition
 {
 public:
-  /** @brief Partition an execution place into a vector of subplaces */
-  place_partition(async_resources_handle& handle, exec_place place, place_partition_scope scope)
+  /** @brief Partition an execution place into a vector of subplaces (with async resource handle).
+   * @param place The execution place to partition (e.g. grid or device)
+   * @param handle Handle used to obtain stream or green-context resources when scope is cuda_stream or green_context
+   * @param scope Partitioning granularity (cuda_device, green_context, or cuda_stream)
+   */
+  place_partition(exec_place place, async_resources_handle& handle, place_partition_scope scope)
   {
 #if _CCCL_CTK_BELOW(12, 4)
     _CCCL_ASSERT(scope != place_partition_scope::green_context, "Green contexts unsupported.");
@@ -86,9 +98,27 @@ public:
     compute_subplaces(handle, place, scope);
   }
 
-  /** @brief Partition a vector of execution places into a vector of subplaces */
-  place_partition(
-    async_resources_handle& handle, ::std::vector<::std::shared_ptr<exec_place>> places, place_partition_scope scope)
+  /** @brief Partition an execution place into a vector of subplaces (no async handle).
+   * Only `cuda_device` scope is supported; green_context and cuda_stream require a handle.
+   * @param place The execution place to partition
+   * @param scope Partitioning granularity (must be cuda_device when no handle is provided)
+   */
+  place_partition(exec_place place, place_partition_scope scope)
+  {
+#if _CCCL_CTK_BELOW(12, 4)
+    _CCCL_ASSERT(scope != place_partition_scope::green_context, "Green contexts need an async resource handle.");
+#endif // _CCCL_CTK_BELOW(12, 4)
+    compute_subplaces_no_handle(place, scope);
+  }
+
+  /** @brief Partition a vector of execution places into a single vector of subplaces (with async handle).
+   * @param handle Handle for stream or green-context resources when scope is cuda_stream or green_context
+   * @param places Input execution places to partition
+   * @param scope Partitioning granularity
+   */
+  place_partition(async_resources_handle& handle,
+                  const ::std::vector<::std::shared_ptr<exec_place>>& places,
+                  place_partition_scope scope)
   {
     for (const auto& place : places)
     {
@@ -96,62 +126,108 @@ public:
     }
   }
 
+  /** @brief Partition a grid of execution places into a single vector of subplaces (with async handle).
+   * @param handle Handle for stream or green-context resources when scope is cuda_stream or green_context
+   * @param grid Input execution place grid to partition
+   * @param scope Partitioning granularity
+   */
+  place_partition(async_resources_handle& handle, const exec_place_grid& grid, place_partition_scope scope)
+  {
+    ::std::vector<::std::shared_ptr<exec_place>> places;
+    const auto& grid_places = grid.get_places();
+    places.reserve(grid_places.size());
+    for (const auto& ep : grid_places)
+    {
+      places.push_back(::std::make_shared<exec_place>(ep));
+    }
+    for (const auto& place : places)
+    {
+      compute_subplaces(handle, *place, scope);
+    }
+  }
+
+  /** @brief Partition a vector of execution places into a single vector of subplaces (no async handle).
+   * Only cuda_device scope is supported.
+   * @param places Input execution places to partition
+   * @param scope Partitioning granularity (must be cuda_device)
+   */
+  place_partition(const ::std::vector<::std::shared_ptr<exec_place>>& places, place_partition_scope scope)
+  {
+    for (const auto& place : places)
+    {
+      compute_subplaces_no_handle(*place, scope);
+    }
+  }
+
   ~place_partition() = default;
 
-  // To iterate over all subplaces
-  using iterator = ::std::vector<exec_place>::iterator;
+  /** Iteration over subplaces. */
+  using iterator       = ::std::vector<exec_place>::iterator;
+  using const_iterator = ::std::vector<exec_place>::const_iterator;
+
+  /** @brief Iterator to the first subplace. @return Begin iterator. */
   iterator begin()
   {
     return sub_places.begin();
   }
+  /** @brief Past-the-end iterator for subplaces. @return End iterator. */
   iterator end()
   {
     return sub_places.end();
-    ;
+  }
+  /** @brief Const iterator to the first subplace. @return Begin const iterator. */
+  const_iterator begin() const
+  {
+    return sub_places.begin();
+  }
+  /** @brief Past-the-end const iterator. @return End const iterator. */
+  const_iterator end() const
+  {
+    return sub_places.end();
   }
 
-  /** @brief Number of subplaces in the partition */
+  /** @brief Number of subplaces in the partition. @return Size of the partition. */
   size_t size() const
   {
     return sub_places.size();
   }
 
-  /** @brief Get the i-th place */
+  /** @brief Get the i-th subplace (mutable).
+   * @param i Index in [0, size()).
+   * @return Reference to the i-th exec_place.
+   */
   exec_place& get(size_t i)
   {
     return sub_places[i];
   }
 
-  /** @brief Get the i-th place (const reference) */
+  /** @brief Get the i-th subplace (const).
+   * @param i Index in [0, size()).
+   * @return Const reference to the i-th exec_place.
+   */
   const exec_place& get(size_t i) const
   {
     return sub_places[i];
+  }
+
+  /** @brief Build an exec_place_grid from the subplaces.
+   * @return A grid view of the partitioned execution places.
+   */
+  exec_place_grid as_grid() const
+  {
+    return make_grid(sub_places);
   }
 
 private:
   /** @brief Compute the subplaces of a place at the specified granularity (scope) into the sub_places vector */
   void compute_subplaces(async_resources_handle& handle, const exec_place& place, place_partition_scope scope)
   {
-    if (place.is_grid() && scope == place_partition_scope::cuda_device)
-    {
-      exec_place_grid g = place.as_grid();
-      // Copy the vector of places
-      sub_places = g.get_places();
-      return;
-    }
-
-    if (place.is_device() && scope == place_partition_scope::cuda_device)
-    {
-      sub_places.push_back(place);
-      return;
-    }
-
     if (place.is_grid() && scope == place_partition_scope::cuda_stream)
     {
       // Recursively partition grid into devices, then into streams
-      for (auto& device_p : place_partition(handle, place, place_partition_scope::cuda_device))
+      for (auto& device_p : place_partition(place, handle, place_partition_scope::cuda_device))
       {
-        auto device_p_places = place_partition(handle, device_p, place_partition_scope::cuda_stream).sub_places;
+        auto device_p_places = place_partition(device_p, handle, place_partition_scope::cuda_stream).sub_places;
         sub_places.insert(sub_places.end(), device_p_places.begin(), device_p_places.end());
       }
       return;
@@ -174,9 +250,9 @@ private:
     if (place.is_grid() && scope == place_partition_scope::green_context)
     {
       // Recursively partition grid into devices, then into green contexts
-      for (auto& device_p : place_partition(handle, place, place_partition_scope::cuda_device))
+      for (auto& device_p : place_partition(place, handle, place_partition_scope::cuda_device))
       {
-        auto device_p_places = place_partition(handle, device_p, place_partition_scope::green_context).sub_places;
+        auto device_p_places = place_partition(device_p, handle, place_partition_scope::green_context).sub_places;
         sub_places.insert(sub_places.end(), device_p_places.begin(), device_p_places.end());
       }
       return;
@@ -199,14 +275,47 @@ private:
       {
         sub_places.push_back(exec_place::green_ctx(h->get_view(i)));
       }
-
       return;
     }
-#endif // _CCCL_CTK_AT_LEAST(12, 4)
+#endif
+
+    // If the scope requires no handle
+    compute_subplaces_no_handle(place, scope);
+  }
+
+  /** @brief Compute the subplaces of a place at the specified granularity (scope) into the sub_places vector */
+  void compute_subplaces_no_handle(const exec_place& place, place_partition_scope scope)
+  {
+#if _CCCL_CTK_BELOW(12, 4)
+    _CCCL_ASSERT(scope != place_partition_scope::green_context, "Green contexts scope need an async resource handle.");
+#endif // _CCCL_CTK_BELOW(12, 4)
+    _CCCL_ASSERT(scope != place_partition_scope::cuda_stream, "CUDA stream scope needs an async resource handle.");
+
+    if (place.is_grid() && scope == place_partition_scope::cuda_device)
+    {
+      exec_place_grid g = place.as_grid();
+      // Copy the vector of places
+      sub_places = g.get_places();
+      return;
+    }
+
+    if (place.is_device() && scope == place_partition_scope::cuda_device)
+    {
+      sub_places.push_back(place);
+      return;
+    }
+
     assert(!"Internal error: unreachable code.");
   }
 
   /** A vector with all subplaces (computed once in compute_subplaces) */
   ::std::vector<exec_place> sub_places;
 };
+
+// Deferred implementation because we need place_partition
+template <typename... Args>
+auto exec_place::partition_by_scope(Args&&... args)
+{
+  return place_partition(*this, ::std::forward<Args>(args)...).as_grid();
+}
 } // end namespace cuda::experimental::stf

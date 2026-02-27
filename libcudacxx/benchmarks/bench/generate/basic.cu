@@ -5,7 +5,7 @@
 
 #include <cuda/memory_pool>
 #include <cuda/std/__pstl_algorithm>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include "nvbench_helper.cuh"
 

@@ -23,7 +23,7 @@
 #include <cuda/std/__fwd/variant.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
-#include <cuda/std/__tuple_dir/sfinae_helpers.h>
+#include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
@@ -377,7 +377,7 @@ _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(_Trait::_TriviallyAvailable,
 _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(
   _Trait::_Available,
   _CCCL_API __move_constructor(__move_constructor&& __that) noexcept(
-    __all<is_nothrow_move_constructible_v<_Types>...>::value) : __move_constructor(__valueless_t{}) {
+    __fold_and_v<is_nothrow_move_constructible_v<_Types>...>) : __move_constructor(__valueless_t{}) {
     this->__generic_construct(*this, ::cuda::std::move(__that));
   });
 
@@ -548,7 +548,7 @@ _LIBCUDACXX_VARIANT_MOVE_ASSIGNMENT(
   _Trait::_Available,
   _CCCL_API __move_assignment&
   operator=(__move_assignment&& __that) noexcept(
-    __all<(is_nothrow_move_constructible_v<_Types> && is_nothrow_move_assignable_v<_Types>) ...>::value) {
+    __fold_and_v<(is_nothrow_move_constructible_v<_Types> && is_nothrow_move_assignable_v<_Types>) ...>) {
     this->__generic_assign(::cuda::std::move(__that));
     return *this;
   });

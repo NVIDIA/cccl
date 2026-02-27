@@ -104,9 +104,9 @@ __host__ __device__ constexpr void mixin_extents()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_mdspan_types<T, cuda::std::extents<int>, L, A>();
-  test_mdspan_types<T, cuda::std::extents<char, D>, L, A>();
-  test_mdspan_types<T, cuda::std::dextents<char, 7>, L, A>();
-  test_mdspan_types<T, cuda::std::dextents<char, 9>, L, A>();
+  test_mdspan_types<T, cuda::std::extents<signed char, D>, L, A>();
+  test_mdspan_types<T, cuda::std::dextents<signed char, 7>, L, A>();
+  test_mdspan_types<T, cuda::std::dextents<signed char, 9>, L, A>();
   test_mdspan_types<T, cuda::std::extents<unsigned, 7>, L, A>();
   test_mdspan_types<T, cuda::std::extents<unsigned, D, D, D>, L, A>();
   test_mdspan_types<T, cuda::std::extents<size_t, D, 7, D>, L, A>();
