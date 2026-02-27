@@ -754,7 +754,7 @@ buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
 {
   auto __res =
     buffer<_Tp, _FirstProperty, _RestProperties...>{__stream, ::cuda::std::forward<_Resource>(__mr), __size, no_init};
-  __fill_n<_Tp, mr::__memory_accessibility _from_properties<_FirstProperty, _RestProperties...>::value>(
+  __fill_n<_Tp, mr::__memory_accessibility_from_properties<_FirstProperty, _RestProperties...>::value>(
     __stream, __res.__unwrapped_begin(), __size, __value);
   return __res;
 }
@@ -768,7 +768,7 @@ auto make_buffer(
   using __default_queries = typename ::cuda::std::decay_t<_Resource>::default_queries;
   using __buffer_type     = __buffer_type_for_props<_Tp, __default_queries>;
   auto __res              = __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __size, no_init};
-  __fill_n<_Tp, __default_queries::template rebind<mr::__memory_accessibility _from_properties>::value>(
+  __fill_n<_Tp, __default_queries::template rebind<mr::__memory_accessibility_from_properties>::value>(
     __stream, __res.__unwrapped_begin(), __size, __value);
   return __res;
 }

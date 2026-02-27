@@ -125,7 +125,7 @@ struct dynamic_accessibility_property
 };
 
 template <bool _HostAccessible, bool _DeviceAccessible>
-_CCCL_API constexpr __memory_accessibility __memory_accessibility _from_static_properties() noexcept
+_CCCL_API constexpr __memory_accessibility __memory_accessibility_from_static_properties() noexcept
 {
   return _HostAccessible && _DeviceAccessible ? __memory_accessibility ::__host_device
        : _DeviceAccessible                    ? __memory_accessibility ::__device
@@ -134,11 +134,11 @@ _CCCL_API constexpr __memory_accessibility __memory_accessibility _from_static_p
 }
 
 template <class... _Properties>
-struct __memory_accessibility _from_properties
+struct __memory_accessibility_from_properties
 {
   static constexpr __memory_accessibility value =
-    __memory_accessibility _from_static_properties<::cuda::mr::__is_host_accessible<_Properties...>,
-                                                   ::cuda::mr::__is_device_accessible<_Properties...>>();
+    __memory_accessibility_from_static_properties<::cuda::mr::__is_host_accessible<_Properties...>,
+                                                  ::cuda::mr::__is_device_accessible<_Properties...>>();
 };
 
 _CCCL_END_NAMESPACE_CUDA_MR

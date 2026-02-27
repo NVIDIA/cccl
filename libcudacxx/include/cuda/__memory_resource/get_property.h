@@ -94,20 +94,12 @@ _CCCL_CONCEPT property_with_value = _CCCL_REQUIRES_EXPR((_Property))(typename(__
 //! @endrst
 #  ifndef _CCCL_DOXYGEN_INVOKED // Doxygen chokes here
 template <class _Resource, class _Property, class _Return>
-_CCCL_CONCEPT_FRAGMENT(__has_property_with_,
-                       requires(const _Resource& __res)(
-                         requires(property_with_value<_Property>),
-                         requires(::cuda::std::same_as<_Return, decltype(get_property(__res, _Property{}))>)));
-#  endif // ^^^ _CCCL_DOXYGEN_INVOKED ^^^
-template <class _Resource, class _Property, class _Return>
-_CCCL_CONCEPT has_property_with = _CCCL_FRAGMENT(__has_property_with_, _Resource, _Property, _Return);
+_CCCL_CONCEPT has_property_with = _CCCL_REQUIRES_EXPR((_Resource, _Property, _Return), const _Resource& __res)(
+  requires(property_with_value<_Property>), _Same_as(_Return) get_property(__res, _Property{}));
 
-#  ifndef _CCCL_DOXYGEN_INVOKED // Doxygen chokes here
 template <class _Resource, class _Upstream>
-_CCCL_CONCEPT_FRAGMENT(
-  __has_upstream_resource_,
-  requires(const _Resource& __res)(
-    requires(::cuda::std::same_as<::cuda::std::__remove_const_ref_t<decltype(__res.upstream_resource())>, _Upstream>)));
+_CCCL_CONCEPT __has_upstream_resource = _CCCL_REQUIRES_EXPR((_Resource, _Upstream), const _Resource& __res)(
+  requires(::cuda::std::same_as<::cuda::std::__remove_const_ref_t<decltype(__res.upstream_resource())>, _Upstream>));
 
 template <class _Resource, class _Upstream>
 _CCCL_CONCEPT __has_get_resource = _CCCL_REQUIRES_EXPR((_Resource, _Upstream), const _Resource& __res)(
@@ -115,12 +107,8 @@ _CCCL_CONCEPT __has_get_resource = _CCCL_REQUIRES_EXPR((_Resource, _Upstream), c
 #  endif // ^^^ _CCCL_DOXYGEN_INVOKED ^^^
 
 template <class _Resource, class _Upstream>
-_CCCL_CONCEPT __has_upstream_resource = _CCCL_FRAGMENT(__has_upstream_resource_, _Resource, _Upstream);
-
-template <class _Resource, class _Upstream>
 _CCCL_CONCEPT __has_forwarded_resource =
-  _CCCL_FRAGMENT(__has_upstream_resource_, _Resource, _Upstream)
-  || _CCCL_FRAGMENT(__has_get_resource_, _Resource, _Upstream);
+  __has_upstream_resource<_Resource, _Upstream> || __has_get_resource<_Resource, _Upstream>;
 
 _CCCL_BEGIN_NAMESPACE_CPO(__forward_property)
 template <class _Derived, class _Upstream>
@@ -202,8 +190,8 @@ _CCCL_REQUIRES((!__disable_default_dynamic_accessibility_property<_Resource>) )
 _CCCL_API constexpr __memory_accessibility
 get_property([[maybe_unused]] const _Resource& __res, dynamic_accessibility_property) noexcept
 {
-  return __memory_accessibility _from_static_properties<::cuda::has_property<_Resource, host_accessible>,
-                                                        ::cuda::has_property<_Resource, device_accessible>>();
+  return __memory_accessibility_from_static_properties<::cuda::has_property<_Resource, host_accessible>,
+                                                       ::cuda::has_property<_Resource, device_accessible>>();
 }
 _CCCL_END_NAMESPACE_CUDA_MR
 
