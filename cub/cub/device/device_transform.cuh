@@ -54,9 +54,10 @@ struct get_tuning_query_t
 {};
 
 template <class PolicySelector>
-#if _CCCL_HAS_CONCEPTS()
-  requires transform_policy_selector<PolicySelector>
-#endif // _CCCL_HAS_CONCEPTS()
+// TODO(bgruber): we cannot check the concept here because PolicySelector is usually an incomplete type still
+// #if _CCCL_HAS_CONCEPTS()
+//   requires transform_policy_selector<PolicySelector>
+// #endif // _CCCL_HAS_CONCEPTS()
 struct tuning
 {
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const get_tuning_query_t&) const noexcept -> PolicySelector
