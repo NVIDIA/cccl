@@ -98,15 +98,19 @@ private:
 
     const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get();
 
-    using tuning_env_t =
+    using tuning_env =
       ::cuda::std::execution::__query_result_or_t<Env, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
-    using default_tuning = detail::transform::policy_selector_from_types<
+    using default_policy_selector = detail::transform::policy_selector_from_types<
       StableAddress == detail::transform::requires_stable_address::yes,
       ::cuda::std::is_same_v<Predicate, detail::transform::always_true_predicate>,
       ::cuda::std::tuple<RandomAccessIteratorsIn...>,
       RandomAccessIteratorOut>;
-    using transform_tuning_t =
-      ::cuda::std::execution::__query_result_or_t<tuning_env_t, detail::transform::get_tuning_query_t, default_tuning>;
+    using policy_selector = ::cuda::std::execution::
+      __query_result_or_t<tuning_env, detail::transform::get_tuning_query_t, default_policy_selector>;
+
+#if _CCCL_HAS_CONCEPTS()
+    static_assert(transform_policy_selector<policy_selector>);
+#endif // _CCCL_HAS_CONCEPTS()
 
     return detail::transform::dispatch<StableAddress>(
       ::cuda::std::move(inputs),
@@ -115,7 +119,7 @@ private:
       ::cuda::std::move(predicate),
       ::cuda::std::move(transform_op),
       stream,
-      transform_tuning_t{});
+      policy_selector{});
   }
 
   // TODO(bgruber): we want to eventually forward the output tuple to the kernel and optimize writing multiple streams
