@@ -109,7 +109,7 @@ private:
       __query_result_or_t<tuning_env, detail::transform::get_tuning_query_t, default_policy_selector>;
 
 #if _CCCL_HAS_CONCEPTS()
-    static_assert(transform_policy_selector<policy_selector>);
+    static_assert(detail::transform::transform_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
     return detail::transform::dispatch<StableAddress>(
