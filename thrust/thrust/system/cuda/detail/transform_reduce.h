@@ -136,7 +136,6 @@ T _CCCL_HOST_DEVICE transform_reduce(
   return init;
 }
 
-// Binary transform_reduce with CUDA-specific iterators
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class InputIt1, class InputIt2, class T, class ReduceOp, class TransformOp>
 T _CCCL_HOST_DEVICE transform_reduce(

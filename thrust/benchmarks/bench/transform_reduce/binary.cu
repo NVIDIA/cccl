@@ -15,9 +15,8 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
-  auto generator               = generate(elements);
-  thrust::device_vector<T> lhs = generator;
-  thrust::device_vector<T> rhs = generator;
+  thrust::device_vector<T> lhs = generate(elements);
+  thrust::device_vector<T> rhs = generate(elements);
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements * 2);
@@ -48,9 +47,8 @@ static void custom_ops(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
-  auto generator               = generate(elements);
-  thrust::device_vector<T> lhs = generator;
-  thrust::device_vector<T> rhs = generator;
+  thrust::device_vector<T> lhs = generate(elements);
+  thrust::device_vector<T> rhs = generate(elements);
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements * 2);

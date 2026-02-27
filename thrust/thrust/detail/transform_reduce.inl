@@ -79,18 +79,18 @@ OutputType transform_reduce(
 } // end transform_reduce()
 
 _CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename T,
-          typename BinaryOp1,
-          typename BinaryOp2>
-_CCCL_HOST_DEVICE
-// SFINAE: only participate when InputIterator2 is actually an iterator
-typename ::cuda::std::enable_if<
-  ::cuda::std::is_convertible<typename ::cuda::std::iterator_traits<InputIterator2>::iterator_category*, void*>::value,
-  T>::type
-transform_reduce(
+template <
+  typename DerivedPolicy,
+  typename InputIterator1,
+  typename InputIterator2,
+  typename T,
+  typename BinaryOp1,
+  typename BinaryOp2,
+  // SFINAE: only participate when InputIterator2 is actually an iterator
+  ::cuda::std::enable_if_t<
+    ::cuda::std::is_convertible_v<typename ::cuda::std::iterator_traits<InputIterator2>::iterator_category*, void*>,
+    int>>
+_CCCL_HOST_DEVICE T transform_reduce(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
@@ -111,17 +111,23 @@ transform_reduce(
     transform_op);
 } // end transform_reduce()
 
-template <typename InputIterator1, typename InputIterator2, typename T, typename BinaryOp1, typename BinaryOp2>
-// SFINAE: only participate when InputIterator2 is actually an iterator
-typename ::cuda::std::enable_if<
-  ::cuda::std::is_convertible<typename ::cuda::std::iterator_traits<InputIterator2>::iterator_category*, void*>::value,
-  T>::type
-transform_reduce(InputIterator1 first1,
-                 InputIterator1 last1,
-                 InputIterator2 first2,
-                 T init,
-                 BinaryOp1 reduce_op,
-                 BinaryOp2 transform_op)
+template <
+  typename InputIterator1,
+  typename InputIterator2,
+  typename T,
+  typename BinaryOp1,
+  typename BinaryOp2,
+  // SFINAE: only participate when InputIterator2 is actually an iterator
+  ::cuda::std::enable_if_t<
+    ::cuda::std::is_convertible_v<typename ::cuda::std::iterator_traits<InputIterator2>::iterator_category*, void*>,
+    int>>
+T transform_reduce(
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  T init,
+  BinaryOp1 reduce_op,
+  BinaryOp2 transform_op)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::transform_reduce");
   using thrust::system::detail::generic::select_system;
