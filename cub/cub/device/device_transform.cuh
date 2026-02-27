@@ -792,6 +792,31 @@ public:
       stream);
   }
 #endif // _CCCL_DOXYGEN_INVOKED
+
+  // internal, used only by Thrust
+  template <typename... RandomAccessIteratorsIn,
+            typename RandomAccessIteratorOut,
+            typename NumItemsT,
+            typename Predicate,
+            typename TransformOp,
+            typename Env = ::cuda::std::execution::env<>>
+  CUB_RUNTIME_FUNCTION static cudaError_t __transform_if_stable_argument_addresses(
+    ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
+    RandomAccessIteratorOut output,
+    NumItemsT num_items,
+    Predicate predicate,
+    TransformOp transform_op,
+    Env env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformIfStableArgumentAddresses");
+    return TransformInternal<detail::transform::requires_stable_address::yes>(
+      ::cuda::std::move(inputs),
+      ::cuda::std::move(output),
+      num_items,
+      ::cuda::std::move(predicate),
+      ::cuda::std::move(transform_op),
+      ::cuda::std::move(env));
+  }
 };
 
 CUB_NAMESPACE_END

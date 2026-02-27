@@ -19,6 +19,7 @@
 #include <cub/util_macro.cuh>
 
 #include <cuda/__device/arch_id.h>
+#include <cuda/std/concepts>
 #include <cuda/std/optional>
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -323,7 +324,7 @@ struct policy_hub
     using ReducePolicy =
       decltype(select_agent_policy<sm100_tuning<AccumT,
                                                 OffsetT,
-                                                classify_op<ReductionOpT>(),
+                                                classify_op<ReductionOpT>,
                                                 classify_offset_size<OffsetT>(),
                                                 classify_accum_size<AccumT>()>>(0));
 
