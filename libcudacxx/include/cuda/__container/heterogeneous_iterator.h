@@ -61,11 +61,11 @@ template <class _CvTp, class... _Properties>
 class heterogeneous_iterator;
 
 // We restrict all accessors of the iterator based on the execution space
-template <class _Tp, _IsConstIter _IsConst, ::cuda::mr::__memory_accessability _Space>
+template <class _Tp, __is_heterogeneous_const_iter _IsConst, ::cuda::mr::__memory_accessibility _Space>
 class __heterogeneous_iterator_access;
 
-template <class _Tp, _IsConstIter _IsConst>
-class __heterogeneous_iterator_access<_Tp, _IsConst, ::cuda::mr::__memory_accessability::__host>
+template <class _Tp, __is_heterogeneous_const_iter _IsConst>
+class __heterogeneous_iterator_access<_Tp, _IsConst, ::cuda::mr::__memory_accessibility ::__host>
 {
 public:
   using iterator_concept  = ::cuda::std::contiguous_iterator_tag;
@@ -111,8 +111,8 @@ protected:
   friend class heterogeneous_iterator;
 };
 
-template <class _Tp, _IsConstIter _IsConst>
-class __heterogeneous_iterator_access<_Tp, _IsConst, ::cuda::mr::__memory_accessability::__device>
+template <class _Tp, __is_heterogeneous_const_iter _IsConst>
+class __heterogeneous_iterator_access<_Tp, _IsConst, ::cuda::mr::__memory_accessibility ::__device>
 {
 public:
   using iterator_concept  = ::cuda::std::contiguous_iterator_tag;
@@ -158,8 +158,8 @@ protected:
   friend class heterogeneous_iterator;
 };
 
-template <class _Tp, _IsConstIter _IsConst>
-class __heterogeneous_iterator_access<_Tp, _IsConst, ::cuda::mr::__memory_accessability::__host_device>
+template <class _Tp, __is_heterogeneous_const_iter _IsConst>
+class __heterogeneous_iterator_access<_Tp, _IsConst, ::cuda::mr::__memory_accessibility ::__host_device>
 {
 public:
   using iterator_concept  = ::cuda::std::contiguous_iterator_tag;
@@ -207,14 +207,15 @@ protected:
 
 template <class _CvTp, class... _Properties>
 class heterogeneous_iterator
-    : public __heterogeneous_iterator_access<::cuda::std::remove_const_t<_CvTp>,
-                                             ::cuda::std::is_const_v<_CvTp> ? _IsConstIter::__yes : _IsConstIter::__no,
-                                             ::cuda::mr::__memory_accessability_from_properties<_Properties...>::value>
+    : public __heterogeneous_iterator_access<
+        ::cuda::std::remove_const_t<_CvTp>,
+        ::cuda::std::is_const_v<_CvTp> ? __is_heterogeneous_const_iter::__yes : __is_heterogeneous_const_iter::__no,
+        ::cuda::mr::__memory_accessibility_from_properties<_Properties...>::value>
 {
-  using __base =
-    __heterogeneous_iterator_access<::cuda::std::remove_const_t<_CvTp>,
-                                    ::cuda::std::is_const_v<_CvTp> ? _IsConstIter::__yes : _IsConstIter::__no,
-                                    ::cuda::mr::__memory_accessability_from_properties<_Properties...>::value>;
+  using __base = __heterogeneous_iterator_access<
+    ::cuda::std::remove_const_t<_CvTp>,
+    ::cuda::std::is_const_v<_CvTp> ? __is_heterogeneous_const_iter::__yes : __is_heterogeneous_const_iter::__no,
+    ::cuda::mr::__memory_accessibility_from_properties<_Properties...>::value>;
 
 public:
   using iterator_concept  = ::cuda::std::contiguous_iterator_tag;
