@@ -87,9 +87,6 @@ def generate_data_with_entropy(
 
 
 def bench_three_way_partition(state: bench.State):
-    """
-    Benchmark three_way_partition operation.
-    """
     # WORKAROUND: Clear caches to avoid caching bug
     # See BUG_REPORT_CACHING.md for details
     clear_all_caches()

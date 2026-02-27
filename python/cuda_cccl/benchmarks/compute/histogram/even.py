@@ -94,9 +94,6 @@ def generate_samples_with_entropy(
 
 
 def bench_histogram_even(state: bench.State):
-    """
-    Benchmark histogram_even operation.
-    """
     # WORKAROUND: Clear caches to avoid bug where cached histogram objects
     # are reused incorrectly when bin count changes. The cache key for
     # np.ndarray only considers dtype, not shape/values, so h_num_output_levels

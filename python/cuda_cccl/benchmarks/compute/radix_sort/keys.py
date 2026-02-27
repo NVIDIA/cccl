@@ -35,9 +35,6 @@ ENTROPY_VALUES = ["1.000", "0.544", "0.201"]
 
 
 def bench_radix_sort_keys(state: bench.State):
-    """
-    Benchmark radix_sort keys operation.
-    """
     # WORKAROUND: Clear caches to avoid caching bug
     # See BUG_REPORT_CACHING.md for details
     clear_all_caches()

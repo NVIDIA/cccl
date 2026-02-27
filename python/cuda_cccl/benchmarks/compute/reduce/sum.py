@@ -28,10 +28,6 @@ from cuda.compute import OpKind, make_reduce_into
 
 
 def bench_reduce_sum(state: bench.State):
-    """
-    Benchmark reduce sum operation using OpKind.PLUS.
-    """
-
     # Get parameters from axes
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]

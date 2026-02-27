@@ -52,9 +52,6 @@ def generate_values(num_elements, dtype, stream):
 
 
 def bench_radix_sort_pairs(state: bench.State):
-    """
-    Benchmark radix_sort pairs (key-value) operation.
-    """
     # WORKAROUND: Clear caches to avoid caching bug
     # See BUG_REPORT_CACHING.md for details
     clear_all_caches()

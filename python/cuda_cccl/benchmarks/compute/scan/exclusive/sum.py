@@ -29,10 +29,6 @@ from cuda.compute import OpKind, make_exclusive_scan
 
 
 def bench_scan_exclusive_sum(state: bench.State):
-    """
-    Benchmark exclusive scan sum operation using OpKind.PLUS.
-    """
-
     # Get parameters from axes
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]

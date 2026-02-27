@@ -27,10 +27,6 @@ from cuda.compute import ConstantIterator, OpKind
 
 
 def bench_fill(state: bench.State):
-    """
-    Benchmark transform fill operation using ConstantIterator.
-    """
-
     # Get parameters from axes
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]

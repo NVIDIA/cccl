@@ -40,9 +40,6 @@ MAX_SEG_SIZE_VALUES = [2, 16, 256]
 
 
 def bench_unique_by_key(state: bench.State):
-    """
-    Benchmark unique_by_key operation.
-    """
     # WORKAROUND: Clear caches to avoid caching bug
     # See BUG_REPORT_CACHING.md for details
     clear_all_caches()

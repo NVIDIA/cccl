@@ -33,9 +33,6 @@ def square_op(x):
 
 
 def bench_transform_reduce_sum(state: bench.State):
-    """
-    Benchmark transform reduce sum using a TransformIterator and OpKind.PLUS.
-    """
     clear_all_caches()
 
     type_str = state.get_string("T")

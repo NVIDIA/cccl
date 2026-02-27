@@ -48,9 +48,6 @@ SEGMENT_SIZES_LARGE = [2**i for i in range(9, 17)]  # 512 to 65536
 
 
 def bench_segmented_reduce_sum(state: bench.State):
-    """
-    Benchmark segmented_reduce sum operation.
-    """
     # WORKAROUND: Clear caches to avoid caching bug
     # See BUG_REPORT_CACHING.md for details
     clear_all_caches()

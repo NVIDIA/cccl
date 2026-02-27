@@ -29,10 +29,6 @@ from cuda.compute import OpKind, make_reduce_into
 
 
 def bench_reduce_min(state: bench.State):
-    """
-    Benchmark reduce min operation using OpKind.MINIMUM.
-    """
-
     # Get parameters from axes
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]

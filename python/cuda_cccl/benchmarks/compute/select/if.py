@@ -43,9 +43,6 @@ ENTROPY_VALUES = ["1.000", "0.544", "0.000"]
 
 
 def bench_select_if(state: bench.State):
-    """
-    Benchmark select_if operation.
-    """
     # WORKAROUND: Clear caches to avoid caching bug with different predicates
     # See BUG_REPORT_CACHING.md for details
     clear_all_caches()
