@@ -101,20 +101,6 @@ def bench_select_if(state: bench.State):
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 
-    try:
-        selector(
-            temp_storage=temp_storage,
-            d_in=d_in,
-            d_out=d_out,
-            d_num_selected_out=d_num_selected,
-            cond=less_than_threshold,
-            num_items=num_elements,
-        )
-        cp.cuda.Device().synchronize()
-    except Exception as e:
-        state.skip(f"CUDA error during warmup: {e}")
-        return
-
     # Get actual number of selected elements for metrics
     num_selected = int(d_num_selected.get()[0])
 
@@ -134,7 +120,7 @@ def bench_select_if(state: bench.State):
             stream=launch.get_stream(),
         )
 
-    state.exec(launcher)
+    state.exec(launcher, batched=False)
 
 
 if __name__ == "__main__":

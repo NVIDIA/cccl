@@ -76,7 +76,7 @@ def bench_scan_exclusive_custom(state: bench.State):
             stream=launch.get_stream(),
         )
 
-    state.exec(launcher)
+    state.exec(launcher, batched=False)
 
 
 if __name__ == "__main__":

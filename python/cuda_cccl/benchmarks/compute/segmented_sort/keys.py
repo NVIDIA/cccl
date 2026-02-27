@@ -48,21 +48,33 @@ def run_segmented_sort(
     num_items,
     num_segments,
 ):
-    try:
-        state.set_disable_blocking_kernel(True)
-        state.set_run_once(True)
-        sorter = make_segmented_sort(
-            d_in_keys=d_in_keys,
-            d_out_keys=d_out_keys,
-            d_in_values=None,
-            d_out_values=None,
-            start_offsets_in=start_offsets,
-            end_offsets_in=end_offsets,
-            order=SortOrder.ASCENDING,
-        )
+    sorter = make_segmented_sort(
+        d_in_keys=d_in_keys,
+        d_in_items=None,
+        d_out_keys=d_out_keys,
+        d_out_items=None,
+        order=SortOrder.ASCENDING,
+    )
 
-        temp_storage_bytes = sorter(
-            temp_storage=None,
+    temp_storage_bytes = sorter(
+        temp_storage=None,
+        d_in_keys=d_in_keys,
+        d_out_keys=d_out_keys,
+        d_in_items=None,
+        d_out_items=None,
+        order=SortOrder.ASCENDING,
+        num_items=num_items,
+        num_segments=num_segments,
+        start_offsets_in=start_offsets,
+        end_offsets_in=end_offsets,
+    )
+    alloc_stream = as_cupy_stream(state.get_stream())
+    with alloc_stream:
+        temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+
+    def launcher(launch: bench.Launch):
+        sorter(
+            temp_storage=temp_storage,
             d_in_keys=d_in_keys,
             d_out_keys=d_out_keys,
             d_in_values=None,
@@ -71,44 +83,10 @@ def run_segmented_sort(
             num_segments=num_segments,
             start_offsets_in=start_offsets,
             end_offsets_in=end_offsets,
+            stream=launch.get_stream(),
         )
-        temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 
-        try:
-            sorter(
-                temp_storage=temp_storage,
-                d_in_keys=d_in_keys,
-                d_out_keys=d_out_keys,
-                d_in_values=None,
-                d_out_values=None,
-                num_items=num_items,
-                num_segments=num_segments,
-                start_offsets_in=start_offsets,
-                end_offsets_in=end_offsets,
-            )
-            cp.cuda.Device().synchronize()
-        except Exception as e:
-            state.skip(f"CUDA error during warmup: {e}")
-            return
-
-        def launcher(launch: bench.Launch):
-            sorter(
-                temp_storage=temp_storage,
-                d_in_keys=d_in_keys,
-                d_out_keys=d_out_keys,
-                d_in_values=None,
-                d_out_values=None,
-                num_items=num_items,
-                num_segments=num_segments,
-                start_offsets_in=start_offsets,
-                end_offsets_in=end_offsets,
-                stream=launch.get_stream(),
-            )
-
-        state.exec(launcher)
-    except (MemoryError, cp.cuda.memory.OutOfMemoryError):
-        state.skip("Skipping: out of memory.")
-        return
+    state.exec(launcher, batched=False)
 
 
 def bench_segmented_sort_power(state: bench.State):

@@ -157,21 +157,6 @@ def bench_histogram_even(state: bench.State):
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 
-    try:
-        histogrammer(
-            temp_storage=temp_storage,
-            d_samples=d_samples,
-            d_histogram=d_histogram,
-            h_num_output_levels=h_num_output_levels,
-            h_lower_level=h_lower_level,
-            h_upper_level=h_upper_level,
-            num_samples=num_elements,
-        )
-        cp.cuda.Device().synchronize()
-    except Exception as e:
-        state.skip(f"CUDA error during warmup: {e}")
-        return
-
     state.add_element_count(num_elements)
     state.add_global_memory_reads(num_elements * d_samples.dtype.itemsize)
     state.add_global_memory_writes(num_bins * d_histogram.dtype.itemsize)
@@ -188,7 +173,7 @@ def bench_histogram_even(state: bench.State):
             stream=launch.get_stream(),
         )
 
-    state.exec(launcher)
+    state.exec(launcher, batched=False)
 
 
 if __name__ == "__main__":

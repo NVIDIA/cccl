@@ -80,7 +80,7 @@ def bench_mul(state: bench.State):
             d_in=c, d_out=b, op=mul_op, num_items=num_items, stream=launch.get_stream()
         )
 
-    state.exec(launcher)
+    state.exec(launcher, batched=False)
 
 
 def bench_add(state: bench.State):
@@ -123,7 +123,7 @@ def bench_add(state: bench.State):
             stream=launch.get_stream(),
         )
 
-    state.exec(launcher)
+    state.exec(launcher, batched=False)
 
 
 def bench_triad(state: bench.State):
@@ -170,7 +170,7 @@ def bench_triad(state: bench.State):
             stream=launch.get_stream(),
         )
 
-    state.exec(launcher)
+    state.exec(launcher, batched=False)
 
 
 def bench_nstream(state: bench.State):
@@ -219,7 +219,7 @@ def bench_nstream(state: bench.State):
             stream=launch.get_stream(),
         )
 
-    state.exec(launcher)
+    state.exec(launcher, batched=False)
 
 
 # Registry of all BabelStream benchmarks

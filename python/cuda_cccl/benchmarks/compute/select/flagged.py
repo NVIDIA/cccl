@@ -92,20 +92,6 @@ def bench_select_flagged(state: bench.State):
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 
-    try:
-        selector(
-            temp_storage=temp_storage,
-            d_in=zip_it,
-            d_out=d_out_it,
-            d_num_selected_out=d_num_selected,
-            cond=flag_predicate,
-            num_items=num_elements,
-        )
-        cp.cuda.Device().synchronize()
-    except Exception as e:
-        state.skip(f"CUDA error during warmup: {e}")
-        return
-
     state.add_element_count(num_elements)
     state.add_global_memory_reads(num_elements * d_in.dtype.itemsize)
     state.add_global_memory_reads(num_elements * flags.dtype.itemsize)
@@ -123,7 +109,7 @@ def bench_select_flagged(state: bench.State):
             stream=launch.get_stream(),
         )
 
-    state.exec(launcher)
+    state.exec(launcher, batched=False)
 
 
 if __name__ == "__main__":

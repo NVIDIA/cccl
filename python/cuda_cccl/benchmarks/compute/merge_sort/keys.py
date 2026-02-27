@@ -70,21 +70,6 @@ def bench_merge_sort_keys(state: bench.State):
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 
-    try:
-        sorter(
-            temp_storage=temp_storage,
-            d_in_keys=d_in_keys,
-            d_in_items=None,
-            d_out_keys=d_out_keys,
-            d_out_items=None,
-            op=OpKind.LESS,
-            num_items=num_elements,
-        )
-        cp.cuda.Device().synchronize()
-    except Exception as e:
-        state.skip(f"CUDA error during warmup: {e}")
-        return
-
     state.add_element_count(num_elements)
     state.add_global_memory_reads(num_elements * d_in_keys.dtype.itemsize)
     state.add_global_memory_writes(num_elements * d_out_keys.dtype.itemsize)
@@ -101,7 +86,7 @@ def bench_merge_sort_keys(state: bench.State):
             stream=launch.get_stream(),
         )
 
-    state.exec(launcher)
+    state.exec(launcher, batched=False)
 
 
 if __name__ == "__main__":

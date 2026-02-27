@@ -57,7 +57,7 @@ def bench_fill(state: bench.State):
                 stream=launch.get_stream(),
             )
 
-        state.exec(launcher)
+        state.exec(launcher, batched=False)
     except (MemoryError, cp.cuda.memory.OutOfMemoryError):
         state.skip("Skipping: out of memory.")
         return

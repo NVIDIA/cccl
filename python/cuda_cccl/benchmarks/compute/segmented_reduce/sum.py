@@ -102,22 +102,6 @@ def bench_segmented_reduce_sum(state: bench.State):
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 
-    try:
-        reducer(
-            temp_storage=temp_storage,
-            d_in=d_in,
-            d_out=d_out,
-            op=OpKind.PLUS,
-            num_segments=num_segments,
-            start_offsets_in=start_offsets,
-            end_offsets_in=end_offsets,
-            h_init=h_init,
-        )
-        cp.cuda.Device().synchronize()
-    except Exception as e:
-        state.skip(f"CUDA error during warmup: {e}")
-        return
-
     state.add_element_count(actual_elements)
     state.add_global_memory_reads(actual_elements * d_in.dtype.itemsize)
     state.add_global_memory_writes(num_segments * d_out.dtype.itemsize)
@@ -135,7 +119,7 @@ def bench_segmented_reduce_sum(state: bench.State):
             stream=launch.get_stream(),
         )
 
-    state.exec(launcher)
+    state.exec(launcher, batched=False)
 
 
 if __name__ == "__main__":

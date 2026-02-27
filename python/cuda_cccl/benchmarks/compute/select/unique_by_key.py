@@ -108,22 +108,6 @@ def bench_unique_by_key(state: bench.State):
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 
-    try:
-        uniquer(
-            temp_storage=temp_storage,
-            d_in_keys=d_in_keys,
-            d_in_items=d_in_values,
-            d_out_keys=d_out_keys,
-            d_out_items=d_out_values,
-            d_out_num_selected=d_num_selected,
-            op=OpKind.EQUAL_TO,
-            num_items=num_elements,
-        )
-        cp.cuda.Device().synchronize()
-    except Exception as e:
-        state.skip(f"CUDA error during warmup: {e}")
-        return
-
     # Get actual number of unique keys for accurate memory write count
     num_runs = int(d_num_selected.get()[0])
 
@@ -153,7 +137,7 @@ def bench_unique_by_key(state: bench.State):
             stream=launch.get_stream(),
         )
 
-    state.exec(launcher)
+    state.exec(launcher, batched=False)
 
 
 if __name__ == "__main__":

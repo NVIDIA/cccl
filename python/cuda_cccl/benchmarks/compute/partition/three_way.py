@@ -164,23 +164,6 @@ def bench_three_way_partition(state: bench.State):
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 
-    try:
-        partitioner(
-            temp_storage=temp_storage,
-            d_in=d_in,
-            d_first_part_out=d_first_part_out,
-            d_second_part_out=d_second_part_out,
-            d_unselected_out=d_unselected_out,
-            d_num_selected_out=d_num_selected_out,
-            select_first_part_op=select_first_part,
-            select_second_part_op=select_second_part,
-            num_items=num_elements,
-        )
-        cp.cuda.Device().synchronize()
-    except Exception as e:
-        state.skip(f"CUDA error during warmup: {e}")
-        return
-
     state.add_element_count(num_elements)
     state.add_global_memory_reads(num_elements * d_in.dtype.itemsize)
     state.add_global_memory_writes(num_elements * d_in.dtype.itemsize)
@@ -202,7 +185,7 @@ def bench_three_way_partition(state: bench.State):
             stream=launch.get_stream(),
         )
 
-    state.exec(launcher)
+    state.exec(launcher, batched=False)
 
 
 if __name__ == "__main__":
