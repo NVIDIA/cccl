@@ -645,20 +645,25 @@ struct DispatchReduceByKey
 
 namespace detail::reduce_by_key
 {
-// we move the conversion out of the lambda below, so MSVC can compile the code
-template <typename PolicyGetter>
-_CCCL_API constexpr auto convert_to_agent_policy(PolicyGetter policy_getter)
+// we move the conversion of the policy to the agent policy and its use out of the lambda below, so MSVC does not ICE
+template <typename PolicyGetter, typename... Args>
+_CCCL_API auto determine_threads_items_vsmem(PolicyGetter policy_getter)
 {
+  // TODO(bgruber): refactor this in the future
   constexpr reduce_by_key_policy policy = policy_getter();
-  return AgentReduceByKeyPolicy<
-    policy.block_threads,
-    policy.items_per_thread,
-    policy.load_algorithm,
-    policy.load_modifier,
-    policy.scan_algorithm,
-    delay_constructor_t<policy.delay_constructor.kind,
-                        policy.delay_constructor.delay,
-                        policy.delay_constructor.l2_write_latency>>{};
+  using Policy                          = AgentReduceByKeyPolicy<
+                             policy.block_threads,
+                             policy.items_per_thread,
+                             policy.load_algorithm,
+                             policy.load_modifier,
+                             policy.scan_algorithm,
+                             delay_constructor_t<policy.delay_constructor.kind,
+                                                 policy.delay_constructor.delay,
+                                                 policy.delay_constructor.l2_write_latency>>;
+  using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<Policy, AgentReduceByKey, Args...>;
+  return ::cuda::std::tuple{vsmem_helper_t::agent_policy_t::BLOCK_THREADS,
+                            vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD,
+                            vsmem_helper_t::vsmem_per_block};
 }
 
 template <
@@ -712,10 +717,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
          "Dispatching DeviceReduceByKey to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());))
 #endif
 
-    // TODO(bgruber): refactor this in the future
-    using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<
-      decltype(convert_to_agent_policy(policy_getter)),
-      AgentReduceByKey,
+    const auto [block_threads, items_per_thread, vsmem_per_block] = determine_threads_items_vsmem<
+      decltype(policy_getter),
       KeysInputIteratorT,
       UniqueOutputIteratorT,
       ValuesInputIteratorT,
@@ -725,17 +728,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
       ReductionOpT,
       OffsetT,
       AccumT,
-      streaming_context_t>;
-
-    constexpr int block_threads    = vsmem_helper_t::agent_policy_t::BLOCK_THREADS;
-    constexpr int items_per_thread = vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD;
+      streaming_context_t>(policy_getter);
 
     // Number of input tiles
     const int tile_size = block_threads * items_per_thread;
     const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
     // The amount of virtual shared memory to allocate
-    const auto vsmem_size = num_tiles * vsmem_helper_t::vsmem_per_block;
+    const auto vsmem_size = num_tiles * vsmem_per_block;
 
     size_t tile_descriptor_memory{};
     if (const auto error = CubDebug(ScanTileStateT::AllocationSize(num_tiles, tile_descriptor_memory)))
