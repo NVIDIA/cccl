@@ -132,7 +132,9 @@ void negative_strides_0(nvbench::state& state)
   constexpr int offset = 70 * 90 * 80 * 80 - 1;
   bench_copy(state, state.get_string("Impl"), offset, layout, offset, layout);
 }
-NVBENCH_BENCH(negative_strides_0).set_name("Negative Strides (optimized)").add_string_axis("Impl", {"naive", "registers"});
+NVBENCH_BENCH(negative_strides_0)
+  .set_name("Negative Strides (optimized)")
+  .add_string_axis("Impl", {"naive", "registers"});
 
 // src: (1001, 70, 63):(-1, -63063, -1001)
 // dst: (1001, 70, 63):(1, 1001, 70070)      // contiguous (forward)
@@ -174,7 +176,7 @@ void flatten_common(nvbench::state& state)
 }
 NVBENCH_BENCH(flatten_common).set_name("flatten_common").add_string_axis("Impl", {"naive", "registers"});
 
-// flatten_one: 20-dim, dst row-major order, src collumn-major order with slice [::5]
+// flatten_one: 20-dim, dst row-major order, src column-major order with slice [::5]
 //
 // src: (2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,4):
 //   (4194304,2097152,1048576,524288,262144,131072,65536,32768,16384,8192,4096,2048,1024,512,256,128,64,32,16,5)

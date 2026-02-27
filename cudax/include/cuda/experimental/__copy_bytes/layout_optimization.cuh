@@ -36,8 +36,6 @@
 
 namespace cuda::experimental
 {
-inline constexpr int __max_vector_bytes = 16;
-
 #if !_CCCL_COMPILER(NVRTC)
 
 //! @brief Compute the alignment of a pointer in bytes.
@@ -220,12 +218,9 @@ __max_vector_size_bytes(const __raw_tensor<_Tp, _MaxRank>& __tensor) noexcept
   }
   _CCCL_ASSERT(__alignment % sizeof(_Tp) == 0, "Maximum vector size is not a multiple of the element size");
   // (3) Compute the number of items per vector over the contiguous mode
-  size_t __items_per_vector   = __alignment / sizeof(_Tp);
-  __items_per_vector          = ::cuda::std::gcd(__items_per_vector, static_cast<size_t>(__shapes[0]));
-  const size_t __vector_bytes = __items_per_vector * sizeof(_Tp);
-  // (4) limit the vector size to the maximum supported vector size
-  constexpr size_t __max_vector_bytes = 16;
-  return ::cuda::std::min(__vector_bytes, __max_vector_bytes);
+  size_t __items_per_vector = __alignment / sizeof(_Tp);
+  __items_per_vector        = ::cuda::std::gcd(__items_per_vector, static_cast<size_t>(__shapes[0]));
+  return __items_per_vector * sizeof(_Tp);
 }
 
 #endif // !_CCCL_COMPILER(NVRTC)

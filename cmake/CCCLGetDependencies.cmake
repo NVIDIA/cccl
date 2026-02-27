@@ -61,7 +61,11 @@ macro(cccl_get_cutlass)
   )
   if (NOT TARGET CUTLASS)
     add_library(CUTLASS INTERFACE)
-    target_include_directories(CUTLASS SYSTEM INTERFACE "${CUTLASS_SOURCE_DIR}/include")
+    target_include_directories(
+      CUTLASS
+      SYSTEM
+      INTERFACE "${CUTLASS_SOURCE_DIR}/include"
+    )
   endif()
 endmacro()
 

@@ -25,8 +25,8 @@
 
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/stable_sort.h>
-#  include <cuda/std/__cstdlib/abs.h>
 #  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__cstdlib/abs.h>
 #  include <cuda/std/__mdspan/mdspan.h>
 #  include <cuda/std/cstdint>
 

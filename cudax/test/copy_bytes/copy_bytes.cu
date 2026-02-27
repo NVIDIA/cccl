@@ -10,9 +10,8 @@
 
 #include <thrust/host_vector.h>
 
-#include <cute/layout.hpp>
-
 #include "copy_bytes_common.cuh"
+#include <cute/layout.hpp>
 
 /***********************************************************************************************************************
  * 1D Tests

@@ -28,6 +28,7 @@
 #include <cuda/__launch/configuration.h>
 #include <cuda/__launch/launch.h>
 #include <cuda/__stream/stream_ref.h>
+#include <cuda/devices>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__host_stdlib/stdexcept>
@@ -114,6 +115,7 @@ template <int _VectorBits, typename _SrcTensor, typename _DstTensor>
 _CCCL_HOST_API void
 __launch_copy_bytes_kernel(const _SrcTensor& __src_tensor, const _DstTensor& __dst_tensor, ::cuda::stream_ref __stream)
 {
+  constexpr int __max_vector_bytes = 32;
   using ::cuda::std::size_t;
   const auto __src_ptr    = ::cute::raw_pointer_cast(__src_tensor.data());
   const auto __dst_ptr    = ::cute::raw_pointer_cast(__dst_tensor.data());
@@ -249,8 +251,7 @@ template <::cuda::std::size_t _Np, typename _Tag, typename _TpSrc, typename _TpD
 //!
 //! 1. Sort both layouts by dst's ascending stride (common permutation).
 //! 2. If both have stride-1 in mode 0 (vectorized path):
-//!    - Compute the contiguous extent for each tensor, use the minimum as
-//!      inner_size to avoid crossing mode boundaries.
+//!    - Compute the contiguous extent for each tensor, use the minimum as inner_size to avoid crossing mode boundaries.
 //!    - Compute the maximum compatible vectorization width and recast.
 //!    - Launch the unified kernel (cute::copy auto-vectorizes).
 //! 3. Fallback: copy_bytes_naive for non-vectorizable or unsupported configurations.
@@ -272,7 +273,7 @@ _CCCL_HOST_API void copy_bytes_registers(
   _CCCL_ASSERT(__src_raw.__rank == __dst_raw.__rank, "Source and destination layouts must have the same rank");
   if (__src_raw.__shapes != __dst_raw.__shapes)
   {
-    _CCCL_THROW(std::invalid_argument, "Source and destination layouts must have the same shapes");
+    _CCCL_THROW(::std::invalid_argument, "Source and destination layouts must have the same shapes");
   }
   const auto __total_size = static_cast<::cuda::std::size_t>(::cute::size(__src_layout));
   if (__total_size == 0)
@@ -305,14 +306,19 @@ _CCCL_HOST_API void copy_bytes_registers(
       const auto __status     = ::cub::detail::copy_mdspan::copy(__src_mdspan, __dst_mdspan, __stream.get());
       if (__status != ::cudaSuccess)
       {
-        ::cuda::__throw_cuda_error(__status, "cub::DeviceCopy::Copy failed");
+        _CCCL_THROW(::cuda::cuda_error, __status, "cub::DeviceCopy::Copy failed");
       }
       return;
     }
-    const auto __src_vector_bytes    = cudax::__max_vector_size_bytes(__src_raw);
-    const auto __dst_vector_bytes    = cudax::__max_vector_size_bytes(__dst_raw);
-    const auto __common_vector_bytes = ::cuda::std::min(__src_vector_bytes, __dst_vector_bytes);
-    const auto __vector_tag          = cudax::__vectorized_dispatch_tag{__common_vector_bytes};
+    const auto __src_vector_bytes        = cudax::__max_vector_size_bytes(__src_raw);
+    const auto __dst_vector_bytes        = cudax::__max_vector_size_bytes(__dst_raw);
+    const auto __dev_id                  = ::cuda::__driver::__cudevice_to_ordinal(::cuda::__driver::__ctxGetDevice());
+    const auto __dev                     = ::cuda::devices[__dev_id];
+    const auto __major                   = __dev.attribute<::cudaDevAttrComputeCapabilityMajor>();
+    const size_t __max_access_size_bytes = (__major >= 9) ? 32 : 16;
+    const auto __common_vector_bytes =
+      ::cuda::std::min({__src_vector_bytes, __dst_vector_bytes, __max_access_size_bytes});
+    const auto __vector_tag = cudax::__vectorized_dispatch_tag{__common_vector_bytes};
     if (__common_vector_bytes > sizeof(_Tp)
         && cudax::__dispatch_by_rank<2>(__vector_tag, __src_raw, __dst_raw, __stream))
     {

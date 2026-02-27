@@ -581,7 +581,7 @@ template <::CUpointer_attribute _Attr>
   const auto __status = ::cuda::__driver::__pointerGetAttributeNoThrow<_Attr>(__result, __ptr);
   if (__status != ::cudaSuccess)
   {
-    ::cuda::__throw_cuda_error(__status, "Failed to get attribute of a pointer");
+    _CCCL_THROW(::cuda::cuda_error, __status, "Failed to get attribute of a pointer");
   }
   return __result;
 }

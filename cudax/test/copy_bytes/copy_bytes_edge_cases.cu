@@ -13,12 +13,11 @@
 #include <thrust/fill.h>
 #include <thrust/host_vector.h>
 
-#include <cute/layout.hpp>
-
 #include <climits>
 #include <stdexcept>
 
 #include "copy_bytes_common.cuh"
+#include <cute/layout.hpp>
 
 /***********************************************************************************************************************
  * Edge Cases

@@ -8,11 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cute/layout.hpp>
-
 #include <cstdint>
 
 #include "copy_bytes_common.cuh"
+#include <cute/layout.hpp>
 
 using data_t = int8_t;
 

@@ -10,9 +10,8 @@
 
 #include <thrust/host_vector.h>
 
-#include <cute/layout.hpp>
-
 #include "copy_bytes_common.cuh"
+#include <cute/layout.hpp>
 
 // Tested Layouts -> must generate 16B vectorized copy and (48):(1) layout
 // --------------------------

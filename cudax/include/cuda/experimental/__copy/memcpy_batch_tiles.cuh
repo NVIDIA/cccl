@@ -51,7 +51,8 @@ __get_memcpy_attributes(__copy_direction __direction, const void* __src_ptr, con
       0};
   }
 
-  const int __device_ordinal = ::cuda::__driver::__pointerGetAttribute<::CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL>(__src_ptr);
+  const int __device_ordinal =
+    ::cuda::__driver::__pointerGetAttribute<::CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL>(__src_ptr);
   return ::CUmemcpyAttributes{
     ::CU_MEMCPY_SRC_ACCESS_ORDER_ANY,
     ::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __device_ordinal},
