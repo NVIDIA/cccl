@@ -90,6 +90,14 @@
 #  define _CCCL_LAUNCH_BOUNDS(...)
 #endif // ^^^ no launch bounds attribute ^^^
 
+// __block_size__ attribute is available for nvcc and nvrtc 12.9+ for hopper+ architectures. It should be used only for
+// cluster launches.
+#if (_CCCL_CUDA_COMPILER(NVCC, >=, 12, 9) || _CCCL_CUDA_COMPILER(NVRTC, >=, 12, 9)) && _CCCL_PTX_ARCH >= 900
+#  define _CCCL_BLOCK_SIZE(...) __block_size__(__VA_ARGS__)
+#else // ^^ has __block_size__ attribute ^^^ / vvv no __block_size__ attribute vvv
+#  define _CCCL_BLOCK_SIZE(...)
+#endif // ^^^ no __block_size__ attribute ^^^
+
 #if _CCCL_HAS_CDP()
 #  ifdef CUDA_FORCE_CDP1_IF_SUPPORTED
 #    error "CUDA Dynamic Parallelism 1 is no longer supported. Please undefine CUDA_FORCE_CDP1_IF_SUPPORTED."

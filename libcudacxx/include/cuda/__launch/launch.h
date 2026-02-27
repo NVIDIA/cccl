@@ -114,6 +114,8 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wassume")
 template <class _Hierarchy>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void __assume_known_info() noexcept
 {
+  static_assert(__is_hierarchy_v<_Hierarchy>);
+
   constexpr auto __dext = ::cuda::std::dynamic_extent;
 
   using _BlockDesc = typename _Hierarchy::template level_desc_type<block_level>;
@@ -251,10 +253,22 @@ _CCCL_DIAG_POP
 #    undef _CCCL_GRID_DIM_Y
 #    undef _CCCL_GRID_DIM_Z
 
-template <class _Config>
+template <class _Hierarchy, class _Level>
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_CONSTEVAL unsigned __block_size(::cuda::std::size_t __i) noexcept
+{
+  static_assert(__is_hierarchy_v<_Hierarchy>);
+  static_assert(__is_hierarchy_level_v<_Level>);
+  using _Desc = typename _Hierarchy::template level_desc_type<_Level>;
+  using _Exts = typename _Desc::extents_type;
+
+  static_assert(_Exts::rank_dynamic() == 0, "this function can be used only with all static extents");
+  return static_cast<unsigned>(_Exts::static_extent(__i));
+}
+
+template <class _Hierarchy>
 [[nodiscard]] _CCCL_DEVICE_API _CCCL_CONSTEVAL unsigned __max_nthreads_per_block() noexcept
 {
-  using _Hierarchy = typename _Config::hierarchy_type;
+  static_assert(__is_hierarchy_v<_Hierarchy>);
   using _BlockDesc = typename _Hierarchy::template level_desc_type<block_level>;
   using _BlockExts = typename _BlockDesc::extents_type;
 
@@ -271,12 +285,37 @@ inline constexpr bool __invoke_kernel_functor_with_config_v =
 #    endif
   ;
 
-// We create 2 overloads, with/without the __launch_bounds__ attribute. We must use enable_if because of
-// "Pack template parameter must be the last template parameter for a variadic __global__ function template" error when
-// we try to use _CCCL_REQUIRES expression.
+// We create 3 kernel functor launchers:
+// 1. With __block_size__ + __launch_bounds__ for cluster launches with compile-time known dims.
+// 2. With __launch_bounds__ for non-cluster launches with compile-time known block size.
+// 3. Fallback without any attributes.
+
 template <class _Config, class _Kernel, class... _Args>
-__global__ static void _CCCL_LAUNCH_BOUNDS(::cuda::__max_nthreads_per_block<_Config>())
-  __kernel_launcher_with_launch_bounds(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
+__global__ static void
+  _CCCL_BLOCK_SIZE((::cuda::__block_size<typename _Config::hierarchy_type, block_level>(0),
+                    ::cuda::__block_size<typename _Config::hierarchy_type, block_level>(1),
+                    ::cuda::__block_size<typename _Config::hierarchy_type, block_level>(2)),
+                   (::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(0),
+                    ::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(1),
+                    ::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(2)))
+  _CCCL_LAUNCH_BOUNDS(::cuda::__max_nthreads_per_block<typename _Config::hierarchy_type>())
+  __kernel_launcher_with_block_size(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
+{
+  ::cuda::__assume_known_info<typename _Config::hierarchy_type>();
+
+  if constexpr (__invoke_kernel_functor_with_config_v<_Kernel, _Config, _Args...>)
+  {
+    __kernel_fn(__conf, __args...);
+  }
+  else
+  {
+    __kernel_fn(__args...);
+  }
+}
+
+template <class _Config, class _Kernel, class... _Args>
+__global__ static void _CCCL_LAUNCH_BOUNDS(::cuda::__max_nthreads_per_block<typename _Config::hierarchy_type>())
+__kernel_launcher_with_launch_bounds(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
 {
   ::cuda::__assume_known_info<typename _Config::hierarchy_type>();
 
@@ -308,14 +347,22 @@ __global__ static void __kernel_launcher(const _CCCL_GRID_CONSTANT _Config __con
 template <class _Kernel, class _Config, class... _Args>
 [[nodiscard]] _CCCL_API constexpr auto __get_kernel_launcher() noexcept
 {
-  constexpr auto __dext = ::cuda::std::dynamic_extent;
-
   using _Hierarchy = typename _Config::hierarchy_type;
   using _BlockDesc = typename _Hierarchy::template level_desc_type<block_level>;
   using _BlockExts = typename _BlockDesc::extents_type;
 
-  if constexpr (_BlockExts::static_extent(0) != __dext && _BlockExts::static_extent(1) != __dext
-                && _BlockExts::static_extent(2) != __dext)
+  if constexpr (_Hierarchy::has_level(cluster))
+  {
+    using _ClusterDesc = typename _Hierarchy::template level_desc_type<cluster_level>;
+    using _ClusterExts = typename _ClusterDesc::extents_type;
+
+    if constexpr (_BlockExts::rank_dynamic() == 0 && _ClusterExts::rank_dynamic() == 0)
+    {
+      return ::cuda::__kernel_launcher_with_block_size<_Config, _Kernel, _Args...>;
+    }
+  }
+
+  if constexpr (_BlockExts::rank_dynamic() == 0)
   {
     return ::cuda::__kernel_launcher_with_launch_bounds<_Config, _Kernel, _Args...>;
   }
