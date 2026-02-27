@@ -446,7 +446,7 @@
     },
     {
       "name": "benchmark",
-      "displayName": "CUB/Thrust/libcu++ benchmarking",
+      "displayName": "CCCL benchmarking",
       "inherits": "cub-benchmark",
       "cacheVariables": {
         "CCCL_ENABLE_THRUST": true,
