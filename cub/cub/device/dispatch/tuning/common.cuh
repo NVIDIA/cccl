@@ -18,6 +18,8 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
+#include <cuda/__functional/maximum.h>
+#include <cuda/__functional/minimum.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/is_signed.h>
 
