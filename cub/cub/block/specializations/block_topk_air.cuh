@@ -348,80 +348,44 @@ private:
     // to the splitter prefix. Otherwise, we have to make sure that *all* candidates that compare strictly less than the
     // splitter prefix are selected, and then select amongst candidates that compare equal to the splitter prefix to
     // fill up the remaining slots up to k.
-    if (expand_k_to_include_ties || num_candidates + total_selected == k)
+    const bool select_all_candidates = expand_k_to_include_ties || num_candidates + total_selected == k;
+
+    if (linear_tid == 0)
     {
-      if (linear_tid == 0)
-      {
-        // Write offsets for selected items with key_prefix < kth_prefix
-        storage.stage.select.selected_offset[0] = 0;
-      }
-      // Ensure atomic selection counter has been reset
-      __syncthreads();
-
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < items_per_thread; ++i)
-      {
-        const auto item_index             = static_cast<int>(linear_tid) * items_per_thread + i;
-        const bit_ordered_type key_prefix = unsigned_keys[i] & prefix_mask;
-        const bool qualifies_for_top_k    = (IsFullTile || item_index < num_valid) && key_prefix <= kth_prefix;
-
-        // Untwiddle the key before storing in shared memory
-        if constexpr (SelectDirection == detail::topk::select::max)
-        {
-          unsigned_keys[i] = bit_ordered_inversion::inverse(decomposer, unsigned_keys[i]);
-        }
-        unsigned_keys[i] = bit_ordered_conversion::from_bit_ordered(decomposer, unsigned_keys[i]);
-
-        if (qualifies_for_top_k)
-        {
-          const histo_counter_t selected_offset = atomicAdd(&storage.stage.select.selected_offset[0], 1);
-          reinterpret_cast<bit_ordered_type*>(storage.stage.select.exchange.keys)[selected_offset] = unsigned_keys[i];
-          if constexpr (!keys_only)
-          {
-            scatter_indices[i] = selected_offset;
-          }
-        }
-      }
+      // Write offsets for selected items with key_prefix < kth_prefix
+      storage.stage.select.selected_offset[0] = 0;
+      // Write offsets for tied items across the k-th position, i.e., key_prefix == kth_prefix
+      storage.stage.select.selected_offset[1] = total_selected;
     }
-    else
+    // Ensure atomic selection counter has been reset
+    __syncthreads();
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < items_per_thread; ++i)
     {
-      if (linear_tid == 0)
+      const bit_ordered_type key_prefix = unsigned_keys[i] & prefix_mask;
+
+      const bool is_valid     = (IsFullTile || static_cast<int>(linear_tid) * items_per_thread + i < num_valid);
+      const bool is_selected  = key_prefix < kth_prefix;
+      const bool is_candidate = key_prefix == kth_prefix;
+
+      // We differentiate between candidates and selected only if not all candidates make it into the top-k items.
+      int item_class = (!select_all_candidates) && is_candidate ? 1 : 0;
+
+      // Untwiddle the key before storing in shared memory
+      if constexpr (SelectDirection == detail::topk::select::max)
       {
-        // Write offsets for selected items with key_prefix < kth_prefix
-        storage.stage.select.selected_offset[0] = 0;
-        // Write offsets for tied items across the k-th position, i.e., key_prefix == kth_prefix
-        storage.stage.select.selected_offset[1] = total_selected;
+        unsigned_keys[i] = bit_ordered_inversion::inverse(decomposer, unsigned_keys[i]);
       }
-      // Ensure atomic selection counter has been reset
-      __syncthreads();
+      unsigned_keys[i] = bit_ordered_conversion::from_bit_ordered(decomposer, unsigned_keys[i]);
 
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < items_per_thread; ++i)
+      if (is_valid && (is_selected || is_candidate))
       {
-        const bit_ordered_type key_prefix = unsigned_keys[i] & prefix_mask;
-
-        const bool is_selected  = key_prefix < kth_prefix;
-        const bool is_candidate = key_prefix == kth_prefix;
-        int item_class          = is_selected ? 0 : (is_candidate ? 1 : -1);
-
-        const bool is_valid = (IsFullTile || static_cast<int>(linear_tid) * items_per_thread + i < num_valid);
-        item_class          = is_valid ? item_class : -1;
-
-        // Untwiddle the key before storing in shared memory
-        if constexpr (SelectDirection == detail::topk::select::max)
+        const histo_counter_t selected_offset = atomicAdd(&storage.stage.select.selected_offset[item_class], 1);
+        reinterpret_cast<bit_ordered_type*>(storage.stage.select.exchange.keys)[selected_offset] = unsigned_keys[i];
+        if constexpr (!keys_only)
         {
-          unsigned_keys[i] = bit_ordered_inversion::inverse(decomposer, unsigned_keys[i]);
-        }
-        unsigned_keys[i] = bit_ordered_conversion::from_bit_ordered(decomposer, unsigned_keys[i]);
-
-        if (item_class >= 0)
-        {
-          const histo_counter_t selected_offset = atomicAdd(&storage.stage.select.selected_offset[item_class], 1);
-          reinterpret_cast<bit_ordered_type*>(storage.stage.select.exchange.keys)[selected_offset] = unsigned_keys[i];
-          if constexpr (!keys_only)
-          {
-            scatter_indices[i] = selected_offset;
-          }
+          scatter_indices[i] = selected_offset;
         }
       }
     }
