@@ -10,10 +10,10 @@ Defined in the header ``<cuda/memory>``.
    namespace cuda {
 
    [[nodiscard]] __host__ __device__ inline
-   size_t ptr_alignment(const void* ptr) noexcept;
+   size_t __ptr_alignment(const void* ptr) noexcept;
 
    [[nodiscard]] __host__ __device__ inline
-   size_t ptr_alignment(const void* ptr, size_t max_alignment) noexcept;
+   size_t __ptr_alignment(const void* ptr, size_t max_alignment) noexcept;
 
    } // namespace cuda
 
@@ -42,10 +42,10 @@ Example
     #include <cuda/memory>
 
     __global__ void kernel(const void* ptr, const void* ptr1, const void* ptr16) {
-        assert(cuda::ptr_alignment(ptr)      >= 128); // usually true for cudaMalloc pointers
-        assert(cuda::ptr_alignment(ptr1, 1)  == 1);
-        assert(cuda::ptr_alignment(ptr16)    == 16);
-        assert(cuda::ptr_alignment(ptr16, 4) == 4);
+        assert(cuda::__ptr_alignment(ptr)      >= 128); // usually true for cudaMalloc pointers
+        assert(cuda::__ptr_alignment(ptr1, 1)  == 1);
+        assert(cuda::__ptr_alignment(ptr16)    == 16);
+        assert(cuda::__ptr_alignment(ptr16, 4) == 4);
     }
 
     int main() {

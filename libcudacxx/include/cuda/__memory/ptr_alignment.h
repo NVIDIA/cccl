@@ -37,7 +37,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @pre    __ptr is not null.
 //! @pre    __max_alignment is a power of two.
 [[nodiscard]] _CCCL_API inline ::cuda::std::size_t
-ptr_alignment(const void* __ptr, ::cuda::std::size_t __max_alignment) noexcept
+__ptr_alignment(const void* __ptr, ::cuda::std::size_t __max_alignment) noexcept
 {
   _CCCL_ASSERT(__ptr != nullptr, "ptr_alignment requires a non-null pointer");
   _CCCL_ASSERT(::cuda::is_power_of_two(__max_alignment), "max_alignment must be a power of two");
@@ -46,9 +46,9 @@ ptr_alignment(const void* __ptr, ::cuda::std::size_t __max_alignment) noexcept
 }
 
 [[nodiscard]] _CCCL_API inline ::cuda::std::size_t
-ptr_alignment(const volatile void* __ptr, ::cuda::std::size_t __max_alignment) noexcept
+__ptr_alignment(const volatile void* __ptr, ::cuda::std::size_t __max_alignment) noexcept
 {
-  return ::cuda::ptr_alignment(const_cast<const void*>(__ptr), __max_alignment);
+  return ::cuda::__ptr_alignment(const_cast<const void*>(__ptr), __max_alignment);
 }
 
 //! @brief Get the alignment of a pointer, namely the largest power of two that divides the pointer address.
@@ -56,16 +56,16 @@ ptr_alignment(const volatile void* __ptr, ::cuda::std::size_t __max_alignment) n
 //! @param  __ptr the input pointer.
 //! @return The alignment of the pointer as a `size_t` value (always a power of two).
 //! @pre    __ptr is not null.
-[[nodiscard]] _CCCL_API inline ::cuda::std::size_t ptr_alignment(const void* __ptr) noexcept
+[[nodiscard]] _CCCL_API inline ::cuda::std::size_t __ptr_alignment(const void* __ptr) noexcept
 {
   _CCCL_ASSERT(__ptr != nullptr, "ptr_alignment requires a non-null pointer");
   const auto __addr = reinterpret_cast<::cuda::std::uintptr_t>(__ptr);
   return static_cast<::cuda::std::size_t>(__addr & (~__addr + 1));
 }
 
-[[nodiscard]] _CCCL_API inline ::cuda::std::size_t ptr_alignment(const volatile void* __ptr) noexcept
+[[nodiscard]] _CCCL_API inline ::cuda::std::size_t __ptr_alignment(const volatile void* __ptr) noexcept
 {
-  return ::cuda::ptr_alignment(const_cast<const void*>(__ptr));
+  return ::cuda::__ptr_alignment(const_cast<const void*>(__ptr));
 }
 
 _CCCL_END_NAMESPACE_CUDA
