@@ -44,7 +44,6 @@ def bench_unique_by_key(state: bench.State):
     # See BUG_REPORT_CACHING.md for details
     clear_all_caches()
 
-    # Get parameters from axes
     key_type_str = state.get_string("KeyT")
     value_type_str = state.get_string("ValueT")
     key_dtype = KEY_TYPE_MAP[key_type_str]
@@ -52,10 +51,8 @@ def bench_unique_by_key(state: bench.State):
     num_elements = int(state.get_int64("Elements"))
     max_seg_size = int(state.get_int64("MaxSegSize"))
 
-    # Allocate arrays
     alloc_stream = as_cupy_stream(state.get_stream())
 
-    # Generate input keys with segments (min_segment_size=1 from C++ code)
     d_in_keys = generate_key_segments(
         num_elements,
         key_dtype,
@@ -87,15 +84,12 @@ def bench_unique_by_key(state: bench.State):
                 value_dtype
             )
 
-        # Output arrays
         d_out_keys = cp.empty(num_elements, dtype=key_dtype)
         d_out_values = cp.empty(num_elements, dtype=value_dtype)
         d_num_selected = cp.empty(1, dtype=np.int32)
 
-    # Synchronize to ensure data is ready
     alloc_stream.synchronize()
 
-    # Build unique_by_key operation with EQUAL_TO operator
     uniquer = make_unique_by_key(
         d_in_keys=d_in_keys,
         d_in_items=d_in_values,
@@ -105,7 +99,6 @@ def bench_unique_by_key(state: bench.State):
         op=OpKind.EQUAL_TO,
     )
 
-    # Get temp storage size and allocate
     temp_storage_bytes = uniquer(
         temp_storage=None,
         d_in_keys=d_in_keys,
@@ -119,7 +112,6 @@ def bench_unique_by_key(state: bench.State):
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 
-    # Warmup run to catch any CUDA errors before benchmarking
     try:
         uniquer(
             temp_storage=temp_storage,
@@ -139,7 +131,6 @@ def bench_unique_by_key(state: bench.State):
     # Get actual number of unique keys for accurate memory write count
     num_runs = int(d_num_selected.get()[0])
 
-    # Match C++ metrics (lines 127-132 of unique_by_key.cu)
     state.add_element_count(num_elements)
     state.add_global_memory_reads(num_elements * d_in_keys.dtype.itemsize)  # Keys read
     state.add_global_memory_reads(
@@ -153,7 +144,6 @@ def bench_unique_by_key(state: bench.State):
         d_num_selected.dtype.itemsize
     )  # num_selected written
 
-    # Execute benchmark
     def launcher(launch: bench.Launch):
         uniquer(
             temp_storage=temp_storage,
@@ -172,9 +162,8 @@ def bench_unique_by_key(state: bench.State):
 
 if __name__ == "__main__":
     b = bench.register(bench_unique_by_key)
-    b.set_name("base")  # Match C++ benchmark name
+    b.set_name("base")
 
-    # Match C++ axes (unique_by_key.cu lines 172-176)
     b.add_string_axis("KeyT", list(KEY_TYPE_MAP.keys()))
     b.add_string_axis("ValueT", list(VALUE_TYPE_MAP.keys()))
     b.add_int64_power_of_two_axis("Elements", range(16, 29, 4))  # [16, 20, 24, 28]

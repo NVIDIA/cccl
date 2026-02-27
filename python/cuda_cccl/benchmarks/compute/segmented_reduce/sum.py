@@ -52,13 +52,11 @@ def bench_segmented_reduce_sum(state: bench.State):
     # See BUG_REPORT_CACHING.md for details
     clear_all_caches()
 
-    # Get parameters from axes
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_elements = int(state.get_int64("Elements"))
     segment_size = int(state.get_int64("SegmentSize"))
 
-    # Allocate arrays
     alloc_stream = as_cupy_stream(state.get_stream())
 
     # Generate segment offsets
@@ -66,7 +64,6 @@ def bench_segmented_reduce_sum(state: bench.State):
         generate_fixed_segment_offsets(num_elements, segment_size, alloc_stream)
     )
 
-    # Generate input data
     with alloc_stream:
         # Random data in a reasonable range to avoid overflow
         if np.issubdtype(dtype, np.integer):
@@ -85,10 +82,8 @@ def bench_segmented_reduce_sum(state: bench.State):
     # Initial value for sum reduction
     h_init = np.array(0, dtype=dtype)
 
-    # Synchronize to ensure data is ready
     alloc_stream.synchronize()
 
-    # Build segmented reduce operation
     reducer = make_segmented_reduce(
         d_in=d_in,
         d_out=d_out,
@@ -98,7 +93,6 @@ def bench_segmented_reduce_sum(state: bench.State):
         h_init=h_init,
     )
 
-    # Get temp storage size and allocate
     temp_storage_bytes = reducer(
         temp_storage=None,
         d_in=d_in,
@@ -112,7 +106,6 @@ def bench_segmented_reduce_sum(state: bench.State):
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 
-    # Warmup run to catch any CUDA errors before benchmarking
     try:
         reducer(
             temp_storage=temp_storage,
@@ -129,12 +122,10 @@ def bench_segmented_reduce_sum(state: bench.State):
         state.skip(f"CUDA error during warmup: {e}")
         return
 
-    # Match C++ metrics
     state.add_element_count(actual_elements)
     state.add_global_memory_reads(actual_elements * d_in.dtype.itemsize)
     state.add_global_memory_writes(num_segments * d_out.dtype.itemsize)
 
-    # Execute benchmark
     def launcher(launch: bench.Launch):
         reducer(
             temp_storage=temp_storage,

@@ -91,16 +91,13 @@ def bench_three_way_partition(state: bench.State):
     # See BUG_REPORT_CACHING.md for details
     clear_all_caches()
 
-    # Get parameters from axes
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_elements = int(state.get_int64("Elements"))
     entropy_str = state.get_string("Entropy")
 
-    # Allocate arrays
     alloc_stream = as_cupy_stream(state.get_stream())
 
-    # Compute borders like C++ code (lines 78-85 of three_way.cu)
     if np.issubdtype(dtype, np.integer):
         info = np.iinfo(dtype)
         min_val = (
@@ -112,16 +109,13 @@ def bench_three_way_partition(state: bench.State):
         min_val = 0.0
         max_val = info.max
 
-    # Compute borders: left = max/3, right = max*2/3
     left_border = max_val // 3 if np.issubdtype(dtype, np.integer) else max_val / 3
     right_border = left_border * 2
 
-    # Generate input data with specified entropy
     d_in = generate_data_with_entropy(
         num_elements, dtype, entropy_str, min_val, max_val, alloc_stream
     )
 
-    # Output arrays
     with alloc_stream:
         d_first_part_out = cp.empty(num_elements, dtype=dtype)
         d_second_part_out = cp.empty(num_elements, dtype=dtype)
@@ -129,10 +123,8 @@ def bench_three_way_partition(state: bench.State):
         # d_num_selected_out stores [num_first_part, num_second_part]
         d_num_selected_out = cp.empty(2, dtype=np.int32)
 
-    # Synchronize to ensure data is ready
     alloc_stream.synchronize()
 
-    # Create predicate functions for three-way partition
     # Items where select_first_op(x) is true go to first partition
     # Items where select_second_op(x) is true (and first is false) go to second partition
     # Items where both are false go to unselected
@@ -152,7 +144,6 @@ def bench_three_way_partition(state: bench.State):
     def select_second_part(x):
         return x < right_thresh
 
-    # Build three_way_partition operation
     partitioner = make_three_way_partition(
         d_in=d_in,
         d_first_part_out=d_first_part_out,
@@ -163,7 +154,6 @@ def bench_three_way_partition(state: bench.State):
         select_second_part_op=select_second_part,
     )
 
-    # Get temp storage size and allocate
     temp_storage_bytes = partitioner(
         temp_storage=None,
         d_in=d_in,
@@ -178,7 +168,6 @@ def bench_three_way_partition(state: bench.State):
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 
-    # Warmup run to catch any CUDA errors before benchmarking
     try:
         partitioner(
             temp_storage=temp_storage,
@@ -196,7 +185,6 @@ def bench_three_way_partition(state: bench.State):
         state.skip(f"CUDA error during warmup: {e}")
         return
 
-    # Match C++ metrics (lines 99-102 of three_way.cu)
     state.add_element_count(num_elements)
     state.add_global_memory_reads(num_elements * d_in.dtype.itemsize)
     state.add_global_memory_writes(num_elements * d_in.dtype.itemsize)
@@ -204,7 +192,6 @@ def bench_three_way_partition(state: bench.State):
         d_num_selected_out.dtype.itemsize
     )  # num_selected written
 
-    # Execute benchmark
     def launcher(launch: bench.Launch):
         partitioner(
             temp_storage=temp_storage,
@@ -224,9 +211,8 @@ def bench_three_way_partition(state: bench.State):
 
 if __name__ == "__main__":
     b = bench.register(bench_three_way_partition)
-    b.set_name("base")  # Match C++ benchmark name
+    b.set_name("base")
 
-    # Match C++ axes (three_way.cu lines 127-131)
     b.add_string_axis("T", list(TYPE_MAP.keys()))
     b.add_int64_power_of_two_axis("Elements", range(16, 29, 4))  # [16, 20, 24, 28]
     b.add_string_axis("Entropy", ENTROPY_VALUES)

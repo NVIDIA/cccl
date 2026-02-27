@@ -29,7 +29,6 @@ from cuda.compute import OpKind, make_exclusive_scan
 
 
 def bench_scan_exclusive_sum(state: bench.State):
-    # Get parameters from axes
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_items = int(state.get_int64("Elements"))
@@ -48,12 +47,10 @@ def bench_scan_exclusive_sum(state: bench.State):
     # Initial value for scan (identity for addition)
     h_init = np.zeros(1, dtype=dtype)
 
-    # Build scan operation using OpKind.PLUS
     scanner = make_exclusive_scan(
         d_in=d_in, d_out=d_out, op=OpKind.PLUS, init_value=h_init
     )
 
-    # Get temp storage size and allocate: Benchmark only execution
     temp_storage_bytes = scanner(
         temp_storage=None,
         d_in=d_in,
@@ -65,7 +62,6 @@ def bench_scan_exclusive_sum(state: bench.State):
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 
-    # Match C++ metrics:
     # state.add_element_count(elements);
     # state.add_global_memory_reads<T>(elements, "Size");
     # state.add_global_memory_writes<T>(elements);
@@ -73,7 +69,6 @@ def bench_scan_exclusive_sum(state: bench.State):
     state.add_global_memory_reads(num_items * d_in.dtype.itemsize)
     state.add_global_memory_writes(num_items * d_out.dtype.itemsize)
 
-    # Execute benchmark
     def launcher(launch: bench.Launch):
         scanner(
             temp_storage=temp_storage,
@@ -90,9 +85,8 @@ def bench_scan_exclusive_sum(state: bench.State):
 
 if __name__ == "__main__":
     b = bench.register(bench_scan_exclusive_sum)
-    b.set_name("base")  # Match C++ benchmark name
+    b.set_name("base")
 
-    # Match C++ axes
     b.add_string_axis("T", list(TYPE_MAP.keys()))
     b.add_int64_power_of_two_axis("Elements", range(16, 33, 4))  # [16, 20, 24, 28, 32]
 

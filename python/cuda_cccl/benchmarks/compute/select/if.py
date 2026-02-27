@@ -47,17 +47,14 @@ def bench_select_if(state: bench.State):
     # See BUG_REPORT_CACHING.md for details
     clear_all_caches()
 
-    # Get parameters from axes
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_elements = int(state.get_int64("Elements"))
     entropy_str = state.get_string("Entropy")
 
-    # Calculate threshold based on entropy
     probability = ENTROPY_TO_PROB[entropy_str]
     threshold = lerp_min_max(dtype, probability)
 
-    # Allocate arrays
     alloc_stream = as_cupy_stream(state.get_stream())
 
     with alloc_stream:
@@ -81,7 +78,6 @@ def bench_select_if(state: bench.State):
         # Number of selected elements output
         d_num_selected = cp.zeros(1, dtype=np.uint64)
 
-    # Synchronize to ensure data is ready
     alloc_stream.synchronize()
 
     # Create predicate: select elements less than threshold
@@ -91,7 +87,6 @@ def bench_select_if(state: bench.State):
     def less_than_threshold(x):
         return x < thresh_val
 
-    # Build select operation
     selector = make_select(
         d_in=d_in,
         d_out=d_out,
@@ -99,7 +94,6 @@ def bench_select_if(state: bench.State):
         cond=less_than_threshold,
     )
 
-    # Get temp storage size and allocate
     temp_storage_bytes = selector(
         temp_storage=None,
         d_in=d_in,
@@ -111,7 +105,6 @@ def bench_select_if(state: bench.State):
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 
-    # Warmup run to catch any CUDA errors before benchmarking
     try:
         selector(
             temp_storage=temp_storage,
@@ -129,13 +122,11 @@ def bench_select_if(state: bench.State):
     # Get actual number of selected elements for metrics
     num_selected = int(d_num_selected.get()[0])
 
-    # Match C++ metrics
     state.add_element_count(num_elements)
     state.add_global_memory_reads(num_elements * d_in.dtype.itemsize)
     state.add_global_memory_writes(num_selected * d_out.dtype.itemsize)
     state.add_global_memory_writes(1 * d_num_selected.dtype.itemsize)
 
-    # Execute benchmark
     def launcher(launch: bench.Launch):
         selector(
             temp_storage=temp_storage,
@@ -152,9 +143,8 @@ def bench_select_if(state: bench.State):
 
 if __name__ == "__main__":
     b = bench.register(bench_select_if)
-    b.set_name("base")  # Match C++ benchmark name
+    b.set_name("base")
 
-    # Match C++ axes
     b.add_string_axis("T", list(TYPE_MAP.keys()))
     b.add_int64_power_of_two_axis("Elements", range(16, 29, 4))  # [16, 20, 24, 28]
     b.add_string_axis("Entropy", ENTROPY_VALUES)

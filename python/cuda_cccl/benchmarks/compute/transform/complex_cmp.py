@@ -75,6 +75,6 @@ def bench_compare_complex(state: bench.State):
 
 if __name__ == "__main__":
     b = bench.register(bench_compare_complex)
-    b.set_name("compare_complex")  # Match C++ benchmark name
+    b.set_name("compare_complex")
     b.add_int64_power_of_two_axis("Elements", range(16, 33, 4))
     bench.run_all_benchmarks(sys.argv)

@@ -97,7 +97,6 @@ def bench_select_flagged(state: bench.State):
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 
-    # Warmup run to catch any CUDA errors before benchmarking
     try:
         selector(
             temp_storage=temp_storage,
@@ -134,7 +133,7 @@ def bench_select_flagged(state: bench.State):
 
 if __name__ == "__main__":
     b = bench.register(bench_select_flagged)
-    b.set_name("base")  # Match C++ benchmark name
+    b.set_name("base")
     b.add_string_axis("T", list(TYPE_MAP.keys()))
     b.add_int64_power_of_two_axis("Elements", range(16, 29, 4))
     b.add_string_axis("Entropy", ENTROPY_VALUES)

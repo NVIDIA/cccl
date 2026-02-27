@@ -83,6 +83,6 @@ def bench_transform_fib(state: bench.State):
 
 if __name__ == "__main__":
     b = bench.register(bench_transform_fib)
-    b.set_name("fibonacci")  # Match C++ benchmark name
+    b.set_name("fibonacci")
     b.add_int64_power_of_two_axis("Elements", range(16, 33, 4))
     bench.run_all_benchmarks(sys.argv)

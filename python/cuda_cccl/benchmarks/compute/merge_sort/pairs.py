@@ -132,7 +132,7 @@ def bench_merge_sort_pairs(state: bench.State):
 
 if __name__ == "__main__":
     b = bench.register(bench_merge_sort_pairs)
-    b.set_name("base")  # Match C++ benchmark name
+    b.set_name("base")
     b.add_string_axis("KeyT", list(KEY_TYPE_MAP.keys()))
     b.add_string_axis("ValueT", list(VALUE_TYPE_MAP.keys()))
     b.add_int64_power_of_two_axis("Elements", range(16, 29, 4))

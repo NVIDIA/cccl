@@ -56,7 +56,6 @@ def bench_radix_sort_pairs(state: bench.State):
     # See BUG_REPORT_CACHING.md for details
     clear_all_caches()
 
-    # Get parameters from axes
     key_type_str = state.get_string("KeyT")
     value_type_str = state.get_string("ValueT")
     key_dtype = KEY_TYPE_MAP[key_type_str]
@@ -64,26 +63,20 @@ def bench_radix_sort_pairs(state: bench.State):
     num_elements = int(state.get_int64("Elements"))
     entropy_str = state.get_string("Entropy")
 
-    # Allocate arrays
     alloc_stream = as_cupy_stream(state.get_stream())
 
-    # Generate input keys with specified entropy
     d_in_keys = generate_data_with_entropy(
         num_elements, key_dtype, entropy_str, alloc_stream
     )
 
-    # Generate input values (random, no entropy control)
     d_in_values = generate_values(num_elements, value_dtype, alloc_stream)
 
-    # Output arrays
     with alloc_stream:
         d_out_keys = cp.empty(num_elements, dtype=key_dtype)
         d_out_values = cp.empty(num_elements, dtype=value_dtype)
 
-    # Synchronize to ensure data is ready
     alloc_stream.synchronize()
 
-    # Build radix sort operation (keys + values, ascending order)
     sorter = make_radix_sort(
         d_in_keys=d_in_keys,
         d_out_keys=d_out_keys,
@@ -92,7 +85,6 @@ def bench_radix_sort_pairs(state: bench.State):
         order=SortOrder.ASCENDING,
     )
 
-    # Get temp storage size and allocate
     temp_storage_bytes = sorter(
         temp_storage=None,
         d_in_keys=d_in_keys,
@@ -104,7 +96,6 @@ def bench_radix_sort_pairs(state: bench.State):
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 
-    # Warmup run to catch any CUDA errors before benchmarking
     try:
         sorter(
             temp_storage=temp_storage,
@@ -119,14 +110,12 @@ def bench_radix_sort_pairs(state: bench.State):
         state.skip(f"CUDA error during warmup: {e}")
         return
 
-    # Match C++ metrics: reads and writes for both keys and values
     state.add_element_count(num_elements)
     state.add_global_memory_reads(num_elements * d_in_keys.dtype.itemsize)
     state.add_global_memory_reads(num_elements * d_in_values.dtype.itemsize)
     state.add_global_memory_writes(num_elements * d_out_keys.dtype.itemsize)
     state.add_global_memory_writes(num_elements * d_out_values.dtype.itemsize)
 
-    # Execute benchmark
     def launcher(launch: bench.Launch):
         sorter(
             temp_storage=temp_storage,
@@ -143,9 +132,8 @@ def bench_radix_sort_pairs(state: bench.State):
 
 if __name__ == "__main__":
     b = bench.register(bench_radix_sort_pairs)
-    b.set_name("base")  # Match C++ benchmark name
+    b.set_name("base")
 
-    # Match C++ axes
     b.add_string_axis("KeyT", list(KEY_TYPE_MAP.keys()))
     b.add_string_axis("ValueT", list(VALUE_TYPE_MAP.keys()))
     b.add_int64_power_of_two_axis("Elements", range(16, 29, 4))  # [16, 20, 24, 28]

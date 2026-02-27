@@ -81,7 +81,7 @@ def bench_scan_exclusive_custom(state: bench.State):
 
 if __name__ == "__main__":
     b = bench.register(bench_scan_exclusive_custom)
-    b.set_name("base")  # Match C++ benchmark name
+    b.set_name("base")
     b.add_string_axis("T", list(TYPE_MAP.keys()))
     b.add_int64_power_of_two_axis("Elements", range(16, 33, 4))
     bench.run_all_benchmarks(sys.argv)

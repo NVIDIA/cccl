@@ -27,7 +27,6 @@ from cuda.compute import ConstantIterator, OpKind
 
 
 def bench_fill(state: bench.State):
-    # Get parameters from axes
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_items = int(state.get_int64("Elements"))
@@ -41,17 +40,14 @@ def bench_fill(state: bench.State):
         # Python equivalent of C++ return_constant<T>{42}
         constant_it = ConstantIterator(dtype(42))
 
-        # Build transform operation: ConstantIterator -> output
         transform = cuda.compute.make_unary_transform(
             d_in=constant_it, d_out=d_out, op=OpKind.IDENTITY
         )
 
-        # Match C++ metrics
         state.add_element_count(num_items)
         state.add_global_memory_reads(0)
         state.add_global_memory_writes(num_items * d_out.dtype.itemsize)
 
-        # Execute benchmark
         def launcher(launch: bench.Launch):
             transform(
                 d_in=constant_it,
@@ -71,7 +67,6 @@ if __name__ == "__main__":
     b = bench.register(bench_fill)
     b.set_name("fill")
 
-    # Match C++ axis
     b.add_string_axis("T", list(TYPE_MAP.keys()))
     b.add_int64_power_of_two_axis("Elements", range(16, 33, 4))
 
