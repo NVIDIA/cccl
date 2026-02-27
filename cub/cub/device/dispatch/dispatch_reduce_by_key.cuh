@@ -645,6 +645,22 @@ struct DispatchReduceByKey
 
 namespace detail::reduce_by_key
 {
+// we move the conversion out of the lambda below, so MSVC can compile the code
+template <typename PolicyGetter>
+_CCCL_API constexpr auto convert_to_agent_policy(PolicyGetter policy_getter)
+{
+  constexpr reduce_by_key_policy policy = policy_getter();
+  return AgentReduceByKeyPolicy<
+    policy.block_threads,
+    policy.items_per_thread,
+    policy.load_algorithm,
+    policy.load_modifier,
+    policy.scan_algorithm,
+    delay_constructor_t<policy.delay_constructor.kind,
+                        policy.delay_constructor.delay,
+                        policy.delay_constructor.l2_write_latency>>{};
+}
+
 template <
   typename OverrideAccumT = use_default,
   typename KeysInputIteratorT,
@@ -698,20 +714,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
          "Dispatching DeviceReduceByKey to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());))
 #endif
 
-    // Convert the policy into a legacy agent policy for vsmem_helper. Use a value and decltype it again, to workaround
-    // MSVC bug that just turns the type to `int`. TODO(bgruber): refactor this in the future
-    [[maybe_unused]] AgentReduceByKeyPolicy<
-      policy.block_threads,
-      policy.items_per_thread,
-      policy.load_algorithm,
-      policy.load_modifier,
-      policy.scan_algorithm,
-      delay_constructor_t<policy.delay_constructor.kind,
-                          policy.delay_constructor.delay,
-                          policy.delay_constructor.l2_write_latency>> agent_policy;
-
+    // TODO(bgruber): refactor this in the future
     using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<
-      decltype(agent_policy),
+      decltype(convert_to_agent_policy(policy_getter)),
       AgentReduceByKey,
       KeysInputIteratorT,
       UniqueOutputIteratorT,
