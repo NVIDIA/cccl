@@ -108,7 +108,7 @@ template <typename _Resource>
 struct __copy_default_queries<_Resource, false>
 {};
 
-enum class __memory_accessability
+enum class __memory_accessibility
 {
   __unknown,
   __host,
@@ -121,24 +121,24 @@ enum class __memory_accessability
 //! at compile time.
 struct dynamic_accessibility_property
 {
-  using value_type = __memory_accessability;
+  using value_type = __memory_accessibility;
 };
 
 template <bool _HostAccessible, bool _DeviceAccessible>
-_CCCL_API constexpr __memory_accessability __memory_accessability_from_static_properties() noexcept
+_CCCL_API constexpr __memory_accessibility __memory_accessibility _from_static_properties() noexcept
 {
-  return _HostAccessible && _DeviceAccessible ? __memory_accessability::__host_device
-       : _DeviceAccessible                    ? __memory_accessability::__device
-       : _HostAccessible                      ? __memory_accessability::__host
-                                              : __memory_accessability::__unknown;
+  return _HostAccessible && _DeviceAccessible ? __memory_accessibility ::__host_device
+       : _DeviceAccessible                    ? __memory_accessibility ::__device
+       : _HostAccessible                      ? __memory_accessibility ::__host
+                                              : __memory_accessibility ::__unknown;
 }
 
 template <class... _Properties>
-struct __memory_accessability_from_properties
+struct __memory_accessibility _from_properties
 {
-  static constexpr __memory_accessability value =
-    __memory_accessability_from_static_properties<::cuda::mr::__is_host_accessible<_Properties...>,
-                                                  ::cuda::mr::__is_device_accessible<_Properties...>>();
+  static constexpr __memory_accessibility value =
+    __memory_accessibility _from_static_properties<::cuda::mr::__is_host_accessible<_Properties...>,
+                                                   ::cuda::mr::__is_device_accessible<_Properties...>>();
 };
 
 _CCCL_END_NAMESPACE_CUDA_MR

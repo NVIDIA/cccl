@@ -249,10 +249,10 @@ struct explicit_dynamic_resource
     return false;
   }
   friend constexpr void get_property(const explicit_dynamic_resource&, cuda::mr::host_accessible) noexcept {}
-  friend constexpr cuda::mr::__memory_accessability
+  friend constexpr cuda::mr::__memory_accessibility
   get_property(const explicit_dynamic_resource&, cuda::mr::dynamic_accessibility_property) noexcept
   {
-    return cuda::mr::__memory_accessability::__device;
+    return cuda::mr::__memory_accessibility ::__device;
   }
 };
 
@@ -297,16 +297,16 @@ TEST_CASE("dynamic_accessibility_property in type-erased wrappers", "[container]
 {
   cuda::mr::any_resource<cuda::mr::host_accessible> host_device_any{host_device_resource{}};
   CHECK(get_property(host_device_any, cuda::mr::dynamic_accessibility_property{})
-        == cuda::mr::__memory_accessability::__host_device);
+        == cuda::mr::__memory_accessibility ::__host_device);
 
   cuda::mr::any_resource<cuda::mr::host_accessible> explicit_any{explicit_dynamic_resource{}};
   CHECK(get_property(explicit_any, cuda::mr::dynamic_accessibility_property{})
-        == cuda::mr::__memory_accessability::__device);
+        == cuda::mr::__memory_accessibility ::__device);
 
   host_device_resource host_device_mr{};
   cuda::mr::resource_ref<cuda::mr::host_accessible> host_device_ref{host_device_mr};
   CHECK(get_property(host_device_ref, cuda::mr::dynamic_accessibility_property{})
-        == cuda::mr::__memory_accessability::__host_device);
+        == cuda::mr::__memory_accessibility ::__host_device);
 }
 
 TEMPLATE_TEST_CASE_METHOD(test_fixture, "Empty property set", "[container][resource]", big_resource, small_resource)
