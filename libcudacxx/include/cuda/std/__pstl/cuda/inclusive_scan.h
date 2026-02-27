@@ -77,7 +77,7 @@ struct __pstl_dispatch<__pstl_algorithm::__inclusive_scan, __execution_backend::
     size_t __num_bytes = 0;
     _CCCL_TRY_CUDA_API(
       ::cub::DeviceScan::InclusiveScanInit,
-      "__pstl_cuda_inclusive_scan: determination of device storage for cub::DeviceReduce::Reduce failed",
+      "__pstl_cuda_inclusive_scan: determination of device storage for cub::DeviceScan::InclusiveScanInit failed",
       static_cast<void*>(nullptr),
       __num_bytes,
       __first,
@@ -97,7 +97,7 @@ struct __pstl_dispatch<__pstl_algorithm::__inclusive_scan, __execution_backend::
       // Run the scan
       _CCCL_TRY_CUDA_API(
         ::cub::DeviceScan::InclusiveScanInit,
-        "__pstl_cuda_inclusive_scan: determination of device storage for cub::DeviceReduce::Reduce failed",
+        "__pstl_cuda_exclusive_scan: kernel launch of cub::DeviceScan::InclusiveScanInit failed",
         __storage.__get_temp_storage(),
         __num_bytes,
         ::cuda::std::move(__first),
@@ -126,7 +126,7 @@ struct __pstl_dispatch<__pstl_algorithm::__inclusive_scan, __execution_backend::
     size_t __num_bytes = 0;
     _CCCL_TRY_CUDA_API(
       ::cub::DeviceScan::InclusiveScan,
-      "__pstl_cuda_inclusive_scan: determination of device storage for cub::DeviceReduce::Reduce failed",
+      "__pstl_cuda_inclusive_scan: determination of device storage for cub::DeviceScan::InclusiveScan failed",
       static_cast<void*>(nullptr),
       __num_bytes,
       __first,
@@ -145,7 +145,7 @@ struct __pstl_dispatch<__pstl_algorithm::__inclusive_scan, __execution_backend::
       // Run the scan
       _CCCL_TRY_CUDA_API(
         ::cub::DeviceScan::InclusiveScan,
-        "__pstl_cuda_inclusive_scan: determination of device storage for cub::DeviceReduce::Reduce failed",
+        "__pstl_cuda_exclusive_scan: kernel launch of cub::DeviceScan::InclusiveScan failed",
         __storage.__get_temp_storage(),
         __num_bytes,
         ::cuda::std::move(__first),

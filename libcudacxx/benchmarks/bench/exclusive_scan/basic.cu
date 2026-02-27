@@ -26,13 +26,14 @@ static void range_iter_init(nvbench::state& state, nvbench::type_list<T>)
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements);
-  state.add_global_memory_writes<T>(1);
+  state.add_global_memory_writes<T>(elements);
 
   caching_allocator_t alloc{};
 
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    do_not_optimize(cuda::std::exclusive_scan(cuda_policy(alloc, launch), in.begin(), in.end(), out.begin(), T{42}));
-  });
+  state.exec(
+    nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+      do_not_optimize(cuda::std::exclusive_scan(cuda_policy(alloc, launch), in.begin(), in.end(), out.begin(), T{42}));
+    });
 }
 
 NVBENCH_BENCH_TYPES(range_iter_init, NVBENCH_TYPE_AXES(fundamental_types))
@@ -50,14 +51,15 @@ static void range_iter_init_op(nvbench::state& state, nvbench::type_list<T>)
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements);
-  state.add_global_memory_writes<T>(1);
+  state.add_global_memory_writes<T>(elements);
 
   caching_allocator_t alloc{};
 
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    do_not_optimize(cuda::std::exclusive_scan(
-      cuda_policy(alloc, launch), in.begin(), in.end(), out.begin(), T{42}, ::cuda::std::plus<T>{}));
-  });
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               do_not_optimize(cuda::std::exclusive_scan(
+                 cuda_policy(alloc, launch), in.begin(), in.end(), out.begin(), T{42}, ::cuda::std::plus<T>{}));
+             });
 }
 
 NVBENCH_BENCH_TYPES(range_iter_init_op, NVBENCH_TYPE_AXES(fundamental_types))
