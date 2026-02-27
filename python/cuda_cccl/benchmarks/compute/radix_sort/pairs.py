@@ -25,26 +25,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
 import numpy as np
-from utils import as_cupy_stream, generate_data_with_entropy
+from utils import INTEGER_TYPES, as_cupy_stream, generate_data_with_entropy
 
 import cuda.bench as bench
 from cuda.compute import SortOrder, clear_all_caches, make_radix_sort
 
-# Key type mapping: match C++ integral_types
-KEY_TYPE_MAP = {
-    "I8": np.int8,
-    "I16": np.int16,
-    "I32": np.int32,
-    "I64": np.int64,
-}
-
-# Value type mapping: match C++ value_types (int8, int16, int32, int64)
-VALUE_TYPE_MAP = {
-    "I8": np.int8,
-    "I16": np.int16,
-    "I32": np.int32,
-    "I64": np.int64,
-}
+# Key and value types: match C++ integral_types / value_types
+KEY_TYPE_MAP = INTEGER_TYPES
+VALUE_TYPE_MAP = INTEGER_TYPES
 
 # Entropy values from C++ benchmark (pairs uses fewer values than keys)
 ENTROPY_VALUES = ["1.000", "0.201"]

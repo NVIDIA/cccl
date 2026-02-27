@@ -22,21 +22,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
 import numpy as np
+from utils import SIGNED_TYPES as TYPE_MAP
 from utils import as_cupy_stream
 
 import cuda.bench as bench
 from cuda.compute import clear_all_caches, make_histogram_even
-
-# Type mapping: match C++ sample_types
-# Note: C++ uses int8_t, int16_t, etc. but Python histogram needs compatible types
-TYPE_MAP = {
-    "I8": np.int8,
-    "I16": np.int16,
-    "I32": np.int32,
-    "I64": np.int64,
-    "F32": np.float32,
-    "F64": np.float64,
-}
 
 # From C++ benchmark
 BINS_VALUES = [32, 128, 2048, 2097152]

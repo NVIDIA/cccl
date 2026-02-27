@@ -21,20 +21,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
 import numpy as np
+from utils import SIGNED_TYPES as TYPE_MAP
 from utils import as_cupy_stream
 
 import cuda.bench as bench
 from cuda.compute import OpKind, TransformIterator, clear_all_caches, make_reduce_into
-
-# Type mapping: match C++ all_types
-TYPE_MAP = {
-    "I8": np.int8,
-    "I16": np.int16,
-    "I32": np.int32,
-    "I64": np.int64,
-    "F32": np.float32,
-    "F64": np.float64,
-}
 
 
 def square_op(x):

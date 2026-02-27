@@ -25,20 +25,17 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
 import numpy as np
-from utils import ENTROPY_TO_PROB, as_cupy_stream, lerp_min_max
+from utils import (
+    ENTROPY_TO_PROB,
+    as_cupy_stream,
+    lerp_min_max,
+)
+from utils import (
+    SIGNED_TYPES as TYPE_MAP,
+)
 
 import cuda.bench as bench
 from cuda.compute import clear_all_caches, make_select
-
-# Type mapping: match C++ fundamental_types (excluding int128 and complex which Python doesn't support)
-TYPE_MAP = {
-    "I8": np.int8,
-    "I16": np.int16,
-    "I32": np.int32,
-    "I64": np.int64,
-    "F32": np.float32,
-    "F64": np.float64,
-}
 
 # Entropy values from C++ benchmark
 # These control the selection threshold and thus how many elements are selected

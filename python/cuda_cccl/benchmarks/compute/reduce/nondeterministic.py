@@ -22,17 +22,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
 import numpy as np
+from utils import TYPE_MAP as _ALL_TYPES
 from utils import as_cupy_stream
 
 import cuda.bench as bench
 from cuda.compute import Determinism, OpKind, make_reduce_into
 
-TYPE_MAP = {
-    "I32": np.int32,
-    "I64": np.int64,
-    "F32": np.float32,
-    "F64": np.float64,
-}
+# C++ tests int32, int64, float, double
+TYPE_MAP = {k: _ALL_TYPES[k] for k in ("I32", "I64", "F32", "F64")}
 
 
 def bench_reduce_nondeterministic(state: bench.State):

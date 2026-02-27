@@ -19,20 +19,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
-import numpy as np
+from utils import TYPE_MAP as _ALL_TYPES
 from utils import as_cupy_stream
 
 import cuda.bench as bench
 import cuda.compute
 from cuda.compute import ZipIterator
 
-# Type mapping: C++ types to NumPy dtypes
-TYPE_MAP = {
-    "I8": np.int8,
-    "I16": np.int16,
-    "F32": np.float32,
-    "F64": np.float64,
-}
+# Subset of types matching C++ babelstream benchmark
+TYPE_MAP = {k: _ALL_TYPES[k] for k in ("I8", "I16", "F32", "F64")}
 
 # BabelStream constants
 START_A = 11

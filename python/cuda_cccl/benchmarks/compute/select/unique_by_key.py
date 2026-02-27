@@ -24,32 +24,15 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
 import numpy as np
-from utils import as_cupy_stream, generate_key_segments
+from utils import INTEGER_TYPES, TYPE_MAP, as_cupy_stream, generate_key_segments
 
 import cuda.bench as bench
 from cuda.compute import OpKind, clear_all_caches, make_unique_by_key
 
-# Type mapping for keys: match C++ key_types (int8, int16, int32, int64)
-KEY_TYPE_MAP = {
-    "I8": np.int8,
-    "I16": np.int16,
-    "I32": np.int32,
-    "I64": np.int64,
-}
-
-# Type mapping for values: match C++ all_types (fundamental types)
-VALUE_TYPE_MAP = {
-    "I8": np.int8,
-    "I16": np.int16,
-    "I32": np.int32,
-    "I64": np.int64,
-    "U8": np.uint8,
-    "U16": np.uint16,
-    "U32": np.uint32,
-    "U64": np.uint64,
-    "F32": np.float32,
-    "F64": np.float64,
-}
+# Key types: match C++ key_types (int8, int16, int32, int64)
+KEY_TYPE_MAP = INTEGER_TYPES
+# Value types: match C++ all_types (fundamental types)
+VALUE_TYPE_MAP = TYPE_MAP
 
 # MaxSegSize values from C++ benchmark (unique_by_key.cu line 176)
 # These are powers of 2: 2^1=2, 2^4=16, 2^8=256

@@ -26,24 +26,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
 import numpy as np
-from utils import ENTROPY_TO_PROB, as_cupy_stream
+from utils import ENTROPY_TO_PROB, TYPE_MAP, as_cupy_stream
 
 import cuda.bench as bench
 from cuda.compute import clear_all_caches, make_three_way_partition
-
-# Type mapping: match C++ fundamental_types (excluding int128 and complex)
-TYPE_MAP = {
-    "I8": np.int8,
-    "I16": np.int16,
-    "I32": np.int32,
-    "I64": np.int64,
-    "U8": np.uint8,
-    "U16": np.uint16,
-    "U32": np.uint32,
-    "U64": np.uint64,
-    "F32": np.float32,
-    "F64": np.float64,
-}
 
 # Entropy values from C++ benchmark (three_way.cu line 131)
 ENTROPY_VALUES = ["1.000", "0.544", "0.000"]

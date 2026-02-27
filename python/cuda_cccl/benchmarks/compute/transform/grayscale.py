@@ -21,17 +21,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
-import numpy as np
+from utils import FLOAT_TYPES as TYPE_MAP
 from utils import as_cupy_stream
 
 import cuda.bench as bench
 from cuda.compute import ZipIterator, make_unary_transform
-
-# Type mapping: C++ uses float and double
-TYPE_MAP = {
-    "F32": np.float32,
-    "F64": np.float64,
-}
 
 
 def bench_transform_grayscale(state: bench.State):

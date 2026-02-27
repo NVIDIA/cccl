@@ -18,20 +18,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
-import numpy as np
+from utils import INTEGER_TYPES as TYPE_MAP
 from utils import as_cupy_stream
 
 import cuda.bench as bench
 import cuda.compute
 from cuda.compute import ConstantIterator, OpKind
-
-# Type mapping: C++ types to NumPy dtypes
-TYPE_MAP = {
-    "I8": np.int8,
-    "I16": np.int16,
-    "I32": np.int32,
-    "I64": np.int64,
-}
 
 
 def bench_fill(state: bench.State):
