@@ -72,6 +72,10 @@ void check_graph_nodes_with_different_streams(F call_cub_api)
   {
     call_cub_api(with_get_stream_method{stream.get()});
   }
+  SECTION("environment with cuda::stream_ref")
+  {
+    call_cub_api(cuda::std::execution::env{cuda::stream_ref{stream}});
+  }
   SECTION("environment with prop with cudaStream_t")
   {
     // MSVC has trouble nesting two aggregate initializations with CTAD
