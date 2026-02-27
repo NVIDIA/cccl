@@ -54,7 +54,7 @@ class exec_place;
  * @code
  * class my_custom_extension : public data_place_extension {
  * public:
- *   exec_place get_affine_exec_place() const override { ... }
+ *   exec_place affine_exec_place() const override { ... }
  *   int get_device_ordinal() const override { return my_device_id; }
  *   ::std::string to_string() const override { return "my_custom_place"; }
  *   size_t hash() const override { return std::hash<int>{}(my_device_id); }
@@ -74,7 +74,7 @@ public:
    * stored at this place. The exec_place may have its own virtual methods
    * (e.g., activate/deactivate) for execution-specific behavior.
    */
-  virtual exec_place get_affine_exec_place() const = 0;
+  virtual exec_place affine_exec_place() const = 0;
 
   /**
    * @brief Get the device ordinal for this place

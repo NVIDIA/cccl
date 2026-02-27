@@ -26,7 +26,7 @@ void find_if(nvbench::state& state, nvbench::type_list<T>)
 
   caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    thrust::find_if(policy(alloc, launch), dinput.begin(), dinput.end(), thrust::detail::equal_to_value<T>(val));
+    thrust::find_if(policy(alloc, launch), dinput.begin(), dinput.end(), cuda::equal_to_value<T>(val));
   });
 }
 

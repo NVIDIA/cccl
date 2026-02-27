@@ -119,5 +119,60 @@ template <typename It>
     THRUST_NS_QUALIFIER::is_trivially_relocatable_v<vt>,
     THRUST_NS_QUALIFIER::is_contiguous_iterator_v<It>};
 }
+
+enum class primitive_key
+{
+  no,
+  yes
+};
+enum class primitive_length
+{
+  no,
+  yes
+};
+enum class key_size
+{
+  _1,
+  _2,
+  _4,
+  _8,
+  _16,
+  unknown
+};
+enum class length_size
+{
+  _4,
+  unknown
+};
+
+template <class T>
+_CCCL_API constexpr primitive_key is_primitive_key()
+{
+  return is_primitive<T>::value ? primitive_key::yes : primitive_key::no;
+}
+
+template <class T>
+_CCCL_API constexpr primitive_length is_primitive_length()
+{
+  return is_primitive<T>::value ? primitive_length::yes : primitive_length::no;
+}
+
+template <class KeyT>
+_CCCL_API constexpr key_size classify_key_size()
+{
+  return sizeof(KeyT) == 1 ? key_size::_1
+       : sizeof(KeyT) == 2 ? key_size::_2
+       : sizeof(KeyT) == 4 ? key_size::_4
+       : sizeof(KeyT) == 8 ? key_size::_8
+       : sizeof(KeyT) == 16
+         ? key_size::_16
+         : key_size::unknown;
+}
+
+template <class LengthT>
+_CCCL_API constexpr length_size classify_length_size()
+{
+  return sizeof(LengthT) == 4 ? length_size::_4 : length_size::unknown;
+}
 } // namespace detail
 CUB_NAMESPACE_END

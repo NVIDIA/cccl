@@ -38,7 +38,7 @@
 //! @file The \c heterogeneous_iterator class is an iterator that provides typed execution space safety.
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-enum class _IsConstIter
+enum class __is_heterogeneous_const_iter
 {
   __no,
   __yes,
@@ -61,10 +61,10 @@ template <class _CvTp, class... _Properties>
 class heterogeneous_iterator;
 
 // We restrict all accessors of the iterator based on the execution space
-template <class _Tp, _IsConstIter _IsConst, ::cuda::mr::__memory_accessability _Space>
+template <class _Tp, __is_heterogeneous_const_iter _IsConst, ::cuda::mr::__memory_accessability _Space>
 class __heterogeneous_iterator_access;
 
-template <class _Tp, _IsConstIter _IsConst>
+template <class _Tp, __is_heterogeneous_const_iter _IsConst>
 class __heterogeneous_iterator_access<_Tp, _IsConst, ::cuda::mr::__memory_accessability::__host>
 {
 public:
@@ -72,8 +72,8 @@ public:
   using iterator_category = ::cuda::std::random_access_iterator_tag;
   using value_type        = _Tp;
   using difference_type   = ::cuda::std::ptrdiff_t;
-  using pointer           = ::cuda::std::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>*;
-  using reference         = ::cuda::std::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>&;
+  using pointer           = ::cuda::std::__maybe_const<_IsConst == __is_heterogeneous_const_iter::__yes, _Tp>*;
+  using reference         = ::cuda::std::__maybe_const<_IsConst == __is_heterogeneous_const_iter::__yes, _Tp>&;
 
   _CCCL_HIDE_FROM_ABI __heterogeneous_iterator_access() = default;
 
@@ -83,14 +83,14 @@ public:
 
   //! @brief Dereference a \c heterogeneous_iterator
   //! @return A reference to the element the iterator points to
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST constexpr reference operator*() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr reference operator*() const noexcept
   {
     return *__ptr_;
   }
 
   //! @brief Operator arrow on a \c heterogeneous_iterator
   //! @return A pointer to the element the iterator points to
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST constexpr pointer operator->() const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr pointer operator->() const noexcept
   {
     return __ptr_;
   }
@@ -98,8 +98,7 @@ public:
   //! @brief Dereference a \c heterogeneous_iterator
   //! @param __count The offset at which we want to dereference
   //! @return A reference of the \p __count th element after the one the iterator points to
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST constexpr reference
-  operator[](const difference_type __count) const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr reference operator[](const difference_type __count) const noexcept
   {
     return *(__ptr_ + __count);
   }
@@ -111,7 +110,7 @@ protected:
   friend class heterogeneous_iterator;
 };
 
-template <class _Tp, _IsConstIter _IsConst>
+template <class _Tp, __is_heterogeneous_const_iter _IsConst>
 class __heterogeneous_iterator_access<_Tp, _IsConst, ::cuda::mr::__memory_accessability::__device>
 {
 public:
@@ -119,8 +118,8 @@ public:
   using iterator_category = ::cuda::std::random_access_iterator_tag;
   using value_type        = _Tp;
   using difference_type   = ::cuda::std::ptrdiff_t;
-  using pointer           = ::cuda::std::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>*;
-  using reference         = ::cuda::std::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>&;
+  using pointer           = ::cuda::std::__maybe_const<_IsConst == __is_heterogeneous_const_iter::__yes, _Tp>*;
+  using reference         = ::cuda::std::__maybe_const<_IsConst == __is_heterogeneous_const_iter::__yes, _Tp>&;
 
   _CCCL_HIDE_FROM_ABI __heterogeneous_iterator_access() = default;
 
@@ -130,14 +129,14 @@ public:
 
   //! @brief Dereference a \c heterogeneous_iterator
   //! @return A reference to the element the iterator points to
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr reference operator*() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr reference operator*() const noexcept
   {
     return *__ptr_;
   }
 
   //! @brief Operator arrow on a \c heterogeneous_iterator
   //! @return A pointer to the element the iterator points to
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr pointer operator->() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr pointer operator->() const noexcept
   {
     return __ptr_;
   }
@@ -145,8 +144,7 @@ public:
   //! @brief Dereference a \c heterogeneous_iterator
   //! @param __count The offset at which we want to dereference
   //! @return A reference of the \p __count th element after the one the iterator points to
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr reference
-  operator[](const difference_type __count) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr reference operator[](const difference_type __count) const noexcept
   {
     return *(__ptr_ + __count);
   }
@@ -158,7 +156,7 @@ protected:
   friend class heterogeneous_iterator;
 };
 
-template <class _Tp, _IsConstIter _IsConst>
+template <class _Tp, __is_heterogeneous_const_iter _IsConst>
 class __heterogeneous_iterator_access<_Tp, _IsConst, ::cuda::mr::__memory_accessability::__host_device>
 {
 public:
@@ -166,25 +164,25 @@ public:
   using iterator_category = ::cuda::std::random_access_iterator_tag;
   using value_type        = _Tp;
   using difference_type   = ::cuda::std::ptrdiff_t;
-  using pointer           = ::cuda::std::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>*;
-  using reference         = ::cuda::std::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>&;
+  using pointer           = ::cuda::std::__maybe_const<_IsConst == __is_heterogeneous_const_iter::__yes, _Tp>*;
+  using reference         = ::cuda::std::__maybe_const<_IsConst == __is_heterogeneous_const_iter::__yes, _Tp>&;
 
   _CCCL_HIDE_FROM_ABI __heterogeneous_iterator_access() = default;
 
-  _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE explicit constexpr __heterogeneous_iterator_access(pointer __ptr) noexcept
+  _CCCL_API explicit constexpr __heterogeneous_iterator_access(pointer __ptr) noexcept
       : __ptr_(__ptr)
   {}
 
   //! @brief Dereference a \c heterogeneous_iterator
   //! @return A reference to the element the iterator points to
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr reference operator*() const noexcept
+  [[nodiscard]] _CCCL_API constexpr reference operator*() const noexcept
   {
     return *__ptr_;
   }
 
   //! @brief Operator arrow on a \c heterogeneous_iterator
   //! @return A pointer to the element the iterator points to
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr pointer operator->() const noexcept
+  [[nodiscard]] _CCCL_API constexpr pointer operator->() const noexcept
   {
     return __ptr_;
   }
@@ -192,8 +190,7 @@ public:
   //! @brief Dereference a \c heterogeneous_iterator
   //! @param __count The offset at which we want to dereference
   //! @return A reference to the `__count` element after the one the iterator points to
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr reference
-  operator[](const difference_type __count) const noexcept
+  [[nodiscard]] _CCCL_API constexpr reference operator[](const difference_type __count) const noexcept
   {
     return *(__ptr_ + __count);
   }
@@ -207,14 +204,15 @@ protected:
 
 template <class _CvTp, class... _Properties>
 class heterogeneous_iterator
-    : public __heterogeneous_iterator_access<::cuda::std::remove_const_t<_CvTp>,
-                                             ::cuda::std::is_const_v<_CvTp> ? _IsConstIter::__yes : _IsConstIter::__no,
-                                             ::cuda::mr::__memory_accessability_from_properties<_Properties...>::value>
+    : public __heterogeneous_iterator_access<
+        ::cuda::std::remove_const_t<_CvTp>,
+        ::cuda::std::is_const_v<_CvTp> ? __is_heterogeneous_const_iter::__yes : __is_heterogeneous_const_iter::__no,
+        ::cuda::mr::__memory_accessability_from_properties<_Properties...>::value>
 {
-  using __base =
-    __heterogeneous_iterator_access<::cuda::std::remove_const_t<_CvTp>,
-                                    ::cuda::std::is_const_v<_CvTp> ? _IsConstIter::__yes : _IsConstIter::__no,
-                                    ::cuda::mr::__memory_accessability_from_properties<_Properties...>::value>;
+  using __base = __heterogeneous_iterator_access<
+    ::cuda::std::remove_const_t<_CvTp>,
+    ::cuda::std::is_const_v<_CvTp> ? __is_heterogeneous_const_iter::__yes : __is_heterogeneous_const_iter::__no,
+    ::cuda::mr::__memory_accessability_from_properties<_Properties...>::value>;
 
 public:
   using iterator_concept  = ::cuda::std::contiguous_iterator_tag;

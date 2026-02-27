@@ -13,9 +13,9 @@ path_to_docs=$(realpath $1)
 
 cd $SCRIPT_PATH
 
-thrust=$(
+pages=$(
         cd $path_to_docs;
-        find ./ -iname "*.html" -printf 'cccl/%P,'
+        find ./ -iname "*.html" -printf '/%P,'
     )
 
-echo "$thrust" > $path_to_docs/pagelist.txt
+echo "$pages" > $path_to_docs/pagelist.txt

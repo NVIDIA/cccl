@@ -210,25 +210,15 @@ mkdir -p "${HTML_DIR}/${VERSION}"
 cp -a "${ORIG_DIR}/." "${HTML_DIR}/${VERSION}/"
 rm -rf "${ORIG_DIR}"
 
-# Redirect root index to the current version
-cat > "${HTML_DIR}/index.html" <<EOF
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="refresh" content="0; url=./${VERSION}/">
-    <title>Redirecting…</title>
-  </head>
-  <body>
-    <p>This page has moved. If you are not redirected automatically, follow this <a href="./${VERSION}/">link to the ${VERSION} documentation</a>.</p>
-  </body>
-</html>
-EOF
-
 # Copy objects.inv to the root to support intersphinx consumers
 if [ -f "${HTML_DIR}/${VERSION}/objects.inv" ]; then
     cp "${HTML_DIR}/${VERSION}/objects.inv" "${HTML_DIR}/objects.inv"
 fi
+
+# Scrape docs to generate page list
+./scrape_docs.bash "${HTML_DIR}/${VERSION}"
+
+cp "./404.html" "${HTML_DIR}/404.html"
 
 # Provide version metadata for the theme switcher
 cat > "${HTML_DIR}/nv-versions.json" <<EOF

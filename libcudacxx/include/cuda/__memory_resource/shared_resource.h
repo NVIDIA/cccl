@@ -130,7 +130,8 @@ struct shared_resource : ::cuda::mr::__copy_default_queries<_Resource>
   }
 
   //! @brief Swaps a \c shared_resource with another one.
-  //! @param __other The other \c shared_resource.
+  //! @param __left A \c shared_resource.
+  //! @param __right Another \c shared_resource.
   friend void swap(shared_resource& __left, shared_resource& __right) noexcept
   {
     __left.swap(__right);

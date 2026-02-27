@@ -24,10 +24,11 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/equality_comparable.h>
-#include <cuda/std/__exception/throw_error.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__fwd/array.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__fwd/string.h>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__iterator/access.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/data.h>
@@ -279,7 +280,7 @@ public:
   {
     if (__idx >= size())
     {
-      ::cuda::std::__throw_out_of_range("span::at");
+      _CCCL_THROW(::std::out_of_range, "span::at");
     }
     return __data_[__idx];
   }
@@ -496,7 +497,7 @@ public:
   {
     if (__idx >= size())
     {
-      ::cuda::std::__throw_out_of_range("span::at");
+      _CCCL_THROW(::std::out_of_range, "span::at");
     }
     return __data_[__idx];
   }

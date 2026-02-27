@@ -125,7 +125,7 @@ public:
     return *this;
   }
 
-  _CCCL_HOST constexpr operator ::std::complex<_Tp>() const
+  _CCCL_HOST_API constexpr operator ::std::complex<_Tp>() const
   {
     return {__re_, __im_};
   }

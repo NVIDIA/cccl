@@ -23,11 +23,8 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/array>
+#include <cuda/std/concepts>
 #include <cuda/std/tuple>
-
-#if _CCCL_HAS_CONCEPTS()
-#  include <cuda/std/concepts>
-#endif // _CCCL_HAS_CONCEPTS()
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>

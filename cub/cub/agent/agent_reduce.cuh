@@ -26,6 +26,8 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
+#include <thrust/type_traits/is_trivially_relocatable.h>
+
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/operations.h>
@@ -208,9 +210,12 @@ struct AgentReduceImpl
 
   // Can vectorize according to the policy if the input iterator is a native
   // pointer to a primitive type
+  // TODO(bgruber): we should not check for `is_pointer_v` but `contiguous_iterator` and unwrap it
   static constexpr bool ATTEMPT_VECTORIZATION =
     (VECTOR_LOAD_LENGTH > 1) && (ITEMS_PER_THREAD % VECTOR_LOAD_LENGTH == 0)
-    && (::cuda::std::is_pointer_v<InputIteratorT>) && is_primitive<InputT>::value;
+    && (::cuda::std::is_pointer_v<InputIteratorT>)
+    // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
+    &&(is_primitive<InputT>::value || THRUST_NS_QUALIFIER::is_trivially_relocatable_v<InputT>);
 
   static constexpr CacheLoadModifier LOAD_MODIFIER = AgentReducePolicy::LOAD_MODIFIER;
 
