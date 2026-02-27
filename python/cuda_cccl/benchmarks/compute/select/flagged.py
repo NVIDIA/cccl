@@ -28,7 +28,6 @@ import cuda.bench as bench
 from cuda.compute import (
     TransformOutputIterator,
     ZipIterator,
-    clear_all_caches,
     make_select,
 )
 
@@ -36,10 +35,6 @@ ENTROPY_VALUES = ["1.000", "0.544", "0.000"]
 
 
 def bench_select_flagged(state: bench.State):
-    # WORKAROUND: Clear caches to avoid caching bug
-    # See BUG_REPORT_CACHING.md for details
-    clear_all_caches()
-
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_elements = int(state.get_int64("Elements"))

@@ -28,7 +28,7 @@ import numpy as np
 from utils import INTEGER_TYPES, as_cupy_stream, generate_data_with_entropy
 
 import cuda.bench as bench
-from cuda.compute import SortOrder, clear_all_caches, make_radix_sort
+from cuda.compute import SortOrder, make_radix_sort
 
 # Key and value types: match C++ integral_types / value_types
 KEY_TYPE_MAP = INTEGER_TYPES
@@ -52,10 +52,6 @@ def generate_values(num_elements, dtype, stream):
 
 
 def bench_radix_sort_pairs(state: bench.State):
-    # WORKAROUND: Clear caches to avoid caching bug
-    # See BUG_REPORT_CACHING.md for details
-    clear_all_caches()
-
     key_type_str = state.get_string("KeyT")
     value_type_str = state.get_string("ValueT")
     key_dtype = KEY_TYPE_MAP[key_type_str]

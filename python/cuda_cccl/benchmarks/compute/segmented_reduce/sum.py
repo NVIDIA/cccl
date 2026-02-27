@@ -36,7 +36,7 @@ from utils import (
 )
 
 import cuda.bench as bench
-from cuda.compute import OpKind, clear_all_caches, make_segmented_reduce
+from cuda.compute import OpKind, make_segmented_reduce
 
 # Segment size ranges from C++ benchmark (power of 2):
 # - small: 2^0 to 2^4 (1, 2, 4, 8, 16)
@@ -48,10 +48,6 @@ SEGMENT_SIZES_LARGE = [2**i for i in range(9, 17)]  # 512 to 65536
 
 
 def bench_segmented_reduce_sum(state: bench.State):
-    # WORKAROUND: Clear caches to avoid caching bug
-    # See BUG_REPORT_CACHING.md for details
-    clear_all_caches()
-
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_elements = int(state.get_int64("Elements"))

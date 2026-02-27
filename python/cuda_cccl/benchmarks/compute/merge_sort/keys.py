@@ -26,17 +26,13 @@ import numpy as np
 from utils import TYPE_MAP, as_cupy_stream, generate_data_with_entropy
 
 import cuda.bench as bench
-from cuda.compute import OpKind, clear_all_caches, make_merge_sort
+from cuda.compute import OpKind, make_merge_sort
 
 # Entropy values from C++ benchmark (keys.cu line 125)
 ENTROPY_VALUES = ["1.000", "0.201"]
 
 
 def bench_merge_sort_keys(state: bench.State):
-    # WORKAROUND: Clear caches to avoid caching bug
-    # See BUG_REPORT_CACHING.md for details
-    clear_all_caches()
-
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_elements = int(state.get_int64("Elements"))

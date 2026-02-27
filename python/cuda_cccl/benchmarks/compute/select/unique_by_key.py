@@ -27,7 +27,7 @@ import numpy as np
 from utils import INTEGER_TYPES, TYPE_MAP, as_cupy_stream, generate_key_segments
 
 import cuda.bench as bench
-from cuda.compute import OpKind, clear_all_caches, make_unique_by_key
+from cuda.compute import OpKind, make_unique_by_key
 
 # Key types: match C++ key_types (int8, int16, int32, int64)
 KEY_TYPE_MAP = INTEGER_TYPES
@@ -40,10 +40,6 @@ MAX_SEG_SIZE_VALUES = [2, 16, 256]
 
 
 def bench_unique_by_key(state: bench.State):
-    # WORKAROUND: Clear caches to avoid caching bug
-    # See BUG_REPORT_CACHING.md for details
-    clear_all_caches()
-
     key_type_str = state.get_string("KeyT")
     value_type_str = state.get_string("ValueT")
     key_dtype = KEY_TYPE_MAP[key_type_str]

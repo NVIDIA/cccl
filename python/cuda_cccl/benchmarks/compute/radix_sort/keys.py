@@ -28,17 +28,13 @@ from utils import SIGNED_TYPES as TYPE_MAP
 from utils import as_cupy_stream, generate_data_with_entropy
 
 import cuda.bench as bench
-from cuda.compute import SortOrder, clear_all_caches, make_radix_sort
+from cuda.compute import SortOrder, make_radix_sort
 
 # Entropy values from C++ benchmark
 ENTROPY_VALUES = ["1.000", "0.544", "0.201"]
 
 
 def bench_radix_sort_keys(state: bench.State):
-    # WORKAROUND: Clear caches to avoid caching bug
-    # See BUG_REPORT_CACHING.md for details
-    clear_all_caches()
-
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_elements = int(state.get_int64("Elements"))

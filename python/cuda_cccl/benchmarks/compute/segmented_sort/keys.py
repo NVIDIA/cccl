@@ -34,7 +34,7 @@ from utils import (
 )
 
 import cuda.bench as bench
-from cuda.compute import SortOrder, clear_all_caches, make_segmented_sort
+from cuda.compute import SortOrder, make_segmented_sort
 
 ENTROPY_VALUES = ["1.000", "0.201"]
 
@@ -91,8 +91,6 @@ def run_segmented_sort(
             state.skip(f"CUDA error during warmup: {e}")
             return
 
-        clear_all_caches()
-
         def launcher(launch: bench.Launch):
             sorter(
                 temp_storage=temp_storage,
@@ -114,8 +112,6 @@ def run_segmented_sort(
 
 
 def bench_segmented_sort_power(state: bench.State):
-    clear_all_caches()
-
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_elements = int(state.get_int64("Elements"))
@@ -156,8 +152,6 @@ def bench_segmented_sort_power(state: bench.State):
 
 
 def bench_segmented_sort_uniform(state: bench.State):
-    clear_all_caches()
-
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_elements = int(state.get_int64("Elements"))

@@ -26,7 +26,7 @@ from utils import SIGNED_TYPES as TYPE_MAP
 from utils import as_cupy_stream
 
 import cuda.bench as bench
-from cuda.compute import clear_all_caches, make_histogram_even
+from cuda.compute import make_histogram_even
 
 # From C++ benchmark
 BINS_VALUES = [32, 128, 2048, 2097152]
@@ -94,15 +94,6 @@ def generate_samples_with_entropy(
 
 
 def bench_histogram_even(state: bench.State):
-    # WORKAROUND: Clear caches to avoid bug where cached histogram objects
-    # are reused incorrectly when bin count changes. The cache key for
-    # np.ndarray only considers dtype, not shape/values, so h_num_output_levels
-    # arrays with different values but same dtype get the same cache key.
-    # This causes a histogram built for 32 bins to be reused for 2048 bins,
-    # leading to memory corruption.
-    # TODO: Fix in cuda.compute._caching to include array values in cache key
-    clear_all_caches()
-
     type_str = state.get_string("SampleT")
     dtype = TYPE_MAP[type_str]
     num_elements = int(state.get_int64("Elements"))

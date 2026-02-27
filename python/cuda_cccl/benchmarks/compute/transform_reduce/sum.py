@@ -25,7 +25,7 @@ from utils import SIGNED_TYPES as TYPE_MAP
 from utils import as_cupy_stream
 
 import cuda.bench as bench
-from cuda.compute import OpKind, TransformIterator, clear_all_caches, make_reduce_into
+from cuda.compute import OpKind, TransformIterator, make_reduce_into
 
 
 def square_op(x):
@@ -33,8 +33,6 @@ def square_op(x):
 
 
 def bench_transform_reduce_sum(state: bench.State):
-    clear_all_caches()
-
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_items = int(state.get_int64("Elements"))

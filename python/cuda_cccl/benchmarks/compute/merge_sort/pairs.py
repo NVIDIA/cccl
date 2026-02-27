@@ -30,7 +30,7 @@ from utils import (
 )
 
 import cuda.bench as bench
-from cuda.compute import OpKind, clear_all_caches, make_merge_sort
+from cuda.compute import OpKind, make_merge_sort
 
 # Key types: match C++ all_types (excluding int128 and complex)
 KEY_TYPE_MAP = SIGNED_TYPES
@@ -41,10 +41,6 @@ ENTROPY_VALUES = ["1.000", "0.201"]
 
 
 def bench_merge_sort_pairs(state: bench.State):
-    # WORKAROUND: Clear caches to avoid caching bug
-    # See BUG_REPORT_CACHING.md for details
-    clear_all_caches()
-
     key_type_str = state.get_string("KeyT")
     value_type_str = state.get_string("ValueT")
     key_dtype = KEY_TYPE_MAP[key_type_str]

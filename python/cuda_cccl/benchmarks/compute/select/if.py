@@ -35,7 +35,7 @@ from utils import (
 )
 
 import cuda.bench as bench
-from cuda.compute import clear_all_caches, make_select
+from cuda.compute import make_select
 
 # Entropy values from C++ benchmark
 # These control the selection threshold and thus how many elements are selected
@@ -43,10 +43,6 @@ ENTROPY_VALUES = ["1.000", "0.544", "0.000"]
 
 
 def bench_select_if(state: bench.State):
-    # WORKAROUND: Clear caches to avoid caching bug with different predicates
-    # See BUG_REPORT_CACHING.md for details
-    clear_all_caches()
-
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_elements = int(state.get_int64("Elements"))

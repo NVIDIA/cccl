@@ -31,7 +31,7 @@ from utils import (
 )
 
 import cuda.bench as bench
-from cuda.compute import clear_all_caches, make_segmented_reduce
+from cuda.compute import make_segmented_reduce
 
 SEGMENT_SIZES_SMALL = [2**i for i in range(0, 5)]
 SEGMENT_SIZES_MEDIUM = [2**i for i in range(5, 9)]
@@ -43,10 +43,6 @@ def max_op(a, b):
 
 
 def bench_segmented_reduce_custom(state: bench.State):
-    # WORKAROUND: Clear caches to avoid caching bug
-    # See BUG_REPORT_CACHING.md for details
-    clear_all_caches()
-
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_elements = int(state.get_int64("Elements"))

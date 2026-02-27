@@ -29,7 +29,7 @@ import numpy as np
 from utils import ENTROPY_TO_PROB, TYPE_MAP, as_cupy_stream
 
 import cuda.bench as bench
-from cuda.compute import clear_all_caches, make_three_way_partition
+from cuda.compute import make_three_way_partition
 
 # Entropy values from C++ benchmark (three_way.cu line 131)
 ENTROPY_VALUES = ["1.000", "0.544", "0.000"]
@@ -87,10 +87,6 @@ def generate_data_with_entropy(
 
 
 def bench_three_way_partition(state: bench.State):
-    # WORKAROUND: Clear caches to avoid caching bug
-    # See BUG_REPORT_CACHING.md for details
-    clear_all_caches()
-
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_elements = int(state.get_int64("Elements"))
