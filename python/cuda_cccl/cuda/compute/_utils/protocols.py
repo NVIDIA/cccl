@@ -22,11 +22,6 @@ def is_device_array(obj: object) -> bool:
     return hasattr(obj, "__cuda_array_interface__")
 
 
-def is_device_array(obj: object) -> bool:
-    """Check if an object implements the `__cuda_array_interface__` protocol."""
-    return hasattr(obj, "__cuda_array_interface__")
-
-
 def get_data_pointer(arr: DeviceArrayLike) -> int:
     # TODO: these are fast paths for CuPy and PyTorch until
     # we have a more general solution.

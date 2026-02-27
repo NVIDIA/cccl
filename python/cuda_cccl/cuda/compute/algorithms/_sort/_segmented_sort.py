@@ -7,8 +7,6 @@ from __future__ import annotations
 
 import numpy as np
 
-import numpy as np
-
 from ... import _bindings
 from ... import _cccl_interop as cccl
 from ..._caching import cache_with_registered_key_functions

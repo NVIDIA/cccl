@@ -24,7 +24,6 @@
 #include <test_resources.h>
 
 #include "helper.h"
-#include "test_resources.h"
 #include "types.h"
 
 // Checks if the offsetting resource wrapper correctly got passed the alignment by the buffer constructor.

@@ -336,26 +336,6 @@ public:
     return ::std::hash<int>()(devid);
   }
 
-  /**
-   * @brief Compute a hash value for this data place
-   *
-   * Used by std::hash specialization for unordered containers.
-   */
-  size_t hash() const
-  {
-    // Not implemented for composite places
-    EXPECT(!is_composite());
-
-    // Extensions provide their own hash
-    if (is_extension())
-    {
-      return extension->hash();
-    }
-
-    // For simple places, hash the devid directly
-    return ::std::hash<int>()(devid);
-  }
-
   decorated_stream getDataStream(async_resources_handle& async_resources) const;
 
 private:
