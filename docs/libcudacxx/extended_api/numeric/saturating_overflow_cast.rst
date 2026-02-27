@@ -24,7 +24,7 @@ The function ``cuda::saturating_overflow_cast`` does saturating cast of a value 
 
 **Constraints**
 
-- ``To`` and ``From`` must be integer types.
+- ``To`` and ``From`` must be `integer types <https://eel.is/c++draft/basic.fundamental#1>`_.
 
 Example
 -------

@@ -37,11 +37,11 @@ The function ``cuda::mul_sat_overflow`` performs saturating multiplication of tw
 
 **Constraints**
 
-- ``T`` must be an integer type.
+- ``T`` must be an `integer type <https://eel.is/c++draft/basic.fundamental#1>`_.
 
 **Performance considerations**
 
-- Functionality is implemented by correcting the ``cuda::mul_overflow`` result.
+- Functionality is implemented by correcting the ``cuda::mul_overflow`` result in case of overflow/underflow.
 - Unsigned computations are generally faster than signed computations.
 
 Example

@@ -24,7 +24,7 @@ The function ``cuda::overflow_cast`` casts a value of type ``From`` to type ``To
 
 **Constraints**
 
-- ``To`` and ``From`` must be integer types.
+- ``To`` and ``From`` must be `integer types <https://eel.is/c++draft/basic.fundamental#1>`_.
 
 Example
 -------

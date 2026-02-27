@@ -37,11 +37,11 @@ The function ``cuda::sub_sat_overflow`` performs saturating subtraction of two v
 
 **Constraints**
 
-- ``T`` must be an integer type.
+- ``T`` must be an `integer type <https://eel.is/c++draft/basic.fundamental#1>`_.
 
 **Performance considerations**
 
-- Functionality is implemented by correcting the ``cuda::sub_overflow`` result.
+- Functionality is implemented by correcting the ``cuda::sub_overflow`` result in case of overflow/underflow.
 - Unsigned computations are generally faster than signed computations.
 
 Example

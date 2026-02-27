@@ -37,11 +37,11 @@ The function ``cuda::add_sat_overflow`` performs saturating addition of two valu
 
 **Constraints**
 
-- ``T`` must be an integer type.
+- ``T`` must be an `integer type <https://eel.is/c++draft/basic.fundamental#1>`_.
 
 **Performance considerations**
 
-- Functionality is implemented by correcting the ``cuda::add_overflow`` result.
+- Functionality is implemented by correcting the ``cuda::add_overflow`` result in case of overflow/underflow.
 - Unsigned computations are generally faster than signed computations.
 
 Example
