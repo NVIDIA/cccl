@@ -29,6 +29,15 @@ ENTROPY_TO_PROB = {
     "0.000": 0.0,
 }
 
+ENTROPY_TO_STEPS = {
+    "1.000": 0,
+    "0.811": 1,
+    "0.544": 2,
+    "0.337": 3,
+    "0.201": 4,
+    "0.000": 0,
+}
+
 
 def as_cupy_stream(cs: bench.CudaStream) -> cp.cuda.Stream:
     """Convert nvbench CudaStream to CuPy Stream."""
@@ -52,44 +61,49 @@ def lerp_min_max(dtype, probability):
     return dtype(min_val + probability * (max_val - min_val))
 
 
-def generate_data_with_entropy(num_elements, dtype, entropy_str, stream):
-    """Generate data with entropy-controlled range approximations."""
-    probability = ENTROPY_TO_PROB[entropy_str]
+def _bitwise_and(a, b, dtype):
+    if np.issubdtype(dtype, np.floating):
+        view_dtype = cp.uint32 if dtype == np.float32 else cp.uint64
+        return (a.view(view_dtype) & b.view(view_dtype)).view(dtype)
+    return a & b
 
-    with stream:
+
+def _uniform_random(num_elements, dtype, min_val, max_val):
+    rand = cp.random.random(num_elements)
+    if np.issubdtype(dtype, np.floating):
+        return ((float(max_val) - float(min_val)) * rand + float(min_val)).astype(dtype)
+    min_f = float(min_val)
+    max_f = float(max_val)
+    return cp.floor((max_f - min_f + 1) * rand + min_f).astype(dtype)
+
+
+def generate_data_with_entropy(
+    num_elements, dtype, entropy_str, stream, min_val=None, max_val=None
+):
+    """Generate data with nvbench_helper-style bit entropy."""
+    if min_val is None or max_val is None:
         if np.issubdtype(dtype, np.integer):
             info = np.iinfo(dtype)
-            if probability == 1.0:
-                if dtype == np.int64:
-                    data = cp.random.randint(
-                        int(info.min), int(info.max), size=num_elements, dtype=np.int64
-                    )
-                else:
-                    data = cp.random.randint(
-                        int(info.min),
-                        int(info.max) + 1,
-                        size=num_elements,
-                        dtype=np.int64,
-                    ).astype(dtype)
-            else:
-                range_size = int((int(info.max) - int(info.min)) * probability)
-                if range_size < 1:
-                    range_size = 1
-                if dtype == np.int64:
-                    max_high = int(info.max)
-                    if range_size > max_high:
-                        range_size = max_high
-                data = cp.random.randint(
-                    0, range_size, size=num_elements, dtype=np.int64
-                ).astype(dtype)
+            default_min = info.min
+            default_max = info.max
         else:
             info = np.finfo(dtype)
-            if probability == 1.0:
-                data = cp.random.uniform(-1, 1, size=num_elements).astype(dtype)
-                data = data * info.max * 0.5
-            else:
-                scale = probability * info.max * 0.5
-                data = cp.random.uniform(-scale, scale, size=num_elements).astype(dtype)
+            default_min = info.tiny
+            default_max = info.max
+        min_val = default_min if min_val is None else min_val
+        max_val = default_max if max_val is None else max_val
+
+    steps = ENTROPY_TO_STEPS[entropy_str]
+
+    with stream:
+        if entropy_str == "0.000":
+            scalar = _uniform_random(1, dtype, min_val, max_val)[0]
+            data = cp.full(num_elements, scalar, dtype=dtype)
+        else:
+            data = _uniform_random(num_elements, dtype, min_val, max_val)
+            for _ in range(steps):
+                tmp = _uniform_random(num_elements, dtype, min_val, max_val)
+                data = _bitwise_and(data, tmp, dtype)
 
     return data
 

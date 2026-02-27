@@ -28,6 +28,7 @@ import numpy as np
 from utils import (
     ENTROPY_TO_PROB,
     as_cupy_stream,
+    generate_data_with_entropy,
     lerp_min_max,
 )
 from utils import (
@@ -52,25 +53,11 @@ def bench_select_if(state: bench.State):
 
     alloc_stream = as_cupy_stream(state.get_stream())
 
+    d_in = generate_data_with_entropy(num_elements, dtype, entropy_str, alloc_stream)
     with alloc_stream:
-        # Generate random input data (uniform distribution across full range)
-        if np.issubdtype(dtype, np.integer):
-            info = np.iinfo(dtype)
-            # Use int64 for randint to avoid overflow issues with large ranges
-            d_in = cp.random.randint(
-                int(info.min), int(info.max) + 1, size=num_elements, dtype=np.int64
-            ).astype(dtype)
-        else:
-            # For floats, generate in [0, 1) and scale to full range
-            info = np.finfo(dtype)
-            d_in = cp.random.uniform(0, 1, size=num_elements).astype(dtype)
-            # Scale to approximately [-max, max] range
-            d_in = d_in * 2 * info.max - info.max
-
         selected_elements = int(cp.count_nonzero(d_in < threshold).get())
         d_out = cp.empty(selected_elements, dtype=dtype)
 
-        # Number of selected elements output
         d_num_selected = cp.zeros(1, dtype=np.uint64)
 
     alloc_stream.synchronize()

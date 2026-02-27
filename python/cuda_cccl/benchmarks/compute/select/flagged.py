@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
 import numpy as np
-from utils import ENTROPY_TO_PROB, as_cupy_stream
+from utils import ENTROPY_TO_PROB, as_cupy_stream, generate_data_with_entropy
 from utils import SIGNED_TYPES as TYPE_MAP
 
 import cuda.bench as bench
@@ -41,16 +41,8 @@ def bench_select_flagged(state: bench.State):
     probability = ENTROPY_TO_PROB[entropy_str]
 
     alloc_stream = as_cupy_stream(state.get_stream())
+    d_in = generate_data_with_entropy(num_elements, dtype, entropy_str, alloc_stream)
     with alloc_stream:
-        if np.issubdtype(dtype, np.integer):
-            info = np.iinfo(dtype)
-            d_in = cp.random.randint(
-                int(info.min), int(info.max) + 1, size=num_elements
-            ).astype(dtype)
-        else:
-            d_in = cp.random.uniform(-1, 1, size=num_elements).astype(dtype)
-
-        # Flags: select with probability p
         flags = (cp.random.random(num_elements) < probability).astype(np.uint8)
 
         zip_it = ZipIterator(d_in, flags)

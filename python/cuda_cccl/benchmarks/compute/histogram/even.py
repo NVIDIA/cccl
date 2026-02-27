@@ -8,10 +8,8 @@ Python benchmark for histogram_even using cuda.compute.
 C++ equivalent: cub/benchmarks/bench/histogram/even.cu
 
 Notes:
-- The C++ benchmark uses Entropy axis to generate data with different bit distributions
-- For Python, we approximate this with random data in the appropriate range
-- Entropy 1.0 = uniform random, 0.201 = skewed towards lower values
-- Migration: Python approximates entropy distributions and skips some I8/I16 large-bin cases due to CUDA errors.
+- The C++ benchmark uses Entropy axis with nvbench_helper bit entropy generation
+- Migration: Python matches the bitwise-AND entropy approach and skips some I8/I16 large-bin cases due to CUDA errors.
 """
 
 import sys
@@ -23,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import cupy as cp
 import numpy as np
 from utils import SIGNED_TYPES as TYPE_MAP
-from utils import as_cupy_stream
+from utils import as_cupy_stream, generate_data_with_entropy
 
 import cuda.bench as bench
 from cuda.compute import make_histogram_even
@@ -43,52 +41,6 @@ def get_upper_level(dtype, num_bins, num_elements):
     else:
         # For floating point types, upper_level = num_elements
         return dtype(num_elements)
-
-
-def generate_samples_with_entropy(
-    num_elements, dtype, lower_level, upper_level, entropy_str, stream
-):
-    """
-    Generate samples with specified entropy level.
-
-    Entropy 1.0 = uniform random distribution
-    Entropy 0.201 = skewed distribution (more values near lower_level)
-    """
-    with stream:
-        if entropy_str == "1.000":
-            # Uniform random distribution
-            if np.issubdtype(dtype, np.integer):
-                # Generate integers in range [lower_level, upper_level)
-                samples = cp.random.randint(
-                    int(lower_level), int(upper_level), size=num_elements, dtype=dtype
-                )
-            else:
-                # Generate floats in range [lower_level, upper_level)
-                samples = cp.random.uniform(
-                    float(lower_level), float(upper_level), size=num_elements
-                ).astype(dtype)
-        else:
-            # Entropy 0.201 - skewed distribution (power-law like)
-            # Generate values biased towards lower end of range
-            if np.issubdtype(dtype, np.integer):
-                # Use exponential distribution scaled to range, then convert to int
-                # This creates more values near lower_level
-                scale = float(upper_level - lower_level) / 5.0  # Adjust for skew
-                raw = cp.random.exponential(scale=scale, size=num_elements)
-                # Clip to range and convert
-                raw = cp.clip(
-                    raw + float(lower_level), float(lower_level), float(upper_level) - 1
-                )
-                samples = raw.astype(dtype)
-            else:
-                # For floats, use exponential distribution
-                scale = float(upper_level - lower_level) / 5.0
-                raw = cp.random.exponential(scale=scale, size=num_elements)
-                samples = cp.clip(
-                    raw + float(lower_level), float(lower_level), float(upper_level)
-                ).astype(dtype)
-
-    return samples
 
 
 def bench_histogram_even(state: bench.State):
@@ -120,8 +72,13 @@ def bench_histogram_even(state: bench.State):
 
     alloc_stream = as_cupy_stream(state.get_stream())
 
-    d_samples = generate_samples_with_entropy(
-        num_elements, dtype, lower_level, upper_level, entropy_str, alloc_stream
+    d_samples = generate_data_with_entropy(
+        num_elements,
+        dtype,
+        entropy_str,
+        alloc_stream,
+        min_val=lower_level,
+        max_val=upper_level,
     )
 
     # Output histogram (counter type is int32 in C++)

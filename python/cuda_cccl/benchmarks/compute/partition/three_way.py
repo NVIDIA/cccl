@@ -26,63 +26,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
 import numpy as np
-from utils import ENTROPY_TO_PROB, TYPE_MAP, as_cupy_stream
+from utils import TYPE_MAP, as_cupy_stream, generate_data_with_entropy
 
 import cuda.bench as bench
 from cuda.compute import make_three_way_partition
-
-# Entropy values from C++ benchmark (three_way.cu line 131)
-
-
-def generate_data_with_entropy(
-    num_elements, dtype, entropy_str, min_val, max_val, stream
-):
-    """
-    Generate data with specified entropy level within a given range.
-
-    Entropy controls the bit-level randomness of the data:
-    - 1.000: Full random (all bits random)
-    - 0.544: Medium entropy
-    - 0.000: Constant value (no entropy)
-    """
-    probability = ENTROPY_TO_PROB[entropy_str]
-
-    with stream:
-        if probability == 0.0:
-            # Zero entropy - constant value
-            data = cp.full(num_elements, min_val, dtype=dtype)
-        elif np.issubdtype(dtype, np.integer):
-            if probability == 1.0:
-                # Full random across the specified range
-                data = cp.random.randint(
-                    int(min_val), int(max_val) + 1, size=num_elements, dtype=np.int64
-                ).astype(dtype)
-            else:
-                # Reduced entropy: limit the range of values
-                range_size = int((int(max_val) - int(min_val)) * probability)
-                if range_size < 1:
-                    range_size = 1
-                data = cp.random.randint(
-                    int(min_val),
-                    int(min_val) + range_size,
-                    size=num_elements,
-                    dtype=np.int64,
-                ).astype(dtype)
-        else:
-            # Floating point
-            if probability == 1.0:
-                # Full random in [min_val, max_val]
-                data = cp.random.uniform(
-                    float(min_val), float(max_val), size=num_elements
-                ).astype(dtype)
-            else:
-                # Reduced entropy: smaller range
-                range_val = float(max_val - min_val) * probability
-                data = cp.random.uniform(
-                    float(min_val), float(min_val) + range_val, size=num_elements
-                ).astype(dtype)
-
-    return data
 
 
 def bench_three_way_partition(state: bench.State):
@@ -108,7 +55,12 @@ def bench_three_way_partition(state: bench.State):
     right_border = left_border * 2
 
     d_in = generate_data_with_entropy(
-        num_elements, dtype, entropy_str, min_val, max_val, alloc_stream
+        num_elements,
+        dtype,
+        entropy_str,
+        alloc_stream,
+        min_val=min_val,
+        max_val=max_val,
     )
 
     with alloc_stream:
