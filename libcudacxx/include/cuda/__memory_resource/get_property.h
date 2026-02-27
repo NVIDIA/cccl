@@ -138,76 +138,74 @@ struct __fn
     if constexpr (__has_upstream_resource<_Derived, _Upstream>)
     {
       return get_property(__res.upstream_resource(), __prop);
-      if constexpr (__has_upstream_resource<_Derived, _Upstream>)
-      {
-        else
-        {
-          return get_property(__res.get(), __prop);
-        }
-      }
     }
-
-    // The indirection is needed, otherwise the compiler might believe that _Derived is an incomplete type
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_TEMPLATE(class _Property, class _Derived2 = _Derived)
-    _CCCL_REQUIRES(property_with_value<_Property> _CCCL_AND has_property<_Upstream, _Property> _CCCL_AND
-                     __has_forwarded_resource<_Derived2, _Upstream>)
-    _CCCL_API friend constexpr __property_value_t<_Property> get_property(const _Derived& __res, _Property __prop)
+    else
     {
-      if constexpr (__has_upstream_resource<_Derived, _Upstream>)
-      {
-        return get_property(__res.upstream_resource(), __prop);
-      }
-      else
-      {
-        return get_property(__res.get(), __prop);
-      }
+      return get_property(__res.get(), __prop);
     }
-  };
-  _CCCL_END_NAMESPACE_CPO
-
-  //! @brief The \c forward_property CRTP template allows Derived to forward all properties of Upstream
-  //! @rst
-  //! .. code-block:: cpp
-  //!
-  //!    class UpstreamWithProperties;
-  //!
-  //!    class DerivedClass : cuda::forward_properties<DerivedClass, UpstreamWithProperties> {
-  //!      // This method is needed to forward stateful properties
-  //!      UpstreamWithProperties& upstream_resource() const { ... }
-  //!    };
-  //!
-  //! .. note::
-  //!
-  //!    In order to forward stateful properties, a type needs to implement either:
-  //!    - an `upstream_resource()` method returning the upstream resource, or
-  //!    - a `get()` method returning the upstream resource.
-  //!
-  //! @endrst
-  template <class _Derived, class _Upstream>
-  using forward_property = __forward_property::__fn<_Derived, _Upstream>;
-
-  _CCCL_END_NAMESPACE_CUDA
-
-  _CCCL_BEGIN_NAMESPACE_CUDA_MR
-
-  template <class _Tp>
-  inline constexpr bool __disable_default_dynamic_accessibility_property = false;
-
-  //! Default implementation: infer from has_property<Resource, host_accessible> and
-  //! has_property<Resource, device_accessible>. Resources can override by providing
-  //! their own get_property(..., dynamic_accessibility_property).
-  //! Excluded for type-erased wrappers (any_resource, resource_ref, etc.) so that
-  //! get_property dispatches via their interface to the stored concrete resource.
-  _CCCL_TEMPLATE(class _Resource)
-  _CCCL_REQUIRES((!__disable_default_dynamic_accessibility_property<_Resource>) )
-  _CCCL_API constexpr __memory_accessibility
-  get_property([[maybe_unused]] const _Resource& __res, dynamic_accessibility_property) noexcept
-  {
-    return __memory_accessibility _from_static_properties<::cuda::has_property<_Resource, host_accessible>,
-                                                          ::cuda::has_property<_Resource, device_accessible>>();
   }
-  _CCCL_END_NAMESPACE_CUDA_MR
+
+  // The indirection is needed, otherwise the compiler might believe that _Derived is an incomplete type
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Property, class _Derived2 = _Derived)
+  _CCCL_REQUIRES(property_with_value<_Property> _CCCL_AND has_property<_Upstream, _Property> _CCCL_AND
+                   __has_forwarded_resource<_Derived2, _Upstream>)
+  _CCCL_API friend constexpr __property_value_t<_Property> get_property(const _Derived& __res, _Property __prop)
+  {
+    if constexpr (__has_upstream_resource<_Derived, _Upstream>)
+    {
+      return get_property(__res.upstream_resource(), __prop);
+    }
+    else
+    {
+      return get_property(__res.get(), __prop);
+    }
+  }
+};
+_CCCL_END_NAMESPACE_CPO
+
+//! @brief The \c forward_property CRTP template allows Derived to forward all properties of Upstream
+//! @rst
+//! .. code-block:: cpp
+//!
+//!    class UpstreamWithProperties;
+//!
+//!    class DerivedClass : cuda::forward_properties<DerivedClass, UpstreamWithProperties> {
+//!      // This method is needed to forward stateful properties
+//!      UpstreamWithProperties& upstream_resource() const { ... }
+//!    };
+//!
+//! .. note::
+//!
+//!    In order to forward stateful properties, a type needs to implement either:
+//!    - an `upstream_resource()` method returning the upstream resource, or
+//!    - a `get()` method returning the upstream resource.
+//!
+//! @endrst
+template <class _Derived, class _Upstream>
+using forward_property = __forward_property::__fn<_Derived, _Upstream>;
+
+_CCCL_END_NAMESPACE_CUDA
+
+_CCCL_BEGIN_NAMESPACE_CUDA_MR
+
+template <class _Tp>
+inline constexpr bool __disable_default_dynamic_accessibility_property = false;
+
+//! Default implementation: infer from has_property<Resource, host_accessible> and
+//! has_property<Resource, device_accessible>. Resources can override by providing
+//! their own get_property(..., dynamic_accessibility_property).
+//! Excluded for type-erased wrappers (any_resource, resource_ref, etc.) so that
+//! get_property dispatches via their interface to the stored concrete resource.
+_CCCL_TEMPLATE(class _Resource)
+_CCCL_REQUIRES((!__disable_default_dynamic_accessibility_property<_Resource>) )
+_CCCL_API constexpr __memory_accessibility
+get_property([[maybe_unused]] const _Resource& __res, dynamic_accessibility_property) noexcept
+{
+  return __memory_accessibility _from_static_properties<::cuda::has_property<_Resource, host_accessible>,
+                                                        ::cuda::has_property<_Resource, device_accessible>>();
+}
+_CCCL_END_NAMESPACE_CUDA_MR
 
 #  include <cuda/std/__cccl/epilogue.h>
 
