@@ -534,7 +534,7 @@ struct DeviceSegmentedReduce
       ::cuda::__call_result_or_t<::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>, EnvT>;
     using segmented_reduce_tuning_t =
       ::cuda::__call_result_or_t<detail::segmented_reduce::get_tuning_query_t,
-                                 detail::segmented_reduce::policy_selector_from_types<AccumT, OffsetT, op_t>,
+                                 detail::segmented_reduce::policy_selector_from_types<AccumT>,
                                  tuning_env_t>;
 
     // Static assert to reject gpu_to_gpu determinism since it's not properly implemented atm

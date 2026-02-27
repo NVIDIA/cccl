@@ -59,11 +59,11 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
 
   // Create wrapped iterator for argmin/argmax operations
   [[maybe_unused]] auto d_indexed_in = thrust::make_transform_iterator(
-    thrust::counting_iterator<::cuda::std::int64_t>{0},
+    cuda::counting_iterator<::cuda::std::int64_t>(0),
     cub::detail::reduce::generate_idx_value<raw_input_it_t, T>(d_raw_in, 1));
   using arg_index_input_iterator_t = decltype(d_indexed_in);
 
-  auto get_in = [&] {
+  auto d_in = [&] {
     if constexpr (is_argmin || is_argmax)
     {
       return d_indexed_in;
@@ -72,10 +72,7 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
     {
       return d_raw_in;
     }
-  };
-
-  using input_it_t = decltype(get_in());
-  input_it_t d_in  = get_in();
+  }();
 
   // Enable throughput calculations
   state.add_element_count(elements);
@@ -85,7 +82,9 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
 
   // Allocate temporary storage
   std::size_t temp_size{};
-  cub::detail::segmented_reduce::dispatch(
+  using override_offset_t = cuda::std::conditional_t<(is_argmin || is_argmax), int, cub::detail::use_default>;
+
+  cub::detail::segmented_reduce::dispatch<accum_t, override_offset_t>(
     nullptr,
     temp_size,
     d_in,
@@ -96,14 +95,14 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
     op_t{},
     init_t{},
     0 /* stream */,
-    {},
+    cub::detail::segmented_reduce::policy_selector_from_types<accum_t>{},
     guaranteed_max_seg_size);
 
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size);
+  thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::segmented_reduce::dispatch(
+    cub::detail::segmented_reduce::dispatch<accum_t, override_offset_t>(
       temp_storage,
       temp_size,
       d_in,
@@ -114,7 +113,7 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
       op_t{},
       init_t{},
       launch.get_stream(),
-      {},
+      cub::detail::segmented_reduce::policy_selector_from_types<accum_t>{},
       guaranteed_max_seg_size);
   });
 }

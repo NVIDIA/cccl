@@ -12,35 +12,48 @@
 #endif
 
 #if !TUNE_BASE
-struct policy_selector
+template <typename AccumT>
+struct policy_hub_t
 {
-  int accum_size;
-
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> segmented_reduce_policy
+  struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
   {
-    constexpr int threads_per_block  = TUNE_L_NOMINAL_4B_THREADS_PER_BLOCK;
-    constexpr int items_per_thread   = TUNE_L_NOMINAL_4B_ITEMS_PER_THREAD;
-    constexpr int items_per_vec_load = TUNE_ITEMS_PER_VEC_LOAD;
+    static constexpr int items_per_vec_load = TUNE_ITEMS_PER_VEC_LOAD;
 
-    auto [scaled_items, scaled_threads] = scale_mem_bound(threads_per_block, items_per_thread, accum_size);
-    const auto base                     = reduce::agent_reduce_policy{
-      scaled_threads, scaled_items, items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
+    static constexpr int small_threads_per_warp  = TUNE_S_THREADS_PER_WARP;
+    static constexpr int medium_threads_per_warp = TUNE_M_THREADS_PER_WARP;
 
-    return segmented_reduce_policy{
-      base,
-      agent_warp_reduce_policy{
-        base.block_threads,
-        TUNE_S_THREADS_PER_WARP,
-        TUNE_S_NOMINAL_4B_ITEMS_PER_THREAD,
-        TUNE_ITEMS_PER_VEC_LOAD,
-        base.load_modifier},
-      agent_warp_reduce_policy{
-        base.block_threads,
-        TUNE_M_THREADS_PER_WARP,
-        TUNE_M_NOMINAL_4B_ITEMS_PER_THREAD,
-        TUNE_ITEMS_PER_VEC_LOAD,
-        base.load_modifier}};
-  }
+    static constexpr int nominal_4b_large_threads_per_block = TUNE_L_NOMINAL_4B_THREADS_PER_BLOCK;
+
+    static constexpr int nominal_4b_small_items_per_thread  = TUNE_S_NOMINAL_4B_ITEMS_PER_THREAD;
+    static constexpr int nominal_4b_medium_items_per_thread = TUNE_M_NOMINAL_4B_ITEMS_PER_THREAD;
+    static constexpr int nominal_4b_large_items_per_thread  = TUNE_L_NOMINAL_4B_ITEMS_PER_THREAD;
+
+    using ReducePolicy =
+      cub::AgentReducePolicy<nominal_4b_large_threads_per_block,
+                             nominal_4b_large_items_per_thread,
+                             AccumT,
+                             items_per_vec_load,
+                             cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+                             cub::LOAD_LDG>;
+
+    using SmallReducePolicy =
+      cub::AgentWarpReducePolicy<ReducePolicy::BLOCK_THREADS,
+                                 small_threads_per_warp,
+                                 nominal_4b_small_items_per_thread,
+                                 AccumT,
+                                 items_per_vec_load,
+                                 cub::LOAD_LDG>;
+
+    using MediumReducePolicy =
+      cub::AgentWarpReducePolicy<ReducePolicy::BLOCK_THREADS,
+                                 medium_threads_per_warp,
+                                 nominal_4b_medium_items_per_thread,
+                                 AccumT,
+                                 items_per_vec_load,
+                                 cub::LOAD_LDG>;
+  };
+
+  using MaxPolicy = policy_t;
 };
 #endif // !TUNE_BASE
 
@@ -88,57 +101,46 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
     }
   };
 
-  // Allocate temporary storage:
-  std::size_t temp_size;
-  cub::detail::reduce::DispatchFixedSizeSegmentedReduce<
+  using dispatch_t = cub::detail::reduce::DispatchFixedSizeSegmentedReduce<
     cuda::std::conditional_t<is_argmin, arg_index_input_iterator_t, input_it_t>,
     output_it_t,
     int,
     op_t,
     init_t,
-    accum_t>::Dispatch(nullptr,
-                       temp_size,
-                       select_in(),
-                       d_out,
-                       num_segments,
-                       static_cast<int>(segment_size),
-                       op_t{},
-                       init_t{},
-                       0 /* stream */,
-                       {},
-                       {}
+    accum_t
 #if !TUNE_BASE
-                       ,
-                       policy_selector{static_cast<int>(sizeof(accum_t))}
-#endif // !TUNE_BASE
-  );
+    ,
+    policy_hub_t<accum_t>
+#endif // TUNE_BASE
+    >;
+
+  // Allocate temporary storage:
+  std::size_t temp_size;
+  dispatch_t::Dispatch(
+    nullptr,
+    temp_size,
+    select_in(),
+    d_out,
+    num_segments,
+    static_cast<int>(segment_size),
+    op_t{},
+    init_t{},
+    0 /* stream */);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::reduce::DispatchFixedSizeSegmentedReduce<
-      cuda::std::conditional_t<is_argmin, arg_index_input_iterator_t, input_it_t>,
-      output_it_t,
-      int,
-      op_t,
-      init_t,
-      accum_t>::Dispatch(temp_storage,
-                         temp_size,
-                         select_in(),
-                         d_out,
-                         num_segments,
-                         static_cast<int>(segment_size),
-                         op_t{},
-                         init_t{},
-                         launch.get_stream(),
-                         {},
-                         {}
-#if !TUNE_BASE
-                         ,
-                         policy_selector{static_cast<int>(sizeof(accum_t))}
-#endif // !TUNE_BASE
-    );
+    dispatch_t::Dispatch(
+      temp_storage,
+      temp_size,
+      select_in(),
+      d_out,
+      num_segments,
+      static_cast<int>(segment_size),
+      op_t{},
+      init_t{},
+      launch.get_stream());
   });
 }
 
