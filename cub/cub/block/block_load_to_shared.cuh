@@ -160,8 +160,8 @@ private:
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void __copy_aligned_async(char* smem_dst, const char* gmem_src, int num_bytes)
   {
-    for (int offset = linear_tid * detail::bulk_copy_min_align; offset < num_bytes;
-         offset += block_threads * detail::bulk_copy_min_align)
+    for (int offset  = linear_tid * detail::bulk_copy_min_align; offset < num_bytes;
+         offset     += block_threads * detail::bulk_copy_min_align)
     {
       [[maybe_unused]] const auto thread_src = gmem_src + offset;
       [[maybe_unused]] const auto thread_dst = smem_dst + offset;
@@ -176,8 +176,8 @@ private:
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void __copy_aligned_fallback(char* smem_dst, const char* gmem_src, int num_bytes)
   {
-    for (int offset = linear_tid * detail::bulk_copy_min_align; offset < num_bytes;
-         offset += block_threads * detail::bulk_copy_min_align)
+    for (int offset  = linear_tid * detail::bulk_copy_min_align; offset < num_bytes;
+         offset     += block_threads * detail::bulk_copy_min_align)
     {
       const auto thread_src                       = gmem_src + offset;
       const auto thread_dst                       = smem_dst + offset;

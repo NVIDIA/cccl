@@ -696,7 +696,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   auto capped_num_items_per_invocation = num_items;
   if constexpr (use_streaming_invocation)
   {
-    capped_num_items_per_invocation = static_cast<global_offset_t>(::cuda::std::numeric_limits<local_offset_t>::max());
+    capped_num_items_per_invocation  = static_cast<global_offset_t>(::cuda::std::numeric_limits<local_offset_t>::max());
     capped_num_items_per_invocation -= (capped_num_items_per_invocation % tile_size);
   }
 

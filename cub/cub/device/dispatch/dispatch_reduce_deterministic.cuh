@@ -268,7 +268,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
 
     if (chunk_index + 1 < num_chunks)
     {
-      d_in += num_current_items;
+      d_in                     += num_current_items;
       d_chunk_block_reductions += current_grid_size;
     }
 

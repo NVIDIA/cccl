@@ -258,8 +258,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
     local_to_global_op,
     reduce_op};
 
-  for (GlobalOffsetT current_partition_offset = 0; current_partition_offset < static_cast<GlobalOffsetT>(num_items);
-       current_partition_offset += static_cast<GlobalOffsetT>(max_partition_size))
+  for (GlobalOffsetT current_partition_offset  = 0; current_partition_offset < static_cast<GlobalOffsetT>(num_items);
+       current_partition_offset               += static_cast<GlobalOffsetT>(max_partition_size))
   {
     const GlobalOffsetT remaining_items = (num_items - current_partition_offset);
     const GlobalOffsetT current_num_items =
