@@ -89,7 +89,7 @@ template <
   // SFINAE: only participate when InputIterator2 is actually an iterator
   ::cuda::std::enable_if_t<
     ::cuda::std::is_convertible_v<typename ::cuda::std::iterator_traits<InputIterator2>::iterator_category*, void*>,
-    int>>
+    int> = 0>
 _CCCL_HOST_DEVICE T transform_reduce(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
@@ -120,7 +120,7 @@ template <
   // SFINAE: only participate when InputIterator2 is actually an iterator
   ::cuda::std::enable_if_t<
     ::cuda::std::is_convertible_v<typename ::cuda::std::iterator_traits<InputIterator2>::iterator_category*, void*>,
-    int>>
+    int> = 0>
 T transform_reduce(
   InputIterator1 first1,
   InputIterator1 last1,
