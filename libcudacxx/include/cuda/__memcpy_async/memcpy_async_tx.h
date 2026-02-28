@@ -44,7 +44,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_memcpy_async_tx_is_not_supported_before_SM_90__();
 template <typename _Tp, ::cuda::std::size_t _Alignment>
-_CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
+_CCCL_DEVICE_API async_contract_fulfillment memcpy_async_tx(
   _Tp* __dest,
   const _Tp* __src,
   ::cuda::aligned_size_t<_Alignment> __size,

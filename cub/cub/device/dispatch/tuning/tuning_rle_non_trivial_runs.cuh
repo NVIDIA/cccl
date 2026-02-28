@@ -25,10 +25,7 @@
 
 #include <cuda/__device/arch_id.h>
 #include <cuda/std/__algorithm/clamp.h>
-
-#if _CCCL_HAS_CONCEPTS()
-#  include <cuda/std/concepts>
-#endif // _CCCL_HAS_CONCEPTS()
+#include <cuda/std/concepts>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
@@ -377,6 +374,7 @@ struct policy_selector
   type_t key_type;
   bool length_is_primitive;
   bool key_is_primitive; // TODO(bgruber): can probably be derived from key_type
+  bool key_is_trivially_copyable;
 
   _CCCL_API constexpr auto
   make_default_policy(BlockLoadAlgorithm block_load_alg, int delay_ctor_key_size, CacheLoadModifier load_mod) const
@@ -391,7 +389,8 @@ struct policy_selector
       load_mod,
       true,
       BLOCK_SCAN_WARP_SCANS,
-      default_reduce_by_key_delay_constructor_policy(delay_ctor_key_size, sizeof(int), true)};
+      default_reduce_by_key_delay_constructor_policy(
+        delay_ctor_key_size, sizeof(int), key_is_primitive || key_is_trivially_copyable, true)};
   }
 
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> rle_non_trivial_runs_policy
@@ -603,7 +602,12 @@ struct policy_selector_from_types
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> rle_non_trivial_runs_policy
   {
     constexpr policy_selector selector{
-      sizeof(LengthT), int{sizeof(KeyT)}, classify_type<KeyT>, is_primitive_v<LengthT>, is_primitive_v<KeyT>};
+      sizeof(LengthT),
+      int{sizeof(KeyT)},
+      classify_type<KeyT>,
+      is_primitive_v<LengthT>,
+      is_primitive_v<KeyT>,
+      ::cuda::std::is_trivially_copyable_v<KeyT>};
     return selector(arch);
   }
 };

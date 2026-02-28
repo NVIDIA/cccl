@@ -446,13 +446,15 @@
     },
     {
       "name": "benchmark",
-      "displayName": "CUB/Thrust benchmarking",
+      "displayName": "CCCL benchmarking",
       "inherits": "cub-benchmark",
       "cacheVariables": {
         "CCCL_ENABLE_THRUST": true,
+        "CCCL_ENABLE_LIBCUDACXX": true,
         "THRUST_ENABLE_EXAMPLES": false,
         "THRUST_ENABLE_TESTING": false,
-        "THRUST_ENABLE_HEADER_TESTING": false
+        "THRUST_ENABLE_HEADER_TESTING": false,
+        "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": false
       }
     }
   ],

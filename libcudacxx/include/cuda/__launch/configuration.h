@@ -67,7 +67,7 @@ template <__detail::launch_option_kind Kind>
 struct find_option_in_tuple_impl
 {
   template <typename Option, typename... Options>
-  _CCCL_DEVICE auto& operator()(const Option& opt, const Options&... rest)
+  _CCCL_DEVICE_API auto& operator()(const Option& opt, const Options&... rest)
   {
     if constexpr (Option::kind == Kind)
     {
@@ -79,14 +79,14 @@ struct find_option_in_tuple_impl
     }
   }
 
-  _CCCL_DEVICE auto operator()()
+  _CCCL_DEVICE_API auto operator()()
   {
     return option_not_found();
   }
 };
 
 template <__detail::launch_option_kind Kind, typename... Options>
-_CCCL_DEVICE auto& find_option_in_tuple(const ::cuda::std::tuple<Options...>& tuple)
+_CCCL_DEVICE_API auto& find_option_in_tuple(const ::cuda::std::tuple<Options...>& tuple)
 {
   return ::cuda::std::apply(find_option_in_tuple_impl<Kind>(), tuple);
 }

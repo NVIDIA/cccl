@@ -600,6 +600,47 @@ MaxSmOccupancy(int& max_sm_occupancy, KernelPtr kernel_ptr, int block_threads, i
 #endif // !_CCCL_COMPILER(NVRTC)
 
 /******************************************************************************
+ * Bulk copy helpers
+ ******************************************************************************/
+namespace detail
+{
+// This should stay an implementation detail even when below functions become public.
+inline constexpr int bulk_copy_min_align = 16;
+
+//! @brief Returns the alignment needed for the shared memory destination buffer of BlockLoadToShared.
+//! @tparam T
+//!   Value type to be loaded.
+template <typename T>
+_CCCL_HOST_DEVICE constexpr int LoadToSharedBufferAlignBytes()
+{
+  return (::cuda::std::max) (int{alignof(T)}, detail::bulk_copy_min_align);
+}
+
+//! @brief Returns the size needed for the shared memory destination buffer of BlockLoadToShared.
+//! @tparam T
+//!   Value type to be loaded.
+//! @tparam GmemAlign
+//!   Guaranteed alignment in bytes of the source range (both begin and end) in global memory
+//! @param[in] num_items
+//!   Size of the source range in global memory
+template <typename T, int GmemAlign = alignof(T)>
+_CCCL_HOST_DEVICE constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t num_items)
+{
+  static_assert(::cuda::std::has_single_bit(unsigned{GmemAlign}));
+  static_assert(GmemAlign >= int{alignof(T)});
+  _CCCL_ASSERT(num_items <= ::cuda::std::size_t{::cuda::std::numeric_limits<int>::max()},
+               "num_items must fit into an int");
+  const int num_bytes = static_cast<int>(num_items) * int{sizeof(T)};
+  if constexpr (GmemAlign >= detail::bulk_copy_min_align)
+  {
+    return num_bytes;
+  }
+  const int extra_space = (num_bytes == 0) ? 0 : detail::bulk_copy_min_align;
+  return ::cuda::round_up(num_bytes, detail::bulk_copy_min_align) + extra_space;
+}
+} // namespace detail
+
+/******************************************************************************
  * Policy management
  ******************************************************************************/
 // PolicyWrapper

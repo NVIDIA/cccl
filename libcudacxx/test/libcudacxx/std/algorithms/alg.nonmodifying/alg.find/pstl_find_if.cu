@@ -23,46 +23,27 @@
 
 inline constexpr size_t size = 1000;
 
-template <class T = int>
-struct equal_to_val
-{
-  T val_;
-
-  constexpr equal_to_val(const T val) noexcept
-      : val_(val)
-  {}
-
-  template <class U>
-  __device__ constexpr bool operator()(const U& val) const noexcept
-  {
-    return static_cast<T>(val) == val_;
-  }
-};
-
 template <class Policy>
 void test_find_if(const Policy& policy)
 {
-  const size_t expected = 42;
+  const int expected = 42;
 
   { // empty should not access anything
-    const auto res =
-      cuda::std::find_if(policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), equal_to_val{expected});
+    const auto res = cuda::std::find_if(
+      policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), cuda::equal_to_value{expected});
     CHECK(res == nullptr);
   }
 
   { // same type
     const auto res = cuda::std::find_if(
-      policy, cuda::counting_iterator{size_t{0}}, cuda::counting_iterator{size}, equal_to_val<size_t>{expected});
+      policy, cuda::counting_iterator{int{0}}, cuda::counting_iterator{int{size}}, cuda::equal_to_value{expected});
     CHECK(res == cuda::counting_iterator{expected});
   }
 
-  { // convertible type
+  { // convertible function arg
     const auto res = cuda::std::find_if(
-      policy,
-      cuda::counting_iterator{size_t{0}},
-      cuda::counting_iterator{size},
-      equal_to_val<int>{static_cast<int>(expected)});
-    CHECK(res == cuda::counting_iterator{expected});
+      policy, cuda::counting_iterator{short{0}}, cuda::counting_iterator{short{size}}, cuda::equal_to_value{expected});
+    CHECK(res == cuda::counting_iterator{short{expected}});
   }
 }
 

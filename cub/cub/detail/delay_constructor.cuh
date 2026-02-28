@@ -193,14 +193,26 @@ struct delay_constructor_for<delay_constructor_kind::reduce_by_key, Delay, L2Wri
 template <delay_constructor_kind Kind, unsigned int Delay, unsigned int L2WriteLatency>
 using delay_constructor_t = typename delay_constructor_for<Kind, Delay, L2WriteLatency>::type;
 
-_CCCL_API constexpr auto
-default_reduce_by_key_delay_constructor_policy(int key_size, int value_size, bool value_is_primitive)
+_CCCL_API constexpr auto default_delay_constructor_policy(bool is_primitive_or_trivially_copyable)
 {
-  if (value_is_primitive && (value_size + key_size < 16))
+  if (is_primitive_or_trivially_copyable)
+  {
+    return delay_constructor_policy{delay_constructor_kind::fixed_delay, 350, 450};
+  }
+  return delay_constructor_policy{delay_constructor_kind::no_delay, 0, 450};
+}
+
+_CCCL_API constexpr auto default_reduce_by_key_delay_constructor_policy(
+  int key_size,
+  int value_size,
+  bool key_is_primitive_or_trivially_copyable,
+  bool value_is_primitive_or_trivially_copyable)
+{
+  if (value_is_primitive_or_trivially_copyable && (value_size + key_size < 16))
   {
     return delay_constructor_policy{delay_constructor_kind::reduce_by_key, 350, 450};
   }
-  return delay_constructor_policy{delay_constructor_kind::no_delay, 0, 450};
+  return default_delay_constructor_policy(key_is_primitive_or_trivially_copyable);
 }
 } // namespace detail
 

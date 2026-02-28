@@ -48,68 +48,74 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 #  if _CCCL_CUDA_COMPILATION()
 
-#    if !_CCCL_CUDA_COMPILER(NVHPC)
-
 // clang-cuda replaces the variables with direct nvvm sreg calls, so we want to assume their return values directly.
-#      if _CCCL_CUDA_COMPILER(CLANG)
-#        define _CCCL_THREAD_IDX_X                   ::__nvvm_read_ptx_sreg_tid_x()
-#        define _CCCL_THREAD_IDX_Y                   ::__nvvm_read_ptx_sreg_tid_y()
-#        define _CCCL_THREAD_IDX_Z                   ::__nvvm_read_ptx_sreg_tid_z()
-#        define _CCCL_BLOCK_DIM_X                    ::__nvvm_read_ptx_sreg_ntid_x()
-#        define _CCCL_BLOCK_DIM_Y                    ::__nvvm_read_ptx_sreg_ntid_y()
-#        define _CCCL_BLOCK_DIM_Z                    ::__nvvm_read_ptx_sreg_ntid_z()
-#        define _CCCL_BLOCK_IDX_X                    ::__nvvm_read_ptx_sreg_ctaid_x()
-#        define _CCCL_BLOCK_IDX_Y                    ::__nvvm_read_ptx_sreg_ctaid_y()
-#        define _CCCL_BLOCK_IDX_Z                    ::__nvvm_read_ptx_sreg_ctaid_z()
-#        define _CCCL_CLUSTER_DIM_X                  ::__nvvm_read_ptx_sreg_cluster_nctaid_x()
-#        define _CCCL_CLUSTER_DIM_Y                  ::__nvvm_read_ptx_sreg_cluster_nctaid_y()
-#        define _CCCL_CLUSTER_DIM_Z                  ::__nvvm_read_ptx_sreg_cluster_nctaid_z()
-#        define _CCCL_CLUSTER_RELATIVE_BLOCK_IDX_X   ::__nvvm_read_ptx_sreg_cluster_ctaid_x()
-#        define _CCCL_CLUSTER_RELATIVE_BLOCK_IDX_Y   ::__nvvm_read_ptx_sreg_cluster_ctaid_y()
-#        define _CCCL_CLUSTER_RELATIVE_BLOCK_IDX_Z   ::__nvvm_read_ptx_sreg_cluster_ctaid_z()
-#        define _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_X ::__nvvm_read_ptx_sreg_nclusterid_x()
-#        define _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Y ::__nvvm_read_ptx_sreg_nclusterid_y()
-#        define _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Z ::__nvvm_read_ptx_sreg_nclusterid_z()
-#        define _CCCL_CLUSTER_IDX_X                  ::__nvvm_read_ptx_sreg_clusterid_x()
-#        define _CCCL_CLUSTER_IDX_Y                  ::__nvvm_read_ptx_sreg_clusterid_y()
-#        define _CCCL_CLUSTER_IDX_Z                  ::__nvvm_read_ptx_sreg_clusterid_z()
-#        define _CCCL_CLUSTER_RELATIVE_BLOCK_RANK    ::__nvvm_read_ptx_sreg_cluster_ctarank()
-#        define _CCCL_CLUSTER_SIZE_IN_BLOCKS         ::__nvvm_read_ptx_sreg_cluster_nctarank()
-#        define _CCCL_GRID_DIM_X                     ::__nvvm_read_ptx_sreg_nctaid_x()
-#        define _CCCL_GRID_DIM_Y                     ::__nvvm_read_ptx_sreg_nctaid_y()
-#        define _CCCL_GRID_DIM_Z                     ::__nvvm_read_ptx_sreg_nctaid_z()
-#      else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG) vvv
-#        define _CCCL_THREAD_IDX_X                   threadIdx.x
-#        define _CCCL_THREAD_IDX_Y                   threadIdx.y
-#        define _CCCL_THREAD_IDX_Z                   threadIdx.z
-#        define _CCCL_BLOCK_DIM_X                    blockDim.x
-#        define _CCCL_BLOCK_DIM_Y                    blockDim.y
-#        define _CCCL_BLOCK_DIM_Z                    blockDim.z
-#        define _CCCL_BLOCK_IDX_X                    blockIdx.x
-#        define _CCCL_BLOCK_IDX_Y                    blockIdx.y
-#        define _CCCL_BLOCK_IDX_Z                    blockIdx.z
-#        define _CCCL_CLUSTER_DIM_X                  ::__clusterDim().x
-#        define _CCCL_CLUSTER_DIM_Y                  ::__clusterDim().y
-#        define _CCCL_CLUSTER_DIM_Z                  ::__clusterDim().z
-#        define _CCCL_CLUSTER_RELATIVE_BLOCK_IDX_X   ::__clusterRelativeBlockIdx().x
-#        define _CCCL_CLUSTER_RELATIVE_BLOCK_IDX_Y   ::__clusterRelativeBlockIdx().y
-#        define _CCCL_CLUSTER_RELATIVE_BLOCK_IDX_Z   ::__clusterRelativeBlockIdx().z
-#        define _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_X ::__clusterGridDimInClusters().x
-#        define _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Y ::__clusterGridDimInClusters().y
-#        define _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Z ::__clusterGridDimInClusters().z
-#        define _CCCL_CLUSTER_IDX_X                  ::__clusterIdx().x
-#        define _CCCL_CLUSTER_IDX_Y                  ::__clusterIdx().y
-#        define _CCCL_CLUSTER_IDX_Z                  ::__clusterIdx().z
-#        define _CCCL_CLUSTER_RELATIVE_BLOCK_RANK    ::__clusterRelativeBlockRank()
-#        define _CCCL_CLUSTER_SIZE_IN_BLOCKS         ::__clusterSizeInBlocks()
-#        define _CCCL_GRID_DIM_X                     gridDim.x
-#        define _CCCL_GRID_DIM_Y                     gridDim.y
-#        define _CCCL_GRID_DIM_Z                     gridDim.z
-#      endif // ^^^ !_CCCL_CUDA_COMPILER(CLANG) ^^^
+#    if _CCCL_CUDA_COMPILER(CLANG)
+#      define _CCCL_THREAD_IDX_X                   ::__nvvm_read_ptx_sreg_tid_x()
+#      define _CCCL_THREAD_IDX_Y                   ::__nvvm_read_ptx_sreg_tid_y()
+#      define _CCCL_THREAD_IDX_Z                   ::__nvvm_read_ptx_sreg_tid_z()
+#      define _CCCL_BLOCK_DIM_X                    ::__nvvm_read_ptx_sreg_ntid_x()
+#      define _CCCL_BLOCK_DIM_Y                    ::__nvvm_read_ptx_sreg_ntid_y()
+#      define _CCCL_BLOCK_DIM_Z                    ::__nvvm_read_ptx_sreg_ntid_z()
+#      define _CCCL_BLOCK_IDX_X                    ::__nvvm_read_ptx_sreg_ctaid_x()
+#      define _CCCL_BLOCK_IDX_Y                    ::__nvvm_read_ptx_sreg_ctaid_y()
+#      define _CCCL_BLOCK_IDX_Z                    ::__nvvm_read_ptx_sreg_ctaid_z()
+#      define _CCCL_CLUSTER_DIM_X                  ::__nvvm_read_ptx_sreg_cluster_nctaid_x()
+#      define _CCCL_CLUSTER_DIM_Y                  ::__nvvm_read_ptx_sreg_cluster_nctaid_y()
+#      define _CCCL_CLUSTER_DIM_Z                  ::__nvvm_read_ptx_sreg_cluster_nctaid_z()
+#      define _CCCL_CLUSTER_RELATIVE_BLOCK_IDX_X   ::__nvvm_read_ptx_sreg_cluster_ctaid_x()
+#      define _CCCL_CLUSTER_RELATIVE_BLOCK_IDX_Y   ::__nvvm_read_ptx_sreg_cluster_ctaid_y()
+#      define _CCCL_CLUSTER_RELATIVE_BLOCK_IDX_Z   ::__nvvm_read_ptx_sreg_cluster_ctaid_z()
+#      define _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_X ::__nvvm_read_ptx_sreg_nclusterid_x()
+#      define _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Y ::__nvvm_read_ptx_sreg_nclusterid_y()
+#      define _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Z ::__nvvm_read_ptx_sreg_nclusterid_z()
+#      define _CCCL_CLUSTER_IDX_X                  ::__nvvm_read_ptx_sreg_clusterid_x()
+#      define _CCCL_CLUSTER_IDX_Y                  ::__nvvm_read_ptx_sreg_clusterid_y()
+#      define _CCCL_CLUSTER_IDX_Z                  ::__nvvm_read_ptx_sreg_clusterid_z()
+#      define _CCCL_CLUSTER_RELATIVE_BLOCK_RANK    ::__nvvm_read_ptx_sreg_cluster_ctarank()
+#      define _CCCL_CLUSTER_SIZE_IN_BLOCKS         ::__nvvm_read_ptx_sreg_cluster_nctarank()
+#      define _CCCL_GRID_DIM_X                     ::__nvvm_read_ptx_sreg_nctaid_x()
+#      define _CCCL_GRID_DIM_Y                     ::__nvvm_read_ptx_sreg_nctaid_y()
+#      define _CCCL_GRID_DIM_Z                     ::__nvvm_read_ptx_sreg_nctaid_z()
+#    else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG) vvv
+#      define _CCCL_THREAD_IDX_X                   threadIdx.x
+#      define _CCCL_THREAD_IDX_Y                   threadIdx.y
+#      define _CCCL_THREAD_IDX_Z                   threadIdx.z
+#      define _CCCL_BLOCK_DIM_X                    blockDim.x
+#      define _CCCL_BLOCK_DIM_Y                    blockDim.y
+#      define _CCCL_BLOCK_DIM_Z                    blockDim.z
+#      define _CCCL_BLOCK_IDX_X                    blockIdx.x
+#      define _CCCL_BLOCK_IDX_Y                    blockIdx.y
+#      define _CCCL_BLOCK_IDX_Z                    blockIdx.z
+#      define _CCCL_CLUSTER_DIM_X                  ::__clusterDim().x
+#      define _CCCL_CLUSTER_DIM_Y                  ::__clusterDim().y
+#      define _CCCL_CLUSTER_DIM_Z                  ::__clusterDim().z
+#      define _CCCL_CLUSTER_RELATIVE_BLOCK_IDX_X   ::__clusterRelativeBlockIdx().x
+#      define _CCCL_CLUSTER_RELATIVE_BLOCK_IDX_Y   ::__clusterRelativeBlockIdx().y
+#      define _CCCL_CLUSTER_RELATIVE_BLOCK_IDX_Z   ::__clusterRelativeBlockIdx().z
+#      define _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_X ::__clusterGridDimInClusters().x
+#      define _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Y ::__clusterGridDimInClusters().y
+#      define _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Z ::__clusterGridDimInClusters().z
+#      define _CCCL_CLUSTER_IDX_X                  ::__clusterIdx().x
+#      define _CCCL_CLUSTER_IDX_Y                  ::__clusterIdx().y
+#      define _CCCL_CLUSTER_IDX_Z                  ::__clusterIdx().z
+#      define _CCCL_CLUSTER_RELATIVE_BLOCK_RANK    ::__clusterRelativeBlockRank()
+#      define _CCCL_CLUSTER_SIZE_IN_BLOCKS         ::__clusterSizeInBlocks()
+#      define _CCCL_GRID_DIM_X                     gridDim.x
+#      define _CCCL_GRID_DIM_Y                     gridDim.y
+#      define _CCCL_GRID_DIM_Z                     gridDim.z
+#    endif // ^^^ !_CCCL_CUDA_COMPILER(CLANG) ^^^
+
+// clang-cuda sometimes warns about the assumption being ignored because it contains (potential) side-effects. We can
+// just suppress it, because in the worst case, the assumption will be just ignored.
+// note(dabayer): I haven't found out when exactly the assumption fails.
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wassume")
 
 template <class _Hierarchy>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void __assume_known_info() noexcept
 {
+  static_assert(__is_hierarchy_v<_Hierarchy>);
+
   constexpr auto __dext = ::cuda::std::dynamic_extent;
 
   using _BlockDesc = typename _Hierarchy::template level_desc_type<block_level>;
@@ -134,13 +140,14 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void __assume_known_info() noexcept
   using _GridDesc = typename _Hierarchy::template level_desc_type<grid_level>;
   using _GridExts = typename _GridDesc::extents_type;
 
-  // Assumptions have no effect with nvc++ in CUDA mode, so we can just use _CCCL_PTX_ARCH here to simplify the code.
-#      if _CCCL_PTX_ARCH >= 900
   if constexpr (_Hierarchy::has_level(cluster))
   {
     using _ClusterDesc = typename _Hierarchy::template level_desc_type<cluster_level>;
     using _ClusterExts = typename _ClusterDesc::extents_type;
 
+    // nvc++ doesn't implement clusters yet, so we can just use _CCCL_PTX_ARCH here. Once the support is there, we can
+    // just add `|| _CCCL_CUDA_COMPILER(NVHPC)`
+#    if _CCCL_PTX_ARCH >= 900
     if constexpr (_ClusterExts::static_extent(0) != __dext)
     {
       _CCCL_ASSUME(_CCCL_CLUSTER_DIM_X == _ClusterExts::static_extent(0));
@@ -179,6 +186,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void __assume_known_info() noexcept
       _CCCL_ASSUME(_CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Z == _GridExts::static_extent(2));
       _CCCL_ASSUME(_CCCL_CLUSTER_IDX_Z < _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Z);
     }
+#    endif // _CCCL_PTX_ARCH >= 900
 
     if constexpr (_ClusterExts::static_extent(0) != __dext && _GridExts::static_extent(0) != __dext)
     {
@@ -197,7 +205,6 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void __assume_known_info() noexcept
     }
   }
   else
-#      endif // _CCCL_PTX_ARCH >= 900
   {
     if constexpr (_GridExts::static_extent(0) != __dext)
     {
@@ -217,38 +224,51 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void __assume_known_info() noexcept
   }
 }
 
-#      undef _CCCL_THREAD_IDX_X
-#      undef _CCCL_THREAD_IDX_Y
-#      undef _CCCL_THREAD_IDX_Z
-#      undef _CCCL_BLOCK_DIM_X
-#      undef _CCCL_BLOCK_DIM_Y
-#      undef _CCCL_BLOCK_DIM_Z
-#      undef _CCCL_BLOCK_IDX_X
-#      undef _CCCL_BLOCK_IDX_Y
-#      undef _CCCL_BLOCK_IDX_Z
-#      undef _CCCL_CLUSTER_DIM_X
-#      undef _CCCL_CLUSTER_DIM_Y
-#      undef _CCCL_CLUSTER_DIM_Z
-#      undef _CCCL_CLUSTER_RELATIVE_BLOCK_IDX_X
-#      undef _CCCL_CLUSTER_RELATIVE_BLOCK_IDX_Y
-#      undef _CCCL_CLUSTER_RELATIVE_BLOCK_IDX_Z
-#      undef _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_X
-#      undef _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Y
-#      undef _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Z
-#      undef _CCCL_CLUSTER_IDX_X
-#      undef _CCCL_CLUSTER_IDX_Y
-#      undef _CCCL_CLUSTER_IDX_Z
-#      undef _CCCL_CLUSTER_RELATIVE_BLOCK_RANK
-#      undef _CCCL_CLUSTER_SIZE_IN_BLOCKS
-#      undef _CCCL_GRID_DIM_X
-#      undef _CCCL_GRID_DIM_Y
-#      undef _CCCL_GRID_DIM_Z
-#    endif // !_CCCL_CUDA_COMPILER(NVHPC)
+_CCCL_DIAG_POP
 
-template <class _Config>
+#    undef _CCCL_THREAD_IDX_X
+#    undef _CCCL_THREAD_IDX_Y
+#    undef _CCCL_THREAD_IDX_Z
+#    undef _CCCL_BLOCK_DIM_X
+#    undef _CCCL_BLOCK_DIM_Y
+#    undef _CCCL_BLOCK_DIM_Z
+#    undef _CCCL_BLOCK_IDX_X
+#    undef _CCCL_BLOCK_IDX_Y
+#    undef _CCCL_BLOCK_IDX_Z
+#    undef _CCCL_CLUSTER_DIM_X
+#    undef _CCCL_CLUSTER_DIM_Y
+#    undef _CCCL_CLUSTER_DIM_Z
+#    undef _CCCL_CLUSTER_RELATIVE_BLOCK_IDX_X
+#    undef _CCCL_CLUSTER_RELATIVE_BLOCK_IDX_Y
+#    undef _CCCL_CLUSTER_RELATIVE_BLOCK_IDX_Z
+#    undef _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_X
+#    undef _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Y
+#    undef _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Z
+#    undef _CCCL_CLUSTER_IDX_X
+#    undef _CCCL_CLUSTER_IDX_Y
+#    undef _CCCL_CLUSTER_IDX_Z
+#    undef _CCCL_CLUSTER_RELATIVE_BLOCK_RANK
+#    undef _CCCL_CLUSTER_SIZE_IN_BLOCKS
+#    undef _CCCL_GRID_DIM_X
+#    undef _CCCL_GRID_DIM_Y
+#    undef _CCCL_GRID_DIM_Z
+
+template <class _Hierarchy, class _Level>
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_CONSTEVAL unsigned __block_size(::cuda::std::size_t __i) noexcept
+{
+  static_assert(__is_hierarchy_v<_Hierarchy>);
+  static_assert(__is_hierarchy_level_v<_Level>);
+  using _Desc = typename _Hierarchy::template level_desc_type<_Level>;
+  using _Exts = typename _Desc::extents_type;
+
+  static_assert(_Exts::rank_dynamic() == 0, "this function can be used only with all static extents");
+  return static_cast<unsigned>(_Exts::static_extent(__i));
+}
+
+template <class _Hierarchy>
 [[nodiscard]] _CCCL_DEVICE_API _CCCL_CONSTEVAL unsigned __max_nthreads_per_block() noexcept
 {
-  using _Hierarchy = typename _Config::hierarchy_type;
+  static_assert(__is_hierarchy_v<_Hierarchy>);
   using _BlockDesc = typename _Hierarchy::template level_desc_type<block_level>;
   using _BlockExts = typename _BlockDesc::extents_type;
 
@@ -265,20 +285,39 @@ inline constexpr bool __invoke_kernel_functor_with_config_v =
 #    endif
   ;
 
-// We create 2 overloads, with/without the __launch_bounds__ attribute. We must use enable_if because of
-// "Pack template parameter must be the last template parameter for a variadic __global__ function template" error when
-// we try to use _CCCL_REQUIRES expression.
-//
-//
+// We create 3 kernel functor launchers:
+// 1. With __block_size__ + __launch_bounds__ for cluster launches with compile-time known dims.
+// 2. With __launch_bounds__ for non-cluster launches with compile-time known block size.
+// 3. Fallback without any attributes.
+
 template <class _Config, class _Kernel, class... _Args>
-__global__ static void _CCCL_LAUNCH_BOUNDS(::cuda::__max_nthreads_per_block<_Config>())
-  __kernel_launcher_with_launch_bounds(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
+__global__ static void
+  _CCCL_BLOCK_SIZE((::cuda::__block_size<typename _Config::hierarchy_type, block_level>(0),
+                    ::cuda::__block_size<typename _Config::hierarchy_type, block_level>(1),
+                    ::cuda::__block_size<typename _Config::hierarchy_type, block_level>(2)),
+                   (::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(0),
+                    ::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(1),
+                    ::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(2)))
+  _CCCL_LAUNCH_BOUNDS(::cuda::__max_nthreads_per_block<typename _Config::hierarchy_type>())
+  __kernel_launcher_with_block_size(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
 {
-  // Assumptions have no effect with nvc++ in CUDA mode. clang-cuda ignores the assumptions (with a warning) due to side
-  // effects.
-#    if !_CCCL_CUDA_COMPILER(NVHPC) && !_CCCL_CUDA_COMPILER(CLANG)
   ::cuda::__assume_known_info<typename _Config::hierarchy_type>();
-#    endif // !_CCCL_CUDA_COMPILER(NVHPC) && !_CCCL_CUDA_COMPILER(CLANG)
+
+  if constexpr (__invoke_kernel_functor_with_config_v<_Kernel, _Config, _Args...>)
+  {
+    __kernel_fn(__conf, __args...);
+  }
+  else
+  {
+    __kernel_fn(__args...);
+  }
+}
+
+template <class _Config, class _Kernel, class... _Args>
+__global__ static void _CCCL_LAUNCH_BOUNDS(::cuda::__max_nthreads_per_block<typename _Config::hierarchy_type>())
+__kernel_launcher_with_launch_bounds(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
+{
+  ::cuda::__assume_known_info<typename _Config::hierarchy_type>();
 
   if constexpr (__invoke_kernel_functor_with_config_v<_Kernel, _Config, _Args...>)
   {
@@ -293,11 +332,7 @@ __global__ static void _CCCL_LAUNCH_BOUNDS(::cuda::__max_nthreads_per_block<_Con
 template <class _Config, class _Kernel, class... _Args>
 __global__ static void __kernel_launcher(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
 {
-  // Assumptions have no effect with nvc++ in CUDA mode. clang-cuda ignores the assumptions (with a warning) due to side
-  // effects.
-#    if !_CCCL_CUDA_COMPILER(NVHPC) && !_CCCL_CUDA_COMPILER(CLANG)
   ::cuda::__assume_known_info<typename _Config::hierarchy_type>();
-#    endif // !_CCCL_CUDA_COMPILER(NVHPC) && !_CCCL_CUDA_COMPILER(CLANG)
 
   if constexpr (__invoke_kernel_functor_with_config_v<_Kernel, _Config, _Args...>)
   {
@@ -312,14 +347,22 @@ __global__ static void __kernel_launcher(const _CCCL_GRID_CONSTANT _Config __con
 template <class _Kernel, class _Config, class... _Args>
 [[nodiscard]] _CCCL_API constexpr auto __get_kernel_launcher() noexcept
 {
-  constexpr auto __dext = ::cuda::std::dynamic_extent;
-
   using _Hierarchy = typename _Config::hierarchy_type;
   using _BlockDesc = typename _Hierarchy::template level_desc_type<block_level>;
   using _BlockExts = typename _BlockDesc::extents_type;
 
-  if constexpr (_BlockExts::static_extent(0) != __dext && _BlockExts::static_extent(1) != __dext
-                && _BlockExts::static_extent(2) != __dext)
+  if constexpr (_Hierarchy::has_level(cluster))
+  {
+    using _ClusterDesc = typename _Hierarchy::template level_desc_type<cluster_level>;
+    using _ClusterExts = typename _ClusterDesc::extents_type;
+
+    if constexpr (_BlockExts::rank_dynamic() == 0 && _ClusterExts::rank_dynamic() == 0)
+    {
+      return ::cuda::__kernel_launcher_with_block_size<_Config, _Kernel, _Args...>;
+    }
+  }
+
+  if constexpr (_BlockExts::rank_dynamic() == 0)
   {
     return ::cuda::__kernel_launcher_with_launch_bounds<_Config, _Kernel, _Args...>;
   }
