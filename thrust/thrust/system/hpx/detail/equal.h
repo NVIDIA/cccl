@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2025 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 /*! \file equal.h
  *  \brief HPX implementation of equal.
@@ -36,23 +23,21 @@
 #include <hpx/parallel/algorithms/equal.hpp>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::hpx::detail
 {
-namespace hpx
-{
-namespace detail
-{
-
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
-bool equal(execution_policy<DerivedPolicy>& exec [[maybe_unused]], InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
+bool equal(execution_policy<DerivedPolicy>& exec [[maybe_unused]],
+           InputIterator1 first1,
+           InputIterator1 last1,
+           InputIterator2 first2)
 {
-  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator1>
-                && ::hpx::traits::is_forward_iterator_v<InputIterator2>)
+  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator1, ::hpx::forward_traversal_tag>
+                && ::hpx::traits::belongs_to_iterator_traversal_v<InputIterator2, ::hpx::forward_traversal_tag>)
   {
-      return ::hpx::equal(hpx::detail::to_hpx_execution_policy(exec),
-                          ::thrust::try_unwrap_contiguous_iterator(first1),
-                          ::thrust::try_unwrap_contiguous_iterator(last1),
-                          ::thrust::try_unwrap_contiguous_iterator(first2));
+    return ::hpx::equal(hpx::detail::to_hpx_execution_policy(exec),
+                        ::thrust::try_unwrap_contiguous_iterator(first1),
+                        ::thrust::try_unwrap_contiguous_iterator(last1),
+                        ::thrust::try_unwrap_contiguous_iterator(first2));
   }
   else
   {
@@ -68,25 +53,23 @@ bool equal(execution_policy<DerivedPolicy>& exec [[maybe_unused]],
            BinaryPredicate binary_pred)
 {
   // wrap pred
-  wrapped_function<BinaryPredicate> wrapped_binary_pred{binary_pred};
+  hpx_wrapped_function<BinaryPredicate> wrapped_binary_pred{binary_pred};
 
-  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator1>
-                && ::hpx::traits::is_forward_iterator_v<InputIterator2>)
+  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator1, ::hpx::forward_traversal_tag>
+                && ::hpx::traits::belongs_to_iterator_traversal_v<InputIterator2, ::hpx::forward_traversal_tag>)
   {
-      return ::hpx::equal(
-        hpx::detail::to_hpx_execution_policy(exec),
-        ::thrust::try_unwrap_contiguous_iterator(first1),
-        ::thrust::try_unwrap_contiguous_iterator(last1),
-        ::thrust::try_unwrap_contiguous_iterator(first2),
-        wrapped_binary_pred);
+    return ::hpx::equal(
+      hpx::detail::to_hpx_execution_policy(exec),
+      ::thrust::try_unwrap_contiguous_iterator(first1),
+      ::thrust::try_unwrap_contiguous_iterator(last1),
+      ::thrust::try_unwrap_contiguous_iterator(first2),
+      wrapped_binary_pred);
   }
   else
   {
     return ::hpx::equal(first1, last1, first2, wrapped_binary_pred);
   }
 }
+} // end namespace system::hpx::detail
 
-} // end namespace detail
-} // end namespace hpx
-} // end namespace system
 THRUST_NAMESPACE_END

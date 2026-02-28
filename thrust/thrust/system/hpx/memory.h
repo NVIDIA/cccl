@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2025 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in chpxliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 /*! \file thrust/system/hpx/memory.h
  *  \brief Managing memory associated with Thrust's HPX system.
@@ -37,11 +24,8 @@
 #include <ostream>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::hpx
 {
-namespace hpx
-{
-
 /*! Allocates an area of memory available to Thrust's <tt>hpx</tt> system.
  *  \param n Number of bytes to allocate.
  *  \return A <tt>hpx::pointer<void></tt> pointing to the beginning of the newly
@@ -91,8 +75,7 @@ using universal_allocator = thrust::mr::stateless_resource_allocator<T, thrust::
 template <typename T>
 using universal_host_pinned_allocator =
   thrust::mr::stateless_resource_allocator<T, thrust::system::hpx::universal_host_pinned_memory_resource>;
-} // namespace hpx
-} // namespace system
+} // namespace system::hpx
 
 /*! \namespace thrust::hpx
  *  \brief \p thrust::hpx is a top-level alias for thrust::system::hpx.

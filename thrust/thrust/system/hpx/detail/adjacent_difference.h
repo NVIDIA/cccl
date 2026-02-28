@@ -1,22 +1,9 @@
-/*
- *  Copyright 2008-2025 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 /*! \file merge.h
-*   \brief HPX implementation of adjacent_difference.
-*/
+ *   \brief HPX implementation of adjacent_difference.
+ */
 
 #pragma once
 
@@ -30,40 +17,34 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/system/detail/generic/adjacent_difference.h>
 #include <thrust/system/hpx/detail/contiguous_iterator.h>
 #include <thrust/system/hpx/detail/execution_policy.h>
 #include <thrust/system/hpx/detail/function.h>
-#include <thrust/system/detail/generic/adjacent_difference.h>
-#include <hpx/parallel/algorithms/adjacent_difference.hpp>
+
 #include <cuda/std/__numeric/adjacent_difference.h>
 
+#include <hpx/parallel/algorithms/adjacent_difference.hpp>
+
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::hpx::detail
 {
-namespace hpx
+template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator>
+OutputIterator adjacent_difference(
+  execution_policy<ExecutionPolicy>& exec [[maybe_unused]],
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result)
 {
-namespace detail
-{
-
-template <typename ExecutionPolicy,
-          typename InputIterator,
-          typename OutputIterator>
-OutputIterator
-adjacent_difference(execution_policy<ExecutionPolicy>& exec [[maybe_unused]],
-      InputIterator first,
-      InputIterator last,
-      OutputIterator result)
-{
-
-  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>
-                && ::hpx::traits::is_forward_iterator_v<OutputIterator>)
+  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator, ::hpx::forward_traversal_tag>
+                && ::hpx::traits::belongs_to_iterator_traversal_v<OutputIterator, ::hpx::forward_traversal_tag>)
   {
-      auto res = ::hpx::adjacent_difference(
-        hpx::detail::to_hpx_execution_policy(exec),
-        ::thrust::try_unwrap_contiguous_iterator(first),
-        ::thrust::try_unwrap_contiguous_iterator(last),
-        ::thrust::try_unwrap_contiguous_iterator(result));
-      return detail::rewrap_contiguous_iterator(res, result);
+    auto res = ::hpx::adjacent_difference(
+      hpx::detail::to_hpx_execution_policy(exec),
+      ::thrust::try_unwrap_contiguous_iterator(first),
+      ::thrust::try_unwrap_contiguous_iterator(last),
+      ::thrust::try_unwrap_contiguous_iterator(result));
+    return detail::rewrap_contiguous_iterator(res, result);
   }
   else
   {
@@ -71,40 +52,33 @@ adjacent_difference(execution_policy<ExecutionPolicy>& exec [[maybe_unused]],
   }
 }
 
-template <typename ExecutionPolicy,
-          typename InputIterator,
-          typename OutputIterator,
-          typename BinaryFunction>
-OutputIterator
-adjacent_difference(execution_policy<ExecutionPolicy>& exec [[maybe_unused]],
-      InputIterator first,
-      InputIterator last,
-      OutputIterator result,
-      BinaryFunction binary_op)
+template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
+OutputIterator adjacent_difference(
+  execution_policy<ExecutionPolicy>& exec [[maybe_unused]],
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  BinaryFunction binary_op)
 {
+  auto wrapped_op = hpx_wrapped_function<BinaryFunction>{binary_op};
 
-  auto wrapped_op = wrapped_function<BinaryFunction>{binary_op};
-  
-  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>
-                && ::hpx::traits::is_forward_iterator_v<OutputIterator>)
+  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator, ::hpx::forward_traversal_tag>
+                && ::hpx::traits::belongs_to_iterator_traversal_v<OutputIterator, ::hpx::forward_traversal_tag>)
   {
-      auto res = ::hpx::adjacent_difference(
-        hpx::detail::to_hpx_execution_policy(exec),
-        ::thrust::try_unwrap_contiguous_iterator(first),
-        ::thrust::try_unwrap_contiguous_iterator(last),
-        ::thrust::try_unwrap_contiguous_iterator(result),
-    wrapped_op);
-      return detail::rewrap_contiguous_iterator(res, result);
+    auto res = ::hpx::adjacent_difference(
+      hpx::detail::to_hpx_execution_policy(exec),
+      ::thrust::try_unwrap_contiguous_iterator(first),
+      ::thrust::try_unwrap_contiguous_iterator(last),
+      ::thrust::try_unwrap_contiguous_iterator(result),
+      wrapped_op);
+    return detail::rewrap_contiguous_iterator(res, result);
   }
   else
   {
     return ::cuda::std::adjacent_difference(first, last, result, wrapped_op);
   }
-} 
-
-} // end namespace detail
-} // end namespace hpx
-} // end namespace system
+}
+} // end namespace system::hpx::detail
 THRUST_NAMESPACE_END
 
 // this system inherits adjacent_difference

@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2025 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
@@ -30,13 +17,10 @@
 #include <hpx/execution.hpp>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace hpx
+namespace system::hpx
 {
 namespace detail
 {
-
 template <typename Executor, typename Parameters>
 struct sequenced_policy_shim : basic_execution_policy<sequenced_policy_shim, Executor, Parameters>
 {
@@ -45,28 +29,20 @@ struct sequenced_policy_shim : basic_execution_policy<sequenced_policy_shim, Exe
 
 using seq_t = sequenced_policy_shim<::hpx::execution::sequenced_executor,
                                     ::hpx::traits::executor_parameters_type_t<::hpx::execution::sequenced_executor>>;
-
 } // namespace detail
 
 _CCCL_GLOBAL_CONSTANT detail::seq_t seq;
-
-} // namespace hpx
-} // namespace system
+} // namespace system::hpx
 
 // alias seq here
 namespace hpx
 {
-
 using thrust::system::hpx::seq;
-
 } // namespace hpx
 THRUST_NAMESPACE_END
 
-namespace hpx
+namespace hpx::detail
 {
-namespace detail
-{
-
 template <typename Executor, typename Parameters>
 struct is_rebound_execution_policy<THRUST_NS_QUALIFIER::system::hpx::detail::sequenced_policy_shim<Executor, Parameters>>
     : std::true_type
@@ -81,6 +57,4 @@ template <typename Executor, typename Parameters>
 struct is_sequenced_execution_policy<
   THRUST_NS_QUALIFIER::system::hpx::detail::sequenced_policy_shim<Executor, Parameters>> : std::true_type
 {};
-
-} // namespace detail
-} // namespace hpx
+} // namespace hpx::detail
