@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2025 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 /*! \file fill.h
  *  \brief HPX implementation of fill/fill_n.
@@ -35,22 +22,18 @@
 #include <hpx/parallel/algorithms/fill.hpp>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::hpx::detail
 {
-namespace hpx
-{
-namespace detail
-{
-
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-void fill(execution_policy<DerivedPolicy>& exec [[maybe_unused]], ForwardIterator first, ForwardIterator last, const T& value)
+void fill(
+  execution_policy<DerivedPolicy>& exec [[maybe_unused]], ForwardIterator first, ForwardIterator last, const T& value)
 {
-  if constexpr (::hpx::traits::is_forward_iterator_v<ForwardIterator>)
+  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<ForwardIterator, ::hpx::forward_traversal_tag>)
   {
-      return ::hpx::fill(hpx::detail::to_hpx_execution_policy(exec),
-                         ::thrust::try_unwrap_contiguous_iterator(first),
-                         ::thrust::try_unwrap_contiguous_iterator(last),
-                         value);
+    return ::hpx::fill(hpx::detail::to_hpx_execution_policy(exec),
+                       ::thrust::try_unwrap_contiguous_iterator(first),
+                       ::thrust::try_unwrap_contiguous_iterator(last),
+                       value);
   }
   else
   {
@@ -59,21 +42,20 @@ void fill(execution_policy<DerivedPolicy>& exec [[maybe_unused]], ForwardIterato
 }
 
 template <typename DerivedPolicy, typename OutputIterator, typename Size, typename T>
-OutputIterator fill_n(execution_policy<DerivedPolicy>& exec [[maybe_unused]], OutputIterator first, Size n, const T& value)
+OutputIterator
+fill_n(execution_policy<DerivedPolicy>& exec [[maybe_unused]], OutputIterator first, Size n, const T& value)
 {
-  if constexpr (::hpx::traits::is_forward_iterator_v<OutputIterator>)
+  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<OutputIterator, ::hpx::forward_traversal_tag>)
   {
-      auto res = ::hpx::fill_n(
-        hpx::detail::to_hpx_execution_policy(exec), ::thrust::try_unwrap_contiguous_iterator(first), n, value);
-      return detail::rewrap_contiguous_iterator(res, first);
+    auto res = ::hpx::fill_n(
+      hpx::detail::to_hpx_execution_policy(exec), ::thrust::try_unwrap_contiguous_iterator(first), n, value);
+    return detail::rewrap_contiguous_iterator(res, first);
   }
   else
   {
     return ::hpx::fill_n(first, n, value);
   }
 }
+} // end namespace system::hpx::detail
 
-} // end namespace detail
-} // end namespace hpx
-} // end namespace system
 THRUST_NAMESPACE_END

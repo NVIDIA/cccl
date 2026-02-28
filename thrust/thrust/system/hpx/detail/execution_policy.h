@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2025 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
@@ -25,6 +12,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/allocator_aware_execution_policy.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/any_system_tag.h>
@@ -33,14 +21,11 @@
 #include <hpx/execution.hpp>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::hpx
 {
 // put the canonical tag in the same ns as the backend's entry points
-namespace hpx
-{
 namespace detail
 {
-
 // this awkward sequence of definitions arise
 // from the desire both for tag to derive
 // from execution_policy and for execution_policy
@@ -57,7 +42,9 @@ struct execution_policy;
 // specialize execution_policy for tag
 template <>
 struct execution_policy<tag> : thrust::system::cpp::detail::execution_policy<tag>
-{};
+{
+  using tag_type = tag;
+};
 
 // tag's definition comes before the
 // generic definition of execution_policy
@@ -68,7 +55,7 @@ struct tag : execution_policy<tag>
 template <typename Derived>
 struct execution_policy : thrust::system::cpp::detail::execution_policy<Derived>
 {
-  typedef tag tag_type;
+  using tag_type = tag;
   operator tag() const
   {
     return tag();
@@ -77,6 +64,11 @@ struct execution_policy : thrust::system::cpp::detail::execution_policy<Derived>
 
 ////////////////////////////////////////////////////////////////////////
 // Base execution policy
+
+//! Base class template for HPX-backed Thrust execution policies that carry an executor and parameters.
+//!
+//! This policy provides `on(...)` and `with(..)` to rebind the underlying HPX executor and executor parameters.
+//! Derived policies are expected to be of the form `Derived<Executor, Parameters>`.
 template <template <class, class> typename Derived, typename Executor, typename Parameters, typename Category = void>
 struct basic_execution_policy
     : execution_policy<Derived<Executor, Parameters>>
@@ -151,18 +143,6 @@ public:
   }
 
   // Create a new derived execution policy from the given executor
-  //
-  // \tparam Executor  The type of the executor to associate with this
-  //                   execution policy.
-  //
-  // \param exec       [in] The executor to use for the execution of
-  //                   the parallel algorithm the returned execution
-  //                   policy is used with.
-  //
-  // \note Requires: ::hpx::traits::is_executor_v<Executor> is true
-  //
-  // \returns The new execution policy
-  //
   template <typename Executor_>
   constexpr decltype(auto) on(Executor_&& exec) const
   {
@@ -173,19 +153,6 @@ public:
   }
 
   // Create a new execution policy from the given execution parameters
-  //
-  // \tparam Parameters  The type of the executor parameters to
-  //                     associate with this execution policy.
-  //
-  // \param params       [in] The executor parameters to use for the
-  //                     execution of the parallel algorithm the
-  //                     returned execution policy is used with.
-  //
-  // \note Requires: all parameters are executor_parameters, different
-  //                 parameter types can't be duplicated
-  //
-  // \returns The new execution policy
-  //
   template <typename... Parameters_>
   constexpr decltype(auto) with(Parameters_&&... params) const
   {
@@ -226,7 +193,7 @@ private:
 };
 
 template <typename Derived>
-auto to_hpx_execution_policy(const execution_policy<Derived>& exec) noexcept
+auto to_hpx_execution_policy(const execution_policy<Derived>& exec [[maybe_unused]]) noexcept
 {
   if constexpr (::hpx::is_execution_policy_v<Derived>)
   {
@@ -234,26 +201,39 @@ auto to_hpx_execution_policy(const execution_policy<Derived>& exec) noexcept
   }
   else
   {
-    (void) exec;
     return ::hpx::execution::par;
   }
 }
-
 } // namespace detail
 
-// alias execution_policy and tag here
-using thrust::system::hpx::detail::execution_policy;
+//! \addtogroup execution_policies
+//! \{
+
+//! \p thrust::hpx::tag is a type representing Thrust's HPX backend system in C++'s type system.
+//!
+//! Iterators "tagged" with a type which is convertible to \p hpx::tag assert that they may be "dispatched" to algorithm
+//! Implementations in the \p hpx system.
 using thrust::system::hpx::detail::tag;
 
-} // namespace hpx
-} // namespace system
+//! \p thrust::hpx::execution_policy is the base class for all Thrust parallel execution policies which are derived from
+//! Thrust's HPX backend system
+using thrust::system::hpx::detail::execution_policy;
+
+//! \p thrust::hpx::par is the parallel execution policy associated with Thrust's HPX backend system.
+//!
+//! Instead of relying on implicit algorithm dispatch through iterator system tags, users may directly target Thrust's
+//! HPX backend system by providing \p thrust::hpx::par as an algorithm parameter.
+//!
+//! Explicit dispatch can be useful in avoiding the introudcution of data copies into containers such as
+//! \p thrust::hpx::vector (when available).
+
+//! \}
+} // namespace system::hpx
 
 // alias items at top-level
 namespace hpx
 {
-
 using thrust::system::hpx::execution_policy;
 using thrust::system::hpx::tag;
-
 } // namespace hpx
 THRUST_NAMESPACE_END

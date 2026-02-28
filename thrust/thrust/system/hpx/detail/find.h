@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2025 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 /*! \file find.h
  *  \brief HPX implementation of find, find_if, and find_if_not.
@@ -37,24 +24,20 @@
 #include <hpx/parallel/algorithms/find.hpp>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::hpx::detail
 {
-namespace hpx
-{
-namespace detail
-{
-
 template <typename DerivedPolicy, typename InputIterator, typename T>
-InputIterator find(execution_policy<DerivedPolicy>& exec [[maybe_unused]], InputIterator first, InputIterator last, const T& value)
+InputIterator
+find(execution_policy<DerivedPolicy>& exec [[maybe_unused]], InputIterator first, InputIterator last, const T& value)
 {
-  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
+  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator, ::hpx::forward_traversal_tag>)
   {
-      auto res = ::hpx::find(
-        hpx::detail::to_hpx_execution_policy(exec),
-        ::thrust::try_unwrap_contiguous_iterator(first),
-        ::thrust::try_unwrap_contiguous_iterator(last),
-        value);
-      return detail::rewrap_contiguous_iterator(res, first);
+    auto res = ::hpx::find(
+      hpx::detail::to_hpx_execution_policy(exec),
+      ::thrust::try_unwrap_contiguous_iterator(first),
+      ::thrust::try_unwrap_contiguous_iterator(last),
+      value);
+    return detail::rewrap_contiguous_iterator(res, first);
   }
   else
   {
@@ -63,19 +46,20 @@ InputIterator find(execution_policy<DerivedPolicy>& exec [[maybe_unused]], Input
 }
 
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-InputIterator find_if(execution_policy<DerivedPolicy>& exec [[maybe_unused]], InputIterator first, InputIterator last, Predicate pred)
+InputIterator
+find_if(execution_policy<DerivedPolicy>& exec [[maybe_unused]], InputIterator first, InputIterator last, Predicate pred)
 {
   // wrap
-  wrapped_function<Predicate> wrapped_pred(pred);
+  hpx_wrapped_function<Predicate> wrapped_pred(pred);
 
-  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
+  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator, ::hpx::forward_traversal_tag>)
   {
-      auto res = ::hpx::find_if(
-        hpx::detail::to_hpx_execution_policy(exec),
-        ::thrust::try_unwrap_contiguous_iterator(first),
-        ::thrust::try_unwrap_contiguous_iterator(last),
-        wrapped_pred);
-      return detail::rewrap_contiguous_iterator(res, first);
+    auto res = ::hpx::find_if(
+      hpx::detail::to_hpx_execution_policy(exec),
+      ::thrust::try_unwrap_contiguous_iterator(first),
+      ::thrust::try_unwrap_contiguous_iterator(last),
+      wrapped_pred);
+    return detail::rewrap_contiguous_iterator(res, first);
   }
   else
   {
@@ -84,27 +68,26 @@ InputIterator find_if(execution_policy<DerivedPolicy>& exec [[maybe_unused]], In
 }
 
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-InputIterator find_if_not(execution_policy<DerivedPolicy>& exec [[maybe_unused]], InputIterator first, InputIterator last, Predicate pred)
+InputIterator find_if_not(
+  execution_policy<DerivedPolicy>& exec [[maybe_unused]], InputIterator first, InputIterator last, Predicate pred)
 {
   // wrap
-  wrapped_function<Predicate> wrapped_pred(pred);
+  hpx_wrapped_function<Predicate> wrapped_pred(pred);
 
-  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
+  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator, ::hpx::forward_traversal_tag>)
   {
-      auto res = ::hpx::find_if_not(
-        hpx::detail::to_hpx_execution_policy(exec),
-        ::thrust::try_unwrap_contiguous_iterator(first),
-        ::thrust::try_unwrap_contiguous_iterator(last),
-        wrapped_pred);
-      return detail::rewrap_contiguous_iterator(res, first);
+    auto res = ::hpx::find_if_not(
+      hpx::detail::to_hpx_execution_policy(exec),
+      ::thrust::try_unwrap_contiguous_iterator(first),
+      ::thrust::try_unwrap_contiguous_iterator(last),
+      wrapped_pred);
+    return detail::rewrap_contiguous_iterator(res, first);
   }
   else
   {
     return ::hpx::find_if_not(first, last, wrapped_pred);
   }
 }
+} // end namespace system::hpx::detail
 
-} // end namespace detail
-} // end namespace hpx
-} // end namespace system
 THRUST_NAMESPACE_END
