@@ -3,11 +3,13 @@ Backport Process
 
 This page documents how changes are made to release branches.
 
-Process overview
-----------------
-
-In general, changes are made to the ``main`` branch and then backported via
-automation to release branches.
+In an ideal world, the release tag ``vX.Y.Z`` would match the exact commit where
+``branch/X.Y.Z`` was created from ``main``, with no additional fixes needed.
+In practice, important bugs are sometimes found after that cut, and we need
+surgical fixes in a prior release branch without taking every newer change from
+``main``. These targeted fixes are called *backports*: the fix is made via a standard
+PR to the ``main`` branch, then automation opens an equivalent PR against the relevant
+release branch.
 
 To land a fix in a release branch, follow these steps:
 
