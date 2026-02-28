@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2025 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
@@ -29,38 +16,34 @@
 #include <thrust/system/hpx/detail/contiguous_iterator.h>
 #include <thrust/system/hpx/detail/execution_policy.h>
 #include <thrust/system/hpx/detail/function.h>
+
 #include <hpx/parallel/algorithms/stable_sort.hpp>
 
-
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::hpx::detail
 {
-namespace hpx
-{
-namespace detail
-{
-
 template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
-void stable_sort(
-  execution_policy<DerivedPolicy>& exec [[maybe_unused]], RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp)
+void stable_sort(execution_policy<DerivedPolicy>& exec [[maybe_unused]],
+                 RandomAccessIterator first,
+                 RandomAccessIterator last,
+                 StrictWeakOrdering comp)
 {
   // wrap comp
-  wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
+  hpx_wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
 
-  if constexpr (::hpx::traits::is_random_access_iterator_v<RandomAccessIterator>)
+  if constexpr (::hpx::traits::has_traversal_v<RandomAccessIterator, ::hpx::random_access_traversal_tag>)
   {
-      return ::hpx::stable_sort(
-        hpx::detail::to_hpx_execution_policy(exec),
-        ::thrust::try_unwrap_contiguous_iterator(first),
-        ::thrust::try_unwrap_contiguous_iterator(last),
-        wrapped_comp);
+    return ::hpx::stable_sort(
+      hpx::detail::to_hpx_execution_policy(exec),
+      ::thrust::try_unwrap_contiguous_iterator(first),
+      ::thrust::try_unwrap_contiguous_iterator(last),
+      wrapped_comp);
   }
   else
   {
     return ::hpx::stable_sort(first, last, comp);
   }
 }
-} // end namespace detail
-} // end namespace hpx
-} // end namespace system
+} // end namespace system::hpx::detail
+
 THRUST_NAMESPACE_END
