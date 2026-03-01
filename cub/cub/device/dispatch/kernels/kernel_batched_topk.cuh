@@ -107,7 +107,7 @@ struct find_smallest_covering_policy_impl
                                                                                           // one
                                >;
 
-  static constexpr bool has_valid_policy = next_step::has_valid_policy;
+  static constexpr bool has_valid_policy = covers;
 };
 
 // Base case: end of tuple
