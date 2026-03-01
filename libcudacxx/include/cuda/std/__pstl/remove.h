@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___PSTL_REMOVE_COPY_H
-#define _CUDA_STD___PSTL_REMOVE_COPY_H
+#ifndef _CUDA_STD___PSTL_REMOVE_H
+#define _CUDA_STD___PSTL_REMOVE_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,23 +24,20 @@
 #if !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__nvtx/nvtx.h>
-#  include <cuda/std/__algorithm/remove_copy.h>
+#  include <cuda/std/__algorithm/remove.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__iterator/concepts.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__pstl/dispatch.h>
-#  include <cuda/std/__pstl/remove.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
-#  include <cuda/std/__type_traits/is_comparable.h>
 #  include <cuda/std/__type_traits/is_execution_policy.h>
-#  include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #  include <cuda/std/__utility/move.h>
 
 #  if _CCCL_HAS_BACKEND_CUDA()
-#    include <cuda/std/__pstl/cuda/copy_if.h>
+#    include <cuda/std/__pstl/cuda/remove_if.h>
 #  endif // _CCCL_HAS_BACKEND_CUDA()
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -49,35 +46,45 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
-_CCCL_TEMPLATE(class _Policy, class _InputIterator, class _OutputIterator, class _Tp)
-_CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_traversal<_OutputIterator> _CCCL_AND
-                 is_execution_policy_v<_Policy>)
-_CCCL_HOST_API _OutputIterator remove_copy(
-  [[maybe_unused]] const _Policy& __policy,
-  _InputIterator __first,
-  _InputIterator __last,
-  _OutputIterator __result,
-  const _Tp& __value)
+template <class _Tp>
+struct __remove_compare_not_eq
 {
-  if (__first == __last)
-  {
-    return __result;
-  }
+  _Tp __val_;
 
+  _CCCL_API constexpr __remove_compare_not_eq(const _Tp& __val) noexcept(is_nothrow_copy_constructible_v<_Tp>)
+      : __val_(__val)
+  {}
+
+  template <class _Up>
+  [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE constexpr bool operator()(const _Up& __rhs) const
+    noexcept(__is_cpp17_nothrow_equality_comparable_v<_Tp, _Up>)
+  {
+    return !(__val_ == __rhs);
+  }
+};
+
+_CCCL_TEMPLATE(class _Policy, class _InputIterator, class _Tp)
+_CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND is_execution_policy_v<_Policy>)
+_CCCL_HOST_API _InputIterator
+remove([[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, const _Tp& __value)
+{
   [[maybe_unused]] auto __dispatch =
-    ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__copy_if, _Policy>();
+    ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__remove_if, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
-    _CCCL_NVTX_RANGE_SCOPE("cuda::std::remove_copy");
+    _CCCL_NVTX_RANGE_SCOPE("cuda::std::remove");
+
+    if (__first == __last)
+    {
+      return __first;
+    }
     const auto __count = ::cuda::std::distance(__first, __last);
-    return __dispatch(
-      __policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__result), __remove_compare_not_eq{__value});
+    return __dispatch(__policy, __first, __count, __remove_compare_not_eq{__value});
   }
   else
   {
-    static_assert(__always_false_v<_Policy>, "Parallel cuda::std::remove_copy requires at least one selected backend");
-    return ::cuda::std::remove_copy(
-      ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__result), __value);
+    static_assert(__always_false_v<_Policy>, "Parallel cuda::std::remove requires at least one selected backend");
+    return ::cuda::std::remove(::cuda::std::move(__first), ::cuda::std::move(__last), __value);
   }
 }
 
@@ -89,4 +96,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #endif // !_CCCL_COMPILER(NVRTC)
 
-#endif // _CUDA_STD___PSTL_REMOVE_COPY_H
+#endif // _CUDA_STD___PSTL_REMOVE_H

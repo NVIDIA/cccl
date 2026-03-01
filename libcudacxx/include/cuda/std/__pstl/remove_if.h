@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___PSTL_REMOVE_COPY_H
-#define _CUDA_STD___PSTL_REMOVE_COPY_H
+#ifndef _CUDA_STD___PSTL_REMOVE_IF_H
+#define _CUDA_STD___PSTL_REMOVE_IF_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,23 +24,20 @@
 #if !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__nvtx/nvtx.h>
-#  include <cuda/std/__algorithm/remove_copy.h>
+#  include <cuda/std/__algorithm/remove_if.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__iterator/concepts.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__pstl/dispatch.h>
-#  include <cuda/std/__pstl/remove.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
-#  include <cuda/std/__type_traits/is_comparable.h>
 #  include <cuda/std/__type_traits/is_execution_policy.h>
-#  include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #  include <cuda/std/__utility/move.h>
 
 #  if _CCCL_HAS_BACKEND_CUDA()
-#    include <cuda/std/__pstl/cuda/copy_if.h>
+#    include <cuda/std/__pstl/cuda/remove_if.h>
 #  endif // _CCCL_HAS_BACKEND_CUDA()
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -49,35 +46,31 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
-_CCCL_TEMPLATE(class _Policy, class _InputIterator, class _OutputIterator, class _Tp)
-_CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_traversal<_OutputIterator> _CCCL_AND
-                 is_execution_policy_v<_Policy>)
-_CCCL_HOST_API _OutputIterator remove_copy(
-  [[maybe_unused]] const _Policy& __policy,
-  _InputIterator __first,
-  _InputIterator __last,
-  _OutputIterator __result,
-  const _Tp& __value)
+_CCCL_TEMPLATE(class _Policy, class _InputIterator, class _UnaryPred)
+_CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND is_execution_policy_v<_Policy>)
+_CCCL_HOST_API _InputIterator
+remove_if([[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, _UnaryPred __pred)
 {
-  if (__first == __last)
-  {
-    return __result;
-  }
+  static_assert(indirect_unary_predicate<_UnaryPred, _InputIterator>,
+                "cuda::std::remove_if: UnaryPred must satisfy indirect_unary_predicate<InputIterator>");
 
   [[maybe_unused]] auto __dispatch =
-    ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__copy_if, _Policy>();
+    ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__remove_if, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
-    _CCCL_NVTX_RANGE_SCOPE("cuda::std::remove_copy");
+    _CCCL_NVTX_RANGE_SCOPE("cuda::std::remove_if");
+
+    if (__first == __last)
+    {
+      return __first;
+    }
     const auto __count = ::cuda::std::distance(__first, __last);
-    return __dispatch(
-      __policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__result), __remove_compare_not_eq{__value});
+    return __dispatch(__policy, __first, __count, ::cuda::std::not_fn(::cuda::std::move(__pred)));
   }
   else
   {
-    static_assert(__always_false_v<_Policy>, "Parallel cuda::std::remove_copy requires at least one selected backend");
-    return ::cuda::std::remove_copy(
-      ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__result), __value);
+    static_assert(__always_false_v<_Policy>, "Parallel cuda::std::remove_if requires at least one selected backend");
+    return ::cuda::std::remove_if(::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__pred));
   }
 }
 
@@ -89,4 +82,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #endif // !_CCCL_COMPILER(NVRTC)
 
-#endif // _CUDA_STD___PSTL_REMOVE_COPY_H
+#endif // _CUDA_STD___PSTL_REMOVE_IF_H

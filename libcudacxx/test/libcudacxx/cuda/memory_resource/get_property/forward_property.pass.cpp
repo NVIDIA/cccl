@@ -14,7 +14,7 @@
 #include <cuda/memory_resource>
 #include <cuda/std/cassert>
 
-namespace has_upstream_resource
+namespace has_forwarded_resource
 {
 struct Upstream
 {};
@@ -28,7 +28,7 @@ struct with_reference
     return upstream;
   }
 };
-static_assert(cuda::__has_upstream_resource<with_reference, Upstream>, "");
+static_assert(cuda::__has_forwarded_resource<with_reference, Upstream>, "");
 
 struct with_const_reference
 {
@@ -37,7 +37,7 @@ struct with_const_reference
     return upstream;
   }
 };
-static_assert(cuda::__has_upstream_resource<with_const_reference, Upstream>, "");
+static_assert(cuda::__has_forwarded_resource<with_const_reference, Upstream>, "");
 
 struct with_value
 {
@@ -46,7 +46,7 @@ struct with_value
     return Upstream{};
   }
 };
-static_assert(cuda::__has_upstream_resource<with_value, Upstream>, "");
+static_assert(cuda::__has_forwarded_resource<with_value, Upstream>, "");
 
 struct with_const_value
 {
@@ -55,7 +55,7 @@ struct with_const_value
     return Upstream{};
   }
 };
-static_assert(cuda::__has_upstream_resource<with_const_value, Upstream>, "");
+static_assert(cuda::__has_forwarded_resource<with_const_value, Upstream>, "");
 
 struct Convertible
 {
@@ -72,8 +72,26 @@ struct with_conversion
     return Convertible{};
   }
 };
-static_assert(!cuda::__has_upstream_resource<with_conversion, Upstream>, "");
-} // namespace has_upstream_resource
+static_assert(!cuda::__has_forwarded_resource<with_conversion, Upstream>, "");
+
+struct with_get_reference
+{
+  Upstream& get() const
+  {
+    return upstream;
+  }
+};
+static_assert(cuda::__has_forwarded_resource<with_get_reference, Upstream>, "");
+
+struct with_get_conversion
+{
+  Convertible get() const
+  {
+    return Convertible{};
+  }
+};
+static_assert(!cuda::__has_forwarded_resource<with_get_conversion, Upstream>, "");
+} // namespace has_forwarded_resource
 
 namespace forward_property
 {
