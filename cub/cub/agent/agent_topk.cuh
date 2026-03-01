@@ -80,10 +80,9 @@ struct key_prefix_storage_t<KeyT, BitsPerPass, false>
 };
 
 template <typename KeyT, int BitsPerPass>
-_CCCL_DEVICE _CCCL_FORCEINLINE void set_kth_key_bits(
-  key_prefix_storage_t<KeyT, BitsPerPass>& prefix, const int total_bits, const int pass, const unsigned int bucket)
+_CCCL_DEVICE _CCCL_FORCEINLINE void
+set_kth_key_bits(key_prefix_storage_t<KeyT, BitsPerPass>& prefix, const int pass, const unsigned int bucket)
 {
-  static_cast<void>(total_bits);
   if constexpr (detail::radix::is_fundamental_type<KeyT>::value)
   {
     using bits_t      = typename Traits<KeyT>::UnsignedBits;
@@ -635,7 +634,7 @@ struct AgentTopK
         counter->len              = cur - prev;
         const unsigned int bucket = static_cast<unsigned int>(bin_idx);
         // Update the "splitter" key by adding the radix digit of the k-th item bin of this pass
-        set_kth_key_bits<key_in_t, bits_per_pass>(counter->kth_key_bits, total_bits, pass, bucket);
+        set_kth_key_bits<key_in_t, bits_per_pass>(counter->kth_key_bits, pass, bucket);
       }
     };
 
