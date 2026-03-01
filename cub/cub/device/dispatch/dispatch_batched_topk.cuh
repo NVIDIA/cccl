@@ -268,7 +268,7 @@ struct dispatch_batched_topk
   {
     // Helper that determines (a) whether there's any one-worker-per-segment policy supporting the range of segment
     // sizes and k, and (b) if so, which set of one-worker-per-segment policies to use
-    using find_valid_policy_t = find_valid_policy<
+    using find_smallest_covering_policy_t = find_smallest_covering_policy<
       ActivePolicyT,
       SegmentSizeParameterT,
       agent_batched_topk_worker_per_segment,
@@ -284,13 +284,14 @@ struct dispatch_batched_topk
     // Currently, we only support fixed-size segments that fit into shared memory
     // TODO (elstehle): extend support for variable-size segments
     static_assert(
-      !params::is_per_segment_param_v<SegmentSizeParameterT> && find_valid_policy_t::supports_one_worker_per_segment,
+      !params::is_per_segment_param_v<SegmentSizeParameterT>
+        && find_smallest_covering_policy_t::supports_one_worker_per_segment,
       "Currently only small, fixed-size segments are supported, where each segment can be processed by a single thread "
       "block.");
     if constexpr (!params::is_per_segment_param_v<SegmentSizeParameterT>
-                  && find_valid_policy_t::supports_one_worker_per_segment)
+                  && find_smallest_covering_policy_t::supports_one_worker_per_segment)
     {
-      return invoke_fixed_segment_size<typename find_valid_policy_t::worker_per_segment_policy_t>();
+      return invoke_fixed_segment_size<typename find_smallest_covering_policy_t::worker_per_segment_policy_t>();
     }
     else
     {
