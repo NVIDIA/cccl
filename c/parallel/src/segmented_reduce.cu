@@ -257,7 +257,8 @@ static_assert(
     "-rdc=true",
     "-dlto",
     "-DCUB_DISABLE_CDP",
-    "-std=c++20"};
+    "-std=c++20",
+    "-default-device"};
 
   cccl::detail::extend_args_with_build_config(args, config);
 
