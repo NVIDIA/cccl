@@ -145,8 +145,6 @@ DECLARE_VECTOR_UNITTEST(TestVectorFillAssign);
 template <class Vector>
 void TestVectorFillInsert()
 {
-  using T = typename Vector::value_type;
-
   { // Insert into empty vector
     Vector v;
     v.insert(v.end(), 3, 13);
