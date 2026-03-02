@@ -895,7 +895,7 @@ void vector_base<T, Alloc>::fill_insert(iterator position, size_type n, const T&
     if (mid < old_end)
     {
       // construct copy n displaced elements to new elements following the insertion
-      m_storage.uninitialized_copy(end() - n, end(), end());
+      m_storage.uninitialized_copy(old_end - n, old_end, old_end);
 
       // extend the size
       m_size += n;
