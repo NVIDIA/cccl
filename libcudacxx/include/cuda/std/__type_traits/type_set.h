@@ -122,7 +122,7 @@ struct __is_included_in : __fold_or<is_same_v<_Ty, _Ts>...>
 {};
 
 template <class _Ty, class... _Ts>
-inline constexpr bool __is_included_in_v = __fold_or_v<is_same_v<_Ty, _Ts>...>;
+inline constexpr bool __is_included_in_v = (is_same_v<_Ty, _Ts> || ...);
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -35,7 +35,7 @@ __host__ __device__ void representable()
 {
   // expected-error-re@*:* {{static assertion failed {{.*}}layout_stride::mapping product of static extents must be
   // representable as index_type.}}
-  cuda::std::layout_stride::mapping<cuda::std::extents<char, 20, 20>> mapping;
+  cuda::std::layout_stride::mapping<cuda::std::extents<signed char, 20, 20>> mapping;
   unused(mapping);
 }
 

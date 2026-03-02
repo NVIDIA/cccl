@@ -36,18 +36,23 @@ Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STAND
 
 $PRESET = "cub"
 $artifactTag = ""
+$variantArg = ""
 if ($NO_LID_SWITCH) {
     $artifactTag = "no_lid"
     $PRESET = "cub-nolid"
+    $variantArg = "-no-lid"
 } elseif ($LID0_SWITCH) {
     $artifactTag = "lid_0"
     $PRESET = "cub-lid0"
+    $variantArg = "-lid0"
 } elseif ($LID1_SWITCH) {
     $artifactTag = "lid_1"
     $PRESET = "cub-lid1"
+    $variantArg = "-lid1"
 } elseif ($LID2_SWITCH) {
     $artifactTag = "lid_2"
     $PRESET = "cub-lid2"
+    $variantArg = "-lid2"
 }
 
 if ($env:GITHUB_ACTIONS -and $artifactTag) {
@@ -56,7 +61,7 @@ if ($env:GITHUB_ACTIONS -and $artifactTag) {
     Write-Host "Unpacking artifact '$artifactName'"
     & bash "./util/artifacts/download_packed.sh" "$artifactName" "../"
 } else {
-    $buildCmd = "$PSScriptRoot/build_cub.ps1 -std $CXX_STANDARD -arch '$CUDA_ARCH' -cmake-options '$CMAKE_OPTIONS'"
+    $buildCmd = "$PSScriptRoot/build_cub.ps1 -std $CXX_STANDARD -arch '$CUDA_ARCH' -cmake-options '$CMAKE_OPTIONS' $variantArg"
     Write-Host "Running: $buildCmd"
     Invoke-Expression $buildCmd
 }

@@ -7,6 +7,7 @@
 #include <cub/device/device_transform.cuh>
 #include <cub/iterator/cache_modified_output_iterator.cuh>
 
+#include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/sequence.h>
 #include <thrust/zip_function.h>
 

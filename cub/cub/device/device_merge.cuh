@@ -87,24 +87,20 @@ struct DeviceMerge
     cudaStream_t stream  = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMerge::MergeKeys");
-
-    using offset_t = ::cuda::std::int64_t;
-
-    return detail::merge::
-      dispatch_t<KeyIteratorIn1, NullType*, KeyIteratorIn2, NullType*, KeyIteratorOut, NullType*, offset_t, CompareOp>::
-        dispatch(
-          d_temp_storage,
-          temp_storage_bytes,
-          keys_in1,
-          nullptr,
-          num_keys1,
-          keys_in2,
-          nullptr,
-          num_keys2,
-          keys_out,
-          nullptr,
-          compare_op,
-          stream);
+    // offset type is just int64_t
+    return detail::merge::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      keys_in1,
+      static_cast<NullType*>(nullptr),
+      num_keys1,
+      keys_in2,
+      static_cast<NullType*>(nullptr),
+      num_keys2,
+      keys_out,
+      static_cast<NullType*>(nullptr),
+      compare_op,
+      stream);
   }
 
   //! @rst
@@ -180,29 +176,20 @@ struct DeviceMerge
     cudaStream_t stream  = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMerge::MergePairs");
-
-    using offset_t = ::cuda::std::int64_t;
-
-    return detail::merge::dispatch_t<
-      KeyIteratorIn1,
-      ValueIteratorIn1,
-      KeyIteratorIn2,
-      ValueIteratorIn2,
-      KeyIteratorOut,
-      ValueIteratorOut,
-      offset_t,
-      CompareOp>::dispatch(d_temp_storage,
-                           temp_storage_bytes,
-                           keys_in1,
-                           values_in1,
-                           num_pairs1,
-                           keys_in2,
-                           values_in2,
-                           num_pairs2,
-                           keys_out,
-                           values_out,
-                           compare_op,
-                           stream);
+    // offset type is just int64_t
+    return detail::merge::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      keys_in1,
+      values_in1,
+      num_pairs1,
+      keys_in2,
+      values_in2,
+      num_pairs2,
+      keys_out,
+      values_out,
+      compare_op,
+      stream);
   }
 };
 

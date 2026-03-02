@@ -1,3 +1,8 @@
+if (NOT CUB_ENABLE_LAUNCH_NO_LAUNCHER)
+  message(STATUS "Skipping ptx-json tests because no-launcher is disabled.")
+  return()
+endif()
+
 if (NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   message(STATUS "Skipping ptx-json tests on non-Linux platforms.")
   return()

@@ -21,7 +21,7 @@
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
-#include "test_resources.h"
+#include <test_resources.h>
 
 // Default data to compare against
 

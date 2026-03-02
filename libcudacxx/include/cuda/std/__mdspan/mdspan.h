@@ -51,6 +51,7 @@
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/as_const.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
@@ -314,9 +315,9 @@ public:
         // Not catching this could lead to out of bounds errors later
         // e.g. mdspan<int, dextents<char,1>, non_checking_layout> m =
         //        mdspan<int, dextents<unsigned, 1>, non_checking_layout>(ptr, 200); leads to an extent of -56 on m
-        _CCCL_ASSERT((static_extent(__r) == dynamic_extent)
-                       || (static_cast<index_type>(__other.extent(__r)) == static_cast<index_type>(static_extent(__r))),
-                     "mdspan: conversion mismatch of source dynamic extents with static extents");
+        _CCCL_ASSERT(
+          (static_extent(__r) == dynamic_extent) || ::cuda::std::cmp_equal(__other.extent(__r), static_extent(__r)),
+          "mdspan: conversion mismatch of source dynamic extents with static extents");
       }
     }
   }
@@ -351,9 +352,9 @@ public:
         // Not catching this could lead to out of bounds errors later
         // e.g. mdspan<int, dextents<char,1>, non_checking_layout> m =
         //        mdspan<int, dextents<unsigned, 1>, non_checking_layout>(ptr, 200); leads to an extent of -56 on m
-        _CCCL_ASSERT((static_extent(__r) == dynamic_extent)
-                       || (static_cast<index_type>(__other.extent(__r)) == static_cast<index_type>(static_extent(__r))),
-                     "mdspan: conversion mismatch of source dynamic extents with static extents");
+        _CCCL_ASSERT(
+          (static_extent(__r) == dynamic_extent) || ::cuda::std::cmp_equal(__other.extent(__r), static_extent(__r)),
+          "mdspan: conversion mismatch of source dynamic extents with static extents");
       }
     }
   }

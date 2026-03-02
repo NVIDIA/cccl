@@ -37,7 +37,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_expect_tx_is_not_supported_before_SM_90__();
-_CCCL_DEVICE inline void
+_CCCL_DEVICE_API inline void
 barrier_expect_tx(barrier<thread_scope_block>& __b, ::cuda::std::ptrdiff_t __transaction_count_update)
 {
   _CCCL_ASSERT(

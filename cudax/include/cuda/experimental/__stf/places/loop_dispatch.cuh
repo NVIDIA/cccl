@@ -79,7 +79,7 @@ inline void loop_dispatch(
       ::std::vector<::std::shared_ptr<exec_place>> thread_affinity;
       for (size_t i = tid; i < place_cnt; i += nthreads)
       {
-        thread_affinity.push_back(::std::make_shared<exec_place>(partition.get(tid)));
+        thread_affinity.push_back(::std::make_shared<exec_place>(partition.get(i)));
       }
       ctx.push_affinity(mv(thread_affinity));
 

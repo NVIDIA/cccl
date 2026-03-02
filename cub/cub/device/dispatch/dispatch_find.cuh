@@ -6,7 +6,6 @@
 //! @file
 //! cub::DeviceFind provides device-wide, parallel operations for computing search across a sequence of data items
 //! residing within device-accessible memory.
-//! @endrst
 
 #include <cub/config.cuh>
 

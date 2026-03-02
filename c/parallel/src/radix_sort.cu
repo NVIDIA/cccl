@@ -255,6 +255,7 @@ struct __align__({3}) values_storage_t {{
 {4}
 using device_radix_sort_policy = {5};
 using namespace cub;
+using namespace cub::detail;
 using namespace cub::detail::radix_sort;
 static_assert(device_radix_sort_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {6}, "Host generated and JIT compiled policy mismatch");
 )XXX",
