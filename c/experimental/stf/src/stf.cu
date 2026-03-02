@@ -417,11 +417,7 @@ void stf_cuda_kernel_destroy(stf_cuda_kernel_handle t)
 
 stf_exec_place_grid_handle stf_exec_place_grid_from_devices(const int* device_ids, size_t count)
 {
-<<<<<<< stf_python_composite_places
-  assert(device_ids != nullptr || count == 0);
-=======
   _CCCL_ASSERT(device_ids != nullptr || count == 0, "device_ids must not be null unless count is 0");
->>>>>>> main
   // count must be >= 1: C++ make_grid() requires non-empty places.
   ::std::vector<exec_place> places;
   places.reserve(count);
@@ -436,11 +432,7 @@ stf_exec_place_grid_handle stf_exec_place_grid_from_devices(const int* device_id
 stf_exec_place_grid_handle
 stf_exec_place_grid_create(const stf_exec_place* places, size_t count, const stf_dim4* grid_dims)
 {
-<<<<<<< stf_python_composite_places
-  assert(places != nullptr || count == 0);
-=======
   _CCCL_ASSERT(places != nullptr || count == 0, "places must not be null unless count is 0");
->>>>>>> main
   ::std::vector<exec_place> cpp_places;
   cpp_places.reserve(count);
   for (size_t i = 0; i < count; i++)
@@ -464,15 +456,9 @@ void stf_exec_place_grid_destroy(stf_exec_place_grid_handle grid)
 
 void stf_make_composite_data_place(stf_data_place* out, stf_exec_place_grid_handle grid, stf_get_executor_fn mapper)
 {
-<<<<<<< stf_python_composite_places
-  assert(out != nullptr);
-  assert(grid != nullptr);
-  assert(mapper != nullptr);
-=======
   _CCCL_ASSERT(out != nullptr, "output data_place pointer must not be null");
   _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
   _CCCL_ASSERT(mapper != nullptr, "partitioner function (mapper) must not be null");
->>>>>>> main
   out->kind               = STF_DATA_PLACE_COMPOSITE;
   out->u.composite.grid   = grid;
   out->u.composite.mapper = mapper;
