@@ -117,18 +117,6 @@ public:
     set_first_nonempty(false);
   }
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void print() const
-  {
-    printf(
-      "segment_counter = %d, max_segment_counter=%d, segment_id = %u, inp_offset=%u, out_offset=%u, n_segments=%u\n",
-      m_segment_counter,
-      m_max_segment_counter,
-      static_cast<unsigned int>(m_segment_id),
-      static_cast<unsigned int>(m_inp_offset),
-      static_cast<unsigned int>(m_out_offset),
-      static_cast<unsigned int>(m_num_segments));
-  }
-
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE multi_segmented_seq_iterator& operator++()
   {
     auto next_val = m_inp_offset + 1;
@@ -223,7 +211,6 @@ struct agent_thread_segmented_scan
   // Alias wrapper allowing storage to be unioned
   using TempStorage = Uninitialized<_TempStorage>;
 
-  _TempStorage& temp_storage; ///< Reference to temp_storage
   wrapped_input_iterator_t d_in; ///< Input data
   OutputIteratorT d_out; ///< Output data
   BeginOffsetIteratorInputT d_inp_begin_offset; ///< Offset to beginning of input segments
@@ -234,7 +221,7 @@ struct agent_thread_segmented_scan
   InitValueT initial_value; ///< The initial value element for ScanOpT
 
   _CCCL_DEVICE _CCCL_FORCEINLINE agent_thread_segmented_scan(
-    TempStorage& temp_storage,
+    TempStorage&,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     BeginOffsetIteratorInputT d_inp_begin_offset,
@@ -243,8 +230,7 @@ struct agent_thread_segmented_scan
     OffsetT num_segments,
     ScanOpT scan_op,
     InitValueT initial_value)
-      : temp_storage(temp_storage.Alias())
-      , d_in(d_in)
+      : d_in(d_in)
       , d_out(d_out)
       , d_inp_begin_offset(d_inp_begin_offset)
       , d_inp_end_offset(d_inp_end_offset)
