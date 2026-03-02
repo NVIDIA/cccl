@@ -118,8 +118,8 @@ struct __pstl_dispatch<__pstl_algorithm::__exclusive_scan, __execution_backend::
     _InputIterator __first,
     _InputIterator __last,
     _OutputIterator __result,
-    _BinaryOp __binary_op,
-    _Tp __init) const
+    _Tp __init,
+    _BinaryOp __binary_op) const
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>
                   && ::cuda::std::__has_random_access_traversal<_OutputIterator>)

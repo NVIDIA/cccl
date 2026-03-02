@@ -70,8 +70,8 @@ _CCCL_HOST_API _OutputIterator exclusive_scan(
       ::cuda::std::move(__first),
       ::cuda::std::move(__last),
       ::cuda::std::move(__result),
-      ::cuda::std::move(__binary_op),
-      __init);
+      ::cuda::std::move(__init),
+      ::cuda::std::move(__binary_op));
   }
   else
   {
@@ -81,8 +81,8 @@ _CCCL_HOST_API _OutputIterator exclusive_scan(
       ::cuda::std::move(__first),
       ::cuda::std::move(__last),
       ::cuda::std::move(__result),
-      ::cuda::std::move(__binary_op),
-      __init);
+      ::cuda::std::move(__init),
+      ::cuda::std::move(__binary_op));
   }
 }
 
@@ -100,7 +100,7 @@ _CCCL_HOST_API _OutputIterator exclusive_scan(
     ::cuda::std::move(__first),
     ::cuda::std::move(__last),
     ::cuda::std::move(__result),
-    __init,
+    ::cuda::std::move(__init),
     ::cuda::std::plus<>{});
 }
 

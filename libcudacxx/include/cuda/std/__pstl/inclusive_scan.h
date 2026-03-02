@@ -71,7 +71,7 @@ _CCCL_HOST_API _OutputIterator inclusive_scan(
       ::cuda::std::move(__last),
       ::cuda::std::move(__result),
       ::cuda::std::move(__binary_op),
-      __init);
+      ::cuda::std::move(__init));
   }
   else
   {
@@ -82,7 +82,7 @@ _CCCL_HOST_API _OutputIterator inclusive_scan(
       ::cuda::std::move(__last),
       ::cuda::std::move(__result),
       ::cuda::std::move(__binary_op),
-      __init);
+      ::cuda::std::move(__init));
   }
 }
 
@@ -105,6 +105,7 @@ _CCCL_HOST_API _OutputIterator inclusive_scan(
     {
       return __result;
     }
+
     return __dispatch(
       __policy,
       ::cuda::std::move(__first),
