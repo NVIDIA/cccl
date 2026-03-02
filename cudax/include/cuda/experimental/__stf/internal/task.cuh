@@ -271,6 +271,9 @@ public:
     // This defines an affine data place too
     set_affine_data_place(p.affine_data_place());
     pimpl->e_place = mv(p);
+    EXPECT(!get_affine_data_place().is_invalid(),
+           "Exec place (e.g. grid) must provide a valid affine data place for dependencies that use "
+           "data_place::affine(). exec_place_grid uses the first place in the grid.");
     return *this;
   }
 

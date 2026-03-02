@@ -1437,6 +1437,12 @@ public:
       return true;
     }
 
+    /* When the task uses data_place::affine(), return an invalid data place. */
+    virtual const data_place affine_data_place() const override
+    {
+      return data_place::invalid();
+    }
+
     bool operator==(const exec_place::impl& rhs) const override
     {
       // First, check if rhs is of type exec_place_grid::impl
@@ -1969,6 +1975,9 @@ inline exec_place data_place::affine_exec_place() const
 
 inline decorated_stream data_place::getDataStream(async_resources_handle& async_resources) const
 {
+  EXPECT(!is_invalid(),
+         "getDataStream called on invalid data_place. Ensure the task's exec place provides a valid "
+         "affine data place (e.g. exec_place_grid uses the first place in the grid).");
   return affine_exec_place().getStream(async_resources, false);
 }
 

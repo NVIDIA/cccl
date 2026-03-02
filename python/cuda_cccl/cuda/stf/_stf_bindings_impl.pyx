@@ -584,7 +584,7 @@ cdef class exec_place_grid(exec_place):
     Grid of execution places (a kind of exec_place). Use wherever an exec_place is
     expected (e.g. ctx.task(grid, ...), set_exec_place(grid)). Create with
     from_devices() or create(). The grid is destroyed automatically when the
-    object goes out of scope; call destroy() only if you need to release it earlier.
+    object goes out of scope.
     """
     cdef stf_exec_place_grid_handle _handle
 
