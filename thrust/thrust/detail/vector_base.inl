@@ -892,33 +892,31 @@ void vector_base<T, Alloc>::fill_insert(iterator position, size_type n, const T&
     iterator old_end                       = end();
     iterator mid                           = position + n;
 
-    if (mid < end())
+    if (mid < old_end)
     {
-      // construct copy n displaced elements to new elements
-      // following the insertion
+      // construct copy n displaced elements to new elements following the insertion
       m_storage.uninitialized_copy(end() - n, end(), end());
 
       // extend the size
       m_size += n;
 
-      // copy num_displaced_elements - n elements to existing elements
-      // this copy overlaps
-      const size_type copy_length = (old_end - n) - position;
-      thrust::detail::overlapped_copy(position, old_end - n, old_end - copy_length);
+      // copy old_end - mid elements over existing elements after mid, may overlap
+      const size_type copy_length = old_end - mid;
+      thrust::detail::overlapped_copy(position, position + copy_length, mid);
 
       // finally, fill the range to the insertion point
-      thrust::fill_n(position, n, x);
-    } // end if
+      thrust::fill_n(position, copy_length, mid);
+    }
     else
     {
       // construct new elements at the end of the vector
-      m_storage.uninitialized_fill_n(end(), n - num_displaced_elements, x);
+      m_storage.uninitialized_fill_n(old_end, n - num_displaced_elements, x);
 
       // extend the size
       m_size += n - num_displaced_elements;
 
       // construct copy the displaced elements
-      m_storage.uninitialized_copy(position, old_end, end());
+      m_storage.uninitialized_copy(position, old_end, mid);
 
       // extend the size
       m_size += num_displaced_elements;
