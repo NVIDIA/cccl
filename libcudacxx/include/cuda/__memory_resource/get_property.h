@@ -92,6 +92,7 @@ _CCCL_CONCEPT property_with_value = _CCCL_REQUIRES_EXPR((_Property))(typename(__
 //!    static_assert(!cuda::has_property_with<OtherResource, stateful_property, double>);
 //!
 //! @endrst
+#  ifndef _CCCL_DOXYGEN_INVOKED // Doxygen chokes here
 template <class _Resource, class _Property, class _Return>
 _CCCL_CONCEPT has_property_with = _CCCL_REQUIRES_EXPR((_Resource, _Property, _Return), const _Resource& __res)(
   requires(property_with_value<_Property>), _Same_as(_Return) get_property(__res, _Property{}));
@@ -103,7 +104,7 @@ _CCCL_CONCEPT __has_upstream_resource = _CCCL_REQUIRES_EXPR((_Resource, _Upstrea
 template <class _Resource, class _Upstream>
 _CCCL_CONCEPT __has_get_resource = _CCCL_REQUIRES_EXPR((_Resource, _Upstream), const _Resource& __res)(
   requires(::cuda::std::same_as<::cuda::std::__remove_const_ref_t<decltype(__res.get())>, _Upstream>));
-#endif // ^^^ _CCCL_DOXYGEN_INVOKED ^^^
+#  endif // ^^^ _CCCL_DOXYGEN_INVOKED ^^^
 
 template <class _Resource, class _Upstream>
 _CCCL_CONCEPT __has_forwarded_resource =
@@ -194,7 +195,7 @@ get_property([[maybe_unused]] const _Resource& __res, dynamic_accessibility_prop
 }
 _CCCL_END_NAMESPACE_CUDA_MR
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CCCL_HAS_CTK()
 

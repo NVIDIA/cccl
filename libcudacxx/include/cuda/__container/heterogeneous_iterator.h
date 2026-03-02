@@ -38,7 +38,7 @@
 //! @file The \c heterogeneous_iterator class is an iterator that provides typed execution space safety.
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-enum class _IsConstIter
+enum class __is_heterogeneous_const_iter
 {
   __no,
   __yes,
@@ -72,8 +72,8 @@ public:
   using iterator_category = ::cuda::std::random_access_iterator_tag;
   using value_type        = _Tp;
   using difference_type   = ::cuda::std::ptrdiff_t;
-  using pointer           = ::cuda::std::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>*;
-  using reference         = ::cuda::std::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>&;
+  using pointer           = ::cuda::std::__maybe_const<_IsConst == __is_heterogeneous_const_iter::__yes, _Tp>*;
+  using reference         = ::cuda::std::__maybe_const<_IsConst == __is_heterogeneous_const_iter::__yes, _Tp>&;
 
   _CCCL_HIDE_FROM_ABI __heterogeneous_iterator_access() = default;
 
@@ -119,8 +119,8 @@ public:
   using iterator_category = ::cuda::std::random_access_iterator_tag;
   using value_type        = _Tp;
   using difference_type   = ::cuda::std::ptrdiff_t;
-  using pointer           = ::cuda::std::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>*;
-  using reference         = ::cuda::std::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>&;
+  using pointer           = ::cuda::std::__maybe_const<_IsConst == __is_heterogeneous_const_iter::__yes, _Tp>*;
+  using reference         = ::cuda::std::__maybe_const<_IsConst == __is_heterogeneous_const_iter::__yes, _Tp>&;
 
   _CCCL_HIDE_FROM_ABI __heterogeneous_iterator_access() = default;
 
@@ -166,8 +166,8 @@ public:
   using iterator_category = ::cuda::std::random_access_iterator_tag;
   using value_type        = _Tp;
   using difference_type   = ::cuda::std::ptrdiff_t;
-  using pointer           = ::cuda::std::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>*;
-  using reference         = ::cuda::std::__maybe_const<_IsConst == _IsConstIter::__yes, _Tp>&;
+  using pointer           = ::cuda::std::__maybe_const<_IsConst == __is_heterogeneous_const_iter::__yes, _Tp>*;
+  using reference         = ::cuda::std::__maybe_const<_IsConst == __is_heterogeneous_const_iter::__yes, _Tp>&;
 
   _CCCL_HIDE_FROM_ABI __heterogeneous_iterator_access() = default;
 
