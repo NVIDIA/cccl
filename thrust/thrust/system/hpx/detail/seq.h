@@ -31,6 +31,10 @@ using seq_t = sequenced_policy_shim<::hpx::execution::sequenced_executor,
                                     ::hpx::traits::executor_parameters_type_t<::hpx::execution::sequenced_executor>>;
 } // namespace detail
 
+/*! \p thrust::system::hpx::seq is the sequenced execution policy associated with Thrust's HPX
+ *  backend system.
+ */
+
 _CCCL_GLOBAL_CONSTANT detail::seq_t seq;
 } // namespace system::hpx
 
