@@ -105,6 +105,9 @@ using key_types = c2h::type_list< // cuda::std::uint8_t,
   >;
 // clang-format on
 
+// Unsigned integer types used for the radix-pass boundary distribution test
+using uint_key_types = c2h::type_list<cuda::std::uint8_t, cuda::std::uint16_t, cuda::std::uint64_t>;
+
 // Consistency check: ensures values remain associated with their corresponding keys
 template <typename KeyT, typename ValueT>
 bool verify_pairs_consistency(const c2h::device_vector<KeyT>& keys_in,
@@ -128,7 +131,7 @@ bool verify_unique_indices(c2h::device_vector<ValueT>& values_out, cuda::std::in
   c2h::device_vector<ValueT> sorted_values = values_out;
 
   // Sort the values within each segment for subsequent duplicate check
-  segmented_sort_keys(sorted_values, num_segments, k, cub::detail::topk::select::min);
+  fixed_size_segmented_sort_keys(sorted_values, num_segments, k, cub::detail::topk::select::min);
 
   // Check for adjacent duplicates within segment boundaries
   auto d_sorted_values = thrust::raw_pointer_cast(sorted_values.data());
@@ -143,7 +146,7 @@ bool verify_unique_indices(c2h::device_vector<ValueT>& values_out, cuda::std::in
 }
 
 C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments",
-         "[keys][segmented][topk][device]",
+         "[pairs][segmented][topk][device]",
          key_types,
          max_segment_size_list,
          max_num_k_list)
@@ -234,12 +237,12 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small fixed-size segments"
   // This catches the case where we just returned a valid value multiple times
   REQUIRE(verify_unique_indices(values_out_buffer, num_segments, k) == true);
 
-  // Verify keys are sorted correctly
-  segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
+  // Verify keys are returned correctly
+  fixed_size_segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
   compact_sorted_keys_to_topk(expected_keys, segment_size, k);
 
   // Since the results of top-k are unordered, sort output segments before comparison.
-  segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+  fixed_size_segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
 
   REQUIRE(expected_keys == keys_out_buffer);
 }

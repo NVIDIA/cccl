@@ -181,11 +181,13 @@ void compact_sorted_keys_to_topk(
   d_keys_in.resize(new_end - d_keys_in.begin());
 }
 
-template <typename KeyT>
-void segmented_sort_keys(c2h::device_vector<KeyT>& d_keys_in,
-                         cuda::std::int64_t num_segments,
-                         cuda::std::int64_t segment_size,
-                         cub::detail::topk::select direction)
+template <typename KeyT, typename OffsetItT>
+void segmented_sort_keys(
+  c2h::device_vector<KeyT>& d_keys_in,
+  cuda::std::int64_t num_segments,
+  OffsetItT d_segment_offsets_begin_it,
+  OffsetItT d_segment_offsets_end_it,
+  cub::detail::topk::select direction)
 {
   cuda::std::int64_t num_items = d_keys_in.size();
 
@@ -194,16 +196,18 @@ void segmented_sort_keys(c2h::device_vector<KeyT>& d_keys_in,
   cub::DoubleBuffer<KeyT> d_keys(
     thrust::raw_pointer_cast(d_keys_in.data()), thrust::raw_pointer_cast(d_keys_alt.data()));
 
-  // Prepare segment offsets
-  auto segment_offsets_it =
-    cuda::make_strided_iterator(cuda::make_counting_iterator<cuda::std::int64_t>(0), segment_size);
-
   // Query temporary storage size
   size_t temp_storage_bytes = 0;
   if (direction == cub::detail::topk::select::min)
   {
     cub::DeviceSegmentedSort::SortKeys(
-      nullptr, temp_storage_bytes, d_keys, num_items, num_segments, segment_offsets_it, (segment_offsets_it + 1));
+      nullptr,
+      temp_storage_bytes,
+      d_keys,
+      num_items,
+      num_segments,
+      d_segment_offsets_begin_it,
+      d_segment_offsets_end_it);
 
     // Allocate temporary storage
     c2h::device_vector<cuda::std::uint8_t> d_temp_storage(temp_storage_bytes, thrust::no_init);
@@ -215,13 +219,19 @@ void segmented_sort_keys(c2h::device_vector<KeyT>& d_keys_in,
       d_keys,
       num_items,
       num_segments,
-      segment_offsets_it,
-      (segment_offsets_it + 1));
+      d_segment_offsets_begin_it,
+      d_segment_offsets_end_it);
   }
   else
   {
     cub::DeviceSegmentedSort::SortKeysDescending(
-      nullptr, temp_storage_bytes, d_keys, num_items, num_segments, segment_offsets_it, (segment_offsets_it + 1));
+      nullptr,
+      temp_storage_bytes,
+      d_keys,
+      num_items,
+      num_segments,
+      d_segment_offsets_begin_it,
+      d_segment_offsets_end_it);
 
     // Allocate temporary storage
     c2h::device_vector<cuda::std::uint8_t> d_temp_storage(temp_storage_bytes, thrust::no_init);
@@ -233,8 +243,8 @@ void segmented_sort_keys(c2h::device_vector<KeyT>& d_keys_in,
       d_keys,
       num_items,
       num_segments,
-      segment_offsets_it,
-      (segment_offsets_it + 1));
+      d_segment_offsets_begin_it,
+      d_segment_offsets_end_it);
   }
 
   // Make sure the result is returned in the original buffer
@@ -242,4 +252,24 @@ void segmented_sort_keys(c2h::device_vector<KeyT>& d_keys_in,
   {
     thrust::copy(d_keys.Current(), d_keys.Current() + num_items, d_keys_in.begin());
   }
+}
+
+template <typename KeyT>
+void fixed_size_segmented_sort_keys(
+  c2h::device_vector<KeyT>& d_keys_in,
+  cuda::std::int64_t num_segments,
+  cuda::std::int64_t segment_size,
+  cub::detail::topk::select direction)
+{
+  auto segment_offsets_it =
+    cuda::make_strided_iterator(cuda::make_counting_iterator<cuda::std::int64_t>(0), segment_size);
+
+  // We materialize the offsets to reduce the number of kernel template specializations
+  c2h::device_vector<cuda::std::int64_t> d_segment_offsets(num_segments + 1);
+  thrust::copy(segment_offsets_it, segment_offsets_it + (num_segments + 1), d_segment_offsets.begin());
+
+  // Perform segmented sort
+  auto d_segment_offsets_begin_it = d_segment_offsets.cbegin();
+  auto d_segment_offsets_end_it   = d_segment_offsets_begin_it + 1;
+  segmented_sort_keys(d_keys_in, num_segments, d_segment_offsets_begin_it, d_segment_offsets_end_it, direction);
 }
