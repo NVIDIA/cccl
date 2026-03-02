@@ -28,6 +28,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__numeric/add_overflow.h>
+#include <cuda/__numeric/mul_overflow.h>
 #include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__mdspan/concepts.h>
 #include <cuda/std/__mdspan/empty_base.h>
@@ -93,20 +95,6 @@ private:
 
   using __stride_array = __mdspan_detail::__possibly_empty_array<index_type, extents_type::rank()>;
 
-  // Used for default construction check and mandates
-  [[nodiscard]] _CCCL_API static constexpr bool
-  __mul_overflow(index_type __x, index_type __y, index_type* __res) noexcept
-  {
-    *__res = __x * __y;
-    return __x && ((*__res / __x) != __y);
-  }
-  [[nodiscard]] _CCCL_API static constexpr bool
-  __add_overflow(index_type __x, index_type __y, index_type* __res) noexcept
-  {
-    *__res = __x + __y;
-    return *__res < __y;
-  }
-
   [[nodiscard]] _CCCL_API static constexpr bool __required_span_size_is_representable(const extents_type& __ext) noexcept
   {
     if constexpr (extents_type::rank() != 0)
@@ -114,7 +102,7 @@ private:
       index_type __prod = __ext.extent(0);
       for (rank_type __r = 1; __r < extents_type::rank(); __r++)
       {
-        if (__mul_overflow(__prod, __ext.extent(__r), &__prod))
+        if (::cuda::mul_overflow(__prod, __ext.extent(__r), __prod))
         {
           return false;
         }
@@ -160,11 +148,11 @@ private:
         }
 
         index_type __prod = (__ext.extent(__r) - 1);
-        if (__mul_overflow(__prod, static_cast<index_type>(__strides[__r]), &__prod))
+        if (::cuda::mul_overflow(__prod, static_cast<index_type>(__strides[__r]), __prod))
         {
           return false;
         }
-        if (__add_overflow(__size, __prod, &__size))
+        if (::cuda::add_overflow(__size, __prod, __size))
         {
           return false;
         }
