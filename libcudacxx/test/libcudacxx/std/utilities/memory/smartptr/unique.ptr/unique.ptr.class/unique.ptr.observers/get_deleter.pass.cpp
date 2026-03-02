@@ -38,7 +38,7 @@ struct Deleter
 template <bool IsArray>
 __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
 {
-  typedef typename cuda::std::conditional<IsArray, int[], int>::type VT;
+  using VT = typename cuda::std::conditional<IsArray, int[], int>::type;
   {
     cuda::std::unique_ptr<int, Deleter> p;
     assert(p.get_deleter().test() == 5);
@@ -48,7 +48,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
     assert(p.get_deleter().test() == 6);
   }
   {
-    typedef cuda::std::unique_ptr<VT, const Deleter&> UPtr;
+    using UPtr = cuda::std::unique_ptr<VT, const Deleter&>;
     const Deleter d;
     UPtr p(nullptr, d);
     const UPtr& cp = p;
@@ -58,7 +58,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
     assert(cp.get_deleter().test() == 6);
   }
   {
-    typedef cuda::std::unique_ptr<VT, Deleter&> UPtr;
+    using UPtr = cuda::std::unique_ptr<VT, Deleter&>;
     Deleter d;
     UPtr p(nullptr, d);
     const UPtr& cp = p;

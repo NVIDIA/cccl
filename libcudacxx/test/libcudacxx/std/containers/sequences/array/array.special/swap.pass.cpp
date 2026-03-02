@@ -39,10 +39,10 @@ struct can_swap : cuda::std::is_same<decltype(can_swap_imp<Tp>(0)), void>
 __host__ __device__ constexpr bool tests()
 {
   {
-    typedef double T;
-    typedef cuda::std::array<T, 3> C;
-    C c1 = {1, 2, 3.5};
-    C c2 = {4, 5, 6.5};
+    using T = double;
+    using C = cuda::std::array<T, 3>;
+    C c1    = {1, 2, 3.5};
+    C c2    = {4, 5, 6.5};
     swap(c1, c2);
     assert(c1.size() == 3);
     assert(c1[0] == 4);
@@ -54,17 +54,17 @@ __host__ __device__ constexpr bool tests()
     assert(c2[2] == 3.5);
   }
   {
-    typedef double T;
-    typedef cuda::std::array<T, 0> C;
-    C c1 = {};
-    C c2 = {};
+    using T = double;
+    using C = cuda::std::array<T, 0>;
+    C c1    = {};
+    C c2    = {};
     swap(c1, c2);
     assert(c1.size() == 0);
     assert(c2.size() == 0);
   }
   {
-    typedef NonSwappable T;
-    typedef cuda::std::array<T, 0> C0;
+    using T  = NonSwappable;
+    using C0 = cuda::std::array<T, 0>;
     static_assert(can_swap<C0&>::value, "");
     C0 l = {};
     C0 r = {};
@@ -74,8 +74,8 @@ __host__ __device__ constexpr bool tests()
   {
     // NonSwappable is still considered swappable in C++03 because there
     // is no access control SFINAE.
-    typedef NonSwappable T;
-    typedef cuda::std::array<T, 42> C1;
+    using T  = NonSwappable;
+    using C1 = cuda::std::array<T, 42>;
     static_assert(!can_swap<C1&>::value, "");
   }
 

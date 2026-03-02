@@ -23,8 +23,8 @@
 int main(int, char**)
 {
   {
-    typedef cuda::std::pair<int, short> P1;
-    typedef cuda::std::pair<double, long> P2;
+    using P1 = cuda::std::pair<int, short>;
+    using P2 = cuda::std::pair<double, long>;
     P1 p1(3, static_cast<short>(4));
     P2 p2;
     p2 = p1;

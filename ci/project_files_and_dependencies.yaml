@@ -51,7 +51,7 @@ projects:
   libcudacxx_internal:
     name: "libcu++ Tests/Infra"
     matrix_project: "libcudacxx"
-    lite_dependencies: []
+    lite_dependencies: [c2h]
     full_dependencies: [libcudacxx_public]
     include_regexes: ["libcudacxx/"]
     exclude_project_files: [libcudacxx_public]

@@ -35,7 +35,7 @@ __global__ void test_global_kernel()
 
 int main(int, char**)
 {
-  typedef cuda::std::not_equal_to<int> F;
+  using F   = cuda::std::not_equal_to<int>;
   const F f = F();
 #if TEST_STD_VER <= 2017
   static_assert((cuda::std::is_same<int, F::first_argument_type>::value), "");
@@ -45,7 +45,7 @@ int main(int, char**)
   assert(!f(36, 36));
   assert(f(36, 6));
 
-  typedef cuda::std::not_equal_to<> F2;
+  using F2    = cuda::std::not_equal_to<>;
   const F2 f2 = F2();
   assert(!f2(36, 36));
   assert(f2(36, 6));

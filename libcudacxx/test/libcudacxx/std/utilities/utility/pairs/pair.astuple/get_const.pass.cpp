@@ -25,14 +25,14 @@
 int main(int, char**)
 {
   {
-    typedef cuda::std::pair<int, short> P;
+    using P = cuda::std::pair<int, short>;
     const P p(3, static_cast<short>(4));
     assert(cuda::std::get<0>(p) == 3);
     assert(cuda::std::get<1>(p) == 4);
   }
 
   {
-    typedef cuda::std::pair<int, short> P;
+    using P = cuda::std::pair<int, short>;
     constexpr P p1(3, static_cast<short>(4));
     static_assert(cuda::std::get<0>(p1) == 3, "");
     static_assert(cuda::std::get<1>(p1) == 4, "");

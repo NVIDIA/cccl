@@ -86,11 +86,25 @@ def load_devcontainer_json(path):
 
 
 def load_devcontainer_meta(tag):
+    import time
+
     # Always pull the latest copy of the image
     if os.environ.get("GITHUB_ACTIONS", None) is not None:
         print(f"::group::Pulling Docker image {tag}", file=sys.stderr)
 
-    subprocess.run(["docker", "pull", tag], stdout=sys.stderr).check_returncode()
+    attempts = 0
+    while True:
+        try:
+            subprocess.run(
+                ["docker", "pull", tag], stdout=sys.stderr
+            ).check_returncode()
+            break
+        except Exception as e:
+            if attempts < 10:
+                attempts += 1
+                time.sleep(5)
+            else:
+                raise e
 
     if os.environ.get("GITHUB_ACTIONS", None) is not None:
         print("::endgroup::", file=sys.stderr)

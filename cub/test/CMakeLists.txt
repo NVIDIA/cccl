@@ -1,9 +1,3 @@
-option(
-  CUB_ENABLE_LAUNCH_VARIANTS
-  "Enable CUB launch variants (lid_1 and lid_2)"
-  ON
-)
-
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   if (CUB_ENABLE_RDC_TESTS)
     if ("${CMAKE_VERSION}" VERSION_LESS 3.27.5)
@@ -249,6 +243,9 @@ function(
     endif()
   endif() # Not catch2 test
 
+  # Disable build caching for compile tests
+  set_tests_properties(${test_target} PROPERTIES ENVIRONMENT SCCACHE_NO_CACHE=1)
+
   # Ensure that we test with assertions enabled
   target_compile_definitions(${test_target} PRIVATE CCCL_ENABLE_ASSERTIONS)
 endfunction()
@@ -269,6 +266,22 @@ function(_cub_launcher_id out_var label)
   string(REGEX MATCH "lid_([0-9]+)" MATCH_RESULT "${label}")
   if (MATCH_RESULT)
     set(${out_var} ${CMAKE_MATCH_1} PARENT_SCOPE)
+  else()
+    set(${out_var} 0 PARENT_SCOPE)
+  endif()
+endfunction()
+
+## _cub_launch_id_enabled
+#
+# Sets out_var to 1 if the given launcher id is enabled by the corresponding
+# CUB_ENABLE_LAUNCH_* option.
+function(_cub_launch_id_enabled out_var launcher_id)
+  if ("${launcher_id}" STREQUAL "0")
+    set(${out_var} ${CUB_ENABLE_LAUNCH_HOST_LAUNCHER} PARENT_SCOPE)
+  elseif ("${launcher_id}" STREQUAL "1")
+    set(${out_var} ${CUB_ENABLE_LAUNCH_DEVICE_LAUNCHER} PARENT_SCOPE)
+  elseif ("${launcher_id}" STREQUAL "2")
+    set(${out_var} ${CUB_ENABLE_LAUNCH_GRAPH_LAUNCHER} PARENT_SCOPE)
   else()
     set(${out_var} 0 PARENT_SCOPE)
   endif()
@@ -349,12 +362,14 @@ foreach (test_src IN LISTS test_srcs)
 
       if (${explicit_launcher})
         set(launcher_id "${explicit_launcher_id}")
+        _cub_launch_id_enabled(launch_enabled "${launcher_id}")
       else()
         if (${CUB_FORCE_RDC})
           set(launcher_id 1)
         else()
           set(launcher_id 0)
         endif()
+        set(launch_enabled "${CUB_ENABLE_LAUNCH_NO_LAUNCHER}")
       endif()
 
       _cub_launcher_requires_rdc(cdp_val "${launcher_id}")
@@ -363,7 +378,7 @@ foreach (test_src IN LISTS test_srcs)
         continue()
       endif()
 
-      if (NOT launcher_id EQUAL 0 AND NOT CUB_ENABLE_LAUNCH_VARIANTS)
+      if (NOT launch_enabled)
         continue()
       endif()
 

@@ -62,12 +62,12 @@ void test_keys(Offset size1 = 3623, Offset size2 = 6346, CompareOp compare_op = 
 using large_type_fallb = c2h::custom_type_t<c2h::equal_comparable_t, c2h::less_comparable_t, c2h::huge_data<56>::type>;
 using large_type_vsmem = c2h::custom_type_t<c2h::equal_comparable_t, c2h::less_comparable_t, c2h::huge_data<774>::type>;
 
-struct fallback_test_policy_hub
+struct fixed_policy_selector
 {
-  struct max_policy : cub::ChainedPolicy<100, max_policy, max_policy>
+  _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> cub::detail::merge::merge_policy
   {
-    using merge_policy = cub::detail::merge::agent_policy_t<128, 7, cub::LOAD_DEFAULT, cub::BLOCK_STORE_WARP_TRANSPOSE>;
-  };
+    return {128, 7, cub::LOAD_DEFAULT, cub::BLOCK_STORE_WARP_TRANSPOSE, false};
+  }
 };
 
 C2H_TEST("DeviceMerge::MergeKeys large key types", "[merge][device]", c2h::type_list<large_type_vsmem, large_type_fallb>)
@@ -88,34 +88,37 @@ C2H_TEST("DeviceMerge::MergeKeys large key types", "[merge][device]", c2h::type_
     6346,
     cuda::std::less<key_t>{},
     [](const key_t* k1, offset_t s1, const key_t* k2, offset_t s2, key_t* r, cuda::std::less<key_t> co) {
-      using dispatch_t = cub::detail::merge::dispatch_t<
-        const key_t*,
-        const cub::NullType*,
-        const key_t*,
-        const cub::NullType*,
-        key_t*,
-        cub::NullType*,
-        offset_t,
-        cuda::std::less<key_t>,
-        fallback_test_policy_hub>; // use a fixed policy for this test so the needed shared memory is deterministic
-
       std::size_t temp_storage_bytes = 0;
-      dispatch_t::dispatch(
-        nullptr, temp_storage_bytes, k1, nullptr, s1, k2, nullptr, s2, r, nullptr, co, cudaStream_t{0});
+      auto value_nullptr             = static_cast<cub::NullType*>(nullptr);
+      cub::detail::merge::dispatch(
+        nullptr,
+        temp_storage_bytes,
+        k1,
+        value_nullptr,
+        s1,
+        k2,
+        value_nullptr,
+        s2,
+        r,
+        value_nullptr,
+        co,
+        cudaStream_t{0},
+        fixed_policy_selector{});
 
       c2h::device_vector<char> temp_storage(temp_storage_bytes);
-      dispatch_t::dispatch(
+      cub::detail::merge::dispatch(
         thrust::raw_pointer_cast(temp_storage.data()),
         temp_storage_bytes,
         k1,
-        nullptr,
+        value_nullptr,
         s1,
         k2,
-        nullptr,
+        value_nullptr,
         s2,
         r,
-        nullptr,
+        value_nullptr,
         co,
-        cudaStream_t{0});
+        cudaStream_t{0},
+        fixed_policy_selector{});
     });
 }

@@ -41,6 +41,7 @@
 #include <cuda/std/__chrono/high_resolution_clock.h>
 #include <cuda/std/__chrono/time_point.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/new>
 #include <cuda/std/__new/device_new.h>
 #include <cuda/std/cstdint>
 
@@ -55,7 +56,7 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
-[[nodiscard]] _CCCL_DEVICE ::cuda::std::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b);
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b);
 _CCCL_END_NAMESPACE_CUDA_DEVICE
 
 _CCCL_BEGIN_NAMESPACE_CUDA
@@ -70,10 +71,10 @@ class barrier<thread_scope_block, ::cuda::std::__empty_completion> : public __bl
   using __barrier_base = ::cuda::std::__barrier_base<::cuda::std::__empty_completion, thread_scope_block>;
   __barrier_base __barrier;
 
-  _CCCL_DEVICE friend ::cuda::std::uint64_t* ::cuda::device::_LIBCUDACXX_ABI_NAMESPACE::barrier_native_handle(
+  _CCCL_DEVICE_API friend ::cuda::std::uint64_t* ::cuda::device::_LIBCUDACXX_ABI_NAMESPACE::barrier_native_handle(
     barrier<thread_scope_block>& __b);
 
-  [[nodiscard]] _CCCL_DEVICE ::cuda::std::uint64_t* __native_handle() const
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint64_t* __native_handle() const
   {
     return ::cuda::device::barrier_native_handle(const_cast<barrier&>(*this));
   }
@@ -243,11 +244,11 @@ private:
       bool __ready = 0;
       ::cuda::std::chrono::high_resolution_clock::time_point const __start =
         ::cuda::std::chrono::high_resolution_clock::now();
-      ::cuda::std::chrono::nanoseconds __elapsed;
+      ::cuda::std::chrono::nanoseconds __elapsed(0);
       do
       {
         const ::cuda::std::uint32_t __wait_nsec = static_cast<::cuda::std::uint32_t>((__nanosec - __elapsed).count());
-        ::cuda::ptx::mbarrier_try_wait(__native_handle(), __token, __wait_nsec);
+        __ready   = ::cuda::ptx::mbarrier_try_wait(__native_handle(), __token, __wait_nsec);
         __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
       } while (!__ready && (__nanosec > __elapsed));
       return __ready;
@@ -343,11 +344,11 @@ private:
       int32_t __ready = 0;
       ::cuda::std::chrono::high_resolution_clock::time_point const __start =
         ::cuda::std::chrono::high_resolution_clock::now();
-      ::cuda::std::chrono::nanoseconds __elapsed;
+      ::cuda::std::chrono::nanoseconds __elapsed(0);
       do
       {
         const ::cuda::std::uint32_t __wait_nsec = static_cast<::cuda::std::uint32_t>((__nanosec - __elapsed).count());
-        ::cuda::ptx::mbarrier_try_wait_parity(__native_handle(), __phase_parity, __wait_nsec);
+        __ready   = ::cuda::ptx::mbarrier_try_wait_parity(__native_handle(), __phase_parity, __wait_nsec);
         __elapsed = ::cuda::std::chrono::high_resolution_clock::now() - __start;
       } while (!__ready && (__nanosec > __elapsed));
 
@@ -397,6 +398,7 @@ private:
       NV_ANY_TARGET,
       (return ::cuda::std::__cccl_thread_poll_with_backoff(
                 ::cuda::std::__barrier_poll_tester_parity<barrier>(this, __phase_parity), __nanosec);))
+    _CCCL_UNREACHABLE();
   }
 
 public:
@@ -525,7 +527,7 @@ _CCCL_END_NAMESPACE_CUDA
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
-[[nodiscard]] _CCCL_DEVICE inline ::cuda::std::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b)
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b)
 {
   return reinterpret_cast<::cuda::std::uint64_t*>(&__b.__barrier);
 }

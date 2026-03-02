@@ -22,12 +22,12 @@ TEST_GLOBAL_VARIABLE int globalCount = 0;
 
 struct CountedIter
 {
-  typedef cuda::std::bidirectional_iterator_tag iterator_category;
-  typedef int value_type;
-  typedef cuda::std::ptrdiff_t difference_type;
-  typedef int* pointer;
-  typedef int& reference;
-  typedef CountedIter self;
+  using iterator_category = cuda::std::bidirectional_iterator_tag;
+  using value_type        = int;
+  using difference_type   = cuda::std::ptrdiff_t;
+  using pointer           = int*;
+  using reference         = int&;
+  using self              = CountedIter;
 
   pointer ptr_;
   __host__ __device__ CountedIter(pointer ptr)

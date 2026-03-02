@@ -14,7 +14,7 @@
 
 #include "test_macros.h"
 
-typedef char one;
+using one = char;
 struct two
 {
   one _[2];

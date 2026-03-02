@@ -26,7 +26,7 @@ test(It i,
      typename cuda::std::iterator_traits<It>::difference_type n,
      typename cuda::std::iterator_traits<It>::value_type x)
 {
-  typedef typename cuda::std::iterator_traits<It>::value_type value_type;
+  using value_type = typename cuda::std::iterator_traits<It>::value_type;
   const cuda::std::reverse_iterator<It> r(i);
   value_type rr = r[n];
   assert(rr == x);

@@ -473,3 +473,38 @@ def test_all_tuple_construction():
 
     assert result["field1"]["a"] == expected_a
     assert np.isclose(result["field2"]["b"], expected_b)
+
+
+def test_struct_field_order_matters():
+    """Test that struct types with same fields in different order are not equal.
+
+    This is a regression test for a bug where StructTypeDescriptor.__hash__()
+    sorted fields before hashing, causing structs with the same fields but
+    different order to hash to the same value and be considered equal.
+    """
+
+    # Create two structs with identical field types but different order
+    @gpu_struct
+    class SumAndCount:
+        sum: np.float32
+        count: np.int32
+
+    @gpu_struct
+    class CountAndSum:
+        count: np.int32
+        sum: np.float32
+
+    # These should NOT be equal (field order matters for struct layout)
+    assert SumAndCount._type_descriptor != CountAndSum._type_descriptor
+
+    # They should have different hashes
+    assert hash(SumAndCount._type_descriptor) != hash(CountAndSum._type_descriptor)
+
+    # Verify they can be used as distinct dict keys
+    cache = {
+        SumAndCount._type_descriptor: "sum_first",
+        CountAndSum._type_descriptor: "count_first",
+    }
+    assert len(cache) == 2
+    assert cache[SumAndCount._type_descriptor] == "sum_first"
+    assert cache[CountAndSum._type_descriptor] == "count_first"

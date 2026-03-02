@@ -23,20 +23,18 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-#if !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
-
-#  if _CCCL_STD_VER < 2020
-template <typename PolicySelector, ::cuda::arch_id LowestArchId>
-struct policy_getter_17
+// makes a functor that gets the policy for ArchId from PolicySelector when called
+template <typename PolicySelector, ::cuda::arch_id ArchId>
+struct policy_getter : PolicySelector
 {
-  PolicySelector policy_selector;
-
   _CCCL_API _CCCL_FORCEINLINE constexpr auto operator()() const
   {
-    return policy_selector(LowestArchId);
+    return PolicySelector::operator()(ArchId);
   }
 };
 
+#if !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
+#  if _CCCL_STD_VER < 2020
 template <typename PolicySelector, size_t N>
 _CCCL_API constexpr auto find_lowest_arch_with_same_policy(
   PolicySelector policy_selector, size_t i, const ::cuda::std::array<::cuda::arch_id, N>& all_arches) -> ::cuda::arch_id
@@ -93,13 +91,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_to_arch_list(
   _CCCL_ASSERT(((device_arch == ::cuda::arch_id{(CudaArches * ArchMult) / 10}) || ...),
                "device_arch must appear in the list of architectures compiled for");
 
-  using policy_t = decltype(policy_selector(::cuda::arch_id{}));
-
   cudaError_t e = cudaErrorInvalidDeviceFunction;
 #  if _CCCL_STD_VER >= 2020
   // In C++20, we just create an integral_constant holding the policy, because policies are structural types in C++20.
   // This causes f to be only instantiated for each distinct policy, since the same policy for different arches results
   // in the same integral_constant type passed to f
+  using policy_t = decltype(policy_selector(::cuda::arch_id{}));
   (...,
    (device_arch == ::cuda::arch_id{(CudaArches * ArchMult) / 10}
       ? (e = f(
@@ -112,7 +109,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_to_arch_list(
     lowest_arch_resolver<ArchMult, ::cuda::std::integer_sequence<int, CudaArches...>, PolicySelector, Is...>;
   (...,
    (device_arch == ::cuda::arch_id{(CudaArches * ArchMult) / 10}
-      ? (e = f(policy_getter_17<PolicySelector, resolver_t::lowest_arch_with_same_policy[Is]>{policy_selector}))
+      ? (e = f(policy_getter<PolicySelector, resolver_t::lowest_arch_with_same_policy[Is]>{policy_selector}))
       : cudaSuccess));
 
 #  endif // if _CCCL_STD_VER >= 2020

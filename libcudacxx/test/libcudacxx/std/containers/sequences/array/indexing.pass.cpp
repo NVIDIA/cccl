@@ -20,9 +20,9 @@
 __host__ __device__ constexpr bool tests()
 {
   {
-    typedef double T;
-    typedef cuda::std::array<T, 3> C;
-    C c = {1, 2, 3.5};
+    using T = double;
+    using C = cuda::std::array<T, 3>;
+    C c     = {1, 2, 3.5};
     static_assert(noexcept(c[0]));
     static_assert(cuda::std::is_same_v<C::reference, decltype(c[0])>);
     C::reference r1 = c[0];
@@ -39,9 +39,9 @@ __host__ __device__ constexpr bool tests()
   // Test operator[] "works" on zero sized arrays
   {
     {
-      typedef double T;
-      typedef cuda::std::array<T, 0> C;
-      C c = {};
+      using T = double;
+      using C = cuda::std::array<T, 0>;
+      C c     = {};
       static_assert(noexcept(c[0]));
       static_assert(cuda::std::is_same_v<C::reference, decltype(c[0])>);
       if (c.size() > (0))
@@ -53,9 +53,9 @@ __host__ __device__ constexpr bool tests()
       }
     }
     {
-      typedef double T;
-      typedef cuda::std::array<const T, 0> C;
-      C c = {};
+      using T = double;
+      using C = cuda::std::array<const T, 0>;
+      C c     = {};
       static_assert(noexcept(c[0]));
       static_assert(cuda::std::is_same_v<C::reference, decltype(c[0])>);
       if (c.size() > (0))

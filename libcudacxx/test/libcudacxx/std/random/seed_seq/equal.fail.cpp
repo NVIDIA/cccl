@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/__random_>
 #include <cuda/std/cassert>
+#include <cuda/std/random>
 
 __host__ __device__ void test()
 {

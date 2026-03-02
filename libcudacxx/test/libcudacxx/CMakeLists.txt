@@ -40,6 +40,10 @@ if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
         cccl.c2h.main
     )
 
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+      target_compile_options(${target_name} PRIVATE "-Wno-attributes")
+    endif()
+
     add_dependencies(${c2h_all_target} ${target_name})
 
     add_test(NAME ${target_name} COMMAND ${target_name})
@@ -65,15 +69,7 @@ cccl_get_dlpack()
 
 get_target_property(CUDA_INCLUDE_DIR CUDA::cudart INTERFACE_INCLUDE_DIRECTORIES)
 
-foreach (COMPUTE_ARCH ${LIBCUDACXX_COMPUTE_ARCHS})
-  set(_compute_message "${_compute_message} sm_${COMPUTE_ARCH}")
-  set(
-    LIBCUDACXX_COMPUTE_ARCHS_STRING
-    "${LIBCUDACXX_COMPUTE_ARCHS_STRING} ${COMPUTE_ARCH}"
-  )
-endforeach()
-
-message(STATUS "Lit enabled CUDA architectures:${_compute_message}")
+message(STATUS "Lit enabled CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES}")
 
 if (LIBCUDACXX_TEST_WITH_NVRTC)
   # TODO: Use project properties to get path to binary.
@@ -177,8 +173,6 @@ elseif (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVHPC")
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS " -stdpar")
 endif()
 
-set(LIBCUDACXX_COMPUTE_ARCHS_STRING "${CMAKE_CUDA_ARCHITECTURES}")
-
 include(AddLLVM)
 
 set(LIBCUDACXX_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
@@ -258,6 +252,7 @@ if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
           "-Dexecutor=\"NoopExecutor()\""
           "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
     # gersemi: on
+    USES_TERMINAL
   )
 endif()
 
@@ -279,13 +274,14 @@ add_test(
         ${libcudacxx_LIT_FLAGS}
         -j "${libcudacxx_LIT_PARALLEL_LEVEL}"
         "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
-  # gersemi: on
+    # gersemi: on
+    USES_TERMINAL
 )
 
 set_tests_properties(
   libcudacxx.test.lit
   PROPERTIES
-    # 3hr, some CI machines are slow
-    TIMEOUT 10800
+    # 6hr to match CI timeout
+    TIMEOUT 21600
     RUN_SERIAL TRUE
 )

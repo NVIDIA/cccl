@@ -12,7 +12,7 @@
 
 #include <cuda/memory_pool>
 #include <cuda/std/__pstl_algorithm>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include "nvbench_helper.cuh"
 
@@ -27,13 +27,12 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_reads<T>(elements);
   state.add_global_memory_writes<T>(1);
 
-  cuda::stream stream{cuda::device_ref{0}};
-  cuda::device_memory_pool_ref alloc = cuda::device_default_memory_pool(stream.device());
+  caching_allocator_t alloc{};
 
-  auto policy = cuda::execution::__cub_par_unseq.with_stream(stream).with_memory_resource(alloc);
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    do_not_optimize(cuda::std::reduce(policy, in.begin(), in.end()));
-  });
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               do_not_optimize(cuda::std::reduce(cuda_policy(alloc, launch), in.begin(), in.end()));
+             });
 }
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))

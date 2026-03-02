@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/__random_>
+#include <cuda/std/random>
 
 #include "random_utilities/test_engine.h"
 

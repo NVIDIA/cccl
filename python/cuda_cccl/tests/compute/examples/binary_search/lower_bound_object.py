@@ -15,7 +15,7 @@ d_values = cp.asarray(h_values)
 d_out = cp.empty(len(h_values), dtype=np.uintp)
 
 searcher = cuda.compute.make_lower_bound(d_data, d_values, d_out)
-searcher(d_data, d_values, d_out, len(d_data), len(d_values))
+searcher(d_data, d_values, d_out, None, len(d_data), len(d_values))
 
 expected = np.searchsorted(h_data, h_values, side="left").astype(np.uintp)
 got = cp.asnumpy(d_out)

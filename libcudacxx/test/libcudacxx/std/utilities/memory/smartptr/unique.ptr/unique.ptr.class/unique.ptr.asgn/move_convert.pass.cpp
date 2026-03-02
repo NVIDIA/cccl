@@ -233,7 +233,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void doDeleterTest()
 template <bool IsArray>
 __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
 {
-  typedef typename cuda::std::conditional<IsArray, A[], A>::type VT;
+  using VT = typename cuda::std::conditional<IsArray, A[], A>::type;
 
   { // Test that different non-reference deleter types are allowed so long
     // as they convert to each other.
@@ -323,25 +323,25 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
 template <bool IsArray>
 __host__ __device__ TEST_CONSTEXPR_CXX23 void test_noexcept()
 {
-  typedef typename cuda::std::conditional<IsArray, A[], A>::type VT;
+  using VT = typename cuda::std::conditional<IsArray, A[], A>::type;
   {
-    typedef cuda::std::unique_ptr<const VT> APtr;
-    typedef cuda::std::unique_ptr<VT> BPtr;
+    using APtr = cuda::std::unique_ptr<const VT>;
+    using BPtr = cuda::std::unique_ptr<VT>;
     static_assert(cuda::std::is_nothrow_assignable<APtr, BPtr>::value, "");
   }
   {
-    typedef cuda::std::unique_ptr<const VT, CDeleter<const VT>> APtr;
-    typedef cuda::std::unique_ptr<VT, CDeleter<VT>> BPtr;
+    using APtr = cuda::std::unique_ptr<const VT, CDeleter<const VT>>;
+    using BPtr = cuda::std::unique_ptr<VT, CDeleter<VT>>;
     static_assert(cuda::std::is_nothrow_assignable<APtr, BPtr>::value, "");
   }
   {
-    typedef cuda::std::unique_ptr<const VT, NCDeleter<const VT>&> APtr;
-    typedef cuda::std::unique_ptr<VT, NCDeleter<const VT>&> BPtr;
+    using APtr = cuda::std::unique_ptr<const VT, NCDeleter<const VT>&>;
+    using BPtr = cuda::std::unique_ptr<VT, NCDeleter<const VT>&>;
     static_assert(cuda::std::is_nothrow_assignable<APtr, BPtr>::value, "");
   }
   {
-    typedef cuda::std::unique_ptr<const VT, const NCConstDeleter<const VT>&> APtr;
-    typedef cuda::std::unique_ptr<VT, const NCConstDeleter<const VT>&> BPtr;
+    using APtr = cuda::std::unique_ptr<const VT, const NCConstDeleter<const VT>&>;
+    using BPtr = cuda::std::unique_ptr<VT, const NCConstDeleter<const VT>&>;
     static_assert(cuda::std::is_nothrow_assignable<APtr, BPtr>::value, "");
   }
 }
@@ -349,7 +349,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_noexcept()
 template <bool IsArray>
 __host__ __device__ void test_deleter_value_category()
 {
-  typedef typename cuda::std::conditional<IsArray, A[], A>::type VT;
+  using VT  = typename cuda::std::conditional<IsArray, A[], A>::type;
   using TD1 = TrackingDeleter<1>;
   using TD2 = TrackingDeleter<2>;
   TD1 d1;

@@ -389,6 +389,7 @@ T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_
  *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 3.2.0
+ *        First appears in CUDA Toolkit 13.2.
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
@@ -449,6 +450,7 @@ _CCCL_HOST_DEVICE void reduce_into(
  *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 3.2.0
+ *        First appears in CUDA Toolkit 13.2.
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator>
@@ -511,6 +513,7 @@ void reduce_into(InputIterator first, InputIterator last, OutputIterator output)
  *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 3.2.0
+ *        First appears in CUDA Toolkit 13.2.
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
@@ -573,6 +576,7 @@ _CCCL_HOST_DEVICE void reduce_into(
  *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 3.2.0
+ *        First appears in CUDA Toolkit 13.2.
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename T>
@@ -643,6 +647,7 @@ void reduce_into(InputIterator first, InputIterator last, OutputIterator output,
  *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 3.2.0
+ *        First appears in CUDA Toolkit 13.2.
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
@@ -707,6 +712,7 @@ _CCCL_HOST_DEVICE void reduce_into(
  *
  *  \verbatim embed:rst:leading-asterisk
  *     .. versionadded:: 3.2.0
+ *        First appears in CUDA Toolkit 13.2.
  *  \endverbatim
  */
 template <typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>

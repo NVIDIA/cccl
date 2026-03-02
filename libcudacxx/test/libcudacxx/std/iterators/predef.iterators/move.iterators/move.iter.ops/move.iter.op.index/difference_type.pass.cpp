@@ -29,7 +29,7 @@ __host__ __device__ void test(It i,
                               typename cuda::std::iterator_traits<It>::difference_type n,
                               typename cuda::std::iterator_traits<It>::value_type x)
 {
-  typedef typename cuda::std::iterator_traits<It>::value_type value_type;
+  using value_type = typename cuda::std::iterator_traits<It>::value_type;
   const cuda::std::move_iterator<It> r(i);
   value_type rr = r[n];
   assert(rr == x);
@@ -56,7 +56,7 @@ int main(int, char**)
 #if defined(_LIBCUDACXX_HAS_MEMORY)
   {
     int i[5];
-    typedef cuda::std::unique_ptr<int, do_nothing> Ptr;
+    using Ptr = cuda::std::unique_ptr<int, do_nothing>;
     Ptr p[5];
     for (unsigned j = 0; j < 5; ++j)
     {
@@ -67,8 +67,8 @@ int main(int, char**)
 #endif // _LIBCUDACXX_HAS_MEMORY
   {
     constexpr const char* p = "123456789";
-    typedef cuda::std::move_iterator<const char*> MI;
-    constexpr MI it1 = cuda::std::make_move_iterator(p);
+    using MI                = cuda::std::move_iterator<const char*>;
+    constexpr MI it1        = cuda::std::make_move_iterator(p);
     static_assert(it1[0] == '1', "");
     static_assert(it1[5] == '6', "");
   }

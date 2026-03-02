@@ -25,15 +25,15 @@
 
 struct UnaryFunction
 {
-  typedef long argument_type;
-  typedef char result_type;
+  using argument_type = long;
+  using result_type   = char;
 };
 
 struct BinaryFunction
 {
-  typedef int first_argument_type;
-  typedef char second_argument_type;
-  typedef long result_type;
+  using first_argument_type  = int;
+  using second_argument_type = char;
+  using result_type          = long;
 };
 
 static_assert(cuda::std::is_same<cuda::std::reference_wrapper<int (UnaryFunction::*)()>::result_type, int>::value, "");

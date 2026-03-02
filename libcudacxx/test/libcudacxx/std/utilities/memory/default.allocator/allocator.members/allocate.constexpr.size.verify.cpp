@@ -23,8 +23,8 @@
 template <typename T>
 __host__ __device__ constexpr bool test()
 {
-  typedef cuda::std::allocator<T> A;
-  typedef cuda::std::allocator_traits<A> AT;
+  using A  = cuda::std::allocator<T>;
+  using AT = cuda::std::allocator_traits<A>;
   A a;
   TEST_IGNORE_NODISCARD a.allocate(AT::max_size(a) + 1); // just barely too large
   TEST_IGNORE_NODISCARD a.allocate(AT::max_size(a) * 2); // significantly too large

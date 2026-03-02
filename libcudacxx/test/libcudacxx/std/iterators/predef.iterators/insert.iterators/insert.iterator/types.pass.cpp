@@ -19,11 +19,11 @@
 //   Cont* container;
 //   Cont::iterator iter;
 // public:
-//   typedef Cont                   container_type;
-//   typedef void                   value_type;
-//   typedef void                   difference_type;
-//   typedef void                   reference;
-//   typedef void                   pointer;
+//   using container_type  = Cont;
+//   using value_type      = void;
+//   using difference_type = void;
+//   using reference       = void;
+//   using pointer         = void;
 // };
 
 #include <cuda/std/inplace_vector>
@@ -48,7 +48,7 @@ struct find_members : private cuda::std::insert_iterator<C>
 template <class C>
 __host__ __device__ void test()
 {
-  typedef cuda::std::insert_iterator<C> R;
+  using R = cuda::std::insert_iterator<C>;
   C c;
   find_members<C> q(c);
   q.test();

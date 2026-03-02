@@ -29,6 +29,7 @@
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_indices.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
+#include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/is_empty.h>
@@ -439,7 +440,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   _CCCL_HIDE_FROM_ABI __tuple_impl& operator=(__tuple_impl&&)      = default;
 
   // Using a fold exppression here breaks nvrtc
-  _CCCL_API inline void swap(__tuple_impl& __t) noexcept(__all<is_nothrow_swappable_v<_Tp>...>::value)
+  _CCCL_API inline void swap(__tuple_impl& __t) noexcept(__fold_and_v<is_nothrow_swappable_v<_Tp>...>)
   {
     (__tuple_leaf<_Indx, _Tp>::swap(static_cast<__tuple_leaf<_Indx, _Tp>&>(__t)), ...);
   }

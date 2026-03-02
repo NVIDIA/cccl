@@ -11,32 +11,32 @@
 
 // <cuda/std/atomic>
 
-// typedef atomic<char>               atomic_char;
-// typedef atomic<signed char>        atomic_schar;
-// typedef atomic<unsigned char>      atomic_uchar;
-// typedef atomic<short>              atomic_short;
-// typedef atomic<unsigned short>     atomic_ushort;
-// typedef atomic<int>                atomic_int;
-// typedef atomic<unsigned int>       atomic_uint;
-// typedef atomic<long>               atomic_long;
-// typedef atomic<unsigned long>      atomic_ulong;
-// typedef atomic<long long>          atomic_llong;
-// typedef atomic<unsigned long long> atomic_ullong;
-// typedef atomic<char16_t>           atomic_char16_t;
-// typedef atomic<char32_t>           atomic_char32_t;
-// typedef atomic<wchar_t>            atomic_wchar_t;
+// using atomic_char      = atomic<char>;
+// using atomic_schar     = atomic<signed char>;
+// using atomic_uchar     = atomic<unsigned char>;
+// using atomic_short     = atomic<short>;
+// using atomic_ushort    = atomic<unsigned short>;
+// using atomic_int       = atomic<int>;
+// using atomic_uint      = atomic<unsigned int>;
+// using atomic_long      = atomic<long>;
+// using atomic_ulong     = atomic<unsigned long>;
+// using atomic_llong     = atomic<long long>;
+// using atomic_ullong    = atomic<unsigned long long>;
+// using atomic_char16_t  = atomic<char16_t>;
+// using atomic_char32_t  = atomic<char32_t>;
+// using atomic_wchar_t   = atomic<wchar_t>;
 //
-// typedef atomic<intptr_t>           atomic_intptr_t;
-// typedef atomic<uintptr_t>          atomic_uintptr_t;
+// using atomic_intptr_t  = atomic<intptr_t>;
+// using atomic_uintptr_t = atomic<uintptr_t>;
 //
-// typedef atomic<int8_t>             atomic_int8_t;
-// typedef atomic<uint8_t>            atomic_uint8_t;
-// typedef atomic<int16_t>            atomic_int16_t;
-// typedef atomic<uint16_t>           atomic_uint16_t;
-// typedef atomic<int32_t>            atomic_int32_t;
-// typedef atomic<uint32_t>           atomic_uint32_t;
-// typedef atomic<int64_t>            atomic_int64_t;
-// typedef atomic<uint64_t>           atomic_uint64_t;
+// using atomic_int8_t    = atomic<int8_t>;
+// using atomic_uint8_t   = atomic<uint8_t>;
+// using atomic_int16_t   = atomic<int16_t>;
+// using atomic_uint16_t  = atomic<uint16_t>;
+// using atomic_int32_t   = atomic<int32_t>;
+// using atomic_uint32_t  = atomic<uint32_t>;
+// using atomic_int64_t   = atomic<int64_t>;
+// using atomic_uint64_t  = atomic<uint64_t>;
 
 #include <cuda/std/atomic>
 #include <cuda/std/type_traits>

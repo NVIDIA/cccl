@@ -11,8 +11,8 @@
 // template <class T1, class T2>
 // struct pair
 // {
-//     typedef T1 first_type;
-//     typedef T2 second_type;
+//     using first_type  = T1;
+//     using second_type = T2;
 
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
@@ -21,7 +21,7 @@
 
 int main(int, char**)
 {
-  typedef cuda::std::pair<float, short*> P;
+  using P = cuda::std::pair<float, short*>;
   static_assert((cuda::std::is_same<P::first_type, float>::value), "");
   static_assert((cuda::std::is_same<P::second_type, short*>::value), "");
 

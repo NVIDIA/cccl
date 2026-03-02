@@ -69,7 +69,7 @@ enum Enum
 };
 struct incomplete_type;
 
-typedef void (*FunctionPtr)();
+using FunctionPtr = void (*)();
 
 int main(int, char**)
 {

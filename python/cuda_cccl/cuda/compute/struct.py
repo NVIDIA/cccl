@@ -3,10 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""
-This module provides `gpu_struct`, a factory for producing struct types.
-
-"""
+from __future__ import annotations
 
 import functools
 from types import new_class
@@ -15,6 +12,11 @@ from typing import Any, ClassVar, TypeGuard, Union, cast, get_type_hints
 import numpy as np
 
 from . import types
+
+"""
+This module provides `gpu_struct`, a factory for producing struct types.
+
+"""
 
 
 def gpu_struct(

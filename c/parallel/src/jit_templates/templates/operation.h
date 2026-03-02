@@ -289,36 +289,67 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
     }
   }
 
-  template <typename, typename... Args>
-  static cuda::std::optional<specialization> special(cccl_op_t operation, cccl_type_info ret, Args... arguments)
+  template <typename Tag, typename RetStorageT, typename... ArgStorageTs>
+  static cuda::std::optional<specialization>
+  special(cccl_op_t operation,
+          tagged_arg<RetStorageT, cccl_type_info> ret,
+          tagged_arg<ArgStorageTs, cccl_type_info>... arguments)
   {
+    // We cannot use well-known operations with storage types as there
+    // is currently no way to tell whether multiple storage types,
+    // e.g., input and output, are the same type. This is necessary in
+    // order for operations like `negate` to work, as it requires both
+    // input and output to be the same type. For now, this check short
+    // circuits the specialization process for well-known operations
+    // with storage types. The code below that checks whether any of
+    // the arguments or the return type are storage types will
+    // currently not run, but is left here as it will be needed in the
+    // future.
+    if (ret.value.type == cccl_type_enum::CCCL_STORAGE
+        || ((arguments.value.type == cccl_type_enum::CCCL_STORAGE) || ...))
+    {
+      return cuda::std::nullopt;
+    }
+
     auto entry = well_known_operation_description(operation.type);
     if (!entry)
     {
       return cuda::std::nullopt;
     }
 
-    cccl_type_enum type_info_table[] = {ret.type, arguments.type...};
+    cccl_type_enum type_info_table[] = {ret.value.type, arguments.value.type...};
     auto builder                     = entry->check(cuda::std::span(type_info_table), std::format(entry->name, +""));
 
     std::string aux = "#include <cuda/std/functional>\n";
     if (entry->symbol)
     {
-      if (((arguments.type == cccl_type_enum::CCCL_STORAGE) || ...))
+      if (((arguments.value.type == cccl_type_enum::CCCL_STORAGE) || ...))
       {
-        std::string type_names[] = {cccl_type_enum_to_name(ret.type), cccl_type_enum_to_name(arguments.type)...};
+        std::string type_names[] = {cccl_type_enum_to_name<RetStorageT>(ret.value.type),
+                                    cccl_type_enum_to_name<ArgStorageTs>(arguments.value.type)...};
         auto type_name_views     = [&]<auto... Is>(std::index_sequence<Is...>) {
           return std::array<std::string_view, sizeof...(Is)>{{type_names[Is]...}};
         }(std::make_index_sequence<1 + sizeof...(arguments)>());
         aux += builder(cuda::std::span(type_name_views), *entry->symbol, operation.name);
       }
-      else if (ret.type == cccl_type_enum::CCCL_STORAGE)
+      else if (ret.value.type == cccl_type_enum::CCCL_STORAGE)
       {
         return cuda::std::nullopt;
       }
     }
 
-    return specialization{std::format(entry->name, cccl_type_enum_to_name(type_info_table[1]).c_str()), aux};
+    // Format the specialization name using the appropriate storage type
+    // type_info_table[1] corresponds to the first argument
+    using FirstArgStorageT = typename cuda::std::tuple_element<0, cuda::std::tuple<ArgStorageTs...>>::type;
+    std::string type_name  = cccl_type_enum_to_name<FirstArgStorageT>(type_info_table[1]);
+
+    return specialization{std::format(entry->name, type_name.c_str()), aux};
+  }
+
+  template <typename Tag, typename... Args>
+  static cuda::std::optional<specialization> special(cccl_op_t operation, Args... args)
+  {
+    return special<Tag>(operation, arg_traits<cuda::std::decay_t<Args>>::wrap(args)...);
   }
 #endif
 };
@@ -330,10 +361,11 @@ struct binary_user_operation_traits
   using type = user_operation_traits::type<Tag, Operation, ValueT, ValueT, ValueT>;
 
 #ifndef _CCCL_C_PARALLEL_JIT_TEMPLATES_PREPROCESS
-  template <typename Tag, typename... Args>
-  static cuda::std::optional<specialization> special(cccl_op_t operation, cccl_type_info arg_t)
+  template <typename Tag, typename Arg>
+  static cuda::std::optional<specialization> special(cccl_op_t operation, Arg arg)
   {
-    return user_operation_traits::special<Tag>(operation, arg_t, arg_t, arg_t);
+    auto wrapped = arg_traits<cuda::std::decay_t<Arg>>::wrap(arg);
+    return user_operation_traits::special<Tag>(operation, wrapped, wrapped, wrapped);
   }
 #endif
 };
@@ -345,10 +377,11 @@ struct binary_user_predicate_traits
   using type = user_operation_traits::type<Tag, Operation, cccl_type_info_mapping<bool>{}, ValueT, ValueT>;
 
 #ifndef _CCCL_C_PARALLEL_JIT_TEMPLATES_PREPROCESS
-  template <typename Tag, typename... Args>
-  static cuda::std::optional<specialization> special(cccl_op_t operation, cccl_type_info arg_t)
+  template <typename Tag, typename Arg>
+  static cuda::std::optional<specialization> special(cccl_op_t operation, Arg arg)
   {
-    return user_operation_traits::special<Tag>(operation, arg_t, arg_t, arg_t);
+    auto wrapped = arg_traits<cuda::std::decay_t<Arg>>::wrap(arg);
+    return user_operation_traits::special<Tag>(operation, wrapped, wrapped, wrapped);
   }
 #endif
 };

@@ -9,8 +9,8 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/__random/feistel_bijection.h>
-#include <cuda/std/__random_>
 #include <cuda/std/cassert>
+#include <cuda/std/random>
 
 #include "test_macros.h"
 

@@ -40,6 +40,7 @@ temp_storage_size = sorter(
     d_input_values,
     d_output_keys,
     d_output_values,
+    OpKind.LESS,
     len(h_input_keys),
 )
 
@@ -53,6 +54,7 @@ sorter(
     d_input_values,
     d_output_keys,
     d_output_values,
+    OpKind.LESS,
     len(h_input_keys),
 )
 

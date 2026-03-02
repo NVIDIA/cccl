@@ -3,12 +3,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from __future__ import annotations
+
+import ast
 import functools
 import inspect
 import operator
-import uuid
+import struct
+import textwrap
 from types import new_class
-from typing import get_type_hints
+from typing import TYPE_CHECKING, Callable, Hashable, List, Tuple
 
 import numba
 import numba.cuda
@@ -31,6 +35,22 @@ from numba.core.typing.templates import ConcreteTemplate
 from numba.cuda.cudadecl import registry as cuda_registry
 from numba.extending import lower_builtin, lower_cast
 
+from . import types as cccl_types
+from ._bindings import Op, OpKind
+from ._caching import CachableFunction, cache_with_registered_key_functions
+from ._odr_helpers import create_stateful_op_void_ptr_wrapper
+from ._utils import sanitize_identifier
+from ._utils.protocols import (
+    get_data_pointer,
+    get_dtype,
+    is_contiguous,
+    is_device_array,
+)
+from .op import OpAdapter
+
+if TYPE_CHECKING:
+    from .typing import DeviceArrayLike
+
 # -----------------------------------------------------------------------------
 # Struct registration and casting
 # -----------------------------------------------------------------------------
@@ -46,7 +66,7 @@ class _StructBase(numba.types.Type):
 # The struct registration logic is isolated here to avoid polluting other
 # modules with Numba-specific type plumbing.
 @functools.lru_cache(maxsize=256)
-def make_struct_type(struct_class_or_name, field_names, field_types):
+def _make_struct_type(struct_class_or_name, field_names, field_types):
     """
     Core factory function that uses the Numba extension machinery to
     create a struct type with pass-by-value semantics.
@@ -292,7 +312,7 @@ def make_struct_type(struct_class_or_name, field_names, field_types):
 def _register_struct_with_numba(struct_class):
     field_spec = struct_class._type_descriptor.fields
 
-    registered_class = make_struct_type(
+    registered_class = _make_struct_type(
         struct_class,
         tuple(field_spec.keys()),
         tuple(field_spec.values()),
@@ -317,7 +337,6 @@ def type_descriptor_to_numba(td):
     - POD TypeDescriptor: uses numba.from_dtype
     - Numba types: pass through
     """
-    from . import types as cccl_types
 
     # Pass through if already a Numba type
     if isinstance(td, numba.types.Type):
@@ -336,7 +355,6 @@ def type_descriptor_to_numba(td):
 
 def _convert_type_descriptor_to_numba(td):
     """Internal helper to convert TypeDescriptor to Numba type."""
-    from . import types as cccl_types
 
     # For struct types
     if isinstance(td, cccl_types.StructTypeDescriptor):
@@ -400,7 +418,6 @@ def _ensure_function_structs_registered(py_func):
 
 def _numba_type_to_type_descriptor(numba_type):
     """Convert a Numba type to a TypeDescriptor (internal helper)."""
-    from . import types as cccl_types
     from .struct import _is_struct_type
 
     # Already a TypeDescriptor
@@ -416,93 +433,8 @@ def _numba_type_to_type_descriptor(numba_type):
     return cccl_types.from_numpy_dtype(dtype)
 
 
-def _annotation_to_type_descriptor(annotation):
-    """
-    Convert a type annotation to a TypeDescriptor.
-
-    Handles:
-    - TypeDescriptor: returns as-is
-    - gpu_struct classes: returns their _type_descriptor
-    - numpy dtypes/types: converts via from_numpy_dtype
-    """
-    from . import types as cccl_types
-    from .struct import _is_struct_type
-
-    if isinstance(annotation, cccl_types.TypeDescriptor):
-        return annotation
-
-    if _is_struct_type(annotation):
-        return annotation._type_descriptor  # type: ignore[union-attr]
-
-    # numpy dtype or type
-    return cccl_types.from_numpy_dtype(np.dtype(annotation))
-
-
-# -----------------------------------------------------------------------------
-# Signature inference
-# -----------------------------------------------------------------------------
-
-
-def infer_signature(py_func, input_types=None):
-    """
-    Infer the signature of a function as TypeDescriptors.
-
-    If annotations are provided, uses those directly.
-    Otherwise, compiles the function to infer types.
-
-    Args:
-        py_func: The Python function to analyze
-        input_types: Optional tuple of TypeDescriptors for the inputs.
-                     Used for inference when annotations are missing.
-
-    Returns:
-        Tuple of (input_type_descriptors, output_type_descriptor)
-        where input_type_descriptors is a tuple of TypeDescriptor
-    """
-    try:
-        annotations = get_type_hints(py_func)
-    except Exception:
-        annotations = py_func.__annotations__
-    spec = inspect.getfullargspec(py_func)
-    arg_names = list(spec.args)
-
-    input_tds = []
-    has_all_input_annotations = True
-
-    # Try to get input types from annotations
-    for name in arg_names:
-        if name in annotations:
-            input_tds.append(_annotation_to_type_descriptor(annotations[name]))
-        else:
-            has_all_input_annotations = False
-            break
-
-    # Try to get output type from return annotation
-    output_td = None
-    if "return" in annotations:
-        output_td = _annotation_to_type_descriptor(annotations["return"])
-
-    # If we have all annotations, we're done
-    if has_all_input_annotations and output_td is not None:
-        return tuple(input_tds), output_td
-
-    # Need to infer by compiling
-    if input_types is None:
-        if not has_all_input_annotations:
-            raise ValueError(
-                "Function must have type annotations for all arguments, "
-                "or input_types must be provided"
-            )
-        input_tds_for_compile = input_tds
-    else:
-        # Use provided input types (TypeDescriptors)
-        input_tds_for_compile = input_types
-
-    # Convert TypeDescriptors to Numba types for compilation
-    input_numba_types = tuple(
-        type_descriptor_to_numba(td) for td in input_tds_for_compile
-    )
-
+@cache_with_registered_key_functions
+def _infer_return_type(py_func, input_types):
     # Ensure any gpu_struct classes referenced in the function are registered
     _ensure_function_structs_registered(py_func)
 
@@ -512,32 +444,39 @@ def infer_signature(py_func, input_types=None):
     sanitized_name = sanitize_identifier(py_func.__name__)
     unique_suffix = hex(id(py_func))[2:]
     abi_name = f"{sanitized_name}_{unique_suffix}"
+    input_numba_types = tuple(type_descriptor_to_numba(t) for t in input_types)
     _, return_type = numba.cuda.compile(
         py_func, input_numba_types, abi_info={"abi_name": abi_name}
     )
-    output_td = _numba_type_to_type_descriptor(return_type)
-
-    # Use provided input types or convert from numba types
-    if input_types is not None:
-        input_tds = list(input_types)
-    elif not has_all_input_annotations:
-        input_tds = [_numba_type_to_type_descriptor(t) for t in input_numba_types]
-
-    return tuple(input_tds), output_td
+    return _numba_type_to_type_descriptor(return_type)
 
 
-def compile_op(op, input_types, output_type=None):
-    """Compile a user-provided binary operator for use with CCCL algorithms."""
-    from . import types as cccl_types
+# -----------------------------------------------------------------------------
+# Stateless ops
+# -----------------------------------------------------------------------------
+
+
+@functools.lru_cache(maxsize=256)
+def _compile_op_impl(cachable_op, input_types_tuple: tuple, output_type):
+    """Cached implementation of op compilation.
+
+    Args:
+        cachable_op: CachableFunction wrapper around the operator
+        input_types_tuple: Tuple of input TypeDescriptors
+        output_type: Output TypeDescriptor
+    """
     from ._bindings import Op, OpKind
     from ._odr_helpers import create_op_void_ptr_wrapper
+
+    # Extract the actual function from CachableFunction
+    op = cachable_op._func
 
     # Ensure any gpu_struct classes referenced in the op are registered
     _ensure_function_structs_registered(op)
 
     numba_input_types = tuple(
         type_descriptor_to_numba(t) if isinstance(t, cccl_types.TypeDescriptor) else t
-        for t in input_types
+        for t in input_types_tuple
     )
 
     if isinstance(output_type, cccl_types.TypeDescriptor):
@@ -548,6 +487,7 @@ def compile_op(op, input_types, output_type=None):
     sig = numba_output_type(*numba_input_types)
     wrapped_op, wrapper_sig = create_op_void_ptr_wrapper(op, sig)
     ltoir, _ = numba.cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
+
     return Op(
         operator_type=OpKind.STATELESS,
         name=wrapped_op.__name__,
@@ -557,171 +497,406 @@ def compile_op(op, input_types, output_type=None):
     )
 
 
-# -----------------------------------------------------------------------------
-# Iterator compilation
-# -----------------------------------------------------------------------------
+def compile_op(op, input_types, output_type=None):
+    """Compile a user-provided binary operator for use with CCCL algorithms.
 
-
-@functools.lru_cache(maxsize=256)
-def cached_compile(func, sig, abi_name=None, **kwargs):
-    """Cached wrapper around numba.cuda.compile."""
-    return numba.cuda.compile(func, sig, abi_info={"abi_name": abi_name}, **kwargs)
-
-
-def _get_abi_suffix():
-    """Generate a unique ABI suffix."""
-    return uuid.uuid4().hex
-
-
-def _resolve_iterator_value_types(it):
-    # transform iterators sometimes need help figuring their input or
-    # output types (depending on whether it's an input or output
-    # iterator). This requires inspecting type annotations, or
-    # using numba's type inference. This function takes an iterator
-    # (possibly a compound iterator like ZipIterator) and traverses
-    # its children recursively, finding any TransformIterators
-    # and setting their value types. At the end, it calls
-    # it._rebuild_value_type_from_children() which propagates
-    # the updated value types back up to the "parent" iterators.
-    from .iterators._iterators import TransformIteratorKind
-
-    children = getattr(it, "children", ())
-    for child in children:
-        _resolve_iterator_value_types(child)
-
-    kind = getattr(it, "kind", None)
-    if isinstance(kind, TransformIteratorKind):
-        op_func = kind.op._func
-        _ensure_function_structs_registered(op_func)
-        if kind.io_kind == "input":
-            _, output_td = infer_signature(op_func, (it.value_type,))
-            it.value_type = output_td
-        else:
-            input_tds, _ = infer_signature(op_func)
-            it.value_type = input_tds[0]
-
-    rebuild_value_type = getattr(it, "_rebuild_value_type_from_children", None)
-    if rebuild_value_type is not None:
-        rebuild_value_type()
-
-
-def compile_iterator(it, io_kind: str):
+    This function is cached to ensure that identical operators with identical
+    types produce the same compiled result (same symbol names and LTOIR),
+    which allows proper deduplication during linking.
     """
-    Compile an iterator into a CCCL Iterator binding object.
+    from ._caching import CachableFunction
+
+    cachable_op = CachableFunction(op)
+    return _compile_op_impl(cachable_op, tuple(input_types), output_type)
+
+
+class _StatelessOp(OpAdapter):
+    """Adapter for stateless callables."""
+
+    __slots__ = ()
+
+    def __init__(self, func):
+        self._func = func
+        self._cachable = CachableFunction(func)
+
+    def compile(self, input_types, output_type=None) -> Op:
+        return compile_op(self._func, input_types, output_type)
+
+    @property
+    def func(self) -> Callable:
+        """Access the wrapped callable."""
+        return self._func
+
+    def __eq__(self, other):
+        return self._cachable == other._cachable
+
+    def __hash__(self):
+        return hash(
+            self._cachable,
+        )
+
+    def get_return_type(self, input_types):
+        return _infer_return_type(self._func, input_types)
+
+
+# -----------------------------------------------------------------------------
+# Stateful ops
+# -----------------------------------------------------------------------------
+#
+# Stateful ops are callables that capture device arrays (state) as globals or
+# closure variables.
+#
+# When numba-cuda encounters a device function that references device
+# arrays in its globals/closures, it captures pointers to the
+# referenced arrays as constants.  If an object being referenced
+# changes (e.g., common in a loop) the device function will be
+# recompiled because it sees a new pointer.
+#
+# We avoid this by relying on support for stateful ops in the CCCL C
+# library itself. Here's how this works
+#
+# 1. Detect any global/closure device arrays referenced by a given callable.
+#
+# 2. Transform the callable's AST to add parameters for each detected device array.
+#
+# 3. Compilation: the compiled device function whose LTOIR we
+#    eventually pass to the CCCL C library must take a single `void*`
+#    argument for is state.  The corresponding declaration of stateful
+#    operators in CCCL C looks like:
+#
+#       extern "C" __device__ void foo(void* state, )`.
+#
+#    Thus, we have Thus, at compilation time, we
+#    define some intrinsics to unpack a `void*` into typed arrays and
+#    invoke the transformed callable from step 2.  Much of this is
+#    implemented in _odr_helpers.py
+
+
+def _detect_device_array_globals(func: Callable) -> List[Tuple[str, object]]:
+    """
+    Detect device arrays referenced as globals in a function.
 
     Args:
-        it: The iterator to compile (an IteratorBase instance)
-        io_kind: Either "input" or "output"
+        func: The function to inspect
 
     Returns:
-        An Iterator binding object ready for use with CCCL algorithms
+        List of (name, array) tuples for detected device arrays
     """
-    from ._bindings import Iterator, IteratorKind, Op, OpKind
-    from ._odr_helpers import (
-        create_advance_void_ptr_wrapper,
-        create_input_dereference_void_ptr_wrapper,
-        create_output_dereference_void_ptr_wrapper,
-    )
+    state_arrays = []
+    code = func.__code__
 
-    _resolve_iterator_value_types(it)
+    for name in code.co_names:
+        val = func.__globals__.get(name)
+        if val is not None and is_device_array(val):
+            state_arrays.append((name, val))
 
-    # Convert TypeDescriptors to Numba types for compilation
-    numba_state_type = type_descriptor_to_numba(it.state_type)
-    state_ptr_type = types.CPointer(numba_state_type)
-    numba_value_type = type_descriptor_to_numba(it.value_type)
+    return state_arrays
 
-    # Validate state size using TypeDescriptor info
-    # (PointerTypeDescriptor.info() returns 8 bytes, TypeDescriptor.info() returns dtype size)
-    state_info = it.state_type.info()
-    iterator_state = memoryview(it.state)
-    if iterator_state.nbytes != state_info.size:
+
+def _detect_device_array_closures(func: Callable) -> List[Tuple[str, object]]:
+    """
+    Detect device arrays captured in function closures.
+
+    Args:
+        func: The function to inspect
+
+    Returns:
+        List of (name, array) tuples for detected device arrays
+    """
+    state_arrays: List[Tuple[str, object]] = []
+    code = func.__code__
+    closure = func.__closure__
+
+    if closure is None:
+        return state_arrays
+
+    # co_freevars contains the names of closure variables
+    for name, cell in zip(code.co_freevars, closure):
+        try:
+            val = cell.cell_contents
+            if is_device_array(val):
+                state_arrays.append((name, val))
+        except ValueError:
+            # Cell is empty
+            pass
+
+    return state_arrays
+
+
+def _detect_all_device_arrays(func: Callable) -> List[Tuple[str, object]]:
+    """
+    Detect all device arrays referenced by a function (globals + closures).
+
+    Args:
+        func: The function to inspect
+
+    Returns:
+        List of (name, array) tuples for detected device arrays
+    """
+    globals_arrays = _detect_device_array_globals(func)
+    closure_arrays = _detect_device_array_closures(func)
+    return globals_arrays + closure_arrays
+
+
+class _AddStateParameters(ast.NodeTransformer):
+    """AST transformer that adds state parameters to a function definition."""
+
+    def __init__(self, state_names: List[str]):
+        self.state_names = state_names
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:
+        # Prepend state parameters to the function arguments
+        # Inner function signature: (state_arrays..., regular_args...)
+        new_args = [ast.arg(arg=name, annotation=None) for name in self.state_names]
+        node.args.args = new_args + node.args.args
+        return node
+
+    def visit_AsyncFunctionDef(
+        self, node: ast.AsyncFunctionDef
+    ) -> ast.AsyncFunctionDef:
+        # Handle async functions the same way
+        new_args = [ast.arg(arg=name, annotation=None) for name in self.state_names]
+        node.args.args = new_args + node.args.args
+        return node
+
+
+def _transform_function_ast(func: Callable, state_names: List[str]) -> Callable:
+    """
+    Transform a function to add state arrays captured as globals or closures
+    as explicit parameters.
+
+    For example, if the function is:
+
+        def func(x): return x + state[0]  # state is a global array
+
+    Then the transformed function will be:
+
+        def func(state, x): return x + state[0]
+
+    Args:
+        func: The original function
+        state_names: Names of device arrays to add as parameters
+
+    Returns:
+        A new function with state arrays as explicit parameters,
+        appearing after the regular parameters.
+
+    Raises:
+        ValueError: If the function source cannot be obtained
+    """
+    # Get source code
+    try:
+        source = inspect.getsource(func)
+    except (OSError, TypeError) as e:
         raise ValueError(
-            f"Iterator state size, {iterator_state.nbytes} bytes, for iterator type {type(it)} "
-            f"does not match expected size, {state_info.size} bytes"
-        )
-    alignment = state_info.alignment
+            f"Cannot get source code for function '{func.__name__}'. "
+        ) from e
 
-    # Compile advance operation
-    advance_abi_name = f"advance_{_get_abi_suffix()}"
-    wrapped_advance, wrapper_sig = create_advance_void_ptr_wrapper(
-        it.advance, state_ptr_type
-    )
-    advance_ltoir, _ = cached_compile(
-        wrapped_advance, wrapper_sig, abi_name=advance_abi_name, output="ltoir"
-    )
-    advance_op = Op(
-        operator_type=OpKind.STATELESS,
-        name=advance_abi_name,
-        ltoir=advance_ltoir,
-    )
+    # Dedent source (in case function is defined inside a class/function)
+    source = textwrap.dedent(source)
 
-    # Compile dereference operation based on io_kind
-    if io_kind == "input":
-        deref_abi_name = f"input_dereference_{_get_abi_suffix()}"
-        wrapped_deref, wrapper_sig = create_input_dereference_void_ptr_wrapper(
-            it.input_dereference, state_ptr_type, numba_value_type
-        )
-    elif io_kind == "output":
-        deref_abi_name = f"output_dereference_{_get_abi_suffix()}"
-        wrapped_deref, wrapper_sig = create_output_dereference_void_ptr_wrapper(
-            it.output_dereference, state_ptr_type, numba_value_type
-        )
-    else:
-        raise ValueError(f"Invalid io_kind: {io_kind}. Must be 'input' or 'output'")
+    # Parse to AST
+    tree = ast.parse(source)
 
-    deref_ltoir, _ = cached_compile(
-        wrapped_deref, wrapper_sig, abi_name=deref_abi_name, output="ltoir"
-    )
-    deref_op = Op(
-        operator_type=OpKind.STATELESS,
-        name=deref_abi_name,
-        ltoir=deref_ltoir,
+    # Transform: add state parameters
+    transformer = _AddStateParameters(state_names)
+    tree = transformer.visit(tree)
+    ast.fix_missing_locations(tree)
+
+    # Compile and execute to create new function
+    # We need to provide the original function's globals for imports
+    # AND inject closure variables so they're accessible in the new function
+    globals_dict = func.__globals__.copy()
+
+    # Inject closure variables (except state arrays which become parameters)
+    if func.__closure__:
+        for name, cell in zip(func.__code__.co_freevars, func.__closure__):
+            if name not in state_names:  # Don't inject state arrays
+                try:
+                    globals_dict[name] = cell.cell_contents
+                except ValueError:
+                    pass  # Cell is empty
+
+    local_ns: dict[str, Callable] = {}
+    exec(
+        compile(tree, filename=f"<auto_stateful:{func.__name__}>", mode="exec"),
+        globals_dict,
+        local_ns,
     )
 
-    # Get TypeInfo directly from TypeDescriptor
-    value_type_info = it.value_type.info()
+    # Get the transformed function
+    transformed_func = local_ns[func.__name__]
 
-    return Iterator(
-        alignment,
-        IteratorKind.ITERATOR,
-        advance_op,
-        deref_op,
-        value_type_info,
-        state=it.state,
-    )
+    return transformed_func
 
 
-# -----------------------------------------------------------------------------
-# Host callback compilation
-# -----------------------------------------------------------------------------
+def _extract_state(func: Callable):
+    # Detect device arrays
+    state_info = _detect_all_device_arrays(func)
+
+    # Extract names and arrays
+    state_names = [name for name, _ in state_info]
+    state_arrays: List[DeviceArrayLike] = [arr for _, arr in state_info]  # type: ignore[misc]
+
+    return state_names, state_arrays
 
 
-def compile_host_op(fn, input_types):
+def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
     """
-    Compile a host-side function (e.g., iterator advance) into a C function pointer.
+    Compile a stateful operator for use with CCCL algorithms.
 
     Args:
-        fn: The Python function to compile
-        input_types: Tuple of TypeDescriptors for the function signature
+        op: The operator function (already transformed to take state as explicit parameters)
+        input_types: Tuple of TypeDescriptors for regular input arguments
+        state_arrays: Tuple of device arrays containing state
+        output_type: Optional TypeDescriptor for return value (inferred if None)
 
     Returns:
-        A ctypes function pointer that can be called from C code
+        Compiled Op object for C++ interop
     """
-    from . import types as cccl_types
 
-    numba_input_types = tuple(
-        type_descriptor_to_numba(t) if isinstance(t, cccl_types.TypeDescriptor) else t
-        for t in input_types
+    # Ensure any gpu_struct classes referenced in the op are registered
+    _ensure_function_structs_registered(op)
+
+    # Validate all state arrays are contiguous
+    for i, state_array in enumerate(state_arrays):
+        if not is_contiguous(state_array):
+            raise ValueError(f"state array {i} must be contiguous")
+
+    # Convert input types to Numba types
+    numba_input_types = tuple(type_descriptor_to_numba(t) for t in input_types)
+
+    # Create Numba array types for state arrays
+    state_array_types = [
+        numba.types.Array(numba.from_dtype(get_dtype(s)), 1, "A") for s in state_arrays
+    ]
+
+    # Infer output type if needed
+    if output_type is None:
+        # Compile with Numba to infer return type
+        # The transformed function expects (state_arrays..., regular_args...)
+        all_numba_input_types = tuple(state_array_types) + numba_input_types
+        sanitized_name = sanitize_identifier(op.__name__)
+        unique_suffix = hex(id(op))[2:]
+        abi_name = f"{sanitized_name}_{unique_suffix}"
+        _, return_type = numba.cuda.compile(
+            op, all_numba_input_types, abi_info={"abi_name": abi_name}
+        )
+        # Convert return type to TypeDescriptor
+        output_type = cccl_types.from_numpy_dtype(
+            numba.np.numpy_support.as_dtype(return_type)
+        )
+
+    # Convert output type to Numba type
+    numba_output_type = type_descriptor_to_numba(output_type)
+
+    # Build full signature: output_type(state_arrays..., regular_args...)
+    sig = numba_output_type(*state_array_types, *numba_input_types)
+
+    # Get state pointers - pointers to the device array data
+    state_ptrs = [get_data_pointer(arr) for arr in state_arrays]
+
+    # Get shape and itemsize from each state array
+    state_info = []
+    for state_array in state_arrays:
+        state_info.append(
+            {
+                "shape": len(state_array),
+                "itemsize": get_dtype(state_array).itemsize,
+                "strides": get_dtype(state_array).itemsize,
+            }
+        )
+
+    # All pointers have the same alignment, use pointer-sized int alignment
+    state_alignment = np.dtype(np.intp).alignment
+
+    # Create the stateful wrapper (constructs arrays from pointers)
+    wrapped_op, wrapper_sig = create_stateful_op_void_ptr_wrapper(
+        op, sig, state_array_types, state_info
     )
 
-    sig = numba.types.void(*numba_input_types)
-    c_fn = numba.cfunc(sig)(fn)
-    return c_fn.ctypes
+    # Compile the wrapper to LTOIR
+    ltoir, _ = numba.cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
+
+    # Pack all data pointers as bytes (sequentially)
+    state_bytes = struct.pack(f"{len(state_ptrs)}P", *state_ptrs)
+
+    # Return Op with STATEFUL kind and packed pointers
+    return Op(
+        operator_type=OpKind.STATEFUL,
+        name=wrapped_op.__name__,
+        ltoir=ltoir,
+        state_alignment=state_alignment,
+        state=state_bytes,
+    )
+
+
+class _JitOpState:
+    def __init__(self, names: List[str], arrays: List[DeviceArrayLike]):
+        self.names = names
+        self.arrays = arrays
+
+    def get_cache_key(self) -> Hashable:
+        return (tuple(self.names), tuple(get_dtype(s) for s in self.arrays))
+
+    def to_bytes(self):
+        state_ptrs = [get_data_pointer(arr) for arr in self.arrays]
+        return struct.pack(f"{len(state_ptrs)}P", *state_ptrs)
+
+
+class _StatefulOp(OpAdapter):
+    __slots__ = "_state"
+
+    def __init__(self, func, state):
+        self._func = func
+        self._cachable = CachableFunction(func)
+        self._state = state
+
+    def get_state(self):
+        return self._state.to_bytes()
+
+    def compile(self, input_types, output_type=None) -> Op:
+        transformed_func = _transform_function_ast(self._func, self._state.names)
+        return _compile_stateful_op(
+            transformed_func, input_types, self._state.arrays, output_type
+        )
+
+    def get_cache_key(self):
+        return (self._func.__name__, self._cachable, self._state.get_cache_key())
+
+    @property
+    def is_stateful(self) -> bool:
+        return True
+
+    @property
+    def func(self) -> Callable:
+        """Access the wrapped callable."""
+        return self._func
+
+    def __hash__(self) -> int:
+        return hash(self.get_cache_key())
+
+    def __eq__(self, other):
+        return (self._cachable == other._cachable) and (self._state == other._state)
+
+
+def to_jit_op_adapter(op: Callable) -> OpAdapter:
+    """
+    Convert the Python callable into the appropriate stateful or stateless
+    OpAdapter, depending on whether or not it references any global state.
+    """
+    state_names, state_arrays = _extract_state(op)
+    if state_names:
+        return _StatefulOp(op, _JitOpState(state_names, state_arrays))
+    else:
+        return _StatelessOp(op)
+
+
+cache_with_registered_key_functions.register(_StatelessOp, lambda op: op._cachable)
+
+cache_with_registered_key_functions.register(_StatefulOp, lambda op: op.get_cache_key())
 
 
 __all__ = [
-    "compile_host_op",
-    "compile_iterator",
-    "compile_op",
-    "type_descriptor_to_numba",
+    "to_jit_op_adapter",
 ]

@@ -144,17 +144,24 @@ OutputIt _CCCL_API _CCCL_FORCEINLINE cub_transform_many(
     return result;
   }
 
-  constexpr auto stable_address =
-    (::cuda::proclaims_copyable_arguments<Predicate>::value && ::cuda::proclaims_copyable_arguments<TransformOp>::value)
-      ? cub::detail::transform::requires_stable_address::no
-      : cub::detail::transform::requires_stable_address::yes;
-
   cudaError_t status;
-  THRUST_INDEX_TYPE_DISPATCH(
-    status,
-    (cub::detail::transform::dispatch<stable_address>),
-    num_items,
-    (firsts, result, num_items_fixed, pred, transform_op, cuda_cub::stream(policy)));
+  if constexpr (::cuda::proclaims_copyable_arguments<Predicate>::value
+                && ::cuda::proclaims_copyable_arguments<TransformOp>::value)
+  {
+    THRUST_INDEX_TYPE_DISPATCH(
+      status,
+      (CUB_NS_QUALIFIER::DeviceTransform::TransformIf),
+      num_items,
+      (firsts, result, num_items_fixed, pred, transform_op, cuda_cub::stream(policy)));
+  }
+  else
+  {
+    THRUST_INDEX_TYPE_DISPATCH(
+      status,
+      (CUB_NS_QUALIFIER::DeviceTransform::__transform_if_stable_argument_addresses),
+      num_items,
+      (firsts, result, num_items_fixed, pred, transform_op, cuda_cub::stream(policy)));
+  }
   throw_on_error(status, "transform: failed inside CUB");
 
   status = cuda_cub::synchronize_optional(policy);

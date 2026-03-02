@@ -93,7 +93,7 @@ __host__ __device__ constexpr bool test()
   test_iteration<cuda::std::extents<unsigned, D>>(cuda::std::array<int, 1>{3}, 7);
   test_iteration<cuda::std::extents<unsigned, 7>>(cuda::std::array<int, 1>{4});
   test_iteration<cuda::std::extents<unsigned, 7, 8>>(cuda::std::array<int, 2>{25, 3});
-  test_iteration<cuda::std::extents<char, D, D, D, D>>(cuda::std::array<int, 4>{1, 1, 1, 1}, 1, 1, 1, 1);
+  test_iteration<cuda::std::extents<signed char, D, D, D, D>>(cuda::std::array<int, 4>{1, 1, 1, 1}, 1, 1, 1, 1);
 
   // Check operator constraint for number of arguments
   static_assert(check_operator_constraints(

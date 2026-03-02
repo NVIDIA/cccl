@@ -22,7 +22,7 @@ def custom_reduce_example():
         return a if a > b else b
 
     threads_per_block = 128
-    block_reduce = coop.block.reduce(numba.int32, threads_per_block, max_op)
+    block_reduce = coop.block.make_reduce(numba.int32, threads_per_block, max_op)
 
     @cuda.jit(link=block_reduce.files)
     def kernel(input, output):
@@ -51,7 +51,7 @@ def custom_reduce_example():
 def sum_reduce_example():
     """Demonstrate block sum reduction using built-in sum operation."""
     threads_per_block = 128
-    block_sum = coop.block.sum(numba.int32, threads_per_block)
+    block_sum = coop.block.make_sum(numba.int32, threads_per_block)
 
     @cuda.jit(link=block_sum.files)
     def kernel(input, output):
@@ -83,7 +83,7 @@ def min_reduce_example():
         return a if a < b else b
 
     threads_per_block = 64
-    block_reduce = coop.block.reduce(numba.int32, threads_per_block, min_op)
+    block_reduce = coop.block.make_reduce(numba.int32, threads_per_block, min_op)
 
     @cuda.jit(link=block_reduce.files)
     def kernel(input, output):
@@ -117,7 +117,7 @@ def multi_block_example():
 
     threads_per_block = 128
     num_blocks = 4
-    block_reduce = coop.block.reduce(numba.int32, threads_per_block, add_op)
+    block_reduce = coop.block.make_reduce(numba.int32, threads_per_block, add_op)
 
     @cuda.jit(link=block_reduce.files)
     def kernel(input, output):

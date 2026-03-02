@@ -1,4 +1,5 @@
 .. _libcudacxx-extended-api-memory-resources-resource:
+.. _libcudacxx-extended-api-memory-resources-synchronous-resource:
 
 The ``cuda::synchronous_resource`` concept
 -------------------------------------------
@@ -18,10 +19,10 @@ For cases where stream-ordered allocation is not possible, ``cuda::mr::synchrono
 The ``cuda::mr::synchronous_resource`` concept provides basic type checks to ensure that a given memory resource provides the
 expected ``allocate_sync`` / ``deallocate_sync`` interface and is also equality comparable, which covers the whole API surface of
 `std::pmr::memory_resource <https://en.cppreference.com/w/cpp/header/memory_resource>`__.
-See below for different memory resources and potential pitfals.
+See below for different memory resources and potential pitfalls.
 
 To demonstrate, the following example defines several resources, only some of which are valid implementations of the
-``cuda::mr::synchronous_resource`` concept. The ``static_assertion``'s will result in compile-time errors for the invalid resources.
+``cuda::mr::synchronous_resource`` concept. The ``static_assertions`` will result in compile-time errors for the invalid resources.
 
 .. code:: cpp
 

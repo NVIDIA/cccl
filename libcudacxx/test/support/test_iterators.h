@@ -30,11 +30,11 @@ class cpp17_output_iterator
   friend class cpp17_output_iterator;
 
 public:
-  typedef cuda::std::output_iterator_tag iterator_category;
-  typedef void value_type;
-  typedef typename cuda::std::iterator_traits<It>::difference_type difference_type;
-  typedef It pointer;
-  typedef typename cuda::std::iterator_traits<It>::reference reference;
+  using iterator_category = cuda::std::output_iterator_tag;
+  using value_type        = void;
+  using difference_type   = typename cuda::std::iterator_traits<It>::difference_type;
+  using pointer           = It;
+  using reference         = typename cuda::std::iterator_traits<It>::reference;
 
   __host__ __device__ constexpr explicit cpp17_output_iterator(It it)
       : it_(cuda::std::move(it))
@@ -82,18 +82,18 @@ static_assert(cuda::std::output_iterator<cpp17_output_iterator<int*>, int>, "");
 template <class It, class ItTraits = It>
 class cpp17_input_iterator
 {
-  typedef cuda::std::iterator_traits<ItTraits> Traits;
+  using Traits = cuda::std::iterator_traits<ItTraits>;
   It it_;
 
   template <class U, class T>
   friend class cpp17_input_iterator;
 
 public:
-  typedef cuda::std::input_iterator_tag iterator_category;
-  typedef typename Traits::value_type value_type;
-  typedef typename Traits::difference_type difference_type;
-  typedef It pointer;
-  typedef typename Traits::reference reference;
+  using iterator_category = cuda::std::input_iterator_tag;
+  using value_type        = typename Traits::value_type;
+  using difference_type   = typename Traits::difference_type;
+  using pointer           = It;
+  using reference         = typename Traits::reference;
 
   __host__ __device__ constexpr explicit cpp17_input_iterator(It it)
       : it_(it)
@@ -156,11 +156,11 @@ class forward_iterator
   friend class forward_iterator;
 
 public:
-  typedef cuda::std::forward_iterator_tag iterator_category;
-  typedef typename cuda::std::iterator_traits<It>::value_type value_type;
-  typedef typename cuda::std::iterator_traits<It>::difference_type difference_type;
-  typedef It pointer;
-  typedef typename cuda::std::iterator_traits<It>::reference reference;
+  using iterator_category = cuda::std::forward_iterator_tag;
+  using value_type        = typename cuda::std::iterator_traits<It>::value_type;
+  using difference_type   = typename cuda::std::iterator_traits<It>::difference_type;
+  using pointer           = It;
+  using reference         = typename cuda::std::iterator_traits<It>::reference;
 
   __host__ __device__ constexpr forward_iterator()
       : it_()
@@ -229,11 +229,11 @@ class bidirectional_iterator
   friend class bidirectional_iterator;
 
 public:
-  typedef cuda::std::bidirectional_iterator_tag iterator_category;
-  typedef typename cuda::std::iterator_traits<It>::value_type value_type;
-  typedef typename cuda::std::iterator_traits<It>::difference_type difference_type;
-  typedef It pointer;
-  typedef typename cuda::std::iterator_traits<It>::reference reference;
+  using iterator_category = cuda::std::bidirectional_iterator_tag;
+  using value_type        = typename cuda::std::iterator_traits<It>::value_type;
+  using difference_type   = typename cuda::std::iterator_traits<It>::difference_type;
+  using pointer           = It;
+  using reference         = typename cuda::std::iterator_traits<It>::reference;
 
   __host__ __device__ constexpr bidirectional_iterator()
       : it_()
@@ -306,11 +306,11 @@ class random_access_iterator
   friend class random_access_iterator;
 
 public:
-  typedef cuda::std::random_access_iterator_tag iterator_category;
-  typedef typename cuda::std::iterator_traits<It>::value_type value_type;
-  typedef typename cuda::std::iterator_traits<It>::difference_type difference_type;
-  typedef It pointer;
-  typedef typename cuda::std::iterator_traits<It>::reference reference;
+  using iterator_category = cuda::std::random_access_iterator_tag;
+  using value_type        = typename cuda::std::iterator_traits<It>::value_type;
+  using difference_type   = typename cuda::std::iterator_traits<It>::difference_type;
+  using pointer           = It;
+  using reference         = typename cuda::std::iterator_traits<It>::reference;
 
   __host__ __device__ constexpr random_access_iterator()
       : it_()
@@ -572,12 +572,12 @@ class contiguous_iterator
   friend class contiguous_iterator;
 
 public:
-  typedef cuda::std::contiguous_iterator_tag iterator_category;
-  typedef typename cuda::std::iterator_traits<It>::value_type value_type;
-  typedef typename cuda::std::iterator_traits<It>::difference_type difference_type;
-  typedef It pointer;
-  typedef typename cuda::std::iterator_traits<It>::reference reference;
-  typedef typename cuda::std::remove_pointer<It>::type element_type;
+  using iterator_category = cuda::std::contiguous_iterator_tag;
+  using value_type        = typename cuda::std::iterator_traits<It>::value_type;
+  using difference_type   = typename cuda::std::iterator_traits<It>::difference_type;
+  using pointer           = It;
+  using reference         = typename cuda::std::iterator_traits<It>::reference;
+  using element_type      = typename cuda::std::remove_pointer<It>::type;
 
   __host__ __device__ constexpr It base() const
   {
@@ -716,12 +716,12 @@ class three_way_contiguous_iterator
   friend class three_way_contiguous_iterator;
 
 public:
-  typedef cuda::std::contiguous_iterator_tag iterator_category;
-  typedef typename cuda::std::iterator_traits<It>::value_type value_type;
-  typedef typename cuda::std::iterator_traits<It>::difference_type difference_type;
-  typedef It pointer;
-  typedef typename cuda::std::iterator_traits<It>::reference reference;
-  typedef typename cuda::std::remove_pointer<It>::type element_type;
+  using iterator_category = cuda::std::contiguous_iterator_tag;
+  using value_type        = typename cuda::std::iterator_traits<It>::value_type;
+  using difference_type   = typename cuda::std::iterator_traits<It>::difference_type;
+  using pointer           = It;
+  using reference         = typename cuda::std::iterator_traits<It>::reference;
+  using element_type      = typename cuda::std::remove_pointer<It>::type;
 
   __host__ __device__ constexpr It base() const
   {
@@ -838,11 +838,11 @@ __host__ __device__ constexpr Iter base(Iter i)
 template <typename T>
 struct ThrowingIterator
 {
-  typedef cuda::std::bidirectional_iterator_tag iterator_category;
-  typedef ptrdiff_t difference_type;
-  typedef const T value_type;
-  typedef const T* pointer;
-  typedef const T& reference;
+  using iterator_category = cuda::std::bidirectional_iterator_tag;
+  using difference_type   = ptrdiff_t;
+  using value_type        = const T;
+  using pointer           = const T*;
+  using reference         = const T&;
 
   enum ThrowingAction
   {
@@ -971,11 +971,11 @@ private:
 template <typename T>
 struct NonThrowingIterator
 {
-  typedef cuda::std::bidirectional_iterator_tag iterator_category;
-  typedef ptrdiff_t difference_type;
-  typedef const T value_type;
-  typedef const T* pointer;
-  typedef const T& reference;
+  using iterator_category = cuda::std::bidirectional_iterator_tag;
+  using difference_type   = ptrdiff_t;
+  using value_type        = const T;
+  using pointer           = const T*;
+  using reference         = const T&;
 
   __host__ __device__ NonThrowingIterator()
       : begin_(nullptr)
@@ -2067,5 +2067,105 @@ using cpp20_input_iterator_list =
   concatenate_t<forward_iterator_list<Ptr>, type_list<cpp20_input_iterator<Ptr>, cpp17_input_iterator<Ptr>>>;
 #endif
 } // namespace types
+
+//! @brief Test iterator that validates, that the iterator is only ever advanced and not incremented repeatedly
+class advance_only_iterator
+{
+  int* iter_ = nullptr;
+
+public:
+  using iterator_category = cuda::std::random_access_iterator_tag;
+  using value_type        = int;
+  using difference_type   = cuda::std::ptrdiff_t;
+  using pointer           = int*;
+  using reference         = int&;
+
+  __host__ __device__ constexpr advance_only_iterator() {}
+  __host__ __device__ constexpr advance_only_iterator(int* iter)
+      : iter_(iter)
+  {}
+
+  __host__ __device__ constexpr reference operator*() const
+  {
+    return *iter_;
+  }
+  __host__ __device__ constexpr reference operator[](difference_type n) const
+  {
+    return iter_[n];
+  }
+
+  __host__ __device__ constexpr advance_only_iterator& operator++()
+  {
+    return *this;
+  }
+  __host__ __device__ constexpr advance_only_iterator& operator--()
+  {
+    return *this;
+  }
+  __host__ __device__ constexpr advance_only_iterator operator++(int)
+  {
+    return *this;
+  }
+  __host__ __device__ constexpr advance_only_iterator operator--(int)
+  {
+    return *this;
+  }
+
+  __host__ __device__ constexpr advance_only_iterator& operator+=(difference_type n)
+  {
+    iter_ += n;
+    return *this;
+  }
+  __host__ __device__ constexpr advance_only_iterator& operator-=(difference_type n)
+  {
+    iter_ -= n;
+    return *this;
+  }
+  __host__ __device__ friend constexpr advance_only_iterator operator+(advance_only_iterator x, difference_type n)
+  {
+    x += n;
+    return x;
+  }
+  __host__ __device__ friend constexpr advance_only_iterator operator+(difference_type n, advance_only_iterator x)
+  {
+    x += n;
+    return x;
+  }
+  __host__ __device__ friend constexpr advance_only_iterator operator-(advance_only_iterator x, difference_type n)
+  {
+    x -= n;
+    return x;
+  }
+  __host__ __device__ friend constexpr difference_type operator-(advance_only_iterator x, advance_only_iterator y)
+  {
+    return x.iter_ - y.iter_;
+  }
+
+  __host__ __device__ friend constexpr bool operator==(const advance_only_iterator& x, const advance_only_iterator& y)
+  {
+    return x.iter_ == y.iter_;
+  }
+  __host__ __device__ friend constexpr bool operator!=(const advance_only_iterator& x, const advance_only_iterator& y)
+  {
+    return x.iter_ != y.iter_;
+  }
+  __host__ __device__ friend constexpr bool operator<(const advance_only_iterator& x, const advance_only_iterator& y)
+  {
+    return x.iter_ < y.iter_;
+  }
+  __host__ __device__ friend constexpr bool operator<=(const advance_only_iterator& x, const advance_only_iterator& y)
+  {
+    return x.iter_ <= y.iter_;
+  }
+  __host__ __device__ friend constexpr bool operator>(const advance_only_iterator& x, const advance_only_iterator& y)
+  {
+    return x.iter_ > y.iter_;
+  }
+  __host__ __device__ friend constexpr bool operator>=(const advance_only_iterator& x, const advance_only_iterator& y)
+  {
+    return x.iter_ >= y.iter_;
+  }
+};
+static_assert(cuda::std::random_access_iterator<advance_only_iterator>, "");
 
 #endif // SUPPORT_TEST_ITERATORS_H
