@@ -13,27 +13,19 @@
 #include <cuda/experimental/__stf/places/places.cuh>
 #include <cuda/experimental/stf.cuh>
 
+#include <cstddef>
 #include <vector>
 
 using namespace cuda::experimental::stf;
 
 namespace
 {
-// Thread-local C partition function used when converting composite data_place to C++.
-// Set in to_data_place() when handling STF_DATA_PLACE_COMPOSITE so the thunk can call it.
-thread_local stf_get_executor_fn g_c_mapper = nullptr;
-
-// C++ thunk: converts pos4/dim4 to C types, calls the user's C (or Python) mapper, converts result back.
-pos4 call_c_mapper(pos4 data_coords, dim4 data_dims, dim4 grid_dims)
-{
-  stf_get_executor_fn fn = g_c_mapper;
-  _CCCL_ASSERT(fn != nullptr, "composite mapper not set");
-  stf_pos4 c_coords{data_coords.x, data_coords.y, data_coords.z, data_coords.t};
-  stf_dim4 c_data_dims{data_dims.x, data_dims.y, data_dims.z, data_dims.t};
-  stf_dim4 c_grid_dims{grid_dims.x, grid_dims.y, grid_dims.z, grid_dims.t};
-  stf_pos4 c_result = fn(c_coords, c_data_dims, c_grid_dims);
-  return pos4(c_result.x, c_result.y, c_result.z, c_result.t);
-}
+// C++ pos4/dim4 and C stf_pos4/stf_dim4 are layout-compatible (see stf.h: "Layout matches C++ pos4/dim4").
+// We pass the C mapper directly to data_place::composite() via reinterpret_cast so no thunk or global is needed.
+static_assert(sizeof(pos4) == sizeof(stf_pos4), "pos4 and stf_pos4 must have identical layout for C/C++ interop");
+static_assert(sizeof(dim4) == sizeof(stf_dim4), "dim4 and stf_dim4 must have identical layout for C/C++ interop");
+static_assert(alignof(pos4) == alignof(stf_pos4), "pos4 and stf_pos4 must have identical alignment");
+static_assert(alignof(dim4) == alignof(stf_dim4), "dim4 and stf_dim4 must have identical alignment");
 } // namespace
 
 extern "C" {
@@ -60,16 +52,16 @@ static data_place to_data_place(stf_data_place* data_p)
     case STF_DATA_PLACE_COMPOSITE: {
       stf_exec_place_grid_handle grid_handle = data_p->u.composite.grid;
       stf_get_executor_fn mapper             = data_p->u.composite.mapper;
-      _CCCL_ASSERT(grid_handle != nullptr && mapper != nullptr, "Invalid composite data place (null grid or mapper)");
+      _CCCL_ASSERT(grid_handle != nullptr, "Invalid composite data place: grid handle is null.");
+      _CCCL_ASSERT(mapper != nullptr, "Invalid composite data place: partitioner function (mapper) is null.");
       if (!grid_handle || !mapper)
       {
         return data_place::invalid();
       }
       exec_place_grid* grid_ptr = static_cast<exec_place_grid*>(grid_handle);
-      g_c_mapper                = mapper;
-      data_place result         = data_place::composite(&call_c_mapper, *grid_ptr);
-      g_c_mapper                = nullptr;
-      return result;
+      // Layout-compatible: pass C mapper directly so the runtime calls it; no thunk or global.
+      get_executor_func_t cpp_mapper = reinterpret_cast<get_executor_func_t>(mapper);
+      return data_place::composite(cpp_mapper, *grid_ptr);
     }
 
     default:
