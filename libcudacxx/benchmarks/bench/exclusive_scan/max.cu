@@ -17,25 +17,27 @@
 #include "nvbench_helper.cuh"
 
 template <typename T>
-static void basic(nvbench::state& state, nvbench::type_list<T>)
+static void range_iter_init_op(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
   thrust::device_vector<T> in = generate(elements);
+  thrust::device_vector<T> out(elements, thrust::no_init);
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements);
-  state.add_global_memory_writes<T>(1);
+  state.add_global_memory_writes<T>(elements);
 
   caching_allocator_t alloc{};
 
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
-             [&](nvbench::launch& launch) {
-               do_not_optimize(cuda::std::count(cuda_policy(alloc, launch), in.begin(), in.end(), T{42}));
-             });
+  state.exec(
+    nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+      do_not_optimize(
+        cuda::std::exclusive_scan(cuda_policy(alloc, launch), in.begin(), in.end(), out.begin(), T{42}, max_t{}));
+    });
 }
 
-NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))
-  .set_name("base")
+NVBENCH_BENCH_TYPES(range_iter_init_op, NVBENCH_TYPE_AXES(fundamental_types))
+  .set_name("range_iter_init_op")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
