@@ -58,11 +58,11 @@ template <class... _PolicySelectors>
   static_assert((::cuda::std::is_empty_v<_PolicySelectors> && ...), "Stateful policy selectors are not implemented");
 
   // since all the tunings are stateless, let's ignore incoming parameters
-  
+
   // we use the return type of the policy_selector as tag
   using tuning_env = ::cuda::std::execution::env<
     ::cuda::std::execution::prop<decltype(_PolicySelectors{}(::cuda::arch_id{})), _PolicySelectors>...>;
-  
+
   return ::cuda::std::execution::prop{__get_tuning_t{}, tuning_env{}};
 }
 
