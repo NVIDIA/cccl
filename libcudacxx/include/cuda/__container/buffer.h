@@ -65,6 +65,7 @@ inline constexpr bool __buffer_compatible_env =
   ::cuda::std::is_same_v<::cuda::std::decay_t<_Env>, ::cuda::std::execution::env<>>
   || ::cuda::std::execution::__queryable_with<const _Env&, allocation_alignment_t>;
 
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 //! @rst
 //! .. _libcudacxx-containers-buffer:
 //!
@@ -629,6 +630,8 @@ public:
   _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND ::cuda::std::__is_included_in_v<_Property, _Properties...>)
   _CCCL_HOST_API friend void get_property(const buffer&, _Property) noexcept {}
 };
+
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
 template <class _Tp>
 using device_buffer = buffer<_Tp, ::cuda::mr::device_accessible>;
