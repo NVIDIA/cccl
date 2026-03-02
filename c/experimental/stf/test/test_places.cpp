@@ -19,7 +19,7 @@ static stf_pos4 blocked_mapper_1d(stf_pos4 data_coords, stf_dim4 data_dims, stf_
 {
   uint64_t extent    = data_dims.x;
   uint64_t nplaces   = grid_dims.x;
-  uint64_t part_size = (extent + nplaces - 1) / nplaces;
+  uint64_t part_size = ::std::ceil_div(extent, nplaces);
   if (part_size == 0)
   {
     part_size = 1;
