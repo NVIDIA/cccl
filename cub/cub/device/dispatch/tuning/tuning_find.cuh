@@ -34,7 +34,7 @@ struct find_policy
   int vector_load_length;
   CacheLoadModifier load_modifier;
 
-  _CCCL_API constexpr friend bool operator==(const find_policy& lhs, const find_policy& rhs)
+  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const find_policy& lhs, const find_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
         && lhs.vector_load_length == rhs.vector_load_length && lhs.load_modifier == rhs.load_modifier;
