@@ -190,6 +190,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     stf_exec_place_grid_handle stf_exec_place_grid_from_devices(const int* device_ids, size_t count)
     stf_exec_place_grid_handle stf_exec_place_grid_create(const stf_exec_place* places, size_t count, const stf_dim4* grid_dims)
     void stf_exec_place_grid_destroy(stf_exec_place_grid_handle grid)
+    void stf_exec_place_grid_set_affine_data_place(stf_exec_place_grid_handle grid, const stf_data_place* dplace)
     void stf_task_start(stf_task_handle t)
     void stf_task_end(stf_task_handle t)
     void stf_task_enable_capture(stf_task_handle t)
@@ -643,6 +644,14 @@ cdef class exec_place_grid(exec_place):
             g._handle = stf_exec_place_grid_create(c_places, n, NULL)
         g._c_place = make_exec_place_from_grid(g._handle)
         return g
+
+    def set_affine_data_place(self, data_place dplace):
+        """
+        Set the affine data place for this grid (used when the task uses data_place::affine()).
+        Call before passing the grid to set_exec_place() / ctx.task() so that dependencies
+        with affine data place resolve to dplace (e.g. a composite data place).
+        """
+        stf_exec_place_grid_set_affine_data_place(self._handle, &dplace._c_place)
 
     def destroy(self):
         if self._handle != NULL:

@@ -433,6 +433,13 @@ void stf_exec_place_grid_destroy(stf_exec_place_grid_handle grid);
 //! \note Total number of places is out_dims->x * out_dims->y * out_dims->z * out_dims->t.
 void stf_exec_place_grid_get_dims(stf_exec_place_grid_handle grid, stf_dim4* out_dims);
 
+//! \brief Set the affine data place for this grid (used when the task uses data_place::affine()).
+//! Call before passing the grid to stf_task_set_exec_place() so that dependencies with affine
+//! data place resolve to \p dplace (e.g. a composite data place).
+//! \param grid Grid handle (must not be NULL)
+//! \param dplace Data place to use as affine for this grid (e.g. from stf_make_composite_data_place())
+void stf_exec_place_grid_set_affine_data_place(stf_exec_place_grid_handle grid, const stf_data_place* dplace);
+
 //! \}
 
 //! \defgroup Handles Opaque Handles

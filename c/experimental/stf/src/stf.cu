@@ -507,6 +507,14 @@ void stf_exec_place_grid_get_dims(stf_exec_place_grid_handle grid, stf_dim4* out
   out_dims->t              = static_cast<uint64_t>(d.t);
 }
 
+void stf_exec_place_grid_set_affine_data_place(stf_exec_place_grid_handle grid, const stf_data_place* dplace)
+{
+  _CCCL_ASSERT(grid != nullptr, "grid handle must not be null");
+  _CCCL_ASSERT(dplace != nullptr, "dplace must not be null");
+  exec_place_grid* g = static_cast<exec_place_grid*>(grid);
+  g->set_affine_data_place(to_data_place(const_cast<stf_data_place*>(dplace)));
+}
+
 void stf_make_composite_data_place(stf_data_place* out, stf_exec_place_grid_handle grid, stf_get_executor_fn mapper)
 {
   _CCCL_ASSERT(out != nullptr, "output data_place pointer must not be null");

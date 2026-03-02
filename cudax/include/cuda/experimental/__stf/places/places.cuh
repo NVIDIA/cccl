@@ -1437,10 +1437,10 @@ public:
       return true;
     }
 
-    /* When the task uses data_place::affine(), return an invalid data place. */
+    /* Return the affine data place (default invalid; set via set_affine_data_place on the exec_place). */
     virtual const data_place affine_data_place() const override
     {
-      return data_place::invalid();
+      return affine;
     }
 
     bool operator==(const exec_place::impl& rhs) const override
