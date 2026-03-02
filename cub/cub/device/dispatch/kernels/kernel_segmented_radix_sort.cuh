@@ -114,6 +114,10 @@ __launch_bounds__(int(AltDigitBits ? PolicySelector{}(::cuda::arch_id{CUB_PTX_AR
     int pass_bits,
     DecomposerT decomposer = {})
 {
+  //
+  // Constants
+  //
+
   static constexpr radix_sort_policy policy                  = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
   static constexpr radix_sort_downsweep_policy active_policy = AltDigitBits ? policy.alt_segmented : policy.segmented;
 
