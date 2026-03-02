@@ -85,8 +85,37 @@ def test_composite_grid_dims():
     del ctx
 
 
+def test_task_on_exec_place_grid():
+    """Task runs on an exec_place_grid; query grid dims and streams by index."""
+    grid = stf.exec_place_grid.from_devices([0, 0])  # same device, 2 places
+    ctx = stf.context()
+    X = np.zeros(4, dtype=np.float32)
+    lX = ctx.logical_data(X)
+    # Pass grid as exec place: either exec_place.from_grid(grid) or grid directly
+    with ctx.task(grid, lX.rw()) as t:
+        dims = t.get_grid_dims()
+        assert dims is not None
+        assert dims == (2, 1, 1, 1)
+        s0 = t.get_stream_at_index(0)
+        s1 = t.get_stream_at_index(1)
+        assert s0 is not None and s0 != 0
+        assert s1 is not None and s1 != 0
+    ctx.finalize()
+    del ctx
+
+
+def test_exec_place_from_grid():
+    """exec_place.from_grid(grid) produces an exec_place with kind 'grid'."""
+    grid = stf.exec_place_grid.from_devices([0])
+    ep = stf.exec_place.from_grid(grid)
+    assert ep.kind == "grid"
+    del grid
+
+
 if __name__ == "__main__":
     test_composite_from_devices()
     test_composite_from_places()
     test_composite_grid_dims()
+    test_task_on_exec_place_grid()
+    test_exec_place_from_grid()
     print("All composite place tests passed.")

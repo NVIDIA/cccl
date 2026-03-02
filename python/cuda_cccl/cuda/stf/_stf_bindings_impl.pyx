@@ -86,9 +86,12 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     #
     # Exec places
     #
+    ctypedef void* stf_exec_place_grid_handle
+
     ctypedef enum stf_exec_place_kind:
         STF_EXEC_PLACE_DEVICE
         STF_EXEC_PLACE_HOST
+        STF_EXEC_PLACE_GRID
 
     ctypedef struct stf_exec_place_device:
         int dev_id
@@ -99,6 +102,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     ctypedef union stf_exec_place_u:
         stf_exec_place_device device
         stf_exec_place_host   host
+        stf_exec_place_grid_handle grid
 
     ctypedef struct stf_exec_place:
         stf_exec_place_kind kind
@@ -106,6 +110,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
 
     stf_exec_place make_device_place(int  dev_id)
     stf_exec_place make_host_place()
+    stf_exec_place make_exec_place_from_grid(stf_exec_place_grid_handle grid)
 
     #
     # Data places
@@ -136,8 +141,6 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
         uint64_t t
 
     ctypedef void (*stf_get_executor_fn)(stf_pos4* result, stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims)
-
-    ctypedef void* stf_exec_place_grid_handle
 
     ctypedef struct stf_data_place_composite:
         stf_exec_place_grid_handle grid
@@ -191,6 +194,8 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     void stf_task_end(stf_task_handle t)
     void stf_task_enable_capture(stf_task_handle t)
     CUstream stf_task_get_custream(stf_task_handle t)
+    int stf_task_get_grid_dims(stf_task_handle t, stf_dim4* out_dims)
+    int stf_task_get_custream_at_index(stf_task_handle t, size_t place_index, CUstream* out_stream)
     void* stf_task_get(stf_task_handle t, int submitted_index)
     void stf_task_destroy(stf_task_handle t)
 
@@ -461,10 +466,21 @@ cdef class exec_place:
         p._c_place = make_host_place()
         return p
 
+    @staticmethod
+    def from_grid(exec_place_grid grid):
+        """Return the grid as an exec_place (exec_place_grid is a subclass of exec_place)."""
+        return grid
+
     @property
     def kind(self) -> str:
-        return ("device" if self._c_place.kind == STF_EXEC_PLACE_DEVICE
-                else "host")
+        if self._c_place.kind == STF_EXEC_PLACE_DEVICE:
+            return "device"
+        elif self._c_place.kind == STF_EXEC_PLACE_HOST:
+            return "host"
+        elif self._c_place.kind == STF_EXEC_PLACE_GRID:
+            return "grid"
+        else:
+            return "unknown"
 
     @property
     def device_id(self) -> int:
@@ -563,11 +579,12 @@ cdef class data_place:
         return p
 
 
-cdef class exec_place_grid:
+cdef class exec_place_grid(exec_place):
     """
-    Grid of execution places for composite data places.
-    Create with from_devices() or create(). The grid is destroyed automatically when
-    the object goes out of scope; call destroy() only if you need to release it earlier.
+    Grid of execution places (a kind of exec_place). Use wherever an exec_place is
+    expected (e.g. ctx.task(grid, ...), set_exec_place(grid)). Create with
+    from_devices() or create(). The grid is destroyed automatically when the
+    object goes out of scope; call destroy() only if you need to release it earlier.
     """
     cdef stf_exec_place_grid_handle _handle
 
@@ -590,6 +607,7 @@ cdef class exec_place_grid:
             dev_ids[i] = int(device_ids[i])
         cdef exec_place_grid g = exec_place_grid.__new__(exec_place_grid)
         g._handle = stf_exec_place_grid_from_devices(dev_ids, n)
+        g._c_place = make_exec_place_from_grid(g._handle)
         return g
 
     @staticmethod
@@ -623,6 +641,7 @@ cdef class exec_place_grid:
             g._handle = stf_exec_place_grid_create(c_places, n, &dims)
         else:
             g._handle = stf_exec_place_grid_create(c_places, n, NULL)
+        g._c_place = make_exec_place_from_grid(g._handle)
         return g
 
     def destroy(self):
@@ -680,11 +699,11 @@ cdef class task:
         self._lds_args.append(ldata)
 
     def set_exec_place(self, object exec_p):
-       if not isinstance(exec_p, exec_place):
-           raise TypeError("set_exec_place expects and exec_place argument")
-
-       cdef exec_place ep = <exec_place> exec_p
-       stf_task_set_exec_place(self._t, &ep._c_place)
+        """Set execution place (exec_place or exec_place_grid, since grid is a kind of exec_place)."""
+        if not isinstance(exec_p, exec_place):
+            raise TypeError("set_exec_place expects an exec_place (or exec_place_grid) argument")
+        cdef exec_place ep = <exec_place> exec_p
+        stf_task_set_exec_place(self._t, &ep._c_place)
 
     def stream_ptr(self) -> int:
         """
@@ -693,6 +712,27 @@ cdef class task:
         """
         cdef CUstream s = stf_task_get_custream(self._t)
         return <uintptr_t> s         # cast pointer -> Py int
+
+    def get_grid_dims(self):
+        """
+        When the task's exec place is a grid, return (x, y, z, t) shape.
+        Call after start(). Returns None if the task is not on a grid.
+        """
+        cdef stf_dim4 dims
+        if stf_task_get_grid_dims(self._t, &dims) != 0:
+            return None
+        return (dims.x, dims.y, dims.z, dims.t)
+
+    def get_stream_at_index(self, size_t place_index):
+        """
+        When the task's exec place is a grid, return the CUstream for the given
+        linear index (0 to product of grid dims - 1) as a Python int (pointer).
+        Call after start(). Raises if not a grid or index invalid.
+        """
+        cdef CUstream s
+        if stf_task_get_custream_at_index(self._t, place_index, &s) != 0:
+            raise RuntimeError("task is not on a grid or place_index out of range")
+        return <uintptr_t> s
 
     def get_arg(self, index) -> int:
         if self._lds_args[index]._is_token:
