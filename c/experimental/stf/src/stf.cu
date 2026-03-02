@@ -438,6 +438,24 @@ stf_exec_place_grid_handle stf_exec_place_grid_from_devices(const int* device_id
   return new exec_place_grid(::std::move(grid));
 }
 
+stf_exec_place_grid_handle stf_exec_place_grid_create(const stf_exec_place* places,
+                                                      size_t count,
+                                                      const stf_dim4* grid_dims)
+{
+  assert(places != nullptr || count == 0);
+  ::std::vector<exec_place> cpp_places;
+  cpp_places.reserve(count);
+  for (size_t i = 0; i < count; i++)
+  {
+    cpp_places.push_back(to_exec_place(const_cast<stf_exec_place*>(&places[i])));
+  }
+  exec_place_grid grid = (grid_dims != nullptr)
+                             ? make_grid(::std::move(cpp_places),
+                                         dim4(grid_dims->x, grid_dims->y, grid_dims->z, grid_dims->t))
+                             : make_grid(::std::move(cpp_places));
+  return new exec_place_grid(::std::move(grid));
+}
+
 void stf_exec_place_grid_destroy(stf_exec_place_grid_handle grid)
 {
   if (grid != nullptr)
