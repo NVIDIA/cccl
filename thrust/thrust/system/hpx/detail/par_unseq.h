@@ -32,6 +32,10 @@ using par_unseq_t =
                                    ::hpx::traits::executor_parameters_type_t<::hpx::execution::parallel_executor>>;
 } // namespace detail
 
+/*! \p thrust::system::hpx::par_unseq is the parallel unsequenced execution policy associated with
+ *  Thrust's HPX backend system.
+ */
+
 _CCCL_GLOBAL_CONSTANT detail::par_unseq_t par_unseq;
 } // namespace system::hpx
 

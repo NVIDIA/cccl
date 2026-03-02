@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-/*! \file merge.h
+/*! \file adjacent_difference.h
  *   \brief HPX implementation of adjacent_difference.
  */
 
@@ -80,6 +80,3 @@ OutputIterator adjacent_difference(
 }
 } // end namespace system::hpx::detail
 THRUST_NAMESPACE_END
-
-// this system inherits adjacent_difference
-#include <thrust/system/cpp/detail/adjacent_difference.h>
