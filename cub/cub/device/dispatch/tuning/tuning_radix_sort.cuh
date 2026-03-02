@@ -1007,7 +1007,7 @@ _CCCL_API constexpr auto convert_policy() -> radix_sort_policy
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
 template <typename LegacyActivePolicy>
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE constexpr auto convert_policy(RadixSortPolicyWrapper<LegacyActivePolicy> policy)
+_CCCL_API _CCCL_FORCEINLINE constexpr auto convert_policy(RadixSortPolicyWrapper<LegacyActivePolicy> policy)
   -> radix_sort_policy
 {
   return convert_policy<LegacyActivePolicy>();
