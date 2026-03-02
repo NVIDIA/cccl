@@ -161,7 +161,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
 
   if (d_temp_storage == nullptr)
-  {
+  { // Return if the caller is simply requesting the size of the storage allocation
     return cudaSuccess;
   }
 
