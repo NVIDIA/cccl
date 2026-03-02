@@ -18,6 +18,7 @@ from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython.pycapsule cimport (
     PyCapsule_CheckExact, PyCapsule_IsValid, PyCapsule_GetPointer
 )
+from libc.stddef cimport size_t
 from libc.stdint cimport uint8_t, uint32_t, uint64_t, int64_t, uintptr_t
 from libc.string cimport memset, memcpy
 
@@ -25,6 +26,42 @@ import numpy as np
 
 import ctypes
 from enum import IntFlag
+
+# ctypes Structure mirrors for the composite mapper callback.
+# The C API uses void (*)(stf_pos4*, stf_pos4, stf_dim4, stf_dim4) so ctypes
+# can create per-mapper callbacks (no struct return = no ctypes limitation).
+class _mapper_pos4(ctypes.Structure):
+    _fields_ = [("x", ctypes.c_int64), ("y", ctypes.c_int64),
+                ("z", ctypes.c_int64), ("t", ctypes.c_int64)]
+
+class _mapper_dim4(ctypes.Structure):
+    _fields_ = [("x", ctypes.c_uint64), ("y", ctypes.c_uint64),
+                ("z", ctypes.c_uint64), ("t", ctypes.c_uint64)]
+
+_mapper_cfunc_type = ctypes.CFUNCTYPE(
+    None, ctypes.POINTER(_mapper_pos4), _mapper_pos4, _mapper_dim4, _mapper_dim4)
+
+
+def _make_mapper_callback(mapper):
+    """Wrap a Python partitioner as a C function pointer for the STF C API.
+
+    Returns (callback_object, c_function_pointer_as_int).
+    The caller must prevent GC of callback_object for the lifetime of the
+    composite data place.
+    """
+    def _trampoline(result_ptr, c_coords, c_data_dims, c_grid_dims):
+        coords = (c_coords.x, c_coords.y, c_coords.z, c_coords.t)
+        data_dims = (c_data_dims.x, c_data_dims.y, c_data_dims.z, c_data_dims.t)
+        grid_dims = (c_grid_dims.x, c_grid_dims.y, c_grid_dims.z, c_grid_dims.t)
+        rx, ry, rz, rt = mapper(coords, data_dims, grid_dims)
+        result_ptr[0].x = int(rx)
+        result_ptr[0].y = int(ry)
+        result_ptr[0].z = int(rz)
+        result_ptr[0].t = int(rt)
+
+    callback = _mapper_cfunc_type(_trampoline)
+    c_ptr = ctypes.cast(callback, ctypes.c_void_p).value
+    return (callback, c_ptr)
 
 cdef extern from "<cuda.h>":
     cdef struct OpaqueCUstream_st
@@ -73,12 +110,6 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     #
     # Data places
     #
-    ctypedef enum stf_data_place_kind:
-        STF_DATA_PLACE_DEVICE
-        STF_DATA_PLACE_HOST
-        STF_DATA_PLACE_MANAGED
-        STF_DATA_PLACE_AFFINE
-
     ctypedef struct stf_data_place_device:
         int dev_id
 
@@ -91,11 +122,40 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     ctypedef struct stf_data_place_affine:
         int dummy
 
+    # Composite data place (grid + partition function)
+    ctypedef struct stf_pos4:
+        int64_t x
+        int64_t y
+        int64_t z
+        int64_t t
+
+    ctypedef struct stf_dim4:
+        uint64_t x
+        uint64_t y
+        uint64_t z
+        uint64_t t
+
+    ctypedef void (*stf_get_executor_fn)(stf_pos4* result, stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims)
+
+    ctypedef void* stf_exec_place_grid_handle
+
+    ctypedef struct stf_data_place_composite:
+        stf_exec_place_grid_handle grid
+        stf_get_executor_fn mapper
+
+    ctypedef enum stf_data_place_kind:
+        STF_DATA_PLACE_DEVICE
+        STF_DATA_PLACE_HOST
+        STF_DATA_PLACE_MANAGED
+        STF_DATA_PLACE_AFFINE
+        STF_DATA_PLACE_COMPOSITE
+
     ctypedef union stf_data_place_u:
         stf_data_place_device device
         stf_data_place_host   host
         stf_data_place_managed   managed
         stf_data_place_affine   affine
+        stf_data_place_composite composite
 
     ctypedef struct stf_data_place:
         stf_data_place_kind kind
@@ -123,6 +183,10 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     void stf_task_set_symbol(stf_task_handle t, const char* symbol)
     void stf_task_add_dep(stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m)
     void stf_task_add_dep_with_dplace(stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m, stf_data_place* data_p)
+    void stf_make_composite_data_place(stf_data_place* out, stf_exec_place_grid_handle grid, stf_get_executor_fn mapper)
+    stf_exec_place_grid_handle stf_exec_place_grid_from_devices(const int* device_ids, size_t count)
+    stf_exec_place_grid_handle stf_exec_place_grid_create(const stf_exec_place* places, size_t count, const stf_dim4* grid_dims)
+    void stf_exec_place_grid_destroy(stf_exec_place_grid_handle grid)
     void stf_task_start(stf_task_handle t)
     void stf_task_end(stf_task_handle t)
     void stf_task_enable_capture(stf_task_handle t)
@@ -410,6 +474,7 @@ cdef class exec_place:
 
 cdef class data_place:
     cdef stf_data_place _c_place
+    cdef object _mapper_callback  # prevent GC of ctypes callback so the C function pointer stays valid
 
     def __cinit__(self):
         # empty default constructor; never directly used
@@ -450,6 +515,8 @@ cdef class data_place:
             return "managed"
         elif k == STF_DATA_PLACE_AFFINE:
             return "affine"
+        elif k == STF_DATA_PLACE_COMPOSITE:
+            return "composite"
         else:
             raise ValueError(f"Unknown data place kind: {k}")
 
@@ -459,6 +526,113 @@ cdef class data_place:
             raise AttributeError("not a device data place")
         return self._c_place.u.device.dev_id
 
+    @staticmethod
+    def composite(exec_place_grid grid, object mapper):
+        """
+        Create a composite data place: grid of execution places + partition function.
+
+        The partitioner (mapper) is a callable with signature:
+            (data_coords, data_dims, grid_dims) -> grid_position
+
+        Each of the four arguments/return is a 4-tuple (x, y, z, t) of integers.
+        Only callability is checked here; signature errors surface when the runtime
+        first invokes the mapper (duck typing).
+        - data_coords: logical position in the data
+        - data_dims: full shape of the data
+        - grid_dims: shape of the execution place grid
+        - return: position in the place grid (which place owns this data)
+
+        Example: blocked partition along first dimension:
+            def blocked_1d(data_coords, data_dims, grid_dims):
+                n = data_dims[0]
+                nplaces = grid_dims[0]
+                part_size = (n + nplaces - 1) // nplaces or 1
+                place_x = min(data_coords[0] // part_size, nplaces - 1)
+                return (place_x, 0, 0, 0)
+
+            grid = exec_place_grid.from_devices([0, 1])
+            dplace = data_place.composite(grid, blocked_1d)
+        """
+        if not callable(mapper):
+            raise TypeError("mapper must be callable (data_coords, data_dims, grid_dims) -> (x, y, z, t)")
+        callback_obj, c_ptr = _make_mapper_callback(mapper)
+        cdef data_place p = data_place.__new__(data_place)
+        p._mapper_callback = callback_obj
+        cdef uintptr_t ptr_val = c_ptr
+        stf_make_composite_data_place(&p._c_place, grid._handle, <stf_get_executor_fn>ptr_val)
+        return p
+
+
+cdef class exec_place_grid:
+    """
+    Grid of execution places for composite data places.
+    Create with from_devices() or create(). The grid is destroyed automatically when
+    the object goes out of scope; call destroy() only if you need to release it earlier.
+    """
+    cdef stf_exec_place_grid_handle _handle
+
+    def __cinit__(self):
+        self._handle = NULL
+
+    @staticmethod
+    def from_devices(device_ids):
+        """
+        Create a grid with one place per device.
+        device_ids: sequence of int (e.g. [0, 1] or [0, 0, 0] for same device repeated).
+        """
+        cdef int dev_ids[64]
+        cdef size_t n = len(device_ids)
+        if n == 0:
+            raise ValueError("device_ids must contain at least one device")
+        if n > 64:
+            raise ValueError("at most 64 devices supported")
+        for i in range(n):
+            dev_ids[i] = int(device_ids[i])
+        cdef exec_place_grid g = exec_place_grid.__new__(exec_place_grid)
+        g._handle = stf_exec_place_grid_from_devices(dev_ids, n)
+        return g
+
+    @staticmethod
+    def create(places, grid_dims=None):
+        """
+        Create a grid from a list of exec_place and optional shape.
+        places: list of exec_place (e.g. [exec_place.device(0), exec_place.device(1)])
+        grid_dims: optional (x, y, z, t) tuple; if None, linear grid (len(places), 1, 1, 1).
+        """
+        cdef stf_exec_place c_places[64]
+        cdef stf_dim4 dims
+        cdef size_t n = len(places)
+        cdef exec_place ep
+        cdef exec_place_grid g
+        if n == 0:
+            raise ValueError("places must contain at least one place")
+        if n > 64:
+            raise ValueError("at most 64 places supported")
+        for i in range(n):
+            p = places[i]
+            if not isinstance(p, exec_place):
+                raise TypeError("places must be a list of exec_place")
+            ep = <exec_place> p
+            c_places[i] = ep._c_place
+        g = exec_place_grid.__new__(exec_place_grid)
+        if grid_dims is not None:
+            dims.x = int(grid_dims[0])
+            dims.y = int(grid_dims[1]) if len(grid_dims) > 1 else 1
+            dims.z = int(grid_dims[2]) if len(grid_dims) > 2 else 1
+            dims.t = int(grid_dims[3]) if len(grid_dims) > 3 else 1
+            g._handle = stf_exec_place_grid_create(c_places, n, &dims)
+        else:
+            g._handle = stf_exec_place_grid_create(c_places, n, NULL)
+        return g
+
+    def destroy(self):
+        if self._handle != NULL:
+            stf_exec_place_grid_destroy(self._handle)
+            self._handle = NULL
+
+    def __dealloc__(self):
+        if self._handle != NULL:
+            stf_exec_place_grid_destroy(self._handle)
 
 
 cdef class task:

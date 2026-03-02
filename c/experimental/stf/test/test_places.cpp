@@ -15,7 +15,7 @@
 
 // Blocked partition along first dimension: maps data coordinates to grid position.
 // Used to exercise composite data place with a grid of execution places.
-static stf_pos4 blocked_mapper_1d(stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims)
+static void blocked_mapper_1d(stf_pos4* result, stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims)
 {
   uint64_t extent    = data_dims.x;
   uint64_t nplaces   = grid_dims.x;
@@ -30,12 +30,10 @@ static stf_pos4 blocked_mapper_1d(stf_pos4 data_coords, stf_dim4 data_dims, stf_
   {
     place_x = static_cast<int64_t>(nplaces) - 1;
   }
-  stf_pos4 result = {};
-  result.x        = place_x;
-  result.y        = 0;
-  result.z        = 0;
-  result.t        = 0;
-  return result;
+  result->x = place_x;
+  result->y = 0;
+  result->z = 0;
+  result->t = 0;
 }
 
 C2H_TEST("empty stf tasks", "[task]")

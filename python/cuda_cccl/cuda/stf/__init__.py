@@ -21,6 +21,7 @@ else:
         data_place,
         dep,
         exec_place,
+        exec_place_grid,
     )
 
     __all__ = [
@@ -28,5 +29,6 @@ else:
         "context",
         "dep",
         "exec_place",
+        "exec_place_grid",
         "data_place",
     ]

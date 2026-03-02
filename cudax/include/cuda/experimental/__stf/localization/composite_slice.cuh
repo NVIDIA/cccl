@@ -416,7 +416,9 @@ private:
     // Logical coordinates of this index
     pos4 coords = delinearize(linearized_index);
 
-    pos4 eplace_coords = mapper(coords, data_dims, grid.get_dims());
+    pos4 eplace_coords;
+    _CCCL_ASSERT(mapper != nullptr, "composite_slice: mapper function pointer must not be null");
+    mapper(&eplace_coords, coords, data_dims, grid.get_dims());
 
     return eplace_coords;
   }

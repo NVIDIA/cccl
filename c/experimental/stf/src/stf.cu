@@ -33,7 +33,7 @@ extern "C" {
 /* Convert the C-API stf_data_place to a C++ data_place object */
 static data_place to_data_place(stf_data_place* data_p)
 {
-  assert(data_p);
+  _CCCL_ASSERT(data_p != nullptr, "data_place pointer must not be null");
 
   switch (data_p->kind)
   {
@@ -65,26 +65,26 @@ static data_place to_data_place(stf_data_place* data_p)
     }
 
     default:
-      assert(false && "Invalid data place kind");
+      _CCCL_ASSERT(false, "Invalid data place kind");
       return data_place::invalid(); // invalid data_place
   }
 }
 
 void stf_ctx_create(stf_ctx_handle* ctx)
 {
-  assert(ctx);
+  _CCCL_ASSERT(ctx != nullptr, "context handle pointer must not be null");
   *ctx = new context{};
 }
 
 void stf_ctx_create_graph(stf_ctx_handle* ctx)
 {
-  assert(ctx);
+  _CCCL_ASSERT(ctx != nullptr, "context handle pointer must not be null");
   *ctx = new context{graph_ctx()};
 }
 
 void stf_ctx_finalize(stf_ctx_handle ctx)
 {
-  assert(ctx);
+  _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
   auto* context_ptr = static_cast<context*>(ctx);
   context_ptr->finalize();
   delete context_ptr;
@@ -92,7 +92,7 @@ void stf_ctx_finalize(stf_ctx_handle ctx)
 
 cudaStream_t stf_fence(stf_ctx_handle ctx)
 {
-  assert(ctx);
+  _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
   auto* context_ptr = static_cast<context*>(ctx);
   return context_ptr->fence();
 }
@@ -132,7 +132,7 @@ void stf_logical_data_with_place(
       break;
     default:
       // Invalid data place - this should not happen with valid input
-      assert(false && "Invalid data_place kind");
+      _CCCL_ASSERT(false, "Invalid data_place kind");
       cpp_dplace = cuda::experimental::stf::data_place::host(); // fallback
       break;
   }
@@ -146,8 +146,8 @@ void stf_logical_data_with_place(
 
 void stf_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol)
 {
-  assert(ld);
-  assert(symbol);
+  _CCCL_ASSERT(ld != nullptr, "logical data handle must not be null");
+  _CCCL_ASSERT(symbol != nullptr, "symbol string must not be null");
 
   auto* ld_ptr = static_cast<logical_data_untyped*>(ld);
   ld_ptr->set_symbol(symbol);
@@ -155,7 +155,7 @@ void stf_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol)
 
 void stf_logical_data_destroy(stf_logical_data_handle ld)
 {
-  assert(ld);
+  _CCCL_ASSERT(ld != nullptr, "logical data handle must not be null");
 
   auto* ld_ptr = static_cast<logical_data_untyped*>(ld);
   delete ld_ptr;
@@ -163,8 +163,8 @@ void stf_logical_data_destroy(stf_logical_data_handle ld)
 
 void stf_logical_data_empty(stf_ctx_handle ctx, size_t length, stf_logical_data_handle* to)
 {
-  assert(ctx);
-  assert(to);
+  _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
+  _CCCL_ASSERT(to != nullptr, "logical data output pointer must not be null");
 
   auto* context_ptr = static_cast<context*>(ctx);
   auto ld_typed     = context_ptr->logical_data(shape_of<slice<char>>(length));
@@ -173,8 +173,8 @@ void stf_logical_data_empty(stf_ctx_handle ctx, size_t length, stf_logical_data_
 
 void stf_token(stf_ctx_handle ctx, stf_logical_data_handle* ld)
 {
-  assert(ctx);
-  assert(ld);
+  _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
+  _CCCL_ASSERT(ld != nullptr, "logical data handle output pointer must not be null");
 
   auto* context_ptr = static_cast<context*>(ctx);
   *ld               = new logical_data_untyped{context_ptr->token()};
@@ -183,7 +183,7 @@ void stf_token(stf_ctx_handle ctx, stf_logical_data_handle* ld)
 /* Convert the C-API stf_exec_place to a C++ exec_place object */
 exec_place to_exec_place(stf_exec_place* exec_p)
 {
-  assert(exec_p);
+  _CCCL_ASSERT(exec_p != nullptr, "exec_place pointer must not be null");
 
   switch (exec_p->kind)
   {
@@ -194,7 +194,7 @@ exec_place to_exec_place(stf_exec_place* exec_p)
       return exec_place::device(exec_p->u.device.dev_id);
 
     default:
-      assert(false && "Invalid execution place kind");
+      _CCCL_ASSERT(false, "Invalid execution place kind");
       return exec_place{}; // invalid exec_place
   }
 }

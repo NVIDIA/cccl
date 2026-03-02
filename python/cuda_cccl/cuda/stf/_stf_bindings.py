@@ -47,7 +47,6 @@ def _load_cuda_libraries():
 
 _load_cuda_libraries()
 
-
 # Import the appropriate bindings implementation depending on what
 # CUDA version is available:
 cuda_version = detect_cuda_version()

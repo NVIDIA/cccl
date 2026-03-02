@@ -61,7 +61,7 @@ class exec_place_green_ctx;
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
 //! Function type for computing executor placement from data coordinates
-using get_executor_func_t = pos4 (*)(pos4, dim4, dim4);
+using get_executor_func_t = void (*)(pos4*, pos4, dim4, dim4);
 
 /**
  * @brief Designates where data will be stored (CPU memory vs. on device 0 (first GPU), device 1 (second GPU), ...)
