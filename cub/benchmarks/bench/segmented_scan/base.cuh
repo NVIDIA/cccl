@@ -312,7 +312,7 @@ using bench_types = all_types;
 #ifdef TUNE_SEGMENTS_PER_BLOCK
 using segments_per_block = nvbench::type_list<std::integral_constant<int, TUNE_SEGMENTS_PER_BLOCK>>;
 #else
-using max_segments_per_worker = nvbench::type_list<std::integral_constant<int, 1>, std::integral_constant<int, 256>>;
+using max_segments_per_worker = nvbench::type_list<std::integral_constant<int, 1>, std::integral_constant<int, 1024>>;
 
 #endif
 
