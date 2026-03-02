@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/__cmath/ceil_div.h>
+
 #include <cuda_runtime.h>
 
 #include <c2h/catch2_test_helper.h>

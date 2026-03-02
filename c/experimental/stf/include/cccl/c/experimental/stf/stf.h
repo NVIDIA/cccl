@@ -227,12 +227,21 @@ typedef struct stf_dim4
 } stf_dim4;
 
 //! \brief Partition (mapper) function: data coordinates -> grid position.
+<<<<<<< stf_python_composite_places
 //! Can be implemented in C or provided from Python via ctypes.
 //! \param[out] result Position in the place grid (which place owns this data)
 //! \param data_coords Logical position in the data space
 //! \param data_dims Full shape of the data
 //! \param grid_dims Shape of the execution place grid
 typedef void (*stf_get_executor_fn)(stf_pos4* result, stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims);
+=======
+//! Can be implemented in C or provided from Python via ctypes/cffi.
+//! \param data_coords Logical position in the data space
+//! \param data_dims Full shape of the data
+//! \param grid_dims Shape of the execution place grid
+//! \return Position in the place grid (which place owns this data)
+typedef stf_pos4 (*stf_get_executor_fn)(stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims);
+>>>>>>> main
 
 //! \brief Opaque handle for an execution place grid (e.g. one place per stream).
 typedef void* stf_exec_place_grid_handle;
@@ -360,11 +369,17 @@ static inline struct stf_data_place make_affine_data_place()
 //!
 //! \par Example (C):
 //! \code
+<<<<<<< stf_python_composite_places
 //! void my_mapper(stf_pos4* result, stf_pos4 coords, stf_dim4 data_dims, stf_dim4 grid_dims) {
 //!   result->x = coords.x / ((int64_t)data_dims.x / (int64_t)grid_dims.x);
 //!   result->y = 0;
 //!   result->z = 0;
 //!   result->t = 0;
+=======
+//! stf_pos4 my_mapper(stf_pos4 coords, stf_dim4 data_dims, stf_dim4 grid_dims) {
+//!   stf_pos4 p = { coords.x / ((int64_t)data_dims.x / (int64_t)grid_dims.x), 0, 0, 0 };
+//!   return p;
+>>>>>>> main
 //! }
 //! int devs[] = { 0, 1 };
 //! stf_exec_place_grid_handle grid = stf_exec_place_grid_from_devices(devs, 2);
