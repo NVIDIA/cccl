@@ -40,7 +40,7 @@ struct find_policy
         && lhs.vector_load_length == rhs.vector_load_length && lhs.load_modifier == rhs.load_modifier;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const find_policy& lhs, const find_policy& rhs)
+  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const find_policy& lhs, const find_policy& rhs)
   {
     return !(lhs == rhs);
   }
