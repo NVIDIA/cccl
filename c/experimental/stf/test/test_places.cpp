@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/__cmath/ceil_div.h>
+
 #include <cuda_runtime.h>
 
 #include <c2h/catch2_test_helper.h>
@@ -19,7 +21,7 @@ static stf_pos4 blocked_mapper_1d(stf_pos4 data_coords, stf_dim4 data_dims, stf_
 {
   uint64_t extent    = data_dims.x;
   uint64_t nplaces   = grid_dims.x;
-  uint64_t part_size = ::std::ceil_div(extent, nplaces);
+  uint64_t part_size = ::cuda::ceil_div(extent, nplaces);
   if (part_size == 0)
   {
     part_size = 1;
