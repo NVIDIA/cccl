@@ -39,7 +39,6 @@ def test_composite_from_devices():
         pass
 
     ctx.finalize()
-    # grid is destroyed automatically when it goes out of scope (__dealloc__)
 
     for i in range(N):
         assert X[i] == float(i)
