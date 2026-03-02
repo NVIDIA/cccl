@@ -93,9 +93,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void NormalizeReductionOutput(
  * @param[in] init
  *   The initial value of the reduction
  *
- * @param[in] num_segments
- *   The number of segments on which the reduction is performed
- *
  * @param[in] max_segment_size
  *   Maximum segment size guarantee
  */

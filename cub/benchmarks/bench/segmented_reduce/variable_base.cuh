@@ -5,9 +5,7 @@
 
 #include <cub/device/dispatch/dispatch_segmented_reduce.cuh>
 
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
-
+#include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
 #include <nvbench_helper.cuh>
@@ -31,7 +29,7 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
   // Retrieve axis parameters
   const auto elements                = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   const auto max_segment_size        = static_cast<std::size_t>(state.get_int64("MaxSegmentSize"));
-  const auto guaranteed_max_seg_size = static_cast<std::size_t>(state.get_int64("GuaranteeMaxSegSize"));
+  const auto guaranteed_max_seg_size = static_cast<std::size_t>(state.get_int64("GuaranteedMaxSegSize"));
 
   // skip if max_segment_size > guaranteed_max_seg_size
   if (guaranteed_max_seg_size != 0 && max_segment_size > guaranteed_max_seg_size)
@@ -50,7 +48,10 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
 
   // Generate input data
   thrust::device_vector<T> in = generate(elements);
-  thrust::device_vector<output_t> out(num_segments);
+
+  using output_vector_init_t =
+    cuda::std::conditional_t<(is_argmin || is_argmax), thrust::default_init_t, thrust::no_init_t>;
+  thrust::device_vector<output_t> out(num_segments, output_vector_init_t{});
 
   raw_input_it_t d_raw_in           = thrust::raw_pointer_cast(in.data());
   output_it_t d_out                 = thrust::raw_pointer_cast(out.data());
@@ -58,7 +59,7 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
   end_offset_it_t d_end_offsets     = d_begin_offsets + 1;
 
   // Create wrapped iterator for argmin/argmax operations
-  [[maybe_unused]] auto d_indexed_in = thrust::make_transform_iterator(
+  [[maybe_unused]] auto d_indexed_in = cuda::make_transform_iterator(
     cuda::counting_iterator<::cuda::std::int64_t>(0),
     cub::detail::reduce::generate_idx_value<raw_input_it_t, T>(d_raw_in, 1));
   using arg_index_input_iterator_t = decltype(d_indexed_in);
@@ -123,7 +124,7 @@ NVBENCH_BENCH_TYPES(variable_segmented_reduce, NVBENCH_TYPE_AXES(value_types, so
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_power_of_two_axis("MaxSegmentSize", nvbench::range(1, 16, 1))
-  .add_int64_axis("GuaranteeMaxSegSize", {0});
+  .add_int64_axis("GuaranteedMaxSegSize", {0});
 
 // Small segments: 1-16 items per segment
 NVBENCH_BENCH_TYPES(variable_segmented_reduce, NVBENCH_TYPE_AXES(value_types, some_offset_types))
@@ -131,7 +132,7 @@ NVBENCH_BENCH_TYPES(variable_segmented_reduce, NVBENCH_TYPE_AXES(value_types, so
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_power_of_two_axis("MaxSegmentSize", nvbench::range(1, 4, 1))
-  .add_int64_power_of_two_axis("GuaranteeMaxSegSize", nvbench::range(1, 4, 1));
+  .add_int64_power_of_two_axis("GuaranteedMaxSegSize", nvbench::range(1, 4, 1));
 
 // Medium segments: 32-256 items per segment
 NVBENCH_BENCH_TYPES(variable_segmented_reduce, NVBENCH_TYPE_AXES(value_types, some_offset_types))
@@ -139,7 +140,7 @@ NVBENCH_BENCH_TYPES(variable_segmented_reduce, NVBENCH_TYPE_AXES(value_types, so
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_power_of_two_axis("MaxSegmentSize", nvbench::range(5, 8, 1))
-  .add_int64_power_of_two_axis("GuaranteeMaxSegSize", nvbench::range(5, 8, 1));
+  .add_int64_power_of_two_axis("GuaranteedMaxSegSize", nvbench::range(5, 8, 1));
 
 // Large segments: 512+ items per segment
 NVBENCH_BENCH_TYPES(variable_segmented_reduce, NVBENCH_TYPE_AXES(value_types, some_offset_types))
@@ -147,4 +148,4 @@ NVBENCH_BENCH_TYPES(variable_segmented_reduce, NVBENCH_TYPE_AXES(value_types, so
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_power_of_two_axis("MaxSegmentSize", nvbench::range(9, 16, 1))
-  .add_int64_power_of_two_axis("GuaranteeMaxSegSize", nvbench::range(9, 16, 1));
+  .add_int64_power_of_two_axis("GuaranteedMaxSegSize", nvbench::range(9, 16, 1));
