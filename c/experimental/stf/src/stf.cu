@@ -10,11 +10,65 @@
 
 #include <cccl/c/experimental/stf/stf.h>
 // #include <cccl/c/parallel/include/cccl/c/extern_c.h>
+#include <cuda/experimental/__stf/places/places.cuh>
 #include <cuda/experimental/stf.cuh>
+
+#include <cstddef>
+#include <vector>
 
 using namespace cuda::experimental::stf;
 
+namespace
+{
+// C++ pos4/dim4 and C stf_pos4/stf_dim4 are layout-compatible (see stf.h: "Layout matches C++ pos4/dim4").
+// We pass the C mapper directly to data_place::composite() via reinterpret_cast so no thunk or global is needed.
+static_assert(sizeof(pos4) == sizeof(stf_pos4), "pos4 and stf_pos4 must have identical layout for C/C++ interop");
+static_assert(sizeof(dim4) == sizeof(stf_dim4), "dim4 and stf_dim4 must have identical layout for C/C++ interop");
+static_assert(alignof(pos4) == alignof(stf_pos4), "pos4 and stf_pos4 must have identical alignment");
+static_assert(alignof(dim4) == alignof(stf_dim4), "dim4 and stf_dim4 must have identical alignment");
+} // namespace
+
 extern "C" {
+
+/* Convert the C-API stf_data_place to a C++ data_place object */
+static data_place to_data_place(stf_data_place* data_p)
+{
+  assert(data_p);
+
+  switch (data_p->kind)
+  {
+    case STF_DATA_PLACE_HOST:
+      return data_place::host();
+
+    case STF_DATA_PLACE_MANAGED:
+      return data_place::managed();
+
+    case STF_DATA_PLACE_AFFINE:
+      return data_place::affine();
+
+    case STF_DATA_PLACE_DEVICE:
+      return data_place::device(data_p->u.device.dev_id);
+
+    case STF_DATA_PLACE_COMPOSITE: {
+      stf_exec_place_grid_handle grid_handle = data_p->u.composite.grid;
+      stf_get_executor_fn mapper             = data_p->u.composite.mapper;
+      _CCCL_ASSERT(grid_handle != nullptr, "Invalid composite data place: grid handle is null.");
+      _CCCL_ASSERT(mapper != nullptr, "Invalid composite data place: partitioner function (mapper) is null.");
+      if (!grid_handle || !mapper)
+      {
+        return data_place::invalid();
+      }
+      exec_place_grid* grid_ptr = static_cast<exec_place_grid*>(grid_handle);
+      // Layout-compatible: pass C mapper directly so the runtime calls it
+      get_executor_func_t cpp_mapper = reinterpret_cast<get_executor_func_t>(mapper);
+      return data_place::composite(cpp_mapper, *grid_ptr);
+    }
+
+    default:
+      assert(false && "Invalid data place kind");
+      return data_place::invalid(); // invalid data_place
+  }
+}
 
 void stf_ctx_create(stf_ctx_handle* ctx)
 {
@@ -72,6 +126,9 @@ void stf_logical_data_with_place(
       break;
     case STF_DATA_PLACE_AFFINE:
       cpp_dplace = cuda::experimental::stf::data_place::affine();
+      break;
+    case STF_DATA_PLACE_COMPOSITE:
+      cpp_dplace = to_data_place(&dplace);
       break;
     default:
       // Invalid data place - this should not happen with valid input
@@ -139,31 +196,6 @@ exec_place to_exec_place(stf_exec_place* exec_p)
     default:
       assert(false && "Invalid execution place kind");
       return exec_place{}; // invalid exec_place
-  }
-}
-
-/* Convert the C-API stf_data_place to a C++ data_place object */
-data_place to_data_place(stf_data_place* data_p)
-{
-  assert(data_p);
-
-  switch (data_p->kind)
-  {
-    case STF_DATA_PLACE_HOST:
-      return data_place::host();
-
-    case STF_DATA_PLACE_MANAGED:
-      return data_place::managed();
-
-    case STF_DATA_PLACE_AFFINE:
-      return data_place::affine();
-
-    case STF_DATA_PLACE_DEVICE:
-      return data_place::device(data_p->u.device.dev_id);
-
-    default:
-      assert(false && "Invalid data place kind");
-      return data_place::invalid(); // invalid data_place
   }
 }
 
@@ -377,6 +409,59 @@ void stf_cuda_kernel_destroy(stf_cuda_kernel_handle t)
   using kernel_type = decltype(::std::declval<context>().cuda_kernel());
   auto* kernel_ptr  = static_cast<kernel_type*>(t);
   delete kernel_ptr;
+}
+
+// -----------------------------------------------------------------------------
+// Composite data place and execution place grid (for Python/cuTile multi-stream)
+// -----------------------------------------------------------------------------
+
+stf_exec_place_grid_handle stf_exec_place_grid_from_devices(const int* device_ids, size_t count)
+{
+  assert(device_ids != nullptr || count == 0);
+  // count must be >= 1: C++ make_grid() requires non-empty places.
+  ::std::vector<exec_place> places;
+  places.reserve(count);
+  for (size_t i = 0; i < count; i++)
+  {
+    places.push_back(exec_place::device(device_ids[i]));
+  }
+  exec_place_grid grid = make_grid(::std::move(places));
+  return new exec_place_grid(::std::move(grid));
+}
+
+stf_exec_place_grid_handle
+stf_exec_place_grid_create(const stf_exec_place* places, size_t count, const stf_dim4* grid_dims)
+{
+  assert(places != nullptr || count == 0);
+  ::std::vector<exec_place> cpp_places;
+  cpp_places.reserve(count);
+  for (size_t i = 0; i < count; i++)
+  {
+    cpp_places.push_back(to_exec_place(const_cast<stf_exec_place*>(&places[i])));
+  }
+  exec_place_grid grid =
+    (grid_dims != nullptr)
+      ? make_grid(::std::move(cpp_places), dim4(grid_dims->x, grid_dims->y, grid_dims->z, grid_dims->t))
+      : make_grid(::std::move(cpp_places));
+  return new exec_place_grid(::std::move(grid));
+}
+
+void stf_exec_place_grid_destroy(stf_exec_place_grid_handle grid)
+{
+  if (grid != nullptr)
+  {
+    delete static_cast<exec_place_grid*>(grid);
+  }
+}
+
+void stf_make_composite_data_place(stf_data_place* out, stf_exec_place_grid_handle grid, stf_get_executor_fn mapper)
+{
+  assert(out != nullptr);
+  assert(grid != nullptr);
+  assert(mapper != nullptr);
+  out->kind               = STF_DATA_PLACE_COMPOSITE;
+  out->u.composite.grid   = grid;
+  out->u.composite.mapper = mapper;
 }
 
 } // extern "C"
