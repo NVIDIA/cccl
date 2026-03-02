@@ -643,10 +643,7 @@ template <typename KeyT,
           typename ValueT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
-          typename SegmentSizeT,
           typename DecomposerT,
-          typename SegmentedKernelT,
-          typename AltSegmentedKernelT,
           typename KernelSource,
           typename KernelLauncherFactory>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes_segmented_radix_sort(
@@ -665,11 +662,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes_segmented_radix
   DecomposerT decomposer,
   radix_sort_policy active_policy,
   KernelSource kernel_source,
-  KernelLauncherFactory launcher_factory,
-  SegmentedKernelT segmented_kernel,
-  AltSegmentedKernelT alt_segmented_kernel)
+  KernelLauncherFactory launcher_factory)
 {
   constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
+
+  auto segmented_kernel     = kernel_source.SegmentedRadixSortKernel();
+  auto alt_segmented_kernel = kernel_source.AltSegmentedRadixSortKernel();
 
   KernelConfig seg_config, alt_seg_config;
   if (const auto error = CubDebug(seg_config.__init(segmented_kernel, active_policy.segmented, launcher_factory)))
@@ -954,9 +952,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     decomposer,
     active_policy,
     kernel_source,
-    launcher_factory,
-    kernel_source.SegmentedRadixSortKernel(),
-    kernel_source.AltSegmentedRadixSortKernel());
+    launcher_factory);
 }
 } // namespace detail::radix_sort
 

@@ -151,6 +151,7 @@ __launch_bounds__(int(AltDigitBits ? PolicySelector{}(::cuda::arch_id{CUB_PTX_AR
   using BlockDownsweepT =
     AgentRadixSortDownsweep<ActiveDownsweepPolicyT, Order == SortOrder::Descending, KeyT, ValueT, SegmentSizeT, DecomposerT>;
 
+  /// Number of bin-starting offsets tracked per thread
   static constexpr int bins_tracked_per_thread = BlockDownsweepT::BINS_TRACKED_PER_THREAD;
 
   //
