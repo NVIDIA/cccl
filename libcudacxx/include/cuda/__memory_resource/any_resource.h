@@ -88,7 +88,8 @@ template <class _Property>
 using __iproperty = typename __with_property<_Property>::template __iproperty<>;
 
 template <class... _Properties>
-using __iproperty_set = ::cuda::__iset<__iproperty<_Properties>...>;
+using __iproperty_set =
+  ::cuda::__iset<__iproperty<_Properties>..., __iproperty<::cuda::mr::dynamic_accessibility_property>>;
 
 // Wrap the calls of the allocate and deallocate member functions
 // because of NVBUG#4967486
@@ -358,6 +359,15 @@ private:
     return *this;
   }
 };
+
+template <class... _Properties>
+inline constexpr bool __disable_default_dynamic_accessibility_property<any_resource<_Properties...>> = true;
+template <class... _Properties>
+inline constexpr bool __disable_default_dynamic_accessibility_property<resource_ref<_Properties...>> = true;
+template <class... _Properties>
+inline constexpr bool __disable_default_dynamic_accessibility_property<any_synchronous_resource<_Properties...>> = true;
+template <class... _Properties>
+inline constexpr bool __disable_default_dynamic_accessibility_property<synchronous_resource_ref<_Properties...>> = true;
 
 _CCCL_TEMPLATE(class... _Properties, class _Resource)
 _CCCL_REQUIRES(mr::synchronous_resource_with<_Resource, _Properties...>)
