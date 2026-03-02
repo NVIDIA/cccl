@@ -864,7 +864,8 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
       // Triggering the next kernel launch here lets the SM ramp up the next kernel while we wait for the bulk copy.
       // Also, the uniform code path should reduce traffic to the CWD (only one thread in a block needs to trigger).
       // However, benchmarks showed up to 20% slowdown on B200 (among strong improvements in batch mode), so we
-      // decided to omit PREEXIT here. See #5249 for details. _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+      // decided to omit PREEXIT here. See #5249 for details.
+      // _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
     }
   }
   else
@@ -882,7 +883,6 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
         char* smem                         = smem_base;
         ::cuda::std::uint32_t total_copied = 0;
 
-        // turning this lambda into a function does not change SASS
         auto bulk_copy_tile = [&](auto aligned_ptr) {
           using T         = typename decltype(aligned_ptr)::value_type;
           const char* src = aligned_ptr.ptr + offset * unsigned{sizeof(T)}; // compute expression in U32 if Offset==I32
@@ -896,10 +896,9 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
           int tail_padding;
           if constexpr (alignof(T) < bulk_copy_size_multiple)
           {
-            head_padding = aligned_ptr.head_padding;
-            tail_padding = head_padding > 0 ? 16 - aligned_ptr.head_padding : 0; // tile size % 16 == 0
-            bytes_to_copy =
-              ::cuda::round_up(aligned_ptr.head_padding + int{sizeof(T)} * valid_items, bulk_copy_size_multiple);
+            head_padding  = aligned_ptr.head_padding;
+            tail_padding  = head_padding > 0 ? 16 - head_padding : 0; // tile size % 16 == 0
+            bytes_to_copy = ::cuda::round_up(head_padding + int{sizeof(T)} * valid_items, bulk_copy_size_multiple);
           }
           else
           {
