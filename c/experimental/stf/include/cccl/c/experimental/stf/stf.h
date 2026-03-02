@@ -191,7 +191,7 @@ static inline stf_exec_place make_host_place()
 static inline stf_exec_place make_exec_place_from_grid(stf_exec_place_grid_handle grid)
 {
   stf_exec_place p;
-  p.kind      = STF_EXEC_PLACE_GRID;
+  p.kind   = STF_EXEC_PLACE_GRID;
   p.u.grid = grid;
   return p;
 }

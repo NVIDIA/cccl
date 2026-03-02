@@ -299,7 +299,8 @@ public:
       };
     }
 
-    /** Overload: when the task is a stream_task with a grid exec place, get the stream for the place at \p place_index (linear index). Otherwise returns nullptr; use get_stream() for the single stream. */
+    /** Overload: when the task is a stream_task with a grid exec place, get the stream for the place at \p place_index
+     * (linear index). Otherwise returns nullptr; use get_stream() for the single stream. */
     cudaStream_t get_stream(size_t place_index) const
     {
       return payload->*[&](auto& self) -> cudaStream_t {

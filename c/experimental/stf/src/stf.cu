@@ -193,8 +193,7 @@ exec_place to_exec_place(stf_exec_place* exec_p)
     case STF_EXEC_PLACE_DEVICE:
       return exec_place::device(exec_p->u.device.dev_id);
 
-    case STF_EXEC_PLACE_GRID:
-    {
+    case STF_EXEC_PLACE_GRID: {
       auto* grid_ptr = static_cast<exec_place_grid*>(exec_p->u.grid);
       _CCCL_ASSERT(grid_ptr != nullptr, "grid handle must not be null");
       return static_cast<const exec_place&>(*grid_ptr);
@@ -501,11 +500,11 @@ void stf_exec_place_grid_get_dims(stf_exec_place_grid_handle grid, stf_dim4* out
   assert(grid != nullptr);
   assert(out_dims != nullptr);
   const exec_place_grid* g = static_cast<const exec_place_grid*>(grid);
-  dim4 d                    = g->get_dims();
-  out_dims->x               = static_cast<uint64_t>(d.x);
-  out_dims->y               = static_cast<uint64_t>(d.y);
-  out_dims->z               = static_cast<uint64_t>(d.z);
-  out_dims->t               = static_cast<uint64_t>(d.t);
+  dim4 d                   = g->get_dims();
+  out_dims->x              = static_cast<uint64_t>(d.x);
+  out_dims->y              = static_cast<uint64_t>(d.y);
+  out_dims->z              = static_cast<uint64_t>(d.z);
+  out_dims->t              = static_cast<uint64_t>(d.t);
 }
 
 void stf_make_composite_data_place(stf_data_place* out, stf_exec_place_grid_handle grid, stf_get_executor_fn mapper)
