@@ -31,6 +31,10 @@ using unseq_t = unsequenced_policy_shim<::hpx::execution::parallel_executor,
                                         ::hpx::traits::executor_parameters_type_t<::hpx::execution::parallel_executor>>;
 } // namespace detail
 
+/*! \p thrust::system::hpx::unseq is the unsequenced execution policy associated with Thrust's HPX
+ *  backend system.
+ */
+
 _CCCL_GLOBAL_CONSTANT detail::unseq_t unseq;
 } // namespace system::hpx
 

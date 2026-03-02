@@ -204,6 +204,7 @@ auto to_hpx_execution_policy(const execution_policy<Derived>& exec [[maybe_unuse
     return ::hpx::execution::par;
   }
 }
+
 } // namespace detail
 
 //! \addtogroup execution_policies
@@ -233,7 +234,9 @@ using thrust::system::hpx::detail::execution_policy;
 // alias items at top-level
 namespace hpx
 {
+
 using thrust::system::hpx::execution_policy;
 using thrust::system::hpx::tag;
+
 } // namespace hpx
 THRUST_NAMESPACE_END

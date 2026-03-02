@@ -19,8 +19,6 @@
 #include <thrust/detail/reference.h>
 #include <thrust/system/hpx/detail/execution_policy.h>
 
-#include <type_traits>
-
 THRUST_NAMESPACE_BEGIN
 namespace system::hpx
 {
@@ -72,7 +70,7 @@ using pointer = thrust::pointer<T, thrust::system::hpx::tag, thrust::tagged_refe
  *  \see raw_pointer_cast
  */
 template <typename T>
-using universal_pointer = thrust::pointer<T, thrust::system::hpx::tag, typename std::add_lvalue_reference<T>::type>;
+using universal_pointer = thrust::pointer<T, thrust::system::hpx::tag, typename ::cuda::std::add_lvalue_reference<T>::type>;
 
 /*! \p reference is a wrapped reference to an object stored in memory available
  *  to the \p hpx system. \p reference is the type of the result of
