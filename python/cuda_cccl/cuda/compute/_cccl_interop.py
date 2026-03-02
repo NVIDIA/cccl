@@ -91,12 +91,17 @@ def _is_well_known_op(op: OpKind) -> bool:
 
 
 def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
+    from ._proxy import ProxyArray
+
     if not is_contiguous(array):
         raise ValueError("Non-contiguous arrays are not supported.")
     dtype = get_dtype(array)
 
     info = _type_info_from_dtype(dtype)
     state_info = _type_info_from_dtype(np.intp)
+    # ProxyArray has no real GPU data; use NULL state for build-time compilation.
+    # The real pointer is supplied at call time via set_cccl_iterator_state().
+    state = None if isinstance(array, ProxyArray) else get_data_pointer(array)
     return Iterator(
         state_info.alignment,
         IteratorKind.POINTER,
@@ -106,7 +111,7 @@ def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
         # Note: this is slightly slower, but supports all ndarray-like objects
         # as long as they support CAI
         # TODO: switch to use gpumemoryview once it's ready
-        state=get_data_pointer(array),
+        state=state,
     )
 
 
@@ -139,7 +144,29 @@ def to_cccl_output_iter(array_or_iterator) -> Iterator:
     return _to_cccl_iter(array_or_iterator, _IteratorIO.OUTPUT)
 
 
-def to_cccl_value_state(array_or_struct: np.ndarray | GpuStruct) -> memoryview:
+def _coerce_value_arg(v):
+    """Normalize scalar-like inputs to np.ndarray for value arguments.
+
+    Converts Python scalars (int, float, bool, complex) and numpy scalars
+    (np.float32(x), etc.) to 0-d numpy arrays.  np.ndarray, GpuStruct, and
+    proxy types are returned unchanged.
+    """
+    if isinstance(v, np.ndarray):
+        return v
+    if isinstance(v, np.generic):  # numpy scalars: np.float32(1.0), etc.
+        return np.asarray(v)
+    if isinstance(v, (bool, int, float, complex)):  # Python scalars
+        return np.asarray(v)
+    return v  # GpuStruct, ProxyValue, other pass-throughs
+
+
+def to_cccl_value_state(array_or_struct) -> memoryview:
+    from ._proxy import _PROXY_VALUE_DATA_ERROR, ProxyValue
+
+    if isinstance(array_or_struct, ProxyValue):
+        raise RuntimeError(_PROXY_VALUE_DATA_ERROR)
+
+    array_or_struct = _coerce_value_arg(array_or_struct)
     if isinstance(array_or_struct, np.ndarray):
         assert array_or_struct.flags.contiguous
         data = array_or_struct.data.cast("B")
@@ -149,7 +176,17 @@ def to_cccl_value_state(array_or_struct: np.ndarray | GpuStruct) -> memoryview:
         return to_cccl_value_state(array_or_struct._data)
 
 
-def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
+def to_cccl_value(array_or_struct) -> Value:
+    from ._proxy import ProxyValue
+
+    if isinstance(array_or_struct, ProxyValue):
+        # Build-time placeholder: supply zero bytes of the right size.
+        # The real value is provided at call time via set_cccl_value_state().
+        info = _type_info_from_dtype(array_or_struct.dtype)
+        zero_bytes = memoryview(bytearray(array_or_struct.dtype.itemsize))
+        return Value(info, zero_bytes)
+
+    array_or_struct = _coerce_value_arg(array_or_struct)
     if isinstance(array_or_struct, np.ndarray):
         info = _type_info_from_dtype(array_or_struct.dtype)
         return Value(info, array_or_struct.data.cast("B"))
@@ -170,16 +207,21 @@ def set_cccl_value_state(cccl_value: Value, array_or_struct: np.ndarray | GpuStr
 
 
 def get_value_type(
-    d_in: DeviceArrayLike | IteratorBase | GpuStruct | np.ndarray,
+    d_in,
 ):
+    from ._proxy import ProxyValue
     from .struct import _Struct
 
     if isinstance(d_in, IteratorBase):
         return d_in.value_type
 
+    if isinstance(d_in, ProxyValue):
+        return types.from_numpy_dtype(d_in.dtype)
+
     if isinstance(d_in, _Struct):
         return type(d_in)._type_descriptor  # type: ignore[union-attr]
 
+    d_in = _coerce_value_arg(d_in)
     dtype = get_dtype(d_in)
 
     if dtype.type == np.void:
@@ -238,14 +280,17 @@ def _check_compile_result(cubin: bytes):
 _check_sass: bool = False
 
 
-def call_build(build_impl_fn: Callable, *args, **kwargs):
+def call_build(build_impl_fn: Callable, *args, cc=None, **kwargs):
     """Calls given build_impl_fn callable while providing compute capability and paths
 
     Returns result of the call.
     """
     global _check_sass
 
-    cc_major, cc_minor = CudaDevice().compute_capability
+    if cc is None:
+        cc_major, cc_minor = CudaDevice().compute_capability
+    else:
+        cc_major, cc_minor = cc
     cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_includes()
     common_data = CommonData(
         cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, cuda_include_path
