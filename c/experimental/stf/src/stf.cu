@@ -193,6 +193,13 @@ exec_place to_exec_place(stf_exec_place* exec_p)
     case STF_EXEC_PLACE_DEVICE:
       return exec_place::device(exec_p->u.device.dev_id);
 
+    case STF_EXEC_PLACE_GRID:
+    {
+      auto* grid_ptr = static_cast<exec_place_grid*>(exec_p->u.grid);
+      _CCCL_ASSERT(grid_ptr != nullptr, "grid handle must not be null");
+      return static_cast<const exec_place&>(*grid_ptr);
+    }
+
     default:
       _CCCL_ASSERT(false, "Invalid execution place kind");
       return exec_place{}; // invalid exec_place
@@ -287,6 +294,41 @@ CUstream stf_task_get_custream(stf_task_handle t)
 
   auto* task_ptr = static_cast<context::unified_task<>*>(t);
   return static_cast<CUstream>(task_ptr->get_stream());
+}
+
+int stf_task_get_grid_dims(stf_task_handle t, stf_dim4* out_dims)
+{
+  if (t == nullptr || out_dims == nullptr)
+  {
+    return -1;
+  }
+  auto* task_ptr = static_cast<context::unified_task<>*>(t);
+  dim4 d;
+  if (!task_ptr->get_grid_dims(&d))
+  {
+    return -1; // task exec place is not a grid
+  }
+  out_dims->x = static_cast<uint64_t>(d.x);
+  out_dims->y = static_cast<uint64_t>(d.y);
+  out_dims->z = static_cast<uint64_t>(d.z);
+  out_dims->t = static_cast<uint64_t>(d.t);
+  return 0;
+}
+
+int stf_task_get_custream_at_index(stf_task_handle t, size_t place_index, CUstream* out_stream)
+{
+  if (t == nullptr || out_stream == nullptr)
+  {
+    return -1;
+  }
+  auto* task_ptr = static_cast<context::unified_task<>*>(t);
+  cudaStream_t s = task_ptr->get_stream(place_index);
+  if (s == nullptr)
+  {
+    return -1; // e.g. graph_task has no per-index streams, or not a grid
+  }
+  *out_stream = static_cast<CUstream>(s);
+  return 0;
 }
 
 void stf_task_destroy(stf_task_handle t)
@@ -452,6 +494,18 @@ void stf_exec_place_grid_destroy(stf_exec_place_grid_handle grid)
   {
     delete static_cast<exec_place_grid*>(grid);
   }
+}
+
+void stf_exec_place_grid_get_dims(stf_exec_place_grid_handle grid, stf_dim4* out_dims)
+{
+  assert(grid != nullptr);
+  assert(out_dims != nullptr);
+  const exec_place_grid* g = static_cast<const exec_place_grid*>(grid);
+  dim4 d                    = g->get_dims();
+  out_dims->x               = static_cast<uint64_t>(d.x);
+  out_dims->y               = static_cast<uint64_t>(d.y);
+  out_dims->z               = static_cast<uint64_t>(d.z);
+  out_dims->t               = static_cast<uint64_t>(d.t);
 }
 
 void stf_make_composite_data_place(stf_data_place* out, stf_exec_place_grid_handle grid, stf_get_executor_fn mapper)

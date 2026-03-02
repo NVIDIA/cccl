@@ -299,6 +299,40 @@ public:
       };
     }
 
+    /** Overload: when the task is a stream_task with a grid exec place, get the stream for the place at \p place_index (linear index). Otherwise returns nullptr; use get_stream() for the single stream. */
+    cudaStream_t get_stream(size_t place_index) const
+    {
+      return payload->*[&](auto& self) -> cudaStream_t {
+        if constexpr (::std::is_same_v<stream_task<>, ::std::decay_t<decltype(self)>>)
+        {
+          return self.get_stream(place_index);
+        }
+        else
+        {
+          (void) place_index;
+          return nullptr; // graph_task has no per-place streams; use get_stream() instead
+        }
+      };
+    }
+
+    /** When the task's exec place is a grid, write its shape to \p out_dims and return true; else return false. */
+    bool get_grid_dims(dim4* out_dims) const
+    {
+      if (out_dims == nullptr)
+      {
+        return false;
+      }
+      return payload->*[&](auto& self) -> bool {
+        const exec_place& e = self.get_exec_place();
+        if (!e.is_grid())
+        {
+          return false;
+        }
+        *out_dims = e.grid_dims();
+        return true;
+      };
+    }
+
   private:
     ::std::variant<stream_task<Deps...>, graph_task<Deps...>> payload;
   };

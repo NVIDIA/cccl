@@ -112,17 +112,21 @@ typedef struct stf_exec_place_host
   char dummy; //!< Dummy field for standard C compatibility
 } stf_exec_place_host;
 
+//! \brief Opaque handle for an execution place grid (e.g. one place per stream).
+typedef void* stf_exec_place_grid_handle;
+
 //! \brief Execution place type discriminator
 typedef enum stf_exec_place_kind
 {
   STF_EXEC_PLACE_DEVICE, //!< Task executes on CUDA device
-  STF_EXEC_PLACE_HOST //!< Task executes on host (CPU)
+  STF_EXEC_PLACE_HOST, //!< Task executes on host (CPU)
+  STF_EXEC_PLACE_GRID //!< Task executes on a grid of places (from stf_exec_place_grid_*)
 } stf_exec_place_kind;
 
 //! \brief Execution place specification
 //!
 //! Tagged union specifying where a task should execute.
-//! Use helper functions make_device_place() and make_host_place() to create.
+//! Use helper functions make_device_place(), make_host_place(), make_exec_place_from_grid() to create.
 typedef struct stf_exec_place
 {
   enum stf_exec_place_kind kind; //!< Type of execution place
@@ -130,6 +134,7 @@ typedef struct stf_exec_place
   {
     stf_exec_place_device device; //!< Device configuration (when kind == STF_EXEC_PLACE_DEVICE)
     stf_exec_place_host host; //!< Host configuration (when kind == STF_EXEC_PLACE_HOST)
+    stf_exec_place_grid_handle grid; //!< Grid handle (when kind == STF_EXEC_PLACE_GRID)
   } u; //!< Configuration union
 } stf_exec_place;
 
@@ -167,6 +172,27 @@ static inline stf_exec_place make_host_place()
   stf_exec_place p;
   p.kind         = STF_EXEC_PLACE_HOST;
   p.u.host.dummy = 0; /* to avoid uninitialized memory warnings */
+  return p;
+}
+
+//! \brief Create execution place from an execution place grid handle
+//!
+//! \param grid Grid handle from stf_exec_place_grid_from_devices() or stf_exec_place_grid_create()
+//! \return Execution place configured for the grid
+//!
+//! \note The grid handle must not be destroyed while the task using this place is in use.
+//!
+//! \par Example:
+//! \code
+//! stf_exec_place_grid_handle grid = stf_exec_place_grid_from_devices(dev_ids, 2);
+//! stf_exec_place place = make_exec_place_from_grid(grid);
+//! stf_task_set_exec_place(task, &place);
+//! \endcode
+static inline stf_exec_place make_exec_place_from_grid(stf_exec_place_grid_handle grid)
+{
+  stf_exec_place p;
+  p.kind      = STF_EXEC_PLACE_GRID;
+  p.u.grid = grid;
   return p;
 }
 
@@ -233,9 +259,6 @@ typedef struct stf_dim4
 //! \param data_dims Full shape of the data
 //! \param grid_dims Shape of the execution place grid
 typedef void (*stf_get_executor_fn)(stf_pos4* result, stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims);
-
-//! \brief Opaque handle for an execution place grid (e.g. one place per stream).
-typedef void* stf_exec_place_grid_handle;
 
 //! \}
 
@@ -403,6 +426,12 @@ stf_exec_place_grid_create(const stf_exec_place* places, size_t count, const stf
 //! stf_exec_place_grid_create().
 //! \param grid Grid handle (may be NULL; no-op in that case)
 void stf_exec_place_grid_destroy(stf_exec_place_grid_handle grid);
+
+//! \brief Get the shape of the execution place grid (out-parameter for Python/ctypes).
+//! \param grid Grid handle (must not be NULL)
+//! \param[out] out_dims On success, the grid shape (x, y, z, t) is written here. Must not be NULL.
+//! \note Total number of places is out_dims->x * out_dims->y * out_dims->z * out_dims->t.
+void stf_exec_place_grid_get_dims(stf_exec_place_grid_handle grid, stf_dim4* out_dims);
 
 //! \}
 
@@ -970,6 +999,28 @@ void stf_task_end(stf_task_handle t);
 //! \see stf_task_start(), stf_task_get()
 
 CUstream stf_task_get_custream(stf_task_handle t);
+
+//!
+//! \brief Get the grid shape of the task's exec place (when it is a grid).
+//!
+//! \param t Task handle
+//! \param[out] out_dims On success, the grid shape (x, y, z, t) is written here. Must not be NULL.
+//! \return 0 on success; non-zero if task exec place is not a grid or \p out_dims is NULL
+//!
+//! \note Total number of grid entries is out_dims->x * out_dims->y * out_dims->z * out_dims->t.
+int stf_task_get_grid_dims(stf_task_handle t, stf_dim4* out_dims);
+
+//!
+//! \brief Get the CUDA stream for a specific grid index (when task's exec place is a grid).
+//!
+//! Use this when the same place is repeated in the grid: the index is the linear slot (0 to
+//! product of grid dims - 1), not a place identity.
+//!
+//! \param t Task handle (must have been started; exec place must be a grid)
+//! \param place_index Linear index in the grid (0-based; use stf_task_get_grid_dims to get shape)
+//! \param[out] out_stream On success, the stream for that index is written here. Must not be NULL.
+//! \return 0 on success; non-zero if task is not a grid, index out of range, or no per-index streams
+int stf_task_get_custream_at_index(stf_task_handle t, size_t place_index, CUstream* out_stream);
 
 //!
 //! \brief Get data pointer for task dependency

@@ -215,3 +215,37 @@ C2H_TEST("composite data place with stf_exec_place_grid_create (vector of places
   }
   free(X);
 }
+
+C2H_TEST("task set_exec_place with STF_EXEC_PLACE_GRID", "[task][places]")
+{
+  const size_t nplaces = 2;
+  stf_exec_place places[nplaces];
+  for (size_t i = 0; i < nplaces; i++)
+  {
+    places[i] = make_device_place(0); // same device repeated
+  }
+  stf_exec_place_grid_handle grid = stf_exec_place_grid_create(places, nplaces, nullptr);
+  REQUIRE(grid != nullptr);
+
+  stf_ctx_handle ctx;
+  stf_ctx_create(&ctx);
+  stf_task_handle t;
+  stf_task_create(ctx, &t);
+  stf_exec_place e_place = make_exec_place_from_grid(grid);
+  REQUIRE(e_place.kind == STF_EXEC_PLACE_GRID);
+  stf_task_set_exec_place(t, &e_place);
+  stf_task_start(t);
+  stf_dim4 dims;
+  int got_dims = stf_task_get_grid_dims(t, &dims);
+  REQUIRE(got_dims == 0); // 0 = success
+  REQUIRE(dims.x == 2);
+  REQUIRE(dims.y == 1);
+  CUstream s0, s1;
+  REQUIRE(stf_task_get_custream_at_index(t, 0, &s0) == 0);
+  REQUIRE(stf_task_get_custream_at_index(t, 1, &s1) == 0);
+  REQUIRE(s0 != nullptr);
+  REQUIRE(s1 != nullptr);
+  stf_task_end(t);
+  stf_ctx_finalize(ctx);
+  stf_exec_place_grid_destroy(grid);
+}
