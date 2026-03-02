@@ -31,6 +31,9 @@ typedef struct cccl_device_segmented_reduce_build_result_t
   uint64_t accumulator_size;
   CUkernel segmented_reduce_kernel;
   void* runtime_policy;
+  size_t runtime_policy_size;
+  // Lowered (mangled) kernel name, heap-allocated, freed by cccl_device_segmented_reduce_cleanup():
+  char* segmented_reduce_kernel_lowered_name;
 } cccl_device_segmented_reduce_build_result_t;
 
 // TODO return a union of nvtx/cuda/nvrtc errors or a string?

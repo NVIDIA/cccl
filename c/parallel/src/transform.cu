@@ -31,6 +31,7 @@
 #include "jit_templates/templates/operation.h"
 #include "jit_templates/templates/output_iterator.h"
 #include "jit_templates/traits.h"
+#include "util/cubin_loader.h"
 #include <cccl/c/transform.h>
 #include <cccl/c/types.h> // cccl_type_info
 #include <nvrtc/command_list.h>
@@ -120,6 +121,10 @@ struct transform_kernel_source
   CacheAsyncConfiguration(const ActionT& action)
   {
     auto cache = reinterpret_cast<transform::cache*>(build.cache);
+    if (cache == nullptr)
+    {
+      return action();
+    }
     if (!cache->async_config.has_value())
     {
       cache->async_config = action();
@@ -132,6 +137,10 @@ struct transform_kernel_source
   CachePrefetchConfiguration(const ActionT& action)
   {
     auto cache = reinterpret_cast<transform::cache*>(build.cache);
+    if (cache == nullptr)
+    {
+      return action();
+    }
     if (!cache->prefetch_config.has_value())
     {
       cache->prefetch_config = action();
@@ -317,18 +326,20 @@ static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) ==
       ->add_link_list(linkable_list)
       ->finalize_program();
 
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-  check(cuLibraryGetKernel(&build_ptr->transform_kernel, build_ptr->library, kernel_lowered_name.c_str()));
+  cccl_try_load_for_device(
+    &build_ptr->library, result.data.get(), &build_ptr->transform_kernel, kernel_lowered_name.c_str());
 
-  build_ptr->loaded_bytes_per_iteration = static_cast<int>(input_it.value_type.size);
-  build_ptr->cc                         = cc_major * 10 + cc_minor;
-  build_ptr->cubin                      = (void*) result.data.release();
-  build_ptr->cubin_size                 = result.size;
-  build_ptr->cache                      = new transform::cache();
+  build_ptr->loaded_bytes_per_iteration    = static_cast<int>(input_it.value_type.size);
+  build_ptr->cc                            = cc_major * 10 + cc_minor;
+  build_ptr->cubin                         = (void*) result.data.release();
+  build_ptr->cubin_size                    = result.size;
+  build_ptr->cache                         = new transform::cache();
+  build_ptr->transform_kernel_lowered_name = strdup(kernel_lowered_name.c_str());
 
   // avoid new and delete which requires the allocated and freed types to match
   static_assert(std::is_trivially_copyable_v<decltype(policy_sel)>);
-  build_ptr->runtime_policy = std::malloc(sizeof(policy_sel));
+  build_ptr->runtime_policy      = std::malloc(sizeof(policy_sel));
+  build_ptr->runtime_policy_size = sizeof(policy_sel);
   std::memcpy(build_ptr->runtime_policy, &policy_sel, sizeof(policy_sel));
 
   return CUDA_SUCCESS;
@@ -518,18 +529,20 @@ static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) ==
       ->add_link_list(linkable_list)
       ->finalize_program();
 
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-  check(cuLibraryGetKernel(&build_ptr->transform_kernel, build_ptr->library, kernel_lowered_name.c_str()));
+  cccl_try_load_for_device(
+    &build_ptr->library, result.data.get(), &build_ptr->transform_kernel, kernel_lowered_name.c_str());
 
-  build_ptr->loaded_bytes_per_iteration = static_cast<int>((input1_it.value_type.size + input2_it.value_type.size));
-  build_ptr->cc                         = cc_major * 10 + cc_minor;
-  build_ptr->cubin                      = (void*) result.data.release();
-  build_ptr->cubin_size                 = result.size;
-  build_ptr->cache                      = new transform::cache();
+  build_ptr->loaded_bytes_per_iteration    = static_cast<int>((input1_it.value_type.size + input2_it.value_type.size));
+  build_ptr->cc                            = cc_major * 10 + cc_minor;
+  build_ptr->cubin                         = (void*) result.data.release();
+  build_ptr->cubin_size                    = result.size;
+  build_ptr->cache                         = new transform::cache();
+  build_ptr->transform_kernel_lowered_name = strdup(kernel_lowered_name.c_str());
 
   // avoid new and delete which requires the allocated and freed types to match
   static_assert(std::is_trivially_copyable_v<decltype(policy_sel)>);
-  build_ptr->runtime_policy = std::malloc(sizeof(policy_sel));
+  build_ptr->runtime_policy      = std::malloc(sizeof(policy_sel));
+  build_ptr->runtime_policy_size = sizeof(policy_sel);
   std::memcpy(build_ptr->runtime_policy, &policy_sel, sizeof(policy_sel));
 
   return CUDA_SUCCESS;
@@ -631,8 +644,12 @@ try
   using namespace cub::detail::transform;
   std::unique_ptr<char[]> cubin(static_cast<char*>(build_ptr->cubin));
   std::free(build_ptr->runtime_policy);
+  std::free(build_ptr->transform_kernel_lowered_name);
   std::unique_ptr<transform::cache> cache(static_cast<transform::cache*>(build_ptr->cache));
-  check(cuLibraryUnload(build_ptr->library));
+  if (build_ptr->library != nullptr)
+  {
+    check(cuLibraryUnload(build_ptr->library));
+  }
 
   return CUDA_SUCCESS;
 }

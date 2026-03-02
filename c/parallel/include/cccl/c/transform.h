@@ -30,7 +30,10 @@ typedef struct cccl_device_transform_build_result_t
   CUkernel transform_kernel;
   int loaded_bytes_per_iteration;
   void* runtime_policy;
+  size_t runtime_policy_size;
   void* cache;
+  // Lowered (mangled) kernel name, heap-allocated, freed by cccl_device_transform_cleanup():
+  char* transform_kernel_lowered_name;
 } cccl_device_transform_build_result_t;
 
 CCCL_C_API CUresult cccl_device_unary_transform_build(

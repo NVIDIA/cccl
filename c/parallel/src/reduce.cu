@@ -18,8 +18,10 @@
 #include <cuda/std/functional> // ::cuda::std::identity
 #include <cuda/std/variant>
 
+#include <cstring> // strdup, free, memcpy
 #include <format>
 #include <memory>
+#include <new> // std::nothrow
 #include <vector>
 
 #include "jit_templates/templates/input_iterator.h"
@@ -27,6 +29,7 @@
 #include "jit_templates/templates/output_iterator.h"
 #include "jit_templates/traits.h"
 #include "util/context.h"
+#include "util/cubin_loader.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
 #include "util/types.h"
@@ -354,15 +357,17 @@ static_assert(device_reduce_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {7
       ->add_link_list(linkable_list)
       ->finalize_program();
 
-  cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-  check(cuLibraryGetKernel(&build->single_tile_kernel, build->library, single_tile_kernel_lowered_name.c_str()));
-  check(cuLibraryGetKernel(
-    &build->single_tile_second_kernel, build->library, single_tile_second_kernel_lowered_name.c_str()));
-  check(cuLibraryGetKernel(&build->reduction_kernel, build->library, reduction_kernel_lowered_name.c_str()));
-  if (build_nondeterministic)
+  if (cccl_try_load_for_device(
+        &build->library, result.data.get(), &build->single_tile_kernel, single_tile_kernel_lowered_name.c_str()))
   {
     check(cuLibraryGetKernel(
-      &build->nondeterministic_atomic_kernel, build->library, nondeterministic_kernel_lowered_name.c_str()));
+      &build->single_tile_second_kernel, build->library, single_tile_second_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build->reduction_kernel, build->library, reduction_kernel_lowered_name.c_str()));
+    if (build_nondeterministic)
+    {
+      check(cuLibraryGetKernel(
+        &build->nondeterministic_atomic_kernel, build->library, nondeterministic_kernel_lowered_name.c_str()));
+    }
   }
 
   build->cc               = cc_major * 10 + cc_minor;
@@ -370,7 +375,15 @@ static_assert(device_reduce_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {7
   build->cubin_size       = result.size;
   build->accumulator_size = accum_t.size;
   build->determinism      = determinism;
-  build->runtime_policy   = new cub::detail::reduce::policy_selector{policy_sel};
+  static_assert(std::is_trivially_copyable_v<cub::detail::reduce::policy_selector>);
+  build->runtime_policy      = std::malloc(sizeof(cub::detail::reduce::policy_selector));
+  build->runtime_policy_size = sizeof(cub::detail::reduce::policy_selector);
+  std::memcpy(build->runtime_policy, &policy_sel, sizeof(cub::detail::reduce::policy_selector));
+  build->single_tile_kernel_lowered_name        = strdup(single_tile_kernel_lowered_name.c_str());
+  build->single_tile_second_kernel_lowered_name = strdup(single_tile_second_kernel_lowered_name.c_str());
+  build->reduction_kernel_lowered_name          = strdup(reduction_kernel_lowered_name.c_str());
+  build->nondeterministic_kernel_lowered_name =
+    build_nondeterministic ? strdup(nondeterministic_kernel_lowered_name.c_str()) : nullptr;
 
   return CUDA_SUCCESS;
 }
@@ -510,8 +523,20 @@ try
 
   using namespace cub::detail::reduce;
   std::unique_ptr<char[]> cubin(static_cast<char*>(build_ptr->cubin));
-  std::unique_ptr<policy_selector> policy(static_cast<policy_selector*>(build_ptr->runtime_policy));
-  check(cuLibraryUnload(build_ptr->library));
+  std::free(build_ptr->runtime_policy);
+  if (build_ptr->library != nullptr)
+  {
+    check(cuLibraryUnload(build_ptr->library));
+  }
+
+  free(build_ptr->single_tile_kernel_lowered_name);
+  free(build_ptr->single_tile_second_kernel_lowered_name);
+  free(build_ptr->reduction_kernel_lowered_name);
+  free(build_ptr->nondeterministic_kernel_lowered_name);
+  build_ptr->single_tile_kernel_lowered_name        = nullptr;
+  build_ptr->single_tile_second_kernel_lowered_name = nullptr;
+  build_ptr->reduction_kernel_lowered_name          = nullptr;
+  build_ptr->nondeterministic_kernel_lowered_name   = nullptr;
 
   return CUDA_SUCCESS;
 }
@@ -522,6 +547,58 @@ catch (const std::exception& exc)
   fflush(stdout);
 
   return CUDA_ERROR_UNKNOWN;
+}
+
+CUresult cccl_load_cubin_and_get_kernels(
+  const void* cubin_in,
+  size_t cubin_size,
+  void** cubin_copy_out,
+  CUlibrary* library_out,
+  const char** kernel_names,
+  CUkernel* kernel_handles,
+  int num_kernels)
+{
+  *cubin_copy_out = nullptr;
+  *library_out    = nullptr;
+
+  if (cubin_in == nullptr || cubin_size == 0)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
+  char* cubin_copy = new (std::nothrow) char[cubin_size];
+  if (!cubin_copy)
+  {
+    return CUDA_ERROR_OUT_OF_MEMORY;
+  }
+  std::memcpy(cubin_copy, cubin_in, cubin_size);
+
+  CUresult status = cuLibraryLoadData(library_out, cubin_copy, nullptr, nullptr, 0, nullptr, nullptr, 0);
+  if (status != CUDA_SUCCESS)
+  {
+    delete[] cubin_copy;
+    return status;
+  }
+
+  for (int i = 0; i < num_kernels; ++i)
+  {
+    if (kernel_names[i] == nullptr)
+    {
+      kernel_handles[i] = nullptr;
+      continue;
+    }
+    status = cuLibraryGetKernel(&kernel_handles[i], *library_out, kernel_names[i]);
+    if (status != CUDA_SUCCESS)
+    {
+      cuLibraryUnload(*library_out);
+      *library_out = nullptr;
+      delete[] cubin_copy;
+      return status;
+    }
+  }
+
+  *cubin_copy_out = cubin_copy;
+  return CUDA_SUCCESS;
 }
 
 // Backward compatibility wrapper

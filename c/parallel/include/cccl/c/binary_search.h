@@ -29,6 +29,8 @@ typedef struct cccl_device_binary_search_build_result_t
   size_t cubin_size;
   CUlibrary library;
   CUkernel kernel;
+  // Lowered (mangled) kernel name, heap-allocated, freed by cccl_device_binary_search_cleanup():
+  char* kernel_lowered_name;
 } cccl_device_binary_search_build_result_t;
 
 CCCL_C_API CUresult cccl_device_binary_search_build(

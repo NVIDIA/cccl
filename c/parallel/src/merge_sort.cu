@@ -13,12 +13,14 @@
 #include <cub/detail/ptx-json-parser.cuh>
 #include <cub/device/device_merge_sort.cuh>
 
+#include <cstring> // strdup, free
 #include <format>
 #include <vector>
 
 #include "kernels/iterators.h"
 #include "kernels/operators.h"
 #include "util/context.h"
+#include "util/cubin_loader.h"
 #include "util/indirect_arg.h"
 #include "util/tuning.h"
 #include "util/types.h"
@@ -397,10 +399,12 @@ __device__ consteval auto& policy_generator() {{
       ->add_link_list(linkable_list)
       ->finalize_program();
 
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-  check(cuLibraryGetKernel(&build_ptr->block_sort_kernel, build_ptr->library, block_sort_kernel_lowered_name.c_str()));
-  check(cuLibraryGetKernel(&build_ptr->partition_kernel, build_ptr->library, partition_kernel_lowered_name.c_str()));
-  check(cuLibraryGetKernel(&build_ptr->merge_kernel, build_ptr->library, merge_kernel_lowered_name.c_str()));
+  if (cccl_try_load_for_device(
+        &build_ptr->library, result.data.get(), &build_ptr->block_sort_kernel, block_sort_kernel_lowered_name.c_str()))
+  {
+    check(cuLibraryGetKernel(&build_ptr->partition_kernel, build_ptr->library, partition_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->merge_kernel, build_ptr->library, merge_kernel_lowered_name.c_str()));
+  }
 
   nlohmann::json runtime_policy =
     cub::detail::ptx_json::parse("device_merge_sort_policy", {result.data.get(), result.size});
@@ -408,12 +412,18 @@ __device__ consteval auto& policy_generator() {{
   using cub::detail::RuntimeMergeSortAgentPolicy;
   auto ms_policy = RuntimeMergeSortAgentPolicy::from_json(runtime_policy, "MergeSortPolicy");
 
-  build_ptr->cc             = cc;
-  build_ptr->cubin          = (void*) result.data.release();
-  build_ptr->cubin_size     = result.size;
-  build_ptr->key_type       = input_keys_it.value_type;
-  build_ptr->item_type      = input_items_it.value_type;
-  build_ptr->runtime_policy = new merge_sort::merge_sort_runtime_tuning_policy{ms_policy};
+  build_ptr->cc         = cc;
+  build_ptr->cubin      = (void*) result.data.release();
+  build_ptr->cubin_size = result.size;
+  build_ptr->key_type   = input_keys_it.value_type;
+  build_ptr->item_type  = input_items_it.value_type;
+  static_assert(std::is_trivially_copyable_v<merge_sort::merge_sort_runtime_tuning_policy>);
+  build_ptr->runtime_policy      = std::malloc(sizeof(merge_sort::merge_sort_runtime_tuning_policy));
+  build_ptr->runtime_policy_size = sizeof(merge_sort::merge_sort_runtime_tuning_policy);
+  std::memcpy(build_ptr->runtime_policy, &ms_policy, sizeof(merge_sort::merge_sort_runtime_tuning_policy));
+  build_ptr->block_sort_kernel_lowered_name = strdup(block_sort_kernel_lowered_name.c_str());
+  build_ptr->partition_kernel_lowered_name  = strdup(partition_kernel_lowered_name.c_str());
+  build_ptr->merge_kernel_lowered_name      = strdup(merge_kernel_lowered_name.c_str());
 
   return CUDA_SUCCESS;
 }
@@ -539,8 +549,18 @@ try
   }
 
   std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
-  std::unique_ptr<char[]> policy(reinterpret_cast<char*>(build_ptr->runtime_policy));
-  check(cuLibraryUnload(build_ptr->library));
+  std::free(build_ptr->runtime_policy);
+  if (build_ptr->library != nullptr)
+  {
+    check(cuLibraryUnload(build_ptr->library));
+  }
+
+  free(build_ptr->block_sort_kernel_lowered_name);
+  free(build_ptr->partition_kernel_lowered_name);
+  free(build_ptr->merge_kernel_lowered_name);
+  build_ptr->block_sort_kernel_lowered_name = nullptr;
+  build_ptr->partition_kernel_lowered_name  = nullptr;
+  build_ptr->merge_kernel_lowered_name      = nullptr;
 
   return CUDA_SUCCESS;
 }
@@ -551,4 +571,20 @@ catch (const std::exception& exc)
   fflush(stdout);
 
   return CUDA_ERROR_UNKNOWN;
+}
+
+void* cccl_merge_sort_make_policy(const void* cubin, size_t cubin_size)
+try
+{
+  nlohmann::json json =
+    cub::detail::ptx_json::parse("device_merge_sort_policy", {static_cast<const char*>(cubin), cubin_size});
+  auto ms_policy = cub::detail::RuntimeMergeSortAgentPolicy::from_json(json, "MergeSortPolicy");
+  return new merge_sort::merge_sort_runtime_tuning_policy{ms_policy};
+}
+catch (const std::exception& exc)
+{
+  fflush(stderr);
+  printf("\nEXCEPTION in cccl_merge_sort_make_policy(): %s\n", exc.what());
+  fflush(stdout);
+  return nullptr;
 }
