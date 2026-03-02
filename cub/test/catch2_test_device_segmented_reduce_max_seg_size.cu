@@ -40,7 +40,7 @@ C2H_TEST("Device segmented reduce works with dynamic max segment sizes",
     }));
   INFO("Test num_items: " << num_items);
 
-  const size_t max_seg_size = GENERATE(0, 5, 10, 100, 1000, 10000);
+  const offset_t max_seg_size = GENERATE(0, 5, 10, 100, 1000, 10000);
 
   // Range of segment sizes to generate
   // Note that the segment range [0, 1] may also include one last segment with more than 1 items

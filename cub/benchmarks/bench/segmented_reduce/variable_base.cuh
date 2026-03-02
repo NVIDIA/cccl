@@ -95,7 +95,7 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
     op_t{},
     init_t{},
     0 /* stream */,
-    cub::detail::segmented_reduce::policy_selector_from_types<accum_t>{},
+    cub::detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, op_t>{},
     guaranteed_max_seg_size);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
@@ -113,7 +113,7 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
       op_t{},
       init_t{},
       launch.get_stream(),
-      cub::detail::segmented_reduce::policy_selector_from_types<accum_t>{},
+      cub::detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, op_t>{},
       guaranteed_max_seg_size);
   });
 }

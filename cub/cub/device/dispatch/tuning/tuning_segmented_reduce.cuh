@@ -203,6 +203,9 @@ struct policy_hub
 
 struct policy_selector
 {
+  type_t accum_t;
+  op_kind_t operation_t;
+  int offset_size;
   int accum_size;
 
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> segmented_reduce_policy
@@ -212,13 +215,13 @@ struct policy_selector
     constexpr int items_per_vec_load = 4;
 
     auto [scaled_items, scaled_threads] = scale_mem_bound(threads_per_block, items_per_thread, accum_size);
-    const auto base                     = reduce::agent_reduce_policy{
+    const auto rp                       = reduce::agent_reduce_policy{
       scaled_threads, scaled_items, items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
 
     return segmented_reduce_policy{
-      base,
-      agent_warp_reduce_policy{base.block_threads, 1, items_per_thread, items_per_vec_load, base.load_modifier},
-      agent_warp_reduce_policy{base.block_threads, 32, items_per_thread, items_per_vec_load, base.load_modifier}};
+      rp,
+      agent_warp_reduce_policy{rp.block_threads, 1, items_per_thread, items_per_vec_load, rp.load_modifier},
+      agent_warp_reduce_policy{rp.block_threads, 32, items_per_thread, items_per_vec_load, rp.load_modifier}};
   }
 };
 
@@ -227,12 +230,14 @@ static_assert(segmented_reduce_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
 // stateless version which can be passed to kernels
-template <typename AccumT>
+template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> segmented_reduce_policy
   {
-    return policy_selector{sizeof(AccumT)}(arch);
+    constexpr auto policies =
+      policy_selector{classify_type<AccumT>, classify_op<ReductionOpT>, int{sizeof(OffsetT)}, int{sizeof(AccumT)}};
+    return policies(arch);
   }
 };
 } // namespace detail::segmented_reduce
