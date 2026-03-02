@@ -44,13 +44,14 @@ namespace cuda::experimental
  * The descriptor stores data pointer, rank, extents, and strides in arrays to use them at runtime.
  */
 template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _AccessorPolicy>
-[[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor<_Tp, _Extents::rank()>
+[[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor<::cuda::std::size_t, ::cuda::std::int64_t, _Tp, _Extents::rank()>
 __to_raw_tensor(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _AccessorPolicy>& __mdspan) noexcept
 {
-  __raw_tensor<_Tp, _Extents::rank()> __result{__mdspan.data_handle(), _Extents::rank()};
+  __raw_tensor<::cuda::std::size_t, ::cuda::std::int64_t, _Tp, _Extents::rank()> __result{
+    __mdspan.data_handle(), _Extents::rank()};
   for (::cuda::std::size_t __i = 0; __i < _Extents::rank(); ++__i)
   {
-    __result.__shapes[__i]  = static_cast<::cuda::std::size_t>(__mdspan.extent(__i));
+    __result.__extents[__i] = static_cast<::cuda::std::size_t>(__mdspan.extent(__i));
     __result.__strides[__i] = static_cast<::cuda::std::int64_t>(__mdspan.stride(__i));
   }
   return __result;
@@ -62,14 +63,14 @@ __to_raw_tensor(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _Accesso
  * The returned tensor keeps a permutation (`__orders`) and the permuted shape/stride arrays, which allows comparing
  * layout compatibility between tensors with different original mode orderings.
  */
-template <typename _Tp, ::cuda::std::size_t _MaxRank>
-[[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor_ordered<_Tp, _MaxRank>
-__sort_by_stride_desc(const __raw_tensor<_Tp, _MaxRank>& __tensor) noexcept
+template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank>
+[[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor_ordered<_Ep, _Sp, _Tp, _MaxRank>
+__sort_by_stride_desc(const __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>& __tensor) noexcept
 {
-  __raw_tensor_ordered<_Tp, _MaxRank> __result{__tensor.__data, __tensor.__rank};
+  __raw_tensor_ordered<_Ep, _Sp, _Tp, _MaxRank> __result{__tensor.__data, __tensor.__rank};
   auto& __input_strides = __tensor.__strides;
   auto& __orders        = __result.__orders;
-  auto& __shapes        = __result.__shapes;
+  auto& __extents       = __result.__extents;
   auto& __strides       = __result.__strides;
   for (::cuda::std::size_t __i = 0; __i < __tensor.__rank; ++__i)
   {
@@ -81,7 +82,7 @@ __sort_by_stride_desc(const __raw_tensor<_Tp, _MaxRank>& __tensor) noexcept
   });
   for (::cuda::std::size_t __i = 0; __i < __tensor.__rank; ++__i)
   {
-    __shapes[__i]  = __tensor.__shapes[__orders[__i]];
+    __extents[__i] = __tensor.__extents[__orders[__i]];
     __strides[__i] = __tensor.__strides[__orders[__i]];
   }
   return __result;
@@ -92,21 +93,21 @@ __sort_by_stride_desc(const __raw_tensor<_Tp, _MaxRank>& __tensor) noexcept
  *
  * Extra modes are represented as shape=1, stride=1, order=i.
  */
-template <::cuda::std::size_t _MaxRankOut, typename _Tp, ::cuda::std::size_t _MaxRankIn>
-[[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor_ordered<_Tp, _MaxRankOut>
-__append(const __raw_tensor_ordered<_Tp, _MaxRankIn>& __tensor_in, ::cuda::std::size_t __target_rank) noexcept
+template <::cuda::std::size_t _MaxRankOut, typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRankIn>
+[[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor_ordered<_Ep, _Sp, _Tp, _MaxRankOut>
+__append(const __raw_tensor_ordered<_Ep, _Sp, _Tp, _MaxRankIn>& __tensor_in, ::cuda::std::size_t __target_rank) noexcept
 {
   static_assert(_MaxRankIn <= _MaxRankOut);
-  __raw_tensor_ordered<_Tp, _MaxRankOut> __result{__tensor_in.__data, __target_rank};
+  __raw_tensor_ordered<_Ep, _Sp, _Tp, _MaxRankOut> __result{__tensor_in.__data, __target_rank};
   for (::cuda::std::size_t __i = 0; __i < __tensor_in.__rank; ++__i)
   {
-    __result.__shapes[__i]  = __tensor_in.__shapes[__i];
+    __result.__extents[__i] = __tensor_in.__extents[__i];
     __result.__strides[__i] = __tensor_in.__strides[__i];
     __result.__orders[__i]  = __tensor_in.__orders[__i];
   }
   for (::cuda::std::size_t __i = __tensor_in.__rank; __i < __target_rank; ++__i)
   {
-    __result.__shapes[__i]  = 1;
+    __result.__extents[__i] = 1;
     __result.__strides[__i] = 1;
     __result.__orders[__i]  = __i;
   }
@@ -119,16 +120,17 @@ __append(const __raw_tensor_ordered<_Tp, _MaxRankIn>& __tensor_in, ::cuda::std::
  * Returns true when strides indicate potential overlap between neighboring modes, which means multiple logical indices
  * may map to the same address.
  */
-template <typename _Tp, ::cuda::std::size_t _MaxRank>
-[[nodiscard]] _CCCL_HOST_API constexpr bool __is_not_unique(const __raw_tensor_ordered<_Tp, _MaxRank>& __tensor) noexcept
+template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank>
+[[nodiscard]] _CCCL_HOST_API constexpr bool
+__is_not_unique(const __raw_tensor_ordered<_Ep, _Sp, _Tp, _MaxRank>& __tensor) noexcept
 {
   // TODO: if all strides are positive, we can make the function more accurate
-  auto& __shapes    = __tensor.__shapes;
+  auto& __extents   = __tensor.__extents;
   auto& __strides   = __tensor.__strides;
   const auto __rank = static_cast<int>(__tensor.__rank);
   for (int __i = 0; __i < __rank - 1; ++__i)
   {
-    if (::cuda::std::abs(__strides[__i]) < __shapes[__i + 1] * ::cuda::std::abs(__strides[__i + 1]))
+    if (::cuda::std::abs(__strides[__i]) < __extents[__i + 1] * ::cuda::std::abs(__strides[__i + 1]))
     {
       return true;
     }
@@ -137,10 +139,15 @@ template <typename _Tp, ::cuda::std::size_t _MaxRank>
 }
 
 /// @brief Checks whether two tensors have the same stride-based mode order.
-template <typename _TpIn, typename _TpOut, ::cuda::std::size_t _MaxRankA, ::cuda::std::size_t _MaxRankB>
+template <typename _Ep,
+          typename _Sp,
+          typename _TpIn,
+          typename _TpOut,
+          ::cuda::std::size_t _MaxRankA,
+          ::cuda::std::size_t _MaxRankB>
 [[nodiscard]] _CCCL_HOST_API constexpr bool
-__same_stride_order(const __raw_tensor_ordered<_TpIn, _MaxRankA>& __tensor_a,
-                    const __raw_tensor_ordered<_TpOut, _MaxRankB>& __tensor_b) noexcept
+__same_stride_order(const __raw_tensor_ordered<_Ep, _Sp, _TpIn, _MaxRankA>& __tensor_a,
+                    const __raw_tensor_ordered<_Ep, _Sp, _TpOut, _MaxRankB>& __tensor_b) noexcept
 {
   const auto __rank_a       = __tensor_a.__rank;
   const auto __rank_b       = __tensor_b.__rank;
@@ -157,18 +164,18 @@ __same_stride_order(const __raw_tensor_ordered<_TpIn, _MaxRankA>& __tensor_a,
   return true;
 }
 
-template <typename _Tp, ::cuda::std::size_t _Rank>
-_CCCL_HOST_API void __println(const __raw_tensor<_Tp, _Rank>& __tensor)
+template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _Rank>
+_CCCL_HOST_API void __println(const __raw_tensor<_Ep, _Sp, _Tp, _Rank>& __tensor)
 {
   const auto __rank = static_cast<int>(__tensor.__rank);
   ::printf("(");
   for (int __i = 0; __i < __rank - 1; ++__i)
   {
-    ::printf("%zu, ", __tensor.__shapes[__i]);
+    ::printf("%llu, ", static_cast<unsigned long long>(__tensor.__extents[__i]));
   }
   if (__rank > 0)
   {
-    ::printf("%zu", __tensor.__shapes[__rank - 1]);
+    ::printf("%llu", static_cast<unsigned long long>(__tensor.__extents[__rank - 1]));
   }
   ::printf("):(");
   for (int __i = 0; __i < __rank - 1; ++__i)
@@ -182,18 +189,18 @@ _CCCL_HOST_API void __println(const __raw_tensor<_Tp, _Rank>& __tensor)
   ::printf(")\n");
 }
 
-template <typename _Tp, ::cuda::std::size_t _Rank>
-_CCCL_HOST_API void __println(const __raw_tensor_ordered<_Tp, _Rank>& __tensor)
+template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _Rank>
+_CCCL_HOST_API void __println(const __raw_tensor_ordered<_Ep, _Sp, _Tp, _Rank>& __tensor)
 {
   const auto __rank = static_cast<int>(__tensor.__rank);
   ::printf("(");
   for (int __i = 0; __i < __rank - 1; ++__i)
   {
-    ::printf("%zu, ", __tensor.__shapes[__i]);
+    ::printf("%llu, ", static_cast<unsigned long long>(__tensor.__extents[__i]));
   }
   if (__rank > 0)
   {
-    ::printf("%zu", __tensor.__shapes[__rank - 1]);
+    ::printf("%llu", static_cast<unsigned long long>(__tensor.__extents[__rank - 1]));
   }
   ::printf("):(");
   for (int __i = 0; __i < __rank - 1; ++__i)

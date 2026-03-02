@@ -42,17 +42,17 @@
 
 namespace cuda::experimental
 {
-template <typename _Tp, int _Rank>
+template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _Rank>
 struct __tile_pointer_iterator
 {
-  const __raw_tensor<_Tp, _Rank> __tensor_original_;
-  const __raw_tensor_ordered<_Tp, _Rank> __tensor_sorted_;
+  const __raw_tensor<_Ep, _Sp, _Tp, _Rank> __tensor_original_;
+  const __raw_tensor_ordered<_Ep, _Sp, _Tp, _Rank> __tensor_sorted_;
   const ::cuda::std::size_t __contiguous_size_;
   const bool __use_stride_order_;
 
   _CCCL_HOST_API explicit __tile_pointer_iterator(
-    const __raw_tensor<_Tp, _Rank>& __tensor_original,
-    const __raw_tensor_ordered<_Tp, _Rank>& __tensor_sorted,
+    const __raw_tensor<_Ep, _Sp, _Tp, _Rank>& __tensor_original,
+    const __raw_tensor_ordered<_Ep, _Sp, _Tp, _Rank>& __tensor_sorted,
     ::cuda::std::size_t __contiguous_size,
     bool __use_stride_order) noexcept
       : __tensor_original_{__tensor_original}
@@ -64,15 +64,15 @@ struct __tile_pointer_iterator
   [[nodiscard]] _CCCL_HOST_API _Tp* operator()(::cuda::std::size_t __tile_idx) const noexcept
   {
     // TODO: potential optimizations: use fast_div_mod in tile iterator
-    const auto& __shapes         = __use_stride_order_ ? __tensor_sorted_.__shapes : __tensor_original_.__shapes;
+    const auto& __extents        = __use_stride_order_ ? __tensor_sorted_.__extents : __tensor_original_.__extents;
     const auto& __strides        = __use_stride_order_ ? __tensor_sorted_.__strides : __tensor_original_.__strides;
     const auto __rank            = static_cast<int>(__tensor_sorted_.__rank);
     auto __index                 = __tile_idx * __contiguous_size_;
     ::cuda::std::size_t __offset = 0;
     for (int __i = __rank - 1; __i >= 0; --__i)
     {
-      __offset += (__index % __shapes[__i]) * __strides[__i];
-      __index /= __shapes[__i];
+      __offset += (__index % __extents[__i]) * __strides[__i];
+      __index /= __extents[__i];
     }
     return __tensor_sorted_.__data + __offset;
   }
@@ -141,9 +141,11 @@ _CCCL_HOST_API void __copy_bytes_impl(
     const auto __num_tiles        = static_cast<size_t>(__src.size() / __tile_size);
     const auto __copy_bytes       = __tile_size * sizeof(_TpIn);
     const auto __use_stride_order = ::cuda::experimental::__same_stride_order(__src_sorted, __dst_sorted);
-    __tile_pointer_iterator<_TpIn, _ExtentsIn::rank()> __src_tiles_iterator(
+    using __ep_t = ::cuda::std::size_t;
+    using __sp_t = ::cuda::std::int64_t;
+    __tile_pointer_iterator<__ep_t, __sp_t, _TpIn, _ExtentsIn::rank()> __src_tiles_iterator(
       __src1, __src_sorted, __tile_size, __use_stride_order);
-    __tile_pointer_iterator<_TpOut, _ExtentsOut::rank()> __dst_tiles_iterator(
+    __tile_pointer_iterator<__ep_t, __sp_t, _TpOut, _ExtentsOut::rank()> __dst_tiles_iterator(
       __dst1, __dst_sorted, __tile_size, __use_stride_order);
 #  if _CCCL_CTK_AT_LEAST(13, 0)
     // Use the memcpy batch API to copy all tiles in one call

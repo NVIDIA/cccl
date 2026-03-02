@@ -59,7 +59,7 @@ void memcpy_layout_0(nvbench::state& state)
 }
 NVBENCH_BENCH(memcpy_layout_0).set_name("memcpy_layout_0").add_string_axis("Impl", {"naive", "registers"});
 
-// memcpy_layout_1: stride_order (3,2,0,1), shape (70,90,80,80)
+// memcpy_layout_1: shape (70,90,80,80), stride_order (3,2,0,1)
 //   fully-contiguous:  (40'320'000):(1)
 void memcpy_layout_1(nvbench::state& state)
 {
@@ -93,8 +93,8 @@ void memcpy_layout_3(nvbench::state& state)
 }
 NVBENCH_BENCH(memcpy_layout_3).set_name("memcpy_layout_3").add_string_axis("Impl", {"naive", "registers"});
 
-// memcpy_neg: negative stride on last dim, shape (63,70,1001)
-//   fully-contiguous but negative:  (1001,4410):(-1,1001)
+// memcpy_neg: negative stride on last dim, shape (63, 70, 1001)
+//   fully-contiguous but negative:  (1001, 4410):(-1, 1001)
 void memcpy_neg(nvbench::state& state)
 {
   using namespace cute;

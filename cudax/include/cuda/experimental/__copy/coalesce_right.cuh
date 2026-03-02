@@ -45,44 +45,44 @@ namespace cuda::experimental
  *    where `curr_stride = out_stride * out_shape` of the most recent mode.
  * 3. Compact valid modes to the beginning of the arrays.
  */
-template <typename _Tp, ::cuda::std::size_t _MaxRank>
-[[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor<_Tp, _MaxRank>
-__coalesce_right(const __raw_tensor<_Tp, _MaxRank>& __tensor_input) noexcept
+template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank>
+[[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>
+__coalesce_right(const __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>& __tensor_input) noexcept
 {
-  using ::cuda::std::int64_t;
-  __raw_tensor<_Tp, _MaxRank> __result{__tensor_input.__data};
-  auto& __shapes  = __result.__shapes;
+  using _Ep1 = ::cuda::std::make_unsigned_t<_Ep>;
+  __raw_tensor<_Ep, _Sp, _Tp, _MaxRank> __result{__tensor_input.__data};
+  auto& __extents = __result.__extents;
   auto& __strides = __result.__strides;
-  ::cuda::std::fill(__shapes.begin(), __shapes.end(), ::cuda::std::size_t{1});
-  ::cuda::std::fill(__strides.begin(), __strides.end(), int64_t{0});
+  ::cuda::std::fill(__extents.begin(), __extents.end(), _Ep1{1});
+  ::cuda::std::fill(__strides.begin(), __strides.end(), _Sp{0});
   const auto __rank  = static_cast<int>(__tensor_input.__rank);
   int __out          = __rank - 1;
-  auto __curr_stride = int64_t{0};
+  _Sp __curr_stride = 0;
   for (int __i = __rank - 1; __i >= 0; --__i)
   {
-    if (__tensor_input.__shapes[__i] == 1)
+    if (__tensor_input.__extents[__i] == 1)
     {
       continue;
     }
     // Merge contiguous modes
     if (__out < __rank - 1 && __tensor_input.__strides[__i] == __curr_stride)
     {
-      __result.__shapes[__out + 1] *= __tensor_input.__shapes[__i];
+      __result.__extents[__out + 1] *= __tensor_input.__extents[__i];
     }
     else
     {
-      __result.__shapes[__out]  = __tensor_input.__shapes[__i];
+      __result.__extents[__out] = __tensor_input.__extents[__i];
       __result.__strides[__out] = __tensor_input.__strides[__i];
       --__out;
     }
-    __curr_stride = __result.__strides[__out + 1] * static_cast<int64_t>(__result.__shapes[__out + 1]);
+    __curr_stride = __result.__strides[__out + 1] * static_cast<_Sp>(__result.__extents[__out + 1]);
   }
   // shift/compact the result at the beginning of the array
   const auto __first_valid = __out + 1;
   const auto __rank_out    = __rank - __first_valid;
   for (int __j = 0; __j < __rank_out; ++__j)
   {
-    __result.__shapes[__j]  = __result.__shapes[__first_valid + __j];
+    __result.__extents[__j] = __result.__extents[__first_valid + __j];
     __result.__strides[__j] = __result.__strides[__first_valid + __j];
   }
   __result.__rank = ::cuda::std::max(__rank_out, 1);

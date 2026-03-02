@@ -63,35 +63,35 @@ namespace cuda::experimental
 //!
 //! @param[in,out] __src Source tensor (shapes and strides reordered)
 //! @param[in,out] __dst Destination tensor (shapes and strides reordered by same permutation)
-template <typename _TpSrc, typename _TpDst, ::cuda::std::size_t _MaxRank>
-_CCCL_HOST_API void
-__sort_by_stride_paired(__raw_tensor<_TpSrc, _MaxRank>& __src, __raw_tensor<_TpDst, _MaxRank>& __dst) noexcept
+template <typename _Ep, typename _Sp, typename _TpSrc, typename _TpDst, ::cuda::std::size_t _MaxRank>
+_CCCL_HOST_API void __sort_by_stride_paired(__raw_tensor<_Ep, _Sp, _TpSrc, _MaxRank>& __src,
+                                            __raw_tensor<_Ep, _Sp, _TpDst, _MaxRank>& __dst) noexcept
 {
   using ::cuda::std::size_t;
   _CCCL_ASSERT(::cuda::in_range(__src.__rank, size_t{1}, _MaxRank), "Invalid tensor rank");
   _CCCL_ASSERT(__src.__rank == __dst.__rank, "Source and destination ranks must be equal");
-  _CCCL_ASSERT(__src.__shapes == __dst.__shapes, "Source and destination shapes must be identical");
+  _CCCL_ASSERT(__src.__extents == __dst.__extents, "Source and destination extents must be identical");
   struct __mode
   {
-    size_t __shape;
-    ::cuda::std::int64_t __src_stride;
-    ::cuda::std::int64_t __dst_stride;
+    _Ep __extent;
+    _Sp __src_stride;
+    _Sp __dst_stride;
   };
   ::cuda::std::array<__mode, _MaxRank> __modes{};
   for (size_t __i = 0; __i < __src.__rank; ++__i)
   {
-    __modes[__i] = {__src.__shapes[__i], __src.__strides[__i], __dst.__strides[__i]};
+    __modes[__i] = {__src.__extents[__i], __src.__strides[__i], __dst.__strides[__i]};
   }
   ::cuda::std::stable_sort(__modes.begin(), __modes.begin() + __src.__rank, [](auto __a, auto __b) {
     return ::cuda::std::abs(__a.__dst_stride) < ::cuda::std::abs(__b.__dst_stride);
   });
   for (size_t __i = 0; __i < __src.__rank; ++__i)
   {
-    __src.__shapes[__i]  = __modes[__i].__shape;
+    __src.__extents[__i] = __modes[__i].__extent;
     __src.__strides[__i] = __modes[__i].__src_stride;
     __dst.__strides[__i] = __modes[__i].__dst_stride;
   }
-  __dst.__shapes = __src.__shapes;
+  __dst.__extents = __src.__extents;
 }
 
 //! @brief Flip modes where both tensors have negative strides to positive.
@@ -100,23 +100,26 @@ __sort_by_stride_paired(__raw_tensor<_TpSrc, _MaxRank>& __src, __raw_tensor<_TpD
 //! negates both strides and advances both data pointers by `(shape - 1) * stride`
 //! (a negative offset, moving pointers backward).
 //!
+//! A negative stride means the mode is iterated in reverse (high address → low).
+//! Flipping a stride (negating it + adjusting the pointer) reverses the iteration direction for that mode
+//!
 //! @pre `__src.__rank == __dst.__rank`, in [1, _MaxRank].
 //! @pre Both tensors must have the same shapes (mode-by-mode).
 //!
 //! @param[in,out] __src Source tensor (data pointer and strides updated)
 //! @param[in,out] __dst Destination tensor (data pointer and strides updated)
-template <typename _TpSrc, typename _TpDst, ::cuda::std::size_t _MaxRank>
-_CCCL_HOST_API void
-__flip_negative_strides_paired(__raw_tensor<_TpSrc, _MaxRank>& __src, __raw_tensor<_TpDst, _MaxRank>& __dst) noexcept
+template <typename _Ep, typename _Sp, typename _TpSrc, typename _TpDst, ::cuda::std::size_t _MaxRank>
+_CCCL_HOST_API void __flip_negative_strides_paired(__raw_tensor<_Ep, _Sp, _TpSrc, _MaxRank>& __src,
+                                                   __raw_tensor<_Ep, _Sp, _TpDst, _MaxRank>& __dst) noexcept
 {
   _CCCL_ASSERT(__src.__rank == __dst.__rank, "Source and destination ranks must be equal");
-  _CCCL_ASSERT(__src.__shapes == __dst.__shapes, "Source and destination shapes must be identical");
+  _CCCL_ASSERT(__src.__extents == __dst.__extents, "Source and destination extents must be identical");
   for (::cuda::std::size_t __i = 0; __i < __src.__rank; ++__i)
   {
     if (__src.__strides[__i] < 0 && __dst.__strides[__i] < 0)
     {
-      const auto __adj_src = static_cast<::cuda::std::int64_t>(__src.__shapes[__i] - 1) * __src.__strides[__i];
-      const auto __adj_dst = static_cast<::cuda::std::int64_t>(__dst.__shapes[__i] - 1) * __dst.__strides[__i];
+      const auto __adj_src = static_cast<_Sp>(__src.__extents[__i] - 1) * __src.__strides[__i];
+      const auto __adj_dst = static_cast<_Sp>(__dst.__extents[__i] - 1) * __dst.__strides[__i];
       __src.__data += __adj_src;
       __dst.__data += __adj_dst;
       __src.__strides[__i] = -__src.__strides[__i];
@@ -141,36 +144,36 @@ __flip_negative_strides_paired(__raw_tensor<_TpSrc, _MaxRank>& __src, __raw_tens
 //!
 //! @param[in,out] __src Source tensor (shapes, strides, and rank updated)
 //! @param[in,out] __dst Destination tensor (shapes, strides, and rank updated)
-template <typename _TpSrc, typename _TpDst, ::cuda::std::size_t _MaxRank>
-_CCCL_HOST_API void
-__coalesce_paired(__raw_tensor<_TpSrc, _MaxRank>& __src, __raw_tensor<_TpDst, _MaxRank>& __dst) noexcept
+template <typename _Ep, typename _Sp, typename _TpSrc, typename _TpDst, ::cuda::std::size_t _MaxRank>
+_CCCL_HOST_API void __coalesce_paired(__raw_tensor<_Ep, _Sp, _TpSrc, _MaxRank>& __src,
+                                      __raw_tensor<_Ep, _Sp, _TpDst, _MaxRank>& __dst) noexcept
 {
   _CCCL_ASSERT(::cuda::in_range(__src.__rank, ::cuda::std::size_t{1}, _MaxRank), "Invalid tensor rank");
   _CCCL_ASSERT(__src.__rank == __dst.__rank, "Source and destination ranks must be equal");
-  _CCCL_ASSERT(__src.__shapes == __dst.__shapes, "Source and destination shapes must be identical");
-  _CCCL_ASSERT(::cuda::experimental::__has_no_extent1_modes(__src), "All shapes must be greater than 1");
+  _CCCL_ASSERT(__src.__extents == __dst.__extents, "Source and destination extents must be identical");
+  _CCCL_ASSERT(::cuda::experimental::__has_no_extent1_modes(__src), "All extents must be greater than 1");
   _CCCL_ASSERT(::cuda::experimental::__has_sorted_strides(__dst), "Destination strides must be sorted by dst strides");
   const auto __rank         = __src.__rank;
-  auto& __shapes            = __src.__shapes;
+  auto& __extents           = __src.__extents;
   ::cuda::std::size_t __out = 1;
   for (::cuda::std::size_t __i = 1; __i < __rank; ++__i)
   {
-    const auto __prev_shape     = static_cast<::cuda::std::int64_t>(__shapes[__out - 1]);
-    const bool __src_contiguous = (__prev_shape * __src.__strides[__out - 1] == __src.__strides[__i]);
-    const bool __dst_contiguous = (__prev_shape * __dst.__strides[__out - 1] == __dst.__strides[__i]);
+    const auto __prev_extent    = static_cast<_Sp>(__extents[__out - 1]);
+    const bool __src_contiguous = (__prev_extent * __src.__strides[__out - 1] == __src.__strides[__i]);
+    const bool __dst_contiguous = (__prev_extent * __dst.__strides[__out - 1] == __dst.__strides[__i]);
     if (__src_contiguous && __dst_contiguous)
     {
-      __shapes[__out - 1] *= __shapes[__i];
+      __extents[__out - 1] *= __extents[__i];
       continue;
     }
-    __shapes[__out]        = __shapes[__i];
+    __extents[__out]       = __extents[__i];
     __src.__strides[__out] = __src.__strides[__i];
     __dst.__strides[__out] = __dst.__strides[__i];
     ++__out;
   }
-  __src.__rank   = __out;
-  __dst.__rank   = __out;
-  __dst.__shapes = __shapes;
+  __src.__rank    = __out;
+  __dst.__rank    = __out;
+  __dst.__extents = __extents;
 }
 
 //! @brief Compute the maximum vectorization width in bytes for a raw tensor.
@@ -188,18 +191,15 @@ __coalesce_paired(__raw_tensor<_TpSrc, _MaxRank>& __src, __raw_tensor<_TpDst, _M
 //!
 //! @param[in] __tensor Raw tensor with strides sorted by @ref __sort_by_stride_paired
 //! @return Maximum safe vectorization width in bytes, in [sizeof(_Tp), 16]
-template <typename _Tp, ::cuda::std::size_t _MaxRank>
+template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank>
 [[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t
-__max_vector_size_bytes(const __raw_tensor<_Tp, _MaxRank>& __tensor) noexcept
+__max_vector_size_bytes(const __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>& __tensor) noexcept
 {
   using ::cuda::std::size_t;
   _CCCL_ASSERT(::cuda::in_range(__tensor.__rank, size_t{1}, _MaxRank), "Invalid tensor rank");
-  _CCCL_ASSERT(::cuda::experimental::__has_no_extent1_modes(__tensor), "All shapes must be greater than 1");
-  const auto& __shapes  = __tensor.__shapes;
+  _CCCL_ASSERT(::cuda::experimental::__has_no_extent1_modes(__tensor), "All extents must be different from 1");
+  const auto& __extents = __tensor.__extents;
   const auto& __strides = __tensor.__strides;
-  // early exit for non-contiguous tensors
-  // this also handles __strides[__i] == -1 (non-contiguous) because strides are sorted
-  // copy_bytes_registers.cuh already ensures that the function is called on tensors with strides[0] == 1
   if (__strides[0] != 1)
   {
     return sizeof(_Tp);
@@ -219,7 +219,7 @@ __max_vector_size_bytes(const __raw_tensor<_Tp, _MaxRank>& __tensor) noexcept
   _CCCL_ASSERT(__alignment % sizeof(_Tp) == 0, "Maximum vector size is not a multiple of the element size");
   // (3) Compute the number of items per vector over the contiguous mode
   size_t __items_per_vector = __alignment / sizeof(_Tp);
-  __items_per_vector        = ::cuda::std::gcd(__items_per_vector, static_cast<size_t>(__shapes[0]));
+  __items_per_vector        = ::cuda::std::gcd(__items_per_vector, static_cast<size_t>(__extents[0]));
   return __items_per_vector * sizeof(_Tp);
 }
 

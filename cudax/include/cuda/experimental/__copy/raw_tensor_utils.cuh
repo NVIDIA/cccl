@@ -41,8 +41,8 @@ namespace cuda::experimental
 //!
 //! @param[in] __tensor Raw tensor to inspect
 //! @return true if strides[0..rank) are non-descending
-template <typename _Tp, ::cuda::std::size_t _MaxRank>
-[[nodiscard]] _CCCL_HOST_API bool __has_sorted_strides(const __raw_tensor<_Tp, _MaxRank>& __tensor) noexcept
+template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank>
+[[nodiscard]] _CCCL_HOST_API bool __has_sorted_strides(const __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>& __tensor) noexcept
 {
   _CCCL_ASSERT(::cuda::in_range(__tensor.__rank, ::cuda::std::size_t{0}, _MaxRank), "Invalid tensor rank");
   return ::cuda::std::is_sorted(
@@ -57,14 +57,14 @@ template <typename _Tp, ::cuda::std::size_t _MaxRank>
 //!
 //! @param[in] __tensor Raw tensor to inspect
 //! @return true if all shapes in [0, rank) are > 1; true for rank 0
-template <typename _Tp, ::cuda::std::size_t _MaxRank>
-[[nodiscard]] _CCCL_HOST_API bool __has_no_extent1_modes(const __raw_tensor<_Tp, _MaxRank>& __tensor) noexcept
+template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank>
+[[nodiscard]] _CCCL_HOST_API bool __has_no_extent1_modes(const __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>& __tensor) noexcept
 {
   _CCCL_ASSERT(::cuda::in_range(__tensor.__rank, ::cuda::std::size_t{0}, _MaxRank), "Invalid tensor rank");
   // clang-format off
-  return ::cuda::std::all_of(__tensor.__shapes.cbegin(), __tensor.__shapes.cbegin() + __tensor.__rank,
-    [](auto __shape) {
-      return __shape > 1;
+  return ::cuda::std::all_of(__tensor.__extents.cbegin(), __tensor.__extents.cbegin() + __tensor.__rank,
+    [](auto __extent) {
+      return __extent > 1;
     }
   ); // clang-format on
 }

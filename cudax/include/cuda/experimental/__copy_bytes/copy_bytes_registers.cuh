@@ -141,6 +141,22 @@ __launch_copy_bytes_kernel(const _SrcTensor& __src_tensor, const _DstTensor& __d
     __stream, __config, __kernel, __src_ptr, __src_layout, __dst_ptr, __dst_layout, __inner_size, __tiles_per_row);
 }
 
+template <::cuda::std::size_t _VectorBytes>
+struct __vector_access
+{
+  using type = ::cuda::std::__make_nbit_uint_t<_VectorBytes * CHAR_BIT>;
+};
+
+// NOT SUPPORTED BY CUTE
+// template <>
+// struct __vector_access<32>
+//{
+//  using type = ::ulonglong4_32a;
+//};
+
+template <::cuda::std::size_t _VectorBytes>
+using __vector_access_t = typename __vector_access<_VectorBytes>::type;
+
 //! @brief Dispatch a vectorized copy kernel based on the common vector size in bytes.
 //!
 //! Recasts the source and destination tensors to the appropriate vector type
@@ -157,13 +173,17 @@ _CCCL_HOST_API void __dispatch_vectorized_copy(
   auto __launch = [&](auto __vec_c) {
     constexpr int __vec_bytes    = decltype(__vec_c)::value;
     constexpr int __vec_bits_int = __vec_bytes * CHAR_BIT;
-    using __vec_type             = ::cuda::std::__make_nbit_uint_t<__vec_bits_int>;
-    const auto __src_recast      = ::cute::recast<__vec_type>(__src_ptr);
-    const auto __dst_recast      = ::cute::recast<__vec_type>(__dst_ptr);
+    using __vec_type             = __vector_access_t<__vec_bytes>;
+
+    const auto __src_recast = ::cute::recast<__vec_type>(__src_ptr);
+    const auto __dst_recast = ::cute::recast<__vec_type>(__dst_ptr);
     ::cuda::experimental::__launch_copy_bytes_kernel<__vec_bits_int>(__src_recast, __dst_recast, __stream);
   };
   switch (__common_vector_bytes)
   {
+    // case 32:
+    //   __launch(::cuda::std::integral_constant<int, 32>{});
+    //   break;
     case 16:
       __launch(::cuda::std::integral_constant<int, 16>{});
       break;
@@ -206,11 +226,17 @@ struct __naive_dispatch_tag
 //! @param[in] __dst    Destination raw tensor
 //! @param[in] __stream CUDA stream
 //! @return `true` if the rank matched and the copy was dispatched, `false` if rank exceeded the limit
-template <::cuda::std::size_t _Np, typename _Tag, typename _TpSrc, typename _TpDst, ::cuda::std::size_t _MaxRank>
+template <::cuda::std::size_t _Np,
+          typename _Tag,
+          typename _Ep,
+          typename _Sp,
+          typename _TpSrc,
+          typename _TpDst,
+          ::cuda::std::size_t _MaxRank>
 [[nodiscard]] _CCCL_HOST_API bool __dispatch_by_rank(
   const _Tag& __tag,
-  const __raw_tensor<_TpSrc, _MaxRank>& __src,
-  const __raw_tensor<_TpDst, _MaxRank>& __dst,
+  const __raw_tensor<_Ep, _Sp, _TpSrc, _MaxRank>& __src,
+  const __raw_tensor<_Ep, _Sp, _TpDst, _MaxRank>& __dst,
   ::cuda::stream_ref __stream)
 {
   constexpr auto __max_dispatch_rank = ::cuda::std::min(_MaxRank, ::cuda::std::size_t{5});
@@ -225,19 +251,19 @@ template <::cuda::std::size_t _Np, typename _Tag, typename _TpSrc, typename _TpD
       constexpr auto __seq = ::cuda::std::make_index_sequence<_Np - 1>{};
       if constexpr (_Tag::__vectorized)
       {
-        const auto __sl = ::cuda::experimental::__to_cute_layout_contiguous(__src, __seq);
-        const auto __dl = ::cuda::experimental::__to_cute_layout_contiguous(__dst, __seq);
+        const auto __src_layout = ::cuda::experimental::__to_cute_layout_contiguous(__src, __seq);
+        const auto __dst_layout = ::cuda::experimental::__to_cute_layout_contiguous(__dst, __seq);
         ::cuda::experimental::__dispatch_vectorized_copy(
-          ::cuda::experimental::__make_gmem_tensor(__src.__data, __sl),
-          ::cuda::experimental::__make_gmem_tensor(__dst.__data, __dl),
+          ::cuda::experimental::__make_gmem_tensor(__src.__data, __src_layout),
+          ::cuda::experimental::__make_gmem_tensor(__dst.__data, __dst_layout),
           __tag.__common_vector_bytes,
           __stream);
       }
       else
       {
-        const auto __sl = ::cuda::experimental::__to_cute_layout(__src, __seq);
-        const auto __dl = ::cuda::experimental::__to_cute_layout(__dst, __seq);
-        ::cuda::experimental::copy_bytes_naive(__src.__data, __sl, __dst.__data, __dl, __stream);
+        const auto __src_layout = ::cuda::experimental::__to_cute_layout(__src, __seq);
+        const auto __dst_layout = ::cuda::experimental::__to_cute_layout(__dst, __seq);
+        ::cuda::experimental::copy_bytes_naive(__src.__data, __src_layout, __dst.__data, __dst_layout, __stream);
       }
       return true;
     }
@@ -264,16 +290,15 @@ _CCCL_HOST_API void copy_bytes_registers(
   ::cuda::stream_ref __stream)
 {
   namespace cudax          = cuda::experimental;
-  constexpr auto __remove1 = cudax::__remove_extent1_mode;
   constexpr int __src_rank = decltype(::cute::rank(__src_layout))::value;
   constexpr int __dst_rank = decltype(::cute::rank(__dst_layout))::value;
   static_assert(__src_rank == __dst_rank, "Source and destination layouts must have the same rank");
-  auto __src_raw = cudax::__to_raw_tensor<__src_rank>(__src_ptr, __src_layout, __remove1);
-  auto __dst_raw = cudax::__to_raw_tensor<__dst_rank>(__dst_ptr, __dst_layout, __remove1);
+  auto __src_raw = cudax::__to_raw_tensor<__src_rank>(__src_ptr, __src_layout, cudax::__remove_extent1_mode);
+  auto __dst_raw = cudax::__to_raw_tensor<__dst_rank>(__dst_ptr, __dst_layout, cudax::__remove_extent1_mode);
   _CCCL_ASSERT(__src_raw.__rank == __dst_raw.__rank, "Source and destination layouts must have the same rank");
-  if (__src_raw.__shapes != __dst_raw.__shapes)
+  if (__src_raw.__extents != __dst_raw.__extents)
   {
-    _CCCL_THROW(::std::invalid_argument, "Source and destination layouts must have the same shapes");
+    _CCCL_THROW(::std::invalid_argument, "Source and destination layouts must have the same extents");
   }
   const auto __total_size = static_cast<::cuda::std::size_t>(::cute::size(__src_layout));
   if (__total_size == 0)
@@ -296,13 +321,13 @@ _CCCL_HOST_API void copy_bytes_registers(
   cudax::__coalesce_paired(__src_raw, __dst_raw);
 
   const bool __are_both_contiguous = (__src_raw.__strides[0] == 1) && (__dst_raw.__strides[0] == 1);
-  if (__are_both_contiguous)
+  if (__are_both_contiguous /*&& ::std::is_same_v<_Tp, _Up>*/)
   {
     if (__src_raw.__rank == 1)
     {
       using __extents_t       = ::cuda::std::dims<1>;
-      const auto __src_mdspan = ::cuda::std::mdspan<const _Tp, __extents_t>(__src_raw.__data, __src_raw.__shapes[0]);
-      const auto __dst_mdspan = ::cuda::std::mdspan<_Tp, __extents_t>(__dst_raw.__data, __dst_raw.__shapes[0]);
+      const auto __src_mdspan = ::cuda::std::mdspan<const _Tp, __extents_t>(__src_raw.__data, __src_raw.__extents[0]);
+      const auto __dst_mdspan = ::cuda::std::mdspan<_Tp, __extents_t>(__dst_raw.__data, __dst_raw.__extents[0]);
       const auto __status     = ::cub::detail::copy_mdspan::copy(__src_mdspan, __dst_mdspan, __stream.get());
       if (__status != ::cudaSuccess)
       {
@@ -325,6 +350,12 @@ _CCCL_HOST_API void copy_bytes_registers(
       return;
     }
   }
+  // transpose case
+  // else if (__dst_raw.__strides[0] == 1)
+  //{
+  //  cudax::copy_bytes_shared_mem(__src_raw, __dst_raw, __stream);
+  //  return;
+  //}
   if (!cudax::__dispatch_by_rank<1>(cudax::__naive_dispatch_tag{}, __src_raw, __dst_raw, __stream))
   {
     cudax::copy_bytes_naive(__src_ptr, __src_layout, __dst_ptr, __dst_layout, __stream);

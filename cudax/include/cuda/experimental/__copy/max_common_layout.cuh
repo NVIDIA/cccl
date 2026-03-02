@@ -45,16 +45,16 @@ namespace cuda::experimental
  * 2. The running contiguous extents from both tensors are accumulated independently and the returned tile size is
  *    `gcd(curr_a, curr_b)`.
  */
-template <typename _TpA, typename _TpB, ::cuda::std::size_t _MaxRank>
+template <typename _Ep, typename _Sp, typename _TpA, typename _TpB, ::cuda::std::size_t _MaxRank>
 [[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::size_t __max_common_contiguous_size(
-  const __raw_tensor_ordered<_TpA, _MaxRank>& __tensor_a,
-  const __raw_tensor_ordered<_TpB, _MaxRank>& __tensor_b) noexcept
+  const __raw_tensor_ordered<_Ep, _Sp, _TpA, _MaxRank>& __tensor_a,
+  const __raw_tensor_ordered<_Ep, _Sp, _TpB, _MaxRank>& __tensor_b) noexcept
 {
   _CCCL_ASSERT(__tensor_a.__rank == __tensor_b.__rank, "The ranks of the tensors must be the same");
-  const auto& __shapes_a       = __tensor_a.__shapes;
+  const auto& __extents_a      = __tensor_a.__extents;
   const auto& __strides_a      = __tensor_a.__strides;
   const auto& __orders_a       = __tensor_a.__orders;
-  const auto& __shapes_b       = __tensor_b.__shapes;
+  const auto& __extents_b      = __tensor_b.__extents;
   const auto& __strides_b      = __tensor_b.__strides;
   const auto& __orders_b       = __tensor_b.__orders;
   ::cuda::std::size_t __curr_a = 1;
@@ -62,13 +62,13 @@ template <typename _TpA, typename _TpB, ::cuda::std::size_t _MaxRank>
   for (int __i = static_cast<int>(__tensor_a.__rank) - 1; __i >= 0; --__i)
   {
     if (__orders_a[__i] != __orders_b[__i] //
-        || (__strides_a[__i] != static_cast<::cuda::std::int64_t>(__curr_a)) //
-        || (__strides_b[__i] != static_cast<::cuda::std::int64_t>(__curr_b)))
+        || (__strides_a[__i] != static_cast<_Sp>(__curr_a)) //
+        || (__strides_b[__i] != static_cast<_Sp>(__curr_b)))
     {
       break;
     }
-    __curr_a *= __shapes_a[__i];
-    __curr_b *= __shapes_b[__i];
+    __curr_a *= __extents_a[__i];
+    __curr_b *= __extents_b[__i];
   }
   return ::cuda::std::gcd(__curr_a, __curr_b);
 }
@@ -79,10 +79,10 @@ template <typename _TpA, typename _TpB, ::cuda::std::size_t _MaxRank>
  * Tensors with different compile-time/runtime ranks are first extended to the same runtime rank using `__append`
  * (identity modes), then forwarded to the same-rank overload.
  */
-template <typename _TpA, typename _TpB, ::cuda::std::size_t _MaxRankA, ::cuda::std::size_t _MaxRankB>
+template <typename _Ep, typename _Sp, typename _TpA, typename _TpB, ::cuda::std::size_t _MaxRankA, ::cuda::std::size_t _MaxRankB>
 [[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::size_t __max_common_contiguous_size(
-  const __raw_tensor_ordered<_TpA, _MaxRankA>& __tensor_a,
-  const __raw_tensor_ordered<_TpB, _MaxRankB>& __tensor_b) noexcept
+  const __raw_tensor_ordered<_Ep, _Sp, _TpA, _MaxRankA>& __tensor_a,
+  const __raw_tensor_ordered<_Ep, _Sp, _TpB, _MaxRankB>& __tensor_b) noexcept
 {
   constexpr auto __rank_max = ::cuda::std::max(_MaxRankA, _MaxRankB);
   const auto __rank_uniform = ::cuda::std::max(__tensor_a.__rank, __tensor_b.__rank);
