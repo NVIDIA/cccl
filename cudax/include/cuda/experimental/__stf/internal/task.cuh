@@ -271,7 +271,8 @@ public:
     // This defines an affine data place too
     set_affine_data_place(p.affine_data_place());
     pimpl->e_place = mv(p);
-    EXPECT(!get_affine_data_place().is_invalid() || get_exec_place().is_grid(),
+    bool affine_ok = !get_affine_data_place().is_invalid() || get_exec_place().is_grid();
+    EXPECT(affine_ok,
            "Exec place must provide a valid affine data place for dependencies that use data_place::affine(), "
            "or use exec_place_grid and set its affine (e.g. grid.set_affine_data_place(composite_dplace)) before "
            "set_exec_place.");

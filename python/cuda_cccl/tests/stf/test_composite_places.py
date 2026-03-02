@@ -87,7 +87,7 @@ def test_composite_grid_dims():
 
 def test_task_on_exec_place_grid():
     """Task runs on an exec_place_grid; query grid dims and streams by index.
-    Sets the grid's affine data place so we can use lX.rw() (affine) instead of passing dplace on each dep.
+    Sets the grid's affine data place so dependencies can use lX.rw() (affine).
     """
     grid = stf.exec_place_grid.from_devices([0, 0])  # same device, 2 places
     dplace = stf.data_place.composite(grid, blocked_mapper_1d)
@@ -109,7 +109,7 @@ def test_task_on_exec_place_grid():
 
 
 def test_task_on_grid_with_composite_dep():
-    """Task on exec_place_grid; affine set on grid so deps can use lX.rw() without passing dplace."""
+    """Task on exec_place_grid; affine set on grid so deps use lX.rw() without passing dplace."""
     grid = stf.exec_place_grid.from_devices([0, 0])
     dplace = stf.data_place.composite(grid, blocked_mapper_1d)
     assert dplace.kind == "composite"
