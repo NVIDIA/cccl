@@ -417,8 +417,7 @@ void stf_cuda_kernel_destroy(stf_cuda_kernel_handle t)
 
 stf_exec_place_grid_handle stf_exec_place_grid_from_devices(const int* device_ids, size_t count)
 {
-  _CCCL_ASSERT(device_ids != nullptr || count == 0,
-               "device_ids must not be null unless count is 0");
+  _CCCL_ASSERT(device_ids != nullptr || count == 0, "device_ids must not be null unless count is 0");
   // count must be >= 1: C++ make_grid() requires non-empty places.
   ::std::vector<exec_place> places;
   places.reserve(count);
@@ -433,8 +432,7 @@ stf_exec_place_grid_handle stf_exec_place_grid_from_devices(const int* device_id
 stf_exec_place_grid_handle
 stf_exec_place_grid_create(const stf_exec_place* places, size_t count, const stf_dim4* grid_dims)
 {
-  _CCCL_ASSERT(places != nullptr || count == 0,
-               "places must not be null unless count is 0");
+  _CCCL_ASSERT(places != nullptr || count == 0, "places must not be null unless count is 0");
   ::std::vector<exec_place> cpp_places;
   cpp_places.reserve(count);
   for (size_t i = 0; i < count; i++)
