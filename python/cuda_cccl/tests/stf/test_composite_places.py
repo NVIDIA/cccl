@@ -87,15 +87,16 @@ def test_composite_grid_dims():
 
 def test_task_on_exec_place_grid():
     """Task runs on an exec_place_grid; query grid dims and streams by index.
-    Uses a composite data place (required when exec place is a grid).
+    Sets the grid's affine data place so we can use lX.rw() (affine) instead of passing dplace on each dep.
     """
     grid = stf.exec_place_grid.from_devices([0, 0])  # same device, 2 places
     dplace = stf.data_place.composite(grid, blocked_mapper_1d)
     assert dplace.kind == "composite"
+    grid.set_affine_data_place(dplace)
     ctx = stf.context()
     X = np.zeros(4, dtype=np.float32)
     lX = ctx.logical_data(X)
-    with ctx.task(grid, lX.rw(dplace)) as t:
+    with ctx.task(grid, lX.rw()) as t:
         dims = t.get_grid_dims()
         assert dims is not None
         assert dims == (2, 1, 1, 1)
@@ -108,14 +109,15 @@ def test_task_on_exec_place_grid():
 
 
 def test_task_on_grid_with_composite_dep():
-    """Task on exec_place_grid with a composite data-place dep (required when exec place is a grid)."""
+    """Task on exec_place_grid; affine set on grid so deps can use lX.rw() without passing dplace."""
     grid = stf.exec_place_grid.from_devices([0, 0])
     dplace = stf.data_place.composite(grid, blocked_mapper_1d)
     assert dplace.kind == "composite"
+    grid.set_affine_data_place(dplace)
     ctx = stf.context()
     X = np.zeros(4, dtype=np.float32)
     lX = ctx.logical_data(X)
-    with ctx.task(grid, lX.rw(dplace)) as t:
+    with ctx.task(grid, lX.rw()) as t:
         dims = t.get_grid_dims()
         assert dims is not None
         assert dims == (2, 1, 1, 1)
