@@ -214,7 +214,7 @@ private:
   // token is only constructible by BlockLoadToShared
   class token_impl
   {
-    friend class BlockLoadToShared;
+    friend struct BlockLoadToShared;
     _CCCL_DEVICE_API _CCCL_FORCEINLINE token_impl() {} // ctor must have a body to avoid token_impl{} to compile
 
     token_impl(const token_impl&)            = delete;
