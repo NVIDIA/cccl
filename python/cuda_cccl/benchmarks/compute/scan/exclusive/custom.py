@@ -36,7 +36,7 @@ def max_op(a, b):
 def bench_scan_exclusive_custom(state: bench.State):
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
-    num_items = int(state.get_int64("Elements"))
+    num_items = int(state.get_int64("Elements{io}"))
 
     alloc_stream = as_cupy_stream(state.get_stream())
     with alloc_stream:
@@ -83,5 +83,5 @@ if __name__ == "__main__":
     b = bench.register(bench_scan_exclusive_custom)
     b.set_name("base")
     b.add_string_axis("T", list(TYPE_MAP.keys()))
-    b.add_int64_power_of_two_axis("Elements", range(16, 33, 4))
+    b.add_int64_power_of_two_axis("Elements{io}", range(16, 33, 4))
     bench.run_all_benchmarks(sys.argv)

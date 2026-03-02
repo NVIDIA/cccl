@@ -38,7 +38,7 @@ def less_complex(a, b):
 
 
 def bench_compare_complex(state: bench.State):
-    num_elements = int(state.get_int64("Elements"))
+    num_elements = int(state.get_int64("Elements{io}"))
 
     try:
         alloc_stream = as_cupy_stream(state.get_stream())
@@ -76,5 +76,5 @@ def bench_compare_complex(state: bench.State):
 if __name__ == "__main__":
     b = bench.register(bench_compare_complex)
     b.set_name("compare_complex")
-    b.add_int64_power_of_two_axis("Elements", range(16, 33, 4))
+    b.add_int64_power_of_two_axis("Elements{io}", range(16, 33, 4))
     bench.run_all_benchmarks(sys.argv)

@@ -31,7 +31,7 @@ from cuda.compute import OpKind, make_exclusive_scan
 def bench_scan_exclusive_sum(state: bench.State):
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
-    num_items = int(state.get_int64("Elements"))
+    num_items = int(state.get_int64("Elements{io}"))
 
     # Setup data - use random values like C++ generate()
     alloc_stream = as_cupy_stream(state.get_stream())
@@ -88,6 +88,8 @@ if __name__ == "__main__":
     b.set_name("base")
 
     b.add_string_axis("T", list(TYPE_MAP.keys()))
-    b.add_int64_power_of_two_axis("Elements", range(16, 33, 4))  # [16, 20, 24, 28, 32]
+    b.add_int64_power_of_two_axis(
+        "Elements{io}", range(16, 33, 4)
+    )  # [16, 20, 24, 28, 32]
 
     bench.run_all_benchmarks(sys.argv)

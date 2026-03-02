@@ -41,7 +41,7 @@ def max_op(a, b):
 def bench_segmented_reduce_custom(state: bench.State):
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
-    num_elements = int(state.get_int64("Elements"))
+    num_elements = int(state.get_int64("Elements{io}"))
     segment_size = int(state.get_int64("SegmentSize"))
 
     alloc_stream = as_cupy_stream(state.get_stream())
@@ -111,19 +111,19 @@ if __name__ == "__main__":
     b_small = bench.register(bench_segmented_reduce_custom)
     b_small.set_name("small")
     b_small.add_string_axis("T", list(TYPE_MAP.keys()))
-    b_small.add_int64_power_of_two_axis("Elements", range(16, 29, 4))
+    b_small.add_int64_power_of_two_axis("Elements{io}", range(16, 29, 4))
     b_small.add_int64_axis("SegmentSize", [2**i for i in range(0, 5)])
 
     b_medium = bench.register(bench_segmented_reduce_custom)
     b_medium.set_name("medium")
     b_medium.add_string_axis("T", list(TYPE_MAP.keys()))
-    b_medium.add_int64_power_of_two_axis("Elements", range(16, 29, 4))
+    b_medium.add_int64_power_of_two_axis("Elements{io}", range(16, 29, 4))
     b_medium.add_int64_axis("SegmentSize", [2**i for i in range(5, 9)])
 
     b_large = bench.register(bench_segmented_reduce_custom)
     b_large.set_name("large")
     b_large.add_string_axis("T", list(TYPE_MAP.keys()))
-    b_large.add_int64_power_of_two_axis("Elements", range(16, 29, 4))
+    b_large.add_int64_power_of_two_axis("Elements{io}", range(16, 29, 4))
     b_large.add_int64_axis("SegmentSize", [2**i for i in range(9, 17)])
 
     bench.run_all_benchmarks(sys.argv)

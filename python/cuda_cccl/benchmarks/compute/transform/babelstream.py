@@ -51,7 +51,7 @@ def bench_mul(state: bench.State):
     """
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
-    num_items = int(state.get_int64("Elements"))
+    num_items = int(state.get_int64("Elements{io}"))
 
     _reset_pools()
 
@@ -90,7 +90,7 @@ def bench_add(state: bench.State):
     """
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
-    num_items = int(state.get_int64("Elements"))
+    num_items = int(state.get_int64("Elements{io}"))
 
     _reset_pools()
 
@@ -133,7 +133,7 @@ def bench_triad(state: bench.State):
     """
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
-    num_items = int(state.get_int64("Elements"))
+    num_items = int(state.get_int64("Elements{io}"))
 
     _reset_pools()
 
@@ -180,7 +180,7 @@ def bench_nstream(state: bench.State):
     """
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
-    num_items = int(state.get_int64("Elements"))
+    num_items = int(state.get_int64("Elements{io}"))
 
     _reset_pools()
 
@@ -236,6 +236,6 @@ if __name__ == "__main__":
         b = bench.register(bench_fn)
         b.set_name(name)
         b.add_string_axis("T", list(TYPE_MAP.keys()))
-        b.add_int64_power_of_two_axis("Elements", range(16, 33, 4))
+        b.add_int64_power_of_two_axis("Elements{io}", range(16, 33, 4))
 
     bench.run_all_benchmarks(sys.argv)

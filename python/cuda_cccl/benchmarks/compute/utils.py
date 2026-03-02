@@ -109,6 +109,7 @@ def generate_data_with_entropy(
 
 
 def generate_uniform_segment_offsets(num_elements, min_segment_size, max_segment_size):
+    num_elements = int(num_elements)
     if min_segment_size <= 0:
         raise ValueError("min_segment_size must be positive")
     if max_segment_size < min_segment_size:
@@ -125,7 +126,11 @@ def generate_uniform_segment_offsets(num_elements, min_segment_size, max_segment
         dtype=cp.int64,
     )
     cumsum = cp.cumsum(sizes)
-    cutoff = int(cp.searchsorted(cumsum, num_elements, side="left").item())
+    cutoff = int(
+        cp.searchsorted(
+            cumsum, cp.asarray(num_elements, dtype=cp.int64), side="left"
+        ).item()
+    )
     sizes = sizes[: cutoff + 1]
     prev = 0 if cutoff == 0 else int(cumsum[cutoff - 1].item())
     sizes[cutoff] = num_elements - prev
@@ -180,6 +185,7 @@ def generate_fixed_segment_offsets(num_elements, segment_size, stream):
 def generate_key_segments(
     num_elements, key_dtype, min_segment_size, max_segment_size, stream
 ):
+    num_elements = int(num_elements)
     if min_segment_size <= 0:
         raise ValueError("min_segment_size must be positive")
     if max_segment_size < min_segment_size:
@@ -196,7 +202,11 @@ def generate_key_segments(
         dtype=cp.int64,
     )
     cumsum = cp.cumsum(sizes)
-    cutoff = int(cp.searchsorted(cumsum, num_elements, side="left").item())
+    cutoff = int(
+        cp.searchsorted(
+            cumsum, cp.asarray(num_elements, dtype=cp.int64), side="left"
+        ).item()
+    )
     sizes = sizes[: cutoff + 1]
     prev = 0 if cutoff == 0 else int(cumsum[cutoff - 1].item())
     sizes[cutoff] = num_elements - prev

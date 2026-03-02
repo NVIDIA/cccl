@@ -15,7 +15,6 @@ Notes:
 import sys
 from pathlib import Path
 
-# Add parent directory to path for utils import
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
@@ -25,8 +24,6 @@ from utils import as_cupy_stream, generate_data_with_entropy
 
 import cuda.bench as bench
 from cuda.compute import make_histogram_even
-
-# From C++ benchmark
 
 
 def get_upper_level(dtype, num_bins, num_elements):
@@ -46,7 +43,7 @@ def get_upper_level(dtype, num_bins, num_elements):
 def bench_histogram_even(state: bench.State):
     type_str = state.get_string("SampleT")
     dtype = TYPE_MAP[type_str]
-    num_elements = int(state.get_int64("Elements"))
+    num_elements = int(state.get_int64("Elements{io}"))
     num_bins = int(state.get_int64("Bins"))
     entropy_str = state.get_string("Entropy")
 
@@ -58,13 +55,13 @@ def bench_histogram_even(state: bench.State):
             state.skip("Number of bins exceeds what SampleT can represent")
             return
 
-    # Skip problematic configurations that cause cudaErrorIllegalAddress
-    # I8/I16 with large bin counts cause memory access issues
-    if dtype in (np.int8, np.int16) and num_bins >= 2048:
-        state.skip(
-            "Small integer types with large bin counts cause illegal memory access"
-        )
-        return
+    # # Skip problematic configurations that cause cudaErrorIllegalAddress
+    # # I8/I16 with large bin counts cause memory access issues
+    # if dtype in (np.int8, np.int16) and num_bins >= 2048:
+    #     state.skip(
+    #         "Small integer types with large bin counts cause illegal memory access"
+    #     )
+    #     return
 
     num_levels = num_bins + 1  # num_output_levels = num_bins + 1
     lower_level = dtype(0)

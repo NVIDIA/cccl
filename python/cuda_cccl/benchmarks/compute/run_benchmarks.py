@@ -92,7 +92,6 @@ POW2_AXES_PY = {"Elements", "MaxSegSize", "MaxSegmentSize", "Segments"}
 CPP_TO_PY_AXIS_MAP = {
     # Common mappings
     "T{ct}": "T",
-    "Elements{io}": "Elements",
     "KeyT{ct}": "KeyT",
     "ValueT{ct}": "ValueT",
     # Histogram uses different name
@@ -109,8 +108,10 @@ def strip_axis_suffix(axis_name: str) -> str:
     if axis_name in CPP_TO_PY_AXIS_MAP:
         return CPP_TO_PY_AXIS_MAP[axis_name]
     # Generic suffix stripping for any other axes
-    if axis_name.endswith("{ct}") or axis_name.endswith("{io}"):
+    if axis_name.endswith("{ct}"):
         return axis_name.rsplit("{", 1)[0]
+    if axis_name.endswith("{io}"):
+        return axis_name
     return axis_name
 
 

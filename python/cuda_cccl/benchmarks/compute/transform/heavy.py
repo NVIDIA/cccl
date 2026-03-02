@@ -105,7 +105,7 @@ _HEAVY_OPS = {
 def bench_heavy(state: bench.State):
     # Axes
     n_regs = int(state.get_string("Heaviness"))
-    size = state.get_int64("Elements")
+    size = int(state.get_int64("Elements{io}"))
 
     try:
         alloc_stream = as_cupy_stream(state.get_stream())
@@ -139,5 +139,5 @@ if __name__ == "__main__":
     b = bench.register(bench_heavy)
     b.set_name("heavy")
     b.add_string_axis("Heaviness", [str(v) for v in (32, 64, 128, 256)])
-    b.add_int64_power_of_two_axis("Elements", range(16, 33, 4))
+    b.add_int64_power_of_two_axis("Elements{io}", range(16, 33, 4))
     bench.run_all_benchmarks(sys.argv)

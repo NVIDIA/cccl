@@ -40,7 +40,7 @@ def bench_unique_by_key(state: bench.State):
     value_type_str = state.get_string("ValueT")
     key_dtype = KEY_TYPE_MAP[key_type_str]
     value_dtype = VALUE_TYPE_MAP[value_type_str]
-    num_elements = int(state.get_int64("Elements"))
+    num_elements = int(state.get_int64("Elements{io}"))
     max_seg_size = int(state.get_int64("MaxSegSize"))
 
     alloc_stream = as_cupy_stream(state.get_stream())
@@ -142,7 +142,7 @@ if __name__ == "__main__":
 
     b.add_string_axis("KeyT", list(KEY_TYPE_MAP.keys()))
     b.add_string_axis("ValueT", list(VALUE_TYPE_MAP.keys()))
-    b.add_int64_power_of_two_axis("Elements", range(16, 29, 4))  # [16, 20, 24, 28]
+    b.add_int64_power_of_two_axis("Elements{io}", range(16, 29, 4))  # [16, 20, 24, 28]
     b.add_int64_power_of_two_axis("MaxSegSize", [1, 4, 8])  # 2^1=2, 2^4=16, 2^8=256
     # Note: OffsetT axis from C++ is not exposed in Python API
 

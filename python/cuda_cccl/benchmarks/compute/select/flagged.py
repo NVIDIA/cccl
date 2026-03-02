@@ -25,17 +25,13 @@ from utils import ENTROPY_TO_PROB, as_cupy_stream, generate_data_with_entropy
 from utils import SIGNED_TYPES as TYPE_MAP
 
 import cuda.bench as bench
-from cuda.compute import (
-    TransformOutputIterator,
-    ZipIterator,
-    make_select,
-)
+from cuda.compute import ZipIterator, make_select
 
 
 def bench_select_flagged(state: bench.State):
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
-    num_elements = int(state.get_int64("Elements"))
+    num_elements = int(state.get_int64("Elements{io}"))
     entropy_str = state.get_string("Entropy")
 
     probability = ENTROPY_TO_PROB[entropy_str]
@@ -48,21 +44,18 @@ def bench_select_flagged(state: bench.State):
         zip_it = ZipIterator(d_in, flags)
         selected_elements = int(cp.count_nonzero(flags).get())
         d_out = cp.empty(selected_elements, dtype=dtype)
+        d_out_flags = cp.empty(selected_elements, dtype=np.uint8)
         d_num_selected = cp.empty(1, dtype=np.uint64)
-
-    def take_value(pair):
-        return pair[0]
 
     def flag_predicate(pair):
         return np.uint8(pair[1] != 0)
 
-    take_value.__annotations__ = {"pair": zip_it.value_type}
     flag_predicate.__annotations__ = {
         "pair": zip_it.value_type,
         "return": np.uint8,
     }
 
-    d_out_it = TransformOutputIterator(d_out, take_value)
+    d_out_it = ZipIterator(d_out, d_out_flags)
 
     selector = make_select(
         d_in=zip_it,
@@ -86,6 +79,7 @@ def bench_select_flagged(state: bench.State):
     state.add_global_memory_reads(num_elements * d_in.dtype.itemsize)
     state.add_global_memory_reads(num_elements * flags.dtype.itemsize)
     state.add_global_memory_writes(selected_elements * d_out.dtype.itemsize)
+    state.add_global_memory_writes(selected_elements * d_out_flags.dtype.itemsize)
     state.add_global_memory_writes(d_num_selected.dtype.itemsize)
 
     def launcher(launch: bench.Launch):
@@ -106,6 +100,6 @@ if __name__ == "__main__":
     b = bench.register(bench_select_flagged)
     b.set_name("base")
     b.add_string_axis("T", list(TYPE_MAP.keys()))
-    b.add_int64_power_of_two_axis("Elements", range(16, 29, 4))
+    b.add_int64_power_of_two_axis("Elements{io}", range(16, 29, 4))
     b.add_string_axis("Entropy", ["1.000", "0.544", "0.000"])
     bench.run_all_benchmarks(sys.argv)

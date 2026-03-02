@@ -52,7 +52,7 @@ def fib_op(n):
 
 def bench_transform_fib(state: bench.State):
     # Axes
-    num_elements = int(state.get_int64("Elements"))
+    num_elements = int(state.get_int64("Elements{io}"))
 
     try:
         alloc_stream = as_cupy_stream(state.get_stream())
@@ -84,5 +84,5 @@ def bench_transform_fib(state: bench.State):
 if __name__ == "__main__":
     b = bench.register(bench_transform_fib)
     b.set_name("fibonacci")
-    b.add_int64_power_of_two_axis("Elements", range(16, 33, 4))
+    b.add_int64_power_of_two_axis("Elements{io}", range(16, 33, 4))
     bench.run_all_benchmarks(sys.argv)
