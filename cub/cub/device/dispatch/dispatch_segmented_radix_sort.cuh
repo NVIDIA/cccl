@@ -721,31 +721,58 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes_segmented_radix
     : (is_num_passes_odd) ? static_cast<ValueT*>(allocations[1])
                           : d_values.Alternate());
 
+  // The offset type (used to specialize the kernel template), large enough to index any segment within a single
+  // invocation
   using per_invocation_segment_offset_t = ::cuda::std::int32_t;
+
+  // The upper bound of segments that a single kernel invocation will process
   constexpr auto max_num_segments_per_invocation =
     static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<per_invocation_segment_offset_t>::max());
+
+  // Number of radix sort invocations until all segments have been processed
   const auto num_invocations = ::cuda::ceil_div(num_segments, max_num_segments_per_invocation);
 
-  auto invoke_one_pass_seg =
+  auto invoke_pass =
     [&](const KeyT* d_keys_in,
         KeyT* d_keys_out,
         const ValueT* d_values_in,
         ValueT* d_values_out,
         int& current_bit,
-        int pass_radix_bits) -> cudaError_t {
-    const int pass_bits           = ::cuda::std::min(pass_radix_bits, (end_bit - current_bit));
+        int pass_radix_bits,
+        auto kernel,
+        KernelConfig config) -> cudaError_t {
+    // The number of bits to process in this pass
+    const int pass_bits = ::cuda::std::min(pass_radix_bits, (end_bit - current_bit));
+
     BeginOffsetIteratorT begin_it = d_begin_offsets;
     EndOffsetIteratorT end_it     = d_end_offsets;
 
-    for (::cuda::std::int64_t inv = 0; inv < num_invocations; inv++)
+    // Iterate over chunks of segments
+    for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
     {
-      const auto current_segment_offset = inv * max_num_segments_per_invocation;
+      const auto current_segment_offset = invocation_index * max_num_segments_per_invocation;
       const auto num_current_segments =
         ::cuda::std::min(max_num_segments_per_invocation, num_segments - current_segment_offset);
 
+      // Log kernel configuration
+#ifdef CUB_DEBUG_LOG
+      _CubLog(
+        "Invoking segmented_kernels<<<%lld, %lld, 0, %lld>>>(), "
+        "%lld items per thread, %lld SM occupancy, "
+        "current segment offset %lld, current bit %d, bit_grain %d\n",
+        (long long) num_current_segments,
+        (long long) config.block_threads,
+        (long long) stream,
+        (long long) config.items_per_thread,
+        (long long) config.sm_occupancy,
+        (long long) current_segment_offset,
+        current_bit,
+        pass_bits);
+#endif
+
       if (const auto err = CubDebug(
-            launcher_factory(static_cast<unsigned int>(num_current_segments), seg_config.block_threads, 0, stream)
-              .doit(segmented_kernel,
+            launcher_factory(static_cast<unsigned int>(num_current_segments), config.block_threads, 0, stream)
+              .doit(kernel,
                     d_keys_in,
                     d_keys_out,
                     d_values_in,
@@ -762,121 +789,69 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes_segmented_radix
       {
         return err;
       }
-      if (const auto err = CubDebug(detail::DebugSyncStream(stream)))
-      {
-        return err;
-      }
-      if (inv + 1 < num_invocations)
+
+      if (invocation_index + 1 < num_invocations)
       {
         begin_it += num_current_segments;
         end_it += num_current_segments;
       }
-    }
-    current_bit += pass_bits;
-    return cudaSuccess;
-  };
 
-  auto invoke_one_pass_alt =
-    [&](const KeyT* d_keys_in,
-        KeyT* d_keys_out,
-        const ValueT* d_values_in,
-        ValueT* d_values_out,
-        int& current_bit,
-        int pass_radix_bits) -> cudaError_t {
-    const int pass_bits           = ::cuda::std::min(pass_radix_bits, (end_bit - current_bit));
-    BeginOffsetIteratorT begin_it = d_begin_offsets;
-    EndOffsetIteratorT end_it     = d_end_offsets;
-
-    for (::cuda::std::int64_t inv = 0; inv < num_invocations; inv++)
-    {
-      const auto current_segment_offset = inv * max_num_segments_per_invocation;
-      const auto num_current_segments =
-        ::cuda::std::min(max_num_segments_per_invocation, num_segments - current_segment_offset);
-
-      if (const auto err = CubDebug(
-            launcher_factory(static_cast<unsigned int>(num_current_segments), alt_seg_config.block_threads, 0, stream)
-              .doit(alt_segmented_kernel,
-                    d_keys_in,
-                    d_keys_out,
-                    d_values_in,
-                    d_values_out,
-                    begin_it,
-                    end_it,
-                    current_bit,
-                    pass_bits,
-                    decomposer)))
-      {
-        return err;
-      }
-      if (const auto err = CubDebug(cudaPeekAtLastError()))
-      {
-        return err;
-      }
+      // Sync the stream if specified to flush runtime errors
       if (const auto err = CubDebug(detail::DebugSyncStream(stream)))
       {
         return err;
       }
-      if (inv + 1 < num_invocations)
-      {
-        begin_it += num_current_segments;
-        end_it += num_current_segments;
-      }
     }
+
+    // Update current bit once all segments have been processed for the current pass
     current_bit += pass_bits;
+
     return cudaSuccess;
   };
 
+  // Run first pass, consuming from the input's current buffers
   int current_bit          = begin_bit;
   const bool use_alt_first = current_bit < alt_end_bit;
-  if (const auto error = CubDebug(
-        use_alt_first
-          ? invoke_one_pass_alt(
-              d_keys.Current(),
-              d_keys_remaining_passes.Current(),
-              d_values.Current(),
-              d_values_remaining_passes.Current(),
-              current_bit,
-              alt_radix_bits)
-          : invoke_one_pass_seg(
-              d_keys.Current(),
-              d_keys_remaining_passes.Current(),
-              d_values.Current(),
-              d_values_remaining_passes.Current(),
-              current_bit,
-              radix_bits)))
+  if (const auto error = CubDebug(invoke_pass(
+        d_keys.Current(),
+        d_keys_remaining_passes.Current(),
+        d_values.Current(),
+        d_values_remaining_passes.Current(),
+        current_bit,
+        use_alt_first ? alt_radix_bits : radix_bits,
+        use_alt_first ? alt_segmented_kernel : segmented_kernel,
+        use_alt_first ? alt_seg_config : seg_config)))
   {
     return error;
   }
 
+  // Run remaining passes
   while (current_bit < end_bit)
   {
     const bool use_alt = current_bit < alt_end_bit;
-    if (const auto error = CubDebug(
-          use_alt
-            ? invoke_one_pass_alt(
-                d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector],
-                d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
-                d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector],
-                d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
-                current_bit,
-                alt_radix_bits)
-            : invoke_one_pass_seg(
-                d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector],
-                d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
-                d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector],
-                d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
-                current_bit,
-                radix_bits)))
+    if (const auto error = CubDebug(invoke_pass(
+          d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector],
+          d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
+          d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector],
+          d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
+          current_bit,
+          use_alt ? alt_radix_bits : radix_bits,
+          use_alt ? alt_segmented_kernel : segmented_kernel,
+          use_alt ? alt_seg_config : seg_config)))
     {
       return error;
     }
+
+    // Invert selectors and update current bit
     d_keys_remaining_passes.selector ^= 1;
     d_values_remaining_passes.selector ^= 1;
   }
 
+  // Update selector
   const int final_num_passes = is_overwrite_okay ? num_passes : 1;
   d_keys.selector            = (d_keys.selector + final_num_passes) & 1;
   d_values.selector          = (d_values.selector + final_num_passes) & 1;
+
   return cudaSuccess;
 }
 
