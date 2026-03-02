@@ -355,7 +355,7 @@ static inline struct stf_data_place make_affine_data_place()
 //! The partition function (\p mapper) maps data coordinates to a position in the
 //! place grid. It can be implemented in C or provided from Python (e.g. ctypes).
 //! \param[out] out Composite data place (kind = STF_DATA_PLACE_COMPOSITE)
-//! \param grid Grid of execution places (from stf_exec_place_grid_from_devices)
+//! \param grid Grid of execution places (from stf_exec_place_grid_from_devices or stf_exec_place_grid_create)
 //! \param mapper Partition function: (data_coords, data_dims, grid_dims) -> grid position
 //!
 //! \par Example (C):
@@ -366,6 +366,8 @@ static inline struct stf_data_place make_affine_data_place()
 //! }
 //! int devs[] = { 0, 1 };
 //! stf_exec_place_grid_handle grid = stf_exec_place_grid_from_devices(devs, 2);
+//! // Or: stf_exec_place places[] = { make_device_place(0), make_device_place(1) };
+//! //      grid = stf_exec_place_grid_create(places, 2, nullptr);
 //! stf_data_place dplace;
 //! stf_make_composite_data_place(&dplace, grid, my_mapper);
 //! stf_task_add_dep_with_dplace(task, ld, STF_RW, &dplace);
@@ -379,8 +381,10 @@ void stf_make_composite_data_place(stf_data_place* out, stf_exec_place_grid_hand
 //! \{
 
 //! \brief Create an execution place grid from device IDs (one place per device).
+//! Convenience for the common case; equivalent to building an array of device places
+//! and calling stf_exec_place_grid_create(places, count, nullptr).
 //! \param device_ids Array of CUDA device IDs (0-based)
-//! \param count Number of devices
+//! \param count Number of devices (must be at least 1)
 //! \return Opaque grid handle; destroy with stf_exec_place_grid_destroy()
 stf_exec_place_grid_handle stf_exec_place_grid_from_devices(const int* device_ids, size_t count);
 

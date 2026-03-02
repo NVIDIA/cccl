@@ -108,10 +108,14 @@ C2H_TEST("empty stf tasks", "[task]")
 C2H_TEST("composite data place with grid of places (same device repeated)", "[task][places][composite]")
 {
   // Use the same device multiple times so the test runs on single-GPU machines.
-  const int device_ids[] = {0, 0, 0};
-  const size_t nplaces   = sizeof(device_ids) / sizeof(device_ids[0]);
+  const size_t nplaces = 3;
+  stf_exec_place places[nplaces];
+  for (size_t i = 0; i < nplaces; i++)
+  {
+    places[i] = make_device_place(0);
+  }
 
-  stf_exec_place_grid_handle grid = stf_exec_place_grid_from_devices(device_ids, nplaces);
+  stf_exec_place_grid_handle grid = stf_exec_place_grid_create(places, nplaces, nullptr);
   REQUIRE(grid != nullptr);
 
   stf_data_place composite_dplace;

@@ -59,7 +59,7 @@ static data_place to_data_place(stf_data_place* data_p)
         return data_place::invalid();
       }
       exec_place_grid* grid_ptr = static_cast<exec_place_grid*>(grid_handle);
-      // Layout-compatible: pass C mapper directly so the runtime calls it; no thunk or global.
+      // Layout-compatible: pass C mapper directly so the runtime calls it
       get_executor_func_t cpp_mapper = reinterpret_cast<get_executor_func_t>(mapper);
       return data_place::composite(cpp_mapper, *grid_ptr);
     }
@@ -418,6 +418,7 @@ void stf_cuda_kernel_destroy(stf_cuda_kernel_handle t)
 stf_exec_place_grid_handle stf_exec_place_grid_from_devices(const int* device_ids, size_t count)
 {
   assert(device_ids != nullptr || count == 0);
+  // count must be >= 1: C++ make_grid() requires non-empty places.
   ::std::vector<exec_place> places;
   places.reserve(count);
   for (size_t i = 0; i < count; i++)
