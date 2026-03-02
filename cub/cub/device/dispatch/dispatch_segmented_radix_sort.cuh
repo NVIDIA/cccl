@@ -28,6 +28,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/arch_id.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -44,7 +45,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::radix_sort
 {
-template <typename MaxPolicyT,
+template <typename PolicySelectorT,
           SortOrder Order,
           typename KeyT,
           typename ValueT,
@@ -54,10 +55,12 @@ template <typename MaxPolicyT,
           typename DecomposerT>
 struct DeviceSegmentedRadixSortKernelSource
 {
+  static_assert(::cuda::std::is_empty_v<PolicySelectorT>);
+
   CUB_DEFINE_KERNEL_GETTER(
     SegmentedRadixSortKernel,
     DeviceSegmentedRadixSortKernel<
-      MaxPolicyT,
+      PolicySelectorT,
       false,
       Order,
       KeyT,
@@ -70,7 +73,7 @@ struct DeviceSegmentedRadixSortKernelSource
   CUB_DEFINE_KERNEL_GETTER(
     AltSegmentedRadixSortKernel,
     DeviceSegmentedRadixSortKernel<
-      MaxPolicyT,
+      PolicySelectorT,
       true,
       Order,
       KeyT,
@@ -118,6 +121,7 @@ struct DeviceSegmentedRadixSortKernelSource
  * @tparam SegmentSizeT
  *   Integer type to index items within a segment
  */
+// TODO(bgruber): deprecate when we make the tuning API public, and remove in CCCL 4.0
 template <SortOrder Order,
           typename KeyT,
           typename ValueT,
@@ -127,7 +131,7 @@ template <SortOrder Order,
           typename PolicyHub    = detail::radix_sort::policy_hub<KeyT, ValueT, SegmentSizeT>,
           typename DecomposerT  = detail::identity_decomposer_t,
           typename KernelSource = detail::radix_sort::DeviceSegmentedRadixSortKernelSource<
-            typename PolicyHub::MaxPolicy,
+            detail::radix_sort::policy_selector_from_hub<PolicyHub>,
             Order,
             KeyT,
             ValueT,
@@ -632,6 +636,329 @@ struct DispatchSegmentedRadixSort
     return error;
   }
 };
+
+namespace detail::radix_sort
+{
+template <typename KeyT,
+          typename ValueT,
+          typename BeginOffsetIteratorT,
+          typename EndOffsetIteratorT,
+          typename SegmentSizeT,
+          typename DecomposerT,
+          typename SegmentedKernelT,
+          typename AltSegmentedKernelT,
+          typename KernelSource,
+          typename KernelLauncherFactory>
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes_segmented_radix_sort(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  DoubleBuffer<KeyT>& d_keys,
+  DoubleBuffer<ValueT>& d_values,
+  ::cuda::std::int64_t num_items,
+  ::cuda::std::int64_t num_segments,
+  BeginOffsetIteratorT d_begin_offsets,
+  EndOffsetIteratorT d_end_offsets,
+  int begin_bit,
+  int end_bit,
+  bool is_overwrite_okay,
+  cudaStream_t stream,
+  DecomposerT decomposer,
+  radix_sort_policy active_policy,
+  KernelSource kernel_source,
+  KernelLauncherFactory launcher_factory,
+  SegmentedKernelT segmented_kernel,
+  AltSegmentedKernelT alt_segmented_kernel)
+{
+  constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
+
+  KernelConfig seg_config, alt_seg_config;
+  if (const auto error = CubDebug(seg_config.__init(segmented_kernel, active_policy.segmented, launcher_factory)))
+  {
+    return error;
+  }
+  if (const auto error =
+        CubDebug(alt_seg_config.__init(alt_segmented_kernel, active_policy.alt_segmented, launcher_factory)))
+  {
+    return error;
+  }
+
+  void* allocations[2]       = {};
+  size_t allocation_sizes[2] = {
+    (is_overwrite_okay) ? 0 : num_items * kernel_source.KeySize(),
+    (is_overwrite_okay || keys_only) ? 0 : num_items * sizeof(ValueT),
+  };
+
+  if (const auto error =
+        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  {
+    return error;
+  }
+
+  if (d_temp_storage == nullptr)
+  {
+    if (temp_storage_bytes == 0)
+    {
+      temp_storage_bytes = 1;
+    }
+    return cudaSuccess;
+  }
+
+  const int radix_bits         = active_policy.segmented.radix_bits;
+  const int alt_radix_bits     = active_policy.alt_segmented.radix_bits;
+  const int num_bits           = end_bit - begin_bit;
+  const int num_passes         = ::cuda::std::max(::cuda::ceil_div(num_bits, radix_bits), 1);
+  const bool is_num_passes_odd = num_passes & 1;
+  const int max_alt_passes     = (num_passes * radix_bits) - num_bits;
+  const int alt_end_bit        = ::cuda::std::min(end_bit, begin_bit + (max_alt_passes * alt_radix_bits));
+
+  DoubleBuffer<KeyT> d_keys_remaining_passes(
+    (is_overwrite_okay || is_num_passes_odd) ? d_keys.Alternate() : static_cast<KeyT*>(allocations[0]),
+    (is_overwrite_okay)   ? d_keys.Current()
+    : (is_num_passes_odd) ? static_cast<KeyT*>(allocations[0])
+                          : d_keys.Alternate());
+
+  DoubleBuffer<ValueT> d_values_remaining_passes(
+    (is_overwrite_okay || is_num_passes_odd) ? d_values.Alternate() : static_cast<ValueT*>(allocations[1]),
+    (is_overwrite_okay)   ? d_values.Current()
+    : (is_num_passes_odd) ? static_cast<ValueT*>(allocations[1])
+                          : d_values.Alternate());
+
+  using per_invocation_segment_offset_t = ::cuda::std::int32_t;
+  constexpr auto max_num_segments_per_invocation =
+    static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<per_invocation_segment_offset_t>::max());
+  const auto num_invocations = ::cuda::ceil_div(num_segments, max_num_segments_per_invocation);
+
+  auto invoke_one_pass_seg =
+    [&](const KeyT* d_keys_in,
+        KeyT* d_keys_out,
+        const ValueT* d_values_in,
+        ValueT* d_values_out,
+        int& current_bit,
+        int pass_radix_bits) -> cudaError_t {
+    const int pass_bits           = ::cuda::std::min(pass_radix_bits, (end_bit - current_bit));
+    BeginOffsetIteratorT begin_it = d_begin_offsets;
+    EndOffsetIteratorT end_it     = d_end_offsets;
+
+    for (::cuda::std::int64_t inv = 0; inv < num_invocations; inv++)
+    {
+      const auto current_segment_offset = inv * max_num_segments_per_invocation;
+      const auto num_current_segments =
+        ::cuda::std::min(max_num_segments_per_invocation, num_segments - current_segment_offset);
+
+      if (const auto err = CubDebug(
+            launcher_factory(static_cast<unsigned int>(num_current_segments), seg_config.block_threads, 0, stream)
+              .doit(segmented_kernel,
+                    d_keys_in,
+                    d_keys_out,
+                    d_values_in,
+                    d_values_out,
+                    begin_it,
+                    end_it,
+                    current_bit,
+                    pass_bits,
+                    decomposer)))
+      {
+        return err;
+      }
+      if (const auto err = CubDebug(cudaPeekAtLastError()))
+      {
+        return err;
+      }
+      if (const auto err = CubDebug(detail::DebugSyncStream(stream)))
+      {
+        return err;
+      }
+      if (inv + 1 < num_invocations)
+      {
+        begin_it += num_current_segments;
+        end_it += num_current_segments;
+      }
+    }
+    current_bit += pass_bits;
+    return cudaSuccess;
+  };
+
+  auto invoke_one_pass_alt =
+    [&](const KeyT* d_keys_in,
+        KeyT* d_keys_out,
+        const ValueT* d_values_in,
+        ValueT* d_values_out,
+        int& current_bit,
+        int pass_radix_bits) -> cudaError_t {
+    const int pass_bits           = ::cuda::std::min(pass_radix_bits, (end_bit - current_bit));
+    BeginOffsetIteratorT begin_it = d_begin_offsets;
+    EndOffsetIteratorT end_it     = d_end_offsets;
+
+    for (::cuda::std::int64_t inv = 0; inv < num_invocations; inv++)
+    {
+      const auto current_segment_offset = inv * max_num_segments_per_invocation;
+      const auto num_current_segments =
+        ::cuda::std::min(max_num_segments_per_invocation, num_segments - current_segment_offset);
+
+      if (const auto err = CubDebug(
+            launcher_factory(static_cast<unsigned int>(num_current_segments), alt_seg_config.block_threads, 0, stream)
+              .doit(alt_segmented_kernel,
+                    d_keys_in,
+                    d_keys_out,
+                    d_values_in,
+                    d_values_out,
+                    begin_it,
+                    end_it,
+                    current_bit,
+                    pass_bits,
+                    decomposer)))
+      {
+        return err;
+      }
+      if (const auto err = CubDebug(cudaPeekAtLastError()))
+      {
+        return err;
+      }
+      if (const auto err = CubDebug(detail::DebugSyncStream(stream)))
+      {
+        return err;
+      }
+      if (inv + 1 < num_invocations)
+      {
+        begin_it += num_current_segments;
+        end_it += num_current_segments;
+      }
+    }
+    current_bit += pass_bits;
+    return cudaSuccess;
+  };
+
+  int current_bit          = begin_bit;
+  const bool use_alt_first = current_bit < alt_end_bit;
+  if (const auto error = CubDebug(
+        use_alt_first
+          ? invoke_one_pass_alt(
+              d_keys.Current(),
+              d_keys_remaining_passes.Current(),
+              d_values.Current(),
+              d_values_remaining_passes.Current(),
+              current_bit,
+              alt_radix_bits)
+          : invoke_one_pass_seg(
+              d_keys.Current(),
+              d_keys_remaining_passes.Current(),
+              d_values.Current(),
+              d_values_remaining_passes.Current(),
+              current_bit,
+              radix_bits)))
+  {
+    return error;
+  }
+
+  while (current_bit < end_bit)
+  {
+    const bool use_alt = current_bit < alt_end_bit;
+    if (const auto error = CubDebug(
+          use_alt
+            ? invoke_one_pass_alt(
+                d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector],
+                d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
+                d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector],
+                d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
+                current_bit,
+                alt_radix_bits)
+            : invoke_one_pass_seg(
+                d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector],
+                d_keys_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
+                d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector],
+                d_values_remaining_passes.d_buffers[d_keys_remaining_passes.selector ^ 1],
+                current_bit,
+                radix_bits)))
+    {
+      return error;
+    }
+    d_keys_remaining_passes.selector ^= 1;
+    d_values_remaining_passes.selector ^= 1;
+  }
+
+  const int final_num_passes = is_overwrite_okay ? num_passes : 1;
+  d_keys.selector            = (d_keys.selector + final_num_passes) & 1;
+  d_values.selector          = (d_values.selector + final_num_passes) & 1;
+  return cudaSuccess;
+}
+
+template <SortOrder Order,
+          typename SegmentSizeT,
+          typename KeyT,
+          typename ValueT,
+          typename BeginOffsetIteratorT,
+          typename EndOffsetIteratorT,
+          typename DecomposerT    = identity_decomposer_t,
+          typename PolicySelector = policy_selector_from_types<KeyT, ValueT, SegmentSizeT>,
+          typename KernelSource   = DeviceSegmentedRadixSortKernelSource<
+              PolicySelector,
+              Order,
+              KeyT,
+              ValueT,
+              BeginOffsetIteratorT,
+              EndOffsetIteratorT,
+              SegmentSizeT,
+              DecomposerT>,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+#if _CCCL_HAS_CONCEPTS()
+  requires radix_sort_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  DoubleBuffer<KeyT>& d_keys,
+  DoubleBuffer<ValueT>& d_values,
+  ::cuda::std::int64_t num_items,
+  ::cuda::std::int64_t num_segments,
+  BeginOffsetIteratorT d_begin_offsets,
+  EndOffsetIteratorT d_end_offsets,
+  int begin_bit,
+  int end_bit,
+  bool is_overwrite_okay,
+  cudaStream_t stream,
+  DecomposerT decomposer                 = {},
+  PolicySelector policy_selector         = {},
+  KernelSource kernel_source             = {},
+  KernelLauncherFactory launcher_factory = {})
+{
+  if (num_items == 0 || num_segments == 0 || (begin_bit == end_bit && is_overwrite_okay))
+  {
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+    }
+    return cudaSuccess;
+  }
+
+  ::cuda::arch_id arch_id{};
+  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  {
+    return error;
+  }
+
+  const radix_sort_policy active_policy = policy_selector(arch_id);
+
+  return invoke_passes_segmented_radix_sort(
+    d_temp_storage,
+    temp_storage_bytes,
+    d_keys,
+    d_values,
+    num_items,
+    num_segments,
+    d_begin_offsets,
+    d_end_offsets,
+    begin_bit,
+    end_bit,
+    is_overwrite_okay,
+    stream,
+    decomposer,
+    active_policy,
+    kernel_source,
+    launcher_factory,
+    kernel_source.SegmentedRadixSortKernel(),
+    kernel_source.AltSegmentedRadixSortKernel());
+}
+} // namespace detail::radix_sort
 
 CUB_NAMESPACE_END
 
