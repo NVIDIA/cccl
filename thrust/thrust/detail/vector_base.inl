@@ -905,7 +905,7 @@ void vector_base<T, Alloc>::fill_insert(iterator position, size_type n, const T&
       thrust::detail::overlapped_copy(position, position + copy_length, mid);
 
       // finally, fill the range to the insertion point
-      thrust::fill_n(position, copy_length, mid);
+      thrust::fill_n(position, n, x);
     }
     else
     {
