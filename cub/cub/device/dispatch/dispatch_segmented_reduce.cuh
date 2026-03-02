@@ -67,14 +67,14 @@ struct DeviceSegmentedReduceKernelSource
       AccumT>)
 };
 
-template <typename PolicyHub, typename AccumT>
+template <typename PolicyHub, typename AccumT, typename OffsetT, typename ReductionOpT>
 struct policy_selector_from_hub
 {
   // this is only called in device code, so we can ignore the arch parameter
   _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> segmented_reduce_policy
   {
     using p  = typename PolicyHub::MaxPolicy::ActivePolicy::SegmentedReducePolicy;
-    using fs = typename segmented_reduce::policy_hub<AccumT, int, ::cuda::std::plus<>>::MaxPolicy;
+    using fs = typename segmented_reduce::policy_hub<AccumT, OffsetT, ReductionOpT>::MaxPolicy;
     using sp = typename fs::SmallReducePolicy;
     using mp = typename fs::MediumReducePolicy;
     return segmented_reduce_policy{
@@ -124,7 +124,7 @@ template <typename InputIteratorT,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, InitT>,
           typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
           typename KernelSource = detail::segmented_reduce::DeviceSegmentedReduceKernelSource<
-            detail::segmented_reduce::policy_selector_from_hub<PolicyHub, AccumT>,
+            detail::segmented_reduce::policy_selector_from_hub<PolicyHub, AccumT, OffsetT, ReductionOpT>,
             InputIteratorT,
             OutputIteratorT,
             BeginOffsetIteratorT,
