@@ -17,24 +17,24 @@
 // Used to exercise composite data place with a grid of execution places.
 static stf_pos4 blocked_mapper_1d(stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims)
 {
-  uint64_t extent = data_dims.x;
-  uint64_t nplaces = grid_dims.x;
+  uint64_t extent    = data_dims.x;
+  uint64_t nplaces   = grid_dims.x;
   uint64_t part_size = (extent + nplaces - 1) / nplaces;
   if (part_size == 0)
   {
     part_size = 1;
   }
-  int64_t c = static_cast<int64_t>(data_coords.x);
+  int64_t c       = static_cast<int64_t>(data_coords.x);
   int64_t place_x = c / static_cast<int64_t>(part_size);
   if (place_x >= static_cast<int64_t>(nplaces))
   {
     place_x = static_cast<int64_t>(nplaces) - 1;
   }
   stf_pos4 result = {};
-  result.x = place_x;
-  result.y = 0;
-  result.z = 0;
-  result.t = 0;
+  result.x        = place_x;
+  result.y        = 0;
+  result.z        = 0;
+  result.t        = 0;
   return result;
 }
 
@@ -172,7 +172,7 @@ C2H_TEST("composite data place with stf_exec_place_grid_create (vector of places
   stf_exec_place_grid_destroy(grid_linear);
 
   // Option 2: 2x2 grid with explicit shape
-  stf_dim4 grid_dims = {2, 2, 1, 1};
+  stf_dim4 grid_dims              = {2, 2, 1, 1};
   stf_exec_place_grid_handle grid = stf_exec_place_grid_create(places, nplaces, &grid_dims);
   REQUIRE(grid != nullptr);
 

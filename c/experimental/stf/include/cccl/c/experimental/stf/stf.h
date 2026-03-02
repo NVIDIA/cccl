@@ -390,11 +390,11 @@ stf_exec_place_grid_handle stf_exec_place_grid_from_devices(const int* device_id
 //! \param grid_dims Optional grid shape; if NULL, uses (count, 1, 1, 1) for a linear grid.
 //!                  Product of dimensions should equal \p count.
 //! \return Opaque grid handle; destroy with stf_exec_place_grid_destroy()
-stf_exec_place_grid_handle stf_exec_place_grid_create(const stf_exec_place* places,
-                                                       size_t count,
-                                                       const stf_dim4* grid_dims);
+stf_exec_place_grid_handle
+stf_exec_place_grid_create(const stf_exec_place* places, size_t count, const stf_dim4* grid_dims);
 
-//! \brief Destroy an execution place grid created with stf_exec_place_grid_from_devices() or stf_exec_place_grid_create().
+//! \brief Destroy an execution place grid created with stf_exec_place_grid_from_devices() or
+//! stf_exec_place_grid_create().
 //! \param grid Grid handle (may be NULL; no-op in that case)
 void stf_exec_place_grid_destroy(stf_exec_place_grid_handle grid);
 

@@ -57,12 +57,10 @@ static data_place to_data_place(stf_data_place* data_p)
     case STF_DATA_PLACE_DEVICE:
       return data_place::device(data_p->u.device.dev_id);
 
-    case STF_DATA_PLACE_COMPOSITE:
-    {
+    case STF_DATA_PLACE_COMPOSITE: {
       stf_exec_place_grid_handle grid_handle = data_p->u.composite.grid;
       stf_get_executor_fn mapper             = data_p->u.composite.mapper;
-      _CCCL_ASSERT(grid_handle != nullptr && mapper != nullptr,
-                   "Invalid composite data place (null grid or mapper)");
+      _CCCL_ASSERT(grid_handle != nullptr && mapper != nullptr, "Invalid composite data place (null grid or mapper)");
       if (!grid_handle || !mapper)
       {
         return data_place::invalid();
@@ -438,9 +436,8 @@ stf_exec_place_grid_handle stf_exec_place_grid_from_devices(const int* device_id
   return new exec_place_grid(::std::move(grid));
 }
 
-stf_exec_place_grid_handle stf_exec_place_grid_create(const stf_exec_place* places,
-                                                      size_t count,
-                                                      const stf_dim4* grid_dims)
+stf_exec_place_grid_handle
+stf_exec_place_grid_create(const stf_exec_place* places, size_t count, const stf_dim4* grid_dims)
 {
   assert(places != nullptr || count == 0);
   ::std::vector<exec_place> cpp_places;
@@ -449,10 +446,10 @@ stf_exec_place_grid_handle stf_exec_place_grid_create(const stf_exec_place* plac
   {
     cpp_places.push_back(to_exec_place(const_cast<stf_exec_place*>(&places[i])));
   }
-  exec_place_grid grid = (grid_dims != nullptr)
-                             ? make_grid(::std::move(cpp_places),
-                                         dim4(grid_dims->x, grid_dims->y, grid_dims->z, grid_dims->t))
-                             : make_grid(::std::move(cpp_places));
+  exec_place_grid grid =
+    (grid_dims != nullptr)
+      ? make_grid(::std::move(cpp_places), dim4(grid_dims->x, grid_dims->y, grid_dims->z, grid_dims->t))
+      : make_grid(::std::move(cpp_places));
   return new exec_place_grid(::std::move(grid));
 }
 
