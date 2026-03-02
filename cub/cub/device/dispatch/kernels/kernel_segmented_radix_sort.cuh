@@ -101,8 +101,8 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires radix_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(ALT_DIGIT_BITS ? PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).alt_segmented.block_threads
-                                     : PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).segmented.block_threads))
+__launch_bounds__(int(AltDigitBits ? PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).alt_segmented.block_threads
+                                   : PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).segmented.block_threads))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedRadixSortKernel(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
