@@ -128,9 +128,25 @@ function(thrust_configure_multiconfig)
     if (DEFINED THRUST_DEVICE_SYSTEM)
       set_property(CACHE THRUST_DEVICE_SYSTEM PROPERTY TYPE STRING)
     else()
+      # This is a chicken-egg problem. We have not run thrust_update_system_found_flags()
+      # yet (to set THRUST_CUDA_FOUND, THRUST_OMP_FOUND etc) because that requires us to
+      # find and configure thrust first via thrust_find_thrust(). But we cannot do that
+      # without first setting defaults here.
+      #
+      # So we make a best effort attempt at deducing suitable default values here.
+      find_package(CUDAToolkit QUIET)
+      find_package(OpenMP QUIET)
+      if (CUDAToolkit_FOUND)
+        set(thrust_device_system CUDA)
+      elseif (OpenMP_FOUND)
+        set(thrust_device_system OMP)
+      else()
+        set(thrust_device_system CPP)
+      endif()
+
       set(
         THRUST_DEVICE_SYSTEM
-        "CUDA"
+        "${thrust_device_system}"
         CACHE STRING
         "The targeted device system: ${THRUST_DEVICE_SYSTEM_OPTIONS}"
       )
