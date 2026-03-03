@@ -40,6 +40,7 @@
 
 #include <cuda/experimental/__copy/utils.cuh>
 #include <cuda/experimental/__copy_bytes/copy_bytes_naive.cuh>
+#include <cuda/experimental/__copy_bytes/copy_bytes_shared_mem.cuh>
 #include <cuda/experimental/__copy_bytes/cute_utils.cuh>
 #include <cuda/experimental/__copy_bytes/layout_optimization.cuh>
 
@@ -351,11 +352,11 @@ _CCCL_HOST_API void copy_bytes_registers(
     }
   }
   // transpose case
-  // else if (__dst_raw.__strides[0] == 1)
-  //{
-  //  cudax::copy_bytes_shared_mem(__src_raw, __dst_raw, __stream);
-  //  return;
-  //}
+  else if (cudax::__use_shared_mem_kernel(__src_raw, __dst_raw))
+  {
+    cudax::copy_bytes_shared_mem(__src_raw, __dst_raw, __stream);
+    return;
+  }
   if (!cudax::__dispatch_by_rank<1>(cudax::__naive_dispatch_tag{}, __src_raw, __dst_raw, __stream))
   {
     cudax::copy_bytes_naive(__src_ptr, __src_layout, __dst_ptr, __dst_layout, __stream);

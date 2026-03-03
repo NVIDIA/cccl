@@ -223,6 +223,24 @@ __max_vector_size_bytes(const __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>& __tensor) n
   return __items_per_vector * sizeof(_Tp);
 }
 
+template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank>
+[[nodiscard]]
+_CCCL_HOST_API int __num_contiguous_dimensions(const __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>& __tensor) noexcept
+{
+  _CCCL_ASSERT(::cuda::in_range(__tensor.__rank, ::cuda::std::size_t{1}, _MaxRank), "Invalid tensor rank");
+  _CCCL_ASSERT(::cuda::experimental::__has_sorted_strides(__tensor),
+               "Destination strides must be sorted by dst strides");
+  const auto& __strides = __tensor.__strides;
+  int __count           = 1;
+  for (::cuda::std::size_t __i = 1; __i < __tensor.__rank; ++__i)
+  {
+    const auto __prev_extent   = __tensor.__extents[__i - 1];
+    const bool __is_contiguous = (__prev_extent * __strides[__i - 1] == __strides[__i]);
+    __count += __is_contiguous;
+  }
+  return __count;
+}
+
 #endif // !_CCCL_COMPILER(NVRTC)
 } // namespace cuda::experimental
 
