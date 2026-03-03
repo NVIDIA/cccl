@@ -600,6 +600,7 @@ struct policy_hub
 
       static constexpr int squad_reduce_thread_count = num_reduce_warps * num_threads_per_warp;
 
+      // manual tuning based on cub.bench.scan.exclusive.sum.base
       // 256 / sizeof(InputValueT) - 1 should minimize bank conflicts (and fits into 48KiB SMEM)
       // 2-byte types and double needed special handling
       static constexpr int items_per_thread =
@@ -648,7 +649,35 @@ struct policy_hub
 #endif // __cccl_ptx_isa >= 860
   };
 
-  using MaxPolicy = Policy1000;
+  struct Policy1200 : ChainedPolicy<1200, Policy1200, Policy1000>
+  {
+    using ScanPolicyT = typename Policy1000::ScanPolicyT;
+
+    struct WarpspeedPolicy : Policy1000::WarpspeedPolicy
+    {
+      static constexpr int items_per_thread = [] {
+        auto ipt = Policy1000::WarpspeedPolicy::items_per_thread;
+
+        // based on cub.bench.scan.exclusive.custom.base, cap items per thread if we don't know the scan op
+        if (is_primitive_op<ScanOpT>() == primitive_op::no && ::cuda::std::is_arithmetic_v<InputValueT>)
+        {
+          if (sizeof(InputValueT) == 4 || sizeof(InputValueT) == 8)
+          {
+            return 127;
+          }
+
+          const int max = sizeof(InputValueT) <= 2 ? 63 : 127;
+          ipt           = ::cuda::std::min(ipt, max);
+        }
+
+        return ipt;
+      }();
+
+      static constexpr int tile_size = items_per_thread * Policy1000::WarpspeedPolicy::squad_reduce_thread_count;
+    };
+  };
+
+  using MaxPolicy = Policy1200;
 };
 } // namespace detail::scan
 
