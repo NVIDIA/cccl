@@ -20,6 +20,8 @@ from pathlib import Path
 # Add parent directory to path for utils import
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import math
+
 import cupy as cp
 import numpy as np
 from utils import as_cupy_stream
@@ -28,13 +30,34 @@ import cuda.bench as bench
 from cuda.compute import make_binary_transform
 
 
+_COMPLEX_EPS = np.finfo(np.float32).eps
+_COMPLEX_THRESHOLD = _COMPLEX_EPS * 2.0
+
+
 def less_complex(a, b):
-    # Lexicographic compare: real then imag
-    if a.real < b.real:
-        return True
-    if a.real > b.real:
+    mag0 = math.sqrt(a.real * a.real + a.imag * a.imag)
+    mag1 = math.sqrt(b.real * b.real + b.imag * b.imag)
+
+    if math.isnan(mag0) or math.isnan(mag1):
         return False
-    return a.imag < b.imag
+
+    if math.isinf(mag0) or math.isinf(mag1):
+        scaler = 0.5
+        mag0 = math.sqrt(
+            (a.real * scaler) * (a.real * scaler)
+            + (a.imag * scaler) * (a.imag * scaler)
+        )
+        mag1 = math.sqrt(
+            (b.real * scaler) * (b.real * scaler)
+            + (b.imag * scaler) * (b.imag * scaler)
+        )
+
+    if abs(mag0 - mag1) < _COMPLEX_THRESHOLD:
+        phase0 = math.atan2(a.imag, a.real)
+        phase1 = math.atan2(b.imag, b.real)
+        return phase0 < phase1
+
+    return mag0 < mag1
 
 
 def bench_compare_complex(state: bench.State):
