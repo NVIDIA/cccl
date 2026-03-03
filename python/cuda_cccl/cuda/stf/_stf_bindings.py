@@ -80,8 +80,8 @@ def get_include_path():
         if candidate.is_dir():
             return candidate
     raise RuntimeError(
-        "Cannot locate cuda.stf include directory. "
-        "The cuda-cccl package may not have been installed correctly."
+        "Cannot locate cuda.stf include directory. Run the cuda-cccl build first "
+        "(pip install -e . or build the wheel); the build copies headers into cuda/stf/include."
     )
 
 
@@ -89,6 +89,11 @@ def get_include_path():
 def get_library_path():
     """Return the path to the directory containing libcccl.c.experimental.stf.so."""
     lib_name = "libcccl.c.experimental.stf.so"
+    # Prefer directory next to the loaded extension (works for installed and editable)
+    ext_dir = Path(bindings_module.__file__).resolve().parent
+    lib_dir = ext_dir / "cccl"
+    if (lib_dir / lib_name).exists():
+        return lib_dir
     pkg_dir = Path(__file__).resolve().parent
     lib_dir = pkg_dir / extra_name / "cccl"
     if (lib_dir / lib_name).exists():

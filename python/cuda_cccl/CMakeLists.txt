@@ -72,6 +72,18 @@ endif()
 file(MAKE_DIRECTORY "cuda/compute/${CUDA_VERSION_DIR}/cccl")
 if (CCCL_ENABLE_C_EXPERIMENTAL_STF)
   file(MAKE_DIRECTORY "cuda/stf/${CUDA_VERSION_DIR}/cccl")
+  # Copy STF and cudax headers into the package tree so get_include_path() works
+  # for both wheel and editable installs (single canonical location).
+  set(_stf_include_dest "${CMAKE_CURRENT_SOURCE_DIR}/cuda/stf/include")
+  file(MAKE_DIRECTORY "${_stf_include_dest}")
+  file(
+    COPY ${_cccl_root}/c/experimental/stf/include/
+    DESTINATION ${_stf_include_dest}
+  )
+  file(
+    COPY ${_cccl_root}/cudax/include/
+    DESTINATION ${_stf_include_dest}
+  )
 endif()
 
 # Install version-specific binaries
@@ -81,14 +93,10 @@ if (CCCL_ENABLE_C_EXPERIMENTAL_STF)
     DESTINATION cuda/stf/${CUDA_VERSION_DIR}/cccl
   )
 
-  # Install STF C API header and cudax headers so downstream packages (e.g. ugpu)
+  # Install STF C API header and cudax headers so downstream packages
   # can compile C++ extensions against the exact same ABI.
   install(
-    DIRECTORY ${_cccl_root}/c/experimental/stf/include/
-    DESTINATION cuda/stf/include
-  )
-  install(
-    DIRECTORY ${_cccl_root}/cudax/include/
+    DIRECTORY ${_stf_include_dest}/
     DESTINATION cuda/stf/include
   )
 endif()
