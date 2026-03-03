@@ -1,18 +1,25 @@
-Git Branches
-==================
+Git Methodology
+=========================
 
-This page documents which branches are used for active development and releases.
+This page defines the canonical branch model used for CCCL development and
+release maintenance.
 
-Branches
---------
-- ``main`` - the default development branch.
+Canonical branches
+------------------
 
-  - Updates to ``main`` are made via pull requests following our
-    :doc:`contributing guidelines </cccl/contributing>`.
+- ``main``
 
-- ``branch/X.Y.x`` - release branches created from ``main`` when finalizing a new release.
+  - The default development branch.
+  - Updates should be made via pull requests following our :doc:`contributing guidelines </cccl/contributing>`.
 
-  - Updates to release branches should be made via the :doc:`Backport Process <backport_process>`.
-  - Release tags (``vX.Y.Z``) are created from these branches to mark finalized releases.
+- ``branch/X.Y.x``
 
-Other branches may be used for various purposes, but the above are the only ones used for well-defined maintenance processes.
+  - Branches from ``main`` meant for stabilizing and publishing tagged releases.
+  - Created via release automation.
+  - Changes should be made via the :doc:`backport process <backport_process>`.
+
+Tagging conventions
+-------------------
+- ``vX.Y.Z`` finalized release tags on release branches
+- ``vX.Y.Z-rcN``: release-candidate tags for pre-release validation.
+- ``vX.Y.Z.dev``: the first commit of development for ``X.Y.Z`` (the commit that increments the library version)

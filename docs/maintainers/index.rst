@@ -6,5 +6,5 @@ This section documents the policies and procedures to maintain and release artif
 .. toctree::
    :maxdepth: 1
 
-   branching_strategy
-   backport_process
+   how_tos/index
+   references/index

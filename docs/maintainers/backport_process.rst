@@ -1,34 +1,25 @@
-Backport Process
-================
+How to commit fixes to release branches (backport process)
+==========================================================
 
-This page documents how changes are made to release branches.
+This guide explains when and how to commit fixes to release branches.
 
-In an ideal world, the release tag ``vX.Y.Z`` would match the exact commit where
-``branch/X.Y.Z`` was created from ``main``, with no additional fixes needed.
-In practice, important bugs are sometimes found after that cut, and we need
-surgical fixes in a prior release branch without taking every newer change from
-``main``. These targeted fixes are called *backports*: the fix is made via a standard
-PR to the ``main`` branch, then automation opens an equivalent PR against the relevant
-release branch.
+After a release branch is created and before a release tag is finalized,
+maintainers may need to apply fixes to that release branch.
 
-To land a fix in a release branch, follow these steps:
+To keep ``main`` as the source of truth, each fix starts as a PR against
+``main``, then automation opens an equivalent *backport* PR against the
+relevant release branch.
 
-#. Make the fix via a normal PR against ``main``.
-#. If the fix meets the criteria below for inclusion in a release branch, add
-   the label ``backport branch/<MAJOR>.<MINOR>.x``.
-#. Once the PR is merged into ``main``, automation opens a backport PR targeting
-   ``branch/<MAJOR>.<MINOR>.x``.
-#. Before merging into the release branch, the backport PR must pass CI when
-   built against the *tip* of the target release branch (no stale PRs allowed).
 
 Backport Criteria
-----------------
+-----------------
 
-Use the questions below to decide if a change is worth backporting:
+Before starting a backport, use the questions below to decide if a change is worth backporting:
 
 - Does this fix a correctness bug (wrong result, UB, memory safety, data race, deadlock)?
 - Does this fix a crash?
 - Does this fix a regression?
+- Are users actively asking for this fix to be backported?
 - How likely are users to be affected by this? How many?
 - Is there a reasonable workaround?
 - How risky is this change?
@@ -36,4 +27,20 @@ Use the questions below to decide if a change is worth backporting:
 Examples *not* worth backporting:
 
 - Fixes to tests that do not impact the functionality of the library.
-- Fixes to infrastructure that do not impact the functionality of the library.
+- Fixes to infrastructure that does not impact the functionality of the library.
+
+Steps
+-----
+
+#. Create a PR with the fix against ``main`` via a PR following our :doc:`contributing guidelines </cccl/contributing>`.
+#. Add the label ``backport branch/X.Y.x`` to the PR.
+
+   - If the PR is already merged, you can still trigger a backport by commenting
+     ``/backport branch/X.Y.x`` on the merged PR.
+#. After merge to ``main``, confirm automation opens a backport PR targeting
+   ``branch/X.Y.x``.
+#. Review the generated backport PR for correctness and resolve any conflicts.
+#. Ensure all CI checks have passed and merge the backport PR into the target
+   release branch.
+
+   - Only members of the GitHub team `cccl-release-owners <https://github.com/orgs/NVIDIA/teams/cccl-release-owners>` can merge PRs to release branches.
