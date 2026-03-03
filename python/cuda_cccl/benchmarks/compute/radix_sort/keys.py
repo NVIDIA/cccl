@@ -19,7 +19,6 @@ Notes:
 import sys
 from pathlib import Path
 
-# Add parent directory to path for utils import
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
@@ -30,14 +29,19 @@ from utils import as_cupy_stream, generate_data_with_entropy
 import cuda.bench as bench
 from cuda.compute import SortOrder, make_radix_sort
 
-# Entropy values from C++ benchmark
-
 
 def bench_radix_sort_keys(state: bench.State):
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_elements = int(state.get_int64("Elements{io}"))
     entropy_str = state.get_string("Entropy")
+
+    if (
+        dtype in (np.int32, np.float32) and
+        num_elements >= 2**28
+    ):
+        state.skip("Skipping: Generates cudaErrorIllegalAddress")
+        return
 
     alloc_stream = as_cupy_stream(state.get_stream())
 

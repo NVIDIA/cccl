@@ -15,7 +15,6 @@ Notes:
 import sys
 from pathlib import Path
 
-# Add parent directory to path for utils import
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
@@ -26,16 +25,13 @@ import cuda.bench as bench
 import cuda.compute
 from cuda.compute import ZipIterator
 
-# Subset of types matching C++ babelstream benchmark
 TYPE_MAP = {k: _ALL_TYPES[k] for k in ("I8", "I16", "F32", "F64")}
 
-# BabelStream constants
 START_A = 11
 START_B = 2
 START_C = 1
 START_SCALAR = -2
 
-# Verify invariant: nstream maintains consistent workload
 assert START_A == START_A + START_B + START_SCALAR * START_C
 
 

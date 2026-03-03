@@ -17,7 +17,6 @@ Notes:
 import sys
 from pathlib import Path
 
-# Add parent directory to path for utils import
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
@@ -28,7 +27,6 @@ from utils import as_cupy_stream
 import cuda.bench as bench
 from cuda.compute import Determinism, OpKind, make_reduce_into
 
-# C++ tests int32, int64, float, double
 TYPE_MAP = {k: _ALL_TYPES[k] for k in ("I32", "I64", "F32", "F64")}
 
 

@@ -16,7 +16,6 @@ Notes:
 import sys
 from pathlib import Path
 
-# Add parent directory to path for utils import
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
@@ -33,7 +32,6 @@ def bench_reduce_min(state: bench.State):
     dtype = TYPE_MAP[type_str]
     num_items = int(state.get_int64("Elements{io}"))
 
-    # Setup data - use random values like C++ generate()
     alloc_stream = as_cupy_stream(state.get_stream())
     with alloc_stream:
         if np.issubdtype(dtype, np.integer):

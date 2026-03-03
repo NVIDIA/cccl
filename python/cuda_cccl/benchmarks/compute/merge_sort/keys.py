@@ -18,7 +18,6 @@ Notes:
 import sys
 from pathlib import Path
 
-# Add parent directory to path for utils import
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
@@ -28,14 +27,16 @@ from utils import TYPE_MAP, as_cupy_stream, generate_data_with_entropy
 import cuda.bench as bench
 from cuda.compute import OpKind, make_merge_sort
 
-# Entropy values from C++ benchmark (keys.cu line 125)
-
 
 def bench_merge_sort_keys(state: bench.State):
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_elements = int(state.get_int64("Elements{io}"))
     entropy_str = state.get_string("Entropy")
+
+    if dtype.itemsize == 8 and num_elements >= 2**28:
+        state.skip("Skipping: large 64-bit key sizes hit allocator limits")
+        return
 
     alloc_stream = as_cupy_stream(state.get_stream())
 
@@ -66,6 +67,9 @@ def bench_merge_sort_keys(state: bench.State):
         op=OpKind.LESS,
         num_items=num_elements,
     )
+    if temp_storage_bytes <= 0:
+        state.skip("Skipping: invalid temp storage size")
+        return
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 

@@ -17,7 +17,6 @@ Notes:
 import sys
 from pathlib import Path
 
-# Add parent directory to path for utils import
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
@@ -29,7 +28,6 @@ from cuda.compute import ZipIterator, make_unary_transform
 
 
 def bench_transform_grayscale(state: bench.State):
-    # Axes
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_elements = int(state.get_int64("Elements{io}"))

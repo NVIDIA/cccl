@@ -16,7 +16,6 @@ Notes:
 import sys
 from pathlib import Path
 
-# Add parent directory to path for utils import
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
@@ -33,12 +32,10 @@ def max_op(a, b):
 
 
 def bench_reduce_custom(state: bench.State):
-    # Axes
     type_str = state.get_string("T")
     dtype = TYPE_MAP[type_str]
     num_items = int(state.get_int64("Elements{io}"))
 
-    # Setup data - use random values like C++ generate()
     alloc_stream = as_cupy_stream(state.get_stream())
     with alloc_stream:
         if np.issubdtype(dtype, np.integer):
@@ -48,7 +45,6 @@ def bench_reduce_custom(state: bench.State):
 
         d_out = cp.empty(1, dtype=dtype)
 
-    # Initial value for reduction (C++ uses T{})
     h_init = np.zeros(1, dtype=dtype)
 
     reducer = make_reduce_into(d_in=d_in, d_out=d_out, op=max_op, h_init=h_init)

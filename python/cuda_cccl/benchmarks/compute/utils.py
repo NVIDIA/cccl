@@ -195,32 +195,29 @@ def generate_key_segments(
     if num_segments_est > np.iinfo(np.int32).max:
         raise MemoryError("Too many segments for int32 offsets")
 
-    sizes = cp.random.randint(
+    sizes_host = np.random.randint(
         min_segment_size,
         max_segment_size + 1,
         size=num_segments_est,
-        dtype=cp.int64,
+        dtype=np.int64,
     )
-    cumsum = cp.cumsum(sizes)
-    cutoff = int(
-        cp.searchsorted(
-            cumsum, cp.asarray(num_elements, dtype=cp.int64), side="left"
-        ).item()
-    )
-    sizes = sizes[: cutoff + 1]
-    prev = 0 if cutoff == 0 else int(cumsum[cutoff - 1].item())
-    sizes[cutoff] = num_elements - prev
+    cumsum = np.cumsum(sizes_host)
+    cutoff = int(np.searchsorted(cumsum, num_elements, side="left"))
+    sizes_host = sizes_host[: cutoff + 1]
+    prev = 0 if cutoff == 0 else int(cumsum[cutoff - 1])
+    sizes_host[cutoff] = num_elements - prev
 
-    num_segments = sizes.size
-    key_ids = cp.arange(num_segments, dtype=cp.int64)
-    if np.issubdtype(key_dtype, np.integer):
+    num_segments = sizes_host.size
+    key_ids_host = np.arange(num_segments, dtype=np.int64)
+    if np.issubdtype(key_dtype, np.integer) and key_dtype.itemsize < 8:
         info = np.iinfo(key_dtype)
         range_size = int(info.max) - int(info.min) + 1
-        key_ids = (key_ids % range_size) + int(info.min)
+        key_ids_host = (key_ids_host % range_size) + int(info.min)
 
-    key_ids = key_ids.astype(key_dtype, copy=False)
+    key_ids_host = key_ids_host.astype(key_dtype, copy=False)
+    keys_host = np.repeat(key_ids_host, sizes_host)
 
     with stream:
-        keys = cp.repeat(key_ids, sizes)
+        keys = cp.asarray(keys_host)
 
     return keys

@@ -19,7 +19,6 @@ Notes:
 import sys
 from pathlib import Path
 
-# Add parent directory to path for utils import
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
@@ -29,9 +28,7 @@ from utils import INTEGER_TYPES, TYPE_MAP, as_cupy_stream, generate_key_segments
 import cuda.bench as bench
 from cuda.compute import OpKind, make_unique_by_key
 
-# Key types: match C++ key_types (int8, int16, int32, int64)
 KEY_TYPE_MAP = INTEGER_TYPES
-# Value types: match C++ all_types (fundamental types)
 VALUE_TYPE_MAP = TYPE_MAP
 
 
@@ -42,6 +39,10 @@ def bench_unique_by_key(state: bench.State):
     value_dtype = VALUE_TYPE_MAP[value_type_str]
     num_elements = int(state.get_int64("Elements{io}"))
     max_seg_size = int(state.get_int64("MaxSegSize"))
+
+    if num_elements > np.iinfo(np.int32).max:
+        state.skip("Skipping: num_elements exceeds int32 limits")
+        return
 
     alloc_stream = as_cupy_stream(state.get_stream())
 

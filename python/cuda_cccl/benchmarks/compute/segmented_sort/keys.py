@@ -18,7 +18,6 @@ Notes:
 import sys
 from pathlib import Path
 
-# Add parent directory to path for utils import
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
@@ -87,7 +86,22 @@ def run_segmented_sort(
             stream=launch.get_stream(),
         )
 
-    state.exec(launcher, batched=False)
+    exec_tag = getattr(bench, "exec_tag", None)
+    if exec_tag is not None:
+        try:
+            state.exec(launcher, exec_tag=exec_tag.sync, batched=False)
+            return
+        except TypeError:
+            try:
+                state.exec(exec_tag.sync, launcher, batched=False)
+                return
+            except TypeError:
+                pass
+
+    try:
+        state.exec(launcher, batched=False, sync=True)
+    except TypeError:
+        state.exec(launcher, batched=False)
 
 
 def bench_segmented_sort_power(state: bench.State):
