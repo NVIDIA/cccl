@@ -140,8 +140,8 @@ DECLARE_UNITTEST(TestSortByKeyBoolDescending);
 
 void TestSortByKeyLongDouble()
 {
-  thrust::host_vector<long double> h_keys  = {10.0L, 9.0L, 8.0L, 7.0L, 6.0L, 5.0L, 4.0L, 3.0L, 2.0L, 1.0L};
-  thrust::host_vector<int> h_values = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+  thrust::host_vector<long double> h_keys    = {10.0L, 9.0L, 8.0L, 7.0L, 6.0L, 5.0L, 4.0L, 3.0L, 2.0L, 1.0L};
+  thrust::host_vector<int> h_values          = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
   thrust::host_vector<int> h_values_expected = {10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
 
   thrust::sort_by_key(h_keys.begin(), h_keys.end(), h_values.begin());
