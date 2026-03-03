@@ -28,7 +28,6 @@ from utils import as_cupy_stream
 import cuda.bench as bench
 from cuda.compute import make_binary_transform
 
-
 _COMPLEX_EPS = np.finfo(np.float32).eps
 _COMPLEX_THRESHOLD = _COMPLEX_EPS * 2.0
 

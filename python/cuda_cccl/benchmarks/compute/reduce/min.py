@@ -86,6 +86,6 @@ if __name__ == "__main__":
     b.set_name("base")
 
     b.add_string_axis("T", list(TYPE_MAP.keys()))
-    b.add_int64_power_of_two_axis("Elements{io}", range(16, 29, 4))  # [16, 20, 24, 28]
+    b.add_int64_power_of_two_axis("Elements{io}", range(16, 29, 4))
 
     bench.run_all_benchmarks(sys.argv)

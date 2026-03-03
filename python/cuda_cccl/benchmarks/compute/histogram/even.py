@@ -63,7 +63,7 @@ def bench_histogram_even(state: bench.State):
         state.skip("Skipping: Generates cudaErrorIllegalAddress")
         return
 
-    num_levels = num_bins + 1  # num_output_levels = num_bins + 1
+    num_levels = num_bins + 1
     lower_level = dtype(0)
     upper_level = get_upper_level(dtype, num_bins, num_elements)
 
@@ -133,8 +133,8 @@ if __name__ == "__main__":
     b.set_name("base")
 
     b.add_string_axis("SampleT", list(TYPE_MAP.keys()))
-    b.add_int64_power_of_two_axis("Elements{io}", range(16, 29, 4))  # [16, 20, 24, 28]
-    b.add_int64_axis("Bins", [32, 128, 2048, 2097152])  # [32, 128, 2048, 2097152]
+    b.add_int64_power_of_two_axis("Elements{io}", range(16, 29, 4))
+    b.add_int64_axis("Bins", [32, 128, 2048, 2097152])
     b.add_string_axis("Entropy", ["0.201", "1.000"])
 
     bench.run_all_benchmarks(sys.argv)

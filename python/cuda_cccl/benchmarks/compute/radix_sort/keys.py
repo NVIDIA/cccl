@@ -36,10 +36,7 @@ def bench_radix_sort_keys(state: bench.State):
     num_elements = int(state.get_int64("Elements{io}"))
     entropy_str = state.get_string("Entropy")
 
-    if (
-        dtype in (np.int32, np.float32) and
-        num_elements >= 2**28
-    ):
+    if dtype in (np.int32, np.float32) and num_elements >= 2**28:
         state.skip("Skipping: Generates cudaErrorIllegalAddress")
         return
 
@@ -97,7 +94,7 @@ if __name__ == "__main__":
     b.set_name("base")
 
     b.add_string_axis("T", list(TYPE_MAP.keys()))
-    b.add_int64_power_of_two_axis("Elements{io}", range(16, 29, 4))  # [16, 20, 24, 28]
+    b.add_int64_power_of_two_axis("Elements{io}", range(16, 29, 4))
     b.add_string_axis("Entropy", ["1.000", "0.544", "0.201"])
     # Note: OffsetT axis from C++ is not exposed in Python API
 
