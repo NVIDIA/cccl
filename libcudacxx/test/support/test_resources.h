@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef CUDA_TEST_CONTAINER_VECTOR_TEST_RESOURCES_H
-#define CUDA_TEST_CONTAINER_VECTOR_TEST_RESOURCES_H
+#ifndef CUDA_TEST_CONTAINERS_TEST_RESOURCES_H
+#define CUDA_TEST_CONTAINERS_TEST_RESOURCES_H
 
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/memory_resource>
@@ -75,8 +75,11 @@ struct memory_resource_wrapper
   friend void get_property(const memory_resource_wrapper&, other_property) noexcept {}
 };
 
-// Adapter that offsets the pointer by the alignment to enable testing that the resource was passed the correct
-// alignment.
+//! @brief Resource adapter for alignment testing.
+//! Allocates \c size + alignment from the upstream resource, then returns a pointer offset by
+//! \c alignment so that the returned pointer has the requested alignment. Use this to verify that
+//! containers pass the correct alignment to allocate: check that the returned pointer satisfies
+//! \c is_pointer_aligned(ptr, expected_alignment).
 template <typename Resource>
 struct offset_by_alignment_resource
     : ::cuda::mr::__copy_default_queries<Resource>
@@ -138,4 +141,11 @@ struct offset_by_alignment_resource
   }
 };
 
-#endif // CUDA_TEST_CONTAINER_VECTOR_TEST_RESOURCES_H
+//! @brief Returns true if \p ptr is aligned to \p alignment (power-of-two).
+template <typename T>
+inline bool is_pointer_aligned(const T* ptr, ::cuda::std::size_t alignment) noexcept
+{
+  return ptr != nullptr && (reinterpret_cast<std::uintptr_t>(ptr) % alignment == 0);
+}
+
+#endif // CUDA_TEST_CONTAINERS_TEST_RESOURCES_H
