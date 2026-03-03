@@ -10,6 +10,8 @@ To keep ``main`` as the source of truth, each fix starts as a PR against
 ``main``, then automation opens an equivalent *backport* PR against the
 relevant release branch.
 
+As a rule, backports target only the most recent stable release branch.
+Backports to older release branches are exceptions and require higher scrutiny.
 
 Backport Criteria
 -----------------
@@ -33,7 +35,7 @@ Steps
 -----
 
 #. Create a PR with the fix against ``main`` via a PR following our :doc:`contributing guidelines </cccl/contributing>`.
-#. Add the label ``backport branch/X.Y.x`` to the PR.
+#. Before merging, add the label ``backport branch/X.Y.x`` to the PR.
 
    - If the PR is already merged, you can still trigger a backport by commenting
      ``/backport branch/X.Y.x`` on the merged PR.
@@ -43,4 +45,6 @@ Steps
 #. Ensure all CI checks have passed and merge the backport PR into the target
    release branch.
 
-   - Only members of the GitHub team `cccl-release-owners <https://github.com/orgs/NVIDIA/teams/cccl-release-owners>` can merge PRs to release branches.
+   - Only members of the GitHub team
+     `cccl-release-owners <https://github.com/orgs/NVIDIA/teams/cccl-release-owners>`_
+     can merge PRs to release branches.
