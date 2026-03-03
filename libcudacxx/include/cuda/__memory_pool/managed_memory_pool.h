@@ -77,11 +77,11 @@ public:
 //! @brief Returns the default managed memory pool.
 //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
 //! @returns The default managed memory pool.
-[[nodiscard]] inline managed_memory_pool_ref managed_default_memory_pool()
+[[nodiscard]] inline managed_memory_pool_ref& managed_default_memory_pool()
 {
-  static ::cudaMemPool_t __pool = ::cuda::__get_default_memory_pool(
-    ::CUmemLocation{::CU_MEM_LOCATION_TYPE_NONE, 0}, ::CU_MEM_ALLOCATION_TYPE_MANAGED);
-  return managed_memory_pool_ref(__pool);
+  static managed_memory_pool_ref __pool{::cuda::__get_default_memory_pool(
+    ::CUmemLocation{::CU_MEM_LOCATION_TYPE_NONE, 0}, ::CU_MEM_ALLOCATION_TYPE_MANAGED)};
+  return __pool;
 }
 
 //! @rst
