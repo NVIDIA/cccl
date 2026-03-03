@@ -1383,7 +1383,7 @@ private:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return detail::segmented_sort::dispatch<SortOrder::Ascending>(
+    return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
