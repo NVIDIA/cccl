@@ -58,13 +58,15 @@ def bench_unique_by_key(state: bench.State):
     with alloc_stream:
         if np.issubdtype(value_dtype, np.integer):
             info = np.iinfo(value_dtype)
-            if value_dtype == np.int64:
+            if np.dtype(value_dtype).itemsize >= 8:
+                # For int64/uint64: generate random int64 and view as target dtype
+                # to avoid overflow in cp.random.randint high parameter
                 d_in_values = cp.random.randint(
-                    int(info.min),
-                    int(info.max),
+                    np.iinfo(np.int64).min,
+                    np.iinfo(np.int64).max,
                     size=num_elements,
                     dtype=np.int64,
-                )
+                ).view(value_dtype)
             else:
                 d_in_values = cp.random.randint(
                     int(info.min),
@@ -109,17 +111,11 @@ def bench_unique_by_key(state: bench.State):
     num_runs = int(d_num_selected.get()[0])
 
     state.add_element_count(num_elements)
-    state.add_global_memory_reads(num_elements * d_in_keys.dtype.itemsize)  # Keys read
-    state.add_global_memory_reads(
-        num_elements * d_in_values.dtype.itemsize
-    )  # Values read
-    state.add_global_memory_writes(num_runs * d_out_keys.dtype.itemsize)  # Keys written
-    state.add_global_memory_writes(
-        num_runs * d_out_values.dtype.itemsize
-    )  # Values written
-    state.add_global_memory_writes(
-        d_num_selected.dtype.itemsize
-    )  # num_selected written
+    state.add_global_memory_reads(int(num_elements * d_in_keys.dtype.itemsize))
+    state.add_global_memory_reads(int(num_elements * d_in_values.dtype.itemsize))
+    state.add_global_memory_writes(int(num_runs * d_out_keys.dtype.itemsize))
+    state.add_global_memory_writes(int(num_runs * d_out_values.dtype.itemsize))
+    state.add_global_memory_writes(int(d_num_selected.dtype.itemsize))
 
     def launcher(launch: bench.Launch):
         uniquer(

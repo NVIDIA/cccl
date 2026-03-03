@@ -185,6 +185,12 @@ def generate_fixed_segment_offsets(num_elements, segment_size, stream):
 def generate_key_segments(
     num_elements, key_dtype, min_segment_size, max_segment_size, stream
 ):
+    """Generate GPU key segments (runs of equal keys) matching C++ generate.uniform.key_segments.
+
+    All computation stays on GPU via CuPy. We avoid ``cp.repeat`` (which
+    doesn't accept a device array for *repeats*) by building a segment-id
+    array through ``cp.searchsorted`` on cumulative offsets instead.
+    """
     num_elements = int(num_elements)
     if min_segment_size <= 0:
         raise ValueError("min_segment_size must be positive")
@@ -195,29 +201,48 @@ def generate_key_segments(
     if num_segments_est > np.iinfo(np.int32).max:
         raise MemoryError("Too many segments for int32 offsets")
 
-    sizes_host = np.random.randint(
-        min_segment_size,
-        max_segment_size + 1,
-        size=num_segments_est,
-        dtype=np.int64,
-    )
-    cumsum = np.cumsum(sizes_host)
-    cutoff = int(np.searchsorted(cumsum, num_elements, side="left"))
-    sizes_host = sizes_host[: cutoff + 1]
-    prev = 0 if cutoff == 0 else int(cumsum[cutoff - 1])
-    sizes_host[cutoff] = num_elements - prev
-
-    num_segments = sizes_host.size
-    key_ids_host = np.arange(num_segments, dtype=np.int64)
-    if np.issubdtype(key_dtype, np.integer) and key_dtype.itemsize < 8:
-        info = np.iinfo(key_dtype)
-        range_size = int(info.max) - int(info.min) + 1
-        key_ids_host = (key_ids_host % range_size) + int(info.min)
-
-    key_ids_host = key_ids_host.astype(key_dtype, copy=False)
-    keys_host = np.repeat(key_ids_host, sizes_host)
-
     with stream:
-        keys = cp.asarray(keys_host)
+        sizes = cp.random.randint(
+            min_segment_size,
+            max_segment_size + 1,
+            size=num_segments_est,
+            dtype=cp.int64,
+        )
+        cumsum = cp.cumsum(sizes)
+
+        # Find how many full segments fit within num_elements
+        cutoff = int(
+            cp.searchsorted(
+                cumsum, cp.asarray(num_elements, dtype=cp.int64), side="left"
+            ).item()
+        )
+        sizes = sizes[: cutoff + 1]
+        prev = 0 if cutoff == 0 else int(cumsum[cutoff - 1].item())
+        sizes[cutoff] = num_elements - prev
+
+        # Build cumulative offsets for the final segments
+        offsets = cp.empty(cutoff + 2, dtype=cp.int64)
+        offsets[0] = 0
+        offsets[1:] = cp.cumsum(sizes)
+
+        # Instead of cp.repeat (which doesn't support device repeats),
+        # use searchsorted to map each element index to its segment id.
+        indices = cp.arange(num_elements, dtype=cp.int64)
+        # searchsorted(offsets[1:], indices, side="right") gives the segment id
+        segment_ids = cp.searchsorted(offsets[1:], indices, side="right")
+
+        # Map segment ids to key values, wrapping within dtype range
+        if np.issubdtype(key_dtype, np.integer):
+            info = np.iinfo(key_dtype)
+            if np.dtype(key_dtype).itemsize < 8:
+                range_size = int(info.max) - int(info.min) + 1
+                keys = ((segment_ids % range_size) + int(info.min)).astype(
+                    key_dtype, copy=False
+                )
+            else:
+                # For int64, avoid Python overflow: just cast directly
+                keys = segment_ids.astype(key_dtype, copy=False)
+        else:
+            keys = segment_ids.astype(key_dtype, copy=False)
 
     return keys
