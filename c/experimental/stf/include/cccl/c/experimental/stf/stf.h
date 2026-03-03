@@ -120,7 +120,8 @@ typedef enum stf_exec_place_kind
 {
   STF_EXEC_PLACE_DEVICE, //!< Task executes on CUDA device
   STF_EXEC_PLACE_HOST, //!< Task executes on host (CPU)
-  STF_EXEC_PLACE_GRID //!< Task executes on a grid of places (from stf_exec_place_grid_*)
+  STF_EXEC_PLACE_GRID, //!< Task executes on a grid of places (from stf_exec_place_grid_*)
+  STF_EXEC_PLACE_OPAQUE //!< Opaque handle wrapping an arbitrary C++ exec_place (for extensibility)
 } stf_exec_place_kind;
 
 //! \brief Execution place specification
@@ -135,6 +136,7 @@ typedef struct stf_exec_place
     stf_exec_place_device device; //!< Device configuration (when kind == STF_EXEC_PLACE_DEVICE)
     stf_exec_place_host host; //!< Host configuration (when kind == STF_EXEC_PLACE_HOST)
     stf_exec_place_grid_handle grid; //!< Grid handle (when kind == STF_EXEC_PLACE_GRID)
+    void* opaque; //!< Opaque C++ exec_place handle (when kind == STF_EXEC_PLACE_OPAQUE)
   } u; //!< Configuration union
 } stf_exec_place;
 
@@ -193,6 +195,22 @@ static inline stf_exec_place make_exec_place_from_grid(stf_exec_place_grid_handl
   stf_exec_place p;
   p.kind   = STF_EXEC_PLACE_GRID;
   p.u.grid = grid;
+  return p;
+}
+
+//! \brief Create execution place from an opaque C++ exec_place handle.
+//!
+//! \param handle Opaque handle from stf_exec_place_opaque_wrap() (must not be NULL).
+//! \return Execution place wrapping the opaque handle.
+//!
+//! \note The handle must remain valid (not destroyed) while the returned stf_exec_place is in use.
+//!       Typically the caller owns the handle and destroys it with stf_exec_place_opaque_destroy()
+//!       after all C API calls using this place have completed.
+static inline stf_exec_place make_opaque_exec_place(void* handle)
+{
+  stf_exec_place p;
+  p.kind     = STF_EXEC_PLACE_OPAQUE;
+  p.u.opaque = handle;
   return p;
 }
 
@@ -269,7 +287,8 @@ typedef enum stf_data_place_kind
   STF_DATA_PLACE_HOST, //!< Data on host (CPU) memory
   STF_DATA_PLACE_MANAGED, //!< Data in CUDA managed (unified) memory
   STF_DATA_PLACE_AFFINE, //!< Data follows execution place (default)
-  STF_DATA_PLACE_COMPOSITE //!< Data partitioned over a grid via a partition function
+  STF_DATA_PLACE_COMPOSITE, //!< Data partitioned over a grid via a partition function
+  STF_DATA_PLACE_OPAQUE //!< Opaque handle wrapping an arbitrary C++ data_place (for extensibility)
 } stf_data_place_kind;
 
 //! \brief Composite data place configuration (grid + partition function)
@@ -293,6 +312,7 @@ typedef struct stf_data_place
     stf_data_place_managed managed; //!< Managed memory configuration
     stf_data_place_affine affine; //!< Affine placement configuration
     stf_data_place_composite composite; //!< Composite (grid + partition function)
+    void* opaque; //!< Opaque C++ data_place handle (when kind == STF_DATA_PLACE_OPAQUE)
   } u; //!< Configuration union
 } stf_data_place;
 
@@ -373,6 +393,20 @@ static inline struct stf_data_place make_affine_data_place()
   return p;
 }
 
+//! \brief Create data place from an opaque C++ data_place handle.
+//!
+//! \param handle Opaque handle from stf_data_place_opaque_wrap() (must not be NULL).
+//! \return Data place wrapping the opaque handle.
+//!
+//! \note The handle must remain valid while the returned stf_data_place is in use.
+static inline stf_data_place make_opaque_data_place(void* handle)
+{
+  stf_data_place p;
+  p.kind     = STF_DATA_PLACE_OPAQUE;
+  p.u.opaque = handle;
+  return p;
+}
+
 //! \brief Create a composite data place (grid + partition function).
 //!
 //! The partition function (\p mapper) maps data coordinates to a position in the
@@ -439,6 +473,59 @@ void stf_exec_place_grid_get_dims(stf_exec_place_grid_handle grid, stf_dim4* out
 //! \param grid Grid handle (must not be NULL)
 //! \param dplace Data place to use as affine for this grid (e.g. from stf_make_composite_data_place())
 void stf_exec_place_grid_set_affine_data_place(stf_exec_place_grid_handle grid, const stf_data_place* dplace);
+
+//! \}
+
+//! \defgroup OpaquePlace Opaque place handles (extensibility)
+//! \brief Wrap/destroy arbitrary C++ exec_place or data_place objects as opaque handles.
+//!
+//! External libraries that define custom exec_place or data_place subclasses in C++ can
+//! use these functions to pass them through the C API. The opaque handle is a heap-allocated
+//! copy of the C++ object (sharing its internal pimpl) that is valid until destroyed.
+//! \{
+
+//! \brief Wrap a C++ exec_place object as an opaque handle.
+//! \param cpp_exec_place Pointer to a C++ exec_place object (must not be NULL).
+//!        The object is copied (the shared_ptr<impl> is shared, not deep-copied).
+//! \return Opaque handle; destroy with stf_exec_place_opaque_destroy().
+void* stf_exec_place_opaque_wrap(const void* cpp_exec_place);
+
+//! \brief Destroy an opaque exec_place handle.
+//! \param handle Handle from stf_exec_place_opaque_wrap() (may be NULL; no-op in that case).
+void stf_exec_place_opaque_destroy(void* handle);
+
+//! \brief Wrap a C++ data_place object as an opaque handle.
+//! \param cpp_data_place Pointer to a C++ data_place object (must not be NULL).
+//!        The object is copied.
+//! \return Opaque handle; destroy with stf_data_place_opaque_destroy().
+void* stf_data_place_opaque_wrap(const void* cpp_data_place);
+
+//! \brief Destroy an opaque data_place handle.
+//! \param handle Handle from stf_data_place_opaque_wrap() (may be NULL; no-op in that case).
+void stf_data_place_opaque_destroy(void* handle);
+
+//! \brief Convert a C stf_exec_place struct to an opaque handle.
+//!
+//! This converts the tagged-union C representation to a heap-allocated C++
+//! exec_place and returns an opaque handle. Useful for round-tripping
+//! standard places through the opaque path (e.g. in tests or Python).
+//! \param c_place Pointer to a C stf_exec_place struct (must not be NULL).
+//! \return Opaque handle; destroy with stf_exec_place_opaque_destroy().
+void* stf_exec_place_to_opaque(const stf_exec_place* c_place);
+
+//! \brief Convert a C stf_data_place struct to an opaque handle.
+//! \param c_place Pointer to a C stf_data_place struct (must not be NULL).
+//! \return Opaque handle; destroy with stf_data_place_opaque_destroy().
+void* stf_data_place_to_opaque(const stf_data_place* c_place);
+
+//! \brief Create an opaque exec_place handle wrapping a dummy (debug) place.
+//!
+//! The dummy place delegates to exec_place::device(dev_id) but prints to stderr
+//! on activate/deactivate. Useful for testing the opaque mechanism and as a
+//! reference for external exec_place implementations.
+//! \param dev_id CUDA device ID
+//! \return Opaque handle; destroy with stf_exec_place_opaque_destroy().
+void* stf_exec_place_dummy_create(int dev_id);
 
 //! \}
 

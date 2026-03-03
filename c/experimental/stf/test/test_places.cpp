@@ -249,3 +249,140 @@ C2H_TEST("task set_exec_place with STF_EXEC_PLACE_GRID", "[task][places]")
   stf_ctx_finalize(ctx);
   stf_exec_place_grid_destroy(grid);
 }
+
+// ---------------------------------------------------------------------------
+// Opaque exec_place extensibility tests
+// ---------------------------------------------------------------------------
+
+C2H_TEST("opaque exec_place round-trip (device via opaque)", "[task][places][opaque]")
+{
+  // Convert a regular C device place to opaque and verify it works in a task.
+  stf_exec_place dev0 = make_device_place(0);
+  void* handle        = stf_exec_place_to_opaque(&dev0);
+  REQUIRE(handle != nullptr);
+
+  stf_exec_place opaque = make_opaque_exec_place(handle);
+  REQUIRE(opaque.kind == STF_EXEC_PLACE_OPAQUE);
+
+  size_t N = 64;
+  float* X = static_cast<float*>(malloc(N * sizeof(float)));
+  for (size_t i = 0; i < N; ++i)
+  {
+    X[i] = static_cast<float>(i);
+  }
+
+  stf_ctx_handle ctx;
+  stf_ctx_create(&ctx);
+
+  stf_logical_data_handle lX;
+  stf_logical_data(ctx, &lX, X, N * sizeof(float));
+
+  stf_task_handle t;
+  stf_task_create(ctx, &t);
+  stf_task_set_exec_place(t, &opaque);
+  stf_task_add_dep(t, lX, STF_RW);
+  stf_task_start(t);
+  stf_task_end(t);
+
+  stf_logical_data_destroy(lX);
+  stf_ctx_finalize(ctx);
+  stf_exec_place_opaque_destroy(handle);
+
+  for (size_t i = 0; i < N; ++i)
+  {
+    REQUIRE(X[i] == static_cast<float>(i));
+  }
+  free(X);
+}
+
+C2H_TEST("dummy custom exec_place in task", "[task][places][opaque][dummy]")
+{
+  void* handle = stf_exec_place_dummy_create(0);
+  REQUIRE(handle != nullptr);
+
+  stf_exec_place opaque = make_opaque_exec_place(handle);
+  REQUIRE(opaque.kind == STF_EXEC_PLACE_OPAQUE);
+
+  stf_ctx_handle ctx;
+  stf_ctx_create(&ctx);
+
+  stf_task_handle t;
+  stf_task_create(ctx, &t);
+  stf_task_set_exec_place(t, &opaque);
+  stf_task_start(t);
+  stf_task_end(t);
+
+  stf_ctx_finalize(ctx);
+  stf_exec_place_opaque_destroy(handle);
+}
+
+C2H_TEST("grid of dummy exec_places", "[task][places][opaque][dummy]")
+{
+  const size_t nplaces = 2;
+
+  void* handles[nplaces];
+  stf_exec_place places[nplaces];
+  for (size_t i = 0; i < nplaces; ++i)
+  {
+    handles[i] = stf_exec_place_dummy_create(0);
+    REQUIRE(handles[i] != nullptr);
+    places[i] = make_opaque_exec_place(handles[i]);
+  }
+
+  stf_exec_place_grid_handle grid = stf_exec_place_grid_create(places, nplaces, nullptr);
+  REQUIRE(grid != nullptr);
+
+  stf_ctx_handle ctx;
+  stf_ctx_create(&ctx);
+
+  stf_task_handle t;
+  stf_task_create(ctx, &t);
+  stf_exec_place e_place = make_exec_place_from_grid(grid);
+  stf_task_set_exec_place(t, &e_place);
+  stf_task_start(t);
+
+  stf_dim4 dims;
+  int got_dims = stf_task_get_grid_dims(t, &dims);
+  REQUIRE(got_dims == 0);
+  REQUIRE(dims.x == 2);
+
+  stf_task_end(t);
+  stf_ctx_finalize(ctx);
+  stf_exec_place_grid_destroy(grid);
+
+  for (size_t i = 0; i < nplaces; ++i)
+  {
+    stf_exec_place_opaque_destroy(handles[i]);
+  }
+}
+
+C2H_TEST("mixed grid (dummy + device)", "[task][places][opaque][dummy]")
+{
+  void* dummy_handle = stf_exec_place_dummy_create(0);
+  REQUIRE(dummy_handle != nullptr);
+
+  stf_exec_place places[2];
+  places[0] = make_opaque_exec_place(dummy_handle);
+  places[1] = make_device_place(0);
+
+  stf_exec_place_grid_handle grid = stf_exec_place_grid_create(places, 2, nullptr);
+  REQUIRE(grid != nullptr);
+
+  stf_ctx_handle ctx;
+  stf_ctx_create(&ctx);
+
+  stf_task_handle t;
+  stf_task_create(ctx, &t);
+  stf_exec_place e_place = make_exec_place_from_grid(grid);
+  stf_task_set_exec_place(t, &e_place);
+  stf_task_start(t);
+
+  stf_dim4 dims;
+  REQUIRE(stf_task_get_grid_dims(t, &dims) == 0);
+  REQUIRE(dims.x == 2);
+
+  stf_task_end(t);
+  stf_ctx_finalize(ctx);
+  stf_exec_place_grid_destroy(grid);
+  stf_exec_place_opaque_destroy(dummy_handle);
+}

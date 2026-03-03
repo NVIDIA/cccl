@@ -92,6 +92,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
         STF_EXEC_PLACE_DEVICE
         STF_EXEC_PLACE_HOST
         STF_EXEC_PLACE_GRID
+        STF_EXEC_PLACE_OPAQUE
 
     ctypedef struct stf_exec_place_device:
         int dev_id
@@ -103,6 +104,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
         stf_exec_place_device device
         stf_exec_place_host   host
         stf_exec_place_grid_handle grid
+        void* opaque
 
     ctypedef struct stf_exec_place:
         stf_exec_place_kind kind
@@ -111,6 +113,12 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     stf_exec_place make_device_place(int  dev_id)
     stf_exec_place make_host_place()
     stf_exec_place make_exec_place_from_grid(stf_exec_place_grid_handle grid)
+    stf_exec_place make_opaque_exec_place(void* handle)
+
+    void* stf_exec_place_opaque_wrap(const void* cpp_exec_place)
+    void stf_exec_place_opaque_destroy(void* handle)
+    void* stf_exec_place_to_opaque(const stf_exec_place* c_place)
+    void* stf_exec_place_dummy_create(int dev_id)
 
     #
     # Data places
@@ -152,6 +160,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
         STF_DATA_PLACE_MANAGED
         STF_DATA_PLACE_AFFINE
         STF_DATA_PLACE_COMPOSITE
+        STF_DATA_PLACE_OPAQUE
 
     ctypedef union stf_data_place_u:
         stf_data_place_device device
@@ -159,6 +168,7 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
         stf_data_place_managed   managed
         stf_data_place_affine   affine
         stf_data_place_composite composite
+        void* opaque
 
     ctypedef struct stf_data_place:
         stf_data_place_kind kind
@@ -168,6 +178,11 @@ cdef extern from "cccl/c/experimental/stf/stf.h":
     stf_data_place make_host_data_place()
     stf_data_place make_managed_data_place()
     stf_data_place make_affine_data_place()
+    stf_data_place make_opaque_data_place(void* handle)
+
+    void* stf_data_place_opaque_wrap(const void* cpp_data_place)
+    void stf_data_place_opaque_destroy(void* handle)
+    void* stf_data_place_to_opaque(const stf_data_place* c_place)
 
     ctypedef struct stf_logical_data_handle_t
     ctypedef stf_logical_data_handle_t* stf_logical_data_handle
@@ -448,12 +463,42 @@ def read(ld, dplace=None):   return dep(ld, AccessMode.READ.value, dplace)
 def write(ld, dplace=None):  return dep(ld, AccessMode.WRITE.value, dplace)
 def rw(ld, dplace=None):     return dep(ld, AccessMode.RW.value, dplace)
 
+cdef exec_place _to_exec_place(object obj):
+    """Convert an exec_place-like object to a Cython exec_place.
+
+    Accepts:
+    - A Cython exec_place (or subclass like exec_place_grid) -- returned as-is.
+    - Any object with a _as_stf_exec_place() method -- called to obtain a Cython exec_place.
+    Raises TypeError otherwise.
+    """
+    if isinstance(obj, exec_place):
+        return <exec_place>obj
+    if hasattr(obj, '_as_stf_exec_place'):
+        result = obj._as_stf_exec_place()
+        if isinstance(result, exec_place):
+            return <exec_place>result
+        raise TypeError(
+            f"_as_stf_exec_place() must return an exec_place, got {type(result).__name__}"
+        )
+    raise TypeError(
+        f"expected an exec_place or an object with _as_stf_exec_place(), "
+        f"got {type(obj).__name__}"
+    )
+
+cdef bint _is_exec_place_like(object obj):
+    """Check if obj is exec_place-like (for dispatch in context.task)."""
+    return isinstance(obj, exec_place) or hasattr(obj, '_as_stf_exec_place')
+
 cdef class exec_place:
     cdef stf_exec_place _c_place
+    cdef bint _owns_opaque
 
     def __cinit__(self):
-        # empty default constructor; never directly used
-        pass
+        self._owns_opaque = False
+
+    def __dealloc__(self):
+        if self._owns_opaque and self._c_place.kind == STF_EXEC_PLACE_OPAQUE:
+            stf_exec_place_opaque_destroy(self._c_place.u.opaque)
 
     @staticmethod
     def device(int dev_id):
@@ -472,6 +517,25 @@ cdef class exec_place:
         """Return the grid as an exec_place (exec_place_grid is a subclass of exec_place)."""
         return grid
 
+    @staticmethod
+    def from_opaque(uintptr_t handle):
+        """Wrap an opaque C++ exec_place pointer as a Python exec_place.
+
+        The returned object takes ownership of the handle and will destroy it
+        when garbage collected. The handle should come from
+        stf_exec_place_opaque_wrap() or stf_exec_place_dummy_create().
+        """
+        if handle == 0:
+            raise ValueError("opaque handle must not be NULL")
+        cdef exec_place p = exec_place.__new__(exec_place)
+        p._c_place = make_opaque_exec_place(<void*>handle)
+        p._owns_opaque = True
+        return p
+
+    def _as_stf_exec_place(self):
+        """Return self (satisfies the ExecPlaceLike duck-typing protocol)."""
+        return self
+
     @property
     def kind(self) -> str:
         if self._c_place.kind == STF_EXEC_PLACE_DEVICE:
@@ -480,6 +544,8 @@ cdef class exec_place:
             return "host"
         elif self._c_place.kind == STF_EXEC_PLACE_GRID:
             return "grid"
+        elif self._c_place.kind == STF_EXEC_PLACE_OPAQUE:
+            return "opaque"
         else:
             return "unknown"
 
@@ -489,13 +555,39 @@ cdef class exec_place:
             raise AttributeError("not a device execution place")
         return self._c_place.u.device.dev_id
 
+cdef data_place _to_data_place(object obj):
+    """Convert a data_place-like object to a Cython data_place.
+
+    Accepts:
+    - A Cython data_place -- returned as-is.
+    - Any object with a _as_stf_data_place() method -- called to obtain a Cython data_place.
+    Raises TypeError otherwise.
+    """
+    if isinstance(obj, data_place):
+        return <data_place>obj
+    if hasattr(obj, '_as_stf_data_place'):
+        result = obj._as_stf_data_place()
+        if isinstance(result, data_place):
+            return <data_place>result
+        raise TypeError(
+            f"_as_stf_data_place() must return a data_place, got {type(result).__name__}"
+        )
+    raise TypeError(
+        f"expected a data_place or an object with _as_stf_data_place(), "
+        f"got {type(obj).__name__}"
+    )
+
 cdef class data_place:
     cdef stf_data_place _c_place
     cdef object _mapper_callback  # prevent GC of ctypes callback so the C function pointer stays valid
+    cdef bint _owns_opaque
 
     def __cinit__(self):
-        # empty default constructor; never directly used
-        pass
+        self._owns_opaque = False
+
+    def __dealloc__(self):
+        if self._owns_opaque and self._c_place.kind == STF_DATA_PLACE_OPAQUE:
+            stf_data_place_opaque_destroy(self._c_place.u.opaque)
 
     @staticmethod
     def device(int dev_id):
@@ -521,6 +613,25 @@ cdef class data_place:
         p._c_place = make_affine_data_place()
         return p
 
+    @staticmethod
+    def from_opaque(uintptr_t handle):
+        """Wrap an opaque C++ data_place pointer as a Python data_place.
+
+        The returned object takes ownership of the handle and will destroy it
+        when garbage collected. The handle should come from
+        stf_data_place_opaque_wrap().
+        """
+        if handle == 0:
+            raise ValueError("opaque handle must not be NULL")
+        cdef data_place p = data_place.__new__(data_place)
+        p._c_place = make_opaque_data_place(<void*>handle)
+        p._owns_opaque = True
+        return p
+
+    def _as_stf_data_place(self):
+        """Return self (satisfies the DataPlaceLike duck-typing protocol)."""
+        return self
+
     @property
     def kind(self) -> str:
         cdef stf_data_place_kind k = self._c_place.kind
@@ -534,6 +645,8 @@ cdef class data_place:
             return "affine"
         elif k == STF_DATA_PLACE_COMPOSITE:
             return "composite"
+        elif k == STF_DATA_PLACE_OPAQUE:
+            return "opaque"
         else:
             raise ValueError(f"Unknown data place kind: {k}")
 
@@ -614,8 +727,8 @@ cdef class exec_place_grid(exec_place):
     @staticmethod
     def create(places, grid_dims=None):
         """
-        Create a grid from a list of exec_place and optional shape.
-        places: list of exec_place (e.g. [exec_place.device(0), exec_place.device(1)])
+        Create a grid from a list of exec_place(-like) objects and optional shape.
+        places: list of exec_place or objects with _as_stf_exec_place()
         grid_dims: optional (x, y, z, t) tuple; if None, linear grid (len(places), 1, 1, 1).
         """
         cdef stf_exec_place c_places[64]
@@ -627,11 +740,10 @@ cdef class exec_place_grid(exec_place):
             raise ValueError("places must contain at least one place")
         if n > 64:
             raise ValueError("at most 64 places supported")
+        cdef list converted = []
         for i in range(n):
-            p = places[i]
-            if not isinstance(p, exec_place):
-                raise TypeError("places must be a list of exec_place")
-            ep = <exec_place> p
+            ep = _to_exec_place(places[i])
+            converted.append(ep)
             c_places[i] = ep._c_place
         g = exec_place_grid.__new__(exec_place_grid)
         if grid_dims is not None:
@@ -708,10 +820,8 @@ cdef class task:
         self._lds_args.append(ldata)
 
     def set_exec_place(self, object exec_p):
-        """Set execution place (exec_place or exec_place_grid, since grid is a kind of exec_place)."""
-        if not isinstance(exec_p, exec_place):
-            raise TypeError("set_exec_place expects an exec_place (or exec_place_grid) argument")
-        cdef exec_place ep = <exec_place> exec_p
+        """Set execution place (exec_place, exec_place_grid, or any ExecPlaceLike object)."""
+        cdef exec_place ep = _to_exec_place(exec_p)
         stf_task_set_exec_place(self._t, &ep._c_place)
 
     def stream_ptr(self) -> int:
@@ -1052,13 +1162,13 @@ cdef class context:
         for d in args:
             if isinstance(d, dep):
                 t.add_dep(d)
-            elif isinstance(d, exec_place):
+            elif _is_exec_place_like(d):
                 if exec_place_set:
                       raise ValueError("Only one exec_place can be given")
                 t.set_exec_place(d)
                 exec_place_set = True
             else:
                 raise TypeError(
-                    "Arguments must be dependency objects or an exec_place"
+                    "Arguments must be dependency objects or an exec_place-like object"
                 )
         return t

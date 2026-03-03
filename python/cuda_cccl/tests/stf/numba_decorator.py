@@ -40,8 +40,14 @@ class stf_kernel_decorator:
         if n == 4:
             ctx = cfg[3]
 
-        if exec_pl is not None and not isinstance(exec_pl, exec_place):
-            raise TypeError("3rd item must be an exec_place")
+        if (
+            exec_pl is not None
+            and not isinstance(exec_pl, exec_place)
+            and not hasattr(exec_pl, "_as_stf_exec_place")
+        ):
+            raise TypeError(
+                "3rd item must be an exec_place or an object with _as_stf_exec_place()"
+            )
 
         if ctx is not None and not isinstance(ctx, context):
             raise TypeError("4th item must be an STF context (or None to infer)")
