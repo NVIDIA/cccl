@@ -80,6 +80,17 @@ if (CCCL_ENABLE_C_EXPERIMENTAL_STF)
     TARGETS cccl.c.experimental.stf
     DESTINATION cuda/stf/${CUDA_VERSION_DIR}/cccl
   )
+
+  # Install STF C API header and cudax headers so downstream packages (e.g. ugpu)
+  # can compile C++ extensions against the exact same ABI.
+  install(
+    DIRECTORY ${_cccl_root}/c/experimental/stf/include/
+    DESTINATION cuda/stf/include
+  )
+  install(
+    DIRECTORY ${_cccl_root}/cudax/include/
+    DESTINATION cuda/stf/include
+  )
 endif()
 
 install(
