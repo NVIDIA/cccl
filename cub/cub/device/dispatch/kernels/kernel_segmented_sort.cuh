@@ -17,6 +17,7 @@
 #include <cub/agent/agent_sub_warp_merge_sort.cuh>
 #include <cub/detail/device_double_buffer.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
+#include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
 #include <cub/util_device.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
@@ -119,13 +120,16 @@ struct SmallSegmentsSelectorT
  *   considered empty.
  */
 template <SortOrder Order,
-          typename ChainedPolicyT,
+          typename PolicySelector,
           typename KeyT,
           typename ValueT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
           typename OffsetT>
-__launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREADS)
+#if _CCCL_HAS_CONCEPTS()
+  requires segmented_sort_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_segment.block_threads)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortFallbackKernel(
     const KeyT* d_keys_in_orig,
     KeyT* d_keys_out_orig,
@@ -136,9 +140,26 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets)
 {
-  using ActivePolicyT       = typename ChainedPolicyT::ActivePolicy;
-  using LargeSegmentPolicyT = typename ActivePolicyT::LargeSegmentPolicy;
-  using MediumPolicyT       = typename ActivePolicyT::MediumSegmentPolicy;
+  static constexpr segmented_sort_policy active_policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+
+  using LargeSegmentPolicyT = AgentRadixSortDownsweepPolicy<
+    0,
+    0,
+    void,
+    active_policy.large_segment.load_algorithm,
+    active_policy.large_segment.load_modifier,
+    active_policy.large_segment.rank_algorithm,
+    active_policy.large_segment.scan_algorithm,
+    active_policy.large_segment.radix_bits,
+    NoScaling<active_policy.large_segment.block_threads, active_policy.large_segment.items_per_thread>>;
+
+  using MediumPolicyT =
+    AgentSubWarpMergeSortPolicy<active_policy.medium_segment.block_threads,
+                                active_policy.medium_segment.warp_threads,
+                                active_policy.medium_segment.items_per_thread,
+                                active_policy.medium_segment.load_algorithm,
+                                active_policy.medium_segment.load_modifier,
+                                active_policy.medium_segment.store_algorithm>;
 
   const auto segment_id = static_cast<local_segment_index_t>(blockIdx.x);
   OffsetT segment_begin = d_begin_offsets[segment_id];
@@ -296,13 +317,16 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
  *   considered empty.
  */
 template <SortOrder Order,
-          typename ChainedPolicyT,
+          typename PolicySelector,
           typename KeyT,
           typename ValueT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
           typename OffsetT>
-__launch_bounds__(ChainedPolicyT::ActivePolicy::SmallSegmentPolicy::BLOCK_THREADS)
+#if _CCCL_HAS_CONCEPTS()
+  requires segmented_sort_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).small_segment.block_threads)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortKernelSmall(
     local_segment_index_t small_segments,
     local_segment_index_t medium_segments,
@@ -321,9 +345,23 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallSegmentPolicy::BLOCK_THREAD
   const local_segment_index_t tid = threadIdx.x;
   const local_segment_index_t bid = blockIdx.x;
 
-  using ActivePolicyT = typename ChainedPolicyT::ActivePolicy;
-  using SmallPolicyT  = typename ActivePolicyT::SmallSegmentPolicy;
-  using MediumPolicyT = typename ActivePolicyT::MediumSegmentPolicy;
+  static constexpr segmented_sort_policy active_policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+
+  using SmallPolicyT =
+    AgentSubWarpMergeSortPolicy<active_policy.small_segment.block_threads,
+                                active_policy.small_segment.warp_threads,
+                                active_policy.small_segment.items_per_thread,
+                                active_policy.small_segment.load_algorithm,
+                                active_policy.small_segment.load_modifier,
+                                active_policy.small_segment.store_algorithm>;
+
+  using MediumPolicyT =
+    AgentSubWarpMergeSortPolicy<active_policy.medium_segment.block_threads,
+                                active_policy.medium_segment.warp_threads,
+                                active_policy.medium_segment.items_per_thread,
+                                active_policy.medium_segment.load_algorithm,
+                                active_policy.medium_segment.load_modifier,
+                                active_policy.medium_segment.store_algorithm>;
 
   constexpr auto threads_per_medium_segment = static_cast<local_segment_index_t>(MediumPolicyT::WARP_THREADS);
   constexpr auto threads_per_small_segment  = static_cast<local_segment_index_t>(SmallPolicyT::WARP_THREADS);
@@ -417,13 +455,16 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallSegmentPolicy::BLOCK_THREAD
  *   considered empty.
  */
 template <SortOrder Order,
-          typename ChainedPolicyT,
+          typename PolicySelector,
           typename KeyT,
           typename ValueT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
           typename OffsetT>
-__launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREADS)
+#if _CCCL_HAS_CONCEPTS()
+  requires segmented_sort_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_segment.block_threads)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortKernelLarge(
     const local_segment_index_t* d_segments_indices,
     const KeyT* d_keys_in_orig,
@@ -435,8 +476,18 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets)
 {
-  using ActivePolicyT         = typename ChainedPolicyT::ActivePolicy;
-  using LargeSegmentPolicyT   = typename ActivePolicyT::LargeSegmentPolicy;
+  static constexpr segmented_sort_policy active_policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  using LargeSegmentPolicyT                            = AgentRadixSortDownsweepPolicy<
+                               0,
+                               0,
+                               void,
+                               active_policy.large_segment.load_algorithm,
+                               active_policy.large_segment.load_modifier,
+                               active_policy.large_segment.rank_algorithm,
+                               active_policy.large_segment.scan_algorithm,
+                               active_policy.large_segment.radix_bits,
+                               NoScaling<active_policy.large_segment.block_threads, active_policy.large_segment.items_per_thread>>;
+
   using local_segment_index_t = local_segment_index_t;
 
   constexpr int small_tile_size = LargeSegmentPolicyT::BLOCK_THREADS * LargeSegmentPolicyT::ITEMS_PER_THREAD;
