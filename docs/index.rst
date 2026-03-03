@@ -13,4 +13,4 @@ make CUDA C++ and Python more delightful.
 
 - :ref:`cccl-cpp-libraries`
 
-- :doc:`Python Libraries <python/index>`
+- :doc:`CCCL Python Libraries <python/index>`
