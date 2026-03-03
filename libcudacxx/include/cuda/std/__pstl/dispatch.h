@@ -39,6 +39,7 @@ enum class __pstl_algorithm
   __for_each_n,
   __generate_n,
   __inclusive_scan,
+  __merge,
   __reduce,
   __remove_if,
   __transform,
